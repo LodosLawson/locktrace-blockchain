@@ -1,8 +1,8 @@
 """
-BlockChainT - High-Performance ACID SQLite WAL Persistence Engine
-=================================================================
-Replaces full-file JSON re-parsing on every request with indexed SQLite WAL storage,
-multi-worker revision tracking, and seamless zero-data-loss migration from blockchain.json.
+BlockChainT - High-Performance ACID SQLite WAL Persistence Engine (v1.4.0)
+==========================================================================
+Provides multi-worker safe SQLite WAL storage for blocks, shared mempool,
+wallets, decentralized P2P nodes, and cryptographic validator block attestations.
 """
 
 import json
@@ -13,7 +13,7 @@ from typing import Dict, List, Optional, Tuple
 
 
 class SQLiteStorage:
-    """Thread-safe & multi-process safe SQLite WAL ledger persistence."""
+    """Thread-safe & multi-process safe SQLite WAL ledger + mempool persistence."""
 
     def __init__(self, db_path: str):
         self.db_path = db_path
@@ -54,6 +54,14 @@ class SQLiteStorage:
             """)
             conn.execute("CREATE INDEX IF NOT EXISTS idx_blocks_hash ON blocks(hash);")
             conn.execute("""
+                CREATE TABLE IF NOT EXISTS mempool (
+                    seq INTEGER PRIMARY KEY AUTOINCREMENT,
+                    tx_hash TEXT UNIQUE NOT NULL,
+                    tx_json TEXT NOT NULL,
+                    created_at REAL NOT NULL
+                );
+            """)
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS wallets (
                     address TEXT PRIMARY KEY,
                     public_key TEXT NOT NULL DEFAULT '',
@@ -66,6 +74,17 @@ class SQLiteStorage:
                     node_id TEXT PRIMARY KEY,
                     data_json TEXT NOT NULL,
                     last_seen REAL NOT NULL
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS block_attestations (
+                    block_index INTEGER NOT NULL,
+                    node_id TEXT NOT NULL,
+                    miner_address TEXT NOT NULL,
+                    block_hash TEXT NOT NULL,
+                    signature TEXT NOT NULL,
+                    timestamp REAL NOT NULL,
+                    PRIMARY KEY (block_index, node_id)
                 );
             """)
             cur = conn.execute("SELECT value FROM meta WHERE key = 'state_revision';")
@@ -123,7 +142,6 @@ class SQLiteStorage:
         conn = self._connect()
         try:
             conn.execute("BEGIN IMMEDIATE;")
-            # Double-check inside exclusive write lock to avoid multi-worker race
             cur = conn.execute("SELECT COUNT(*) AS cnt FROM blocks;")
             if int(cur.fetchone()["cnt"]) > 0:
                 conn.execute("COMMIT;")
@@ -197,10 +215,13 @@ class SQLiteStorage:
             conn.close()
 
     def load_full_state(self) -> Optional[Tuple[int, dict]]:
-        """Loads full ledger state and current revision from SQLite WAL."""
+        """Loads full ledger state, shared mempool, and current revision from SQLite WAL."""
         conn = self._connect()
         try:
-            cur = conn.execute("SELECT block_index, hash, previous_hash, merkle_root, timestamp, nonce, miner, version, transactions_json FROM blocks ORDER BY block_index ASC;")
+            cur = conn.execute(
+                "SELECT block_index, hash, previous_hash, merkle_root, timestamp, nonce, miner, version, transactions_json "
+                "FROM blocks ORDER BY block_index ASC;"
+            )
             block_rows = cur.fetchall()
             if not block_rows:
                 return None
@@ -227,10 +248,24 @@ class SQLiteStorage:
                 except Exception:
                     pass
 
+            mempool_rows = conn.execute("SELECT tx_json FROM mempool ORDER BY seq ASC;").fetchall()
+            pending_txs: List[dict] = []
+            for r in mempool_rows:
+                try:
+                    pending_txs.append(json.loads(r["tx_json"]))
+                except Exception:
+                    pass
+
+            att_rows = conn.execute(
+                "SELECT block_index, COUNT(*) AS cnt FROM block_attestations GROUP BY block_index;"
+            ).fetchall()
+            attestation_counts: Dict[int, int] = {int(r["block_index"]): int(r["cnt"]) for r in att_rows}
+
             chain_dicts: List[dict] = []
             for r in block_rows:
+                b_idx = int(r["block_index"])
                 chain_dicts.append({
-                    "index": r["block_index"],
+                    "index": b_idx,
                     "hash": r["hash"],
                     "previous_hash": r["previous_hash"],
                     "merkle_root": r["merkle_root"],
@@ -238,11 +273,14 @@ class SQLiteStorage:
                     "nonce": r["nonce"],
                     "miner": r["miner"],
                     "version": r["version"],
+                    "attestations_count": attestation_counts.get(b_idx, 0),
                     "transactions": json.loads(r["transactions_json"]),
                 })
 
             return revision, {
                 "chain": chain_dicts,
+                "pending_transactions": pending_txs,
+                "attestation_counts": attestation_counts,
                 "wallets": wallets,
                 "nodes": nodes,
                 "total_transactions": int(meta.get("total_transactions", "0")),
@@ -253,10 +291,11 @@ class SQLiteStorage:
 
     def save_state(self, blocks_dicts: List[dict], wallets: Dict[str, dict],
                    nodes: Dict[str, dict], total_transactions: int,
-                   total_fees_collected: float) -> int:
+                   total_fees_collected: float,
+                   pending_dicts: Optional[List[dict]] = None) -> int:
         """
-        Persists new blocks incrementally and upserts wallets/nodes inside a single ACID WAL transaction.
-        Returns the new state_revision.
+        Persists new blocks incrementally, synchronizes shared mempool,
+        and upserts wallets/nodes inside a single ACID WAL transaction.
         """
         conn = self._connect()
         try:
@@ -286,6 +325,16 @@ class SQLiteStorage:
                         ),
                     )
 
+            # Synchronize shared multi-worker mempool
+            if pending_dicts is not None:
+                conn.execute("DELETE FROM mempool;")
+                for p_tx in pending_dicts:
+                    tx_h = str(p_tx.get("tx_hash") or "")
+                    conn.execute(
+                        "INSERT OR REPLACE INTO mempool (tx_hash, tx_json, created_at) VALUES (?, ?, ?);",
+                        (tx_h, json.dumps(p_tx, ensure_ascii=False), float(p_tx.get("timestamp", time.time()))),
+                    )
+
             for addr, w_info in wallets.items():
                 conn.execute(
                     """
@@ -300,7 +349,6 @@ class SQLiteStorage:
                     ),
                 )
 
-            # Sync node registry cleanly
             existing_ids = {r["node_id"] for r in conn.execute("SELECT node_id FROM nodes;").fetchall()}
             removed_ids = existing_ids - set(nodes.keys())
             for rid in removed_ids:
@@ -330,5 +378,53 @@ class SQLiteStorage:
         except Exception:
             conn.execute("ROLLBACK;")
             raise
+        finally:
+            conn.close()
+
+    def record_attestation(self, block_index: int, node_id: str, miner_address: str,
+                           block_hash: str, signature: str, timestamp: float) -> Tuple[bool, int]:
+        """Records a cryptographic validator block attestation if not already submitted by this node."""
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE;")
+            existing = conn.execute(
+                "SELECT 1 FROM block_attestations WHERE block_index = ? AND node_id = ?;",
+                (int(block_index), str(node_id)),
+            ).fetchone()
+            inserted = False
+            if existing is None:
+                conn.execute(
+                    """
+                    INSERT INTO block_attestations (
+                        block_index, node_id, miner_address, block_hash, signature, timestamp
+                    ) VALUES (?, ?, ?, ?, ?, ?);
+                    """,
+                    (int(block_index), str(node_id), str(miner_address), str(block_hash), str(signature), float(timestamp)),
+                )
+                rev_row = conn.execute("SELECT value FROM meta WHERE key = 'state_revision';").fetchone()
+                next_rev = (int(rev_row["value"]) if rev_row else 0) + 1
+                conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('state_revision', ?);", (str(next_rev),))
+                inserted = True
+            cnt_row = conn.execute(
+                "SELECT COUNT(*) AS cnt FROM block_attestations WHERE block_index = ?;",
+                (int(block_index),),
+            ).fetchone()
+            conn.execute("COMMIT;")
+            return inserted, int(cnt_row["cnt"]) if cnt_row else 0
+        except Exception:
+            conn.execute("ROLLBACK;")
+            raise
+        finally:
+            conn.close()
+
+    def get_block_attestations(self, block_index: int) -> List[dict]:
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                "SELECT block_index, node_id, miner_address, block_hash, signature, timestamp "
+                "FROM block_attestations WHERE block_index = ? ORDER BY timestamp ASC;",
+                (int(block_index),),
+            ).fetchall()
+            return [dict(r) for r in rows]
         finally:
             conn.close()

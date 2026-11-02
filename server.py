@@ -245,7 +245,7 @@ def after_request(response):
     duration = time.time() - getattr(g, "start_time", time.time())
     response.headers["X-Request-ID"] = getattr(g, "request_id", "unknown")
     response.headers["X-Response-Time"] = f"{duration:.4f}s"
-    response.headers["X-Powered-By"] = "LockTrace-Blockchain/1.3"
+    response.headers["X-Powered-By"] = "LockTrace-Blockchain/1.4"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     origin = request.headers.get("Origin", "")
@@ -307,11 +307,13 @@ def index_page():
 def api_health():
     return api_response(True, data={
         "status": "healthy",
-        "version": "1.3.0",
+        "version": "1.4.0",
         "network": "mainnet",
         "storage_engine": "sqlite-wal",
+        "consensus": "pow-v2-merkle-quorum",
         "merkle_enabled": True,
         "non_custodial_signing": True,
+        "multi_node_p2p": True,
         "chain_valid": blockchain.is_chain_valid(),
     })
 
@@ -593,34 +595,72 @@ def api_latest_blocks():
     return api_response(True, data={"blocks": blockchain.get_latest_blocks(count)})
 
 
-# ── Decentralized Network Nodes Endpoints ────────────────────
+@app.route("/api/v1/chain/range", methods=["GET"])
+def api_chain_range():
+    """Incremental archival chain sync endpoint for decentralized peer nodes."""
+    start = safe_int(request.args.get("start", 0), default=0, min_val=0)
+    limit = safe_int(request.args.get("limit", 100), default=100, min_val=1, max_val=200)
+    return api_response(True, data=blockchain.get_chain_range(start=start, limit=limit))
+
+
+# ── Decentralized Network Nodes & P2P Consensus Endpoints ─────
 @app.route("/api/v1/nodes", methods=["GET"])
 def api_get_nodes():
-    """List all registered network nodes with uptime and health."""
+    """List all registered network nodes with uptime, attestations, rewards, and health."""
     nodes = blockchain.get_nodes()
     online_count = sum(1 for n in nodes if n.get("status") == "online")
+    verified_count = sum(1 for n in nodes if n.get("status") == "online" and (n.get("auth_verified") or n.get("is_genesis")))
     return api_response(True, data={
         "total_nodes": len(nodes),
         "online_nodes": online_count,
+        "verified_nodes": verified_count,
+        "reward_model": {"proposer_share": 0.70, "validator_pool_share": 0.30},
         "nodes": nodes,
     })
 
 
+@app.route("/api/v1/peers", methods=["GET"])
+def api_get_peers():
+    """Returns active P2P peer endpoints for node-to-node mesh discovery."""
+    nodes = blockchain.get_nodes()
+    peers = [
+        {
+            "node_id": n.get("node_id"),
+            "name": n.get("name"),
+            "endpoint": n.get("endpoint"),
+            "location": n.get("location"),
+            "block_height": n.get("block_height", 0),
+            "attested_height": n.get("attested_height", -1),
+            "auth_verified": bool(n.get("auth_verified") or n.get("is_genesis")),
+            "is_genesis": bool(n.get("is_genesis")),
+        }
+        for n in nodes
+        if n.get("status") == "online" and str(n.get("endpoint", "")).startswith("http")
+    ]
+    return api_response(True, data={"peers": peers, "count": len(peers)})
+
+
 @app.route("/api/v1/nodes/register", methods=["POST"])
 def api_register_node():
-    """Register or announce a community node into the decentralized network."""
-    if not check_rate_limit("node_register", limit=20, window_seconds=60):
+    """Register or announce a community node into the decentralized network (with optional ECDSA ownership proof)."""
+    if not check_rate_limit("node_register", limit=25, window_seconds=60):
         return api_response(False, message="Çok sık düğüm kayıt isteği gönderildi.", status=429)
 
     data = request.get_json(silent=True) or {}
     node_id = str(data.get("node_id", "") or "").strip()
     name = str(data.get("name", "") or "").strip()
     endpoint = str(data.get("endpoint", "") or "").strip()
-    role = str(data.get("role", "Peer Node") or "Peer Node").strip()
+    role = str(data.get("role", "Community Validator Peer") or "Community Validator Peer").strip()
     location = str(data.get("location", "Decentralized") or "Decentralized").strip()
     miner_address = str(data.get("miner_address", "") or "").strip()
     block_height = safe_int(data.get("block_height", 0), default=0, min_val=0)
-    version = str(data.get("version", "1.2.0") or "1.2.0").strip()
+    version = str(data.get("version", "1.4.0") or "1.4.0").strip()
+    pub_key = str(data.get("public_key", "") or "").strip()
+    sig = str(data.get("signature", "") or "").strip()
+    raw_ts = data.get("timestamp")
+    ts_val = safe_float(raw_ts) if raw_ts is not None else None
+    ts_exact = str(raw_ts).strip() if ts_val is not None else None
+    hashrate_hs = safe_float(data.get("hashrate_hs", 0.0), default=0.0) or 0.0
 
     if miner_address and not is_valid_bct_address(miner_address):
         return api_response(False, message="Geçersiz madenci cüzdan adresi formatı.", status=400)
@@ -628,24 +668,31 @@ def api_register_node():
     if not node_id:
         node_id = f"node-{secrets.token_hex(4)}"
 
-    node_info = blockchain.register_or_ping_node(
-        node_id=node_id,
-        name=name,
-        endpoint=endpoint,
-        role=role,
-        location=location,
-        miner_address=miner_address,
-        block_height=block_height,
-        version=version,
-    )
-    logger.info(f"Node Registered / Heartbeat: {node_info['name']} [{node_info['node_id']}]")
+    try:
+        node_info = blockchain.register_or_ping_node(
+            node_id=node_id,
+            name=name,
+            endpoint=endpoint,
+            role=role,
+            location=location,
+            miner_address=miner_address,
+            block_height=block_height,
+            version=version,
+            public_key=pub_key,
+            signature=sig,
+            timestamp=ts_exact,
+            hashrate_hs=hashrate_hs,
+        )
+    except PermissionError as pe:
+        return api_response(False, message=str(pe), status=403)
+    logger.info(f"Node Registered / Heartbeat: {node_info['name']} [{node_info['node_id']}] (verified={node_info.get('auth_verified')})")
     return api_response(True, message="Node registered successfully in LockTrace network", data=node_info, status=201)
 
 
 @app.route("/api/v1/nodes/ping", methods=["POST"])
 def api_ping_node():
-    """Heartbeat endpoint for connected nodes."""
-    if not check_rate_limit("node_ping", limit=30, window_seconds=60):
+    """Authenticated heartbeat endpoint for connected peer nodes."""
+    if not check_rate_limit("node_ping", limit=45, window_seconds=60):
         return api_response(False, message="Rate limit exceeded", status=429)
 
     data = request.get_json(silent=True) or {}
@@ -657,27 +704,85 @@ def api_ping_node():
     if miner_addr and not is_valid_bct_address(miner_addr):
         miner_addr = ""
 
-    blockchain.register_or_ping_node(
+    pub_key = str(data.get("public_key", "") or "").strip()
+    sig = str(data.get("signature", "") or "").strip()
+    raw_ts = data.get("timestamp")
+    ts_val = safe_float(raw_ts) if raw_ts is not None else None
+    ts_exact = str(raw_ts).strip() if ts_val is not None else None
+    hashrate_hs = safe_float(data.get("hashrate_hs", 0.0), default=0.0) or 0.0
+
+    try:
+        blockchain.register_or_ping_node(
+            node_id=node_id,
+            block_height=safe_int(data.get("block_height", len(blockchain.chain)), default=len(blockchain.chain), min_val=0),
+            miner_address=miner_addr,
+            public_key=pub_key,
+            signature=sig,
+            timestamp=ts_exact,
+            hashrate_hs=hashrate_hs,
+        )
+    except PermissionError as pe:
+        return api_response(False, message=str(pe), status=403)
+    return api_response(True, message="Pong", data={
+        "node_id": node_id[:64],
+        "status": "online",
+        "network_height": len(blockchain.chain),
+        "pending_mempool": len(blockchain.pending_transactions),
+    })
+
+
+@app.route("/api/v1/nodes/attest", methods=["POST"])
+def api_attest_block():
+    """Cryptographic ECDSA block attestation from peer validator nodes (unlocks 30% Validator Reward Pool)."""
+    if not check_rate_limit("node_attest", limit=60, window_seconds=60):
+        return api_response(False, message="Attestation rate limit exceeded", status=429)
+
+    data = request.get_json(silent=True) or {}
+    node_id = str(data.get("node_id", "") or "").strip()
+    miner_address = str(data.get("miner_address", "") or "").strip()
+    block_index = safe_int(data.get("block_index", -1), default=-1)
+    block_hash = str(data.get("block_hash", "") or "").strip()
+    pub_key = str(data.get("public_key", "") or "").strip()
+    sig = str(data.get("signature", "") or "").strip()
+    raw_ts = data.get("timestamp")
+    ts = safe_float(raw_ts)
+
+    if ts is None:
+        return api_response(False, message="Geçerli timestamp gereklidir.", status=400)
+    ts_exact = str(raw_ts).strip()
+    if sig and not rate_limiter.register_signature_once(sig):
+        return api_response(False, message="Tekrarlanan (replay) doğrulama imzası reddedildi.", status=409)
+
+    ok, msg, res = blockchain.attest_block(
         node_id=node_id,
-        block_height=safe_int(data.get("block_height", len(blockchain.chain)), default=len(blockchain.chain), min_val=0),
-        miner_address=miner_addr,
+        miner_address=miner_address,
+        block_index=block_index,
+        block_hash=block_hash,
+        public_key=pub_key,
+        signature=sig,
+        timestamp=ts_exact,
     )
-    return api_response(True, message="Pong", data={"node_id": node_id[:64], "status": "online", "network_height": len(blockchain.chain)})
+    if not ok:
+        return api_response(False, message=msg, status=400)
+    return api_response(True, message=msg, data=res, status=200)
 
 
-# ── Mining & Node Reward Endpoints ───────────────────────────
+# ── Mining, PoW Block Templates & Multi-Node Reward Endpoints ─
 @app.route("/api/v1/mining/job", methods=["GET"])
 def api_mining_job():
-    """Provides current mining difficulty, pending fees, and block reward metrics."""
+    """Provides current mining difficulty, pending fees, and 70/30 reward pool metrics."""
     with blockchain.lock:
+        blockchain._load_state(sweep_overdue=False)
         pending_count = len(blockchain.pending_transactions)
         pending_fees = sum(tx.fee for tx in blockchain.pending_transactions if tx.tx_type == "transfer")
         space_fees = sum(tx.fee for tx in blockchain.pending_transactions if tx.tx_type in ("space_post", "space_like", "space_comment"))
         miner_cut = round(pending_fees * MINER_FEE_SHARE + space_fees, 8)
         block_index = len(blockchain.chain)
         prev_hash = blockchain.chain[-1].hash if blockchain.chain else "0" * 64
-        difficulty = blockchain.difficulty
+        difficulty = blockchain.get_current_difficulty()
+        active_vals = len(blockchain.get_eligible_validators("", block_index))
 
+    total_pool = round(BLOCK_REWARD + miner_cut, 8) if pending_count > 0 else 0.0
     return api_response(True, data={
         "block_index": block_index,
         "previous_hash": prev_hash,
@@ -685,13 +790,64 @@ def api_mining_job():
         "pending_transactions": pending_count,
         "block_subsidy": BLOCK_REWARD if pending_count > 0 else 0.0,
         "pending_fees": round(pending_fees + space_fees, 8),
-        "potential_miner_reward": round(BLOCK_REWARD + miner_cut, 8) if pending_count > 0 else 0.0,
+        "potential_reward_pool": total_pool,
+        "proposer_share_pct": 70 if active_vals > 0 else 100,
+        "validator_pool_share_pct": 30 if active_vals > 0 else 0,
+        "eligible_validators": active_vals,
     })
+
+
+@app.route("/api/v1/mining/template", methods=["GET"])
+def api_mining_template():
+    """Returns a deterministic v2 PoW block template (`getblocktemplate`) for external CPU/GPU miners."""
+    if not check_rate_limit("mining_template", limit=60, window_seconds=60):
+        return api_response(False, message="Şablon istek sınırı aşıldı.", status=429)
+
+    miner_address = str(request.args.get("miner_address", "") or "").strip()
+    node_id = str(request.args.get("node_id", "") or "").strip()
+    ok, msg, tpl = blockchain.build_mining_template(miner_address=miner_address, node_id=node_id)
+    if not ok and (tpl is None or not tpl.get("empty")):
+        return api_response(False, message=msg, status=400)
+    return api_response(True, message=msg, data=tpl)
+
+
+@app.route("/api/v1/mining/submit", methods=["POST"])
+def api_mining_submit():
+    """Verifies and appends an externally mined Proof-of-Work block (`submitblock`) and distributes 70/30 rewards."""
+    if not check_rate_limit("mining_submit", limit=30, window_seconds=60):
+        return api_response(False, message="Blok gönderim sınırı aşıldı.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    block_data = data.get("block") or {}
+    node_id = str(data.get("node_id", "") or "").strip()
+    pub_key = str(data.get("public_key", "") or "").strip()
+    sig = str(data.get("signature", "") or "").strip()
+    hashrate_hs = safe_float(data.get("hashrate_hs", 0.0), default=0.0) or 0.0
+
+    if sig and not rate_limiter.register_signature_once(sig):
+        return api_response(False, message="Tekrarlanan (replay) blok imzası reddedildi.", status=409)
+
+    ok, msg, receipt = blockchain.submit_mined_block(
+        block_data=block_data,
+        node_id=node_id,
+        public_key=pub_key,
+        signature=sig,
+        reported_hashrate=hashrate_hs,
+    )
+    if not ok:
+        status_code = 409 if (receipt and receipt.get("stale")) else 400
+        return api_response(False, message=msg, data=receipt, status=status_code)
+
+    logger.info(
+        f"External PoW Block #{receipt['block_index']} sealed by {receipt['miner_address'][:10]}... "
+        f"(Proposer: +{receipt['miner_reward']} BCT | Validator Pool: +{receipt['validator_pool_reward']} BCT)"
+    )
+    return api_response(True, message=msg, data=receipt, status=201)
 
 
 @app.route("/api/v1/mine", methods=["POST"])
 def api_mine_block():
-    """Forge and mine a new Proof-of-Work block when pending transactions exist in the mempool."""
+    """Backward-compatible mining trigger when pending transactions exist in the mempool."""
     if not check_rate_limit("mine_block", limit=15, window_seconds=60):
         return api_response(False, message="Madencilik istek sınırına ulaşıldı. Lütfen bekleyin.", status=429)
 
@@ -704,23 +860,25 @@ def api_mine_block():
     if not is_valid_bct_address(miner_address) or miner_address.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
         return api_response(False, message="Invalid miner address format", status=400)
 
-    # Strictly require pending transactions so empty blocks cannot be farmed for free BCT
     block = blockchain.mine_pending_block(miner_address=miner_address)
     if not block:
         return api_response(False, message="Havuzda bekleyen işlem yok. Boş blok üretimi ve karşılıksız ödül dağıtımı kapalıdır.", status=400)
 
     coinbase = next((t for t in block.transactions if t.tx_type == "mining_reward"), None)
+    val_rewards = sum(t.amount for t in block.transactions if t.tx_type == "validator_reward")
     reward_val = coinbase.amount if coinbase else 0.0
 
-    logger.info(f"Block #{block.index} mined by {miner_address[:10]}... Reward: {reward_val} BCT")
+    logger.info(f"Block #{block.index} mined by {miner_address[:10]}... Reward: {reward_val} BCT (+{val_rewards} BCT validator pool)")
 
     return api_response(True, message=f"Block #{block.index} successfully mined! Deposited {reward_val:.8f} BCT reward.", data={
         "block_index": block.index,
         "block_hash": block.hash,
+        "merkle_root": block.merkle_root,
         "nonce": block.nonce,
         "transactions_packaged": len(block.transactions),
         "miner_address": miner_address,
         "miner_reward": reward_val,
+        "validator_pool_reward": round(val_rewards, 8),
         "miner_balance": blockchain.get_balance(miner_address),
         "timestamp": block.timestamp,
     }, status=201)

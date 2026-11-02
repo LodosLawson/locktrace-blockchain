@@ -493,7 +493,7 @@
             <div class="flex items-center gap-1.5 mt-1 text-on-surface-variant font-label-lg text-label-lg">
               <span>≈</span>
               <span id="sendFiatPreview">$0.00</span>
-              <span class="text-outline text-xs">• Net: <strong class="text-on-surface font-mono" id="sendNetPreview">0.00 BCT</strong></span>
+              <span class="text-outline text-xs">• Alıcıya Net: <strong class="text-on-surface font-mono" id="sendNetPreview">0.00 BCT</strong></span>
             </div>
             <div class="grid grid-cols-4 gap-2 w-full max-w-xs mt-space-lg">
               <button class="pct-btn py-2 rounded-full bg-surface-container-high text-on-surface font-label-md text-label-md hover:bg-surface-container-highest transition-colors active:scale-95 text-center" onclick="setSendPercent(0.25)" type="button">%25</button>
@@ -754,7 +754,7 @@
                     </div>
                     <div>
                       <p class="font-body-md text-body-md text-on-surface font-medium leading-none">LockTrace Mainnet L1</p>
-                      <span class="font-label-sm text-label-sm text-on-surface-variant">Genesis Validator • Sabit Arz: 1 Trilyon BCT</span>
+                      <span class="font-label-sm text-label-sm text-on-surface-variant">Çoklu Düğüm PoW + Quorum • %70 Üretici / %30 Doğrulayıcı Havuzu</span>
                     </div>
                   </div>
                   <div class="flex items-center gap-1 bg-surface-container px-2.5 py-0.5 rounded-full">
@@ -999,9 +999,9 @@
         <div class="w-full max-w-4xl mx-auto px-margin md:px-6 pb-space-lg flex flex-col gap-5">
           <div class="flex items-center justify-between mt-space-sm">
             <div class="flex flex-col gap-1">
-              <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">REST API v1.3 • MERKLE SPV • SQLITE WAL</span>
-              <h1 class="font-headline-md text-headline-md text-on-surface">Geliştirici API &amp; Bağımsız Düğüm Kurulumu</h1>
-              <p class="font-body-sm text-body-sm text-on-surface-variant">Kendi bilgisayarınızda doğrulayıcı düğüm (Archival PoW + Merkle Verifier) çalıştırarak %50 işlem ücreti + 0.05 BCT blok ödülü kazanın.</p>
+              <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">REST &amp; P2P API v1.4 • ÇOKLU DÜĞÜM QUORUM • SQLITE WAL</span>
+              <h1 class="font-headline-md text-headline-md text-on-surface">Geliştirici API &amp; Çoklu P2P Düğüm Kurulumu</h1>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Kendi bilgisayarınızda bağımsız P2P PoW + Doğrulayıcı düğüm çalıştırın. Her blok ödülünün %70'i bloğu kazanan PoW üreticisine, %30'u ise aktif ECDSA doğrulayıcı düğüm sahiplerine eşit dağıtılır.</p>
             </div>
           </div>
 
@@ -2210,9 +2210,14 @@
         iconColor = 'text-primary';
         sign = '+';
       } else if (txType === 'mining_reward') {
-        title = 'PoW Madencilik Ödülü';
+        title = 'PoW Blok Üretim Ödülü (%70)';
         icon = 'memory';
         iconColor = 'text-primary';
+        sign = '+';
+      } else if (txType === 'validator_reward') {
+        title = 'Doğrulayıcı Düğüm Ödülü (%30 Havuz)';
+        icon = 'verified_user';
+        iconColor = 'text-secondary';
         sign = '+';
       } else if (txType === 'space_post') {
         title = 'Space Düşünce Paylaşımı';
@@ -2235,8 +2240,8 @@
         title = isIncoming ? 'BCT Alındı' : 'BCT Gönderildi';
       }
 
-      const totalOut = (!isIncoming && txType === 'transfer')
-        ? Number((amountNum + Number(tx.fee || 0)).toFixed(8))
+      const totalOut = (isIncoming && txType === 'transfer')
+        ? Math.max(0, Number((amountNum - Number(tx.fee || 0)).toFixed(8)))
         : amountNum;
 
       return {
@@ -2332,8 +2337,8 @@
             <div class="flex flex-col items-end shrink-0 ml-2">
               <span class="font-body-md text-body-md ${amtClass} font-semibold tabular-nums">${meta.sign}${formatBct(meta.displayAmount, 4)} BCT</span>
               <div class="flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                <span class="font-label-sm text-label-sm text-on-surface-variant">Tamamlandı</span>
+                <span class="w-1.5 h-1.5 rounded-full ${tx.status === 'mempool' ? 'bg-secondary animate-pulse' : 'bg-primary'}"></span>
+                <span class="font-label-sm text-label-sm ${tx.status === 'mempool' ? 'text-secondary' : 'text-on-surface-variant'}">${tx.status === 'mempool' ? 'Havuzda (PoW)' : 'Tamamlandı'}</span>
               </div>
             </div>
           </div>`;
@@ -2378,9 +2383,11 @@
       amtEl.textContent = `${meta.sign}${formatBct(meta.displayAmount, 6)} BCT`;
       amtEl.className = 'font-headline-lg text-headline-lg tabular-nums ' + (meta.isIncoming ? 'text-primary' : 'text-on-surface');
 
-      document.getElementById('modal-status').textContent = tx.block_index !== undefined
-        ? `Blok #${tx.block_index} (On-Chain)`
-        : 'Tamamlandı (On-Chain)';
+      document.getElementById('modal-status').textContent = tx.status === 'mempool'
+        ? 'Mempool Havuzunda (Düğüm PoW Bekliyor)'
+        : (tx.block_index !== undefined && tx.block_index !== null
+          ? `Blok #${tx.block_index} (On-Chain)`
+          : 'Tamamlandı (On-Chain)');
       document.getElementById('modal-time').textContent = formatFullDate(tx.timestamp);
       document.getElementById('modal-counterparty').textContent = meta.counterparty || '--';
       document.getElementById('modal-fee').textContent = `${formatBct(tx.fee || 0, 6)} BCT`;
@@ -2492,7 +2499,7 @@
 
       const amt = Number(v || 0);
       const fee = amt > 0 ? Math.max(0.00000001, Number((amt * 0.01).toFixed(8))) : 0;
-      const total = Number((amt + fee).toFixed(8));
+      const netToReceiver = Math.max(0, Number((amt - fee).toFixed(8)));
       const usd = amt * bctPriceUsd;
 
       const fiatEl = document.getElementById('sendFiatPreview');
@@ -2500,7 +2507,7 @@
       const feeEl = document.getElementById('sendFeePreview');
 
       if (fiatEl) fiatEl.textContent = '$' + usd.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
-      if (netEl) netEl.textContent = `${formatBct(total, 4)} BCT`;
+      if (netEl) netEl.textContent = `${formatBct(netToReceiver, 4)} BCT`;
       if (feeEl) feeEl.textContent = `${formatBct(fee, 4)} BCT (%1)`;
     }
 
@@ -2512,9 +2519,8 @@
         showToast('Kullanılabilir BCT bakiyeniz 0', 'warning', true);
         return;
       }
-      // Account for 1% fee so 100% ("Tümü") never fails due to fee!
-      const maxSendable = bal / 1.01;
-      const rawAmt = Math.floor(maxSendable * pct * 1e6) / 1e6;
+      // 1% fee is deducted inside the transfer amount (receiver gets 99%), so full balance is sendable
+      const rawAmt = pct >= 1 ? Number(bal.toFixed(8)) : Math.floor(bal * pct * 1e6) / 1e6;
       inputEl.value = rawAmt > 0 ? String(rawAmt) : '0';
       sanitizeAndPreviewSendAmount(inputEl);
     }
@@ -2654,7 +2660,8 @@
         });
 
         if (ok) {
-          showToast('Transfer blokzincire başarıyla mühürlendi!', 'verified');
+          const isMempool = body && body.data && body.data.status === 'mempool';
+          showToast(isMempool ? 'Transfer imzalandı ve P2P düğüm havuzuna iletildi!' : 'Transfer blokzincire başarıyla mühürlendi!', 'verified');
           if (amountInput) {
             amountInput.value = '';
             sanitizeAndPreviewSendAmount(amountInput);
@@ -2910,9 +2917,10 @@
           if (hdrHeight) hdrHeight.textContent = '#' + (height > 0 ? height - 1 : 0);
           if (mBlocks) mBlocks.textContent = '#' + (height > 0 ? (height - 1).toLocaleString('tr-TR') : '0');
           if (mCirc) mCirc.textContent = formatBct(st.circulating_supply || 0, 2) + ' BCT';
-          if (mDiff) mDiff.textContent = `PoW Zorluk ${st.difficulty || 3} (%1)`;
+          const memCount = Number(st.pending_transactions || 0);
+          if (mDiff) mDiff.textContent = memCount > 0 ? `Zorluk ${st.difficulty || 3} • Havuz: ${memCount}` : `PoW Zorluk ${st.difficulty || 3} (%70/%30)`;
           if (mWallets) mWallets.textContent = String(st.total_wallets || 0);
-          if (consStatus) consStatus.textContent = st.chain_valid !== false ? 'Senkron: %100' : 'Doğrulanıyor';
+          if (consStatus) consStatus.textContent = st.chain_valid !== false ? (memCount > 0 ? `Mempool: ${memCount} Tx` : 'Senkron: %100') : 'Doğrulanıyor';
         }
 
         if (nodesRes.ok && nodesRes.body.data) {
@@ -2946,8 +2954,8 @@
                 <span class="material-symbols-outlined text-secondary text-[18px]">terminal</span>
               </div>
               <div>
-                <p class="font-body-sm text-body-sm text-on-surface font-medium leading-none">Topluluk Madenci Düğümü Ekleyin</p>
-                <span class="font-label-sm text-label-sm text-on-surface-variant">node_runner.py v1.3 • %50 Ücret + 0.05 BCT Ödül</span>
+                <p class="font-body-sm text-body-sm text-on-surface font-medium leading-none">Topluluk P2P Madenci &amp; Doğrulayıcı Düğümü Ekleyin</p>
+                <span class="font-label-sm text-label-sm text-on-surface-variant">node_runner.py v1.4 • %70 PoW Üretici + %30 Doğrulayıcı Ödül Havuzu</span>
               </div>
             </div>
             <button class="px-3 py-1 rounded-full bg-surface-container text-primary font-label-sm text-label-sm font-semibold" onclick="switchTab('api-docs')" type="button">Kurulum</button>
@@ -2955,22 +2963,34 @@
         return;
       }
 
-      grid.innerHTML = peers.slice(0, 8).map((n) => {
+      grid.innerHTML = peers.slice(0, 10).map((n) => {
         const isOnline = n.status === 'online';
+        const hs = Number(n.hashrate_hs || 0);
+        const hsLabel = hs >= 1000 ? `${(hs / 1000).toFixed(1)} kH/s` : (hs > 0 ? `${Math.round(hs)} H/s` : 'Doğrulayıcı');
+        const rewards = Number(n.total_rewards || 0);
         return `
-          <div class="bg-surface-container-low p-3.5 rounded-xl flex items-center justify-between border border-outline-variant/10">
-            <div class="flex items-center gap-2.5 min-w-0">
-              <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center shrink-0">
-                <span class="font-label-md text-label-md text-secondary font-bold">P2P</span>
+          <div class="bg-surface-container-low p-3.5 rounded-xl flex flex-col gap-2 border border-outline-variant/10">
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center shrink-0">
+                  <span class="font-label-md text-label-md text-secondary font-bold">P2P</span>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <p class="font-body-md text-body-md text-on-surface font-medium leading-none truncate">${escapeHtml(n.name || n.node_id)}</p>
+                    ${n.auth_verified ? '<span class="px-1.5 py-0.5 rounded bg-primary/15 text-primary font-label-sm text-[10px]">ECDSA</span>' : ''}
+                  </div>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant truncate block mt-0.5">${escapeHtml(n.location || 'Global')} • Blok #${escapeHtml(n.block_height || 0)} • ${escapeHtml(hsLabel)}</span>
+                </div>
               </div>
-              <div class="min-w-0">
-                <p class="font-body-md text-body-md text-on-surface font-medium leading-none truncate">${escapeHtml(n.name || n.node_id)}</p>
-                <span class="font-label-sm text-label-sm text-on-surface-variant truncate block mt-0.5">${escapeHtml(n.location || 'Global')} • Blok #${escapeHtml(n.block_height || 0)} • ${escapeHtml(n.blocks_mined || 0)} Kazım</span>
+              <div class="flex items-center gap-1 bg-surface-container px-2.5 py-0.5 rounded-full shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-primary' : 'bg-outline'}"></span>
+                <span class="font-label-sm text-label-sm ${isOnline ? 'text-primary' : 'text-outline'}">${isOnline ? 'Aktif' : 'Çevrimdışı'}</span>
               </div>
             </div>
-            <div class="flex items-center gap-1 bg-surface-container px-2.5 py-0.5 rounded-full shrink-0 ml-2">
-              <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-primary' : 'bg-outline'}"></span>
-              <span class="font-label-sm text-label-sm ${isOnline ? 'text-primary' : 'text-outline'}">${isOnline ? 'Aktif' : 'Beklemede'}</span>
+            <div class="flex items-center justify-between text-xs pt-1.5 border-t border-outline-variant/10 font-mono">
+              <span class="text-on-surface-variant">${escapeHtml(n.blocks_mined || 0)} Kazım • ${escapeHtml(n.blocks_attested || 0)} Onay</span>
+              <span class="text-primary font-semibold">+${formatBct(rewards, 4)} BCT Ödül</span>
             </div>
           </div>`;
       }).join('');
@@ -2993,7 +3013,8 @@
         else if (txType === 'space_post') { icon = 'forum'; label = 'Space Paylaşım'; }
         else if (txType === 'space_like') { icon = 'favorite'; label = 'Space Beğeni'; }
         else if (txType === 'space_comment') { icon = 'chat_bubble'; label = 'Space Yorum'; }
-        else if (txType === 'mining_reward') { icon = 'memory'; label = 'Madenci Ödülü'; }
+        else if (txType === 'mining_reward') { icon = 'memory'; label = 'PoW Ödülü (%70)'; }
+        else if (txType === 'validator_reward') { icon = 'verified_user'; label = 'Doğrulayıcı (%30)'; }
 
         return `
           <div class="bg-surface-container-low p-3.5 rounded-xl flex items-center justify-between active:bg-surface-container hover:bg-surface-container transition-colors cursor-pointer border border-outline-variant/10" onclick="openExplorerTxByIndex(${idx})">
@@ -3011,7 +3032,7 @@
             </div>
             <div class="text-right shrink-0 ml-2">
               <span class="font-body-sm text-body-sm text-on-surface font-semibold block tabular-nums">${formatBct(tx.amount, 4)} BCT</span>
-              <span class="font-label-sm text-label-sm text-primary">Blok #${escapeHtml(tx.block_index ?? 0)}</span>
+              <span class="font-label-sm text-label-sm ${tx.status === 'mempool' ? 'text-secondary' : 'text-primary'}">${tx.status === 'mempool' ? 'Mempool (PoW)' : 'Blok #' + escapeHtml(tx.block_index ?? 0)}</span>
             </div>
           </div>`;
       }).join('');
@@ -3051,7 +3072,7 @@
             </div>
             <div class="text-right shrink-0 ml-2">
               <span class="font-body-sm text-body-sm text-on-surface font-semibold block">${txCount} İşlem</span>
-              <span class="font-label-sm text-label-sm text-on-surface-variant font-mono">Nonce ${escapeHtml(b.nonce)}</span>
+              <span class="font-label-sm text-label-sm text-on-surface-variant font-mono">${Number(b.attestations_count || 0) > 0 ? escapeHtml(b.attestations_count) + ' Onay • ' : ''}Nonce ${escapeHtml(b.nonce)}</span>
             </div>
           </div>`;
       }).join('');
@@ -3115,7 +3136,7 @@
             <div><span class="text-on-surface-variant block text-[10px] uppercase">PoW Nonce &amp; Zorluk</span><span class="text-primary">${escapeHtml(b.nonce)} (SHA-256)</span></div>
             <div class="sm:col-span-2"><span class="text-on-surface-variant block text-[10px] uppercase">Merkle Root (SPV Kök Özeti)</span><span class="text-secondary break-all">${escapeHtml(b.merkle_root || '--')}</span></div>
             <div class="sm:col-span-2"><span class="text-on-surface-variant block text-[10px] uppercase">Önceki Blok Hash</span><span class="text-on-surface-variant break-all">${escapeHtml(b.previous_hash)}</span></div>
-            <div class="sm:col-span-2"><span class="text-on-surface-variant block text-[10px] uppercase">Doğrulayıcı Düğüm</span><span class="text-on-surface">${escapeHtml(vNode.name || b.miner || 'Genesis Validator')} (${escapeHtml(vNode.location || 'Mainnet')})</span></div>
+            <div class="sm:col-span-2"><span class="text-on-surface-variant block text-[10px] uppercase">PoW Üretici &amp; Quorum Onayı</span><span class="text-on-surface">${escapeHtml(vNode.name || b.miner || 'Genesis Validator')} • ${escapeHtml(b.attestations_count || 0)} P2P Düğüm İmzası</span></div>
           </div>
           <div class="flex flex-col gap-2">
             <span class="font-label-md text-label-md text-on-surface font-semibold">Blok İçindeki İşlemler (${txs.length})</span>
@@ -3685,7 +3706,12 @@
         { method: 'GET', path: '/api/v1/explorer/merkle-proof/<tx_hash>', desc: 'SPV Merkle kriptografik dahil olma kanıtı (Light-Client doğrulaması)', testable: sampleTx ? '/explorer/merkle-proof/' + sampleTx : '/blocks/latest?count=1' },
         { method: 'POST', path: '/api/v1/transaction', desc: 'Tarayıcıda imzalanmış Non-Custodial SECP256k1 ECDSA transfer gönderimi', testable: null },
         { method: 'GET', path: '/api/v1/space/feed?limit=50', desc: 'On-Chain LockTrace Space sosyal düşünce ve telif akışı', testable: '/space/feed?limit=5' },
-        { method: 'GET', path: '/api/v1/nodes', desc: 'Aktif doğrulayıcı ve topluluk P2P düğümleri listesi', testable: '/nodes' }
+        { method: 'GET', path: '/api/v1/nodes', desc: 'Aktif doğrulayıcı, hashrate ve %70/%30 düğüm ödül istatistikleri', testable: '/nodes' },
+        { method: 'GET', path: '/api/v1/peers', desc: 'Doğrudan düğümler arası (P2P Gossip) eş keşif dizini', testable: '/peers' },
+        { method: 'GET', path: '/api/v1/mining/template', desc: 'Harici PoW madencileri için mempool ve %70/%30 ödül şablonu üretir', testable: null },
+        { method: 'POST', path: '/api/v1/mining/submit', desc: 'Harici PoW düğümünün kazdığı ve ECDSA imzaladığı bloğu zincire mühürler', testable: null },
+        { method: 'POST', path: '/api/v1/nodes/attest', desc: 'Doğrulayıcı düğümlerin blok kriptografik Quorum onay imzasını kaydeder', testable: null },
+        { method: 'GET', path: '/api/v1/chain/range?start=0&limit=5', desc: 'Yeni katılan düğümler için kademeli tam zincir (Archival Sync) senkronizasyonu', testable: '/chain/range?start=0&limit=5' }
       ];
 
       container.innerHTML = endpoints.map((ep, idx) => `
