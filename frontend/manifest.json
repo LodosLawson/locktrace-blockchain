@@ -1,15 +1,16 @@
 {
-  "id": "locktrace-space-bank",
-  "name": "LockTrace Bank - BCT Blockchain Account",
+  "id": "locktrace-web3-neobank",
+  "name": "LockTrace Web3 Neobank & Blockchain",
   "short_name": "LockTrace",
-  "description": "Next-Gen Decentralized Banking & Digital Asset Management on LockTrace Blockchain",
+  "description": "Minimalist Web3 Neobank, BCT Blockchain Wallet & Decentralized Banking Platform",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "background_color": "#080c14",
-  "theme_color": "#0d1322",
-  "orientation": "portrait",
-  "categories": ["finance", "banking", "utilities"],
+  "display_override": ["window-controls-overlay", "standalone", "minimal-ui"],
+  "background_color": "#131315",
+  "theme_color": "#131315",
+  "orientation": "any",
+  "categories": ["finance", "banking", "crypto", "utilities"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -22,18 +23,34 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
     }
   ],
   "shortcuts": [
     {
-      "name": "Send Funds",
-      "url": "/#send",
-      "description": "Instant Transfer"
+      "name": "Cüzdanım",
+      "url": "/#cuzdanim",
+      "description": "Portföy ve bakiye görüntüle"
     },
     {
-      "name": "Account Statement",
-      "url": "/#statement",
-      "description": "View History"
+      "name": "BCT Al / Sat",
+      "url": "/#al-sat",
+      "description": "Fiat ile BCT al veya nakde çevir"
+    },
+    {
+      "name": "Para Gönder",
+      "url": "/#para-gonder",
+      "description": "Anında BCT transferi yap"
+    },
+    {
+      "name": "Ağ & Explorer",
+      "url": "/#ag-ve-explorer",
+      "description": "Canlı blokzincir durumu ve madencilik"
     }
   ]
 }
