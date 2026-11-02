@@ -199,7 +199,7 @@
         </div>
         <div class="flex flex-col">
           <span class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.3</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.4</span>
         </div>
       </div>
 
@@ -477,7 +477,7 @@
                 </div>
                 <div class="flex flex-col text-left">
                   <span class="font-label-lg text-label-lg font-medium text-on-surface leading-tight">PoW Node</span>
-                  <span class="font-label-sm text-label-sm text-on-surface-variant leading-tight">+0.05 BCT</span>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant leading-tight">%70/%30 Ödül</span>
                 </div>
               </button>
             </div>
@@ -900,7 +900,7 @@
                     <span class="font-label-md text-label-md text-on-surface font-semibold truncate font-mono" id="composerAuthorLabel">Cüzdan Seçilmedi</span>
                     <span class="text-on-surface-variant font-label-sm text-label-sm" id="composerSubLabel">· Ziyaretçi</span>
                   </div>
-                  <textarea class="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/60 font-body-sm text-body-sm resize-none focus:outline-none focus:ring-0 p-0" id="spacePostInput" maxlength="280" oninput="updateSpaceCharCount()" onkeydown="if((event.ctrlKey || event.metaKey) && event.key === 'Enter'){ event.preventDefault(); publishSpacePost(); }" placeholder="Web3 dünyasıyla ne paylaşmak istersin? (0.10 BCT)" rows="2"></textarea>
+                  <textarea class="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/60 font-body-sm text-body-sm resize-none focus:outline-none focus:ring-0 p-0" id="spacePostInput" maxlength="280" oninput="updateSpaceCharCount()" onpaste="setTimeout(updateSpaceCharCount, 20)" onkeydown="if((event.ctrlKey || event.metaKey) && event.key === 'Enter'){ event.preventDefault(); publishSpacePost(); }" placeholder="Web3 dünyasıyla ne paylaşmak istersin? (0.10 BCT)" rows="2"></textarea>
                 </div>
               </div>
 
@@ -1058,7 +1058,7 @@
   <!-- MODAL 1: İŞLEM DETAYI & SPV MERKLE KANITI DOĞRULAYICI                     -->
   <!-- ========================================================================= -->
   <div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-4" id="tx-modal" onclick="if(event.target===this) closeTxModal();">
-    <div class="w-full max-w-[430px] rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl transition-all scale-95 opacity-0 border border-outline-variant/25" id="modal-card">
+    <div class="w-full max-w-[430px] max-h-[90dvh] overflow-y-auto rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl transition-all scale-95 opacity-0 border border-outline-variant/25" id="modal-card">
       <div class="flex items-center justify-between">
         <div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
           <span class="material-symbols-outlined text-[19px]" id="modal-icon">arrow_downward</span>
@@ -1162,7 +1162,7 @@
         </div>
 
         <div class="flex items-center gap-2" id="vaultSetupControls">
-          <input autocomplete="off" class="flex-1 bg-surface-container rounded-lg px-3 py-2 text-xs font-mono text-on-surface placeholder:text-outline focus:outline-none border border-outline-variant/20" id="vaultPinInput" inputmode="numeric" maxlength="12" placeholder="4-12 haneli PIN belirle" type="password"/>
+          <input autocomplete="off" class="flex-1 bg-surface-container rounded-lg px-3 py-2 text-xs font-mono text-on-surface placeholder:text-outline focus:outline-none border border-outline-variant/20" id="vaultPinInput" inputmode="numeric" maxlength="12" onkeydown="if(event.key==='Enter'){ event.preventDefault(); enableWalletPinVault(); }" placeholder="4-12 haneli PIN belirle" type="password"/>
           <button class="px-3.5 py-2 rounded-lg bg-primary text-on-primary font-label-sm text-label-sm font-semibold shrink-0" onclick="enableWalletPinVault()" type="button">
             Şifrele
           </button>
@@ -1180,9 +1180,9 @@
       </div>
 
       <div class="flex items-center gap-2">
-        <button class="flex-1 h-[44px] rounded-full bg-surface-container-low hover:bg-error-container/30 text-on-surface-variant hover:text-error font-label-md text-label-md border border-outline-variant/25 transition-colors flex items-center justify-center gap-1.5" onclick="switchOrDisconnectWallet()" type="button">
+        <button class="flex-1 h-[44px] rounded-full bg-surface-container-low hover:bg-error-container/30 text-on-surface-variant hover:text-error font-label-md text-label-md border border-outline-variant/25 transition-colors flex items-center justify-center gap-1.5" onclick="disconnectCurrentWallet()" type="button">
           <span class="material-symbols-outlined text-[15px]">logout</span>
-          <span>Cüzdan Değiştir</span>
+          <span>Cüzdanı Çıkar</span>
         </button>
         <button class="flex-1 h-[44px] rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-label-md font-semibold transition-colors" onclick="closeReceiveModal()" type="button">
           Tamam
@@ -1284,7 +1284,7 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v1.3.0)     -->
+  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v1.4.0)     -->
   <!-- ========================================================================= -->
   <script>
     'use strict';
@@ -1584,6 +1584,10 @@
     let currentSpaceTab = 'all';
     let spaceSearchQuery = '';
     let activeDetailPostId = null;
+    let isSendingTransaction = false;
+    let isPublishingSpacePost = false;
+    let isSubmittingComment = false;
+    const inFlightLikes = new Set();
 
     let deferredPwaPrompt = null;
     let html5QrScanner = null;
@@ -1707,9 +1711,13 @@
       const opts = Object.assign({
         headers: { 'Content-Type': 'application/json' }
       }, options);
-      const res = await fetch(API_BASE + path, opts);
-      const json = await res.json().catch(() => ({ success: false, message: 'Geçersiz sunucu yanıtı' }));
-      return { ok: res.ok && json.success !== false, status: res.status, body: json };
+      try {
+        const res = await fetch(API_BASE + path, opts);
+        const json = await res.json().catch(() => ({ success: false, message: 'Geçersiz sunucu yanıtı' }));
+        return { ok: res.ok && json.success !== false, status: res.status, body: json };
+      } catch (err) {
+        return { ok: false, status: 0, body: { success: false, message: 'Ağ bağlantı hatası (' + (err.message || 'çevrimdışı') + ')' } };
+      }
     }
 
     // =========================================================================
@@ -1954,6 +1962,9 @@
       modal.classList.add('flex');
       setTimeout(() => input.focus(), 60);
 
+      if (pinUnlockResolver) {
+        try { pinUnlockResolver(null); } catch (_e) {}
+      }
       return new Promise((resolve) => {
         pinUnlockResolver = resolve;
       });
@@ -2477,6 +2488,20 @@
       }
     }
 
+    function disconnectCurrentWallet() {
+      if (!confirm('Cüzdanınızın bu cihazdaki oturumunu kapatmak istediğinize emin misiniz?\n(12 kelimelik kurtarma ifadenizle dilediğiniz zaman tekrar geri yükleyebilirsiniz)')) {
+        return;
+      }
+      sessionUnlockedKeys = null;
+      saveWalletState(null);
+      syncWalletHeaderUI();
+      updateVaultControlsUI();
+      renderBalanceFigures(0);
+      closeReceiveModal();
+      switchTab('yeni-cuzdan');
+      showToast('Cüzdan oturumu kapatıldı', 'logout');
+    }
+
     function switchOrDisconnectWallet() {
       closeReceiveModal();
       switchTab('yeni-cuzdan');
@@ -2612,6 +2637,7 @@
     }
 
     async function executeSendTransaction() {
+      if (isSendingTransaction) return;
       if (!currentAccount || !currentAccount.address) {
         showToast('Önce cüzdanınızı oluşturun veya içe aktarın', 'warning', true);
         switchTab('yeni-cuzdan');
@@ -2638,6 +2664,14 @@
         showToast('Lütfen geçerli bir BCT tutarı girin', 'warning', true);
         return;
       }
+
+      const userBal = Number((currentAccount && currentAccount.balance) || 0);
+      if (amount > userBal) {
+        showToast(`Yetersiz bakiye! Mevcut: ${formatBct(userBal, 4)} BCT`, 'warning', true);
+        return;
+      }
+
+      isSendingTransaction = true;
 
       const roundedAmt = Number(amount.toFixed(8));
       const amtTrimmed = roundedAmt.toFixed(8).replace(/\.?0+$/, '');
@@ -2679,6 +2713,7 @@
       } catch (err) {
         showToast(err.message || 'İmzalama veya ağ hatası', 'error', true);
       } finally {
+        isSendingTransaction = false;
         if (btn) btn.disabled = false;
         if (btnText) btnText.textContent = 'Devam Et ve İmzala';
       }
@@ -3128,6 +3163,7 @@
         if (hashEl) hashEl.textContent = b.hash;
 
         const txs = Array.isArray(b.transactions) ? b.transactions : [];
+        window._currentBlockModalTxs = txs;
         const vNode = b.validator_node || {};
 
         bodyEl.innerHTML = `
@@ -3140,8 +3176,8 @@
           </div>
           <div class="flex flex-col gap-2">
             <span class="font-label-md text-label-md text-on-surface font-semibold">Blok İçindeki İşlemler (${txs.length})</span>
-            ${txs.map((t) => `
-              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/10 flex items-center justify-between gap-2">
+            ${txs.map((t, tIdx) => `
+              <div class="p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/10 flex items-center justify-between gap-2 cursor-pointer transition-colors" onclick="closeBlockDetailModal(); openTxDetail(window._currentBlockModalTxs[${tIdx}]);" title="İşlem Detayını Aç">
                 <div class="min-w-0">
                   <div class="font-mono text-primary truncate">${escapeHtml(t.tx_hash || '')}</div>
                   <div class="text-on-surface-variant truncate">${escapeHtml(shortAddr(t.sender))} → ${escapeHtml(shortAddr(t.receiver))}</div>
@@ -3371,6 +3407,22 @@
 
       renderSpacePostDetailContent(postId);
       window.scrollTo({ top: 0, behavior: 'instant' });
+
+      // Fetch fresh comments & earnings in background
+      apiFetch('/space/post/' + encodeURIComponent(postId)).then(({ ok, body }) => {
+        if (ok && body.data) {
+          const updated = body.data;
+          const idx = spacePostsCache.findIndex(p => p.post_id === postId);
+          if (idx >= 0) {
+            spacePostsCache[idx] = updated;
+          } else {
+            spacePostsCache.unshift(updated);
+          }
+          if (activeDetailPostId === postId) {
+            renderSpacePostDetailContent(postId);
+          }
+        }
+      }).catch(() => {});
     }
 
     function resetSpaceDetailChrome() {
@@ -3542,6 +3594,7 @@
     }
 
     async function publishSpacePost() {
+      if (isPublishingSpacePost) return;
       if (!currentAccount || !currentAccount.address) {
         showToast('Paylaşım yapmak için önce ücretsiz cüzdan açın (+1 BCT)', 'account_balance_wallet', true);
         switchTab('yeni-cuzdan');
@@ -3556,6 +3609,7 @@
         showToast('Lütfen paylaşmak istediğiniz düşünceyi yazın', 'warning', true);
         return;
       }
+      isPublishingSpacePost = true;
 
       if (btn) btn.disabled = true;
       if (btnText) btnText.textContent = 'İmzalanıyor...';
@@ -3584,6 +3638,7 @@
       } catch (err) {
         showToast(err.message || 'İmzalama iptal edildi', 'error', true);
       } finally {
+        isPublishingSpacePost = false;
         if (btn) btn.disabled = false;
         if (btnText) btnText.textContent = 'Paylaş';
       }
@@ -3591,11 +3646,13 @@
 
     async function likeSpacePost(postId, ev) {
       if (ev) ev.stopPropagation();
+      if (inFlightLikes.has(postId)) return;
       if (!currentAccount || !currentAccount.address) {
         showToast('Beğenmek için önce cüzdanınızı bağlayın', 'account_balance_wallet', true);
         switchTab('yeni-cuzdan');
         return;
       }
+      inFlightLikes.add(postId);
       try {
         const canonical = `${currentAccount.address}:${postId}`;
         const authFields = await buildSignedAuthPayload(canonical);
@@ -3615,11 +3672,13 @@
         }
       } catch (err) {
         showToast(err.message || 'İşlem iptal edildi', 'error', true);
+      } finally {
+        inFlightLikes.delete(postId);
       }
     }
 
     async function submitDetailSpaceComment() {
-      if (!activeDetailPostId) return;
+      if (isSubmittingComment || !activeDetailPostId) return;
       if (!currentAccount || !currentAccount.address) {
         showToast('Yorum yapmak için önce cüzdanınızı bağlayın', 'account_balance_wallet', true);
         switchTab('yeni-cuzdan');
@@ -3633,6 +3692,7 @@
         return;
       }
 
+      isSubmittingComment = true;
       if (btn) btn.disabled = true;
       try {
         const canonical = `${currentAccount.address}:${activeDetailPostId}:${content}`;
@@ -3656,6 +3716,7 @@
       } catch (err) {
         showToast(err.message || 'İmzalama iptal edildi', 'error', true);
       } finally {
+        isSubmittingComment = false;
         if (btn) btn.disabled = false;
       }
     }
@@ -3676,6 +3737,10 @@
     function tipAuthorPrompt(authorAddress, ev) {
       if (ev) ev.stopPropagation();
       if (!authorAddress) return;
+      if (currentAccount && currentAccount.address && authorAddress === currentAccount.address) {
+        showToast('Kendi gönderinize bahşiş gönderemezsiniz', 'warning', true);
+        return;
+      }
       resetSpaceDetailChrome();
       switchTab('para-gonder');
       const recInput = document.getElementById('sendRecipientInput');
@@ -3751,6 +3816,55 @@
       const standalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
       return iOS && !standalone;
     }
+
+    // Global Keyboard & History Navigation
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' || e.key === 'Esc') {
+        if (!document.getElementById('pin-unlock-modal')?.classList.contains('hidden')) {
+          closePinUnlockModal(false);
+          return;
+        }
+        if (!document.getElementById('qr-scanner-modal')?.classList.contains('hidden')) {
+          closeQrScannerModal();
+          return;
+        }
+        if (!document.getElementById('tx-modal')?.classList.contains('hidden')) {
+          closeTxModal();
+          return;
+        }
+        if (!document.getElementById('receive-modal')?.classList.contains('hidden')) {
+          closeReceiveModal();
+          return;
+        }
+        if (!document.getElementById('block-detail-modal')?.classList.contains('hidden')) {
+          closeBlockDetailModal();
+          return;
+        }
+        if (!document.getElementById('ios-pwa-modal')?.classList.contains('hidden')) {
+          closeIosPwaModal();
+          return;
+        }
+        if (activeDetailPostId !== null) {
+          closeSpacePostDetail();
+          return;
+        }
+      }
+    });
+
+    window.addEventListener('popstate', () => {
+      if (activeDetailPostId !== null) {
+        closeSpacePostDetail();
+        return;
+      }
+      const hash = (window.location.hash || '').replace(/^#/, '').trim();
+      if (hash) {
+        switchTab(hash, false);
+      }
+    });
+
+    window.addEventListener('unhandledrejection', (ev) => {
+      console.warn('[LockTrace App]', ev.reason);
+    });
 
     function setupPwaHandlers() {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
