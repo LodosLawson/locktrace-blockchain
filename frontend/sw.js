@@ -1,4 +1,4 @@
-const CACHE_NAME = 'locktrace-pwa-v3';
+const CACHE_NAME = 'locktrace-pwa-v4';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -37,20 +37,8 @@ self.addEventListener('activate', (event) => {
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
 
-  // 1. API Requests: Network-first
+  // 1. API Requests: Direct passthrough - never synthesize 503
   if (url.pathname.startsWith('/api/')) {
-    event.respondWith(
-      fetch(event.request).catch(() => {
-        return new Response(JSON.stringify({
-          success: false,
-          offline: true,
-          message: "Ağ bağlantısı yok (Çevrimdışı mod). Lütfen internet bağlantınızı kontrol edin."
-        }), {
-          status: 503,
-          headers: { 'Content-Type': 'application/json' }
-        });
-      })
-    );
     return;
   }
 

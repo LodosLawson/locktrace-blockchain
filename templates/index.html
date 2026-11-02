@@ -10,7 +10,12 @@
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#131315"/>
   <meta name="mobile-web-app-capable" content="yes"/>
-  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <!-- Automatic Apex to WWW Redirect for Valid HTTPS / SSL -->
+  <script>
+    if (window.location.hostname === 'locktrace.space') {
+      window.location.replace('https://www.locktrace.space' + window.location.pathname + window.location.search);
+    }
+  </script>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="LockTrace"/>
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
@@ -377,47 +382,58 @@
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 2: LOCKTRACE SPACE (On-Chain Decentralized Thought Feed)             -->
+            <!-- TAB 2: LOCKTRACE SPACE (On-Chain Decentralized Thought Feed - Stitch Modern UI) -->
       <!-- ========================================================================= -->
       <div id="tab-space" class="tab-content flex-col w-full items-center">
-        <div class="w-full max-w-2xl mx-auto flex flex-col gap-5">
+        <div class="w-full max-w-2xl mx-auto flex flex-col gap-4">
           
-          <!-- Space Banner Card -->
-          <div class="w-full bg-gradient-to-br from-surface-container-low via-surface-container to-surface-container-low rounded-2xl p-5 md:p-6 shadow-xl border border-primary/30 flex flex-col gap-3 relative overflow-hidden">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold text-lg">
-                  <span class="material-symbols-outlined text-[24px]">rocket_launch</span>
-                </div>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <h1 class="text-xl md:text-2xl font-bold text-on-surface">LockTrace Space</h1>
-                    <span class="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-mono font-semibold">On-Chain</span>
-                  </div>
-                  <p class="text-xs text-on-surface-variant">Sansürsüz, kalıcı ve blokzincire doğrudan mühürlenen düşünce akışı</p>
-                </div>
+          <!-- Sub-Header Status & Chain Context (Stitch Inspired) -->
+          <div class="pt-1 pb-1 flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2 bg-surface-container-low px-3.5 py-1.5 rounded-full border border-outline-variant/30 shadow-sm">
+              <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+              <span class="text-xs font-semibold text-on-surface uppercase tracking-wider font-mono">LockTrace Mainnet</span>
+              <span class="material-symbols-outlined text-[16px] text-on-surface-variant">check_circle</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="relative hidden sm:block">
+                <input type="text" id="spaceSearchInput" placeholder="Düşüncelerde ara..." class="bg-surface-container-low border border-outline-variant/30 rounded-full pl-8 pr-3 py-1.5 text-xs text-on-surface placeholder:text-outline outline-none focus:border-primary transition-colors w-40 focus:w-56" oninput="filterSpaceBySearch()"/>
+                <span class="material-symbols-outlined text-[16px] text-outline absolute left-2.5 top-2">search</span>
               </div>
-              <button class="w-9 h-9 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center transition-all" onclick="loadSpaceFeed()" title="Akışı Yenile" type="button">
+              <button aria-label="Akışı Yenile" onclick="loadSpaceFeed()" class="w-9 h-9 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high active:scale-95 transition-all" title="Akışı Yenile" type="button">
                 <span class="material-symbols-outlined text-[18px]">refresh</span>
               </button>
             </div>
+          </div>
 
-            <!-- Economic Rules & Creator Revenue Pill -->
-            <div class="p-3 bg-surface-container-lowest/80 rounded-xl border border-outline-variant/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 text-xs">
-              <div class="flex flex-wrap items-center gap-2 text-on-surface-variant">
-                <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-mono text-[11px]">✍️ Paylaşım: <strong>0.10 BCT</strong></span>
-                <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-mono text-[11px]">❤️ Beğeni: <strong>0.01 BCT</strong></span>
-                <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface font-mono text-[11px]">💬 Yorum: <strong>0.02 BCT</strong></span>
+          <!-- Space Rules & Creator Revenue Pill (Stitch Modern) -->
+          <div class="w-full bg-gradient-to-br from-surface-container-low via-surface-container to-surface-container-low rounded-2xl p-4 md:p-5 shadow-lg border border-primary/30 flex flex-col gap-2.5 relative overflow-hidden">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5">
+                <div class="w-9 h-9 rounded-xl bg-primary/20 text-primary flex items-center justify-center font-bold">
+                  <span class="material-symbols-outlined text-[22px]">rocket_launch</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h1 class="text-lg md:text-xl font-bold text-on-surface">LockTrace Space</h1>
+                    <span class="px-2 py-0.5 rounded-full bg-primary/20 text-primary text-[10px] font-mono font-semibold">On-Chain Feed</span>
+                  </div>
+                  <p class="text-[11px] text-on-surface-variant">Sansürsüz, kalıcı ve blokzincire doğrudan mühürlenen düşünceler</p>
+                </div>
+              </div>
+              <span class="font-mono text-primary font-semibold text-xs bg-surface-container-lowest px-2.5 py-1 rounded-full border border-primary/20" id="spaceUserBalBadge">0.0000 BCT</span>
+            </div>
+
+            <!-- Economic Rules Pill -->
+            <div class="p-2.5 bg-surface-container-lowest/80 rounded-xl border border-outline-variant/30 flex flex-wrap items-center justify-between gap-2 text-xs">
+              <div class="flex flex-wrap items-center gap-2 text-on-surface-variant text-[11px] font-mono">
+                <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface">✍️ Paylaşım: <strong>0.10 BCT</strong></span>
+                <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface">❤️ Beğeni: <strong>0.01 BCT</strong></span>
+                <span class="px-2 py-0.5 rounded bg-surface-container text-on-surface">💬 Yorum: <strong>0.02 BCT</strong></span>
               </div>
               <div class="text-[11px] text-primary font-medium flex items-center gap-1">
                 <span class="material-symbols-outlined text-[14px]">monetization_on</span>
-                <span>Beğeni/Yorumların %20'si YAZARA KAZANÇ</span>
+                <span>%20 YAZARA ANINDA TELİF KAZANCI</span>
               </div>
-            </div>
-            
-            <div class="flex items-center justify-between text-xs text-on-surface-variant pt-1 border-t border-outline-variant/20">
-              <span>Arz Koruması: İşlem ücretlerinin %70-80'i 1 Trilyon Hazine Kasasına geri döner.</span>
-              <span class="font-mono text-primary font-semibold" id="spaceUserBalBadge">0.0000 BCT</span>
             </div>
           </div>
 
@@ -447,33 +463,62 @@
             </div>
           </div>
 
-          <!-- New Thought / Tweet Composer Card -->
-          <div class="w-full bg-surface-container-low rounded-2xl p-4 md:p-5 shadow-xl border border-outline-variant/30 flex flex-col gap-3">
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[18px]">edit_note</span>
-                <span class="text-xs font-semibold text-on-surface">Yeni Bir Düşünceyi Blokzincire Mühürle</span>
+          <!-- Quick Compose Box (Stitch Design) -->
+          <section class="w-full">
+            <div class="bg-surface-container rounded-2xl p-4 md:p-5 shadow-lg border border-outline-variant/30 flex flex-col gap-3 transition-all duration-200">
+              <div class="flex items-start gap-3">
+                <div class="relative shrink-0">
+                  <div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden flex items-center justify-center shadow-inner" id="composerAvatar">
+                    <span class="material-symbols-outlined text-primary text-[24px]">account_circle</span>
+                  </div>
+                  <span class="absolute -bottom-1 -right-1 w-4 h-4 bg-primary text-on-primary rounded-full flex items-center justify-center text-[10px] shadow-sm">
+                    <span class="material-symbols-outlined text-[11px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+                  </span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center gap-1.5 mb-1.5">
+                    <span class="font-mono text-xs text-on-surface font-semibold truncate" id="composerAuthorLabel">Cüzdan Seçilmedi</span>
+                    <span class="text-on-surface-variant text-[11px]" id="composerSubLabel">· Sen</span>
+                  </div>
+                  <textarea class="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/60 text-xs sm:text-sm resize-none focus:outline-none focus:ring-0 p-0" id="spacePostInput" placeholder="Web3 dünyasıyla ne paylaşmak istersin? (0.10 BCT)" rows="2" maxlength="280" oninput="updateSpaceCharCount()" onkeydown="if((event.ctrlKey || event.metaKey) && event.key === 'Enter'){ event.preventDefault(); publishSpacePost(); }"></textarea>
+                </div>
               </div>
-              <span class="text-[10px] text-outline font-mono hidden sm:inline">Ctrl + Enter ile Hızlı Gönder</span>
-            </div>
 
-            <div class="relative">
-              <textarea id="spacePostInput" rows="3" maxlength="280" class="w-full bg-surface-container rounded-xl p-3.5 text-sm text-on-surface placeholder:text-outline border border-outline-variant/30 focus:border-primary outline-none resize-none transition-colors" placeholder="Aklından geçen sansürsüz ve kalıcı düşünceyi blokzincire mühürle... (Örn: LockTrace Space'e hoş geldiniz!)" oninput="updateSpaceCharCount()" onkeydown="if((event.ctrlKey || event.metaKey) && event.key === 'Enter'){ event.preventDefault(); publishSpacePost(); }"></textarea>
-              <div class="absolute bottom-2.5 right-3 text-[10px] font-mono text-outline-variant" id="spaceCharCount">0 / 280</div>
-            </div>
-
-            <div class="flex items-center justify-between">
-              <div class="flex items-center gap-1.5 text-[11px] text-on-surface-variant">
-                <span>Ücret:</span>
-                <span class="font-mono font-bold text-primary">0.10 BCT</span>
-                <span class="text-outline text-[10px] hidden sm:inline">(Hoşgeldin bakiyenizle karşılanır)</span>
+              <!-- Quick Action Controls & Post CTA -->
+              <div class="flex items-center justify-between pt-2 border-t border-outline-variant/20">
+                <div class="flex items-center gap-2">
+                  <span class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high text-on-surface-variant text-xs font-mono font-medium">
+                    <span class="material-symbols-outlined text-[14px] text-primary">attach_money</span>
+                    <span>$BCT</span>
+                  </span>
+                  <span class="text-[10px] font-mono text-outline" id="spaceCharCount">0 / 280</span>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="text-[11px] text-outline font-mono hidden sm:inline">0.10 BCT</span>
+                  <button class="h-9 px-4 rounded-full bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs flex items-center gap-1.5 shadow-md active:scale-95 transition-all" id="btnPublishPost" onclick="publishSpacePost()" type="button">
+                    <span id="btnPublishPostText">Paylaş</span>
+                    <span class="material-symbols-outlined text-[16px]">send</span>
+                  </button>
+                </div>
               </div>
-              <button class="px-5 py-2.5 rounded-full bg-primary hover:bg-primary/90 text-on-primary font-semibold text-xs flex items-center gap-1.5 shadow-lg shadow-primary/20 transition-all active:scale-95 disabled:opacity-40" id="btnPublishPost" onclick="publishSpacePost()" type="button">
-                <span class="material-symbols-outlined text-[16px]">send</span>
-                <span id="btnPublishPostText">Mühürle ve Paylaş</span>
+            </div>
+          </section>
+
+          <!-- Feed Filter Segmented Bar (Stitch Design) -->
+          <section class="w-full">
+            <div class="flex items-center bg-surface-container-low p-1 rounded-full shadow-inner border border-outline-variant/20">
+              <button class="space-filter-btn flex-1 py-1.5 px-3 rounded-full text-xs text-on-surface bg-surface-container-high font-semibold transition-all text-center" id="filterBtnAll" onclick="filterSpaceTab('all')">
+                Keşfet
+              </button>
+              <button class="space-filter-btn flex-1 py-1.5 px-3 rounded-full text-xs text-on-surface-variant hover:text-on-surface transition-all text-center" id="filterBtnMine" onclick="filterSpaceTab('mine')">
+                Düşüncelerim
+              </button>
+              <button class="space-filter-btn flex-1 py-1.5 px-3 rounded-full text-xs text-on-surface-variant hover:text-on-surface transition-all text-center flex items-center justify-center gap-1" id="filterBtnTop" onclick="filterSpaceTab('top')">
+                <span>Alfa &amp; Popüler</span>
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
               </button>
             </div>
-          </div>
+          </section>
 
           <!-- Feed Stream Container -->
           <div class="flex flex-col gap-3" id="spaceFeedStream">
@@ -934,9 +979,9 @@
   </div>
 
   <script>
-    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1')
       ? 'http://localhost:5000/api/v1'
-      : '/api/v1';
+      : (window.location.hostname.includes('locktrace.space') ? 'https://www.locktrace.space/api/v1' : '/api/v1');
 
     let currentAccount = null;
     let cachedTransactions = [];
@@ -2086,9 +2131,12 @@
       }, 7000);
     });
 
+        // ═════════════════════════════════════════════════════════════════════════
+    // 🪐 LOCKTRACE SPACE & ON-CHAIN DÜŞÜNCE AKIŞI (Stitch Enhanced)
     // ═════════════════════════════════════════════════════════════════════════
-    // 🪐 LOCKTRACE SPACE & ON-CHAIN DÜŞÜNCE AKIŞI
-    // ═════════════════════════════════════════════════════════════════════════
+
+    let currentSpaceFilter = 'all';
+    let spacePostsCache = [];
 
     function updateSpaceWalletUI() {
       const alertEl = document.getElementById('spaceWalletAlert');
@@ -2096,6 +2144,8 @@
       const addrText = document.getElementById('spaceConnectedAddrText');
       const balText = document.getElementById('spaceConnectedBalText');
       const balBadge = document.getElementById('spaceUserBalBadge');
+      const composerAuthor = document.getElementById('composerAuthorLabel');
+      const composerSub = document.getElementById('composerSubLabel');
 
       if (currentAccount && currentAccount.address) {
         if (alertEl) alertEl.classList.add('hidden');
@@ -2104,10 +2154,14 @@
         const balFormatted = `${(currentAccount.balance || 0).toFixed(4)} BCT`;
         if (balText) balText.textContent = balFormatted;
         if (balBadge) balBadge.textContent = balFormatted;
+        if (composerAuthor) composerAuthor.textContent = `${currentAccount.address.slice(0, 10)}...${currentAccount.address.slice(-6)}`;
+        if (composerSub) composerSub.textContent = '· Sen';
       } else {
         if (alertEl) alertEl.classList.remove('hidden');
         if (activeBarEl) activeBarEl.classList.add('hidden');
         if (balBadge) balBadge.textContent = '0.0000 BCT';
+        if (composerAuthor) composerAuthor.textContent = 'Cüzdan Seçilmedi';
+        if (composerSub) composerSub.textContent = '· Ziyaretçi';
       }
     }
 
@@ -2127,6 +2181,35 @@
       }
     }
 
+    function filterSpaceTab(filterType) {
+      currentSpaceFilter = filterType;
+      document.querySelectorAll('.space-filter-btn').forEach(btn => {
+        btn.classList.remove('bg-surface-container-high', 'text-on-surface', 'font-semibold');
+        btn.classList.add('text-on-surface-variant');
+      });
+      const activeBtn = document.getElementById(filterType === 'all' ? 'filterBtnAll' : (filterType === 'mine' ? 'filterBtnMine' : 'filterBtnTop'));
+      if (activeBtn) {
+        activeBtn.classList.add('bg-surface-container-high', 'text-on-surface', 'font-semibold');
+        activeBtn.classList.remove('text-on-surface-variant');
+      }
+      renderSpacePosts(spacePostsCache);
+    }
+
+    function filterSpaceBySearch() {
+      renderSpacePosts(spacePostsCache);
+    }
+
+    function tipAuthorPrompt(authorAddr) {
+      if (!authorAddr) return;
+      switchTab('para-gonder');
+      const recipientInput = document.getElementById('sendRecipientInput');
+      if (recipientInput) {
+        recipientInput.value = authorAddr;
+        recipientInput.focus();
+      }
+      showToast('Yazarın adresi gönderim ekranına aktarıldı. Bahşiş miktarını belirleyip mühürleyebilirsiniz!');
+    }
+
     async function loadSpaceFeed() {
       const feedContainer = document.getElementById('spaceFeedStream');
       if (!feedContainer) return;
@@ -2144,127 +2227,157 @@
           return;
         }
 
-        const posts = res.json.data?.posts || [];
-        if (posts.length === 0) {
-          feedContainer.innerHTML = `
-            <div class="p-8 bg-surface-container-low rounded-2xl border border-outline-variant/30 text-center text-xs text-on-surface-variant flex flex-col items-center gap-3">
-              <div class="w-12 h-12 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold text-xl">
-                <span class="material-symbols-outlined text-[28px]">rocket_launch</span>
-              </div>
-              <div class="flex flex-col gap-1">
-                <span class="text-sm font-bold text-on-surface">LockTrace Space Akışı Henüz Boş</span>
-                <span class="text-xs text-outline">0.10 BCT karşılığında ilk sansürsüz düşünceyi blokzincire mühürleyin!</span>
-              </div>
-              <button onclick="document.getElementById('spacePostInput')?.focus()" class="mt-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-xs flex items-center gap-1.5 shadow active:scale-95">
-                <span class="material-symbols-outlined text-[16px]">edit_note</span>
-                <span>İlk Düşünceyi Mühürle</span>
-              </button>
-            </div>`;
-          return;
-        }
-
-        const myAddr = currentAccount?.address || '';
-        feedContainer.innerHTML = posts.map(p => {
-          const shortAuthor = p.author ? `${p.author.slice(0, 8)}...${p.author.slice(-6)}` : 'Bilinmeyen';
-          const isMine = (p.author === myAddr);
-          const hasLiked = (p.likes || []).includes(myAddr);
-          const dateStr = p.timestamp ? formatTimeAgo(p.timestamp * 1000) : 'Az önce';
-          const earnings = (p.author_earnings || 0).toFixed(4);
-
-          const commentsHtml = (p.comments || []).map(c => `
-            <div class="p-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/20 flex flex-col gap-1 text-xs">
-              <div class="flex items-center justify-between text-[11px]">
-                <div class="flex items-center gap-1.5">
-                  <span class="font-mono text-primary font-semibold">${c.commenter?.slice(0, 8)}...${c.commenter?.slice(-4)}</span>
-                  ${c.commenter === myAddr ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-primary/20 text-primary font-semibold">Sen</span>' : ''}
-                </div>
-                <span class="text-outline text-[10px]">${formatTimeAgo(c.timestamp * 1000)}</span>
-              </div>
-              <p class="text-on-surface break-words leading-relaxed pl-2">${escapeHtml(c.content)}</p>
-            </div>
-          `).join('');
-
-          return `
-            <div class="w-full bg-surface-container-low rounded-2xl p-4 md:p-5 border border-outline-variant/30 hover:border-outline-variant flex flex-col gap-3 shadow-lg transition-all" id="post-card-${p.post_id}">
-              <!-- Post Author & Meta -->
-              <div class="flex items-center justify-between">
-                <div class="flex items-center gap-2.5">
-                  <div class="w-9 h-9 rounded-2xl bg-gradient-to-br from-primary/30 to-secondary/30 text-primary flex items-center justify-center font-bold text-xs shrink-0 font-mono shadow-sm">
-                    ${p.author ? p.author.slice(3, 5).toUpperCase() : 'BCT'}
-                  </div>
-                  <div class="flex flex-col">
-                    <div class="flex items-center gap-1.5">
-                      <span class="text-xs font-bold text-on-surface font-mono cursor-pointer hover:text-primary transition-colors" onclick="copyText('${p.author}'); showToast('Yazar adresi kopyalandı!');" title="Adresi Kopyala">${shortAuthor}</span>
-                      ${isMine ? '<span class="px-1.5 py-0.5 rounded bg-primary/20 text-primary text-[9px] font-semibold">Senin Düşüncen</span>' : ''}
-                    </div>
-                    <span class="text-[10px] text-on-surface-variant">${dateStr}</span>
-                  </div>
-                </div>
-
-                <div class="flex items-center gap-1.5">
-                  ${p.block_index !== undefined ? `<span class="px-2 py-0.5 rounded-lg bg-surface-container text-outline text-[10px] font-mono cursor-pointer hover:text-primary hover:bg-surface-container-high transition-colors" onclick="openBlockDetailModal('${p.block_index}')" title="Bloğu İncele">Blok #${p.block_index}</span>` : ''}
-                  ${parseFloat(earnings) > 0 ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-semibold" title="Yazarın bu düşünceden kazandığı on-chain telif">+${earnings} BCT</span>` : ''}
-                </div>
-              </div>
-
-              <!-- Thought Content -->
-              <p class="text-sm text-on-surface leading-relaxed break-words whitespace-pre-wrap">${escapeHtml(p.content)}</p>
-
-              <!-- Actions Row: Like (0.01 BCT), Comment (0.02 BCT) & Share -->
-              <div class="flex items-center justify-between pt-2 border-t border-outline-variant/20 text-xs">
-                <div class="flex items-center gap-2">
-                  <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full ${hasLiked ? 'bg-primary/20 text-primary font-bold border border-primary/30' : 'bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high'} transition-all active:scale-95" onclick="likeSpacePost('${p.post_id}')" title="Beğen (0.01 BCT - %20'si yazara)">
-                    <span class="material-symbols-outlined text-[16px] ${hasLiked ? 'text-primary' : ''}">${hasLiked ? 'favorite' : 'favorite_border'}</span>
-                    <span>${p.likes_count || 0}</span>
-                    ${hasLiked ? '<span class="text-[10px] text-primary hidden sm:inline">Beğendin</span>' : ''}
-                  </button>
-
-                  <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high transition-all active:scale-95" onclick="toggleCommentsSection('${p.post_id}')" title="Yorumları Aç / Kapat">
-                    <span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span>
-                    <span>${p.comments_count || 0} Yorum</span>
-                  </button>
-
-                  <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-surface-container text-outline hover:text-on-surface transition-all active:scale-95 text-[11px]" onclick="copyText('${p.post_id}'); showToast('Gönderi ID kopyalandı!');" title="Gönderi ID Kopyala">
-                    <span class="material-symbols-outlined text-[14px]">share</span>
-                    <span class="hidden sm:inline">Paylaş</span>
-                  </button>
-                </div>
-
-                <span class="text-[10px] text-outline font-mono hidden sm:inline" title="İşlem Karması">${p.tx_hash ? p.tx_hash.slice(0, 10) + '...' : ''}</span>
-              </div>
-
-              <!-- Comments Accordion Section -->
-              <div class="flex flex-col gap-2.5 pt-2 border-t border-outline-variant/20 hidden" id="comments-section-${p.post_id}">
-                <div class="flex flex-col gap-2 max-h-60 overflow-y-auto" id="comments-list-${p.post_id}">
-                  ${commentsHtml || '<div class="text-[11px] text-outline text-center py-3 bg-surface-container-lowest/50 rounded-xl">Henüz yorum yapılmadı. İlk yorumu 0.02 BCT ile sen bırak!</div>'}
-                </div>
-
-                <!-- Add Comment Form -->
-                <div class="flex items-center gap-2 pt-1">
-                  <input type="text" maxlength="140" placeholder="Yorum yaz (0.02 BCT, Enter ile gönder)..." class="flex-1 bg-surface-container rounded-xl px-3.5 py-2 text-xs text-on-surface placeholder:text-outline outline-none border border-outline-variant/30 focus:border-primary transition-colors" id="comment-input-${p.post_id}" onkeydown="if(event.key === 'Enter'){ submitSpaceComment('${p.post_id}'); }"/>
-                  <button class="px-3.5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-semibold shrink-0 transition-all active:scale-95 flex items-center gap-1 shadow" onclick="submitSpaceComment('${p.post_id}')">
-                    <span class="material-symbols-outlined text-[14px]">send</span>
-                    <span>Yorum Yap</span>
-                  </button>
-                </div>
-              </div>
-            </div>
-          `;
-        }).join('');
+        spacePostsCache = res.json.data?.posts || [];
+        renderSpacePosts(spacePostsCache);
       } catch (e) {
         feedContainer.innerHTML = `<div class="p-4 text-xs text-error text-center">Akış yüklenemedi: ${e.message}</div>`;
       }
     }
 
-    function toggleCommentsSection(postId) {
-      const el = document.getElementById(`comments-section-${postId}`);
-      if (el) {
-        el.classList.toggle('hidden');
-        if (!el.classList.contains('hidden')) {
-          const input = document.getElementById(`comment-input-${postId}`);
-          if (input) setTimeout(() => input.focus(), 50);
-        }
+    function renderSpacePosts(posts) {
+      const feedContainer = document.getElementById('spaceFeedStream');
+      if (!feedContainer) return;
+
+      const myAddr = currentAccount?.address || '';
+      const searchQuery = (document.getElementById('spaceSearchInput')?.value || '').trim().toLowerCase();
+
+      let filtered = [...posts];
+
+      // Tab filtering
+      if (currentSpaceFilter === 'mine') {
+        filtered = filtered.filter(p => p.author === myAddr);
+      } else if (currentSpaceFilter === 'top') {
+        filtered.sort((a, b) => ((b.likes_count || 0) + (b.comments_count || 0) * 2 + (b.author_earnings || 0)) - ((a.likes_count || 0) + (a.comments_count || 0) * 2 + (a.author_earnings || 0)));
       }
+
+      // Search filtering
+      if (searchQuery) {
+        filtered = filtered.filter(p => (p.content || '').toLowerCase().includes(searchQuery) || (p.author || '').toLowerCase().includes(searchQuery));
+      }
+
+      if (filtered.length === 0) {
+        feedContainer.innerHTML = `
+          <div class="p-8 bg-surface-container-low rounded-2xl border border-outline-variant/30 text-center text-xs text-on-surface-variant flex flex-col items-center gap-3">
+            <div class="w-12 h-12 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold text-xl">
+              <span class="material-symbols-outlined text-[28px]">rocket_launch</span>
+            </div>
+            <div class="flex flex-col gap-1">
+              <span class="text-sm font-bold text-on-surface">Sonuç Bulunamadı</span>
+              <span class="text-xs text-outline">Seçili filtre veya aramaya uygun düşünce bulunamadı.</span>
+            </div>
+            <button onclick="document.getElementById('spacePostInput')?.focus()" class="mt-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-xs flex items-center gap-1.5 shadow active:scale-95">
+              <span class="material-symbols-outlined text-[16px]">edit_note</span>
+              <span>Yeni Düşünce Mühürle</span>
+            </button>
+          </div>`;
+        return;
+      }
+
+      feedContainer.innerHTML = filtered.map(p => {
+        const shortAuthor = p.author ? `${p.author.slice(0, 8)}...${p.author.slice(-6)}` : 'Bilinmeyen';
+        const isMine = (p.author === myAddr);
+        const hasLiked = (p.likes || []).includes(myAddr);
+        const dateStr = p.timestamp ? formatTimeAgo(p.timestamp * 1000) : 'Az önce';
+        const earnings = (p.author_earnings || 0).toFixed(4);
+
+        const commentsHtml = (p.comments || []).map(c => `
+          <div class="p-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/20 flex flex-col gap-1 text-xs">
+            <div class="flex items-center justify-between text-[11px]">
+              <div class="flex items-center gap-1.5">
+                <span class="font-mono text-primary font-semibold">${c.commenter?.slice(0, 8)}...${c.commenter?.slice(-4)}</span>
+                ${c.commenter === myAddr ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-primary/20 text-primary font-semibold">Sen</span>' : ''}
+              </div>
+              <span class="text-outline text-[10px]">${formatTimeAgo(c.timestamp * 1000)}</span>
+            </div>
+            <p class="text-on-surface break-words leading-relaxed pl-2">${escapeHtml(c.content)}</p>
+          </div>
+        `).join('');
+
+        return `
+          <div class="w-full bg-surface-container rounded-2xl p-4 md:p-5 border border-outline-variant/30 hover:border-outline-variant/70 flex flex-col gap-3 shadow-md transition-all" id="post-card-${p.post_id}">
+            <!-- Post Author & Meta (Stitch) -->
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden flex items-center justify-center shrink-0 border border-outline-variant/30 shadow-inner">
+                  <span class="material-symbols-outlined text-primary text-[22px]">account_circle</span>
+                </div>
+                <div class="flex flex-col min-w-0">
+                  <div class="flex items-center gap-1.5">
+                    <span class="text-xs font-bold text-on-surface font-mono cursor-pointer hover:text-primary transition-colors truncate" onclick="copyText('${p.author}'); showToast('Yazar adresi kopyalandı!');" title="Adresi Kopyala">${shortAuthor}</span>
+                    <span class="text-primary flex items-center" title="Doğrulanmış Blokzincir Hesabı">
+                      <span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+                    </span>
+                    <span class="text-[10px] text-on-surface-variant">· ${dateStr}</span>
+                    ${isMine ? '<span class="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[9px] font-semibold">Sen</span>' : ''}
+                  </div>
+                  <span class="text-[10px] text-outline font-mono truncate">${p.author}</span>
+                </div>
+              </div>
+
+              <div class="flex items-center gap-1.5 shrink-0">
+                ${p.block_index !== undefined ? `<span class="px-2 py-0.5 rounded-lg bg-surface-container-high text-outline text-[10px] font-mono cursor-pointer hover:text-primary hover:bg-surface-container-highest transition-colors" onclick="openBlockDetailModal('${p.block_index}')" title="Bloğu İncele">Blok #${p.block_index}</span>` : ''}
+                ${parseFloat(earnings) > 0 ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-semibold" title="Yazarın bu düşünceden kazandığı on-chain telif">+${earnings} BCT</span>` : ''}
+              </div>
+            </div>
+
+            <!-- Thought Body -->
+            <p class="text-xs sm:text-sm text-on-surface leading-relaxed break-words whitespace-pre-wrap">${escapeHtml(p.content)}</p>
+
+            <!-- Protocol Tags (Stitch) -->
+            <div class="flex items-center gap-2 pt-0.5">
+              <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary text-[10px] font-mono">
+                <span class="material-symbols-outlined text-[12px]">layers</span>
+                LockTrace Mainnet
+              </span>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-mono">
+                $BCT Space
+              </span>
+            </div>
+
+            <!-- Action Interaction Bar (Stitch) -->
+            <div class="flex items-center justify-between pt-2 border-t border-outline-variant/20 text-xs">
+              <div class="flex items-center gap-2">
+                <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full ${hasLiked ? 'bg-primary/20 text-primary font-bold border border-primary/30' : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'} transition-all active:scale-95" onclick="likeSpacePost('${p.post_id}')" title="Beğen (0.01 BCT - %20'si yazara)">
+                  <span class="material-symbols-outlined text-[16px] ${hasLiked ? 'text-primary' : ''}">${hasLiked ? 'favorite' : 'favorite_border'}</span>
+                  <span>${p.likes_count || 0}</span>
+                  ${hasLiked ? '<span class="text-[10px] text-primary hidden sm:inline">Beğendin</span>' : ''}
+                </button>
+
+                <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all active:scale-95" onclick="toggleCommentsSection('${p.post_id}')" title="Yorumları Aç / Kapat">
+                  <span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span>
+                  <span>${p.comments_count || 0} Yorum</span>
+                </button>
+
+                <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-surface-container-high text-outline hover:text-on-surface transition-all active:scale-95 text-[11px]" onclick="copyText('${p.post_id}'); showToast('Gönderi ID kopyalandı!');" title="Gönderi ID Kopyala">
+                  <span class="material-symbols-outlined text-[14px]">repeat</span>
+                  <span class="hidden sm:inline">Paylaş</span>
+                </button>
+              </div>
+
+              <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-on-primary active:scale-95 transition-all text-xs border border-primary/20" onclick="tipAuthorPrompt('${p.author}')" title="Yazara On-Chain Bahşiş Gönder">
+                <span class="material-symbols-outlined text-[14px]">toll</span>
+                <span class="text-[11px] font-semibold">Bahşiş</span>
+              </button>
+            </div>
+
+            <!-- Comments Accordion Section -->
+            <div class="flex flex-col gap-2.5 pt-2 border-t border-outline-variant/20 hidden" id="comments-section-${p.post_id}">
+              <div class="flex flex-col gap-2 max-h-60 overflow-y-auto" id="comments-list-${p.post_id}">
+                ${commentsHtml || '<div class="text-[11px] text-outline text-center py-3 bg-surface-container-lowest/50 rounded-xl">Henüz yorum yapılmadı. İlk yorumu 0.02 BCT ile sen bırak!</div>'}
+              </div>
+
+              <!-- Add Comment Form -->
+              <div class="flex items-center gap-2 pt-1">
+                <input type="text" maxlength="140" placeholder="Yorum yaz (0.02 BCT, Enter ile gönder)..." class="flex-1 bg-surface-container-high rounded-xl px-3.5 py-2 text-xs text-on-surface placeholder:text-outline outline-none border border-outline-variant/30 focus:border-primary transition-colors" id="comment-input-${p.post_id}" onkeydown="if(event.key === 'Enter'){ submitSpaceComment('${p.post_id}'); }"/>
+                <button class="px-3.5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-semibold shrink-0 transition-all active:scale-95 flex items-center gap-1 shadow" onclick="submitSpaceComment('${p.post_id}')">
+                  <span class="material-symbols-outlined text-[14px]">send</span>
+                  <span>Yorum Yap</span>
+                </button>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
     async function publishSpacePost() {
