@@ -17,6 +17,7 @@ data/*.sqlite*
 # Keys & Secrets
 *.key
 *.pem
+*release_signing_key*
 deploy_package.tar.gz
 frontend_update.tar.gz
 update*.tar.gz

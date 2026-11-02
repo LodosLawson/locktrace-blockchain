@@ -359,6 +359,23 @@ Content-Type: application/json
 2. **Immutable On-Chain Balance Resolution:** Balances are not stored in mutable single registers; instead, every balance inquiry computes the exact sum of verified genesis, reward, and transfer transactions across the Proof-of-Work blockchain.
 3. **Double-Spend Prevention:** Automatic nonces and signature verifications prevent replay and double-spending attempts.
 4. **Thread-Safe Atomic Persistence:** State synchronization is protected by a process-wide `RLock` and written via atomic file swaps (`blockchain.json.tmp` -> `blockchain.json`).
+5. **SHA-256 & ECDSA Signed Decentralized Frontend (v1.5.0):**
+   - `frontend/index.html` SHA-256: `d7ec373dad7f5736ae948a174e1b24c98aa12ff3ce786f6774df9183eee2a2f9`
+   - IPFS CIDv1: `ipfs://bafkreigx5q3t3ll7k43k5fekc5hbwjgjrkqs746opbxwo5g7sgb65yvc7e`
+   - Release Authority Address: `BCT5014d104d8063cbe2d64faea57925e96295ac3b8`
+   - Every node verifies the canonical SHA-256 checksum and SECP256k1 ECDSA release signature (`frontend/integrity.json` + on-chain `frontend_release` block) before serving the Web Wallet. Any unauthorized modification triggers an immediate `HTTP 403` security lockout.
+
+### Run Decentralized Frontend Locally or as a Public/LAN Server
+```bash
+# 1. Local Mode (Accessible ONLY on your PC at http://127.0.0.1:5050 + auto-opens browser)
+python node_runner.py --local --open
+
+# 2. Server Mode (Accessible on LAN / Internet at http://0.0.0.0:5050)
+python node_runner.py --server --port 5050
+
+# 3. Verify Frontend Checksum & ECDSA Signature Only
+python node_runner.py --verify-frontend
+```
 
 ---
 

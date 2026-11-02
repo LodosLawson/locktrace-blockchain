@@ -8,8 +8,10 @@ Thread-Safe Rate Limiting & High-Resiliency Transaction Processing.
 import os
 import re
 import sys
+import json
 import math
 import time
+import hashlib
 import logging
 import secrets
 import threading
@@ -17,7 +19,7 @@ from collections import deque
 from datetime import datetime
 from typing import Optional
 
-from flask import Flask, request, jsonify, render_template, g, send_file
+from flask import Flask, request, jsonify, render_template, g, send_file, Response
 from flask_cors import CORS
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -28,7 +30,10 @@ from core.blockchain import (
     TOTAL_SUPPLY,
     BLOCK_REWARD,
     MINER_FEE_SHARE,
+    RELEASE_AUTHORITY_ADDRESS,
+    RELEASE_AUTHORITY_PUBKEY,
     is_valid_bct_address,
+    verify_frontend_manifest,
 )
 from core.wallet import (
     Wallet,
@@ -273,11 +278,112 @@ def api_response(success: bool, data=None, message=None, status=200, **extra):
     return jsonify(body), status
 
 
+ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+
+
+def _inspect_local_frontend_integrity() -> dict:
+    """Verify local frontend/index.html & sw.js SHA-256 checksums + ECDSA Release Authority signature."""
+    index_path = os.path.join(ROOT_DIR, "frontend", "index.html")
+    sw_path = os.path.join(ROOT_DIR, "frontend", "sw.js")
+    manifest_path = os.path.join(ROOT_DIR, "frontend", "integrity.json")
+
+    if not os.path.exists(index_path) or not os.path.exists(manifest_path):
+        return {
+            "verified": False,
+            "reason": "⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz. (integrity.json eksik)",
+        }
+
+    try:
+        with open(manifest_path, "r", encoding="utf-8") as mf:
+            manifest = json.load(mf)
+        with open(index_path, "rb") as ix:
+            index_bytes = ix.read().replace(b"\r\n", b"\n")
+        actual_index_sha = hashlib.sha256(index_bytes).hexdigest()
+
+        actual_sw_sha = ""
+        if os.path.exists(sw_path):
+            with open(sw_path, "rb") as sf:
+                actual_sw_sha = hashlib.sha256(sf.read().replace(b"\r\n", b"\n")).hexdigest()
+
+        sig_ok, sig_msg = verify_frontend_manifest(manifest)
+        if not sig_ok:
+            return {
+                "verified": False,
+                "reason": f"⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz. ({sig_msg})",
+                "actual_index_sha256": actual_index_sha,
+            }
+
+        expected_index_sha = str(manifest.get("index_html_sha256", "")).lower()
+        expected_sw_sha = str(manifest.get("sw_js_sha256", "")).lower()
+        if actual_index_sha != expected_index_sha:
+            return {
+                "verified": False,
+                "reason": "⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz.",
+                "expected_index_sha256": expected_index_sha,
+                "actual_index_sha256": actual_index_sha,
+            }
+        if expected_sw_sha and actual_sw_sha and actual_sw_sha != expected_sw_sha:
+            return {
+                "verified": False,
+                "reason": "⛔ UYARI: Service Worker (sw.js) değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz.",
+                "expected_sw_sha256": expected_sw_sha,
+                "actual_sw_sha256": actual_sw_sha,
+            }
+
+        return {
+            "verified": True,
+            "manifest": manifest,
+            "index_bytes": index_bytes,
+            "actual_index_sha256": actual_index_sha,
+            "actual_sw_sha256": actual_sw_sha,
+        }
+    except Exception as exc:
+        return {
+            "verified": False,
+            "reason": f"⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz. ({exc})",
+        }
+
+
+def _bootstrap_onchain_frontend_seal():
+    check = _inspect_local_frontend_integrity()
+    if check.get("verified") and check.get("manifest"):
+        ok, msg, sealed = blockchain.seal_frontend_release(check["manifest"])
+        if ok and sealed:
+            logger.info(
+                f"Frontend Integrity Sealed On-Chain: v{sealed.get('version')} "
+                f"SHA256={sealed.get('index_html_sha256', '')[:16]}... Block=#{sealed.get('block_index')}"
+            )
+    else:
+        logger.warning(f"Frontend Integrity Check Alert: {check.get('reason')}")
+
+
+_bootstrap_onchain_frontend_seal()
+
+
+def _serve_verified_frontend_response():
+    check = _inspect_local_frontend_integrity()
+    if not check.get("verified"):
+        warn_html = f"""<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>Güvenlik Kilidi - LockTrace</title>
+        <style>body{{background:#131315;color:#ffb4ab;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;}}
+        .card{{max-width:620px;background:#1f1f21;border:1px solid #93000a;border-radius:16px;padding:32px;box-shadow:0 20px 50px rgba(0,0,0,0.6);}}
+        code{{display:block;background:#0e0e10;color:#e5e1e4;padding:12px;border-radius:8px;margin-top:12px;word-break:break-all;font-size:12px;}}</style></head>
+        <body><div class="card"><h2>⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz.</h2>
+        <p style="color:#e5e1e4;line-height:1.6;">LockTrace SHA-256 Sağlama Toplamı ve ECDSA Sürüm İmzası doğrulaması başarısız oldu. Cüzdan güvenliğiniz için arayüz yüklenmesi engellendi.</p>
+        <code>Beklenen SHA-256: {check.get('expected_index_sha256', 'Bilinmiyor')}<br>Mevcut SHA-256: {check.get('actual_index_sha256', 'Geçersiz')}</code></div></body></html>"""
+        return Response(warn_html, status=403, mimetype="text/html")
+
+    resp = Response(check["index_bytes"], status=200, mimetype="text/html; charset=utf-8")
+    resp.headers["X-Frontend-SHA256"] = check["actual_index_sha256"]
+    resp.headers["X-Frontend-IPFS-CID"] = check["manifest"].get("ipfs_cid_v1", "")
+    resp.headers["X-Frontend-Signature"] = check["manifest"].get("signature", "")
+    return resp
+
+
 @app.errorhandler(404)
 def handle_404(_err):
     if request.path.startswith("/api/"):
         return api_response(False, message="API uç noktası bulunamadı.", status=404)
-    return render_template("index.html")
+    return _serve_verified_frontend_response()
 
 
 @app.errorhandler(405)
@@ -296,24 +402,49 @@ def handle_500(err):
     return api_response(False, message="Sunucu tarafında beklenmeyen bir hata oluştu.", status=500)
 
 
-# ── Web Shell Entrypoint (Local / Fallback) ──────────────────
+# ── Web Shell Entrypoint (Cryptographically Verified) ────────
 @app.route("/", methods=["GET"])
+@app.route("/index.html", methods=["GET"])
 def index_page():
-    return render_template("index.html")
+    return _serve_verified_frontend_response()
+
+
+@app.route("/api/v1/frontend/integrity", methods=["GET"])
+def api_frontend_integrity():
+    check = _inspect_local_frontend_integrity()
+    onchain = blockchain.get_latest_frontend_release()
+    manifest = check.get("manifest") or onchain or {}
+    return api_response(True, data={
+        "verified": bool(check.get("verified")),
+        "version": manifest.get("version", "1.5.0"),
+        "released_at": manifest.get("released_at", ""),
+        "authority_address": RELEASE_AUTHORITY_ADDRESS,
+        "authority_public_key": RELEASE_AUTHORITY_PUBKEY,
+        "index_html_sha256": check.get("actual_index_sha256") or manifest.get("index_html_sha256", ""),
+        "expected_index_sha256": manifest.get("index_html_sha256", ""),
+        "sw_js_sha256": check.get("actual_sw_sha256") or manifest.get("sw_js_sha256", ""),
+        "ipfs_cid_v1": manifest.get("ipfs_cid_v1", ""),
+        "signature": manifest.get("signature", ""),
+        "onchain_anchor": onchain,
+        "warning": None if check.get("verified") else check.get("reason"),
+    })
 
 
 # ── Health & Stats ───────────────────────────────────────────
 @app.route("/api/v1/health", methods=["GET"])
 def api_health():
+    check = _inspect_local_frontend_integrity()
     return api_response(True, data={
         "status": "healthy",
-        "version": "1.4.0",
+        "version": "1.5.0",
         "network": "mainnet",
         "storage_engine": "sqlite-wal",
         "consensus": "pow-v2-merkle-quorum",
         "merkle_enabled": True,
         "non_custodial_signing": True,
         "multi_node_p2p": True,
+        "frontend_verified": bool(check.get("verified")),
+        "frontend_sha256": check.get("actual_index_sha256", ""),
         "chain_valid": blockchain.is_chain_valid(),
     })
 
@@ -339,9 +470,27 @@ def api_create_wallet():
         return api_response(False, message="Cüzdan oluşturma sınırına ulaştınız. Lütfen daha sonra tekrar deneyin.", status=429)
 
     data = request.get_json(silent=True) or {}
+    client_address = str(data.get("address", "") or "").strip()
+    client_pubkey = str(data.get("public_key", "") or "").strip()
     provided_mnemonic = str(data.get("mnemonic", "") or "").strip()
 
     try:
+        # Path A: 100% Zero-Knowledge Client-Side Keygen (mnemonic & private_key never leave browser!)
+        if client_address and client_pubkey and not provided_mnemonic:
+            if public_key_to_address(client_pubkey) != client_address:
+                return api_response(False, message="Açık anahtar (public_key) ile cüzdan adresi uyuşmuyor.", status=400)
+            success, message = blockchain.register_wallet(client_address, client_pubkey)
+            if success:
+                logger.info(f"Non-Custodial Account Registered: {client_address} (ip={get_client_ip()})")
+                return api_response(True, message=message, data={
+                    "address": client_address,
+                    "public_key": client_pubkey,
+                    "balance": blockchain.get_balance(client_address),
+                    "nonce": blockchain.get_account_nonce(client_address),
+                }, status=201)
+            return api_response(False, message=message, status=400)
+
+        # Path B: Legacy / API Mnemonic Keygen
         if provided_mnemonic:
             cleaned = " ".join(provided_mnemonic.lower().split())
             if not validate_mnemonic(cleaned):
@@ -376,10 +525,27 @@ def api_import_wallet():
         return api_response(False, message="Çok fazla içe aktarma denemesi. Lütfen 1 dakika bekleyin.", status=429)
 
     data = request.get_json(silent=True) or {}
+    client_address = str(data.get("address", "") or "").strip()
+    client_pubkey = str(data.get("public_key", "") or "").strip()
     mnemonic_phrase = str(data.get("mnemonic", "") or "").strip()
     private_key_hex = str(data.get("private_key", "") or "").strip()
 
     try:
+        # Path A: 100% Zero-Knowledge Client-Side Import (secrets stay in browser!)
+        if client_address and client_pubkey and not mnemonic_phrase and not private_key_hex:
+            if public_key_to_address(client_pubkey) != client_address:
+                return api_response(False, message="Açık anahtar ile cüzdan adresi uyuşmuyor.", status=400)
+            ok, msg = blockchain.register_wallet(client_address, client_pubkey)
+            if not ok:
+                return api_response(False, message=msg, status=400)
+            return api_response(True, message="Cüzdan başarıyla doğrulandı ve bağlandı!", data={
+                "address": client_address,
+                "public_key": client_pubkey,
+                "balance": blockchain.get_balance(client_address),
+                "nonce": blockchain.get_account_nonce(client_address),
+            })
+
+        # Path B: Legacy / API Import
         if mnemonic_phrase:
             words = mnemonic_phrase.lower().split()
             if len(words) != 12:

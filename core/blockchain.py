@@ -45,6 +45,34 @@ ACTIVE_MINER_TTL_SECONDS = 90.0          # Heartbeat window identifying live ext
 MINING_DIFFICULTY = 3                    # Base Proof of Work Difficulty
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
+RELEASE_AUTHORITY_ADDRESS = "BCT5014d104d8063cbe2d64faea57925e96295ac3b8"
+RELEASE_AUTHORITY_PUBKEY = (
+    "5c8eca3d56c054b5b95a353e245efb3e014d85a33e8cb7e395b8a249d97a61c"
+    "bdb35454f75f38d56c9fd34525411720208983d4ce27ed0fa34ddb09d2a08ff9c"
+)
+
+
+def verify_frontend_manifest(manifest: dict) -> Tuple[bool, str]:
+    """Cryptographically verify a signed frontend release manifest against RELEASE_AUTHORITY_PUBKEY."""
+    if not isinstance(manifest, dict):
+        return False, "Geçersiz manifest formatı."
+    ver = str(manifest.get("version", "")).strip()
+    index_sha = str(manifest.get("index_html_sha256", "")).strip().lower()
+    sw_sha = str(manifest.get("sw_js_sha256", "")).strip().lower()
+    ipfs_cid = str(manifest.get("ipfs_cid_v1", "")).strip()
+    pub = str(manifest.get("authority_public_key", "")).strip().lower()
+    sig = str(manifest.get("signature", "")).strip()
+
+    if not ver or len(index_sha) != 64 or not ipfs_cid or not sig:
+        return False, "Eksik sürüm sağlama toplamı (SHA-256) veya imza alanı."
+    if pub != RELEASE_AUTHORITY_PUBKEY.lower() or public_key_to_address(pub) != RELEASE_AUTHORITY_ADDRESS:
+        return False, "Yetkisiz sürüm imzalayıcı açık anahtarı (Release Authority mismatch)!"
+
+    canonical_msg = f"LOCKTRACE_FRONTEND_RELEASE:{ver}:{index_sha}:{sw_sha}:{ipfs_cid}"
+    if not verify_signature(RELEASE_AUTHORITY_PUBKEY, canonical_msg, sig):
+        return False, "ECDSA sürüm imzası geçersiz! Manifest manipüle edilmiş."
+    return True, "Doğrulandı"
+
 
 def is_valid_bct_address(addr: str) -> bool:
     """Validate BCT address syntax (case-insensitive prefix BCT + 40 hex)."""
@@ -1611,6 +1639,73 @@ class Blockchain:
                 if current.merkle_root != expected_merkle:
                     return False
             return True
+
+    def get_latest_frontend_release(self) -> Optional[dict]:
+        """Return the latest on-chain cryptographically verified frontend release anchor."""
+        with self.lock:
+            self._load_state(sweep_overdue=False)
+            for blk in reversed(self.chain):
+                for tx in reversed(blk.transactions):
+                    if tx.tx_type == "frontend_release" and isinstance(tx.extra_data, dict):
+                        ok, _ = verify_frontend_manifest(tx.extra_data)
+                        if ok:
+                            res = dict(tx.extra_data)
+                            res["block_index"] = blk.index
+                            res["block_hash"] = blk.hash
+                            res["tx_hash"] = tx.hash()
+                            res["sealed_timestamp"] = blk.timestamp
+                            return res
+            return None
+
+    def seal_frontend_release(self, manifest: dict) -> Tuple[bool, str, Optional[dict]]:
+        """Immutably seal an ECDSA-signed frontend SHA-256 release manifest into a LockTrace block."""
+        ok, msg = verify_frontend_manifest(manifest)
+        if not ok:
+            return False, msg, None
+
+        with self.lock:
+            self._load_state()
+            latest = self.get_latest_frontend_release()
+            target_sha = str(manifest.get("index_html_sha256", "")).strip().lower()
+            target_sw = str(manifest.get("sw_js_sha256", "")).strip().lower()
+            if (
+                latest
+                and str(latest.get("index_html_sha256", "")).lower() == target_sha
+                and str(latest.get("sw_js_sha256", "")).lower() == target_sw
+            ):
+                return True, "Bu frontend sürümü zaten blokzincire mühürlenmiş durumda.", latest
+
+            clean_manifest = {
+                "version": str(manifest.get("version", "")).strip(),
+                "released_at": str(manifest.get("released_at", "")).strip(),
+                "authority_address": RELEASE_AUTHORITY_ADDRESS,
+                "authority_public_key": RELEASE_AUTHORITY_PUBKEY,
+                "index_html_sha256": target_sha,
+                "sw_js_sha256": target_sw,
+                "ipfs_cid_v1": str(manifest.get("ipfs_cid_v1", "")).strip(),
+                "canonical_payload": str(manifest.get("canonical_payload", "")).strip(),
+                "signature": str(manifest.get("signature", "")).strip(),
+            }
+
+            tx = Transaction(
+                sender=RELEASE_AUTHORITY_ADDRESS,
+                receiver=TREASURY_ADDRESS,
+                amount=0.0,
+                fee=0.0,
+                signature=clean_manifest["signature"],
+                tx_type="frontend_release",
+                extra_data=clean_manifest,
+            )
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            block = self._mine_block()
+            sealed = dict(clean_manifest)
+            if block:
+                sealed["block_index"] = block.index
+                sealed["block_hash"] = block.hash
+                sealed["tx_hash"] = tx.hash()
+                sealed["sealed_timestamp"] = block.timestamp
+            return True, "Frontend SHA-256 sürüm özeti blokzincire başarıyla mühürlendi!", sealed
 
     @staticmethod
     def _sanitize_node_field(val: str, max_len: int = 64) -> str:

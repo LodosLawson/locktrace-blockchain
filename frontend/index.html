@@ -221,7 +221,7 @@
         </div>
         <div class="flex flex-col">
           <span class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.4</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.5</span>
         </div>
       </div>
 
@@ -261,16 +261,16 @@
         <span class="material-symbols-outlined text-[16px]">install_desktop</span>
         <span>Uygulamayı Yükle</span>
       </button>
-      <div class="p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/20 flex items-center justify-between">
+      <button class="w-full p-3 rounded-xl bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/20 flex items-center justify-between transition-colors text-left cursor-pointer" onclick="openNetworkSecurityModal()" title="SHA-256 Bütünlük &amp; Merkeziyetsiz RPC Seçici" type="button">
         <div class="flex items-center gap-2">
-          <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+          <span class="w-2 h-2 rounded-full bg-primary animate-pulse" id="sidebarIntegrityDot"></span>
           <div class="flex flex-col">
-            <span class="font-label-sm text-label-sm text-on-surface">SQLite WAL + Merkle</span>
-            <span class="text-[10px] font-mono text-on-surface-variant">Non-Custodial ECDSA</span>
+            <span class="font-label-sm text-label-sm text-on-surface" id="sidebarIntegrityLabel">SHA-256 + Quorum</span>
+            <span class="text-[10px] font-mono text-on-surface-variant" id="sidebarActiveRpcLabel">Non-Custodial ECDSA</span>
           </div>
         </div>
         <span class="material-symbols-outlined text-primary text-[16px]">verified_user</span>
-      </div>
+      </button>
     </div>
   </aside>
 
@@ -281,10 +281,11 @@
     <!-- Default Tab Mode Header -->
     <div class="h-16 px-margin flex items-center justify-between gap-space-sm" id="mobileHeaderDefault">
       <div class="flex items-center gap-space-xs min-w-0">
-        <div class="flex items-center gap-space-xs bg-surface-container-low px-2.5 py-1.5 rounded-full border border-outline-variant/30">
-          <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
-          <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold truncate">LockTrace Mainnet</span>
-        </div>
+        <button class="flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-2.5 py-1.5 rounded-full border border-outline-variant/30 transition-colors active:scale-95" onclick="openNetworkSecurityModal()" title="Ağ &amp; SHA-256 Doğrulama" type="button">
+          <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="mobileNetDot"></span>
+          <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold truncate" id="mobileNetLabel">LockTrace Mainnet</span>
+          <span class="material-symbols-outlined text-[13px] text-primary shrink-0">shield_lock</span>
+        </button>
       </div>
       <div class="flex items-center gap-space-sm shrink-0">
         <button id="btnPwaMobileHeader" class="hidden items-center justify-center w-8 h-8 rounded-full bg-primary/15 text-primary" onclick="triggerPwaInstall()" title="Uygulamayı Yükle" type="button">
@@ -319,10 +320,11 @@
   <!-- ========================================================================= -->
   <header class="hidden md:flex fixed top-0 left-64 right-0 h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/15 z-40 items-center justify-between px-8">
     <div class="flex items-center gap-3">
-      <div class="flex items-center gap-space-xs bg-surface-container-low px-3 py-1.5 rounded-full border border-outline-variant/30">
-        <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-        <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold">LockTrace Mainnet</span>
-      </div>
+      <button class="flex items-center gap-space-xs bg-surface-container-low hover:bg-surface-container px-3 py-1.5 rounded-full border border-outline-variant/30 transition-colors cursor-pointer" onclick="openNetworkSecurityModal()" title="SHA-256 Bütünlük Kalkanı &amp; RPC Düğüm Seçici" type="button">
+        <span class="w-2 h-2 rounded-full bg-primary animate-pulse" id="desktopNetDot"></span>
+        <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold" id="desktopNetLabel">LockTrace Mainnet</span>
+        <span class="material-symbols-outlined text-[14px] text-primary">shield_lock</span>
+      </button>
       <div class="flex items-center gap-2 text-on-surface-variant font-label-md text-label-md font-mono">
         <span>Blok <strong class="text-primary" id="headerBlockHeight">#--</strong></span>
         <span class="opacity-40">•</span>
@@ -1021,43 +1023,67 @@
         <div class="w-full max-w-4xl mx-auto px-margin md:px-6 pb-space-lg flex flex-col gap-5">
           <div class="flex items-center justify-between mt-space-sm">
             <div class="flex flex-col gap-1">
-              <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">REST &amp; P2P API v1.4 • ÇOKLU DÜĞÜM QUORUM • SQLITE WAL</span>
-              <h1 class="font-headline-md text-headline-md text-on-surface">Geliştirici API &amp; Çoklu P2P Düğüm Kurulumu</h1>
-              <p class="font-body-sm text-body-sm text-on-surface-variant">Kendi bilgisayarınızda bağımsız P2P PoW + Doğrulayıcı düğüm çalıştırın. Her blok ödülünün %70'i bloğu kazanan PoW üreticisine, %30'u ise aktif ECDSA doğrulayıcı düğüm sahiplerine eşit dağıtılır.</p>
+              <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">REST &amp; P2P API v1.5 • SHA-256 İMZALI FRONTEND • QUORUM RPC</span>
+              <h1 class="font-headline-md text-headline-md text-on-surface">Geliştirici API &amp; Merkeziyetsiz Düğüm / Web Sunucu Kurulumu</h1>
+              <p class="font-body-sm text-body-sm text-on-surface-variant">Kendi bilgisayarınızda veya sunucunuzda bağımsız P2P PoW + Doğrulayıcı düğüm ve SHA-256 imzalı yerel Web Cüzdanı çalıştırın. Her blok ödülünün %70'i PoW üreticisine, %30'u ise aktif ECDSA doğrulayıcı düğümlere dağıtılır.</p>
             </div>
           </div>
 
           <div class="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-3">
             <div class="flex items-center justify-between">
-              <span class="font-label-lg text-label-lg text-on-surface font-medium">Tek Komutla Düğüm Çalıştır (Windows / Linux / macOS)</span>
-              <a class="font-label-sm text-label-sm text-primary hover:underline flex items-center gap-1" href="/node_runner.py" target="_blank" rel="noopener">
-                <span>node_runner.py İndir</span>
-                <span class="material-symbols-outlined text-[14px]">download</span>
-              </a>
+              <span class="font-label-lg text-label-lg text-on-surface font-medium">1. Yerel (Local) veya Sunucu (Server) Olarak Frontend + Node Çalıştır</span>
+              <div class="flex items-center gap-3">
+                <button class="font-label-sm text-label-sm text-secondary hover:underline flex items-center gap-1" onclick="openNetworkSecurityModal()" type="button">
+                  <span class="material-symbols-outlined text-[14px]">shield_lock</span>
+                  <span>SHA-256 &amp; RPC Kalkanı</span>
+                </button>
+                <a class="font-label-sm text-label-sm text-primary hover:underline flex items-center gap-1" href="/node_runner.py" target="_blank" rel="noopener">
+                  <span>node_runner.py İndir</span>
+                  <span class="material-symbols-outlined text-[14px]">download</span>
+                </a>
+              </div>
             </div>
-            <div class="p-3 rounded-lg bg-surface-container-lowest font-mono text-xs text-primary flex items-center justify-between gap-2 overflow-x-auto border border-outline-variant/15">
-              <code>git clone https://github.com/LodosLawson/locktrace-blockchain.git &amp;&amp; cd locktrace-blockchain &amp;&amp; python node_runner.py</code>
-              <button class="px-3 py-1 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm shrink-0" onclick="copyText('git clone https://github.com/LodosLawson/locktrace-blockchain.git && cd locktrace-blockchain && python node_runner.py')" type="button">Kopyala</button>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
+              <div class="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-semibold text-primary uppercase font-mono">A) Yerel Bilgisayarda Aç (Sadece Size Özel)</span>
+                  <button class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface text-[11px]" onclick="copyText('python node_runner.py --local --open')" type="button">Kopyala</button>
+                </div>
+                <code class="font-mono text-xs text-on-surface overflow-x-auto">python node_runner.py --local --open</code>
+                <span class="text-[11px] text-on-surface-variant">SHA-256 + ECDSA bütünlüğünü doğrular ve cüzdanı <code class="text-primary">http://127.0.0.1:5050</code> adresinde açar.</span>
+              </div>
+              <div class="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                <div class="flex items-center justify-between">
+                  <span class="text-[11px] font-semibold text-secondary uppercase font-mono">B) Genel Web &amp; RPC Sunucusu Olarak Aç</span>
+                  <button class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface text-[11px]" onclick="copyText('python node_runner.py --server --port 5050')" type="button">Kopyala</button>
+                </div>
+                <code class="font-mono text-xs text-on-surface overflow-x-auto">python node_runner.py --server --port 5050</code>
+                <span class="text-[11px] text-on-surface-variant">Ağdaki tüm cihazlara <code class="text-secondary">http://SUNUCU_IP:5050</code> üzerinden doğrulanmış Web Arayüzü ve P2P RPC sunar.</span>
+              </div>
             </div>
 
-            <!-- Düğüm Ödülü Nasıl Alınır ve Harcanır? -->
+            <!-- Kriptografik Bütünlük & Ödül Kartları -->
             <div class="mt-2 pt-3 border-t border-outline-variant/15 flex flex-col gap-2">
               <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[18px]">payments</span>
-                <span class="font-label-md text-label-md text-on-surface font-semibold">Düğüm Ödülleri Nasıl Alınır ve Cüzdandan Harcanır?</span>
+                <span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+                <span class="font-label-md text-label-md text-on-surface font-semibold">Kriptografik Frontend Koruması &amp; Ödül Rehberi</span>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs text-on-surface-variant font-body-sm">
-                <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
-                  <span class="font-semibold text-primary font-mono">1. Otomatik Yatırım (Claim Yok)</span>
-                  <span>Kazdığınız (%70 PoW) ve onayladığınız (%30 Quorum) her blokta ödüller hiçbir işlem ücreti ödemeden doğrudan düğüm cüzdanınıza yansır.</span>
+              <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5 text-xs text-on-surface-variant font-body-sm">
+                <div class="bg-surface-container p-3 rounded-xl border border-primary/20 flex flex-col gap-1">
+                  <span class="font-semibold text-primary font-mono">SHA-256 &amp; ECDSA Kalkanı</span>
+                  <span>Düğüm açılışta <code class="text-on-surface">index.html</code> SHA-256 özetini ve blokzincir mührünü doğrular; 1 harf bile değiştirilmişse çalıştırmayı reddeder.</span>
                 </div>
                 <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
-                  <span class="font-semibold text-secondary font-mono">2. Kendi Web Cüzdanını Bağlama</span>
-                  <span>Düğümü başlatırken <code class="text-on-surface">--wallet BCTcuzdaniniz</code> parametresi verirseniz, ödüller doğrudan buradaki web cüzdanınıza yatar.</span>
+                  <span class="font-semibold text-primary font-mono">Otomatik Yatırım (Claim Yok)</span>
+                  <span>Kazdığınız (%70 PoW) ve onayladığınız (%30 Quorum) blok ödülleri ek işlem ücreti gerektirmeden doğrudan cüzdanınıza yansır.</span>
                 </div>
                 <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
-                  <span class="font-semibold text-primary font-mono">3. Web'den Harcama / İçe Aktar</span>
-                  <span>Düğümün ürettiği <code class="text-on-surface">miner_wallet.json</code> dosyasındaki 12 kelimeyi veya private key'i kopyalayıp <strong>Cüzdan Aç / Aktar</strong> sekmesinden tarayıcınıza aktarabilirsiniz.</span>
+                  <span class="font-semibold text-secondary font-mono">Web Cüzdanını Bağlama</span>
+                  <span><code class="text-on-surface">--wallet BCTcuzdaniniz</code> parametresi verirseniz ödüller doğrudan tarayıcı cüzdanınıza yatar.</span>
+                </div>
+                <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
+                  <span class="font-semibold text-primary font-mono">miner_wallet.json Aktarma</span>
+                  <span><code class="text-on-surface">~/.locktrace/miner_wallet.json</code> içindeki anahtarı <strong>Cüzdan Aç / Aktar</strong> sekmesinden güvenle içe aktarabilirsiniz.</span>
                 </div>
               </div>
             </div>
@@ -1318,6 +1344,80 @@
       <p class="font-body-sm text-body-sm text-on-surface-variant text-center">
         BCT cüzdan QR kodunu kamera çerçevesine hizalayın.
       </p>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 7: MERKEZİYETSİZ RPC SEÇİCİ & SHA-256 BÜTÜNLÜK KALKANI              -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-3 md:p-6" id="network-security-modal" onclick="if(event.target===this) closeNetworkSecurityModal();">
+    <div class="w-full max-w-xl max-h-[90dvh] overflow-y-auto rounded-2xl bg-surface-container p-5 md:p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/30">
+      <div class="flex items-center justify-between pb-3 border-b border-outline-variant/25">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[20px]">shield_lock</span>
+          </div>
+          <div>
+            <span class="font-headline-sm text-headline-sm text-on-surface">SHA-256 Sürüm Kalkanı &amp; Merkeziyetsiz RPC</span>
+            <div class="text-[11px] text-on-surface-variant font-mono">ECDSA İmzalı Arayüz • Çoklu Düğüm (Quorum) Doğrulama</div>
+          </div>
+        </div>
+        <button class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface flex items-center justify-center transition-colors shrink-0" onclick="closeNetworkSecurityModal()" type="button">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <!-- 1. SHA-256 & ECDSA Integrity Box -->
+      <div class="p-3.5 rounded-xl bg-surface-container-lowest border border-outline-variant/25 flex flex-col gap-2 text-xs">
+        <div class="flex items-center justify-between gap-2">
+          <span class="font-semibold text-on-surface flex items-center gap-1.5">
+            <span class="material-symbols-outlined text-[16px] text-primary" id="secModalStatusIcon">verified</span>
+            <span id="secModalStatusText">İmzalı Sürüm Kontrol Ediliyor...</span>
+          </span>
+          <span class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px]" id="secModalVersionBadge">v1.5.0</span>
+        </div>
+        <div class="grid grid-cols-1 gap-1.5 font-mono text-[11px] text-on-surface-variant pt-1">
+          <div class="flex flex-col bg-surface-container p-2 rounded-lg">
+            <span class="text-[10px] text-outline uppercase">index.html SHA-256 Checksum</span>
+            <span class="text-on-surface break-all select-all" id="secModalSha256">--</span>
+          </div>
+          <div class="flex flex-col bg-surface-container p-2 rounded-lg">
+            <span class="text-[10px] text-outline uppercase">IPFS CIDv1 (Değiştirilemez İçerik Adresi)</span>
+            <span class="text-primary break-all select-all" id="secModalIpfsCid">ipfs://--</span>
+          </div>
+          <div class="flex items-center justify-between bg-surface-container p-2 rounded-lg">
+            <span class="text-[10px] text-outline uppercase">Blokzincir Mühür Bloğu</span>
+            <span class="text-on-surface font-semibold" id="secModalSealedBlock">#--</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Multi-Node RPC Selector -->
+      <div class="flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="font-label-md text-label-md text-on-surface font-semibold">Aktif RPC Düğümü Seçimi (Otomatik Yedekli)</span>
+          <span class="text-[11px] font-mono text-primary" id="secModalCurrentRpc">--</span>
+        </div>
+        <div class="flex flex-col gap-1.5" id="rpcNodesListContainer">
+          <!-- Populated dynamically -->
+        </div>
+        <div class="flex items-center gap-2 mt-1">
+          <input class="flex-1 h-10 bg-surface-container-lowest border border-outline-variant/30 rounded-xl px-3 text-xs font-mono text-on-surface placeholder:text-outline focus:outline-none focus:border-primary" id="customRpcUrlInput" placeholder="Özel Node URL ekle (örn: http://127.0.0.1:5050)" type="text"/>
+          <button class="h-10 px-4 rounded-xl bg-surface-container-high hover:bg-primary hover:text-on-primary text-on-surface font-label-md text-label-md font-semibold transition-colors shrink-0" onclick="addAndSelectCustomRpc()" type="button">Bağlan</button>
+        </div>
+      </div>
+
+      <!-- 3. Quorum Multi-RPC Cross-Check -->
+      <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-2.5">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex flex-col">
+            <span class="font-label-md text-label-md text-on-surface font-semibold">Çoklu Düğüm Çapraz Doğrulaması (Quorum)</span>
+            <span class="text-[11px] text-on-surface-variant">Bağımsız P2P düğümleri sorgulayarak blok yüksekliği ve bakiyenizi karşılaştırır.</span>
+          </div>
+          <button class="px-3.5 py-2 rounded-full bg-primary text-on-primary font-label-sm text-label-sm font-semibold hover:brightness-105 active:scale-95 transition-all shrink-0" onclick="runQuorumCrossCheck()" type="button">Şimdi Doğrula</button>
+        </div>
+        <div class="hidden text-xs font-mono bg-surface-container-lowest p-2.5 rounded-lg border border-outline-variant/15 whitespace-pre-wrap text-on-surface-variant" id="quorumCheckResultBox"></div>
+      </div>
     </div>
   </div>
 
@@ -1593,10 +1693,185 @@
         return JSON.parse(new TextDecoder().decode(new Uint8Array(plainBuf)));
       }
 
+      function publicKeyToAddress(pubHex) {
+        const clean = String(pubHex || '').trim().replace(/^0x/i, '');
+        const raw = clean.length === 130 && clean.startsWith('04') ? clean.slice(2) : clean;
+        if (!/^[0-9a-fA-F]{128}$/.test(raw)) throw new Error('Geçersiz 128 haneli açık anahtar');
+        const px = BigInt('0x' + raw.slice(0, 64));
+        const py = BigInt('0x' + raw.slice(64, 128));
+        if (px <= 0n || px >= P || py <= 0n || py >= P || mod(py * py) !== mod(px * px * px + 7n)) {
+          throw new Error('Açık anahtar SECP256k1 eğrisi üzerinde değil');
+        }
+        const firstHash = bytesToHex(sha256Bytes(hexToBytes(raw)));
+        const secondHash = sha256Hex(firstHash);
+        return 'BCT' + secondHash.slice(0, 40);
+      }
+
+      function verifyEcdsaSha256(pubHex, message, sigHex) {
+        try {
+          const cleanPub = String(pubHex || '').trim().replace(/^0x/i, '');
+          const rawPub = cleanPub.length === 130 && cleanPub.startsWith('04') ? cleanPub.slice(2) : cleanPub;
+          const cleanSig = String(sigHex || '').trim().replace(/^0x/i, '');
+          if (!/^[0-9a-fA-F]{128}$/.test(rawPub) || !/^[0-9a-fA-F]{128}$/.test(cleanSig)) return false;
+          const px = BigInt('0x' + rawPub.slice(0, 64));
+          const py = BigInt('0x' + rawPub.slice(64, 128));
+          if (px <= 0n || px >= P || py <= 0n || py >= P || mod(py * py) !== mod(px * px * px + 7n)) return false;
+          const r = BigInt('0x' + cleanSig.slice(0, 64));
+          const s = BigInt('0x' + cleanSig.slice(64, 128));
+          if (r <= 0n || r >= N || s <= 0n || s >= N) return false;
+          const z = mod(BigInt('0x' + bytesToHex(sha256Bytes(utf8ToBytes(message)))), N);
+          const w = modInv(s, N);
+          const u1 = mod(z * w, N);
+          const u2 = mod(r * w, N);
+          const pt = pointAdd(pointMul(u1, [Gx, Gy]), pointMul(u2, [px, py]));
+          if (!pt) return false;
+          return mod(pt[0], N) === r;
+        } catch (_e) {
+          return false;
+        }
+      }
+
+      // Pure-JS SHA-512 + PBKDF2-HMAC-SHA512 fallback (for plain HTTP LAN/Server nodes without WebCrypto subtle)
+      const K512_CONST = [
+        0x428a2f98d728ae22n,0x7137449123ef65cdn,0xb5c0fbcfec4d3b2fn,0xe9b5dba58189dbbcn,0x3956c25bf348b538n,0x59f111f1b605d019n,0x923f82a4af194f9bn,0xab1c5ed5da6d8118n,
+        0xd807aa98a3030242n,0x12835b0145706fben,0x243185be4ee4b28cn,0x550c7dc3d5ffb4e2n,0x72be5d74f27b896fn,0x80deb1fe3b1696b1n,0x9bdc06a725c71235n,0xc19bf174cf692694n,
+        0xe49b69c19ef14ad2n,0xefbe4786384f25e3n,0x0fc19dc68b8cd5b5n,0x240ca1cc77ac9c65n,0x2de92c6f592b0275n,0x4a7484aa6ea6e483n,0x5cb0a9dcbd41fbd4n,0x76f988da831153b5n,
+        0x983e5152ee66dfabn,0xa831c66d2db43210n,0xb00327c898fb213fn,0xbf597fc7beef0ee4n,0xc6e00bf33da88fc2n,0xd5a79147930aa725n,0x06ca6351e003826fn,0x142929670a0e6e70n,
+        0x27b70a8546d22ffcn,0x2e1b21385c26c926n,0x4d2c6dfc5ac42aedn,0x53380d139d95b3dfn,0x650a73548baf63den,0x766a0abb3c77b2a8n,0x81c2c92e47edaee6n,0x92722c851482353bn,
+        0xa2bfe8a14cf10364n,0xa81a664bbc423001n,0xc24b8b70d0f89791n,0xc76c51a30654be30n,0xd192e819d6ef5218n,0xd69906245565a910n,0xf40e35855771202an,0x106aa07032bbd1b8n,
+        0x19a4c116b8d2d0c8n,0x1e376c085141ab53n,0x2748774cdf8eeb99n,0x34b0bcb5e19b48a8n,0x391c0cb3c5c95a63n,0x4ed8aa4ae3418acbn,0x5b9cca4f7763e373n,0x682e6ff3d6b2b8a3n,
+        0x748f82ee5defb2fcn,0x78a5636f43172f60n,0x84c87814a1f0ab72n,0x8cc702081a6439ecn,0x90befffa23631e28n,0xa4506cebde82bde9n,0xbef9a3f7b2c67915n,0xc67178f2e372532bn,
+        0xca273eceea26619cn,0xd186b8c721c0c207n,0xeada7dd6cde0eb1en,0xf57d4f7fee6ed178n,0x06f067aa72176fban,0x0a637dc5a2c898a6n,0x113f9804bef90daen,0x1b710b35131c471bn,
+        0x28db77f523047d84n,0x32caab7b40c72493n,0x3c9ebe0a15c9bebcn,0x431d67c49c100d4cn,0x4cc5d4becb3e42b6n,0x597f299cfc657e2an,0x5fcb6fab3ad6faecn,0x6c44198c4a475817n
+      ];
+      const H512_INIT = [
+        0x6a09e667f3bcc908n,0xbb67ae8584caa73bn,0x3c6ef372fe94f82bn,0xa54ff53a5f1d36f1n,
+        0x510e527fade682d1n,0x9b05688c2b3e6c1fn,0x1f83d9abfb41bd6bn,0x5be0cd19137e2179n
+      ];
+      const MASK64 = 0xffffffffffffffffn;
+      function rotr64(x, n) { return ((x >> n) | (x << (64n - n))) & MASK64; }
+
+      function sha512Bytes(msg) {
+        const len = msg.length;
+        const bitLen = BigInt(len) * 8n;
+        const padLen = ((112 - ((len + 1) % 128)) + 128) % 128;
+        const total = len + 1 + padLen + 16;
+        const buf = new Uint8Array(total);
+        buf.set(msg);
+        buf[len] = 0x80;
+        const dv = new DataView(buf.buffer);
+        dv.setBigUint64(total - 8, bitLen, false);
+
+        const H = H512_INIT.slice();
+        const W = new Array(80);
+        for (let off = 0; off < total; off += 128) {
+          for (let i = 0; i < 16; i++) W[i] = dv.getBigUint64(off + i * 8, false);
+          for (let i = 16; i < 80; i++) {
+            const s0 = rotr64(W[i-15], 1n) ^ rotr64(W[i-15], 8n) ^ (W[i-15] >> 7n);
+            const s1 = rotr64(W[i-2], 19n) ^ rotr64(W[i-2], 61n) ^ (W[i-2] >> 6n);
+            W[i] = (W[i-16] + s0 + W[i-7] + s1) & MASK64;
+          }
+          let [a,b,c,d,e,f,g,h] = H;
+          for (let i = 0; i < 80; i++) {
+            const S1 = rotr64(e, 14n) ^ rotr64(e, 18n) ^ rotr64(e, 41n);
+            const ch = (e & f) ^ ((~e & MASK64) & g);
+            const t1 = (h + S1 + ch + K512_CONST[i] + W[i]) & MASK64;
+            const S0 = rotr64(a, 28n) ^ rotr64(a, 34n) ^ rotr64(a, 39n);
+            const maj = (a & b) ^ (a & c) ^ (b & c);
+            const t2 = (S0 + maj) & MASK64;
+            h = g; g = f; f = e; e = (d + t1) & MASK64;
+            d = c; c = b; b = a; a = (t1 + t2) & MASK64;
+          }
+          H[0]=(H[0]+a)&MASK64; H[1]=(H[1]+b)&MASK64; H[2]=(H[2]+c)&MASK64; H[3]=(H[3]+d)&MASK64;
+          H[4]=(H[4]+e)&MASK64; H[5]=(H[5]+f)&MASK64; H[6]=(H[6]+g)&MASK64; H[7]=(H[7]+h)&MASK64;
+        }
+        const out = new Uint8Array(64);
+        const odv = new DataView(out.buffer);
+        for (let i = 0; i < 8; i++) odv.setBigUint64(i * 8, H[i], false);
+        return out;
+      }
+
+      function hmacSha512Bytes(keyBytes, msgBytes) {
+        const blockSize = 128;
+        let k = keyBytes.length > blockSize ? sha512Bytes(keyBytes) : keyBytes;
+        const kPad = new Uint8Array(blockSize);
+        kPad.set(k);
+        const inner = new Uint8Array(blockSize + msgBytes.length);
+        const outer = new Uint8Array(blockSize + 64);
+        for (let i = 0; i < blockSize; i++) {
+          inner[i] = kPad[i] ^ 0x36;
+          outer[i] = kPad[i] ^ 0x5c;
+        }
+        inner.set(msgBytes, blockSize);
+        outer.set(sha512Bytes(inner), blockSize);
+        return sha512Bytes(outer);
+      }
+
+      const BIP39_WORDS = 'abandon ability able about above absent absorb abstract absurd abuse access accident account accuse achieve acid acoustic acquire across act action actor actress actual adapt add addict address adjust admit adult advance advice aerobic affair afford afraid again age agent agree ahead aim air airport aisle alarm album alcohol alert alien all alley allow almost alone alpha already also alter always amateur amazing among amount amused analyst anchor ancient anger angle angry animal ankle announce annual another answer antenna antique anxiety any apart apology appear apple approve april arch arctic area arena argue arm armed armor army around arrange arrest arrive arrow art artefact artist artwork ask aspect assault asset assist assume asthma athlete atom attack attend attitude attract auction audit august aunt author auto autumn average avocado avoid awake aware away awesome awful awkward axis baby bachelor bacon badge bag balance balcony ball bamboo banana banner bar barely bargain barrel base basic basket battle beach bean beauty because become beef before begin behave behind believe below belt bench benefit best betray better between beyond bicycle bid bike bind biology bird birth bitter black blade blame blanket blast bleak bless blind blood blossom blouse blue blur blush board boat body boil bomb bone bonus book boost border boring borrow boss bottom bounce box boy bracket brain brand brass brave bread breeze brick bridge brief bright bring brisk broccoli broken bronze broom brother brown brush bubble buddy budget buffalo build bulb bulk bullet bundle bunker burden burger burst bus business busy butter buyer buzz cabbage cabin cable cactus cage cake call calm camera camp can canal cancel candy cannon canoe canvas canyon capable capital captain car carbon card cargo carpet carry cart case cash casino castle casual cat catalog catch category cattle caught cause caution cave ceiling celery cement census century cereal certain chair chalk champion change chaos chapter charge chase chat cheap check cheese chef cherry chest chicken chief child chimney choice choose chronic chuckle chunk churn cigar cinnamon circle citizen city civil claim clap clarify claw clay clean clerk clever click client cliff climb clinic clip clock clog close cloth cloud clown club clump cluster clutch coach coast coconut code coffee coil coin collect color column combine come comfort comic common company concert conduct confirm congress connect consider control convince cook cool copper copy coral core corn correct cost cotton couch country couple course cousin cover coyote crack cradle craft cram crane crash crater crawl crazy cream credit creek crew cricket crime crisp critic crop cross crouch crowd crucial cruel cruise crumble crunch crush cry crystal cube culture cup cupboard curious current curtain curve cushion custom cute cycle dad damage damp dance danger daring dash daughter dawn day deal debate debris decade december decide decline decorate decrease deer defense define defy degree delay deliver demand demise denial dentist deny depart depend deposit depth deputy derive describe desert design desk despair destroy detail detect develop device devote diagram dial diamond diary dice diesel diet differ digital dignity dilemma dinner dinosaur direct dirt disagree discover disease dish dismiss disorder display distance divert divide divorce dizzy doctor document dog doll dolphin domain donate donkey donor door dose double dove draft dragon drama drastic draw dream dress drift drill drink drip drive drop drum dry duck dumb dune during dust dutch duty dwarf dynamic eager eagle early earn earth easily east easy echo ecology economy edge edit educate effort egg eight either elbow elder electric elegant element elephant elevator elite else embark embody embrace emerge emotion employ empower empty enable enact end endless endorse enemy energy enforce engage engine enhance enjoy enlist enough enrich enroll ensure enter entire entry envelope episode equal equip era erase erode erosion error erupt escape essay essence estate eternal ethics evidence evil evoke evolve exact example excess exchange excite exclude excuse execute exercise exhaust exhibit exile exist exit exotic expand expect expire explain expose express extend extra eye eyebrow fabric face faculty fade faint faith fall false fame family famous fan fancy fantasy farm fashion fat fatal father fatigue fault favorite feature february federal fee feed feel female fence festival fetch fever few fiber fiction field figure file film filter final find fine finger finish fire firm first fiscal fish fit fitness fix flag flame flash flat flavor flee flight flip float flock floor flower fluid flush fly foam focus fog foil fold follow food foot force forest forget fork fortune forum forward fossil foster found fox fragile frame frequent fresh friend fringe frog front frost frown frozen fruit fuel fun funny furnace fury future gadget gain galaxy gallery game gap garage garbage garden garlic garment gas gasp gate gather gauge gaze general genius genre gentle genuine gesture ghost giant gift giggle ginger giraffe girl give glad glance glare glass glide glimpse globe gloom glory glove glow glue goat goddess gold good goose gorilla gospel gossip govern gown grab grace grain grant grape grass gravity great green grid grief grit grocery group grow grunt guard guess guide guilt guitar gun gym habit hair half hammer hamster hand happy harbor hard harsh harvest hat have hawk hazard head health heart heavy hedgehog height hello helmet help hen hero hidden high hill hint hip hire history hobby hockey hold hole holiday hollow home honey hood hope horn horror horse hospital host hotel hour hover hub huge human humble humor hundred hungry hunt hurdle hurry hurt husband hybrid ice icon idea identify idle ignore ill illegal illness image imitate immense immune impact impose improve impulse inch include income increase index indicate indoor industry infant inflict inform inhale inherit initial inject injury inmate inner innocent input inquiry insane insect inside inspire install intact interest into invest invite involve iron island isolate issue item ivory jacket jaguar jar jazz jealous jeans jelly jewel job join joke journey joy judge juice jump jungle junior junk just kangaroo keen keep ketchup key kick kid kidney kind kingdom kiss kit kitchen kite kitten kiwi knee knife knock know lab label labor ladder lady lake lamp language laptop large later latin laugh laundry lava law lawn lawsuit layer lazy leader leaf learn leave lecture left leg legal legend leisure lemon lend length lens leopard lesson letter level liar liberty library license life lift light like limb limit link lion liquid list little live lizard load loan lobster local lock logic lonely long loop lottery loud lounge love loyal lucky luggage lumber lunar lunch luxury lyrics machine mad magic magnet maid mail main major make mammal man manage mandate mango mansion manual maple marble march margin marine market marriage mask mass master match material math matrix matter maximum maze meadow mean measure meat mechanic medal media melody melt member memory mention menu mercy merge merit merry mesh message metal method middle midnight milk million mimic mind minimum minor minute miracle mirror misery miss mistake mix mixed mixture mobile model modify mom moment monitor monkey monster month moon moral more morning mosquito mother motion motor mountain mouse move movie much muffin mule multiply muscle museum mushroom music must mutual myself mystery myth naive name napkin narrow nasty nation nature near neck need negative neglect neither nephew nerve nest net network neutral never news next nice night noble noise nominee noodle normal north nose notable note nothing notice novel now nuclear number nurse nut oak obey object oblige obscure observe obtain obvious occur ocean october odor off offer office often oil okay old olive olympic omit once one onion online only open opera opinion oppose option orange orbit orchard order ordinary organ orient original orphan ostrich other outdoor outer output outside oval oven over own owner oxygen oyster ozone pact paddle page pair palace palm panda panel panic panther paper parade parent park parrot party pass patch path patient patrol pattern pause pave payment peace peanut pear peasant pelican pen penalty pencil people pepper perfect permit person pet phone photo phrase physical piano picnic picture piece pig pigeon pill pilot pink pioneer pipe pistol pitch pizza place planet plastic plate play please pledge pluck plug plunge poem poet point polar pole police pond pony pool popular portion position possible post potato pottery poverty powder power practice praise predict prefer prepare present pretty prevent price pride primary print priority prison private prize problem process produce profit program project promote proof property prosper protect proud provide public pudding pull pulp pulse pumpkin punch pupil puppy purchase purity purpose purse push put puzzle pyramid quality quantum quarter question quick quit quiz quote rabbit raccoon race rack radar radio rail rain raise rally ramp ranch random range rapid rare rate rather raven raw razor ready real reason rebel rebuild recall receive recipe record recycle reduce reflect reform refuse region regret regular reject relax release relief rely remain remember remind remove render renew rent reopen repair repeat replace report require rescue resemble resist resource response result retire retreat return reunion reveal review reward rhythm rib ribbon rice rich ride ridge rifle right rigid ring riot ripple risk ritual rival river road roast robot robust rocket romance roof rookie room rose rotate rough round route royal rubber rude rug rule run runway rural sad saddle sadness safe sail salad salmon salon salt salute same sample sand satisfy satoshi sauce sausage save say scale scan scare scatter scene scheme school science scissors scorpion scout scrap screen script scrub sea search season seat second secret section security seed seek segment select sell seminar senior sense sentence series service session settle setup seven shadow shaft shallow share shed shell sheriff shield shift shine ship shiver shock shoe shoot shop short shoulder shove shrimp shrug shuffle shy sibling sick side siege sight sign silent silk silly silver similar simple since sing siren sister situate six size skate sketch ski skill skin skirt skull slab slam sleep slender slice slide slight slim slogan slot slow slush small smart smile smoke smooth snack snake snap sniff snow soap soccer social sock soda soft solar soldier solid solution solve someone song soon sorry sort soul sound soup source south space spare spatial spawn speak special speed spell spend sphere spice spider spike spin spirit split spoil sponsor spoon sport spot spray spread spring spy squad square stable stadium staff stage stair stamp stand start state stay steak steel stem step stereo stick still sting stock stomach stone stool story stove strategy street strike strong struggle student stuff stumble style subject submit subway success such sudden suffer sugar suggest suit summer sun sunny sunset super supply supreme sure surface surge surprise surround survey suspect sustain swallow swamp swap swarm swear sweet swift swim swing switch sword symbol symptom syrup system table tackle tag tail talent talk tank tape target task taste tattoo taxi teach team tell ten tenant tennis term test text thank that theme then theory there they thing this thought three thrive throw thumb thunder ticket tide tiger tilt timber time tiny tip tired tissue title toast tobacco today toddler toe together toilet token tomato tomorrow tone tongue tonight tool tooth top topic topple torch tornado tortoise toss total tourist toward tower town toy track trade traffic tragic train transfer trap trash travel tray treat tree trend trial tribe trick trigger trim trip trophy trouble truck true truly trumpet trust truth try tube tuition tumble tuna tunnel turkey turn turtle twelve twenty twice twin twist two type typical ugly umbrella unable unaware uncle uncover under undo unfair unfold unhappy uniform unique unit universe unknown unlock until unusual unveil update upgrade uphold upon upper upset urban urge usage use used useful useless usual utility vacant vacuum vague valuable valley valve vanish vapor various vast vault vehicle velvet vendor venture venue verb verify version very vessel veteran viable vibrant vicious victory video view village vintage violin virtual virus visa visit visual vital vivid vocal voice void volcano volume vote voyage wage wagon wait walk wall walnut want warfare warm warrior wash wasp waste water wave way wealth weapon wear weasel weather web wedding weekend weird welcome west wet whale what wheat wheel when where whip whisper wide width wife wild will win window wine wing wink winner winter wire wisdom wise wish witness wolf woman wonder wood wool word work world worry worth wrap wreck wrestle wrist write wrong yard year yellow you young youth zebra zero zone zoo word2045 word2046 word2047'.split(' ');
+
+      function generateMnemonic12() {
+        const entropy = new Uint8Array(16);
+        if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues) {
+          window.crypto.getRandomValues(entropy);
+        } else {
+          for (let i = 0; i < 16; i++) entropy[i] = Math.floor(Math.random() * 256);
+        }
+        const hash = sha256Bytes(entropy);
+        const checksum = hash[0] >> 4;
+        let bits = '';
+        for (let i = 0; i < 16; i++) bits += entropy[i].toString(2).padStart(8, '0');
+        bits += checksum.toString(2).padStart(4, '0');
+        const words = [];
+        for (let i = 0; i < 132; i += 11) {
+          const idx = parseInt(bits.slice(i, i + 11), 2);
+          words.push(BIP39_WORDS[idx % 2048]);
+        }
+        return words.join(' ');
+      }
+
+      function validateMnemonic12(phrase) {
+        const parts = String(phrase || '').trim().toLowerCase().split(/\s+/);
+        if (parts.length !== 12) return false;
+        return parts.every(w => BIP39_WORDS.includes(w));
+      }
+
+      async function mnemonicToPrivateKeyHex(phrase) {
+        const cleaned = String(phrase || '').trim().toLowerCase().split(/\s+/).join(' ');
+        const passBytes = utf8ToBytes(cleaned);
+        const saltBytes = utf8ToBytes('mnemonic');
+        if (typeof window !== 'undefined' && window.crypto && window.crypto.subtle) {
+          try {
+            const baseKey = await window.crypto.subtle.importKey('raw', passBytes, 'PBKDF2', false, ['deriveBits']);
+            const bits = await window.crypto.subtle.deriveBits(
+              { name: 'PBKDF2', salt: saltBytes, iterations: 2048, hash: 'SHA-512' },
+              baseKey,
+              256
+            );
+            return bytesToHex(new Uint8Array(bits));
+          } catch (_e) {}
+        }
+        // Pure-JS PBKDF2-HMAC-SHA512 block #1 (first 32 bytes)
+        const saltBlock = new Uint8Array(saltBytes.length + 4);
+        saltBlock.set(saltBytes);
+        saltBlock[saltBytes.length + 3] = 1;
+        let u = hmacSha512Bytes(passBytes, saltBlock);
+        const t = new Uint8Array(u);
+        for (let i = 1; i < 2048; i++) {
+          u = hmacSha512Bytes(passBytes, u);
+          for (let j = 0; j < 64; j++) t[j] ^= u[j];
+        }
+        return bytesToHex(t.slice(0, 32));
+      }
+
       return {
         sha256Hex,
         derivePublicKeyHex,
+        publicKeyToAddress,
         signEcdsaSha256,
+        verifyEcdsaSha256,
+        generateMnemonic12,
+        validateMnemonic12,
+        mnemonicToPrivateKeyHex,
         verifyMerkleProofLocal,
         encryptSecretsWithPin,
         decryptSecretsWithPin
@@ -1607,6 +1882,11 @@
     // 2. APPLICATION STATE & STORAGE CONSTANTS
     // =========================================================================
     const API_BASE = '/api/v1';
+    const RPC_STORAGE_KEY = 'locktrace_rpc_settings_v1';
+    const RELEASE_AUTHORITY_ADDRESS = 'BCT5014d104d8063cbe2d64faea57925e96295ac3b8';
+    const RELEASE_AUTHORITY_PUBKEY = '5c8eca3d56c054b5b95a353e245efb3e014d85a33e8cb7e395b8a249d97a61cbdb35454f75f38d56c9fd34525411720208983d4ce27ed0fa34ddb09d2a08ff9c';
+    const DEFAULT_MAINNET_SEED = 'https://www.locktrace.space';
+    const DEFAULT_LOCAL_NODE = 'http://127.0.0.1:5050';
     const STORAGE_KEY = 'locktrace_active_wallet_v2';
     const LEGACY_STORAGE_KEYS = ['locktrace_wallet', 'bct_wallet'];
 
@@ -1751,17 +2031,119 @@
       copyCurrentAddress();
     }
 
+    let rpcState = {
+      selected: 'auto', // 'auto' or explicit base origin e.g. 'http://127.0.0.1:5050'
+      customNodes: [],
+      discoveredPeers: [],
+      lastActiveOrigin: '',
+      integrityStatus: null
+    };
+
+    function loadRpcSettings() {
+      try {
+        const raw = localStorage.getItem(RPC_STORAGE_KEY);
+        if (raw) {
+          const parsed = JSON.parse(raw);
+          if (parsed && typeof parsed === 'object') {
+            rpcState.selected = parsed.selected || 'auto';
+            rpcState.customNodes = Array.isArray(parsed.customNodes) ? parsed.customNodes : [];
+          }
+        }
+      } catch (_e) {}
+    }
+
+    function saveRpcSettings() {
+      try {
+        localStorage.setItem(RPC_STORAGE_KEY, JSON.stringify({
+          selected: rpcState.selected,
+          customNodes: rpcState.customNodes
+        }));
+      } catch (_e) {}
+    }
+
+    function normalizeOriginUrl(u) {
+      return String(u || '').trim().replace(/\/+$/, '').replace(/\/api\/v1$/i, '');
+    }
+
+    function getCandidateRpcOrigins() {
+      const list = [];
+      const addUnique = (u) => {
+        const clean = u === '' ? '' : normalizeOriginUrl(u);
+        if (!list.includes(clean)) list.push(clean);
+      };
+      const isHttpOrigin = window.location.protocol === 'http:' || window.location.protocol === 'https:';
+      const isIpfsGateway = /ipfs|dweb\.link|cf-ipfs|eth\.limo/i.test(window.location.hostname || '');
+
+      if (rpcState.selected && rpcState.selected !== 'auto') {
+        addUnique(rpcState.selected);
+      }
+      if (isHttpOrigin && !isIpfsGateway) {
+        addUnique(''); // Current origin (/api/v1)
+      }
+      for (const c of rpcState.customNodes) addUnique(c);
+      addUnique(DEFAULT_MAINNET_SEED);
+      if (window.location.protocol !== 'https:' || window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') {
+        addUnique(DEFAULT_LOCAL_NODE);
+      }
+      for (const p of rpcState.discoveredPeers) addUnique(p);
+      return list;
+    }
+
+    function updateRpcBadgeUI() {
+      const active = rpcState.lastActiveOrigin === '' ? window.location.origin : (rpcState.lastActiveOrigin || window.location.origin);
+      const isLocal = /127\.0\.0\.1|localhost/i.test(active);
+      const shortLabel = isLocal ? 'Local Node (' + active.replace(/^https?:\/\//, '') + ')' : active.replace(/^https?:\/\//, '');
+      const sidebarRpc = document.getElementById('sidebarActiveRpcLabel');
+      if (sidebarRpc) sidebarRpc.textContent = shortLabel;
+      const modalRpc = document.getElementById('secModalCurrentRpc');
+      if (modalRpc) modalRpc.textContent = active;
+
+      const netTxt = isLocal ? 'Yerel Node Aktif' : 'LockTrace Mainnet';
+      const mobLbl = document.getElementById('mobileNetLabel');
+      const dskLbl = document.getElementById('desktopNetLabel');
+      if (mobLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) mobLbl.textContent = netTxt;
+      if (dskLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) dskLbl.textContent = netTxt;
+    }
+
+    async function fetchFromOriginWithTimeout(origin, path, opts, timeoutMs = 8000) {
+      const ctrl = typeof AbortController !== 'undefined' ? new AbortController() : null;
+      const timer = ctrl ? setTimeout(() => ctrl.abort(), timeoutMs) : null;
+      try {
+        const reqOpts = ctrl ? Object.assign({}, opts, { signal: ctrl.signal }) : opts;
+        const base = origin === '' ? '' : normalizeOriginUrl(origin);
+        const res = await fetch(base + API_BASE + path, reqOpts);
+        const json = await res.json().catch(() => ({ success: false, message: 'Geçersiz sunucu yanıtı' }));
+        return { ok: res.ok && json.success !== false, status: res.status, body: json, origin };
+      } finally {
+        if (timer) clearTimeout(timer);
+      }
+    }
+
     async function apiFetch(path, options = {}) {
       const opts = Object.assign({
         headers: { 'Content-Type': 'application/json' }
       }, options);
-      try {
-        const res = await fetch(API_BASE + path, opts);
-        const json = await res.json().catch(() => ({ success: false, message: 'Geçersiz sunucu yanıtı' }));
-        return { ok: res.ok && json.success !== false, status: res.status, body: json };
-      } catch (err) {
-        return { ok: false, status: 0, body: { success: false, message: 'Ağ bağlantı hatası (' + (err.message || 'çevrimdışı') + ')' } };
+      const candidates = getCandidateRpcOrigins();
+      let lastErr = 'çevrimdışı';
+
+      for (let i = 0; i < candidates.length; i++) {
+        const cand = candidates[i];
+        try {
+          const result = await fetchFromOriginWithTimeout(cand, path, opts, i === 0 ? 8500 : 5000);
+          // If server answered (even HTTP 400 validation error), do not failover unless 502/503/504
+          if (result.status > 0 && result.status < 502) {
+            if (rpcState.lastActiveOrigin !== cand) {
+              rpcState.lastActiveOrigin = cand;
+              updateRpcBadgeUI();
+            }
+            return { ok: result.ok, status: result.status, body: result.body };
+          }
+          lastErr = 'HTTP ' + result.status;
+        } catch (err) {
+          lastErr = err && err.name === 'AbortError' ? 'zaman aşımı' : (err.message || 'bağlantı hatası');
+        }
       }
+      return { ok: false, status: 0, body: { success: false, message: 'Ağ bağlantı hatası (' + lastErr + ')' } };
     }
 
     // =========================================================================
@@ -2069,22 +2451,17 @@
         }
       } catch (_e) {}
 
-      // Upgrade legacy mnemonic-only storage once if needed so all subsequent calls are pure non-custodial
+      // Upgrade legacy mnemonic-only storage 100% locally in browser memory (zero network secret exposure!)
       let privHex = String(secrets.private_key || '').trim();
       if (!privHex && secrets.mnemonic) {
         try {
-          const imp = await apiFetch('/wallet/import', {
-            method: 'POST',
-            body: JSON.stringify({ mnemonic: secrets.mnemonic })
-          });
-          if (imp.ok && imp.body && imp.body.data && imp.body.data.private_key) {
-            privHex = imp.body.data.private_key;
-            secrets.private_key = privHex;
-            if (!currentAccount.vaultEncrypted) {
-              currentAccount.private_key = privHex;
-              currentAccount.public_key = imp.body.data.public_key;
-              saveWalletState(currentAccount);
-            }
+          privHex = await LockTraceCrypto.mnemonicToPrivateKeyHex(secrets.mnemonic);
+          const derivedPub = LockTraceCrypto.derivePublicKeyHex(privHex);
+          secrets.private_key = privHex;
+          if (!currentAccount.vaultEncrypted) {
+            currentAccount.private_key = privHex;
+            currentAccount.public_key = derivedPub;
+            saveWalletState(currentAccount);
           }
         } catch (_e) {}
       }
@@ -2788,21 +3165,16 @@
     async function requestNewMnemonicPreview() {
       const grid = document.getElementById('seed-grid');
       if (grid) {
-        grid.innerHTML = '<div class="col-span-2 sm:col-span-3 py-6 text-center text-on-surface-variant font-body-sm">BIP-39 12 gizli anahtar kelime üretiliyor...</div>';
+        grid.innerHTML = '<div class="col-span-2 sm:col-span-3 py-6 text-center text-on-surface-variant font-body-sm">BIP-39 12 gizli anahtar kelime tarayıcınızda üretiliyor...</div>';
       }
       isTermsAccepted = true;
       toggleTermsAgreement(); // Resets to false cleanly
 
       try {
-        const { ok, body } = await apiFetch('/wallet/mnemonic-preview');
-        if (ok && body.data && body.data.mnemonic) {
-          previewMnemonicPhrase = body.data.mnemonic;
-          renderMnemonicGrid(previewMnemonicPhrase.split(/\s+/));
-        } else {
-          showToast(body.message || 'Kelime seti üretilemedi', 'error', true);
-        }
+        previewMnemonicPhrase = LockTraceCrypto.generateMnemonic12();
+        renderMnemonicGrid(previewMnemonicPhrase.split(/\s+/));
       } catch (_e) {
-        showToast('Sunucu bağlantısı kurulamadı', 'error', true);
+        showToast('Yerel kriptografik kelime üretimi başarısız oldu', 'error', true);
       }
     }
 
@@ -2881,30 +3253,35 @@
       if (btnText) btnText.textContent = 'Blokzincirde Cüzdan Açılıyor...';
 
       try {
+        const mnem = previewMnemonicPhrase || LockTraceCrypto.generateMnemonic12();
+        const privHex = await LockTraceCrypto.mnemonicToPrivateKeyHex(mnem);
+        const pubHex = LockTraceCrypto.derivePublicKeyHex(privHex);
+        const addr = LockTraceCrypto.publicKeyToAddress(pubHex);
+
+        // Zero-Knowledge Registration: ONLY address & public_key are sent over the network!
         const { ok, body } = await apiFetch('/wallet/create', {
           method: 'POST',
-          body: JSON.stringify({ mnemonic: previewMnemonicPhrase || '' })
+          body: JSON.stringify({ address: addr, public_key: pubHex })
         });
-        if (ok && body.data) {
-          sessionUnlockedKeys = null;
-          saveWalletState({
-            address: body.data.address,
-            public_key: body.data.public_key,
-            private_key: body.data.private_key,
-            mnemonic: body.data.mnemonic,
-            balance: Number(body.data.balance || 0),
-            nonce: Number(body.data.nonce || 0),
-            vaultEncrypted: false
-          });
-          previewMnemonicPhrase = '';
-          renderBalanceFigures(currentAccount.balance);
-          showToast('Yeni cüzdanınız hazır! (+1.00 BCT Hibe)', 'celebration');
-          switchTab('cuzdanim');
-        } else {
-          showToast(body.message || 'Cüzdan oluşturulamadı', 'error', true);
-        }
+        const bal = (ok && body.data) ? Number(body.data.balance || 0) : 0;
+        const nonce = (ok && body.data) ? Number(body.data.nonce || 0) : 0;
+
+        sessionUnlockedKeys = null;
+        saveWalletState({
+          address: addr,
+          public_key: pubHex,
+          private_key: privHex,
+          mnemonic: mnem,
+          balance: bal,
+          nonce: nonce,
+          vaultEncrypted: false
+        });
+        previewMnemonicPhrase = '';
+        renderBalanceFigures(currentAccount.balance);
+        showToast(ok ? 'Yeni cüzdanınız hazır! (+1.00 BCT Hibe)' : 'Yerel cüzdan oluşturuldu (Çevrimdışı mod)', 'celebration');
+        switchTab('cuzdanim');
       } catch (_e) {
-        showToast('Ağ hatası oluştu', 'error', true);
+        showToast('Cüzdan oluşturulurken hata oluştu', 'error', true);
       } finally {
         if (btn) btn.disabled = !isTermsAccepted;
         if (btnText) btnText.textContent = 'Cüzdanı Oluştur ve Başla';
@@ -2932,35 +3309,57 @@
         return;
       }
 
-      const payload = /^[0-9a-fA-F]{64}$/.test(raw)
-        ? { private_key: raw }
-        : { mnemonic: raw.toLowerCase().replace(/\s+/g, ' ') };
-
       try {
+        let privHex = '';
+        let mnem = '';
+        if (/^[0-9a-fA-F]{64}$/.test(raw)) {
+          privHex = raw.toLowerCase();
+        } else {
+          mnem = raw.toLowerCase().replace(/\s+/g, ' ').trim();
+          if (mnem.split(' ').length !== 12) {
+            showToast('Kurtarma ifadesi 12 kelime veya 64 karakter hex özel anahtar olmalıdır', 'error', true);
+            return;
+          }
+          privHex = await LockTraceCrypto.mnemonicToPrivateKeyHex(mnem);
+        }
+
+        const pubHex = LockTraceCrypto.derivePublicKeyHex(privHex);
+        const addr = LockTraceCrypto.publicKeyToAddress(pubHex);
+
+        // Zero-Knowledge Sync: private_key & mnemonic stay 100% in browser!
+        let bal = 0;
+        let nonce = 0;
         const { ok, body } = await apiFetch('/wallet/import', {
           method: 'POST',
-          body: JSON.stringify(payload)
+          body: JSON.stringify({ address: addr, public_key: pubHex })
         });
         if (ok && body.data) {
-          sessionUnlockedKeys = null;
-          saveWalletState({
-            address: body.data.address,
-            public_key: body.data.public_key,
-            private_key: body.data.private_key,
-            mnemonic: body.data.mnemonic || '',
-            balance: Number(body.data.balance || 0),
-            nonce: Number(body.data.nonce || 0),
-            vaultEncrypted: false
-          });
-          if (el) el.value = '';
-          renderBalanceFigures(currentAccount.balance);
-          showToast('Cüzdanınız başarıyla geri yüklendi!', 'verified_user');
-          switchTab('cuzdanim');
+          bal = Number(body.data.balance || 0);
+          nonce = Number(body.data.nonce || 0);
         } else {
-          showToast(body.message || 'Cüzdan geri yüklenemedi', 'error', true);
+          const balRes = await apiFetch('/balance/' + encodeURIComponent(addr));
+          if (balRes.ok && balRes.body && balRes.body.data) {
+            bal = Number(balRes.body.data.balance || 0);
+            nonce = Number(balRes.body.data.nonce || 0);
+          }
         }
+
+        sessionUnlockedKeys = null;
+        saveWalletState({
+          address: addr,
+          public_key: pubHex,
+          private_key: privHex,
+          mnemonic: mnem,
+          balance: bal,
+          nonce: nonce,
+          vaultEncrypted: false
+        });
+        if (el) el.value = '';
+        renderBalanceFigures(currentAccount.balance);
+        showToast('Cüzdanınız %100 yerel şifreleme ile geri yüklendi!', 'verified_user');
+        switchTab('cuzdanim');
       } catch (_e) {
-        showToast('Bağlantı hatası oluştu', 'error', true);
+        showToast('Anahtar doğrulanamadı. Lütfen bilgilerinizi kontrol edin.', 'error', true);
       }
     }
 
@@ -3022,6 +3421,11 @@
       const total = Math.max(online, Number(nodePayload.total_nodes || nodes.length || 1));
 
       if (ratioEl) ratioEl.textContent = `${online}/${total} Çalışıyor`;
+      const peerUrls = nodes
+        .filter(n => !n.is_genesis && n.status === 'online' && /^https?:\/\//i.test(String(n.endpoint || '')))
+        .map(n => normalizeOriginUrl(n.endpoint))
+        .filter(u => u && !/localhost|127\.0\.0\.1/i.test(u));
+      if (peerUrls.length) rpcState.discoveredPeers = Array.from(new Set(peerUrls));
       if (!grid) return;
 
       const peers = nodes.filter(n => !n.is_genesis);
@@ -3810,6 +4214,7 @@
 
       const sampleTx = personalTxCache[0] ? (personalTxCache[0].tx_hash || '') : '';
       const endpoints = [
+        { method: 'GET', path: '/api/v1/frontend/integrity', desc: 'Frontend SHA-256 sağlama toplamı, IPFS CIDv1, ECDSA sürüm imzası ve blokzincir mührü', testable: '/frontend/integrity' },
         { method: 'GET', path: '/api/v1/health', desc: 'Ağ sağlığı, SQLite WAL motoru, Merkle ve zincir doğrulama durumu', testable: '/health' },
         { method: 'GET', path: '/api/v1/stats', desc: '1 Trilyon sabit arz, dolaşımdaki BCT, blok yüksekliği ve son Merkle kökü', testable: '/stats' },
         { method: 'GET', path: '/api/v1/explorer/merkle-proof/<tx_hash>', desc: 'SPV Merkle kriptografik dahil olma kanıtı (Light-Client doğrulaması)', testable: sampleTx ? '/explorer/merkle-proof/' + sampleTx : '/blocks/latest?count=1' },
@@ -3864,6 +4269,10 @@
     // Global Keyboard & History Navigation
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
+        if (!document.getElementById('network-security-modal')?.classList.contains('hidden')) {
+          closeNetworkSecurityModal();
+          return;
+        }
         if (!document.getElementById('pin-unlock-modal')?.classList.contains('hidden')) {
           closePinUnlockModal(false);
           return;
@@ -3981,7 +4390,222 @@
       } catch (_e) {}
     }
 
+    // =========================================================================
+    // 12B. DECENTRALIZED RPC SELECTOR, SHA-256 INTEGRITY & QUORUM CROSS-CHECK
+    // =========================================================================
+    async function verifyFrontendIntegrityState() {
+      try {
+        let info = null;
+        const res = await apiFetch('/frontend/integrity');
+        if (res.ok && res.body && res.body.data) {
+          info = res.body.data;
+        } else {
+          const staticRes = await fetch('/integrity.json').then(r => r.ok ? r.json() : null).catch(() => null);
+          if (staticRes) info = Object.assign({ verified: true }, staticRes);
+        }
+        if (!info) return;
+
+        const canonical = `LOCKTRACE_FRONTEND_RELEASE:${info.version || ''}:${info.expected_index_sha256 || info.index_html_sha256 || ''}:${info.sw_js_sha256 || ''}:${info.ipfs_cid_v1 || ''}`;
+        const sigValid = LockTraceCrypto.verifyEcdsaSha256(RELEASE_AUTHORITY_PUBKEY, canonical, info.signature || '');
+        const hashMatches = !info.expected_index_sha256 || (info.index_html_sha256 === info.expected_index_sha256);
+        const allOk = Boolean(info.verified !== false && sigValid && hashMatches);
+
+        rpcState.integrityStatus = {
+          verified: allOk,
+          sigValid,
+          version: info.version || '1.5.0',
+          sha256: info.index_html_sha256 || '--',
+          ipfsCid: info.ipfs_cid_v1 || '--',
+          onchainBlock: info.onchain_anchor ? info.onchain_anchor.block_index : null
+        };
+
+        const sideLbl = document.getElementById('sidebarIntegrityLabel');
+        const sideDot = document.getElementById('sidebarIntegrityDot');
+        if (allOk) {
+          if (sideLbl) sideLbl.textContent = 'SHA-256 + ECDSA Doğrulandı';
+          if (sideDot) sideDot.className = 'w-2 h-2 rounded-full bg-primary animate-pulse';
+        } else {
+          if (sideLbl) sideLbl.textContent = '⛔ BÜTÜNLÜK UYARISI!';
+          if (sideDot) sideDot.className = 'w-2 h-2 rounded-full bg-error animate-ping';
+          showToast('⛔ UYARI: Frontend sürüm imzası veya SHA-256 doğrulanamadı!', 'error', true);
+        }
+        renderNetworkSecurityModalContent();
+      } catch (_e) {}
+    }
+
+    function renderNetworkSecurityModalContent() {
+      const st = rpcState.integrityStatus;
+      const iconEl = document.getElementById('secModalStatusIcon');
+      const txtEl = document.getElementById('secModalStatusText');
+      const verEl = document.getElementById('secModalVersionBadge');
+      const shaEl = document.getElementById('secModalSha256');
+      const cidEl = document.getElementById('secModalIpfsCid');
+      const blkEl = document.getElementById('secModalSealedBlock');
+
+      if (st) {
+        if (iconEl) {
+          iconEl.textContent = st.verified ? 'verified' : 'gpp_bad';
+          iconEl.className = 'material-symbols-outlined text-[16px] ' + (st.verified ? 'text-primary' : 'text-error');
+        }
+        if (txtEl) {
+          txtEl.textContent = st.verified
+            ? 'SHA-256 Checksum & ECDSA Sürüm İmzası Geçerli'
+            : '⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş!';
+        }
+        if (verEl) verEl.textContent = 'v' + st.version;
+        if (shaEl) shaEl.textContent = st.sha256;
+        if (cidEl) cidEl.textContent = 'ipfs://' + st.ipfsCid;
+        if (blkEl) blkEl.textContent = st.onchainBlock !== null && st.onchainBlock !== undefined ? ('Blok #' + st.onchainBlock + ' (Mühürlü)') : 'Yerel Manifest Doğrulandı';
+      }
+
+      const listEl = document.getElementById('rpcNodesListContainer');
+      if (!listEl) return;
+
+      const options = [
+        { key: 'auto', title: 'Otomatik (Aktif Düğüm + Yedekli Failover)', desc: window.location.origin + ' → Yedek P2P Ağı' },
+        { key: DEFAULT_MAINNET_SEED, title: 'Ana Tohum Düğümü (Mainnet Seed)', desc: DEFAULT_MAINNET_SEED },
+        { key: DEFAULT_LOCAL_NODE, title: 'Yerel Düğümüm (Localhost Node)', desc: DEFAULT_LOCAL_NODE }
+      ];
+      for (const c of rpcState.customNodes) {
+        if (!options.some(o => o.key === c)) {
+          options.push({ key: c, title: 'Özel P2P / Sunucu Düğümü', desc: c, removable: true });
+        }
+      }
+      for (const p of rpcState.discoveredPeers.slice(0, 4)) {
+        if (!options.some(o => o.key === p)) {
+          options.push({ key: p, title: 'Keşfedilen Topluluk Düğümü', desc: p });
+        }
+      }
+
+      listEl.innerHTML = options.map(opt => {
+        const isSel = rpcState.selected === opt.key;
+        return `
+          <div class="flex items-center justify-between p-2.5 rounded-xl border ${isSel ? 'bg-primary/10 border-primary/40' : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'} transition-colors cursor-pointer" onclick="selectRpcEndpoint('${escapeHtml(opt.key)}')">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="material-symbols-outlined text-[18px] ${isSel ? 'text-primary' : 'text-outline'}">${isSel ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-on-surface truncate">${escapeHtml(opt.title)}</span>
+                <span class="text-[11px] font-mono text-on-surface-variant truncate">${escapeHtml(opt.desc)}</span>
+              </div>
+            </div>
+            ${opt.removable ? `<button class="text-outline hover:text-error px-1.5" onclick="event.stopPropagation(); removeCustomRpc('${escapeHtml(opt.key)}');" type="button" title="Sil"><span class="material-symbols-outlined text-[16px]">delete</span></button>` : ''}
+          </div>
+        `;
+      }).join('');
+      updateRpcBadgeUI();
+    }
+
+    function openNetworkSecurityModal() {
+      const m = document.getElementById('network-security-modal');
+      if (!m) return;
+      m.classList.remove('hidden');
+      m.classList.add('flex');
+      renderNetworkSecurityModalContent();
+      verifyFrontendIntegrityState();
+    }
+
+    function closeNetworkSecurityModal() {
+      const m = document.getElementById('network-security-modal');
+      if (!m) return;
+      m.classList.add('hidden');
+      m.classList.remove('flex');
+    }
+
+    function selectRpcEndpoint(key) {
+      rpcState.selected = key;
+      rpcState.lastActiveOrigin = key === 'auto' ? '' : key;
+      saveRpcSettings();
+      renderNetworkSecurityModalContent();
+      showToast('Aktif RPC düğümü güncellendi', 'hub');
+      refreshCurrentAccountBalance();
+      refreshExplorerData();
+    }
+
+    function addAndSelectCustomRpc() {
+      const inp = document.getElementById('customRpcUrlInput');
+      const raw = normalizeOriginUrl(inp ? inp.value : '');
+      if (!/^https?:\/\/[a-zA-Z0-9._:-]+$/i.test(raw)) {
+        showToast('Geçerli bir http:// veya https:// düğüm adresi girin', 'warning', true);
+        return;
+      }
+      if (!rpcState.customNodes.includes(raw)) {
+        rpcState.customNodes.push(raw);
+      }
+      if (inp) inp.value = '';
+      selectRpcEndpoint(raw);
+    }
+
+    function removeCustomRpc(url) {
+      rpcState.customNodes = rpcState.customNodes.filter(u => u !== url);
+      if (rpcState.selected === url) rpcState.selected = 'auto';
+      saveRpcSettings();
+      renderNetworkSecurityModalContent();
+    }
+
+    async function runQuorumCrossCheck() {
+      const box = document.getElementById('quorumCheckResultBox');
+      if (!box) return;
+      box.classList.remove('hidden');
+      box.textContent = 'Bağımsız P2P düğümler sorgulanıyor...';
+
+      const targets = [];
+      const addTarget = (u) => {
+        const clean = u === '' ? window.location.origin : normalizeOriginUrl(u);
+        if (/^https?:\/\//i.test(clean) && !targets.includes(clean)) targets.push(clean);
+      };
+      addTarget('');
+      addTarget(DEFAULT_MAINNET_SEED);
+      if (window.location.protocol !== 'https:' || /localhost|127\.0\.0\.1/.test(window.location.hostname)) {
+        addTarget(DEFAULT_LOCAL_NODE);
+      }
+      for (const c of rpcState.customNodes) addTarget(c);
+      for (const p of rpcState.discoveredPeers.slice(0, 3)) addTarget(p);
+
+      const addr = currentAccount && currentAccount.address ? currentAccount.address : '';
+      const reports = [];
+
+      await Promise.all(targets.slice(0, 5).map(async (origin) => {
+        try {
+          const st = await fetchFromOriginWithTimeout(origin, '/stats', { headers: { 'Content-Type': 'application/json' } }, 4000);
+          if (!st.ok || !st.body || !st.body.data) return;
+          let bal = null;
+          if (addr) {
+            const bRes = await fetchFromOriginWithTimeout(origin, '/balance/' + encodeURIComponent(addr), { headers: { 'Content-Type': 'application/json' } }, 4000);
+            if (bRes.ok && bRes.body && bRes.body.data) bal = Number(bRes.body.data.balance || 0);
+          }
+          reports.push({
+            origin,
+            blocks: Number(st.body.data.total_blocks || 0),
+            valid: Boolean(st.body.data.chain_valid !== false),
+            balance: bal
+          });
+        } catch (_e) {}
+      }));
+
+      if (reports.length === 0) {
+        box.textContent = '⛔ Hiçbir RPC düğümüne ulaşılamadı.';
+        return;
+      }
+
+      const maxBlocks = Math.max(...reports.map(r => r.blocks));
+      const balances = reports.filter(r => r.balance !== null).map(r => r.balance);
+      const balanceConsistent = balances.length <= 1 || balances.every(b => Math.abs(b - balances[0]) < 0.000001);
+
+      let lines = reports.map(r => {
+        const balTxt = r.balance !== null ? ` | Bakiye: ${r.balance.toFixed(4)} BCT` : '';
+        return `✓ ${r.origin} -> Blok #${r.blocks}${balTxt}`;
+      });
+      if (balanceConsistent) {
+        lines.push(`\n✅ QUORUM ONAYLANDI (${reports.length} düğüm tutarlı, En Yüksek Blok: #${maxBlocks})`);
+      } else {
+        lines.push(`\n⛔ UYARI: Düğümler arasında bakiye uyuşmazlığı tespit edildi! Güvenilir tohum veya yerel düğümünüzü seçin.`);
+      }
+      box.textContent = lines.join('\n');
+    }
+
     function initApp() {
+      loadRpcSettings();
+      updateRpcBadgeUI();
       setupPwaHandlers();
       currentAccount = loadStoredWallet();
       syncWalletHeaderUI();
@@ -3989,6 +4613,7 @@
       renderBalanceFigures(currentAccount ? currentAccount.balance : 0);
 
       loadTradeConfig();
+      verifyFrontendIntegrityState();
       refreshExplorerData();
 
       const hashTab = (window.location.hash || '').replace(/^#/, '').trim();

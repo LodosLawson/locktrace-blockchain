@@ -1,15 +1,16 @@
-const CACHE_NAME = 'locktrace-pwa-v10';
+const CACHE_NAME = 'locktrace-pwa-v11';
 
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
+  '/integrity.json',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon.svg'
 ];
 
-// Install: Pre-cache critical core shell
+// Install: Pre-cache critical decentralized core shell
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => {
@@ -33,24 +34,39 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Optimized for iOS WebKit & Desktop
+// Fetch: Network-First for HTML shell (respects 403 SHA-256 tamper lock, survives full server shutdown offline!)
 self.addEventListener('fetch', (event) => {
-  // Only handle GET requests
   if (event.request.method !== 'GET') return;
 
   const url = new URL(event.request.url);
 
-  // 1. Never intercept or cache API requests (direct passthrough to blockchain node)
-  if (url.pathname.startsWith('/api/')) {
+  // 1. Never intercept or cache API or P2P RPC requests
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/p2p/')) {
     return;
   }
 
-  // 2. Only cache same-origin static requests
+  // 2. Only handle same-origin static requests
   if (url.origin !== self.location.origin) {
     return;
   }
 
-  // 3. Stale-While-Revalidate for local static assets
+  // 3. Navigation / HTML shell: Network-First with Offline Fallback
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+    event.respondWith(
+      fetch(event.request).then((networkResponse) => {
+        if (networkResponse && networkResponse.status === 200) {
+          const clone = networkResponse.clone();
+          caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+        }
+        return networkResponse;
+      }).catch(() => {
+        return caches.match('/index.html') || caches.match('/');
+      })
+    );
+    return;
+  }
+
+  // 4. Stale-While-Revalidate for icons/manifest/integrity.json
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
@@ -61,11 +77,7 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => {
-        if (event.request.mode === 'navigate') {
-          return caches.match('/index.html');
-        }
-      });
+      }).catch(() => cachedResponse);
 
       return cachedResponse || fetchPromise;
     })

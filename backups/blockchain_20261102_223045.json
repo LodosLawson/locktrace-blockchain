@@ -1,0 +1,4573 @@
+{
+  "chain": [
+    {
+      "index": 0,
+      "version": 1,
+      "hash": "000f37c14b84937c84c1787755dae58a6db697aedc8636379595b55330743dd4",
+      "previous_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "merkle_root": "1f4b0b8921682a4a8973602a885d702a03235daa62d9cb8986334ade756aee4b",
+      "timestamp": 1793592252.4725256,
+      "nonce": 20103,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "GENESIS",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 1000000000000.0,
+          "fee": 0.0,
+          "net_amount": 1000000000000.0,
+          "signature": "genesis_block_signature",
+          "timestamp": 1793592252.4725213,
+          "tx_type": "genesis",
+          "tx_hash": "1f4b0b8921682a4a8973602a885d702a03235daa62d9cb8986334ade756aee4b"
+        }
+      ]
+    },
+    {
+      "index": 1,
+      "version": 1,
+      "hash": "000d3c69f3d7c1fd7869bc7c4830c7192ba00c305cb2ffc4f10b594a0846acd0",
+      "previous_hash": "000f37c14b84937c84c1787755dae58a6db697aedc8636379595b55330743dd4",
+      "merkle_root": "7145204c6fe2216bea151cf07dbf03f5c07b413080cbc4fa05ab2e5dd36d24da",
+      "timestamp": 1793622481.7104883,
+      "nonce": 19603,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT5ea683b922a1ee9afa2d9c503dc632275e6e1bd1",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "wallet_creation_reward",
+          "timestamp": 1793622481.7104719,
+          "tx_type": "reward",
+          "tx_hash": "7145204c6fe2216bea151cf07dbf03f5c07b413080cbc4fa05ab2e5dd36d24da"
+        }
+      ]
+    },
+    {
+      "index": 2,
+      "version": 1,
+      "hash": "000e56ce85f2736960a9d4311fd10092f84cd2b45836878ee09fce405a29c0c6",
+      "previous_hash": "000d3c69f3d7c1fd7869bc7c4830c7192ba00c305cb2ffc4f10b594a0846acd0",
+      "merkle_root": "f357e34bb19a255af92b8c4add7ef9d1c49abd54124a54d7ac0076c291762aef",
+      "timestamp": 1793622699.0612197,
+      "nonce": 2010,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7fd1fad4be560be0b111327f0d0aaaea2b201348",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "wallet_creation_reward",
+          "timestamp": 1793622699.0612116,
+          "tx_type": "reward",
+          "tx_hash": "f357e34bb19a255af92b8c4add7ef9d1c49abd54124a54d7ac0076c291762aef"
+        }
+      ]
+    },
+    {
+      "index": 3,
+      "version": 1,
+      "hash": "00010045355eff75ad1fd0d52d54d61baf4473f853a488938b4c21869bc3276e",
+      "previous_hash": "000e56ce85f2736960a9d4311fd10092f84cd2b45836878ee09fce405a29c0c6",
+      "merkle_root": "4a5dbf7e5368eba64e91afdb02395025a9577f0501b73cb18daf4443f549c8f3",
+      "timestamp": 1793623318.5606122,
+      "nonce": 10097,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT879cfde4c9244c059c14c0efe228c8bf285a4a12",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793623318.5606046,
+          "tx_type": "reward",
+          "tx_hash": "4a5dbf7e5368eba64e91afdb02395025a9577f0501b73cb18daf4443f549c8f3"
+        }
+      ]
+    },
+    {
+      "index": 4,
+      "version": 1,
+      "hash": "00008f98f3d4da6ddc031a8d6cc14337fb5392469bbee7865e3973452fad0fc3",
+      "previous_hash": "00010045355eff75ad1fd0d52d54d61baf4473f853a488938b4c21869bc3276e",
+      "merkle_root": "492a5819f138c203a1d704c59192076b5b06256a97dffa78edd69ed357195bcb",
+      "timestamp": 1793623319.1316617,
+      "nonce": 8631,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT879cfde4c9244c059c14c0efe228c8bf285a4a12",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793623319.1316547,
+          "tx_type": "reward",
+          "tx_hash": "492a5819f138c203a1d704c59192076b5b06256a97dffa78edd69ed357195bcb"
+        }
+      ]
+    },
+    {
+      "index": 5,
+      "version": 1,
+      "hash": "0007cf16c9c27d8c7d66f2586fbde385111acccb95359571dfedd9c8020cdd86",
+      "previous_hash": "00008f98f3d4da6ddc031a8d6cc14337fb5392469bbee7865e3973452fad0fc3",
+      "merkle_root": "0123f0700c9f685faa66802e7f02efdc8f84da9ab985f9fb5937d1c1fcc36f87",
+      "timestamp": 1793623678.2478251,
+      "nonce": 4742,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT4e82603ce89fc6fab27f283a2a837bd09e94ab97",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793623678.2478175,
+          "tx_type": "reward",
+          "tx_hash": "0123f0700c9f685faa66802e7f02efdc8f84da9ab985f9fb5937d1c1fcc36f87"
+        }
+      ]
+    },
+    {
+      "index": 6,
+      "version": 1,
+      "hash": "00027d25cf0e1a58211d4d2894b9825f42cdf81be1070539f9577525c85ea2fb",
+      "previous_hash": "0007cf16c9c27d8c7d66f2586fbde385111acccb95359571dfedd9c8020cdd86",
+      "merkle_root": "cb942a5c282459e9c354158ef5a2b9d95527c1263ce57aabf65a350386c75cb2",
+      "timestamp": 1793623702.7611544,
+      "nonce": 2796,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT4e82603ce89fc6fab27f283a2a837bd09e94ab97",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793623702.7611477,
+          "tx_type": "reward",
+          "tx_hash": "cb942a5c282459e9c354158ef5a2b9d95527c1263ce57aabf65a350386c75cb2"
+        }
+      ]
+    },
+    {
+      "index": 7,
+      "version": 1,
+      "hash": "00081123dd2b874f67fa1ee9b14bd0f84f73e37ec4f9cee684acf45f2b8862a9",
+      "previous_hash": "00027d25cf0e1a58211d4d2894b9825f42cdf81be1070539f9577525c85ea2fb",
+      "merkle_root": "cbfb694e0577f7b7218a81c1f1a2c24f30e2d1f70c5369a2a7cc06f97a8daff0",
+      "timestamp": 1793623720.3659182,
+      "nonce": 7452,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT936c021799697f871e92c5a6b40578162cc1be18",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793623720.365911,
+          "tx_type": "reward",
+          "tx_hash": "cbfb694e0577f7b7218a81c1f1a2c24f30e2d1f70c5369a2a7cc06f97a8daff0"
+        }
+      ]
+    },
+    {
+      "index": 8,
+      "version": 1,
+      "hash": "000c4084dd7c0c0dfb5f1e8577df4308b6a76953019e1de151f89d775b2307aa",
+      "previous_hash": "00081123dd2b874f67fa1ee9b14bd0f84f73e37ec4f9cee684acf45f2b8862a9",
+      "merkle_root": "e9521f871112f1e7e6b8360abc44cadfa0cca3610d536969e31458cd03eb9988",
+      "timestamp": 1793624172.6212618,
+      "nonce": 3185,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT6fa0313e05d0621cef87960114b6a7be678391d7",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793624172.6212428,
+          "tx_type": "reward",
+          "tx_hash": "e9521f871112f1e7e6b8360abc44cadfa0cca3610d536969e31458cd03eb9988"
+        }
+      ]
+    },
+    {
+      "index": 9,
+      "version": 1,
+      "hash": "000bb60e672f43e90c5265fbdba79ca9772fed9d99f82f9d372727d50f0b4e49",
+      "previous_hash": "000c4084dd7c0c0dfb5f1e8577df4308b6a76953019e1de151f89d775b2307aa",
+      "merkle_root": "ce1dcf23d132d9881dfe314a807a862cefbac8013e3e3e3275d2ab5372d1760c",
+      "timestamp": 1793624172.8945746,
+      "nonce": 8790,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT179823a4c92ace1dda6df31f4b4bc11345ad863c",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793624172.8945673,
+          "tx_type": "reward",
+          "tx_hash": "ce1dcf23d132d9881dfe314a807a862cefbac8013e3e3e3275d2ab5372d1760c"
+        }
+      ]
+    },
+    {
+      "index": 10,
+      "version": 1,
+      "hash": "000d11c361af993aff5520d4e83c18a1b52ec773167bed28f3aa1038e4f44909",
+      "previous_hash": "000bb60e672f43e90c5265fbdba79ca9772fed9d99f82f9d372727d50f0b4e49",
+      "merkle_root": "5bd2645d6c5e5c88b37966b7c0cca890ba1136f3a38bd9ccbd6476f36180aa1e",
+      "timestamp": 1793624173.0461574,
+      "nonce": 4929,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT6fa0313e05d0621cef87960114b6a7be678391d7",
+          "receiver": "BCT179823a4c92ace1dda6df31f4b4bc11345ad863c",
+          "amount": 0.4,
+          "fee": 0.004,
+          "net_amount": 0.396,
+          "signature": "a7425d545fe79cce957b00005918bb69b05e265bee57877b6bb70a2b91986aeff0350bb1270e0e16cef260467cc3098d8a2c5f1f08b83fbb4175566748d2efad",
+          "timestamp": 1793624173.0461442,
+          "tx_type": "transfer",
+          "tx_hash": "5bd2645d6c5e5c88b37966b7c0cca890ba1136f3a38bd9ccbd6476f36180aa1e"
+        }
+      ]
+    },
+    {
+      "index": 11,
+      "version": 1,
+      "hash": "000f5dc26143c3734d5746f894109064d19017929c7a0ef68a9ca0c533d64031",
+      "previous_hash": "000d11c361af993aff5520d4e83c18a1b52ec773167bed28f3aa1038e4f44909",
+      "merkle_root": "9f01fe6cbed1d9fe4d378f3adc402bba2d6a2555298b476f6a9c7c30e4e95df8",
+      "timestamp": 1793624261.148995,
+      "nonce": 5961,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT4e82603ce89fc6fab27f283a2a837bd09e94ab97",
+          "receiver": "BCT936c021799697f871e92c5a6b40578162cc1be18",
+          "amount": 1.0,
+          "fee": 0.01,
+          "net_amount": 0.99,
+          "signature": "2f9ee61e88cf31681b3fc130bfcde15255e893583af8a75b0555c5793cec3248b714b394e76fb0079c69152191e6c9a6e57d714dc297eff9439e1b342774d4e2",
+          "timestamp": 1793624261.1489823,
+          "tx_type": "transfer",
+          "tx_hash": "9f01fe6cbed1d9fe4d378f3adc402bba2d6a2555298b476f6a9c7c30e4e95df8"
+        }
+      ]
+    },
+    {
+      "index": 12,
+      "version": 1,
+      "hash": "000d6f2c8702d412983f1ad4a3170cb11e3d18ac3fe3cb4a4c309626c7791d09",
+      "previous_hash": "000f5dc26143c3734d5746f894109064d19017929c7a0ef68a9ca0c533d64031",
+      "merkle_root": "d7721b179bfa59eb8c38bfd29b14f75decac2d899dab20918ec985501c6aabb2",
+      "timestamp": 1793624284.4788527,
+      "nonce": 10495,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT4e82603ce89fc6fab27f283a2a837bd09e94ab97",
+          "receiver": "BCT936c021799697f871e92c5a6b40578162cc1be18",
+          "amount": 1.0,
+          "fee": 0.01,
+          "net_amount": 0.99,
+          "signature": "962d10c9b34869e6eea262f51deb574942a82df3f667850d34aac523127bf48bfcb705c667319b0bf25dc6742df87924f7baf46feb33671a1279e0ced7a28017",
+          "timestamp": 1793624284.4788413,
+          "tx_type": "transfer",
+          "tx_hash": "d7721b179bfa59eb8c38bfd29b14f75decac2d899dab20918ec985501c6aabb2"
+        }
+      ]
+    },
+    {
+      "index": 13,
+      "version": 1,
+      "hash": "0005e795a9e64b21364c5b0207df24234e1d3ad6a23f7acc68be60c75f6d16db",
+      "previous_hash": "000d6f2c8702d412983f1ad4a3170cb11e3d18ac3fe3cb4a4c309626c7791d09",
+      "merkle_root": "5bc31e0e71bfdca06403ad9072e5675b61790db9a7661cb33e69bca8c15d2f91",
+      "timestamp": 1793624293.6396413,
+      "nonce": 464,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTdaaa6d800a0fc5af0fcac98cf1c3f3a31f0e23d0",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793624293.6396337,
+          "tx_type": "reward",
+          "tx_hash": "5bc31e0e71bfdca06403ad9072e5675b61790db9a7661cb33e69bca8c15d2f91"
+        }
+      ]
+    },
+    {
+      "index": 14,
+      "version": 1,
+      "hash": "00065ed8752b04c69cef81d0fc312f4792cb28f4a9f47a8a94c15569eb093157",
+      "previous_hash": "0005e795a9e64b21364c5b0207df24234e1d3ad6a23f7acc68be60c75f6d16db",
+      "merkle_root": "2d6edba52947e0d53b3ce13d3f6611bd4dedde056e8d427e582517000ff8f41d",
+      "timestamp": 1793624307.4986823,
+      "nonce": 13366,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTdaaa6d800a0fc5af0fcac98cf1c3f3a31f0e23d0",
+          "receiver": "BCT936c021799697f871e92c5a6b40578162cc1be18",
+          "amount": 1.0,
+          "fee": 0.01,
+          "net_amount": 0.99,
+          "signature": "ceedba0fa880fd2a94cb7b270aa8e7c2350c7faa6829fc600bae6264251689e0ffa5489e980a01203134c03a51af405cb605398a380082e8922ee97656e7852e",
+          "timestamp": 1793624307.4986708,
+          "tx_type": "transfer",
+          "tx_hash": "2d6edba52947e0d53b3ce13d3f6611bd4dedde056e8d427e582517000ff8f41d"
+        }
+      ]
+    },
+    {
+      "index": 15,
+      "version": 1,
+      "hash": "0006c281e4b63c5c18d90e400edf56ad919a12a7d0cf1a10d60c8054e5459a0c",
+      "previous_hash": "00065ed8752b04c69cef81d0fc312f4792cb28f4a9f47a8a94c15569eb093157",
+      "merkle_root": "80e034da3dbb5b300fc8b95ac40470601b7fe0e93dccf8a4ab984121784bb059",
+      "timestamp": 1793624359.3929474,
+      "nonce": 8246,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT936c021799697f871e92c5a6b40578162cc1be18",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793624359.3929398,
+          "tx_type": "reward",
+          "tx_hash": "80e034da3dbb5b300fc8b95ac40470601b7fe0e93dccf8a4ab984121784bb059"
+        }
+      ]
+    },
+    {
+      "index": 16,
+      "version": 1,
+      "hash": "0008ea85a84c7bfb0e9963781e04c643a8745829b1c9dd5362641b64cac4e0c5",
+      "previous_hash": "0006c281e4b63c5c18d90e400edf56ad919a12a7d0cf1a10d60c8054e5459a0c",
+      "merkle_root": "260a31c5882478ff27f8850a721e8277b21125549f79077ce137c9dc70ef9d3e",
+      "timestamp": 1793624374.8207777,
+      "nonce": 10819,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT0026de8080eabec92fef06b4a9c9bb6cf3ef196f",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793624374.8207695,
+          "tx_type": "reward",
+          "tx_hash": "260a31c5882478ff27f8850a721e8277b21125549f79077ce137c9dc70ef9d3e"
+        }
+      ]
+    },
+    {
+      "index": 17,
+      "version": 1,
+      "hash": "000af72d22ea6271405bbf87c1bea2496fc1057fe54fdb6fcb6c9a1acdbb7dbf",
+      "previous_hash": "0008ea85a84c7bfb0e9963781e04c643a8745829b1c9dd5362641b64cac4e0c5",
+      "merkle_root": "6063485c0ff651323ec1a6a3a44900314c0d6e9bf071cb34152f1e9b67d94df4",
+      "timestamp": 1793624401.317815,
+      "nonce": 16344,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793624401.3178065,
+          "tx_type": "reward",
+          "tx_hash": "6063485c0ff651323ec1a6a3a44900314c0d6e9bf071cb34152f1e9b67d94df4"
+        }
+      ]
+    },
+    {
+      "index": 18,
+      "version": 1,
+      "hash": "000f3a8f1ae25ae2eee318e4e35a21eb5aa2676eb68a1b5813680f5629f39f90",
+      "previous_hash": "000af72d22ea6271405bbf87c1bea2496fc1057fe54fdb6fcb6c9a1acdbb7dbf",
+      "merkle_root": "7c8dfb717cf4a95a554bfacc6c0b61209b813865f759ce15c7ff8247444932d9",
+      "timestamp": 1793624418.6122642,
+      "nonce": 1877,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT936c021799697f871e92c5a6b40578162cc1be18",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 1.0,
+          "fee": 0.01,
+          "net_amount": 0.99,
+          "signature": "87e246e5e6fcb5aa8561888e703eecfa55c7a6a1ca77afa1f29412f20abbe2a37155e3b13ca6f534227af0e76cd4fb7daf72331c83913a763390a083b0d2e5d3",
+          "timestamp": 1793624418.612251,
+          "tx_type": "transfer",
+          "tx_hash": "7c8dfb717cf4a95a554bfacc6c0b61209b813865f759ce15c7ff8247444932d9"
+        }
+      ]
+    },
+    {
+      "index": 19,
+      "version": 1,
+      "hash": "00049165c6e14249d7b0815b5a813d7e55497d386bd95d550b72fab2a05df6ba",
+      "previous_hash": "000f3a8f1ae25ae2eee318e4e35a21eb5aa2676eb68a1b5813680f5629f39f90",
+      "merkle_root": "d10c3ccce28544bb5ece29bab99cc28d6c487887d64d0fc89368fb55d068d9a5",
+      "timestamp": 1793624437.1894765,
+      "nonce": 15442,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793624437.1894689,
+          "tx_type": "reward",
+          "tx_hash": "d10c3ccce28544bb5ece29bab99cc28d6c487887d64d0fc89368fb55d068d9a5"
+        }
+      ]
+    },
+    {
+      "index": 20,
+      "version": 1,
+      "hash": "00026f4e40080d03f8cf9a2cc012e3e7171448413171e50091bfaeee2e90f400",
+      "previous_hash": "00049165c6e14249d7b0815b5a813d7e55497d386bd95d550b72fab2a05df6ba",
+      "merkle_root": "81893000da95f285c6e2f1bfb6483bf8fb71be956ad08f1063adb37be276c1d9",
+      "timestamp": 1793624449.9474297,
+      "nonce": 8827,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793624449.9474206,
+          "tx_type": "reward",
+          "tx_hash": "81893000da95f285c6e2f1bfb6483bf8fb71be956ad08f1063adb37be276c1d9"
+        }
+      ]
+    },
+    {
+      "index": 21,
+      "version": 1,
+      "hash": "00034e4e4b718402198f53ecffb04a6223a21995a41039553a1f1215a3283b62",
+      "previous_hash": "00026f4e40080d03f8cf9a2cc012e3e7171448413171e50091bfaeee2e90f400",
+      "merkle_root": "62ced7040a1078a0c7ac3104121de2ca01c411353e8137a7ef0e6b21a483c022",
+      "timestamp": 1793625042.4387195,
+      "nonce": 10496,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTa46c7f62f3684d7e17b793fe4ad3e5795b2dc9cc",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793625042.438712,
+          "tx_type": "reward",
+          "tx_hash": "62ced7040a1078a0c7ac3104121de2ca01c411353e8137a7ef0e6b21a483c022"
+        }
+      ]
+    },
+    {
+      "index": 22,
+      "version": 1,
+      "hash": "0009e7ab2ed9c76ccd3da321e35a689892e0a3ad0a0f4192ca55069db4d0a66f",
+      "previous_hash": "00034e4e4b718402198f53ecffb04a6223a21995a41039553a1f1215a3283b62",
+      "merkle_root": "77a02c6334b7f1246223b1c661b716c176a9b9af2bd48fb2c99f4017cfdf5baf",
+      "timestamp": 1793625732.1319816,
+      "nonce": 2999,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT2db88f4a46871844cfcde4b8ecfa02644af88836",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793625732.1319764,
+          "tx_type": "reward",
+          "tx_hash": "77a02c6334b7f1246223b1c661b716c176a9b9af2bd48fb2c99f4017cfdf5baf"
+        }
+      ]
+    },
+    {
+      "index": 23,
+      "version": 1,
+      "hash": "0006e1cc6607d2a0db2983688d6ea5997d7f30034238bd98335000cf49caa14a",
+      "previous_hash": "0009e7ab2ed9c76ccd3da321e35a689892e0a3ad0a0f4192ca55069db4d0a66f",
+      "merkle_root": "fbe40b7dcae0c3a1522bace1316c76bfd832f4c4b2b9a18f1baaa9c3e5004b84",
+      "timestamp": 1793625776.8035007,
+      "nonce": 4103,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT2db88f4a46871844cfcde4b8ecfa02644af88836",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 0.2,
+          "fee": 0.002,
+          "net_amount": 0.198,
+          "signature": "ec5a07f434d7bfda91dab386e916d9aa704ae22e76c278e1dd75056d81e4af879914df887bb49803e1d71b3e7bdc52a5b68f7a6a01cff417c8e296d8b598acfc",
+          "timestamp": 1793625776.803494,
+          "tx_type": "transfer",
+          "tx_hash": "fbe40b7dcae0c3a1522bace1316c76bfd832f4c4b2b9a18f1baaa9c3e5004b84"
+        }
+      ]
+    },
+    {
+      "index": 24,
+      "version": 1,
+      "hash": "000407efc0fc7c0522d27e0700ebdcab4be399898e1ac390e1606b780d70b09e",
+      "previous_hash": "0006e1cc6607d2a0db2983688d6ea5997d7f30034238bd98335000cf49caa14a",
+      "merkle_root": "8959ad35d15a2a1af5135d429cccdc791ff683820a64e8376630a616b9f5e44f",
+      "timestamp": 1793625876.940246,
+      "nonce": 4821,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTc1f397ffc50b3c97bead38437a3849d16f0923d0",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793625876.9402406,
+          "tx_type": "reward",
+          "tx_hash": "8959ad35d15a2a1af5135d429cccdc791ff683820a64e8376630a616b9f5e44f"
+        }
+      ]
+    },
+    {
+      "index": 25,
+      "version": 1,
+      "hash": "00002b2b408e6d7c0afd4b4c9581cf88c6e5aa78b1ddd78e7df972a4f04558fa",
+      "previous_hash": "000407efc0fc7c0522d27e0700ebdcab4be399898e1ac390e1606b780d70b09e",
+      "merkle_root": "927676d899741ca78844c08d80a9bef2839a1a4d43ef92a48cd099dee2ae62fc",
+      "timestamp": 1793625894.2375531,
+      "nonce": 3504,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTb9f8cecad369584979964df09744245b39a0efe0",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793625894.237548,
+          "tx_type": "reward",
+          "tx_hash": "927676d899741ca78844c08d80a9bef2839a1a4d43ef92a48cd099dee2ae62fc"
+        }
+      ]
+    },
+    {
+      "index": 26,
+      "version": 1,
+      "hash": "000112204c2fabe2d103b08c52cd979dae1386d2b14a0c5e1f840c8765be6a0e",
+      "previous_hash": "00002b2b408e6d7c0afd4b4c9581cf88c6e5aa78b1ddd78e7df972a4f04558fa",
+      "merkle_root": "741906a396bd2c72306ef2e191163d69368f769c82d4e5f314c63fa71050f578",
+      "timestamp": 1793625904.2877278,
+      "nonce": 1903,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTb9f8cecad369584979964df09744245b39a0efe0",
+          "receiver": "BCTc1f397ffc50b3c97bead38437a3849d16f0923d0",
+          "amount": 1.0,
+          "fee": 0.01,
+          "net_amount": 0.99,
+          "signature": "7e88c73418629fae5f82febe3f1c70ccf1625421905d0bdbd681daafba7ee8e3f5fe45890bed32a2d7d706a292cecc0ee6d9780a6117664cc01a2d2037c833a2",
+          "timestamp": 1793625904.2877212,
+          "tx_type": "transfer",
+          "tx_hash": "741906a396bd2c72306ef2e191163d69368f769c82d4e5f314c63fa71050f578"
+        }
+      ]
+    },
+    {
+      "index": 27,
+      "version": 1,
+      "hash": "000a5cc959c75f5fb6d97181f4e38f0d5b1baa934e2ca1603781c7257c8499f1",
+      "previous_hash": "000112204c2fabe2d103b08c52cd979dae1386d2b14a0c5e1f840c8765be6a0e",
+      "merkle_root": "25a429421570ec57c8644bd40fed2f2ccba19932652a53d75ef85273a23adf6e",
+      "timestamp": 1793625936.8926759,
+      "nonce": 14083,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTc1f397ffc50b3c97bead38437a3849d16f0923d0",
+          "receiver": "BCTb9f8cecad369584979964df09744245b39a0efe0",
+          "amount": 0.5,
+          "fee": 0.005,
+          "net_amount": 0.495,
+          "signature": "f354612ca29fa0ba906678ab0cb6c9f0948c4f9b232f5fa031b2ce099f7653bd4144c1ddf89db9eaa069ef54ba90f98a5a1e72d8ceb15974997440c2ff2472c9",
+          "timestamp": 1793625936.8926687,
+          "tx_type": "transfer",
+          "tx_hash": "25a429421570ec57c8644bd40fed2f2ccba19932652a53d75ef85273a23adf6e"
+        }
+      ]
+    },
+    {
+      "index": 28,
+      "version": 1,
+      "hash": "00077e011c3fd5e6891d20e53742aa95b4ed3e1d1d71e44be1a3ff895dfe71d9",
+      "previous_hash": "000a5cc959c75f5fb6d97181f4e38f0d5b1baa934e2ca1603781c7257c8499f1",
+      "merkle_root": "f2b2f4541d1fbfe8c44550808a187880f228d981622649c0e9a5cff8208ebc28",
+      "timestamp": 1793628194.1849344,
+      "nonce": 13817,
+      "miner": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_28",
+          "timestamp": 1793628194.1849284,
+          "tx_type": "mining_reward",
+          "tx_hash": "f2b2f4541d1fbfe8c44550808a187880f228d981622649c0e9a5cff8208ebc28"
+        }
+      ]
+    },
+    {
+      "index": 29,
+      "version": 1,
+      "hash": "0005c58ec3c1ba38a5af8863dbf618505c39256540770e61514eb1c5c17d7e56",
+      "previous_hash": "00077e011c3fd5e6891d20e53742aa95b4ed3e1d1d71e44be1a3ff895dfe71d9",
+      "merkle_root": "9f541f21918fc07b65c5483c02e93fe17d55fae9da128d42ab576be603262d84",
+      "timestamp": 1793629752.8827825,
+      "nonce": 138,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTd970c6657d86abb7df89a1e4a9524f3ad6f3879e",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793629752.8827221,
+          "tx_type": "reward",
+          "tx_hash": "9f541f21918fc07b65c5483c02e93fe17d55fae9da128d42ab576be603262d84"
+        }
+      ]
+    },
+    {
+      "index": 30,
+      "version": 1,
+      "hash": "00078653438ae9e7c810c912f22d9bad06c121cfb2f998b26377c45724af6d44",
+      "previous_hash": "0005c58ec3c1ba38a5af8863dbf618505c39256540770e61514eb1c5c17d7e56",
+      "merkle_root": "db06dfcc57414a366acca8387fe6ffddc8420f6ac0fceeec9502be4156b0fd3c",
+      "timestamp": 1793629828.7517953,
+      "nonce": 674,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT6be93913dab175e024522859c13ca043a03c763c",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793629828.7517302,
+          "tx_type": "reward",
+          "tx_hash": "db06dfcc57414a366acca8387fe6ffddc8420f6ac0fceeec9502be4156b0fd3c"
+        }
+      ]
+    },
+    {
+      "index": 31,
+      "version": 1,
+      "hash": "0009c4cc3f2fbaed0a91fe5120397caf2441f5aff167853a16283d658e731a1a",
+      "previous_hash": "00078653438ae9e7c810c912f22d9bad06c121cfb2f998b26377c45724af6d44",
+      "merkle_root": "0daf74134215c05323e8d0e143c1c7a576b99da4217d8fbfc5300b51a07bd571",
+      "timestamp": 1793630127.3114367,
+      "nonce": 3903,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT252bb3ffc4358f2154726e0bfbcfda6d4f40cb8d",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793630127.3113723,
+          "tx_type": "reward",
+          "tx_hash": "0daf74134215c05323e8d0e143c1c7a576b99da4217d8fbfc5300b51a07bd571"
+        }
+      ]
+    },
+    {
+      "index": 32,
+      "version": 1,
+      "hash": "0006ee73d5fd56d8023c9e3997526765fe54c0841826cfa728b5fe3bf6bde485",
+      "previous_hash": "0009c4cc3f2fbaed0a91fe5120397caf2441f5aff167853a16283d658e731a1a",
+      "merkle_root": "fe34c6291f8c63f5ec4ab398405f04d41c04f3c8b5b10c067880d6ade500d506",
+      "timestamp": 1793630252.683236,
+      "nonce": 272,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT2c313a04263d261d5ce7e9e6384e0ffa50d8e3ae",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793630252.6831682,
+          "tx_type": "reward",
+          "tx_hash": "fe34c6291f8c63f5ec4ab398405f04d41c04f3c8b5b10c067880d6ade500d506"
+        }
+      ]
+    },
+    {
+      "index": 33,
+      "version": 1,
+      "hash": "0000a17b459209f2c2decefe1ecac9075739630df14e64a316421d5397b0985a",
+      "previous_hash": "0006ee73d5fd56d8023c9e3997526765fe54c0841826cfa728b5fe3bf6bde485",
+      "merkle_root": "c21b02e4a088d6c14aaa565347992958bf27814564a97e1f33d16fb478c91010",
+      "timestamp": 1793630257.6670299,
+      "nonce": 2714,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTef43aaeb8647641f1c2a9203867497b6887e55c9",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793630257.6669612,
+          "tx_type": "reward",
+          "tx_hash": "c21b02e4a088d6c14aaa565347992958bf27814564a97e1f33d16fb478c91010"
+        }
+      ]
+    },
+    {
+      "index": 34,
+      "version": 1,
+      "hash": "000ee489cb31796bbbccbc80fd239cf40b14481a9d0e737a2373119af99f1e4b",
+      "previous_hash": "0000a17b459209f2c2decefe1ecac9075739630df14e64a316421d5397b0985a",
+      "merkle_root": "8db504790074f46a2079208cc132e75806d41bd93f0c0c893244feeed4dd6156",
+      "timestamp": 1793630261.8215377,
+      "nonce": 5026,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTc42ebbc3f26c30f00d84c36da6c68351b20e0993",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793630261.8214498,
+          "tx_type": "reward",
+          "tx_hash": "8db504790074f46a2079208cc132e75806d41bd93f0c0c893244feeed4dd6156"
+        }
+      ]
+    },
+    {
+      "index": 35,
+      "version": 1,
+      "hash": "0001dfe9f8be53da9cb00eb87538cd7964452280af611dd77bf91520048ac1f0",
+      "previous_hash": "000ee489cb31796bbbccbc80fd239cf40b14481a9d0e737a2373119af99f1e4b",
+      "merkle_root": "0d20b164947fe2106ce34b0819ddb5ab5018081a21a03960d3ba99b5076149ac",
+      "timestamp": 1793630296.9449484,
+      "nonce": 187,
+      "miner": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_35",
+          "timestamp": 1793630296.9449418,
+          "tx_type": "mining_reward",
+          "tx_hash": "0d20b164947fe2106ce34b0819ddb5ab5018081a21a03960d3ba99b5076149ac"
+        }
+      ]
+    },
+    {
+      "index": 36,
+      "version": 1,
+      "hash": "0005fcda60c86ee028a1bdf51dd6643e2075ce964babb67b2ae1865b4f9bbf8d",
+      "previous_hash": "0001dfe9f8be53da9cb00eb87538cd7964452280af611dd77bf91520048ac1f0",
+      "merkle_root": "82941586eb1b425fc28e97a46c65d86ef6da29658885a50466c82aada668dcea",
+      "timestamp": 1793630299.8807433,
+      "nonce": 16266,
+      "miner": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_36",
+          "timestamp": 1793630299.880735,
+          "tx_type": "mining_reward",
+          "tx_hash": "82941586eb1b425fc28e97a46c65d86ef6da29658885a50466c82aada668dcea"
+        }
+      ]
+    },
+    {
+      "index": 37,
+      "version": 1,
+      "hash": "00084ffae4a0645b37ed02fed5f49dc521c54532144c2300837c2c21fd410b2c",
+      "previous_hash": "0005fcda60c86ee028a1bdf51dd6643e2075ce964babb67b2ae1865b4f9bbf8d",
+      "merkle_root": "8254bf5ac16117eace9630b85283bb702389ec4fd07ddf8de617144e13a2e70a",
+      "timestamp": 1793630311.636846,
+      "nonce": 1129,
+      "miner": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_37",
+          "timestamp": 1793630311.636839,
+          "tx_type": "mining_reward",
+          "tx_hash": "8254bf5ac16117eace9630b85283bb702389ec4fd07ddf8de617144e13a2e70a"
+        }
+      ]
+    },
+    {
+      "index": 38,
+      "version": 1,
+      "hash": "0007a2e280dbd6a71edb6546574f1a99e6be387d670e0711f9de938dc7c98128",
+      "previous_hash": "00084ffae4a0645b37ed02fed5f49dc521c54532144c2300837c2c21fd410b2c",
+      "merkle_root": "0928ded93e372700b1098ac1b88d75f8b8ec292d2af8c5d54fb690ae47906a57",
+      "timestamp": 1793630338.9941177,
+      "nonce": 1371,
+      "miner": "BCT6be93913dab175e024522859c13ca043a03c763c",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT6be93913dab175e024522859c13ca043a03c763c",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_38",
+          "timestamp": 1793630338.99411,
+          "tx_type": "mining_reward",
+          "tx_hash": "0928ded93e372700b1098ac1b88d75f8b8ec292d2af8c5d54fb690ae47906a57"
+        }
+      ]
+    },
+    {
+      "index": 39,
+      "version": 1,
+      "hash": "0008d699da51f2cbfb7578853b4450d09d609786a65604d6c46c61b28a03b0df",
+      "previous_hash": "0007a2e280dbd6a71edb6546574f1a99e6be387d670e0711f9de938dc7c98128",
+      "merkle_root": "ce274460dd42175f8092ce581fe82bbf24bdd7b88d1502b742e0c87a0fda9926",
+      "timestamp": 1793630464.7666707,
+      "nonce": 4481,
+      "miner": "BCT6be93913dab175e024522859c13ca043a03c763c",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT6be93913dab175e024522859c13ca043a03c763c",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_39",
+          "timestamp": 1793630464.7666633,
+          "tx_type": "mining_reward",
+          "tx_hash": "ce274460dd42175f8092ce581fe82bbf24bdd7b88d1502b742e0c87a0fda9926"
+        }
+      ]
+    },
+    {
+      "index": 40,
+      "version": 1,
+      "hash": "000c7a6f9b9f4cbb6e5984ecfe273feae4bf11ab995d43c472647c24c7e0b886",
+      "previous_hash": "0008d699da51f2cbfb7578853b4450d09d609786a65604d6c46c61b28a03b0df",
+      "merkle_root": "c0111b979ccc0d4c28c25a36ed84d5523191b8b9b26460daed953cc93b91d248",
+      "timestamp": 1793630465.6492777,
+      "nonce": 4791,
+      "miner": "BCT6be93913dab175e024522859c13ca043a03c763c",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT6be93913dab175e024522859c13ca043a03c763c",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_40",
+          "timestamp": 1793630465.6492705,
+          "tx_type": "mining_reward",
+          "tx_hash": "c0111b979ccc0d4c28c25a36ed84d5523191b8b9b26460daed953cc93b91d248"
+        }
+      ]
+    },
+    {
+      "index": 41,
+      "version": 1,
+      "hash": "00044c9e8d23036cc27f9fa20e7c63f1e831ed02f457e38e7b01370ed813f615",
+      "previous_hash": "000c7a6f9b9f4cbb6e5984ecfe273feae4bf11ab995d43c472647c24c7e0b886",
+      "merkle_root": "acb6272515efa55b030f2a09647f749419ac94ca38dce0c467640faca2b41ce7",
+      "timestamp": 1793630633.6832464,
+      "nonce": 1515,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+          "amount": 1000.0,
+          "fee": 0.0,
+          "net_amount": 1000.0,
+          "signature": "thirdweb_onramp_baa8545199585dfa",
+          "timestamp": 1793630633.6831646,
+          "tx_type": "fiat_buy",
+          "tx_hash": "acb6272515efa55b030f2a09647f749419ac94ca38dce0c467640faca2b41ce7"
+        }
+      ]
+    },
+    {
+      "index": 42,
+      "version": 1,
+      "hash": "000b8b7a1b96935e960978299fd7f5ff359b006f2f2e17aa32a6f5cc07a4bae7",
+      "previous_hash": "00044c9e8d23036cc27f9fa20e7c63f1e831ed02f457e38e7b01370ed813f615",
+      "merkle_root": "b19be226b406248712f62b51714ad2a28a3855c4a99a9e5ac8fc93ad94548e9c",
+      "timestamp": 1793630715.0566459,
+      "nonce": 751,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT2c53950bbe7a2cb07d17f7598a3b41d9191f78f4",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793630715.0563753,
+          "tx_type": "reward",
+          "tx_hash": "b19be226b406248712f62b51714ad2a28a3855c4a99a9e5ac8fc93ad94548e9c"
+        }
+      ]
+    },
+    {
+      "index": 43,
+      "version": 1,
+      "hash": "0004d83e93dab215ee0be138687d3712782805299d944a3915f214e9ee17ebcc",
+      "previous_hash": "000b8b7a1b96935e960978299fd7f5ff359b006f2f2e17aa32a6f5cc07a4bae7",
+      "merkle_root": "a2f858506848f506d1cd158d4bdb258fd708a693e02d76cd457f21d593c880ab",
+      "timestamp": 1793630771.8167188,
+      "nonce": 2361,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTdbdba94af8b79b0abf7368afa767f235e67a0c22",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793630771.8166363,
+          "tx_type": "reward",
+          "tx_hash": "a2f858506848f506d1cd158d4bdb258fd708a693e02d76cd457f21d593c880ab"
+        }
+      ]
+    },
+    {
+      "index": 44,
+      "version": 1,
+      "hash": "000c7353ea1cc0e305b4029fe775ff35c2187ef47ab02dbcbd487f3bfa7b67ca",
+      "previous_hash": "0004d83e93dab215ee0be138687d3712782805299d944a3915f214e9ee17ebcc",
+      "merkle_root": "73ea1dfc8e67b9798a57ae920587a33a995d9a3bda5dd209158cca1223c7c389",
+      "timestamp": 1793630815.8076437,
+      "nonce": 5055,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT4ebea3d0f7132475e4e7c22573696eab6267a191",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793630815.8075535,
+          "tx_type": "reward",
+          "tx_hash": "73ea1dfc8e67b9798a57ae920587a33a995d9a3bda5dd209158cca1223c7c389"
+        }
+      ]
+    },
+    {
+      "index": 45,
+      "version": 1,
+      "hash": "0000b3b6ff75dcd50e0b1b810a06060a619cf590a2e6f36c3c2929a8976adc2b",
+      "previous_hash": "000c7353ea1cc0e305b4029fe775ff35c2187ef47ab02dbcbd487f3bfa7b67ca",
+      "merkle_root": "c0d779da4003b34c98700b8e9c7f057907b3356cf749520bacbdd45c04122d1e",
+      "timestamp": 1793630837.0556366,
+      "nonce": 2353,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT4ebea3d0f7132475e4e7c22573696eab6267a191",
+          "amount": 1000.0,
+          "fee": 0.0,
+          "net_amount": 1000.0,
+          "signature": "thirdweb_onramp_7779945d532e4001",
+          "timestamp": 1793630837.0555463,
+          "tx_type": "fiat_buy",
+          "tx_hash": "c0d779da4003b34c98700b8e9c7f057907b3356cf749520bacbdd45c04122d1e"
+        }
+      ]
+    },
+    {
+      "index": 46,
+      "version": 1,
+      "hash": "000c1cd60364588c5f729f0c60b53171c44e4d9cd5bda6a3038ed3dd81adfb4e",
+      "previous_hash": "0000b3b6ff75dcd50e0b1b810a06060a619cf590a2e6f36c3c2929a8976adc2b",
+      "merkle_root": "702a9aafad6b82ce248e77d46366cf311dc54ab7a7e51080067e9854efcc6806",
+      "timestamp": 1793631218.662891,
+      "nonce": 1198,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT57c229c326c1d2f7fa9b2057bf5bbb3a3aa62e4f",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793631218.6628013,
+          "tx_type": "reward",
+          "tx_hash": "702a9aafad6b82ce248e77d46366cf311dc54ab7a7e51080067e9854efcc6806"
+        }
+      ]
+    },
+    {
+      "index": 47,
+      "version": 1,
+      "hash": "0003246535298133425d07971201cbc5d52189f013de2d2033cd1a85dfd67525",
+      "previous_hash": "000c1cd60364588c5f729f0c60b53171c44e4d9cd5bda6a3038ed3dd81adfb4e",
+      "merkle_root": "ac4524a019542d8bd696aeeabdb9129d494887f92317b35ffebb85e1916815cf",
+      "timestamp": 1793631546.592069,
+      "nonce": 1478,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT6ad8e1ff529873a9f9eb3aab504913e5f3fb9e85",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793631546.5919766,
+          "tx_type": "reward",
+          "tx_hash": "ac4524a019542d8bd696aeeabdb9129d494887f92317b35ffebb85e1916815cf"
+        }
+      ]
+    },
+    {
+      "index": 48,
+      "version": 1,
+      "hash": "000d7f8be5d3794ec85b1344e435a5babfd6c804589ea2985a9edf470f3e3348",
+      "previous_hash": "0003246535298133425d07971201cbc5d52189f013de2d2033cd1a85dfd67525",
+      "merkle_root": "eca193d99a25d72a59dedb647ac1d70433e90348e77b5e92a9a4bf1c45ddefa9",
+      "timestamp": 1793631614.9135654,
+      "nonce": 1204,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT36be450a2066672b1fd2f5c960b6b0855f95c4d5",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793631614.913471,
+          "tx_type": "reward",
+          "tx_hash": "eca193d99a25d72a59dedb647ac1d70433e90348e77b5e92a9a4bf1c45ddefa9"
+        }
+      ]
+    },
+    {
+      "index": 49,
+      "version": 1,
+      "hash": "000cb6e4402a77cab4dd24a20672baf67d6314cc2f70b08828eacc28b07be620",
+      "previous_hash": "000d7f8be5d3794ec85b1344e435a5babfd6c804589ea2985a9edf470f3e3348",
+      "merkle_root": "0433247c24420c13399b0d9bfb65298fc1b35e7b47a4a1e99df9dd0988cf5fea",
+      "timestamp": 1793632105.960176,
+      "nonce": 7091,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT69b88824db1be08bab686c8c9d635a32d4f68e21",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632105.9600828,
+          "tx_type": "reward",
+          "tx_hash": "0433247c24420c13399b0d9bfb65298fc1b35e7b47a4a1e99df9dd0988cf5fea"
+        }
+      ]
+    },
+    {
+      "index": 50,
+      "version": 1,
+      "hash": "000535943c35fbd5365b4eb9ab8cdb4c2b8554fd110805157d629e3eebe8b816",
+      "previous_hash": "000cb6e4402a77cab4dd24a20672baf67d6314cc2f70b08828eacc28b07be620",
+      "merkle_root": "c8cac36a09df4bbe2e1e92b9e6914d1846be86e8fc115127549367c2d6412d20",
+      "timestamp": 1793632199.6209369,
+      "nonce": 3043,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT4de8a7d7a0e7d4d4f1e4c642daf2a6e5c563c81e",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632199.6208384,
+          "tx_type": "reward",
+          "tx_hash": "c8cac36a09df4bbe2e1e92b9e6914d1846be86e8fc115127549367c2d6412d20"
+        }
+      ]
+    },
+    {
+      "index": 51,
+      "version": 1,
+      "hash": "0003da1f31ff77afc01e6de70f737c362b03bcdb0bfa3898f3627a799684921e",
+      "previous_hash": "000535943c35fbd5365b4eb9ab8cdb4c2b8554fd110805157d629e3eebe8b816",
+      "merkle_root": "c52b7d0eba4c730d2767b11d778214a6dcd33277230568fd092f7744a00589cb",
+      "timestamp": 1793632201.693944,
+      "nonce": 4340,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTd446fcb2fea275ac1d39709600052766bd66a76f",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632201.6938488,
+          "tx_type": "reward",
+          "tx_hash": "c52b7d0eba4c730d2767b11d778214a6dcd33277230568fd092f7744a00589cb"
+        }
+      ]
+    },
+    {
+      "index": 52,
+      "version": 1,
+      "hash": "00081ebd8a69230dacb278b9576c9b33f3b80af8f385642b4bb31f753b5d3087",
+      "previous_hash": "0003da1f31ff77afc01e6de70f737c362b03bcdb0bfa3898f3627a799684921e",
+      "merkle_root": "528fa1087bd04ecfd5704ebefed363d3f849b2413ccdf825cc17a0170008d210",
+      "timestamp": 1793632210.5662773,
+      "nonce": 2027,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf5540be26dfac9466b6b49b731abb0306578f470",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632210.5661662,
+          "tx_type": "reward",
+          "tx_hash": "528fa1087bd04ecfd5704ebefed363d3f849b2413ccdf825cc17a0170008d210"
+        }
+      ]
+    },
+    {
+      "index": 53,
+      "version": 1,
+      "hash": "000643f29d24ebc83d1d2329a89dd847de595e0fc21c3692b1fd8d62c5758e9f",
+      "previous_hash": "00081ebd8a69230dacb278b9576c9b33f3b80af8f385642b4bb31f753b5d3087",
+      "merkle_root": "0ccc5ca0a89c4a26a1897d456e53dcda54c682e464f0dc9412b71bc227fa2c37",
+      "timestamp": 1793632210.8651574,
+      "nonce": 8562,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT43e13c36b0f36b4440e88cdcd50b59cdd9c1ccd8",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632210.8650558,
+          "tx_type": "reward",
+          "tx_hash": "0ccc5ca0a89c4a26a1897d456e53dcda54c682e464f0dc9412b71bc227fa2c37"
+        }
+      ]
+    },
+    {
+      "index": 54,
+      "version": 1,
+      "hash": "000eeb0b902760fddb58b5497b03f1c183051db71cb74943e6d5265f20548624",
+      "previous_hash": "000643f29d24ebc83d1d2329a89dd847de595e0fc21c3692b1fd8d62c5758e9f",
+      "merkle_root": "a37a070c30ebe3e3c0743b690150a650caaab4e3b516f20ceba59f5f94679157",
+      "timestamp": 1793632211.6645975,
+      "nonce": 9264,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf0ff9a51c8df7b86a45b58d4277f6d0ce4bc5be1",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632211.6644921,
+          "tx_type": "reward",
+          "tx_hash": "a37a070c30ebe3e3c0743b690150a650caaab4e3b516f20ceba59f5f94679157"
+        }
+      ]
+    },
+    {
+      "index": 55,
+      "version": 1,
+      "hash": "00076072acdbfa9bcf723c4f0ba44833cef53d2ba99579442bf45182695eb24c",
+      "previous_hash": "000eeb0b902760fddb58b5497b03f1c183051db71cb74943e6d5265f20548624",
+      "merkle_root": "a70e73a3f40c045e6e8c24726f6e6b133e93b029d1dcc05f2d386de60ea9335f",
+      "timestamp": 1793632212.3831794,
+      "nonce": 5524,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf9abe23dd0c3734354d9e83b89b9260fe603abc8",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632212.3830729,
+          "tx_type": "reward",
+          "tx_hash": "a70e73a3f40c045e6e8c24726f6e6b133e93b029d1dcc05f2d386de60ea9335f"
+        }
+      ]
+    },
+    {
+      "index": 56,
+      "version": 1,
+      "hash": "0006dfc6968811989141d8224c7e75da0c85b67a89a2063eb6f338a6f0c364b5",
+      "previous_hash": "00076072acdbfa9bcf723c4f0ba44833cef53d2ba99579442bf45182695eb24c",
+      "merkle_root": "245d2ee3a0600478a2d86e5f43276b9c11356a0a22214c5916c4937cadcdd3a8",
+      "timestamp": 1793632214.8245282,
+      "nonce": 9718,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT0f032bac9bd02333bbe500544b5abeefaafdb2d0",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632214.8244026,
+          "tx_type": "reward",
+          "tx_hash": "245d2ee3a0600478a2d86e5f43276b9c11356a0a22214c5916c4937cadcdd3a8"
+        }
+      ]
+    },
+    {
+      "index": 57,
+      "version": 1,
+      "hash": "0006feafcc700d843989d7b69246f94be471d16d373cbaa0835f7e5eabd3cdc9",
+      "previous_hash": "0006dfc6968811989141d8224c7e75da0c85b67a89a2063eb6f338a6f0c364b5",
+      "merkle_root": "063b245d7f24966974fcb492f8246945a73d75722404f7666699e728fe7da7f3",
+      "timestamp": 1793632218.8128903,
+      "nonce": 3739,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT8474298e6825f059a296ed66862824b52bea5bd1",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632218.8127847,
+          "tx_type": "reward",
+          "tx_hash": "063b245d7f24966974fcb492f8246945a73d75722404f7666699e728fe7da7f3"
+        }
+      ]
+    },
+    {
+      "index": 58,
+      "version": 1,
+      "hash": "000ba7a81431c6fa2ab8f6fe6e7d5da0b81ba38f5b4fbdeb4d8f8800e6b79b3f",
+      "previous_hash": "0006feafcc700d843989d7b69246f94be471d16d373cbaa0835f7e5eabd3cdc9",
+      "merkle_root": "ae88765f6a82ff05da7b93c9edd06832841961a09d2a4e6a3d6caa547da9ea5a",
+      "timestamp": 1793632224.6296742,
+      "nonce": 895,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTe054d981202ce78599f47fc1481582bfc1700d38",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632224.629568,
+          "tx_type": "reward",
+          "tx_hash": "ae88765f6a82ff05da7b93c9edd06832841961a09d2a4e6a3d6caa547da9ea5a"
+        }
+      ]
+    },
+    {
+      "index": 59,
+      "version": 1,
+      "hash": "000bcf1f126d9061bb361e0afd31e119c7b22e262291868ff48b281ca317bd3e",
+      "previous_hash": "000ba7a81431c6fa2ab8f6fe6e7d5da0b81ba38f5b4fbdeb4d8f8800e6b79b3f",
+      "merkle_root": "fe5d07862413acf957b7f6faab19edd028a036cb51e6bbfe4b3ff66fc31e9c0f",
+      "timestamp": 1793632228.6181996,
+      "nonce": 4167,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTd1cef38536eabe0d84cfd406dcca2794ca51aad0",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632228.6180904,
+          "tx_type": "reward",
+          "tx_hash": "fe5d07862413acf957b7f6faab19edd028a036cb51e6bbfe4b3ff66fc31e9c0f"
+        }
+      ]
+    },
+    {
+      "index": 60,
+      "version": 1,
+      "hash": "000bb4534e442fced04b3d625e7eacb1b235344a9f0c56fb3d15c39036062c62",
+      "previous_hash": "000bcf1f126d9061bb361e0afd31e119c7b22e262291868ff48b281ca317bd3e",
+      "merkle_root": "63f9eebf227384169e8cfe84bb948de097c14a9162e578ef1cd94cb17628d016",
+      "timestamp": 1793632233.3016794,
+      "nonce": 8258,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT6d538df15c32c1a0d167f328c3ace183b9d23781",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632233.3015695,
+          "tx_type": "reward",
+          "tx_hash": "63f9eebf227384169e8cfe84bb948de097c14a9162e578ef1cd94cb17628d016"
+        }
+      ]
+    },
+    {
+      "index": 61,
+      "version": 1,
+      "hash": "000f0f3f60a1cd0a60303473653332f23bb8fe41b029e7b7fc28fc04c33d1469",
+      "previous_hash": "000bb4534e442fced04b3d625e7eacb1b235344a9f0c56fb3d15c39036062c62",
+      "merkle_root": "ac76938d8d381083bd0993867a6df4b1ac7bc6922b3c16f1614b0da327b8ef8d",
+      "timestamp": 1793632233.9944415,
+      "nonce": 436,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT758452230fed78bbb878f443338ee92bc34e2f1c",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632233.9943106,
+          "tx_type": "reward",
+          "tx_hash": "ac76938d8d381083bd0993867a6df4b1ac7bc6922b3c16f1614b0da327b8ef8d"
+        }
+      ]
+    },
+    {
+      "index": 62,
+      "version": 1,
+      "hash": "0002ea6c2d000408c4e055524d2f2c7a62d8aefe07d3e7c17058490ab1ede9b6",
+      "previous_hash": "000f0f3f60a1cd0a60303473653332f23bb8fe41b029e7b7fc28fc04c33d1469",
+      "merkle_root": "786cbe872caf49991616c94de959bb1efc738be67a704807afeb384523c3fdc3",
+      "timestamp": 1793632235.478267,
+      "nonce": 4430,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTc83941af0f7e6db43e57a66e07b39cedc468996a",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632235.4781454,
+          "tx_type": "reward",
+          "tx_hash": "786cbe872caf49991616c94de959bb1efc738be67a704807afeb384523c3fdc3"
+        }
+      ]
+    },
+    {
+      "index": 63,
+      "version": 1,
+      "hash": "00031a803bcc362347773f68365a2a5dfee69da498f190eff3465e9db30379ec",
+      "previous_hash": "0002ea6c2d000408c4e055524d2f2c7a62d8aefe07d3e7c17058490ab1ede9b6",
+      "merkle_root": "9c825297b0a3c810813fc060f4ad17c7c7b4089ed5dac6950ab17b4cf69574e9",
+      "timestamp": 1793632241.4815168,
+      "nonce": 428,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT0c32487ad599a9b93721f36c14719f90e97eec73",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632241.4814003,
+          "tx_type": "reward",
+          "tx_hash": "9c825297b0a3c810813fc060f4ad17c7c7b4089ed5dac6950ab17b4cf69574e9"
+        }
+      ]
+    },
+    {
+      "index": 64,
+      "version": 1,
+      "hash": "0000653b3a7e718cb98832995d6c2fcc2f0dce68a07e369103beb1c586864dcd",
+      "previous_hash": "00031a803bcc362347773f68365a2a5dfee69da498f190eff3465e9db30379ec",
+      "merkle_root": "a99d83078fb51c16e4d48e864b6bc5cf617f3aa6e8a4d15e01fa77b626172894",
+      "timestamp": 1793632243.8640726,
+      "nonce": 5094,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT07292264b75c5ceef48615c76c0123719cadd7a8",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632243.8639529,
+          "tx_type": "reward",
+          "tx_hash": "a99d83078fb51c16e4d48e864b6bc5cf617f3aa6e8a4d15e01fa77b626172894"
+        }
+      ]
+    },
+    {
+      "index": 65,
+      "version": 1,
+      "hash": "000ca278723db918c73caa83ad56a618ff0431476d994684912c87fcae246216",
+      "previous_hash": "0000653b3a7e718cb98832995d6c2fcc2f0dce68a07e369103beb1c586864dcd",
+      "merkle_root": "c141807ac6da7556541bbf4300815b435df5473ef0d55540150fd40a6891a49a",
+      "timestamp": 1793632251.2206378,
+      "nonce": 2012,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT181320c790c719a5f997fb35053a161777e89ea7",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632251.220519,
+          "tx_type": "reward",
+          "tx_hash": "c141807ac6da7556541bbf4300815b435df5473ef0d55540150fd40a6891a49a"
+        }
+      ]
+    },
+    {
+      "index": 66,
+      "version": 1,
+      "hash": "000ef2f0dde8c95e11c1bc9cf619b4fb65890e0f0b3988e416754304d4793a4d",
+      "previous_hash": "000ca278723db918c73caa83ad56a618ff0431476d994684912c87fcae246216",
+      "merkle_root": "c5fccf53d7c48c6efc90125335eb1c5b6aa91f42145af7ce66c9597cd700e6ca",
+      "timestamp": 1793632256.7206538,
+      "nonce": 3657,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT018a7496529c72b068151576da3df4443dc458bd",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632256.7205322,
+          "tx_type": "reward",
+          "tx_hash": "c5fccf53d7c48c6efc90125335eb1c5b6aa91f42145af7ce66c9597cd700e6ca"
+        }
+      ]
+    },
+    {
+      "index": 67,
+      "version": 1,
+      "hash": "00030efddffb70f13695cac4f7c4dd66da018589931c1b38358e8ec4c8b1247e",
+      "previous_hash": "000ef2f0dde8c95e11c1bc9cf619b4fb65890e0f0b3988e416754304d4793a4d",
+      "merkle_root": "e66d6e90676e168c165a39faf46dd5e41ac0b72a2c45d05701a49cd51e7c3176",
+      "timestamp": 1793632275.6037416,
+      "nonce": 6337,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTa45133b894658237b174f6338ec5f3bd09413295",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632275.6036208,
+          "tx_type": "reward",
+          "tx_hash": "e66d6e90676e168c165a39faf46dd5e41ac0b72a2c45d05701a49cd51e7c3176"
+        }
+      ]
+    },
+    {
+      "index": 68,
+      "version": 1,
+      "hash": "0005e7ebc209a5f84756a0c5cb727bdcb12bf3936e8d2caa5c8973c20fe62b3c",
+      "previous_hash": "00030efddffb70f13695cac4f7c4dd66da018589931c1b38358e8ec4c8b1247e",
+      "merkle_root": "b58a5f050ad3cb1eadc64066c5f7ca790dab68a2e6637d4feeafa418c64760c5",
+      "timestamp": 1793632278.9935043,
+      "nonce": 4082,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTfccd57cb83e1c9dcef08384fdb26f8486e590555",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632278.993379,
+          "tx_type": "reward",
+          "tx_hash": "b58a5f050ad3cb1eadc64066c5f7ca790dab68a2e6637d4feeafa418c64760c5"
+        }
+      ]
+    },
+    {
+      "index": 69,
+      "version": 1,
+      "hash": "00017d89ac8ff6a10ece6a7079c742bb8e134e88243271609468cd029c2fd192",
+      "previous_hash": "0005e7ebc209a5f84756a0c5cb727bdcb12bf3936e8d2caa5c8973c20fe62b3c",
+      "merkle_root": "de7b7b7fc547723fc09c601f1084989de8c6be8043b3f80202a715494110d9f9",
+      "timestamp": 1793632296.2865727,
+      "nonce": 109,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTb755dfecf7729e55cfcdbc2a2bbe6b8e00b01147",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632296.2864482,
+          "tx_type": "reward",
+          "tx_hash": "de7b7b7fc547723fc09c601f1084989de8c6be8043b3f80202a715494110d9f9"
+        }
+      ]
+    },
+    {
+      "index": 70,
+      "version": 1,
+      "hash": "0007d5b9faa558ff756d0b5e58120b721b21b53ea6b852bdf191a5023f75cf5e",
+      "previous_hash": "00017d89ac8ff6a10ece6a7079c742bb8e134e88243271609468cd029c2fd192",
+      "merkle_root": "ee846228f78b8caf5e94c58456ba8234dae9b559680eff3c22a0fc3061d4e00a",
+      "timestamp": 1793632305.2321541,
+      "nonce": 4570,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT87fedb65de32fc0250bc3acc934127492c780682",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632305.2320292,
+          "tx_type": "reward",
+          "tx_hash": "ee846228f78b8caf5e94c58456ba8234dae9b559680eff3c22a0fc3061d4e00a"
+        }
+      ]
+    },
+    {
+      "index": 71,
+      "version": 1,
+      "hash": "000900c2e299ec0530668c89415140573c5cacceff096a6c96a86157cc024ad3",
+      "previous_hash": "0007d5b9faa558ff756d0b5e58120b721b21b53ea6b852bdf191a5023f75cf5e",
+      "merkle_root": "c73692a531249dc958dfd69b7a7acbea723fcd45fa53eaf8bd6a3dc0e4ab79e6",
+      "timestamp": 1793632307.6173415,
+      "nonce": 5470,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf3fca5f4ec4b98a37c8d773986b77e37038a6c02",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632307.6172047,
+          "tx_type": "reward",
+          "tx_hash": "c73692a531249dc958dfd69b7a7acbea723fcd45fa53eaf8bd6a3dc0e4ab79e6"
+        }
+      ]
+    },
+    {
+      "index": 72,
+      "version": 1,
+      "hash": "0007ecb5e658010b4044f3a00146ac9989f34f098cd78490012f05c911bfafdd",
+      "previous_hash": "000900c2e299ec0530668c89415140573c5cacceff096a6c96a86157cc024ad3",
+      "merkle_root": "d3b2452b636c0517a6828f66da72374f66f391ecd3c71523590a60ea82412059",
+      "timestamp": 1793632330.9657826,
+      "nonce": 1126,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT3ca84afa3d6030e063060421d5fd97a92195368e",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632330.9656544,
+          "tx_type": "reward",
+          "tx_hash": "d3b2452b636c0517a6828f66da72374f66f391ecd3c71523590a60ea82412059"
+        }
+      ]
+    },
+    {
+      "index": 73,
+      "version": 1,
+      "hash": "000ab5e9c69064bc342b64b091f27c41d3a7c633fe8333c069da482f50abc2c8",
+      "previous_hash": "0007ecb5e658010b4044f3a00146ac9989f34f098cd78490012f05c911bfafdd",
+      "merkle_root": "1651f157f73b75ea9c25e45cf88add508202ab6823920776489958cc7bbcd854",
+      "timestamp": 1793632333.9120972,
+      "nonce": 3084,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT9a59ac8acf71a2bea5e372e4b1e4d8b6a6350e05",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632333.9119673,
+          "tx_type": "reward",
+          "tx_hash": "1651f157f73b75ea9c25e45cf88add508202ab6823920776489958cc7bbcd854"
+        }
+      ]
+    },
+    {
+      "index": 74,
+      "version": 1,
+      "hash": "0004ee469b1f3b5dd7d8ed84560f3c14ad57050ae871c87f2955ff8c8dcc21a4",
+      "previous_hash": "000ab5e9c69064bc342b64b091f27c41d3a7c633fe8333c069da482f50abc2c8",
+      "merkle_root": "21666298f5d40483a7e62479cf4c014ae8d1be6b37d7ea0cc5d9bede7f12052b",
+      "timestamp": 1793632411.328602,
+      "nonce": 568,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTe11c12f0626e8744abf4e81fe2a0791bc9e2c2c2",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632411.328466,
+          "tx_type": "reward",
+          "tx_hash": "21666298f5d40483a7e62479cf4c014ae8d1be6b37d7ea0cc5d9bede7f12052b"
+        }
+      ]
+    },
+    {
+      "index": 75,
+      "version": 1,
+      "hash": "00017513682b48265b8907b7eb061de07c2b0720723faf3b247b35703e4497ef",
+      "previous_hash": "0004ee469b1f3b5dd7d8ed84560f3c14ad57050ae871c87f2955ff8c8dcc21a4",
+      "merkle_root": "9008d2a2824b380b6a44470ae107fbe7ee6daa35a3d47b9ecb2c88528ab1a2a5",
+      "timestamp": 1793632419.7609808,
+      "nonce": 2604,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTc1552d78dad59fbfeec644e3d50505d0db57a050",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632419.760846,
+          "tx_type": "reward",
+          "tx_hash": "9008d2a2824b380b6a44470ae107fbe7ee6daa35a3d47b9ecb2c88528ab1a2a5"
+        }
+      ]
+    },
+    {
+      "index": 76,
+      "version": 1,
+      "hash": "0004117e8c2f8cbecbe1b0b0bdfe6e06d291902151cbb4c3300921e3201ccfbc",
+      "previous_hash": "00017513682b48265b8907b7eb061de07c2b0720723faf3b247b35703e4497ef",
+      "merkle_root": "4cce0ed82b6c679fe140f7b9682de6bacb27ccba38e369abb858deb3042fd90b",
+      "timestamp": 1793632442.9468272,
+      "nonce": 5382,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTa96b149c2266bd33c46f3797ab1ec1d4126f42b7",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632442.9466908,
+          "tx_type": "reward",
+          "tx_hash": "4cce0ed82b6c679fe140f7b9682de6bacb27ccba38e369abb858deb3042fd90b"
+        }
+      ]
+    },
+    {
+      "index": 77,
+      "version": 1,
+      "hash": "000c75496945402857a44939ea40e9891ff773dbf82012f2ebbde1ae1bcf77f2",
+      "previous_hash": "0004117e8c2f8cbecbe1b0b0bdfe6e06d291902151cbb4c3300921e3201ccfbc",
+      "merkle_root": "ac3373958a1b1919525b7af4bb5413598a04beb24de656d803e47e672104e236",
+      "timestamp": 1793632444.6541371,
+      "nonce": 950,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTbbc9267c6e477596e11104bdb4bf07737c95cdc7",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632444.6539967,
+          "tx_type": "reward",
+          "tx_hash": "ac3373958a1b1919525b7af4bb5413598a04beb24de656d803e47e672104e236"
+        }
+      ]
+    },
+    {
+      "index": 78,
+      "version": 1,
+      "hash": "000e690afe075112acd677cb627480837506f093fbf35cbe75c5745b9c7e73d3",
+      "previous_hash": "000c75496945402857a44939ea40e9891ff773dbf82012f2ebbde1ae1bcf77f2",
+      "merkle_root": "1b6ed162a26c2ee6185469eeba10bc6f994cb7d0486823429b1f41ad960addb8",
+      "timestamp": 1793632452.1599483,
+      "nonce": 6498,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTb3d38fbb3a5ffc8247f783f49ce67bc9134268ee",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632452.159762,
+          "tx_type": "reward",
+          "tx_hash": "1b6ed162a26c2ee6185469eeba10bc6f994cb7d0486823429b1f41ad960addb8"
+        }
+      ]
+    },
+    {
+      "index": 79,
+      "version": 1,
+      "hash": "0000cd3f0a46a5afdfc186af2c820e695c32a464d11bc0871f81bc44e73fdbb3",
+      "previous_hash": "000e690afe075112acd677cb627480837506f093fbf35cbe75c5745b9c7e73d3",
+      "merkle_root": "2a82c4e6ed2cf789d71d934e29f7e566faa3cacd34428482ce0362394ccf4d86",
+      "timestamp": 1793632455.8722875,
+      "nonce": 2578,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTe8973f56fa06f0bb5a8ba7c98ba2447f204bfb02",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632455.872098,
+          "tx_type": "reward",
+          "tx_hash": "2a82c4e6ed2cf789d71d934e29f7e566faa3cacd34428482ce0362394ccf4d86"
+        }
+      ]
+    },
+    {
+      "index": 80,
+      "version": 1,
+      "hash": "000b60ed068084b9ad17a59850ac1636abd962d46c0634bb9739444df0ce13b6",
+      "previous_hash": "0000cd3f0a46a5afdfc186af2c820e695c32a464d11bc0871f81bc44e73fdbb3",
+      "merkle_root": "06c2e8dc1834fe02f731d401f2b1dc9873d7656ca1b9d34b5bb7f4573d8b3703",
+      "timestamp": 1793632626.4462013,
+      "nonce": 2542,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT9c8a4d17ebb565a8cc0b7883c7ee000668d636db",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632626.446052,
+          "tx_type": "reward",
+          "tx_hash": "06c2e8dc1834fe02f731d401f2b1dc9873d7656ca1b9d34b5bb7f4573d8b3703"
+        }
+      ]
+    },
+    {
+      "index": 81,
+      "version": 1,
+      "hash": "0008deb9ed8824b402e5b51135882e4c1d33daf2af9d570df3557ac8fde18ca8",
+      "previous_hash": "000b60ed068084b9ad17a59850ac1636abd962d46c0634bb9739444df0ce13b6",
+      "merkle_root": "fac32c63edb648585ed0616d39df12bfbd9acd2362e96e8d60843382c778920b",
+      "timestamp": 1793632634.1624584,
+      "nonce": 408,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793632634.162225,
+          "tx_type": "reward",
+          "tx_hash": "fac32c63edb648585ed0616d39df12bfbd9acd2362e96e8d60843382c778920b"
+        }
+      ]
+    },
+    {
+      "index": 82,
+      "version": 1,
+      "hash": "000127855734df6a95b438f3850684d856ac091ca7a4e02cc411736ccc7dd7fc",
+      "previous_hash": "0008deb9ed8824b402e5b51135882e4c1d33daf2af9d570df3557ac8fde18ca8",
+      "merkle_root": "fbf8a3e02675ac6648d3f175265a7a2423dd070c882e7d426193ebe5cca713f2",
+      "timestamp": 1793633231.678222,
+      "nonce": 2173,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_82",
+          "timestamp": 1793633231.678215,
+          "tx_type": "mining_reward",
+          "tx_hash": "fbf8a3e02675ac6648d3f175265a7a2423dd070c882e7d426193ebe5cca713f2"
+        }
+      ]
+    },
+    {
+      "index": 83,
+      "version": 1,
+      "hash": "0004c9fbef84cb5bd5f973701ba7c8dc3d44a70117cc992c4bdc0066c87ca0c4",
+      "previous_hash": "000127855734df6a95b438f3850684d856ac091ca7a4e02cc411736ccc7dd7fc",
+      "merkle_root": "ae5f0e96c0c1fe6b3aa015c6a64c2c838e93503435a25484e027a83985096c05",
+      "timestamp": 1793633232.4137676,
+      "nonce": 7324,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_83",
+          "timestamp": 1793633232.4137607,
+          "tx_type": "mining_reward",
+          "tx_hash": "ae5f0e96c0c1fe6b3aa015c6a64c2c838e93503435a25484e027a83985096c05"
+        }
+      ]
+    },
+    {
+      "index": 84,
+      "version": 1,
+      "hash": "000360d8a3f8ca9ca885592baa3ac29355753498ab314d72393774cb035efbea",
+      "previous_hash": "0004c9fbef84cb5bd5f973701ba7c8dc3d44a70117cc992c4bdc0066c87ca0c4",
+      "merkle_root": "7d0a3ec19df2babdca9ddfa5ad668fa0253c71cc565cfafd17bad27ea4df4eaf",
+      "timestamp": 1793633233.0871503,
+      "nonce": 1775,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_84",
+          "timestamp": 1793633233.087141,
+          "tx_type": "mining_reward",
+          "tx_hash": "7d0a3ec19df2babdca9ddfa5ad668fa0253c71cc565cfafd17bad27ea4df4eaf"
+        }
+      ]
+    },
+    {
+      "index": 85,
+      "version": 1,
+      "hash": "00072d27f59a8433f4e383a66ba6522acd868bff24a93554b234ccc3509ba060",
+      "previous_hash": "000360d8a3f8ca9ca885592baa3ac29355753498ab314d72393774cb035efbea",
+      "merkle_root": "f7e6c6c53a6f9b22a10d80b4df80bee29aa42b8502a37b4614c961b19c0b74ab",
+      "timestamp": 1793633233.4766355,
+      "nonce": 5013,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_85",
+          "timestamp": 1793633233.4766285,
+          "tx_type": "mining_reward",
+          "tx_hash": "f7e6c6c53a6f9b22a10d80b4df80bee29aa42b8502a37b4614c961b19c0b74ab"
+        }
+      ]
+    },
+    {
+      "index": 86,
+      "version": 1,
+      "hash": "0007827fa072beefe5425045aadfe7228569fee210d40acda16b7bf2e70a07b5",
+      "previous_hash": "00072d27f59a8433f4e383a66ba6522acd868bff24a93554b234ccc3509ba060",
+      "merkle_root": "03867f0dcc809bed7c5c8f66d39d664516f741c4be5be7aa6b3c9780b659429f",
+      "timestamp": 1793633237.9160957,
+      "nonce": 10521,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_86",
+          "timestamp": 1793633237.9160893,
+          "tx_type": "mining_reward",
+          "tx_hash": "03867f0dcc809bed7c5c8f66d39d664516f741c4be5be7aa6b3c9780b659429f"
+        }
+      ]
+    },
+    {
+      "index": 87,
+      "version": 1,
+      "hash": "0003a0a722e791d54e6ede52032cb2ac22155ed09c423841d02fadf598867fe9",
+      "previous_hash": "0007827fa072beefe5425045aadfe7228569fee210d40acda16b7bf2e70a07b5",
+      "merkle_root": "ad17f91b36dd6deeae393565168b9e77e2bde4056f175099eb28f15b7af4a7fb",
+      "timestamp": 1793633238.989672,
+      "nonce": 3761,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_87",
+          "timestamp": 1793633238.9896653,
+          "tx_type": "mining_reward",
+          "tx_hash": "ad17f91b36dd6deeae393565168b9e77e2bde4056f175099eb28f15b7af4a7fb"
+        }
+      ]
+    },
+    {
+      "index": 88,
+      "version": 1,
+      "hash": "0008b2ca37f647fc681577b5e8f461e7110515ffe29b593cb08a78c33eeedf1a",
+      "previous_hash": "0003a0a722e791d54e6ede52032cb2ac22155ed09c423841d02fadf598867fe9",
+      "merkle_root": "a139cc7924cbb36f62e518f99a4621ebf0e8649a3948899f3885da61a951fdc8",
+      "timestamp": 1793633239.5535772,
+      "nonce": 2148,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_88",
+          "timestamp": 1793633239.55357,
+          "tx_type": "mining_reward",
+          "tx_hash": "a139cc7924cbb36f62e518f99a4621ebf0e8649a3948899f3885da61a951fdc8"
+        }
+      ]
+    },
+    {
+      "index": 89,
+      "version": 1,
+      "hash": "000b7548f1ba4b771073bf22ef644a93133dc843f431fdf1f21a1faa745a5078",
+      "previous_hash": "0008b2ca37f647fc681577b5e8f461e7110515ffe29b593cb08a78c33eeedf1a",
+      "merkle_root": "14cf5aa6266aeb5df8cc908dbc8a81f71f45582370864860e799ecfa8c76c1cb",
+      "timestamp": 1793633240.0399792,
+      "nonce": 486,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_89",
+          "timestamp": 1793633240.0399725,
+          "tx_type": "mining_reward",
+          "tx_hash": "14cf5aa6266aeb5df8cc908dbc8a81f71f45582370864860e799ecfa8c76c1cb"
+        }
+      ]
+    },
+    {
+      "index": 90,
+      "version": 1,
+      "hash": "000896c93abc23be2b45c21ee51f387fd0ee0d6fe0e311b7c392dda199171dcf",
+      "previous_hash": "000b7548f1ba4b771073bf22ef644a93133dc843f431fdf1f21a1faa745a5078",
+      "merkle_root": "53042ed5742ccadaa617d84626222890af3b969e75c344df6a66bba1b69b9776",
+      "timestamp": 1793633240.4930296,
+      "nonce": 6019,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_90",
+          "timestamp": 1793633240.493023,
+          "tx_type": "mining_reward",
+          "tx_hash": "53042ed5742ccadaa617d84626222890af3b969e75c344df6a66bba1b69b9776"
+        }
+      ]
+    },
+    {
+      "index": 91,
+      "version": 1,
+      "hash": "000bb03de927f433f63e75d8e072274b4b9cc83afec6ba52f9e7903d445f37df",
+      "previous_hash": "000896c93abc23be2b45c21ee51f387fd0ee0d6fe0e311b7c392dda199171dcf",
+      "merkle_root": "592b71766d60ace25b0bfff152c70d87e422cfc8042070ccf0493b44ae6d7f38",
+      "timestamp": 1793633240.9833272,
+      "nonce": 2328,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_91",
+          "timestamp": 1793633240.9833217,
+          "tx_type": "mining_reward",
+          "tx_hash": "592b71766d60ace25b0bfff152c70d87e422cfc8042070ccf0493b44ae6d7f38"
+        }
+      ]
+    },
+    {
+      "index": 92,
+      "version": 1,
+      "hash": "0008ae538c79c2c72445762c32cc2c10598da2ea7a1fc508c1c93ea9de3d4492",
+      "previous_hash": "000bb03de927f433f63e75d8e072274b4b9cc83afec6ba52f9e7903d445f37df",
+      "merkle_root": "d89719f22e75891602cce0d4dd76a7bf2833c4327f9fb7506cfcbaf0c21b1313",
+      "timestamp": 1793633241.5022209,
+      "nonce": 2456,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_92",
+          "timestamp": 1793633241.5022142,
+          "tx_type": "mining_reward",
+          "tx_hash": "d89719f22e75891602cce0d4dd76a7bf2833c4327f9fb7506cfcbaf0c21b1313"
+        }
+      ]
+    },
+    {
+      "index": 93,
+      "version": 1,
+      "hash": "000532a6d8d8b1c50c3f0cff1d70698fa5fdeee6b8354a66b922c2f3defeb326",
+      "previous_hash": "0008ae538c79c2c72445762c32cc2c10598da2ea7a1fc508c1c93ea9de3d4492",
+      "merkle_root": "a2060c3c81a17bd2e1b173156b2a6fcdcd8a05eea622f3d31d28c4bb7c932252",
+      "timestamp": 1793633242.1798027,
+      "nonce": 2520,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_93",
+          "timestamp": 1793633242.1797976,
+          "tx_type": "mining_reward",
+          "tx_hash": "a2060c3c81a17bd2e1b173156b2a6fcdcd8a05eea622f3d31d28c4bb7c932252"
+        }
+      ]
+    },
+    {
+      "index": 94,
+      "version": 1,
+      "hash": "000a944e99960fb451cf06193390a9118bef36972f2bfc75a1cc53c80f97685c",
+      "previous_hash": "000532a6d8d8b1c50c3f0cff1d70698fa5fdeee6b8354a66b922c2f3defeb326",
+      "merkle_root": "ec653978203bb757fba45d94088c53d7ee40a9025db7250369e62742b07cd066",
+      "timestamp": 1793633242.9636836,
+      "nonce": 4318,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_94",
+          "timestamp": 1793633242.9636765,
+          "tx_type": "mining_reward",
+          "tx_hash": "ec653978203bb757fba45d94088c53d7ee40a9025db7250369e62742b07cd066"
+        }
+      ]
+    },
+    {
+      "index": 95,
+      "version": 1,
+      "hash": "0002c070c16179530be44f82f1bf9a3b27b7880d1217396ec993c9efef88b1a3",
+      "previous_hash": "000a944e99960fb451cf06193390a9118bef36972f2bfc75a1cc53c80f97685c",
+      "merkle_root": "dc77b3fb1daef53ac4d78905356b543e797d7530441fd04fc71699adc5b6de09",
+      "timestamp": 1793633243.4507759,
+      "nonce": 2383,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_95",
+          "timestamp": 1793633243.4507692,
+          "tx_type": "mining_reward",
+          "tx_hash": "dc77b3fb1daef53ac4d78905356b543e797d7530441fd04fc71699adc5b6de09"
+        }
+      ]
+    },
+    {
+      "index": 96,
+      "version": 1,
+      "hash": "00003ccc4f2c0ff9081f393289f29bcfefcf7d60226cea561ca00e22935baaa0",
+      "previous_hash": "0002c070c16179530be44f82f1bf9a3b27b7880d1217396ec993c9efef88b1a3",
+      "merkle_root": "26a3e7e9223023dc318e7847276f3f79c23ecb4d1e837a180799e41eaa2f3a6a",
+      "timestamp": 1793633243.8984315,
+      "nonce": 4009,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_96",
+          "timestamp": 1793633243.8984256,
+          "tx_type": "mining_reward",
+          "tx_hash": "26a3e7e9223023dc318e7847276f3f79c23ecb4d1e837a180799e41eaa2f3a6a"
+        }
+      ]
+    },
+    {
+      "index": 97,
+      "version": 1,
+      "hash": "0004e8c2d2e7ff8d2ec7434d8b986bffcfad17e33b6e56ef0b81bb1e2df0ccc9",
+      "previous_hash": "00003ccc4f2c0ff9081f393289f29bcfefcf7d60226cea561ca00e22935baaa0",
+      "merkle_root": "6d9608926393bde1a997b5696a1440baf6f35847b837f14ad7fa41aa34a9b2ca",
+      "timestamp": 1793633244.8241854,
+      "nonce": 2445,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_97",
+          "timestamp": 1793633244.8241782,
+          "tx_type": "mining_reward",
+          "tx_hash": "6d9608926393bde1a997b5696a1440baf6f35847b837f14ad7fa41aa34a9b2ca"
+        }
+      ]
+    },
+    {
+      "index": 98,
+      "version": 1,
+      "hash": "0002e84b7ca2b0d187ec7c2c0fa2c8e63e60539671d455443cf3714b21d5ae6e",
+      "previous_hash": "0004e8c2d2e7ff8d2ec7434d8b986bffcfad17e33b6e56ef0b81bb1e2df0ccc9",
+      "merkle_root": "e018d454687c3dbb2de7595458cb13ba6fd86ccda6c2ade45f0c3da15559060f",
+      "timestamp": 1793633245.2693841,
+      "nonce": 3061,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_98",
+          "timestamp": 1793633245.2693775,
+          "tx_type": "mining_reward",
+          "tx_hash": "e018d454687c3dbb2de7595458cb13ba6fd86ccda6c2ade45f0c3da15559060f"
+        }
+      ]
+    },
+    {
+      "index": 99,
+      "version": 1,
+      "hash": "00085bcfa48b813b5fde12290eb73bf551b3877b28c48c15d8601cd92e6a9951",
+      "previous_hash": "0002e84b7ca2b0d187ec7c2c0fa2c8e63e60539671d455443cf3714b21d5ae6e",
+      "merkle_root": "d54755bb15841a430d466d108c75d4f0e263f39dfade266b321344d954817639",
+      "timestamp": 1793633245.7071753,
+      "nonce": 8886,
+      "miner": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 0.05,
+          "fee": 0.0,
+          "net_amount": 0.05,
+          "signature": "coinbase_pow_reward_block_99",
+          "timestamp": 1793633245.7071683,
+          "tx_type": "mining_reward",
+          "tx_hash": "d54755bb15841a430d466d108c75d4f0e263f39dfade266b321344d954817639"
+        }
+      ]
+    },
+    {
+      "index": 100,
+      "version": 1,
+      "hash": "00048d5f616db335352f7207d85d5262cfdde7cc1094bf52b6b94dcba7ba94b4",
+      "previous_hash": "00085bcfa48b813b5fde12290eb73bf551b3877b28c48c15d8601cd92e6a9951",
+      "merkle_root": "a3fc3a515931b8f74664de48e56872e160f3516519a549866e556310be9668b1",
+      "timestamp": 1793633249.6483724,
+      "nonce": 3516,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTa2411a9010028eeb227e092398ea29c52cc567ee",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793633249.6482022,
+          "tx_type": "reward",
+          "tx_hash": "a3fc3a515931b8f74664de48e56872e160f3516519a549866e556310be9668b1"
+        }
+      ]
+    },
+    {
+      "index": 101,
+      "version": 1,
+      "hash": "000cbd269f5025cd5a11dafb4cc9e5da6d2c9b752239cee2ac8654e44be6f20d",
+      "previous_hash": "00048d5f616db335352f7207d85d5262cfdde7cc1094bf52b6b94dcba7ba94b4",
+      "merkle_root": "d6197b605a20e0a664bf48335997f8c4b47d511085a8bb4ea029c3a98c9cffcd",
+      "timestamp": 1793633413.6081543,
+      "nonce": 2742,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT1ea992f860a58390aebcd7aef04ed957668b05d5",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793633413.6079803,
+          "tx_type": "reward",
+          "tx_hash": "d6197b605a20e0a664bf48335997f8c4b47d511085a8bb4ea029c3a98c9cffcd"
+        }
+      ]
+    },
+    {
+      "index": 102,
+      "version": 1,
+      "hash": "00009599a74a70e368c9be88f00ddf99a02c4d2f5e17feee639bfeeded542a96",
+      "previous_hash": "000cbd269f5025cd5a11dafb4cc9e5da6d2c9b752239cee2ac8654e44be6f20d",
+      "merkle_root": "8e992c8a1d0d2c76c81016cc2a1b1e2ff5316a8d4c76e1785378cbc7a1caf69b",
+      "timestamp": 1793633424.2607298,
+      "nonce": 1280,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793633424.260535,
+          "tx_type": "reward",
+          "tx_hash": "8e992c8a1d0d2c76c81016cc2a1b1e2ff5316a8d4c76e1785378cbc7a1caf69b"
+        }
+      ]
+    },
+    {
+      "index": 103,
+      "version": 1,
+      "hash": "0002abac388cb465c222d75aa7bfb3ea12da5218a85c58a04b978f7e6443217a",
+      "previous_hash": "00009599a74a70e368c9be88f00ddf99a02c4d2f5e17feee639bfeeded542a96",
+      "merkle_root": "d8c14f5b68c8843ec598bbfcea4f8ec9060fc949b135f9006ac91c55bc6301bf",
+      "timestamp": 1793633444.3682735,
+      "nonce": 317,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT9fd1da9bab8d43c69a8de77738b67aef87f9504b",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793633444.3680987,
+          "tx_type": "reward",
+          "tx_hash": "d8c14f5b68c8843ec598bbfcea4f8ec9060fc949b135f9006ac91c55bc6301bf"
+        }
+      ]
+    },
+    {
+      "index": 104,
+      "version": 1,
+      "hash": "0006f787129848d44c4c33c7fb68a12adf69e9097f0949d2a113610cf99e8977",
+      "previous_hash": "0002abac388cb465c222d75aa7bfb3ea12da5218a85c58a04b978f7e6443217a",
+      "merkle_root": "f6d88e2fe28732c323c0d27a59022b4c9cdc66d8fd79d087d8078dfba9c5cb41",
+      "timestamp": 1793633907.7808263,
+      "nonce": 1337,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "amount": 5000.0,
+          "fee": 0.0,
+          "net_amount": 5000.0,
+          "signature": "thirdweb_onramp_c01a2f90859aec89",
+          "timestamp": 1793633907.7805986,
+          "tx_type": "fiat_buy",
+          "tx_hash": "f6d88e2fe28732c323c0d27a59022b4c9cdc66d8fd79d087d8078dfba9c5cb41"
+        }
+      ]
+    },
+    {
+      "index": 105,
+      "version": 1,
+      "hash": "0002b59aa8d2e5db327c4b0dce6a566b0d692046e1490a148c1864673134978d",
+      "previous_hash": "0006f787129848d44c4c33c7fb68a12adf69e9097f0949d2a113610cf99e8977",
+      "merkle_root": "9248a383fe17ee24efd9e22e841c81ae2b2bd23fed1429145d2cd9cca74cd9d5",
+      "timestamp": 1793633958.5953598,
+      "nonce": 664,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d",
+          "amount": 5000.0,
+          "fee": 0.0,
+          "net_amount": 5000.0,
+          "signature": "thirdweb_onramp_af24ac822f2fe77e",
+          "timestamp": 1793633958.595174,
+          "tx_type": "fiat_buy",
+          "tx_hash": "9248a383fe17ee24efd9e22e841c81ae2b2bd23fed1429145d2cd9cca74cd9d5"
+        }
+      ]
+    },
+    {
+      "index": 106,
+      "version": 1,
+      "hash": "000221aa65f9dc58686a4fe7654c59afc55e3b82c6afbae3b3a304951d5a6685",
+      "previous_hash": "0002b59aa8d2e5db327c4b0dce6a566b0d692046e1490a148c1864673134978d",
+      "merkle_root": "11e087f0a79204dfc8f93e2ad4c50aa4cbdb946a3a5b1a7cdaec71ec2c7dd08c",
+      "timestamp": 1793633963.9667933,
+      "nonce": 1595,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d",
+          "amount": 5000.0,
+          "fee": 0.0,
+          "net_amount": 5000.0,
+          "signature": "thirdweb_onramp_001a4310013900ea",
+          "timestamp": 1793633963.966599,
+          "tx_type": "fiat_buy",
+          "tx_hash": "11e087f0a79204dfc8f93e2ad4c50aa4cbdb946a3a5b1a7cdaec71ec2c7dd08c"
+        }
+      ]
+    },
+    {
+      "index": 107,
+      "version": 1,
+      "hash": "000db02fbf7ee19ce0a7b7b4b5da3c9189a6dff6181839b91049b7174ac2cd8f",
+      "previous_hash": "000221aa65f9dc58686a4fe7654c59afc55e3b82c6afbae3b3a304951d5a6685",
+      "merkle_root": "03e43ab8c5d2084295599c6f29f8d76f6b14d77698e5c93f23f0ffc265aff642",
+      "timestamp": 1793641549.7842085,
+      "nonce": 2286,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTcb7bfaa7610c692014a8d5b30e0066f6305a70b7",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793641549.7840023,
+          "tx_type": "reward",
+          "tx_hash": "03e43ab8c5d2084295599c6f29f8d76f6b14d77698e5c93f23f0ffc265aff642"
+        }
+      ]
+    },
+    {
+      "index": 108,
+      "version": 1,
+      "hash": "0000ccd6720b4d3ebc97f0c1e8e8b9f2c45539776b84f1a8a3ac4fce76539d3a",
+      "previous_hash": "000db02fbf7ee19ce0a7b7b4b5da3c9189a6dff6181839b91049b7174ac2cd8f",
+      "merkle_root": "014a90865bbbc89ae9b9a891aa7f10d242e56cb02abca711da57c291748b2f3f",
+      "timestamp": 1793641693.5493288,
+      "nonce": 8999,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTe2d0839d38ac6b5402c97558212cc9a6fd807998",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793641693.5491335,
+          "tx_type": "reward",
+          "tx_hash": "014a90865bbbc89ae9b9a891aa7f10d242e56cb02abca711da57c291748b2f3f"
+        }
+      ]
+    },
+    {
+      "index": 109,
+      "version": 1,
+      "hash": "000aba9c5dfcc31c941238de187cb497a03705e1c9eac03c7e0bf0b633ee5aef",
+      "previous_hash": "0000ccd6720b4d3ebc97f0c1e8e8b9f2c45539776b84f1a8a3ac4fce76539d3a",
+      "merkle_root": "62fd39e0bc826e993778fe72fbb6e5798afbc19eccc1d23d85a244685ccc62cf",
+      "timestamp": 1793641694.1755843,
+      "nonce": 7625,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTe2d0839d38ac6b5402c97558212cc9a6fd807998",
+          "amount": 5.0,
+          "fee": 0.05,
+          "net_amount": 4.95,
+          "signature": "genesis_sig",
+          "timestamp": 1793641694.1753674,
+          "tx_type": "transfer",
+          "tx_hash": "62fd39e0bc826e993778fe72fbb6e5798afbc19eccc1d23d85a244685ccc62cf"
+        }
+      ]
+    },
+    {
+      "index": 110,
+      "version": 1,
+      "hash": "000df4d8de3c578b813a493106db2a7a5d55e6cb3148f006beca2c3927cc9ad8",
+      "previous_hash": "000aba9c5dfcc31c941238de187cb497a03705e1c9eac03c7e0bf0b633ee5aef",
+      "merkle_root": "ce23eae539073af22d4769078ec828759bc30ecc839e26704c8c521d02fca2d1",
+      "timestamp": 1793641748.0432518,
+      "nonce": 822,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7a320af1ab67b55210d2725184e58b25be528a90",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793641748.0430439,
+          "tx_type": "reward",
+          "tx_hash": "ce23eae539073af22d4769078ec828759bc30ecc839e26704c8c521d02fca2d1"
+        }
+      ]
+    },
+    {
+      "index": 111,
+      "version": 1,
+      "hash": "000fde262adb2e7301619a2c276be7e88f8d939128061918b48f7e4cf8a23fc0",
+      "previous_hash": "000df4d8de3c578b813a493106db2a7a5d55e6cb3148f006beca2c3927cc9ad8",
+      "merkle_root": "946b5acc390aae78ae9192ff3791172ed97dfbffa344d2c9ad332f7d96d32be3",
+      "timestamp": 1793641781.2668934,
+      "nonce": 14540,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793641781.2666712,
+          "tx_type": "reward",
+          "tx_hash": "946b5acc390aae78ae9192ff3791172ed97dfbffa344d2c9ad332f7d96d32be3"
+        }
+      ]
+    },
+    {
+      "index": 112,
+      "version": 1,
+      "hash": "000a4b0c6a87ce5c924c2dcf8151c2d28a24a999ca0b5e1da1ca4184dea935cd",
+      "previous_hash": "000fde262adb2e7301619a2c276be7e88f8d939128061918b48f7e4cf8a23fc0",
+      "merkle_root": "d58bdc1d07b842afe124ff4de2781d50c86820e9eb6d6c8869d36e9c584fd9d4",
+      "timestamp": 1793641782.289397,
+      "nonce": 19,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+          "amount": 10.0,
+          "fee": 0.1,
+          "net_amount": 9.9,
+          "signature": "genesis_grant",
+          "timestamp": 1793641782.2891917,
+          "tx_type": "transfer",
+          "tx_hash": "d58bdc1d07b842afe124ff4de2781d50c86820e9eb6d6c8869d36e9c584fd9d4"
+        }
+      ]
+    },
+    {
+      "index": 113,
+      "version": 1,
+      "hash": "0006106bc52fa6dbbe000c6ab58fbfec6174dd33c666e635eb138b312f91bd65",
+      "previous_hash": "000a4b0c6a87ce5c924c2dcf8151c2d28a24a999ca0b5e1da1ca4184dea935cd",
+      "merkle_root": "f1a03b36b0f65ae5980a3bd8e890be35845458fe1f7821acb7da315a517324ab",
+      "timestamp": 1793641782.3647344,
+      "nonce": 2328,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.1,
+          "fee": 0.02,
+          "net_amount": 0.1,
+          "signature": "c65b424b6f729130cfc81a97aced5ebb5d6ab5e0125f5e25b0371135c880a6f2",
+          "timestamp": 1793641782.3645086,
+          "tx_type": "space_post",
+          "tx_hash": "f1a03b36b0f65ae5980a3bd8e890be35845458fe1f7821acb7da315a517324ab",
+          "extra_data": {
+            "post_id": "post_9d9cbca2f6146faa",
+            "content": "LockTrace Space açıldı! 🪐 Sansürsüz, kalıcı ve blokzincire doğrudan mühürlenen on-chain düşünce alanımıza hoş geldiniz. Beğeni ve yorumlardan %20 yazar telifi kazanın! #bct #locktrace",
+            "author": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+            "treasury_cut": 0.08
+          }
+        }
+      ]
+    },
+    {
+      "index": 114,
+      "version": 1,
+      "hash": "000478e8ef3a77c74454b16844002d7ef3835f0eaabd2e3cc9eec91bf9a0de49",
+      "previous_hash": "0006106bc52fa6dbbe000c6ab58fbfec6174dd33c666e635eb138b312f91bd65",
+      "merkle_root": "bbb986106861f52b330c5a1d0cd25b15ae370247b74099dce54c6ac1ac98e894",
+      "timestamp": 1793641782.6536143,
+      "nonce": 55,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT5dcbd001df19c3ee66cc41bed1fc18acfb2582c9",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793641782.6533918,
+          "tx_type": "reward",
+          "tx_hash": "bbb986106861f52b330c5a1d0cd25b15ae370247b74099dce54c6ac1ac98e894"
+        }
+      ]
+    },
+    {
+      "index": 115,
+      "version": 1,
+      "hash": "0002d3398088618ed0565a67b375ad8d02ed14e16578c0ed61958b1f83d7984c",
+      "previous_hash": "000478e8ef3a77c74454b16844002d7ef3835f0eaabd2e3cc9eec91bf9a0de49",
+      "merkle_root": "65fbbaf7c50a1d074a3e6ad476411b9cb60ad7f4ca2d1188f938e9ba9f91db6d",
+      "timestamp": 1793641782.6832247,
+      "nonce": 8918,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT5dcbd001df19c3ee66cc41bed1fc18acfb2582c9",
+          "amount": 5.0,
+          "fee": 0.05,
+          "net_amount": 4.95,
+          "signature": "genesis_grant",
+          "timestamp": 1793641782.6829982,
+          "tx_type": "transfer",
+          "tx_hash": "65fbbaf7c50a1d074a3e6ad476411b9cb60ad7f4ca2d1188f938e9ba9f91db6d"
+        }
+      ]
+    },
+    {
+      "index": 116,
+      "version": 1,
+      "hash": "000ec260c92723b4a546b6e602735a7e9b1dc3af8421fb1906fbac7d7fb0c737",
+      "previous_hash": "0002d3398088618ed0565a67b375ad8d02ed14e16578c0ed61958b1f83d7984c",
+      "merkle_root": "e908b9ca12ad4ff2de9682af1eb845a4bc0ccb2ce006d1ba7e5a8c9ae258952b",
+      "timestamp": 1793641783.4564054,
+      "nonce": 10801,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT5dcbd001df19c3ee66cc41bed1fc18acfb2582c9",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "208a419efdbface3dfde8a2716baf8c902dcd4b2aad3bfe70515dbd877fa4a17",
+          "timestamp": 1793641783.4561188,
+          "tx_type": "space_like",
+          "tx_hash": "e908b9ca12ad4ff2de9682af1eb845a4bc0ccb2ce006d1ba7e5a8c9ae258952b",
+          "extra_data": {
+            "post_id": "post_9d9cbca2f6146faa",
+            "author": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+            "liker": "BCT5dcbd001df19c3ee66cc41bed1fc18acfb2582c9",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 117,
+      "version": 1,
+      "hash": "000ec4f1c7dc0e271ffa4df335202646e076fa983236fdf0564da7c6c2907186",
+      "previous_hash": "000ec260c92723b4a546b6e602735a7e9b1dc3af8421fb1906fbac7d7fb0c737",
+      "merkle_root": "e0c074b58a7c4654ee98ce25803a89ef629928b670149d2cb84cf619cf68f70a",
+      "timestamp": 1793641784.4665277,
+      "nonce": 4781,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT5dcbd001df19c3ee66cc41bed1fc18acfb2582c9",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.02,
+          "fee": 0.002,
+          "net_amount": 0.02,
+          "signature": "208a419efdbface3dfde8a2716baf8c902dcd4b2aad3bfe70515dbd877fa4a17",
+          "timestamp": 1793641784.4663029,
+          "tx_type": "space_comment",
+          "tx_hash": "e0c074b58a7c4654ee98ce25803a89ef629928b670149d2cb84cf619cf68f70a",
+          "extra_data": {
+            "post_id": "post_9d9cbca2f6146faa",
+            "comment_id": "cmt_7e15e96c2b1d",
+            "author": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+            "commenter": "BCT5dcbd001df19c3ee66cc41bed1fc18acfb2582c9",
+            "content": "Harika bir başlangıç! İlk on-chain yorum burada.",
+            "author_cut": 0.004,
+            "treasury_cut": 0.014
+          }
+        }
+      ]
+    },
+    {
+      "index": 118,
+      "version": 1,
+      "hash": "0009d007bbfeb74137c219c77b4f56f9a6c33fd13c1728690ebf457d67843eec",
+      "previous_hash": "000ec4f1c7dc0e271ffa4df335202646e076fa983236fdf0564da7c6c2907186",
+      "merkle_root": "343da4a692929fd72cb485848c20d539c10de59eb631da3b7681aa3b67d0298f",
+      "timestamp": 1793641822.8211248,
+      "nonce": 7946,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT25883b7cbabf517f651c783a64f0a879210e5f01",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793641822.820909,
+          "tx_type": "reward",
+          "tx_hash": "343da4a692929fd72cb485848c20d539c10de59eb631da3b7681aa3b67d0298f"
+        }
+      ]
+    },
+    {
+      "index": 119,
+      "version": 1,
+      "hash": "000c6e91df640951267639f9a612e08d6006d48208370a2676eca27e7c507159",
+      "previous_hash": "0009d007bbfeb74137c219c77b4f56f9a6c33fd13c1728690ebf457d67843eec",
+      "merkle_root": "84399d97e44e7f3c9190c423a35765ec7b3a5d4764d626be41d16ed34bd557ee",
+      "timestamp": 1793641982.8776593,
+      "nonce": 5895,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.1,
+          "fee": 0.02,
+          "net_amount": 0.1,
+          "signature": "592e586b388c1caa045c42e6743fca4d6f2fe1799dd8cfda7ee56c301a4a7716d6204e992086f1dfab13f58d63e519d4e803975dc52a9373d2597d982a28ea56",
+          "timestamp": 1793641982.8774164,
+          "tx_type": "space_post",
+          "tx_hash": "84399d97e44e7f3c9190c423a35765ec7b3a5d4764d626be41d16ed34bd557ee",
+          "extra_data": {
+            "post_id": "post_1c8dfca443dfbaa2",
+            "content": "Test",
+            "author": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+            "treasury_cut": 0.08
+          }
+        }
+      ]
+    },
+    {
+      "index": 120,
+      "version": 1,
+      "hash": "00082434cb3a94e4f1fdf5589e067a7bda8757816495c8605bb581c136d0b14b",
+      "previous_hash": "000c6e91df640951267639f9a612e08d6006d48208370a2676eca27e7c507159",
+      "merkle_root": "53f34e947c8ff428dc00b220a7f2357adf536a0085d1dcefd1ddc2f8ea136507",
+      "timestamp": 1793642025.2819192,
+      "nonce": 1888,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT87b11a731cd3a43a485cc5a63a5a67983592a9cd",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793642025.281691,
+          "tx_type": "reward",
+          "tx_hash": "53f34e947c8ff428dc00b220a7f2357adf536a0085d1dcefd1ddc2f8ea136507"
+        }
+      ]
+    },
+    {
+      "index": 121,
+      "version": 1,
+      "hash": "00024edcc6842e880dfd312109ab47ed35e6b8e9d20f93c23302e9c7312e431b",
+      "previous_hash": "00082434cb3a94e4f1fdf5589e067a7bda8757816495c8605bb581c136d0b14b",
+      "merkle_root": "4166388faae5e3c40d178d87241701e6ff7f60ca8cdbd4a694b4c29649afa2c3",
+      "timestamp": 1793642027.6649973,
+      "nonce": 702,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT7c0b4de954dd9810afdf2d69d931c3cc86707805",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793642027.6647675,
+          "tx_type": "reward",
+          "tx_hash": "4166388faae5e3c40d178d87241701e6ff7f60ca8cdbd4a694b4c29649afa2c3"
+        }
+      ]
+    },
+    {
+      "index": 122,
+      "version": 1,
+      "hash": "000be38b19f12fd756124bc26b0989b99c322382d70f9b7d39a83582300aa50d",
+      "previous_hash": "00024edcc6842e880dfd312109ab47ed35e6b8e9d20f93c23302e9c7312e431b",
+      "merkle_root": "6c308070de05bbad1f990456e9da62f74c0abf93eaf76205182f89049e8de653",
+      "timestamp": 1793642032.712676,
+      "nonce": 636,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT75a89872677096f4e6abf7fbe29e760ea41b31f5",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793642032.7123847,
+          "tx_type": "reward",
+          "tx_hash": "6c308070de05bbad1f990456e9da62f74c0abf93eaf76205182f89049e8de653"
+        }
+      ]
+    },
+    {
+      "index": 123,
+      "version": 1,
+      "hash": "000876a77f72f352205c5f8d582fe00e5fcf8e4733b48a2dd6a3732c6b50259b",
+      "previous_hash": "000be38b19f12fd756124bc26b0989b99c322382d70f9b7d39a83582300aa50d",
+      "merkle_root": "101acc4284f88cbddfa791a8a93be91958a9cd7fc1e0d6c19acf3d8e753637f9",
+      "timestamp": 1793642111.6587024,
+      "nonce": 5223,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT75a89872677096f4e6abf7fbe29e760ea41b31f5",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.1,
+          "fee": 0.02,
+          "net_amount": 0.1,
+          "signature": "e1c2b5c466408cc283c6299038a965fe5e0e0355cf8c9cf6bc80d4390ade8939196be272e15a615ee8743934b2cde1bffbf1a1085fd5899280771666d9f9636b",
+          "timestamp": 1793642111.6584485,
+          "tx_type": "space_post",
+          "tx_hash": "101acc4284f88cbddfa791a8a93be91958a9cd7fc1e0d6c19acf3d8e753637f9",
+          "extra_data": {
+            "post_id": "post_3fef0a5620bf475a",
+            "content": "Test",
+            "author": "BCT75a89872677096f4e6abf7fbe29e760ea41b31f5",
+            "treasury_cut": 0.08
+          }
+        }
+      ]
+    },
+    {
+      "index": 124,
+      "version": 1,
+      "hash": "0003c13e0f975c6f5167c6c5bb5648c9760dc1724cf1634da3cc2efcc0dbfbaa",
+      "previous_hash": "000876a77f72f352205c5f8d582fe00e5fcf8e4733b48a2dd6a3732c6b50259b",
+      "merkle_root": "952a71a0d06b0d2155e188aaca167859dd9c1146cc059070857f3d8fd28f4d75",
+      "timestamp": 1793642145.0813894,
+      "nonce": 3782,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT75fd5234d6e9ae735f36ced6ac39cacb8db88163",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793642145.08115,
+          "tx_type": "reward",
+          "tx_hash": "952a71a0d06b0d2155e188aaca167859dd9c1146cc059070857f3d8fd28f4d75"
+        }
+      ]
+    },
+    {
+      "index": 125,
+      "version": 1,
+      "hash": "0002a0d529e7547d24fbf65c2082070c0f9d953726991133ec366a84c22ccb4f",
+      "previous_hash": "0003c13e0f975c6f5167c6c5bb5648c9760dc1724cf1634da3cc2efcc0dbfbaa",
+      "merkle_root": "9dbaf1cf52ec530a53cbe35016edcd3b3caa4d71ad08aec85bd5d0f60bb383d0",
+      "timestamp": 1793644531.2689457,
+      "nonce": 13857,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTe23c200ed1d408bc2b6a69b822e9a27272804fe4",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793644531.2686465,
+          "tx_type": "reward",
+          "tx_hash": "9dbaf1cf52ec530a53cbe35016edcd3b3caa4d71ad08aec85bd5d0f60bb383d0"
+        }
+      ]
+    },
+    {
+      "index": 126,
+      "version": 1,
+      "hash": "0008bcc501ee6022d388534a515ee2b3128cdf8afd9be0d3f6726c6fb5a745c4",
+      "previous_hash": "0002a0d529e7547d24fbf65c2082070c0f9d953726991133ec366a84c22ccb4f",
+      "merkle_root": "162284709dc43db253358c3175799d7d31c9754ceff6d6e2401b82be6d0124dd",
+      "timestamp": 1793644552.2563403,
+      "nonce": 1420,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTe23c200ed1d408bc2b6a69b822e9a27272804fe4",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.1,
+          "fee": 0.02,
+          "net_amount": 0.1,
+          "signature": "b4f04a5ad72d145b5cc2b2e466469763cc3be3d3233c47ac9ac19ef64b8957de28a62e2723747f15d215537f1a06d4b6acb176f97f9bd4bcbcef201fd9b80bf6",
+          "timestamp": 1793644552.256088,
+          "tx_type": "space_post",
+          "tx_hash": "162284709dc43db253358c3175799d7d31c9754ceff6d6e2401b82be6d0124dd",
+          "extra_data": {
+            "post_id": "post_6987428a50a3361d",
+            "content": "TEST",
+            "author": "BCTe23c200ed1d408bc2b6a69b822e9a27272804fe4",
+            "treasury_cut": 0.08
+          }
+        }
+      ]
+    },
+    {
+      "index": 127,
+      "version": 1,
+      "hash": "000bf5df99343d35a7e4c0e2aad007ffb1a53d2f02455322f156fd3e31d93d9c",
+      "previous_hash": "0008bcc501ee6022d388534a515ee2b3128cdf8afd9be0d3f6726c6fb5a745c4",
+      "merkle_root": "ec430f4c3e0be82c320325cb13ad39e1d7f75066022bd44f6228c0d7084d64c3",
+      "timestamp": 1793644744.1054938,
+      "nonce": 2427,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTfaf8d8a7f11dc86e9be8966d58368ba9686396df",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793644744.1052523,
+          "tx_type": "reward",
+          "tx_hash": "ec430f4c3e0be82c320325cb13ad39e1d7f75066022bd44f6228c0d7084d64c3"
+        }
+      ]
+    },
+    {
+      "index": 128,
+      "version": 1,
+      "hash": "0004b0e95d44e9ae7400d1fc82107bdaa00bc9a1476036b745bf230fbe148969",
+      "previous_hash": "000bf5df99343d35a7e4c0e2aad007ffb1a53d2f02455322f156fd3e31d93d9c",
+      "merkle_root": "d3d7527f879482b3af271c29643fc68ba731cafa74f58793908cace2f8b914a2",
+      "timestamp": 1793644753.225784,
+      "nonce": 12831,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTd2b5a6e1365406237de5e4529fff13f55c1c9267",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793644753.2255297,
+          "tx_type": "reward",
+          "tx_hash": "d3d7527f879482b3af271c29643fc68ba731cafa74f58793908cace2f8b914a2"
+        }
+      ]
+    },
+    {
+      "index": 129,
+      "version": 1,
+      "hash": "000aae8a5c29c42cf53c71bfaa99c3f5eb90002fbbf1b1a3dbc3b15dac723b1a",
+      "previous_hash": "0004b0e95d44e9ae7400d1fc82107bdaa00bc9a1476036b745bf230fbe148969",
+      "merkle_root": "41ad02c80e49681f159b2346b792e6f11c9e20051efc98059119a88e5650f3d4",
+      "timestamp": 1793645094.4934876,
+      "nonce": 8716,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTa4c6d82386768f0bca5e0bc1617ecc8d35eb1ed2",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793645094.4932506,
+          "tx_type": "reward",
+          "tx_hash": "41ad02c80e49681f159b2346b792e6f11c9e20051efc98059119a88e5650f3d4"
+        }
+      ]
+    },
+    {
+      "index": 130,
+      "version": 1,
+      "hash": "0001f04ad0a08f514c6275e144375fd30df6b2cb98b696186a03277e1e04e741",
+      "previous_hash": "000aae8a5c29c42cf53c71bfaa99c3f5eb90002fbbf1b1a3dbc3b15dac723b1a",
+      "merkle_root": "0896c02d4928296af1274ea0dd6447ea0b78e7cf201f38117e197ab22075de1f",
+      "timestamp": 1793645762.825906,
+      "nonce": 8071,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT97a1ffcb71b7a72893f06342fc3dba681b00020f",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793645762.8255975,
+          "tx_type": "reward",
+          "tx_hash": "0896c02d4928296af1274ea0dd6447ea0b78e7cf201f38117e197ab22075de1f"
+        }
+      ]
+    },
+    {
+      "index": 131,
+      "version": 1,
+      "hash": "00072a6074d674e73d3b5f2f8e06491d1e881e4460f19eeba81034ba173fe76b",
+      "previous_hash": "0001f04ad0a08f514c6275e144375fd30df6b2cb98b696186a03277e1e04e741",
+      "merkle_root": "d93f74d402471eae89777e5f9708691e435bfffa29ab5a04aa0ed7b72d27bd6e",
+      "timestamp": 1793645774.3821387,
+      "nonce": 2462,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTb9e8b5280379face99597004e48e98acbf35a8bc",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793645774.3819003,
+          "tx_type": "reward",
+          "tx_hash": "d93f74d402471eae89777e5f9708691e435bfffa29ab5a04aa0ed7b72d27bd6e"
+        }
+      ]
+    },
+    {
+      "index": 132,
+      "version": 1,
+      "hash": "000c0412893029bb2a6a4ccd8871e4c04469c2f3ce1475e474fcc47e9cda287d",
+      "previous_hash": "00072a6074d674e73d3b5f2f8e06491d1e881e4460f19eeba81034ba173fe76b",
+      "merkle_root": "a7f2fb7995893d5febab21e1b58cbb93f7e62aafa008c98370ef2b1ef9380f90",
+      "timestamp": 1793645897.2504907,
+      "nonce": 4207,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT77c5a30595867f076d9ea128085e9235011a0bd2",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793645897.2502472,
+          "tx_type": "reward",
+          "tx_hash": "a7f2fb7995893d5febab21e1b58cbb93f7e62aafa008c98370ef2b1ef9380f90"
+        }
+      ]
+    },
+    {
+      "index": 133,
+      "version": 1,
+      "hash": "0004c279510eae70c0325d4c5b720f387eaafbebe1dbfb0d99808c680302a17c",
+      "previous_hash": "000c0412893029bb2a6a4ccd8871e4c04469c2f3ce1475e474fcc47e9cda287d",
+      "merkle_root": "b0334c032aeb07b0865195c4c1e77e5d947d50fb3fbaafbdfbf7ec47fd3bb6bb",
+      "timestamp": 1793645910.290859,
+      "nonce": 6342,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT77c5a30595867f076d9ea128085e9235011a0bd2",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.1,
+          "fee": 0.02,
+          "net_amount": 0.1,
+          "signature": "53fbf0f73db304f2f4179d4190e76b57857b0013144482d80f49c6ef562c55e6ea78eb17e8b6ed2cc31ebd212d73bb503f52f5d1daaa7706eb6808fe7f4b3ac5",
+          "timestamp": 1793645910.2904992,
+          "tx_type": "space_post",
+          "tx_hash": "b0334c032aeb07b0865195c4c1e77e5d947d50fb3fbaafbdfbf7ec47fd3bb6bb",
+          "extra_data": {
+            "post_id": "post_a44f37abacc2c2a5",
+            "content": "test",
+            "author": "BCT77c5a30595867f076d9ea128085e9235011a0bd2",
+            "treasury_cut": 0.08
+          }
+        }
+      ]
+    },
+    {
+      "index": 134,
+      "version": 1,
+      "hash": "000664c9533c98e349512342d773c3c4dd7bfbab3d909552d814e80bc0ed3bea",
+      "previous_hash": "0004c279510eae70c0325d4c5b720f387eaafbebe1dbfb0d99808c680302a17c",
+      "merkle_root": "c978b2d3cd7103e19c7b231b3e4c7d091518ab5ef3290d673805bafb410abba7",
+      "timestamp": 1793646703.3762891,
+      "nonce": 3444,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT9e9095b896462283113acaaacb296310c6e501fd",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793646703.376043,
+          "tx_type": "reward",
+          "tx_hash": "c978b2d3cd7103e19c7b231b3e4c7d091518ab5ef3290d673805bafb410abba7"
+        }
+      ]
+    },
+    {
+      "index": 135,
+      "version": 1,
+      "hash": "000f98999b2597f76e368a8b73edd5007b9890be1015194e9a0009eb43579baf",
+      "previous_hash": "000664c9533c98e349512342d773c3c4dd7bfbab3d909552d814e80bc0ed3bea",
+      "merkle_root": "0911a06716f0b76653e2b9815298ca94f332e836b4d1515437802d148a07d134",
+      "timestamp": 1793646742.9489126,
+      "nonce": 1230,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793646742.9486415,
+          "tx_type": "reward",
+          "tx_hash": "0911a06716f0b76653e2b9815298ca94f332e836b4d1515437802d148a07d134"
+        }
+      ]
+    },
+    {
+      "index": 136,
+      "version": 1,
+      "hash": "000f1b4449648343ed5b32e457b758b18f09007f3d9eaacd071ddb8e7cffe9d0",
+      "previous_hash": "000f98999b2597f76e368a8b73edd5007b9890be1015194e9a0009eb43579baf",
+      "merkle_root": "60f3b02dac8aaebafbc481513511c7125d92ad085c3cdb2d0f4543df51835dac",
+      "timestamp": 1793646761.9163446,
+      "nonce": 2409,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.1,
+          "fee": 0.02,
+          "net_amount": 0.1,
+          "signature": "665635832f23c145ee2e417ca3324e7fc4c651c9d9588ddc1c2cc1cfe70b819f94722ee6a6713951fa242cddebaa4b1595f616230f61ee3676ae609512a2b246",
+          "timestamp": 1793646761.9160852,
+          "tx_type": "space_post",
+          "tx_hash": "60f3b02dac8aaebafbc481513511c7125d92ad085c3cdb2d0f4543df51835dac",
+          "extra_data": {
+            "post_id": "post_5b70b28c08de0e51",
+            "content": "test",
+            "author": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+            "treasury_cut": 0.08
+          }
+        }
+      ]
+    },
+    {
+      "index": 137,
+      "version": 1,
+      "hash": "0007fca6387a4d0dee76a10bad76e55b069a487ef49f4381c358ff628bdb08da",
+      "previous_hash": "000f1b4449648343ed5b32e457b758b18f09007f3d9eaacd071ddb8e7cffe9d0",
+      "merkle_root": "426eeffae5db729bd280ffb8be6ecee25fc3e284dbdb2a5533ac66dd7e8dd2da",
+      "timestamp": 1793647117.7042425,
+      "nonce": 802,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "1a9aae955e3ebbc1e304f9b9d31fac677d363ab26166af10de1b8cece97e96e2f371b0ebcc6f1d1a399616fb7db0495146a8920bfb64af1e5728b8e75abfdf78",
+          "timestamp": 1793647117.7039852,
+          "tx_type": "space_like",
+          "tx_hash": "426eeffae5db729bd280ffb8be6ecee25fc3e284dbdb2a5533ac66dd7e8dd2da",
+          "extra_data": {
+            "post_id": "post_5b70b28c08de0e51",
+            "author": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+            "liker": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 138,
+      "version": 1,
+      "hash": "0000f69dd557061ae75c383fb5fbf6955d33ef033b3cc10bb568988f0ec6a382",
+      "previous_hash": "0007fca6387a4d0dee76a10bad76e55b069a487ef49f4381c358ff628bdb08da",
+      "merkle_root": "2322842117b84f3ba6528ed2e6725a810251fd46f9eaaaa098c6f4a9206d5d48",
+      "timestamp": 1793647131.2881954,
+      "nonce": 11458,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "ccb3756443be189d58881184c0926aa9e868d6a4ff445c1b31e7a45958df233cef8815d38afadce4d22c841456d3360b45ce3fa572422a527ea407ce9b63426f",
+          "timestamp": 1793647131.287933,
+          "tx_type": "space_like",
+          "tx_hash": "2322842117b84f3ba6528ed2e6725a810251fd46f9eaaaa098c6f4a9206d5d48",
+          "extra_data": {
+            "post_id": "post_1c8dfca443dfbaa2",
+            "author": "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+            "liker": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 139,
+      "version": 1,
+      "hash": "000f2bcd116387abe35ea6b6e3c21ba288b58771fe112549aa6c52f6c1f121db",
+      "previous_hash": "0000f69dd557061ae75c383fb5fbf6955d33ef033b3cc10bb568988f0ec6a382",
+      "merkle_root": "01b24ca093706d04ec5ba2d59c57df7ccaaa5852e59d121f9b4846719b04d9bc",
+      "timestamp": 1793647133.5914288,
+      "nonce": 8840,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "856222b0bd0ccc28fbd4f4185db8b626ad51a7107e69259891c53de4f74bb0a7e0ee22c4aec51fffd30081855e36e4566d7d61e0c858c397b31960e80df82bde",
+          "timestamp": 1793647133.5911615,
+          "tx_type": "space_like",
+          "tx_hash": "01b24ca093706d04ec5ba2d59c57df7ccaaa5852e59d121f9b4846719b04d9bc",
+          "extra_data": {
+            "post_id": "post_3fef0a5620bf475a",
+            "author": "BCT75a89872677096f4e6abf7fbe29e760ea41b31f5",
+            "liker": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 140,
+      "version": 1,
+      "hash": "00042d223df6cba641578d0bd0e9339e5aac4e21a4fb88fcb4beb79988d45398",
+      "previous_hash": "000f2bcd116387abe35ea6b6e3c21ba288b58771fe112549aa6c52f6c1f121db",
+      "merkle_root": "ab464c5805b32a057930774d062cf08cd59644dac17dd5d48ebf955aa8d94d15",
+      "timestamp": 1793647136.060985,
+      "nonce": 3883,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "2f398ad5efb507c2845d0c813a290f16ca7dd9070c9d109ff0bd87a3fa14bdfbffbd5c404a56588a28fb347c2ab9a7ef26035eadfd9d9f996d5fbd219c2ba06f",
+          "timestamp": 1793647136.0607178,
+          "tx_type": "space_like",
+          "tx_hash": "ab464c5805b32a057930774d062cf08cd59644dac17dd5d48ebf955aa8d94d15",
+          "extra_data": {
+            "post_id": "post_6987428a50a3361d",
+            "author": "BCTe23c200ed1d408bc2b6a69b822e9a27272804fe4",
+            "liker": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 141,
+      "version": 1,
+      "hash": "000405fcd7d3087d17657df0484ae620da4fd98f48ee1ec3fea6f04f3e5afb72",
+      "previous_hash": "00042d223df6cba641578d0bd0e9339e5aac4e21a4fb88fcb4beb79988d45398",
+      "merkle_root": "8419bb4c40d7ddc7f81d2055862665023d8b6f9b4e0592f560883103230c0462",
+      "timestamp": 1793647137.795309,
+      "nonce": 1665,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "0daeae04b157564b92838e2c3580049c7565ef00a4157cfba87e03ce0f111c81d58249be23521c975a37c6a192663bbde41d0fe35b48c05879db6bc584e3e00c",
+          "timestamp": 1793647137.7950382,
+          "tx_type": "space_like",
+          "tx_hash": "8419bb4c40d7ddc7f81d2055862665023d8b6f9b4e0592f560883103230c0462",
+          "extra_data": {
+            "post_id": "post_a44f37abacc2c2a5",
+            "author": "BCT77c5a30595867f076d9ea128085e9235011a0bd2",
+            "liker": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 142,
+      "version": 1,
+      "hash": "000a3502b8bfd5c201f13b223dadc6c3953e1b8012f092078e7cfe1ad93cf089",
+      "previous_hash": "000405fcd7d3087d17657df0484ae620da4fd98f48ee1ec3fea6f04f3e5afb72",
+      "merkle_root": "2451c201f93b37c38cf8cdc2f4735b8a5ffbed7fe4fa37dbe46f76ee59c2432f",
+      "timestamp": 1793647140.1002316,
+      "nonce": 443,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "f489dc6dc18b71f8ce5bca7193bbefe41d3703fd0236d3b9a561c4ae7f1fc60df5a3b75791fe5f6dd570601d780523873eb744ce6f8d1b4b1e7f4d6fe8fa6095",
+          "timestamp": 1793647140.099961,
+          "tx_type": "space_like",
+          "tx_hash": "2451c201f93b37c38cf8cdc2f4735b8a5ffbed7fe4fa37dbe46f76ee59c2432f",
+          "extra_data": {
+            "post_id": "post_9d9cbca2f6146faa",
+            "author": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+            "liker": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 143,
+      "version": 1,
+      "hash": "0002ca674b42ce87591858fa67bae5be0cb4ccf7c9532c00b08a8ace4b9bf64e",
+      "previous_hash": "000a3502b8bfd5c201f13b223dadc6c3953e1b8012f092078e7cfe1ad93cf089",
+      "merkle_root": "37da59622197cf605d9108efe642b9c46bb7065aa3dfb6b7215ec35a74c7b9fa",
+      "timestamp": 1793647940.5470245,
+      "nonce": 4818,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793647940.5466228,
+          "tx_type": "reward",
+          "tx_hash": "37da59622197cf605d9108efe642b9c46bb7065aa3dfb6b7215ec35a74c7b9fa"
+        }
+      ]
+    },
+    {
+      "index": 144,
+      "version": 1,
+      "hash": "000d49fce6bac8548eacc35f5783b3cf3fd791b9fb07456c42e7e7c22606c08c",
+      "previous_hash": "0002ca674b42ce87591858fa67bae5be0cb4ccf7c9532c00b08a8ace4b9bf64e",
+      "merkle_root": "8b7209fb2edc31eaa8b05d7729f504df62c161ea06d5c338d08923d6f8d6bd7e",
+      "timestamp": 1793647953.7596998,
+      "nonce": 1224,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "7fdb365b5c67710c5a6679847422b361fd604943d281957748c16be08385dc29888178c0bd4914fcbb035247a5d9de7a0b921d5c4ec8d98e5c83441c794013a2",
+          "timestamp": 1793647953.759412,
+          "tx_type": "space_like",
+          "tx_hash": "8b7209fb2edc31eaa8b05d7729f504df62c161ea06d5c338d08923d6f8d6bd7e",
+          "extra_data": {
+            "post_id": "post_9d9cbca2f6146faa",
+            "author": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+            "liker": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 145,
+      "version": 1,
+      "hash": "00003677a93a0931a8bdc5c8cc0c63f83cef5ffe9fac1650028f77ef523cf662",
+      "previous_hash": "000d49fce6bac8548eacc35f5783b3cf3fd791b9fb07456c42e7e7c22606c08c",
+      "merkle_root": "e93a65a36f869a55617750533a1c71781678547f997999ab2620e27efb78dea5",
+      "timestamp": 1793647954.9094834,
+      "nonce": 16435,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "eb235025943e92d275dca2efd6982c725a146e235e50fe72aaa7e7e9b70f85a55eca779136710e4a891f5cc9ab94d6148665b2555cf76f974a355c653488b9f0",
+          "timestamp": 1793647954.9092011,
+          "tx_type": "space_like",
+          "tx_hash": "e93a65a36f869a55617750533a1c71781678547f997999ab2620e27efb78dea5",
+          "extra_data": {
+            "post_id": "post_5b70b28c08de0e51",
+            "author": "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c",
+            "liker": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 146,
+      "version": 1,
+      "hash": "0008be93eec2dac41ba14ad0a2a5195dff44ebeb3c091d6e457f8121e3af95a3",
+      "previous_hash": "00003677a93a0931a8bdc5c8cc0c63f83cef5ffe9fac1650028f77ef523cf662",
+      "merkle_root": "1264989f81b75ffeaea477ce690c1e6741d8eda1ca50d25859236e31865b49e6",
+      "timestamp": 1793648022.0534751,
+      "nonce": 12565,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.1,
+          "fee": 0.02,
+          "net_amount": 0.1,
+          "signature": "1319e0b42a073501f41f0c5b6a666c2e3e96843b133af6fc8b517f70836b56d5baff82346c628147bd7cb80b303d7abf6dbe6202f9926b48ef8e003b9de07ccc",
+          "timestamp": 1793648022.0531955,
+          "tx_type": "space_post",
+          "tx_hash": "1264989f81b75ffeaea477ce690c1e6741d8eda1ca50d25859236e31865b49e6",
+          "extra_data": {
+            "post_id": "post_cbf1d84fe168676f",
+            "content": "test 2",
+            "author": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+            "treasury_cut": 0.08
+          }
+        }
+      ]
+    },
+    {
+      "index": 147,
+      "version": 1,
+      "hash": "0008cc23992e8c378493f4dff611ac512d9ee420e89ca220777e31888f4f6a18",
+      "previous_hash": "0008be93eec2dac41ba14ad0a2a5195dff44ebeb3c091d6e457f8121e3af95a3",
+      "merkle_root": "782117ea15cb47c7a28d6267ab9cfe98a022d417cb8ddd63a24c9c3f972896e4",
+      "timestamp": 1793648026.3772714,
+      "nonce": 194,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "de10b74acd5211ff5d58cb6704bc1ab9224c69f808a8dca6cde2e604486aa6cfa384b429f03b440546bc093c9472e2dae85536881d80c6fd6c12ec578ea3e572",
+          "timestamp": 1793648026.3769906,
+          "tx_type": "space_like",
+          "tx_hash": "782117ea15cb47c7a28d6267ab9cfe98a022d417cb8ddd63a24c9c3f972896e4",
+          "extra_data": {
+            "post_id": "post_cbf1d84fe168676f",
+            "author": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+            "liker": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 148,
+      "version": 1,
+      "hash": "0001cba09285345892ccc6eb8578a8eeaaa30700478c0828639e91a1291950a2",
+      "previous_hash": "0008cc23992e8c378493f4dff611ac512d9ee420e89ca220777e31888f4f6a18",
+      "merkle_root": "5d8837c7776b676b40aa29bf83130cf41d234de41284f2d19afbc738bc9a557d",
+      "timestamp": 1793648106.780433,
+      "nonce": 5556,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTa601b10bb496280b55289ae7c704412e2c989734",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793648106.780157,
+          "tx_type": "reward",
+          "tx_hash": "5d8837c7776b676b40aa29bf83130cf41d234de41284f2d19afbc738bc9a557d"
+        }
+      ]
+    },
+    {
+      "index": 149,
+      "version": 1,
+      "hash": "0007ce3b041e8701ea77eb5b4424c985f97512c42de6e47461af4e694c2f1878",
+      "previous_hash": "0001cba09285345892ccc6eb8578a8eeaaa30700478c0828639e91a1291950a2",
+      "merkle_root": "a382e635641ff2e8fcfc087b04a402bbefe28fb7891ee4d94efdfe9e4530f4b4",
+      "timestamp": 1793648124.4193223,
+      "nonce": 4258,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTa601b10bb496280b55289ae7c704412e2c989734",
+          "receiver": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+          "amount": 1.0,
+          "fee": 0.01,
+          "net_amount": 0.99,
+          "signature": "00f7e93aca97c97b84602b22c5b62916f2c10b70d213de820d0a432cf584016f74c8b13a4dcaa6c5198ab57ff4c455ffddcc9b305eb16d20f74a1126a708c03f",
+          "timestamp": 1793648124.4190326,
+          "tx_type": "transfer",
+          "tx_hash": "a382e635641ff2e8fcfc087b04a402bbefe28fb7891ee4d94efdfe9e4530f4b4"
+        }
+      ]
+    },
+    {
+      "index": 150,
+      "version": 1,
+      "hash": "000adf753f288bee81deb3bfb1c0b11652794b27856ae694bb7d81160c9fb2ab",
+      "previous_hash": "0007ce3b041e8701ea77eb5b4424c985f97512c42de6e47461af4e694c2f1878",
+      "merkle_root": "21bc2fe14b660109d83a2e20035195640062674bba63fa3b769091d86e2e9756",
+      "timestamp": 1793648281.6138296,
+      "nonce": 1047,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT1d8bf9af020f703f24dae16cf90158014862b3ac",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793648281.6135333,
+          "tx_type": "reward",
+          "tx_hash": "21bc2fe14b660109d83a2e20035195640062674bba63fa3b769091d86e2e9756"
+        }
+      ]
+    },
+    {
+      "index": 151,
+      "version": 1,
+      "hash": "0004f02e5b0912211b9f0c0df7240272c29aea6f2352464e4a8f90a7a5feeec0",
+      "previous_hash": "000adf753f288bee81deb3bfb1c0b11652794b27856ae694bb7d81160c9fb2ab",
+      "merkle_root": "0f47be4f6fc9d70bec973a9d86722b99a757f60d49f7cde09e3e7374c08f1eec",
+      "timestamp": 1793649110.1777906,
+      "nonce": 416,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf15b8f08cf840ff3e223066b58befed480b38191",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793649110.1774971,
+          "tx_type": "reward",
+          "tx_hash": "0f47be4f6fc9d70bec973a9d86722b99a757f60d49f7cde09e3e7374c08f1eec"
+        }
+      ]
+    },
+    {
+      "index": 152,
+      "version": 1,
+      "hash": "000041865bba4ce17dcbb3ca16e5610432c32297c81158e4f1dcc8b8cd8d7cd3",
+      "previous_hash": "0004f02e5b0912211b9f0c0df7240272c29aea6f2352464e4a8f90a7a5feeec0",
+      "merkle_root": "b8404a059ec7f4b463231a1708ba120a614be4dff36420fcf53cb9ce9af58550",
+      "timestamp": 1793649154.0972166,
+      "nonce": 5167,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT6f2ee78eb5c61b741f8d85aa6d445803a1498db5",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793649154.0969431,
+          "tx_type": "reward",
+          "tx_hash": "b8404a059ec7f4b463231a1708ba120a614be4dff36420fcf53cb9ce9af58550"
+        }
+      ]
+    },
+    {
+      "index": 153,
+      "version": 1,
+      "hash": "0004ddd725837319e1d91831dd0ff1378d8350b04eb25256d67d1683203d6711",
+      "previous_hash": "000041865bba4ce17dcbb3ca16e5610432c32297c81158e4f1dcc8b8cd8d7cd3",
+      "merkle_root": "974b3b15a9c5971c5a862e5d4755ea89cf4083b167eed706c3b463433fc4569e",
+      "timestamp": 1793649170.0849886,
+      "nonce": 316,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTd9b9fb7419ade7f1e328828a364acc6927fc7c23",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793649170.0847094,
+          "tx_type": "reward",
+          "tx_hash": "974b3b15a9c5971c5a862e5d4755ea89cf4083b167eed706c3b463433fc4569e"
+        }
+      ]
+    },
+    {
+      "index": 154,
+      "version": 1,
+      "hash": "000a710a4c7979cf1c1c7aed7cad961580d248a14bcd342eaa755080a322f60a",
+      "previous_hash": "0004ddd725837319e1d91831dd0ff1378d8350b04eb25256d67d1683203d6711",
+      "merkle_root": "b06b032c2ee021c84c8e48198d34c569f6ca6bf989bb7615d4d7f63d41ae295c",
+      "timestamp": 1793649184.7834096,
+      "nonce": 495,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTd9b9fb7419ade7f1e328828a364acc6927fc7c23",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "09a32b1f3f987a9c7c7fd997cf9158b3e397424f949ff2e75bf50c3e639e0a98e4b17208b6116d075eb31d5e7a52aa2782110aeba25101b5b3f85d509b00a1f9",
+          "timestamp": 1793649184.7831252,
+          "tx_type": "space_like",
+          "tx_hash": "b06b032c2ee021c84c8e48198d34c569f6ca6bf989bb7615d4d7f63d41ae295c",
+          "extra_data": {
+            "post_id": "post_cbf1d84fe168676f",
+            "author": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+            "liker": "BCTd9b9fb7419ade7f1e328828a364acc6927fc7c23",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 155,
+      "version": 1,
+      "hash": "000cdee00709cefc3cc826a50428a97f7e06356abd56e501f38136d0f8e115b8",
+      "previous_hash": "000a710a4c7979cf1c1c7aed7cad961580d248a14bcd342eaa755080a322f60a",
+      "merkle_root": "3b551a0b0590fc5ebe4831c38bdb6f089c8c44b1c4e30e2129934f707c870001",
+      "timestamp": 1793649202.5703714,
+      "nonce": 1539,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTd9b9fb7419ade7f1e328828a364acc6927fc7c23",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.1,
+          "fee": 0.02,
+          "net_amount": 0.1,
+          "signature": "50dccafee9ba1a43a6575d2c2b021571646a332ac28b750edb4fb110e3999b818848c5e2a4117c250f5bcd9c5e5ffa15dfbc002fa1979df317ac55fa1684db6b",
+          "timestamp": 1793649202.5700798,
+          "tx_type": "space_post",
+          "tx_hash": "3b551a0b0590fc5ebe4831c38bdb6f089c8c44b1c4e30e2129934f707c870001",
+          "extra_data": {
+            "post_id": "post_23cc0c3fd44e77b5",
+            "content": "Test",
+            "author": "BCTd9b9fb7419ade7f1e328828a364acc6927fc7c23",
+            "treasury_cut": 0.08
+          }
+        }
+      ]
+    },
+    {
+      "index": 156,
+      "version": 1,
+      "hash": "0002ad404e0c3660a55f6922627f5f9b4e5aef0981308ef626b258b593071001",
+      "previous_hash": "000cdee00709cefc3cc826a50428a97f7e06356abd56e501f38136d0f8e115b8",
+      "merkle_root": "df73197e65b344d57935d2785f2ed93e6dccefbf389ae6fc8429afa3d83a789d",
+      "timestamp": 1793649246.6544108,
+      "nonce": 2125,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT1c6cb18f89504c6b99547f71cfeef82513b0cbb5",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793649246.6541302,
+          "tx_type": "reward",
+          "tx_hash": "df73197e65b344d57935d2785f2ed93e6dccefbf389ae6fc8429afa3d83a789d"
+        }
+      ]
+    },
+    {
+      "index": 157,
+      "version": 1,
+      "hash": "00090313d4be27ea9952291992631f23c9eff711581cfb8e66f68e6c9ec232eb",
+      "previous_hash": "0002ad404e0c3660a55f6922627f5f9b4e5aef0981308ef626b258b593071001",
+      "merkle_root": "15e0c57ada469791af9095cc834d07d4e222671e26bc6ae4d9bb00d31851fcba",
+      "timestamp": 1793649388.4396143,
+      "nonce": 472,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT0d8c77c0d5a600c46edd2bcadbd0dc7ce17719d4",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793649388.4393308,
+          "tx_type": "reward",
+          "tx_hash": "15e0c57ada469791af9095cc834d07d4e222671e26bc6ae4d9bb00d31851fcba"
+        }
+      ]
+    },
+    {
+      "index": 158,
+      "version": 1,
+      "hash": "000d2944f0ed84d5b052eb13f9960f5f7e900d65c9ba748fcd624078bd00597a",
+      "previous_hash": "00090313d4be27ea9952291992631f23c9eff711581cfb8e66f68e6c9ec232eb",
+      "merkle_root": "b1d975f2fb5f8c61cf34f6d785ee8e8281a9a285d64049159918fb194a8f7440",
+      "timestamp": 1793650170.621313,
+      "nonce": 10666,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT0d8c77c0d5a600c46edd2bcadbd0dc7ce17719d4",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "9c968618953525777b02a71664212b2e3b5962725cd42a0b252f9e06c8778de20cf288ad42c6a92871a9d7ab3a07b8491c1c0962da358e36028d3daa18ab0e13",
+          "timestamp": 1793650170.6210232,
+          "tx_type": "space_like",
+          "tx_hash": "b1d975f2fb5f8c61cf34f6d785ee8e8281a9a285d64049159918fb194a8f7440",
+          "extra_data": {
+            "post_id": "post_cbf1d84fe168676f",
+            "author": "BCTd489344089405bbf148f1c5b245951d1d92e029f",
+            "liker": "BCT0d8c77c0d5a600c46edd2bcadbd0dc7ce17719d4",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 159,
+      "version": 1,
+      "hash": "000222a5b0f23af91eb5ac2d0996bf321dd577532a56a4017d9b54858f7f7f0d",
+      "previous_hash": "000d2944f0ed84d5b052eb13f9960f5f7e900d65c9ba748fcd624078bd00597a",
+      "merkle_root": "39a866b7b0afbcf52f645eef0a8dd149a87a0b1d14f63a6d2335f3613d9e30d9",
+      "timestamp": 1793650172.5796127,
+      "nonce": 2827,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT0d8c77c0d5a600c46edd2bcadbd0dc7ce17719d4",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.01,
+          "fee": 0.001,
+          "net_amount": 0.01,
+          "signature": "13ec2421602e7d198f283ae2792e188b2f144146c27255522e9426828eaa212bd6469f631d504703bf10734a4b1d9e2f5e14dbac6c5c3d912f643e865c639fd2",
+          "timestamp": 1793650172.5793152,
+          "tx_type": "space_like",
+          "tx_hash": "39a866b7b0afbcf52f645eef0a8dd149a87a0b1d14f63a6d2335f3613d9e30d9",
+          "extra_data": {
+            "post_id": "post_9d9cbca2f6146faa",
+            "author": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+            "liker": "BCT0d8c77c0d5a600c46edd2bcadbd0dc7ce17719d4",
+            "author_cut": 0.002,
+            "treasury_cut": 0.007
+          }
+        }
+      ]
+    },
+    {
+      "index": 160,
+      "version": 1,
+      "hash": "000ddc3bf95cf50afb4d60edbb0b25e659ff82b867c397532b3565b3a944030d",
+      "previous_hash": "000222a5b0f23af91eb5ac2d0996bf321dd577532a56a4017d9b54858f7f7f0d",
+      "merkle_root": "78e257413ccfb92ab0562d5f93f86bce105754802371164b59f071a0da1e91c8",
+      "timestamp": 1793651858.327363,
+      "nonce": 5952,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT0d8c77c0d5a600c46edd2bcadbd0dc7ce17719d4",
+          "receiver": "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d",
+          "amount": 0.98,
+          "fee": 0.0098,
+          "net_amount": 0.9702,
+          "signature": "1bf8c28d487a1bea596a1e255e4817ba1b3c5cfb8efae7e2df7d230c6c2c32c4fba4aa5a013c724a6da7d7995709c6ea80354ad3dd0fc984c6db649f2ac66c8b",
+          "timestamp": 1793651858.3265557,
+          "tx_type": "transfer",
+          "tx_hash": "78e257413ccfb92ab0562d5f93f86bce105754802371164b59f071a0da1e91c8"
+        }
+      ]
+    },
+    {
+      "index": 161,
+      "version": 1,
+      "hash": "00093d255cd161476345ec24624bcab7cbd75bb465fca9dce75ae983465264b2",
+      "previous_hash": "000ddc3bf95cf50afb4d60edbb0b25e659ff82b867c397532b3565b3a944030d",
+      "merkle_root": "8c5337b7e3c40b550568a3a9565933bbd83fa047981c8a1291a1e1c6ccce8df4",
+      "timestamp": 1793652644.7358544,
+      "nonce": 2697,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTebf2c526f7403e90905ec8e644fed9cf31950057",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793652644.7350044,
+          "tx_type": "reward",
+          "tx_hash": "8c5337b7e3c40b550568a3a9565933bbd83fa047981c8a1291a1e1c6ccce8df4"
+        }
+      ]
+    },
+    {
+      "index": 162,
+      "version": 1,
+      "hash": "0002f63c99e254439c5dfdf11e4cd283e698324b4c746da61293e01322254446",
+      "previous_hash": "00093d255cd161476345ec24624bcab7cbd75bb465fca9dce75ae983465264b2",
+      "merkle_root": "b125ffae1c254837d314c2569d3adf32e4dfdf89743ee06e326eaf82b3f8c930",
+      "timestamp": 1793652654.2137773,
+      "nonce": 174,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCTebf2c526f7403e90905ec8e644fed9cf31950057",
+          "receiver": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "amount": 0.02,
+          "fee": 0.002,
+          "net_amount": 0.02,
+          "signature": "ed32a951871df4c5af44636570610f164f9d16d38d6ad3653086180dbf71a41991985cc8657e033e7f706c61d0f5e75742557d40932d1582c61202b2176067a9",
+          "timestamp": 1793652654.2128518,
+          "tx_type": "space_comment",
+          "tx_hash": "b125ffae1c254837d314c2569d3adf32e4dfdf89743ee06e326eaf82b3f8c930",
+          "extra_data": {
+            "post_id": "post_23cc0c3fd44e77b5",
+            "comment_id": "cmt_431521b40833",
+            "author": "BCTd9b9fb7419ade7f1e328828a364acc6927fc7c23",
+            "commenter": "BCTebf2c526f7403e90905ec8e644fed9cf31950057",
+            "content": "Test",
+            "author_cut": 0.004,
+            "treasury_cut": 0.014
+          }
+        }
+      ]
+    },
+    {
+      "index": 163,
+      "version": 2,
+      "hash": "000284e43744bfcf5b5a6a0097db8d55dc4b3f52827f89d7a6c8694334f0341c",
+      "previous_hash": "0002f63c99e254439c5dfdf11e4cd283e698324b4c746da61293e01322254446",
+      "merkle_root": "913fdf3b07d3d05a7fb78f8feafa277db9706e59f914d399c9be53d0f54ac831",
+      "timestamp": 1793656097.2150793,
+      "nonce": 12416,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCTf38106f995363afc314d7dc53b4e341e62fe1053",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793656097.214282,
+          "tx_type": "reward",
+          "tx_hash": "913fdf3b07d3d05a7fb78f8feafa277db9706e59f914d399c9be53d0f54ac831"
+        }
+      ]
+    },
+    {
+      "index": 164,
+      "version": 2,
+      "hash": "000e81b6f6c815c064ed07c4ef1f884878a320ea9f9aca48135343eb97ed72cd",
+      "previous_hash": "000284e43744bfcf5b5a6a0097db8d55dc4b3f52827f89d7a6c8694334f0341c",
+      "merkle_root": "0c433278c1d2d39da0da455b1154cf65d5ff8d777d64117c86e84d93a0b98644",
+      "timestamp": 1793658486.3137677,
+      "nonce": 13685,
+      "miner": "Genesis-Validator",
+      "transaction_count": 1,
+      "transactions": [
+        {
+          "sender": "BCT_HAZINE_0000000000000000000000000000000000000000",
+          "receiver": "BCT9f57d29bfb21843697d14d34e11029fc722d02d7",
+          "amount": 1.0,
+          "fee": 0.0,
+          "net_amount": 1.0,
+          "signature": "automated_welcome_grant_1bct",
+          "timestamp": 1793658486.312941,
+          "tx_type": "reward",
+          "tx_hash": "0c433278c1d2d39da0da455b1154cf65d5ff8d777d64117c86e84d93a0b98644"
+        }
+      ]
+    }
+  ],
+  "balances": {
+    "BCT0d8c77c0d5a600c46edd2bcadbd0dc7ce17719d4": 0.0,
+    "BCTd9b9fb7419ade7f1e328828a364acc6927fc7c23": 0.894,
+    "BCT_HAZINE_0000000000000000000000000000000000000000": 999999982881.9668,
+    "BCTf38106f995363afc314d7dc53b4e341e62fe1053": 1.0,
+    "BCT9f57d29bfb21843697d14d34e11029fc722d02d7": 1.0
+  },
+  "wallets": {
+    "BCT5ea683b922a1ee9afa2d9c503dc632275e6e1bd1": {
+      "public_key": "e0a1e5a6eb30679d31d74a27ce1e676145a6596ad0e45f8ef692b509bf71120cd2da0fbeeb3f27a4dc4f9fd1a362834d8d65124bc6dae65aa9ced9c7cb28bc00",
+      "created_at": 1793622481.7104533,
+      "nonce": 0
+    },
+    "BCT7fd1fad4be560be0b111327f0d0aaaea2b201348": {
+      "public_key": "8b62cc3921cb29b0e7320315e2629e53e55e3edb82889c9cd6ad6912f4ada4067f714af807e26f90315a5ed8905766bff8a17b19a66e80b01363403ff76fdbee",
+      "created_at": 1793622699.0612047,
+      "nonce": 0
+    },
+    "BCT2db88f4a46871844cfcde4b8ecfa02644af88836": {
+      "public_key": "78414a8e7466a70a6cd4466a05fc446395d4debcc21fc5dfa391ce0304dea335612b3cbb8a14a11a390aef9bd33f4747b0694adfd866f63232f224fb5e0c5d35",
+      "created_at": 1793625732.1319454,
+      "nonce": 1
+    },
+    "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b": {
+      "public_key": "",
+      "created_at": 1793625776.8034763,
+      "nonce": 0
+    },
+    "BCTc1f397ffc50b3c97bead38437a3849d16f0923d0": {
+      "public_key": "f048e0cde176bf0451d6636e9d5a0b49518241776f54cde66f26907264933028a11dcbb6ad302aae2241f29089e4c1bd263cb0d9710c523a7462ebafd8bf9598",
+      "created_at": 1793625876.9402087,
+      "nonce": 1
+    },
+    "BCTb9f8cecad369584979964df09744245b39a0efe0": {
+      "public_key": "9c78bcaa851d567bcfe0ce3ec358ab7ef69ce33efab88edfd0d00752424df14f899d557544b74e1e3d3f86e0c7004820e4fcf4c7a100a2bc098ded70dde01ef3",
+      "created_at": 1793625894.2375152,
+      "nonce": 1
+    },
+    "BCTd970c6657d86abb7df89a1e4a9524f3ad6f3879e": {
+      "public_key": "289ae30c36b365fffe79e9140bdbe549734bdf4c89b47afca5f30fd3bf1e7dc398e94b6c3bae01336e8e75bc8dbb4a54c177caa6393c25df65d5dcb475d30531",
+      "created_at": 1793629752.8826652,
+      "nonce": 0
+    },
+    "BCT6be93913dab175e024522859c13ca043a03c763c": {
+      "public_key": "a069b21e5298844865ff80979b422942885f565a23d3568fd345d050dd439073313bb20e0a0672d9cba91275ed172bd876fe61e69e5c1c8b1e261dcb54125c0b",
+      "created_at": 1793629828.7516692,
+      "nonce": 0
+    },
+    "BCT252bb3ffc4358f2154726e0bfbcfda6d4f40cb8d": {
+      "public_key": "ec3a6a0c280e432b524535e1d3ac6436914160ab1b59cdd6a909df889f8237afdafceda5be833f76f615693d11861a6b4db4c774478ffdc18b5bb5451bce624d",
+      "created_at": 1793630127.311312,
+      "nonce": 0
+    },
+    "BCT2c313a04263d261d5ce7e9e6384e0ffa50d8e3ae": {
+      "public_key": "8c8c31ea3e047e06a4b1c01c11be09e8aaecca29233fd83bc5381602ad52abccc8e7f684193de027aba5d2e9dedae43b497beb3c173980a04f8524166516f0cf",
+      "created_at": 1793630252.6831038,
+      "nonce": 0
+    },
+    "BCTef43aaeb8647641f1c2a9203867497b6887e55c9": {
+      "public_key": "e800320e14f3062f1c27f1ea96079693528ddbe36bfc209ac0363d33d5baac39af8f6225664e131497dcbc8b0263276926683ba1b403965bf06fbdaa9753a5fc",
+      "created_at": 1793630257.6668966,
+      "nonce": 0
+    },
+    "BCTc42ebbc3f26c30f00d84c36da6c68351b20e0993": {
+      "public_key": "be4f2d47406dfd47f3346e97e6e8f330fe9533328576a9bc46030f9ec4762e960c072ae185749799652fb687738e48c9f54266e540c42f4aee7dc42a87673fef",
+      "created_at": 1793630261.8213847,
+      "nonce": 0
+    },
+    "BCT2c53950bbe7a2cb07d17f7598a3b41d9191f78f4": {
+      "public_key": "cbd8449d09696f862f6cbabb6c783a536a6af5e199607ed37c58aa371a37caf677efe980ffd2d64a282d3988b16dcb0add364db061c9d4189dfd5cd8663c3489",
+      "created_at": 1793630715.0562954,
+      "nonce": 0
+    },
+    "BCTdbdba94af8b79b0abf7368afa767f235e67a0c22": {
+      "public_key": "6bea0bbd6e6c6d2c5671d03778337754e7acf1398974cd910c5e457ea7d09930e7db256451bbe221671c400d46119d1b1881e5ae0750b47a16fd4ffa6ebeb523",
+      "created_at": 1793630771.8165557,
+      "nonce": 0
+    },
+    "BCT4ebea3d0f7132475e4e7c22573696eab6267a191": {
+      "public_key": "3fd879099badeea89dba6e023efafef9acdd9b2fb258e961f397b2a0a48167b6208d39361fef57b7ca28c298efd725d4695b4801be4243dfdc15090dda80b55f",
+      "created_at": 1793630815.807467,
+      "nonce": 0
+    },
+    "BCT57c229c326c1d2f7fa9b2057bf5bbb3a3aa62e4f": {
+      "public_key": "ef29e727c1445e6cbd44be0060e6704a7b73e53098fce309db82d9828fe431eaf953401c8d7764a0061d12bfc02a5fc34d092245f4ef1d626c185673ceb30a0c",
+      "created_at": 1793631218.6627154,
+      "nonce": 0
+    },
+    "BCT6ad8e1ff529873a9f9eb3aab504913e5f3fb9e85": {
+      "public_key": "97a3778942c7f90963f6c15ff0169e26b9530ed9bf173bd883669af5b5c621b795ed95e0b6072e4c83f14effc7c8a40fe1b256d8ca8e888843a7dfb368dd5ef7",
+      "created_at": 1793631546.5918887,
+      "nonce": 0
+    },
+    "BCT36be450a2066672b1fd2f5c960b6b0855f95c4d5": {
+      "public_key": "4d22e562b011b365e8fe0a1c4f45b2f7030a23897a0265cd81c0857776e69c4b283b7763e8140c11bdf266313c3390d8699688c29773ec1d237b22d516a35e93",
+      "created_at": 1793631614.9133804,
+      "nonce": 0
+    },
+    "BCT69b88824db1be08bab686c8c9d635a32d4f68e21": {
+      "public_key": "8d71ec53075322051eb748f284131b76d94692622e538bc2b88767ac3f94da7868de1c9b596a7c4669230fe84f55b074963993ad9cc6ddf3aa6d4018b7979ada",
+      "created_at": 1793632105.9599931,
+      "nonce": 0
+    },
+    "BCT4de8a7d7a0e7d4d4f1e4c642daf2a6e5c563c81e": {
+      "public_key": "82a59f9312a6327248365ed2796e381e50a2572cbd609664f881eae6e912389256de7a52438a41e2eec1f7f43908e1618ef32efd35471fb25cc4238dc00a6550",
+      "created_at": 1793632199.6207414,
+      "nonce": 0
+    },
+    "BCTd446fcb2fea275ac1d39709600052766bd66a76f": {
+      "public_key": "2a6d5e6acc1050c98622905f3b481189200689d62f90c47706a36fcbb9d4f1992b6825fa2c6740f9103e557981c0ceb1e85ec062f20700135f401b0ad5e676c8",
+      "created_at": 1793632201.693756,
+      "nonce": 0
+    },
+    "BCTf5540be26dfac9466b6b49b731abb0306578f470": {
+      "public_key": "c28f22c42c49ed9c28b69ab01818bd8d482f19c940222d47df20c4a0ed7678228b10451b371e7954e415d4666dad0f0466ae426ca898e682ab3a2b03d71fd546",
+      "created_at": 1793632210.5660682,
+      "nonce": 0
+    },
+    "BCT43e13c36b0f36b4440e88cdcd50b59cdd9c1ccd8": {
+      "public_key": "914140bca26e2fb76f93f0d7e27dfaa91e7b69cb91dc6f7298fff4774a2a6d4a2495a9eb4171ecd1868797fdf78a8b31ee2fcd2658e10904b40d9333b90f1ff0",
+      "created_at": 1793632210.8649523,
+      "nonce": 0
+    },
+    "BCTf0ff9a51c8df7b86a45b58d4277f6d0ce4bc5be1": {
+      "public_key": "86ecb1c9307968b2ad8cf42563b3cdf3f325bbc61d70f5ce9d4c06c0dc53dce931f85f62d8b52c359acf5848f45fcac154f1f4aacf479a4ddfdee88a202ea24a",
+      "created_at": 1793632211.6643507,
+      "nonce": 0
+    },
+    "BCTf9abe23dd0c3734354d9e83b89b9260fe603abc8": {
+      "public_key": "6bbd45486edd69bfe3ced1404935544e69a5c3698604719b05fe7e3ba4c184b401fba4debbe4ee770ca9be86cfd5d75e6d06ea8630397447b30a4497de08fe9f",
+      "created_at": 1793632212.3829722,
+      "nonce": 0
+    },
+    "BCT0f032bac9bd02333bbe500544b5abeefaafdb2d0": {
+      "public_key": "ff76b77a927f2eea4fb842a95e5ac950e208e0bd8e878f541dcfc02abcaceb871650a5d07b513dbcd5f0e9d369c95672da4420b6677a5d16c01d1d245bf798bc",
+      "created_at": 1793632214.8242915,
+      "nonce": 0
+    },
+    "BCT8474298e6825f059a296ed66862824b52bea5bd1": {
+      "public_key": "3b86ebf988e51182660b32950574dad5359a1141d821df5b5143fa834fcb25b7103b4320db22941663ae863d3fe658582216d8b62ab48181715882b0446e8554",
+      "created_at": 1793632218.812681,
+      "nonce": 0
+    },
+    "BCTe054d981202ce78599f47fc1481582bfc1700d38": {
+      "public_key": "aa2e2ca300a39534d50ebb459c21c2a3e4f6b53fdbb1bb4fde8a9d6a33632601925f2a965e99cf3695affce63ca9502e9d014c01e626217bd6274bbd08a622da",
+      "created_at": 1793632224.6294618,
+      "nonce": 0
+    },
+    "BCTd1cef38536eabe0d84cfd406dcca2794ca51aad0": {
+      "public_key": "c64a288d710938551ebf1772874e46ae8a41ffa2b81b156b09bc0a016fae3780baa8fe37aabdde02d55d2e0cd38f277b85acdd42ae1557119fa57ec6096bd851",
+      "created_at": 1793632228.6179843,
+      "nonce": 0
+    },
+    "BCT6d538df15c32c1a0d167f328c3ace183b9d23781": {
+      "public_key": "3e31c0619fce3a08efc8156b41796a0ef8d2b8ac96809b158a79e25468cf5d0b795ec0db71c635bfc51ee2505109e948a869a4277dce215b6813a7399b76c866",
+      "created_at": 1793632233.3014631,
+      "nonce": 0
+    },
+    "BCT758452230fed78bbb878f443338ee92bc34e2f1c": {
+      "public_key": "2aff4a7afaf9129b0960c6062cc8ff4b2da5372ebebc7f3a3df2c0d7124a71dc31f5468049e38ea6ee562500a059af5ff55ed5468228fbec591a1e344bd66331",
+      "created_at": 1793632233.994201,
+      "nonce": 0
+    },
+    "BCTc83941af0f7e6db43e57a66e07b39cedc468996a": {
+      "public_key": "26404561b5ad7113a143976f9ba02fc8315851dd3c69a5d8055ee4dc1a1127ff4a95033cf52e9f357404ec913bc2d8605d678a12a5d6b67af7e9c29e7f139af8",
+      "created_at": 1793632235.4780312,
+      "nonce": 0
+    },
+    "BCT0c32487ad599a9b93721f36c14719f90e97eec73": {
+      "public_key": "3590619768001a4ee274358fde54c3863b959a7a433b51c369f95ffde735937203fa77fa7342e1027f813321d378cc9af0e95d3d50ad765620ae644618b08dc4",
+      "created_at": 1793632241.4812684,
+      "nonce": 0
+    },
+    "BCT07292264b75c5ceef48615c76c0123719cadd7a8": {
+      "public_key": "3a7cdb0bdf27b21605e598031b4c1b4b877f7064d51137204dee6ca703316a73cbb6b83f8bf6b458aa4fe774d820069412d0e991595670b6c48c988c90e439e4",
+      "created_at": 1793632243.863835,
+      "nonce": 0
+    },
+    "BCT181320c790c719a5f997fb35053a161777e89ea7": {
+      "public_key": "f829ac2106c3611436e62713b16c4af6e17aa64ca9294bcb882ebdac9b536e287aeb8661bb3e1582f5f3ef51273dde43a110ec9110c0ddc202e76d53717d9586",
+      "created_at": 1793632251.220374,
+      "nonce": 0
+    },
+    "BCT018a7496529c72b068151576da3df4443dc458bd": {
+      "public_key": "16713ea89d3c44ecec1374d6fc98f51fb6eabfe171d37c54c255a782fb7785dbe698960b4f0a34715fe6a7853d274443ffc9ffe761766f5ae2562af6eb534fea",
+      "created_at": 1793632256.7203853,
+      "nonce": 0
+    },
+    "BCTa45133b894658237b174f6338ec5f3bd09413295": {
+      "public_key": "d552d0ad8ced999ba1883ac23aac4d95b12393bf62a82806df77786df59e0266c4977bc402d2c28b2b6acee03f52f2ec50d36737aff505e2d60540bb665d9c05",
+      "created_at": 1793632275.6035042,
+      "nonce": 0
+    },
+    "BCTfccd57cb83e1c9dcef08384fdb26f8486e590555": {
+      "public_key": "e168b6862bebdeb9c792573ee07e68dc2ff6495443a9ed1e81afcd89a045efca5625308148013291d937d5a1440eb24c755989bd80667842c99ad8b690cfb4a7",
+      "created_at": 1793632278.9932456,
+      "nonce": 0
+    },
+    "BCTb755dfecf7729e55cfcdbc2a2bbe6b8e00b01147": {
+      "public_key": "b3adb23eaa067f6143519dc034018f5726ab5b018c73e885de54891bebfa38fc540b361c56c9f1207061ded5600ac38f540548521eb9bd9bd0ce27901263db6f",
+      "created_at": 1793632296.2863004,
+      "nonce": 0
+    },
+    "BCT87fedb65de32fc0250bc3acc934127492c780682": {
+      "public_key": "e758c664237f16d72a54f116d3df856413544cfe211390ad2805b741f0e9916f7e0ff984a948321c497ac1f2a0d5163cb50156f081d9c14505a019daf7d5f8c2",
+      "created_at": 1793632305.2319078,
+      "nonce": 0
+    },
+    "BCTf3fca5f4ec4b98a37c8d773986b77e37038a6c02": {
+      "public_key": "6842ca77f5fbbf08b095e4d7fe6436b3f4e8be8b1f23c92edd98e88c0bef24ba0f79e35d48ee29e6ad4e7f4152ac2672c1fe216f99763457af9f19718d4da7e9",
+      "created_at": 1793632307.6170802,
+      "nonce": 0
+    },
+    "BCT3ca84afa3d6030e063060421d5fd97a92195368e": {
+      "public_key": "ce6fc8d8db0b652b024b15dbd8be227fdd762d45b17e951e59cfb42375c2b15d5a3d116d407155923ec7372cd34d26536d69f9ae56f7d1eb794a016789a73772",
+      "created_at": 1793632330.9655294,
+      "nonce": 0
+    },
+    "BCT9a59ac8acf71a2bea5e372e4b1e4d8b6a6350e05": {
+      "public_key": "3f6310d403d66e3fd7e61b61ba9f072f72e3e38e84e66feb96466959362e5c1229453a90061e7a3fdfc450809053be3fe7af91c43ba48fed8e46000bb5a48ee0",
+      "created_at": 1793632333.9118392,
+      "nonce": 0
+    },
+    "BCTe11c12f0626e8744abf4e81fe2a0791bc9e2c2c2": {
+      "public_key": "9c497be77b70d748f0da939a2118c864495a91ae2ffa187ca47f54abdc10dc6ea71b981a8c16d3445e4a1742b900174dd4f35852070410a00abb8c5f54caeb84",
+      "created_at": 1793632411.3282485,
+      "nonce": 0
+    },
+    "BCTc1552d78dad59fbfeec644e3d50505d0db57a050": {
+      "public_key": "91f94db382e1c1f76a1d837f1fde2555d5bc5ed5896e4c288f8cde3fe1d5b04142172a8d7254791fc19c79cc1c1d07d5ee960b349eed1e48bc4e23a315628feb",
+      "created_at": 1793632419.7607148,
+      "nonce": 0
+    },
+    "BCTa96b149c2266bd33c46f3797ab1ec1d4126f42b7": {
+      "public_key": "6375326ef0118eab373df1537f5516acb78507c05988852d8702c58e9626bbad64a5f7b7e0c096f95dd3095335bb95eb278dfcb3c6b33d9c591e3e9015667d53",
+      "created_at": 1793632442.9465575,
+      "nonce": 0
+    },
+    "BCTbbc9267c6e477596e11104bdb4bf07737c95cdc7": {
+      "public_key": "8a9d19fc5f53171d5348c7e2d0fa1ef4da51a9ed74863d2c4235e8ab1e25b32a3b10749a1fbfa3a89c5832b847c1c333878c98035889107be8fb6ea76edde0ab",
+      "created_at": 1793632444.6538568,
+      "nonce": 0
+    },
+    "BCTb3d38fbb3a5ffc8247f783f49ce67bc9134268ee": {
+      "public_key": "cf75eb55b263e8f23ee3b6495d22e645c539f19b3cc3ccc532dae28fefeacc76b970b6882b09f11bc6d28831a3cbceee47e7f9145539e0c6dbb58d07406970e0",
+      "created_at": 1793632452.1595752,
+      "nonce": 0
+    },
+    "BCTe8973f56fa06f0bb5a8ba7c98ba2447f204bfb02": {
+      "public_key": "aeab33a017f38ff24a5665879d3ba201e5b1108c87adfd517228eb24adf677d409b6646de1a26c4f56b57d9ec85e841a841dc23f32fde130a2268b52b890a796",
+      "created_at": 1793632455.8718908,
+      "nonce": 0
+    },
+    "BCT9c8a4d17ebb565a8cc0b7883c7ee000668d636db": {
+      "public_key": "10c8ae8eebfe4492f32ebb794abfb2efb5f24aa00c25fe1931f5eb001d43c5ef5077a6c68f27f54ad7be8f37f9494f6016763ee136947c28ee532b5169260736",
+      "created_at": 1793632626.44577,
+      "nonce": 0
+    },
+    "BCTf8c255f129a61b296f197a7e70902c043c3da0bf": {
+      "public_key": "f56de4653d004683bc688e02cdc9709194ce6a53fccc585d81a5d35325cda39b2c20ba0bc4daee3f4247015cb410d4a2224d70509ac4198162f06863d4530b7a",
+      "created_at": 1793632634.162009,
+      "nonce": 1
+    },
+    "BCTa2411a9010028eeb227e092398ea29c52cc567ee": {
+      "public_key": "6f7635309062b0fe23be71a75b00bb3411bd21856e7bb5b68264f7a0890faf64ce17e6d332b1383d3626a8a0b553056c33d88862d7289b4fb3807ef7a40aa0e4",
+      "created_at": 1793633249.6480322,
+      "nonce": 0
+    },
+    "BCT1ea992f860a58390aebcd7aef04ed957668b05d5": {
+      "public_key": "63f4659418992240ea3dfa57c135d0a2266f5ad1b6950256aa02f482100f1e5174afb008e73eb9f4c30936ddb16b9bf0dd5f2927153f41e4c51c510c8824342a",
+      "created_at": 1793633413.6078086,
+      "nonce": 0
+    },
+    "BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d": {
+      "public_key": "b8467a952bd2fb949bfaa52f646b7db89fb47976599ec02f7ce720ae1b4a5226ee6e6fb56a534d208e709a99b2028a1d2dcff18ba97ba9768e4d58b47dfd1d60",
+      "created_at": 1793633424.2603235,
+      "nonce": 0
+    },
+    "BCT9fd1da9bab8d43c69a8de77738b67aef87f9504b": {
+      "public_key": "49166ce1c5ae65a9862c75c575ed69f28aebe7c1136b314a67ddd9fdb231fb2ccffc59ec981adaae934cfae3984ff13286703b3d0527e9313e0d52fe2c9c16f4",
+      "created_at": 1793633444.3679256,
+      "nonce": 0
+    },
+    "BCTcb7bfaa7610c692014a8d5b30e0066f6305a70b7": {
+      "public_key": "23d6163235adae540eb20256acd347dabf88a4f4d0db88f2b782b9a4e81bab9301e06cfc6cdde2fa0976000a6d6bc40d971beada1cb4bec333a74958f6974a7e",
+      "created_at": 1793641549.7838118,
+      "nonce": 0
+    },
+    "BCTe2d0839d38ac6b5402c97558212cc9a6fd807998": {
+      "public_key": "849b88c8795b04e78a64fc5deab20d8571a8908d0309ae61ace208cf462191fe44cdb1efa0efd37e2f7d42900be8903c74ef56cba3ca4ee39ded7ea6d972529a",
+      "created_at": 1793641693.548942,
+      "nonce": 0
+    },
+    "BCT7a320af1ab67b55210d2725184e58b25be528a90": {
+      "public_key": "ecf12fe87531ceeeb4394990c02fc8be2cba5d7ffa3436d2da8ab17dcc9abcccba8bd5d9a5d347dc425ce6b5702a3a0b991fdfe59f71d2c5c3a3c357a326e7f5",
+      "created_at": 1793641748.0428379,
+      "nonce": 0
+    },
+    "BCTfda01823cb81ed1bf0564ecd7c12413dff71d39d": {
+      "public_key": "f047f93e94de1101b19564dad2fb4cefed11b0379276bd2db98138cbff22312095784b6a6c04e322817e8f62cf5187c44e4f0904f8af9ac7483ee61870620d98",
+      "created_at": 1793641781.266467,
+      "nonce": 1
+    },
+    "BCT5dcbd001df19c3ee66cc41bed1fc18acfb2582c9": {
+      "public_key": "b02caff740e198e5fa78df9a1fe5d99c8ecd5acff16ed9b7f6495a2ddad0c262ecc6eedac9b35f73ca24cec78367b4928817fb836455853ba3de8bb8d8790455",
+      "created_at": 1793641782.6531868,
+      "nonce": 2
+    },
+    "BCT25883b7cbabf517f651c783a64f0a879210e5f01": {
+      "public_key": "463080dd35c367f05b90710962e3d472b85f22d7c158f199a1157ff8e14debfdbbc467a36bc3e8497d56ce1258e6892c75437c4208c6af229c3621d398fda102",
+      "created_at": 1793641822.8207002,
+      "nonce": 0
+    },
+    "BCT87b11a731cd3a43a485cc5a63a5a67983592a9cd": {
+      "public_key": "a63cbddeb3c02f371f931b8a4f09018113e66a3eaa6a258255a5adaf173cc729208f31a81b0f9a18a3af8acbbaffeabd95da03a66061f6f9818af26bec1ca6fc",
+      "created_at": 1793642025.2814486,
+      "nonce": 0
+    },
+    "BCT7c0b4de954dd9810afdf2d69d931c3cc86707805": {
+      "public_key": "98a41f5c59f3cc9ca69e9b5e2481cc7fd8bcb90aaa15d378b42e71a09e2b9b63a8745366209b211e839251054742e0b0c0db9e18e7e59e62222e5d48d6c3ccb4",
+      "created_at": 1793642027.6644213,
+      "nonce": 0
+    },
+    "BCT75a89872677096f4e6abf7fbe29e760ea41b31f5": {
+      "public_key": "b70c7ec844bf2e12aad1ae3c41dffb28d006ecebd1c41678041a5893ea889b543928cc4e2087edd4ffbdfc6ffdef796c74f4604d2b585d33e22902f3e12ea2ef",
+      "created_at": 1793642032.7121665,
+      "nonce": 1
+    },
+    "BCT75fd5234d6e9ae735f36ced6ac39cacb8db88163": {
+      "public_key": "26b71c342e58371d6bb13d950d7d4ecbf9b662fb84ab6e2f555430ef98bd1b71c3d5f6aeee61b154bd24949e1aa0d1cb0ed9a43ce49792c2791276def3f584bf",
+      "created_at": 1793642145.0808976,
+      "nonce": 0
+    },
+    "BCTe23c200ed1d408bc2b6a69b822e9a27272804fe4": {
+      "public_key": "e7d7ba8c7332375a044d26ae019c77a3e18df9c0764962675e189456f6152eaf2b4cbb278c3241296bd78644857d227bdebbb5a37d6c2096350d40ddb8849a28",
+      "created_at": 1793644531.2683673,
+      "nonce": 1
+    },
+    "BCTfaf8d8a7f11dc86e9be8966d58368ba9686396df": {
+      "public_key": "66d8f131b8fb71055e97cae3764f5cb88fd53fc6998f55a49e3cd6c8621f17af7366c58eb5d9cb2e71b625fb7ada71d501713008124a10411cd822cece9da997",
+      "created_at": 1793644744.104944,
+      "nonce": 0
+    },
+    "BCTd2b5a6e1365406237de5e4529fff13f55c1c9267": {
+      "public_key": "20281828b2c2fbac03f64c20fb17809345b31a6dc3e2b7d5a52c95bfb03fe33c6eab1547f0db2a67f2901839ba4149ed73c940266e724547ec4cd48dad5301b9",
+      "created_at": 1793644753.2252944,
+      "nonce": 0
+    },
+    "BCTa4c6d82386768f0bca5e0bc1617ecc8d35eb1ed2": {
+      "public_key": "bfd94919dae53ae9c6ad093bdbbfbb1e6c3b00a6cd6a8211fbe58152c772775194e3a77f8b9c2c7270dc87181d0c5be0feea435a68cd8a167a54e8ca3f45a217",
+      "created_at": 1793645094.493014,
+      "nonce": 0
+    },
+    "BCT97a1ffcb71b7a72893f06342fc3dba681b00020f": {
+      "public_key": "2fa2c520b6a79c562dd5b69aeb97d6d59ee829d38a86d47e4f267dd1d077d696cc859297111158f4b3b8676ffea98d9372c5cded7066c73027c4a5ca7d90b321",
+      "created_at": 1793645762.8253403,
+      "nonce": 0
+    },
+    "BCTb9e8b5280379face99597004e48e98acbf35a8bc": {
+      "public_key": "d8877e142ba63cc87265b0c2380ee2f381be5e5b7a661f9d76fc8454358df859cc17a364ecfecf64a12a903044bba52d0f745e9d1d05daa7dfe42c626c8dbd9a",
+      "created_at": 1793645774.3816476,
+      "nonce": 0
+    },
+    "BCT77c5a30595867f076d9ea128085e9235011a0bd2": {
+      "public_key": "486ce581f835a7348e7b09354cd1508198efca3407905edc4734e2aa1c72332a3867c873e838d3480f18ddc4eaed18474558231af2a505f8d466345f78023216",
+      "created_at": 1793645897.2500074,
+      "nonce": 1
+    },
+    "BCT9e9095b896462283113acaaacb296310c6e501fd": {
+      "public_key": "adbd38e9ae8c36ffe502641a958ded78d070857591083d781d4e8772b7d2ddafad236c10d29cff8f9f18608299cbbf5a9bc47163a69133a177fdb90e3bd49ca3",
+      "created_at": 1793646703.3758004,
+      "nonce": 0
+    },
+    "BCT91c7c7098aa4f81be4d5bb8b1a22e4e416a9c63c": {
+      "public_key": "bec6bf8300f8b8789b819cd6449695086946a6db6c078ac4d5b0b245b15829d9c74bc20711a4d5659311c8eac07aec6b1e9ca02786d0ae9f163c888047fa7e83",
+      "created_at": 1793646742.9483526,
+      "nonce": 7
+    },
+    "BCTd489344089405bbf148f1c5b245951d1d92e029f": {
+      "public_key": "e28942f2279de4cd3d527abe4dee42d65aa7fbd6a2532d9c8dd3ff12a655510cfd2a1a03101f56b2454d69b24e7fe319c7da60c57ecf87b07dac7fd50e9e969c",
+      "created_at": 1793647940.5463607,
+      "nonce": 4
+    },
+    "BCTa601b10bb496280b55289ae7c704412e2c989734": {
+      "public_key": "1cf33775624d57965df126749495188e8ff6ca7132a2e33722c06a1bb67768b5b269806fd088db1230387eb01d802c3f68dde92f6aa77bb676e01647b978c83d",
+      "created_at": 1793648106.779886,
+      "nonce": 1
+    },
+    "BCT1d8bf9af020f703f24dae16cf90158014862b3ac": {
+      "public_key": "61ae7882bfca0fa3a1d8842b8fa3a3f5415228f07767ef4f4d83915eea0f882006510141aee668031f91d0f5f211345e72f6edc6966e6698bc4b52cda3286046",
+      "created_at": 1793648281.613261,
+      "nonce": 0
+    },
+    "BCTf15b8f08cf840ff3e223066b58befed480b38191": {
+      "public_key": "2eda297ee4b04cf0e518e858e8166cd55e10aefba3b522628e4d12a3455f317e6cf770f5f10c88774b607444a4efd899688349981e2482835f4acc301671d23e",
+      "created_at": 1793649110.1772313,
+      "nonce": 0
+    },
+    "BCT6f2ee78eb5c61b741f8d85aa6d445803a1498db5": {
+      "public_key": "0bdb3ca79cf69d5a6bb9d4f0b590ac22653e875a081ea3d06e4081e1ac87e8c4fea89e2bb16ddfb73592b7c8b0ef4940e53c814efd41d5703fe8a4abea4ba817",
+      "created_at": 1793649154.0966623,
+      "nonce": 0
+    },
+    "BCTd9b9fb7419ade7f1e328828a364acc6927fc7c23": {
+      "public_key": "984a1684f33edec3e134290a8963757816b24bda53152047f7e4fe292493485656c717394e83909ef0cf8a1f3e458a0a1ede66669fc0fe7f4b9b129310317a86",
+      "created_at": 1793649170.0843976,
+      "nonce": 2
+    },
+    "BCT1c6cb18f89504c6b99547f71cfeef82513b0cbb5": {
+      "public_key": "8aba45ff6b9dc8367ec60942469ab9ddbebc9e17c4f12ea06012888a5e02460799ad4f3ec97ba8e2da9bd737eaa1239e306d712ba0a57456ed59fed140b41129",
+      "created_at": 1793649246.6538556,
+      "nonce": 0
+    },
+    "BCT0d8c77c0d5a600c46edd2bcadbd0dc7ce17719d4": {
+      "public_key": "3108d9bd05d1403873e7c23bb34f0a57424b31d0116099f6747dad84399411f701f5b79a70fa7cb385e971ce992024f3c95667d636eaf4ac2e46b4b8021e56ef",
+      "created_at": 1793649388.4390552,
+      "nonce": 3
+    },
+    "BCTebf2c526f7403e90905ec8e644fed9cf31950057": {
+      "public_key": "0beb36e3219570aafab454c86a5df4a8e3f5f651b559d2fc73ff73156a219de8bee58ad08c1b2da2f43a57c931d12e7f0d320142eac4ffed8122edfcc879e787",
+      "created_at": 1793652644.7342165,
+      "nonce": 1
+    },
+    "BCTf38106f995363afc314d7dc53b4e341e62fe1053": {
+      "public_key": "fc57b7728225618b90f0076412f023d72a8761a7c2708934cea37babcdb2541022c76ab81bc9c7c3e8db1ddb2feebb88fb5996f318f9b17f2bdab338400a4365",
+      "created_at": 1793656097.2134955,
+      "nonce": 0
+    },
+    "BCT9f57d29bfb21843697d14d34e11029fc722d02d7": {
+      "public_key": "18f4976451be0821fd3c43ec3b5d114c51ada8f8daf165e0c938574f4e1de3fdbe13f25d91526c90c33fa2eea05fa6830c98bd33ca805525d1b23bff7cb89b91",
+      "created_at": 1793658486.3117597,
+      "nonce": 0
+    }
+  },
+  "nodes": {
+    "node-stockholm-validator-01": {
+      "node_id": "node-stockholm-validator-01",
+      "name": "LockTrace Genesis Validator #1",
+      "endpoint": "http://129.151.205.219:5000",
+      "public_url": "https://locktrace.space",
+      "role": "Genesis Validator / Archival Seed",
+      "location": "Stockholm, Sweden (Oracle Cloud)",
+      "last_seen": 1793656766.8167267,
+      "created_at": 1793620000.0,
+      "status": "online",
+      "version": "1.2.0",
+      "block_height": 164,
+      "is_genesis": true
+    }
+  },
+  "total_transactions": 158,
+  "total_fees_collected": 0.4578
+}

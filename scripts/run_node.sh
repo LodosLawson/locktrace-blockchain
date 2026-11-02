@@ -1,33 +1,32 @@
 #!/bin/bash
-# ========================================================
-# LockTrace Community Node Launcher for Linux & macOS
-# ========================================================
+# =====================================================================
+# LockTrace Decentralized Node & Verified Web Launcher (Linux & macOS)
+# =====================================================================
 set -e
 
-echo "=== 🛡️ LockTrace Node Setup ==="
+echo "=== LockTrace Decentralized Node & Web Setup (v1.5.0) ==="
 
-# Check Python 3
 if ! command -v python3 &> /dev/null; then
     echo "Python 3 is required. Please install python3."
     exit 1
 fi
 
-# Create virtual environment if not present
-if [ ! -d "venv" ]; then
-    echo "Creating virtual environment..."
-    python3 -m venv venv
-fi
-
-source venv/bin/activate
-pip install -q --upgrade pip
-pip install -q -r requirements.txt
-
-read -p "Enter your Node Name (e.g., Istanbul-Node-01): " NODE_NAME
-read -p "Enter your Geographic Location (e.g., Istanbul, TR): " NODE_LOC
-
+read -p "Dugum Adi (orn: Istanbul-Node-01): " NODE_NAME
+read -p "Konum (orn: Istanbul, TR): " NODE_LOC
 NODE_NAME=${NODE_NAME:-"Community-Peer"}
 NODE_LOC=${NODE_LOC:-"Global"}
 
-echo "Starting LockTrace Node daemon..."
-python3 node_runner.py --name "$NODE_NAME" --location "$NODE_LOC"
+echo ""
+echo "Frontend Calisma Modunu Secin:"
+echo "  [1] Yerel Mod (Sadece bu bilgisayarda ac: http://127.0.0.1:5050 + Tarayiciyi Ac)"
+echo "  [2] Sunucu Modu (Agda / Internette sunucu olarak ac: http://0.0.0.0:5050)"
+echo "  [3] Sadece P2P Madenci/Dogrulayici (Web arayuzu kapali)"
+read -p "Seciminiz (Varsayilan: 2): " MODE
 
+if [ "$MODE" = "1" ]; then
+    python3 node_runner.py --name "$NODE_NAME" --location "$NODE_LOC" --local --open
+elif [ "$MODE" = "3" ]; then
+    python3 node_runner.py --name "$NODE_NAME" --location "$NODE_LOC" --no-web
+else
+    python3 node_runner.py --name "$NODE_NAME" --location "$NODE_LOC" --server --port 5050
+fi
