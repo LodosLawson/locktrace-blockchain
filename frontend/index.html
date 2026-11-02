@@ -1,0 +1,1074 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>LockTrace Bank | Decentralized BCT Account & Explorer</title>
+  
+  <!-- PWA & Mobile Web App Meta -->
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080c14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LockTrace">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+
+  <!-- Inter Font -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    :root {
+      --bg: #07090e;
+      --bg-surface: #0d121d;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #2563eb;
+      --accent-hover: #1d4ed8;
+      --accent-glow: rgba(37, 99, 235, 0.35);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --gold: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius-sm: 8px;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
+
+    /* Ambient Background Glow */
+    .ambient-glow {
+      position: fixed;
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 380px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.18) 0%, rgba(139, 92, 246, 0.08) 50%, rgba(0, 0, 0, 0) 80%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Top Navigation Bar */
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(7, 9, 14, 0.85);
+      border-bottom: 1px solid var(--card-border);
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .brand-wrap {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+    .brand-logo {
+      width: 36px;
+      height: 36px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+    }
+    .brand-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      letter-spacing: -0.4px;
+      color: #fff;
+    }
+    .brand-title span {
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+    }
+
+    .status-pill {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.72rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: var(--emerald);
+      padding: 0.35rem 0.75rem;
+      border-radius: 999px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .pulse-dot {
+      width: 6px;
+      height: 6px;
+      background: var(--emerald);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
+
+    .btn-install {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: #fff;
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 4px 14px var(--accent-glow);
+      transition: all 0.2s;
+    }
+    .btn-install.visible {
+      display: inline-flex;
+    }
+
+    /* Main Content Wrapper */
+    main {
+      flex: 1;
+      max-width: 860px;
+      width: 100%;
+      margin: 0 auto;
+      padding: 1.25rem;
+      z-index: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
+    }
+
+    /* ── TITANIUM OBSIDIAN BANK CARD ── */
+    .card-scene {
+      perspective: 1000px;
+    }
+    .bank-card {
+      position: relative;
+      background: linear-gradient(135deg, #182030 0%, #0d121c 60%, #080c14 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.15);
+      color: #fff;
+      overflow: hidden;
+      transition: transform 0.3s;
+    }
+    .bank-card::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 0; bottom: 0; left: 0;
+      background: radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
+
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 1.8rem;
+    }
+    .emv-chip {
+      width: 44px;
+      height: 32px;
+      background: linear-gradient(135deg, #fcd34d, #d97706);
+      border-radius: 6px;
+      position: relative;
+      border: 1px solid rgba(0,0,0,0.3);
+      box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);
+    }
+    .emv-chip::before {
+      content: '';
+      position: absolute;
+      top: 35%; left: 0; right: 0; height: 1px;
+      background: rgba(0,0,0,0.25);
+    }
+    .card-brand-label {
+      font-size: 0.75rem;
+      font-weight: 800;
+      letter-spacing: 2px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nfc-icon {
+      font-size: 1.1rem;
+      color: #94a3b8;
+    }
+
+    .card-balance-section {
+      margin-bottom: 1.6rem;
+    }
+    .card-balance-label {
+      font-size: 0.75rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #94a3b8;
+      margin-bottom: 0.3rem;
+    }
+    .card-balance-num {
+      font-size: 2.6rem;
+      font-weight: 800;
+      letter-spacing: -1px;
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+    }
+    .card-balance-num .curr {
+      font-size: 1.3rem;
+      color: #60a5fa;
+      font-weight: 700;
+    }
+
+    .card-bottom {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+    }
+    .card-holder {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #64748b;
+    }
+    .card-holder-name {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: #f1f5f9;
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+    }
+    .card-acc-num {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.8rem;
+      color: #cbd5e1;
+      letter-spacing: 1px;
+    }
+
+    /* ── QUICK BANKING ACTIONS ── */
+    .quick-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.75rem;
+    }
+    .quick-btn {
+      background: var(--bg-card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 0.9rem 0.5rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      color: var(--text);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .quick-btn:hover {
+      background: rgba(30, 41, 59, 0.8);
+      border-color: rgba(255,255,255,0.15);
+      transform: translateY(-2px);
+    }
+    .quick-btn:active {
+      transform: scale(0.96);
+    }
+    .quick-btn .btn-icon-circle {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+      display: grid;
+      place-items: center;
+      font-size: 1.25rem;
+    }
+    .quick-btn span.label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: #e2e8f0;
+    }
+
+    /* ── NAVIGATION TABS ── */
+    .nav-tabs {
+      display: flex;
+      background: rgba(255, 255, 255, 0.04);
+      padding: 4px;
+      border-radius: var(--radius-md);
+      gap: 4px;
+    }
+    .tab-btn {
+      flex: 1;
+      text-align: center;
+      padding: 0.7rem 0;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      border-radius: 10px;
+      cursor: pointer;
+      transition: 0.2s;
+      border: none;
+      background: transparent;
+    }
+    .tab-btn.active {
+      background: var(--accent);
+      color: #fff;
+      box-shadow: 0 4px 14px var(--accent-glow);
+    }
+
+    /* ── CONTENT PANELS ── */
+    .panel {
+      display: none;
+      background: var(--bg-card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      padding: 1.6rem;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
+    }
+    .panel.active {
+      display: block;
+      animation: tabFadeIn 0.25s ease-out;
+    }
+    @keyframes tabFadeIn {
+      from { opacity: 0; transform: translateY(6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel-header {
+      margin-bottom: 1.25rem;
+    }
+    .panel-title {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 0.3rem;
+    }
+    .panel-desc {
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    /* Forms */
+    .form-group {
+      margin-bottom: 1.2rem;
+    }
+    .form-group label {
+      display: block;
+      font-size: 0.75rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      color: var(--text-muted);
+      margin-bottom: 0.45rem;
+    }
+    input, textarea {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.4);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      color: #fff;
+      padding: 0.9rem 1.1rem;
+      font-size: 0.95rem;
+      outline: none;
+      transition: border 0.2s;
+    }
+    input:focus, textarea:focus {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+    input::placeholder { color: #475569; }
+
+    .fee-calc-box {
+      background: rgba(0, 0, 0, 0.25);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 0.85rem 1rem;
+      margin-bottom: 1.25rem;
+      display: flex;
+      justify-content: space-between;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+    .fee-calc-box strong {
+      color: var(--gold);
+    }
+
+    .btn-primary {
+      width: 100%;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 1rem;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      box-shadow: 0 6px 20px var(--accent-glow);
+      transition: all 0.2s;
+    }
+    .btn-primary:hover {
+      opacity: 0.95;
+      transform: translateY(-1px);
+    }
+    .btn-primary:active {
+      transform: scale(0.98);
+    }
+
+    .btn-success {
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      box-shadow: 0 6px 20px var(--emerald-glow);
+    }
+
+    /* ── STATEMENT LIST ── */
+    .tx-ledger {
+      display: flex;
+      flex-direction: column;
+    }
+    .tx-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 1rem 0;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .tx-row:last-child { border-bottom: none; }
+    .tx-info-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .tx-icon-bubble {
+      width: 40px;
+      height: 40px;
+      border-radius: 10px;
+      display: grid;
+      place-items: center;
+      font-size: 1.15rem;
+    }
+    .bubble-reward { background: rgba(16, 185, 129, 0.15); color: var(--emerald); }
+    .bubble-send { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .bubble-receive { background: rgba(37, 99, 235, 0.15); color: #60a5fa; }
+
+    .tx-title {
+      font-size: 0.88rem;
+      font-weight: 700;
+      color: #fff;
+    }
+    .tx-time {
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      margin-top: 2px;
+    }
+    .tx-amount-right {
+      text-align: right;
+    }
+    .tx-val {
+      font-size: 0.95rem;
+      font-weight: 800;
+    }
+    .val-pos { color: var(--emerald); }
+    .val-neg { color: #f87171; }
+    .tx-fee-note {
+      font-size: 0.7rem;
+      color: var(--gold);
+    }
+
+    /* ── NETWORK METRICS ── */
+    .metrics-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 0.85rem;
+      margin-bottom: 1.25rem;
+    }
+    @media (min-width: 640px) {
+      .metrics-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .metric-card {
+      background: rgba(0, 0, 0, 0.35);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-md);
+      padding: 1rem;
+      text-align: center;
+    }
+    .metric-val {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #60a5fa;
+    }
+    .metric-lbl {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+
+    /* ── PWA MODAL / BANNER ── */
+    .pwa-banner {
+      display: none;
+      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(124, 58, 237, 0.2));
+      border: 1px solid rgba(59, 130, 246, 0.4);
+      border-radius: var(--radius-md);
+      padding: 1rem 1.25rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+    }
+    .pwa-banner.show {
+      display: flex;
+    }
+
+    /* Toast Notification */
+    #toast {
+      position: fixed;
+      bottom: 2rem;
+      left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b;
+      color: #fff;
+      padding: 0.85rem 1.6rem;
+      border-radius: 999px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      border: 1px solid var(--card-border);
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+      z-index: 100;
+      pointer-events: none;
+    }
+    #toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-glow"></div>
+  <div id="toast">Notification</div>
+
+  <!-- Header -->
+  <header>
+    <div class="brand-wrap">
+      <div class="brand-logo">🛡️</div>
+      <div class="brand-title">LockTrace <span>Bank</span></div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-install" id="pwaInstallHeaderBtn" onclick="triggerPWAInstall()">
+        📲 Install App
+      </button>
+      <div class="status-pill">
+        <div class="pulse-dot"></div>
+        <span>Mainnet Node</span>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <!-- PWA Install Banner (Mobile & Desktop) -->
+    <div class="pwa-banner" id="pwaBanner">
+      <div>
+        <div style="font-weight:800; font-size:0.9rem; color:#fff;">Install LockTrace Banking App</div>
+        <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Get instant standalone mobile & desktop access</div>
+      </div>
+      <button class="btn-primary" style="width:auto; padding:0.5rem 1rem; font-size:0.8rem;" onclick="triggerPWAInstall()">
+        Install Now
+      </button>
+    </div>
+
+    <!-- ── TITANIUM BANK CARD ── -->
+    <section class="card-scene">
+      <div class="bank-card">
+        <div class="card-top">
+          <div class="emv-chip"></div>
+          <div class="card-brand-label">
+            <span>LOCKTRACE OBSIDIAN</span>
+            <span class="nfc-icon">🛜</span>
+          </div>
+        </div>
+
+        <div class="card-balance-section">
+          <div class="card-balance-label">Available Balance</div>
+          <div class="card-balance-num">
+            <span id="cardBalance">0.00</span>
+            <span class="curr">BCT</span>
+          </div>
+        </div>
+
+        <div class="card-bottom">
+          <div>
+            <div class="card-holder">Account Holder</div>
+            <div class="card-holder-name" onclick="copyAddress()" title="Click to copy account ID">
+              <span id="cardHolderText">No Wallet Connected</span>
+              <span>📋</span>
+            </div>
+          </div>
+          <div class="card-acc-num" id="cardMaskedNum">•••• •••• •••• 0000</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── QUICK BANKING ACTIONS ── -->
+    <div class="quick-grid">
+      <div class="quick-btn" onclick="openTab('send')">
+        <div class="btn-icon-circle">💸</div>
+        <span class="label">Send</span>
+      </div>
+      <div class="quick-btn" onclick="openTab('wallet')">
+        <div class="btn-icon-circle">🎁</div>
+        <span class="label">Open / Bonus</span>
+      </div>
+      <div class="quick-btn" onclick="openTab('statement')">
+        <div class="btn-icon-circle">📜</div>
+        <span class="label">Statement</span>
+      </div>
+      <div class="quick-btn" onclick="openTab('network')">
+        <div class="btn-icon-circle">🌐</div>
+        <span class="label">Explorer</span>
+      </div>
+    </div>
+
+    <!-- ── TABS SELECTOR ── -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="openTab('send')">Transfer</button>
+      <button class="tab-btn" onclick="openTab('wallet')">Account</button>
+      <button class="tab-btn" onclick="openTab('statement')">Statement</button>
+      <button class="tab-btn" onclick="openTab('network')">Network</button>
+    </div>
+
+    <!-- ── PANEL 1: TRANSFER (SEND) ── -->
+    <div class="panel active" id="tab-send">
+      <div class="panel-header">
+        <div class="panel-title">Instant Wire Transfer</div>
+        <div class="panel-desc">Transfer BCT securely across the network with 1% automated treasury redistribution.</div>
+      </div>
+
+      <div class="form-group">
+        <label>Beneficiary BCT Address</label>
+        <input type="text" id="txRecipient" placeholder="BCT40hexcharacters...">
+      </div>
+
+      <div class="form-group">
+        <label>Transfer Amount (BCT)</label>
+        <input type="number" id="txAmount" placeholder="0.00000000" step="0.00000001" min="0.00000001" oninput="calcFee()">
+      </div>
+
+      <div class="fee-calc-box">
+        <span>Treasury Fee (1%):</span>
+        <strong id="feeDisplay">0.00000000 BCT</strong>
+      </div>
+
+      <button class="btn-primary" onclick="handleSendMoney()">
+        ⚡ Authorize & Send Transfer
+      </button>
+    </div>
+
+    <!-- ── PANEL 2: WALLET & KEYS ── -->
+    <div class="panel" id="tab-wallet">
+      <div class="panel-header">
+        <div class="panel-title">Account Registration & Security</div>
+        <div class="panel-desc">Create a new institutional BCT vault or restore an existing account with your private key.</div>
+      </div>
+
+      <button class="btn-primary btn-success" style="margin-bottom:1.5rem;" onclick="handleCreateWallet()">
+        🎁 Open New Account (Claim 1.00 BCT Welcome Bonus)
+      </button>
+
+      <hr style="border:none; border-top:1px solid var(--card-border); margin:1.5rem 0;">
+
+      <div class="form-group">
+        <label>Import Account via Private Key (64-hex)</label>
+        <input type="password" id="importKeyInput" placeholder="Enter private key to restore...">
+      </div>
+      <button class="btn-primary" onclick="handleImportWallet()">
+        🔑 Restore Account
+      </button>
+
+      <div id="keyVaultBox" style="display:none; margin-top:1.5rem; background:rgba(0,0,0,0.4); border:1px solid rgba(239,68,68,0.3); border-radius:12px; padding:1.2rem;">
+        <div style="font-size:0.8rem; font-weight:800; color:#f87171; margin-bottom:0.4rem;">🔐 Private Key Backup (Keep Secret)</div>
+        <div id="dispPrivKey" style="font-family:'JetBrains Mono', monospace; font-size:0.75rem; word-break:break-all; color:#cbd5e1; margin-bottom:0.85rem;"></div>
+        <button class="btn-primary" style="background:#334155; padding:0.5rem; font-size:0.8rem;" onclick="copyPrivKey()">
+          Copy Private Key
+        </button>
+      </div>
+    </div>
+
+    <!-- ── PANEL 3: STATEMENT & ACTIVITY ── -->
+    <div class="panel" id="tab-statement">
+      <div class="panel-header">
+        <div class="panel-title">Recent Transactions & Statements</div>
+        <div class="panel-desc">Immutable on-chain transaction records and treasury allocations.</div>
+      </div>
+
+      <div class="tx-ledger" id="txLedgerList">
+        <div style="text-align:center; color:var(--text-muted); padding:2rem; font-size:0.85rem;">
+          Scanning on-chain ledger...
+        </div>
+      </div>
+    </div>
+
+    <!-- ── PANEL 4: NETWORK & EXPLORER ── -->
+    <div class="panel" id="tab-network">
+      <div class="panel-header">
+        <div class="panel-title">LockTrace Network Economics</div>
+        <div class="panel-desc">Real-time macro parameters of the 1 Trillion BCT monetary policy.</div>
+      </div>
+
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-val" id="metricSupply">1.00T</div>
+          <div class="metric-lbl">Total Supply</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="metricTreasury">-</div>
+          <div class="metric-lbl">Treasury Vault</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="metricCirculating">-</div>
+          <div class="metric-lbl">Circulating</div>
+        </div>
+        <div class="metric-card">
+          <div class="metric-val" id="metricBlocks">-</div>
+          <div class="metric-lbl">Blocks Mined</div>
+        </div>
+      </div>
+
+      <div style="background:rgba(0,0,0,0.35); border:1px solid var(--card-border); border-radius:12px; padding:1.2rem; font-size:0.82rem; color:var(--text-muted); line-height:1.6;">
+        <div>⚡ <strong>Monetary Distribution:</strong> 1 Trillion initial reserve. Each newly registered account receives an automated <strong>1.00 BCT</strong> grant from the vault.</div>
+        <div style="margin-top:0.4rem;">🔄 <strong>Deflationary Redistribution:</strong> Every transfer charges an exact <strong>1% fee</strong> that cycles directly back into the 1T Treasury Pool.</div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    // API Route
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5000/api/v1'
+      : '/api/v1';
+
+    let currentAccount = null;
+    let deferredPrompt = null;
+
+    // Toast
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    // Tabs
+    function openTab(tabId) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      const target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.add('active');
+
+      const tabs = ['send', 'wallet', 'statement', 'network'];
+      const idx = tabs.indexOf(tabId);
+      if (idx !== -1) {
+        document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+      }
+
+      if (tabId === 'statement' || tabId === 'network') refreshNetworkMetrics();
+    }
+
+    // Copy Handlers
+    function copyAddress() {
+      if (!currentAccount) return toast("No active account connected");
+      navigator.clipboard.writeText(currentAccount.address);
+      toast("Account address copied to clipboard!");
+    }
+
+    function copyPrivKey() {
+      if (!currentAccount) return;
+      navigator.clipboard.writeText(currentAccount.private_key);
+      toast("Private key copied! Store it securely.");
+    }
+
+    // Fee Calc
+    function calcFee() {
+      const amt = parseFloat(document.getElementById('txAmount').value) || 0;
+      const fee = amt * 0.01;
+      document.getElementById('feeDisplay').textContent = fee.toFixed(8) + " BCT";
+    }
+
+    // Update UI
+    function updateAccountUI(acc) {
+      currentAccount = acc;
+      localStorage.setItem('locktrace_bank_acc', JSON.stringify(acc));
+      
+      const shortAddr = acc.address.slice(0, 8) + '...' + acc.address.slice(-6);
+      document.getElementById('cardHolderText').textContent = shortAddr;
+      document.getElementById('cardMaskedNum').textContent = '•••• •••• •••• ' + acc.address.slice(-4).toUpperCase();
+      document.getElementById('dispPrivKey').textContent = acc.private_key;
+      document.getElementById('keyVaultBox').style.display = 'block';
+      refreshBalance();
+    }
+
+    // Refresh Balance
+    async function refreshBalance() {
+      if (!currentAccount) return;
+      try {
+        const res = await fetch(`${API_BASE}/balance/${currentAccount.address}`);
+        const data = await res.json();
+        if (data.success) {
+          const bal = Number(data.data.balance);
+          document.getElementById('cardBalance').textContent = bal.toLocaleString('en-US', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 8
+          });
+        }
+      } catch (err) {
+        console.error("Balance fetch error:", err);
+      }
+    }
+
+    // Open Account / Claim Bonus
+    async function handleCreateWallet() {
+      try {
+        toast("Opening new BCT account & minting 1.00 BCT bonus...");
+        const res = await fetch(`${API_BASE}/wallet/create`, { method: 'POST' });
+        const data = await res.json();
+        if (data.success) {
+          updateAccountUI(data.data);
+          toast("Welcome! 1.00 BCT initial grant deposited.");
+          openTab('send');
+        } else {
+          toast("Error: " + data.message);
+        }
+      } catch (err) {
+        toast("Network error: " + err.message);
+      }
+    }
+
+    // Import Account
+    async function handleImportWallet() {
+      const pk = document.getElementById('importKeyInput').value.trim();
+      if (!pk) return toast("Please enter a valid 64-hex private key");
+
+      try {
+        const res = await fetch(`${API_BASE}/wallet/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ private_key: pk })
+        });
+        const data = await res.json();
+        if (data.success) {
+          updateAccountUI(data.data);
+          toast("Account successfully restored!");
+          openTab('send');
+        } else {
+          toast("Error: " + data.message);
+        }
+      } catch (err) {
+        toast("Network error: " + err.message);
+      }
+    }
+
+    // Send Money
+    async function handleSendMoney() {
+      if (!currentAccount) return toast("Please open or restore an account first");
+      const recipient = document.getElementById('txRecipient').value.trim();
+      const amount = parseFloat(document.getElementById('txAmount').value);
+
+      if (!recipient || !amount || amount <= 0) {
+        return toast("Please specify a valid recipient address and amount");
+      }
+
+      try {
+        toast("Signing transaction cryptographically...");
+        const res = await fetch(`${API_BASE}/transaction`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sender: currentAccount.address,
+            receiver: recipient,
+            amount: amount,
+            private_key: currentAccount.private_key
+          })
+        });
+        const data = await res.json();
+        if (data.success) {
+          toast("Transfer completed! 1% fee returned to treasury.");
+          document.getElementById('txRecipient').value = '';
+          document.getElementById('txAmount').value = '';
+          calcFee();
+          refreshBalance();
+          openTab('statement');
+        } else {
+          toast("Transaction declined: " + data.message);
+        }
+      } catch (err) {
+        toast("Network error: " + err.message);
+      }
+    }
+
+    // Metrics & Statement
+    async function refreshNetworkMetrics() {
+      try {
+        const [statsRes, txsRes] = await Promise.all([
+          fetch(`${API_BASE}/stats`).then(r => r.json()),
+          fetch(`${API_BASE}/transactions/latest?limit=15`).then(r => r.json())
+        ]);
+
+        if (statsRes.success) {
+          const s = statsRes.data;
+          document.getElementById('metricBlocks').textContent = s.total_blocks.toLocaleString('en-US');
+          document.getElementById('metricTreasury').textContent = (s.treasury_balance / 1e9).toFixed(2) + 'B';
+          document.getElementById('metricCirculating').textContent = (s.circulating_supply).toFixed(2);
+        }
+
+        if (txsRes.success && txsRes.data.transactions) {
+          const list = document.getElementById('txLedgerList');
+          if (txsRes.data.transactions.length === 0) {
+            list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:2rem;">No transaction records found.</div>';
+          } else {
+            list.innerHTML = txsRes.data.transactions.map(t => {
+              const isReward = t.tx_type === 'reward';
+              const isGenesis = t.tx_type === 'genesis';
+              const isMine = currentAccount && (t.sender === currentAccount.address || t.receiver === currentAccount.address);
+
+              let icon = '💸';
+              let cls = 'bubble-send';
+              let sign = '-';
+              let valCls = 'val-neg';
+
+              if (isReward) {
+                icon = '🎁';
+                cls = 'bubble-reward';
+                sign = '+';
+                valCls = 'val-pos';
+              } else if (isGenesis) {
+                icon = '🏛️';
+                cls = 'bubble-receive';
+                sign = '';
+                valCls = 'val-pos';
+              } else if (currentAccount && t.receiver === currentAccount.address) {
+                icon = '📥';
+                cls = 'bubble-receive';
+                sign = '+';
+                valCls = 'val-pos';
+              }
+
+              return `
+                <div class="tx-row">
+                  <div class="tx-info-left">
+                    <div class="tx-icon-bubble ${cls}">${icon}</div>
+                    <div>
+                      <div class="tx-title">${isReward ? 'Account Welcome Grant' : (isGenesis ? 'Genesis Minting' : 'BCT Wire Transfer')}</div>
+                      <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleString('en-US')} • Block #${t.block_index}</div>
+                    </div>
+                  </div>
+                  <div class="tx-amount-right">
+                    <div class="tx-val ${valCls}">${sign}${Number(t.amount).toFixed(4)} BCT</div>
+                    ${t.fee > 0 ? `<div class="tx-fee-note">Fee: ${t.fee.toFixed(4)} BCT</div>` : ''}
+                  </div>
+                </div>
+              `;
+            }).join('');
+          }
+        }
+      } catch (err) {
+        console.error("Statement loading error:", err);
+      }
+    }
+
+    // ── PWA INSTALL LOGIC (Desktop & Mobile) ──
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('pwaInstallHeaderBtn').classList.add('visible');
+      document.getElementById('pwaBanner').classList.add('show');
+    });
+
+    async function triggerPWAInstall() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        if (outcome === 'accepted') {
+          toast("App installed successfully!");
+          document.getElementById('pwaInstallHeaderBtn').classList.remove('visible');
+          document.getElementById('pwaBanner').classList.remove('show');
+        }
+        deferredPrompt = null;
+      } else {
+        // iOS Safari Instructions
+        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+        if (isIOS) {
+          alert("To install on iOS:\n1. Tap the Share button (square with arrow)\n2. Select 'Add to Home Screen'\n3. Enjoy LockTrace Bank!");
+        } else {
+          toast("App is already installed or open in a supported browser.");
+        }
+      }
+    }
+
+    // Init
+    window.addEventListener('load', () => {
+      // Register Service Worker
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(console.error);
+      }
+
+      // Check Saved Wallet
+      const saved = localStorage.getItem('locktrace_bank_acc');
+      if (saved) {
+        try {
+          updateAccountUI(JSON.parse(saved));
+        } catch (e) {}
+      }
+
+      refreshNetworkMetrics();
+      setInterval(() => {
+        refreshBalance();
+        if (document.getElementById('tab-statement').classList.contains('active') ||
+            document.getElementById('tab-network').classList.contains('active')) {
+          refreshNetworkMetrics();
+        }
+      }, 7000);
+    });
+  </script>
+</body>
+</html>

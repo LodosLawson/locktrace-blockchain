@@ -1,0 +1,39 @@
+{
+  "id": "locktrace-space-bank",
+  "name": "LockTrace Bank - BCT Blockchain Account",
+  "short_name": "LockTrace",
+  "description": "Next-Gen Decentralized Banking & Digital Asset Management on LockTrace Blockchain",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#080c14",
+  "theme_color": "#0d1322",
+  "orientation": "portrait",
+  "categories": ["finance", "banking", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Send Funds",
+      "url": "/#send",
+      "description": "Instant Transfer"
+    },
+    {
+      "name": "Account Statement",
+      "url": "/#statement",
+      "description": "View History"
+    }
+  ]
+}

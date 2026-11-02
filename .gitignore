@@ -1,0 +1,9 @@
+__pycache__/
+*.py[cod]
+venv/
+logs/
+data/
+*.key
+*.pem
+deploy_package.tar.gz
+frontend_update.tar.gz
