@@ -127,10 +127,33 @@ class Blockchain:
         self.lock = threading.RLock()
         self.total_transactions = 0
         self.total_fees_collected = 0.0
+        self.nodes: Dict[str, dict] = {}
 
         with self.lock:
             if not self._load_state():
                 self._create_genesis_block()
+            self._init_default_nodes()
+
+    def _init_default_nodes(self):
+        genesis_node = {
+            "node_id": "node-stockholm-validator-01",
+            "name": "LockTrace Genesis Validator #1",
+            "endpoint": "http://129.151.205.219:5000",
+            "public_url": "https://locktrace.space",
+            "role": "Genesis Validator / Archival Seed",
+            "location": "Stockholm, Sweden (Oracle Cloud)",
+            "last_seen": time.time(),
+            "created_at": 1793620000.0,
+            "status": "online",
+            "version": "1.2.0",
+            "block_height": len(self.chain),
+            "is_genesis": True
+        }
+        if "node-stockholm-validator-01" not in self.nodes:
+            self.nodes["node-stockholm-validator-01"] = genesis_node
+        else:
+            self.nodes["node-stockholm-validator-01"]["last_seen"] = time.time()
+            self.nodes["node-stockholm-validator-01"]["block_height"] = len(self.chain)
 
     def _create_genesis_block(self):
         self.balances[TREASURY_ADDRESS] = TOTAL_SUPPLY
@@ -396,6 +419,56 @@ class Blockchain:
                     return False
             return True
 
+    def register_or_ping_node(self, node_id: str, name: str = "",
+                              endpoint: str = "", role: str = "Peer Node",
+                              location: str = "Decentralized",
+                              block_height: int = 0,
+                              version: str = "1.2.0") -> dict:
+        with self.lock:
+            self._load_state()
+            clean_id = (node_id or "").strip()
+            if not clean_id:
+                clean_id = f"node-{int(time.time())}"
+
+            node_info = self.nodes.get(clean_id, {
+                "node_id": clean_id,
+                "created_at": time.time(),
+                "is_genesis": False
+            })
+
+            node_info.update({
+                "name": (name or "").strip() or node_info.get("name", f"Community Node ({clean_id[:8]})"),
+                "endpoint": (endpoint or "").strip() or node_info.get("endpoint", "p2p-client"),
+                "role": role or node_info.get("role", "Peer Node"),
+                "location": location or node_info.get("location", "Global"),
+                "last_seen": time.time(),
+                "status": "online",
+                "version": version or "1.2.0",
+                "block_height": max(block_height, node_info.get("block_height", 0), len(self.chain))
+            })
+            self.nodes[clean_id] = node_info
+            self._save_state()
+            return node_info
+
+    def get_nodes(self) -> List[dict]:
+        with self.lock:
+            self._load_state()
+            self._init_default_nodes()
+            now = time.time()
+            res = []
+            for n_id, n in self.nodes.items():
+                copy_n = dict(n)
+                # If node hasn't pinged in 15 minutes, mark inactive
+                if not copy_n.get("is_genesis") and (now - copy_n.get("last_seen", 0) > 900):
+                    copy_n["status"] = "offline"
+                else:
+                    copy_n["status"] = "online"
+                copy_n["uptime_seconds"] = int(now - copy_n.get("created_at", now))
+                res.append(copy_n)
+            # Sort Genesis first, then by last_seen
+            res.sort(key=lambda x: (not x.get("is_genesis", False), -x.get("last_seen", 0)))
+            return res
+
     def get_stats(self) -> dict:
         with self.lock:
             self._load_state()
@@ -425,6 +498,7 @@ class Blockchain:
                 "chain": [b.to_dict() for b in self.chain],
                 "balances": self.balances,
                 "wallets": self.wallets,
+                "nodes": self.nodes,
                 "total_transactions": self.total_transactions,
                 "total_fees_collected": self.total_fees_collected
             }
@@ -446,8 +520,10 @@ class Blockchain:
 
             self.balances = state.get("balances", {})
             self.wallets = state.get("wallets", {})
+            self.nodes = state.get("nodes", {})
             self.total_transactions = state.get("total_transactions", 0)
             self.total_fees_collected = state.get("total_fees_collected", 0.0)
+            self._init_default_nodes()
 
             chain_data = state.get("chain", [])
             new_chain = []

@@ -295,5 +295,61 @@ def api_latest_blocks():
     return api_response(True, data={"blocks": blockchain.get_latest_blocks(count)})
 
 
+# ── Decentralized Network Nodes Endpoints ────────────────────
+@app.route("/api/v1/nodes", methods=["GET"])
+def api_get_nodes():
+    """List all registered network nodes with uptime and health."""
+    nodes = blockchain.get_nodes()
+    online_count = sum(1 for n in nodes if n.get("status") == "online")
+    return api_response(True, data={
+        "total_nodes": len(nodes),
+        "online_nodes": online_count,
+        "nodes": nodes
+    })
+
+
+@app.route("/api/v1/nodes/register", methods=["POST"])
+def api_register_node():
+    """Register or announce a community node into the decentralized network."""
+    data = request.get_json(silent=True) or {}
+    node_id = str(data.get("node_id", "")).strip()
+    name = str(data.get("name", "")).strip()
+    endpoint = str(data.get("endpoint", "")).strip()
+    role = str(data.get("role", "Peer Node")).strip()
+    location = str(data.get("location", "Decentralized")).strip()
+    block_height = int(data.get("block_height", 0))
+    version = str(data.get("version", "1.2.0")).strip()
+
+    if not node_id:
+        node_id = f"node-{secrets.token_hex(4)}"
+
+    node_info = blockchain.register_or_ping_node(
+        node_id=node_id,
+        name=name,
+        endpoint=endpoint,
+        role=role,
+        location=location,
+        block_height=block_height,
+        version=version
+    )
+    logger.info(f"Node Registered / Heartbeat: {node_info['name']} [{node_info['node_id']}] from {location}")
+    return api_response(True, message="Node registered successfully in LockTrace network", data=node_info, status=201)
+
+
+@app.route("/api/v1/nodes/ping", methods=["POST"])
+def api_ping_node():
+    """Heartbeat endpoint for connected nodes."""
+    data = request.get_json(silent=True) or {}
+    node_id = str(data.get("node_id", "")).strip()
+    if not node_id:
+        return api_response(False, message="Node ID required", status=400)
+
+    node_info = blockchain.register_or_ping_node(
+        node_id=node_id,
+        block_height=int(data.get("block_height", len(blockchain.chain)))
+    )
+    return api_response(True, message="Pong", data={"node_id": node_id, "status": "online", "network_height": len(blockchain.chain)})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

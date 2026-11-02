@@ -192,12 +192,51 @@
     /* Tabs */
     .nav-tabs {
       display: flex; background: rgba(255, 255, 255, 0.04); padding: 4px; border-radius: var(--radius-md); gap: 4px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
     }
+    .nav-tabs::-webkit-scrollbar { display: none; }
     .tab-btn {
-      flex: 1; text-align: center; padding: 0.7rem 0; font-size: 0.82rem; font-weight: 700;
+      flex: 1; text-align: center; padding: 0.7rem 0.8rem; font-size: 0.82rem; font-weight: 700;
       color: var(--text-muted); border-radius: 10px; cursor: pointer; border: none; background: transparent;
+      white-space: nowrap;
     }
     .tab-btn.active { background: var(--accent); color: #fff; }
+
+    /* Quick Grid */
+    .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    @media (min-width: 640px) {
+      .quick-grid { grid-template-columns: repeat(6, 1fr); }
+    }
+
+    /* Code Box & Badges */
+    .badge-get { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 2px 7px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .badge-post { background: rgba(37, 99, 235, 0.2); color: #60a5fa; border: 1px solid rgba(37, 99, 235, 0.4); padding: 2px 7px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    
+    .code-box {
+      position: relative; background: #070a10; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 0.9rem; margin: 0.5rem 0; overflow-x: auto;
+    }
+    .code-box pre { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #cbd5e1; line-height: 1.5; }
+    .btn-copy-code {
+      position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: #cbd5e1; font-size: 0.7rem; padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer;
+    }
+    .btn-copy-code:hover { background: rgba(255,255,255,0.18); color: #fff; }
+
+    /* API Endpoint Cards */
+    .api-card {
+      background: rgba(0, 0, 0, 0.35); border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 1.1rem; margin-bottom: 0.9rem; transition: border-color 0.2s;
+    }
+    .api-card:hover { border-color: rgba(255, 255, 255, 0.16); }
+    .api-card-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .api-endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .api-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+    .live-response-box {
+      margin-top: 0.8rem; background: #05070c; border: 1px solid rgba(37, 99, 235, 0.3);
+      border-radius: 8px; padding: 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+      color: #93c5fd; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    }
 
     /* Panel */
     .panel {
@@ -416,6 +455,14 @@
         <div class="btn-icon-circle">🔍</div>
         <span class="label">Explorer</span>
       </div>
+      <div class="quick-btn" onclick="openTab('nodes')">
+        <div class="btn-icon-circle">🌐</div>
+        <span class="label">Nodes</span>
+      </div>
+      <div class="quick-btn" onclick="openTab('api')">
+        <div class="btn-icon-circle">⚡</div>
+        <span class="label">API Docs</span>
+      </div>
     </div>
 
     <!-- Navigation Tabs -->
@@ -424,6 +471,8 @@
       <button class="tab-btn" onclick="openTab('wallet')">Account</button>
       <button class="tab-btn" onclick="openTab('statement')">Statement</button>
       <button class="tab-btn" onclick="openTab('explorer')">Explorer</button>
+      <button class="tab-btn" onclick="openTab('nodes')">Nodes</button>
+      <button class="tab-btn" onclick="openTab('api')">API Docs</button>
     </div>
 
     <!-- PANEL 1: TRANSFER (SEND) -->
@@ -578,6 +627,117 @@
         <div id="explorerBlocksList">Loading blocks...</div>
       </div>
     </div>
+
+    <!-- PANEL 5: DECENTRALIZED NETWORK NODES -->
+    <div class="panel" id="tab-nodes">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div class="panel-title">Decentralized Network Nodes</div>
+          <div class="panel-desc">Live P2P validator peers, archival seed nodes, and community operators.</div>
+        </div>
+        <button style="background:rgba(255,255,255,0.06); border:1px solid var(--card-border); color:var(--text-muted); padding:0.4rem 0.8rem; border-radius:8px; font-size:0.75rem; cursor:pointer;" onclick="refreshNodesData()">🔄 Refresh</button>
+      </div>
+
+      <!-- Network Overview Counters -->
+      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom:1.25rem;">
+        <div class="detail-card" style="margin:0; text-align:center; padding:1.2rem;">
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; letter-spacing:1px;">ACTIVE PEER NODES</div>
+          <div id="statTotalNodes" style="font-size:1.8rem; font-weight:800; color:#60a5fa; margin-top:4px;">1</div>
+        </div>
+        <div class="detail-card" style="margin:0; text-align:center; padding:1.2rem;">
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; letter-spacing:1px;">NETWORK CONSENSUS</div>
+          <div id="statConsensusStatus" style="font-size:1.8rem; font-weight:800; color:var(--emerald); margin-top:4px;">100% HEALTHY</div>
+        </div>
+      </div>
+
+      <!-- Live Nodes List -->
+      <div style="font-size:0.9rem; font-weight:800; color:#fff; margin-bottom:0.6rem;">🌐 Active Network Nodes</div>
+      <div id="nodesListContainer">
+        <div style="color:var(--text-muted); padding:1.5rem; text-align:center;">Discovering active nodes...</div>
+      </div>
+
+      <hr style="border:none; border-top:1px solid var(--card-border); margin:1.5rem 0;">
+
+      <!-- Run Your Own Node Guide -->
+      <div class="detail-card" style="border-color:rgba(37,99,235,0.4); background:rgba(15,23,42,0.7);">
+        <div style="font-size:1rem; font-weight:800; color:#60a5fa; margin-bottom:0.4rem; display:flex; align-items:center; gap:8px;">
+          <span>🖥️ Run Your Own Node (Linux / macOS / Windows)</span>
+        </div>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem; line-height:1.5;">
+          Join the decentralized network! Run an independent node on your local machine or VPS, sync the complete ledger, verify Proof-of-Work blocks locally, and announce your node in real-time.
+        </p>
+
+        <!-- OS Selection Subtabs -->
+        <div class="explorer-subtabs" style="margin-bottom:0.8rem;">
+          <button class="subtab-btn active" id="btnOsLinux" onclick="switchOsGuide('linux')">🐧 Linux</button>
+          <button class="subtab-btn" id="btnOsMac" onclick="switchOsGuide('mac')">🍎 macOS</button>
+          <button class="subtab-btn" id="btnOsWin" onclick="switchOsGuide('win')">🪟 Windows</button>
+        </div>
+
+        <!-- Linux Guide -->
+        <div id="guideLinux" class="os-guide-content">
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Run in Terminal (Ubuntu / Debian / CentOS / Arch):</div>
+          <div class="code-box">
+            <pre id="codeLinux">git clone https://github.com/LodosLawson/locktrace-blockchain.git
+cd locktrace-blockchain
+pip3 install -r requirements.txt
+python3 node_runner.py --name "My-Linux-Node" --location "Istanbul, Turkey"</pre>
+            <button class="btn-copy-code" onclick="copySnippet('codeLinux')">📋 Copy</button>
+          </div>
+        </div>
+
+        <!-- macOS Guide -->
+        <div id="guideMac" class="os-guide-content" style="display:none;">
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Run in Terminal (macOS with Python 3):</div>
+          <div class="code-box">
+            <pre id="codeMac">git clone https://github.com/LodosLawson/locktrace-blockchain.git
+cd locktrace-blockchain
+chmod +x scripts/run_node.sh
+./scripts/run_node.sh</pre>
+            <button class="btn-copy-code" onclick="copySnippet('codeMac')">📋 Copy</button>
+          </div>
+        </div>
+
+        <!-- Windows Guide -->
+        <div id="guideWin" class="os-guide-content" style="display:none;">
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Run in Windows PowerShell:</div>
+          <div class="code-box">
+            <pre id="codeWin">git clone https://github.com/LodosLawson/locktrace-blockchain.git
+cd locktrace-blockchain
+.\scripts\run_node.ps1</pre>
+            <button class="btn-copy-code" onclick="copySnippet('codeWin')">📋 Copy</button>
+          </div>
+        </div>
+
+        <!-- Quick Browser Node Announce -->
+        <div style="margin-top:1.2rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:0.9rem;">
+          <div style="font-size:0.8rem; font-weight:700; color:#fff; margin-bottom:0.4rem;">⚡ Quick Announce a Node to Network</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:6px;">
+            <input type="text" id="quickNodeName" placeholder="Node Name (e.g. My-Home-Node)" style="font-size:0.8rem; padding:0.6rem;">
+            <input type="text" id="quickNodeLoc" placeholder="Location (e.g. Berlin, Germany)" style="font-size:0.8rem; padding:0.6rem;">
+            <button class="btn-primary" style="width:auto; padding:0 1.2rem; font-size:0.8rem;" onclick="handleQuickNodeAnnounce()">Register Node</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 6: DEVELOPER REST API DOCUMENTATION -->
+    <div class="panel" id="tab-api">
+      <div class="panel-title">Developer REST API v1 Specification</div>
+      <div class="panel-desc">Interactive cryptographic documentation for wallets, atomic transfers, ledger inspection, and peer telemetry.</div>
+
+      <!-- Base URL box -->
+      <div style="background:rgba(0,0,0,0.4); border:1px solid var(--card-border); border-radius:12px; padding:0.85rem 1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Active Base URL</span>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.88rem; color:#60a5fa; margin-top:2px;" id="dispApiBaseUrl">/api/v1</div>
+        </div>
+        <button class="btn-primary" style="width:auto; padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="copyApiBase()">📋 Copy Base URL</button>
+      </div>
+
+      <!-- Interactive API Endpoint List -->
+      <div id="apiEndpointsContainer"></div>
+    </div>
   </main>
 
   <script>
@@ -621,7 +781,7 @@
       const target = document.getElementById('tab-' + tabId);
       if (target) target.classList.add('active');
 
-      const tabs = ['send', 'wallet', 'statement', 'explorer'];
+      const tabs = ['send', 'wallet', 'statement', 'explorer', 'nodes', 'api'];
       const idx = tabs.indexOf(tabId);
       if (idx !== -1) {
         document.querySelectorAll('.tab-btn')[idx].classList.add('active');
@@ -629,6 +789,8 @@
 
       if (tabId === 'statement') loadMyStatement();
       if (tabId === 'explorer') refreshExplorerData();
+      if (tabId === 'nodes') refreshNodesData();
+      if (tabId === 'api') renderApiDocs();
     }
 
     function switchExplorerView(view) {
@@ -1079,6 +1241,254 @@
       openTab('explorer');
       document.getElementById('explorerSearchInput').value = idx;
       handleExplorerSearch();
+    }
+
+    // ── Nodes & Multi-OS Guide Handlers ──
+    function switchOsGuide(os) {
+      document.getElementById('guideLinux').style.display = os === 'linux' ? 'block' : 'none';
+      document.getElementById('guideMac').style.display = os === 'mac' ? 'block' : 'none';
+      document.getElementById('guideWin').style.display = os === 'win' ? 'block' : 'none';
+      document.getElementById('btnOsLinux').classList.toggle('active', os === 'linux');
+      document.getElementById('btnOsMac').classList.toggle('active', os === 'mac');
+      document.getElementById('btnOsWin').classList.toggle('active', os === 'win');
+    }
+
+    function copySnippet(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      navigator.clipboard.writeText(el.innerText);
+      toast("Node setup commands copied to clipboard!");
+    }
+
+    async function refreshNodesData() {
+      const res = await safeFetchJson(`${API_BASE}/nodes`);
+      const container = document.getElementById('nodesListContainer');
+      if (res.ok && res.json && res.json.success) {
+        const data = res.json.data;
+        document.getElementById('statTotalNodes').textContent = data.total_nodes || 1;
+        document.getElementById('statConsensusStatus').textContent = data.online_nodes + " ONLINE";
+
+        if (!data.nodes || data.nodes.length === 0) {
+          container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:1.5rem;">No active nodes found.</div>';
+          return;
+        }
+
+        container.innerHTML = data.nodes.map(n => {
+          const isGenesis = n.is_genesis;
+          const isOnline = n.status === 'online';
+          const badgeClass = isGenesis ? 'background:rgba(245,158,11,0.15); color:var(--gold); border:1px solid rgba(245,158,11,0.3);' : 'background:rgba(37,99,235,0.15); color:#60a5fa; border:1px solid rgba(37,99,235,0.3);';
+
+          return `
+            <div class="detail-card" style="margin-bottom:0.75rem; border-color:${isGenesis ? 'rgba(245,158,11,0.3)' : 'var(--card-border)'};">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                <div>
+                  <div style="font-weight:800; font-size:0.95rem; color:#fff; display:flex; align-items:center; gap:8px;">
+                    <span>${isGenesis ? '🏛️' : '🖥️'} ${n.name}</span>
+                    <span style="font-size:0.68rem; padding:2px 8px; border-radius:999px; ${badgeClass}">
+                      ${n.role}
+                    </span>
+                  </div>
+                  <div style="font-size:0.72rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-top:2px;">
+                    ID: ${n.node_id} • v${n.version}
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:700; color:${isOnline ? 'var(--emerald)' : 'var(--danger)'};">
+                  <div style="width:7px; height:7px; border-radius:50%; background:${isOnline ? 'var(--emerald)' : 'var(--danger)'};"></div>
+                  <span>${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                </div>
+              </div>
+
+              <div class="detail-row"><span class="detail-lbl">Geographic Region:</span><span class="detail-val" style="color:#e2e8f0;">📍 ${n.location}</span></div>
+              <div class="detail-row"><span class="detail-lbl">P2P Endpoint:</span><span class="detail-val">${n.endpoint}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Consensus Block Height:</span><span class="detail-val" style="color:#60a5fa; font-weight:700;">#${n.block_height}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Last Heartbeat:</span><span class="detail-val">${new Date(n.last_seen * 1000).toLocaleTimeString()}</span></div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:1.5rem;">Unable to load nodes telemetry.</div>';
+      }
+    }
+
+    async function handleQuickNodeAnnounce() {
+      const name = document.getElementById('quickNodeName').value.trim();
+      const loc = document.getElementById('quickNodeLoc').value.trim();
+      if (!name) return toast("Please provide a name for your node");
+
+      const payload = {
+        name: name,
+        location: loc || "Decentralized",
+        role: "Community Peer Node",
+        endpoint: "https://locktrace.space"
+      };
+
+      const res = await safeFetchJson(`${API_BASE}/nodes/register`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
+
+      if (res.ok && res.json && res.json.success) {
+        toast(`Node '${name}' announced to network!`);
+        document.getElementById('quickNodeName').value = '';
+        document.getElementById('quickNodeLoc').value = '';
+        refreshNodesData();
+      } else {
+        toast("Registration error: " + (res.json?.message || "Failed"));
+      }
+    }
+
+    // ── Interactive API Documentation ──
+    const API_ENDPOINTS = [
+      {
+        method: 'GET',
+        path: '/health',
+        desc: 'Check blockchain node daemon health, consensus validity, and network version.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/health"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/stats',
+        desc: 'Returns global macro metrics: 1T total supply, treasury balance, circulating BCT, total blocks, and 1% fees recycled.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/stats"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'POST',
+        path: '/wallet/create',
+        desc: 'Cryptographically generates a 12-word BIP-39 mnemonic seed, derives SECP256k1 keys, and deposits 1.00 BCT welcome bonus.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/wallet/create"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'POST',
+        path: '/wallet/import',
+        desc: 'Restore an account from a 12-word seed phrase or 64-hex private key.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/wallet/import" -H "Content-Type: application/json" -d '{"mnemonic":"stick process eagle life uncover pilot sick aisle inmate visa put doll"}'`,
+        testable: false,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/balance/{address}',
+        desc: 'Calculates mathematically exact available balance directly from immutable on-chain blocks.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/balance/BCT_HAZINE_0000000000000000000000000000000000000000"`,
+        testable: true,
+        execPath: '/balance/BCT_HAZINE_0000000000000000000000000000000000000000'
+      },
+      {
+        method: 'POST',
+        path: '/transaction',
+        desc: 'Executes a cryptographic transfer between accounts with 1% automated treasury redistribution.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/transaction" -H "Content-Type: application/json" -d '{"sender":"BCT...","receiver":"BCT...","amount":1.0,"mnemonic":"..."}'`,
+        testable: false,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/transactions/latest?limit=10',
+        desc: 'Lists the latest confirmed transactions across the entire network.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/transactions/latest?limit=10"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/blocks/latest?count=10',
+        desc: 'Fetches recent Proof-of-Work mined blocks with transaction count, nonce, and hash.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/blocks/latest?count=10"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/explorer/search?q={query}',
+        desc: 'Universal ledger search by block number (e.g. 0), 64-hex transaction hash, or BCT address.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/explorer/search?q=0"`,
+        testable: true,
+        execPath: '/explorer/search?q=0'
+      },
+      {
+        method: 'GET',
+        path: '/nodes',
+        desc: 'List all active P2P validator peers, telemetry status, and consensus block heights.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/nodes"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'POST',
+        path: '/nodes/register',
+        desc: 'Register a community node daemon into the decentralized network.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/nodes/register" -H "Content-Type: application/json" -d '{"name":"Stockholm-Node","location":"Sweden"}'`,
+        testable: true,
+        samplePayload: { name: "Web-Explorer-Test-Node", location: "Global Cloud" }
+      }
+    ];
+
+    function renderApiDocs() {
+      const container = document.getElementById('apiEndpointsContainer');
+      const baseEl = document.getElementById('dispApiBaseUrl');
+      if (baseEl) baseEl.textContent = window.location.origin + API_BASE;
+      if (!container || container.children.length > 0) return;
+
+      container.innerHTML = API_ENDPOINTS.map((ep, idx) => {
+        const isGet = ep.method === 'GET';
+        const cardId = `api_resp_${idx}`;
+
+        return `
+          <div class="api-card">
+            <div class="api-card-header">
+              <div class="api-endpoint-path">
+                <span class="${isGet ? 'badge-get' : 'badge-post'}">${ep.method}</span>
+                <span>/api/v1${ep.path}</span>
+              </div>
+              ${ep.testable ? `<button class="btn-primary" style="width:auto; padding:0.3rem 0.75rem; font-size:0.72rem;" onclick="tryApiLive(${idx})">⚡ Try Live</button>` : ''}
+            </div>
+            <div class="api-desc">${ep.desc}</div>
+
+            <div class="code-box" style="margin-top:0.6rem;">
+              <pre id="curl_${idx}">${ep.curl}</pre>
+              <button class="btn-copy-code" onclick="copySnippet('curl_${idx}')">📋 Copy</button>
+            </div>
+
+            <div id="${cardId}" class="live-response-box" style="display:none;"></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function copyApiBase() {
+      navigator.clipboard.writeText(window.location.origin + API_BASE);
+      toast("Base URL copied to clipboard!");
+    }
+
+    async function tryApiLive(idx) {
+      const ep = API_ENDPOINTS[idx];
+      const targetPath = ep.execPath || ep.path;
+      const respBox = document.getElementById(`api_resp_${idx}`);
+      respBox.style.display = 'block';
+      respBox.textContent = `Sending ${ep.method} request to ${API_BASE}${targetPath}...`;
+
+      try {
+        const opts = { method: ep.method };
+        if (ep.method === 'POST') {
+          opts.headers = { 'Content-Type': 'application/json' };
+          if (ep.samplePayload) {
+            opts.body = JSON.stringify(ep.samplePayload);
+          }
+        }
+
+        const res = await fetch(`${API_BASE}${targetPath}`, opts);
+        const data = await res.json();
+        respBox.textContent = `HTTP ${res.status} ${res.statusText}\n\n` + JSON.stringify(data, null, 2);
+      } catch (err) {
+        respBox.textContent = `Request failed: ${err.message}`;
+      }
     }
 
     // PWA Install
