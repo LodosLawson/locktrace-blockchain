@@ -23,13 +23,14 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
 
 def is_valid_bct_address(addr: str) -> bool:
-    """Validate BCT address syntax."""
+    """Validate BCT address syntax (case-insensitive prefix BCT + 40 hex)."""
     if not addr or not isinstance(addr, str):
         return False
     clean = addr.strip()
-    if clean == TREASURY_ADDRESS or clean == "GENESIS_VAULT":
+    clean_upper = clean.upper()
+    if clean_upper == TREASURY_ADDRESS or clean_upper == "GENESIS_VAULT":
         return True
-    return clean.startswith("BCT") and len(clean) == 43 and all(c in "0123456789abcdefABCDEF" for c in clean[3:])
+    return clean_upper.startswith("BCT") and len(clean) == 43 and all(c in "0123456789abcdefABCDEF" for c in clean[3:])
 
 
 class Transaction:
@@ -146,6 +147,7 @@ class Blockchain:
         self._save_state()
 
     def verify_and_recalc_balance(self, address: str) -> float:
+        """Calculate mathematically exact balance from immutable on-chain history."""
         clean_addr = address.strip()
         bal = 0.0
         for block in self.chain:
@@ -157,6 +159,8 @@ class Blockchain:
                         bal += round(tx.amount, 8)
                 if tx.sender == clean_addr:
                     bal -= round(tx.amount, 8)
+                if clean_addr == TREASURY_ADDRESS and tx.fee > 0:
+                    bal += round(tx.fee, 8)
 
         for tx in self.pending_transactions:
             if tx.receiver == clean_addr:
@@ -166,6 +170,8 @@ class Blockchain:
                     bal += round(tx.amount, 8)
             if tx.sender == clean_addr:
                 bal -= round(tx.amount, 8)
+            if clean_addr == TREASURY_ADDRESS and tx.fee > 0:
+                bal += round(tx.fee, 8)
 
         return round(bal, 8)
 
@@ -174,37 +180,48 @@ class Blockchain:
             self._load_state()
             clean_addr = address.strip()
 
-            if clean_addr in self.wallets:
-                bal = self.get_balance(clean_addr)
-                return True, f"Wallet already active with balance: {bal} BCT"
+            current_bal = self.verify_and_recalc_balance(clean_addr)
+
+            # Check if this address has EVER received the welcome bonus in any block
+            has_received_reward = any(
+                tx.receiver == clean_addr and tx.tx_type == "reward"
+                for block in self.chain
+                for tx in block.transactions
+            ) or any(
+                tx.receiver == clean_addr and tx.tx_type == "reward"
+                for tx in self.pending_transactions
+            )
+
+            # If already has a real public key AND already received reward, return existing
+            if clean_addr in self.wallets and self.wallets[clean_addr].get("public_key") and has_received_reward:
+                return True, f"Wallet already active with balance: {current_bal} BCT"
 
             self.wallets[clean_addr] = {
-                "public_key": public_key,
-                "created_at": time.time()
+                "public_key": public_key or self.wallets.get(clean_addr, {}).get("public_key", ""),
+                "created_at": self.wallets.get(clean_addr, {}).get("created_at", time.time())
             }
 
-            treasury_bal = self.get_balance(TREASURY_ADDRESS)
-            if treasury_bal >= 1.0:
-                reward_tx = Transaction(
-                    sender=TREASURY_ADDRESS,
-                    receiver=clean_addr,
-                    amount=1.0,
-                    fee=0.0,
-                    signature="automated_welcome_grant_1bct",
-                    tx_type="reward"
-                )
-                self.balances[TREASURY_ADDRESS] = round(treasury_bal - 1.0, 8)
-                self.balances[clean_addr] = 1.0
-                self.pending_transactions.append(reward_tx)
-                self.total_transactions += 1
+            if not has_received_reward:
+                treasury_bal = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+                if treasury_bal >= 1.0:
+                    reward_tx = Transaction(
+                        sender=TREASURY_ADDRESS,
+                        receiver=clean_addr,
+                        amount=1.0,
+                        fee=0.0,
+                        signature="automated_welcome_grant_1bct",
+                        tx_type="reward"
+                    )
+                    self.pending_transactions.append(reward_tx)
+                    self.total_transactions += 1
+                    self._mine_block()
 
-                self._mine_block()
-                self._save_state()
-                return True, "Wallet created! 1.00 BCT welcome bonus deposited."
-            else:
-                self.balances[clean_addr] = 0.0
-                self._save_state()
-                return True, "Wallet created, treasury pool depleted."
+            # Always sync actual balance from verified ledger
+            final_bal = self.verify_and_recalc_balance(clean_addr)
+            self.balances[clean_addr] = final_bal
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+            return True, f"Wallet registered successfully! Available balance: {final_bal} BCT"
 
     def create_transaction(self, sender: str, receiver: str,
                            amount: float, signature: str) -> Tuple[bool, str, Optional[dict]]:
@@ -233,7 +250,7 @@ class Blockchain:
             if amount <= 0:
                 return False, "Amount must be strictly positive", None
 
-            sender_balance = self.get_balance(clean_sender)
+            sender_balance = self.verify_and_recalc_balance(clean_sender)
             if sender_balance < amount:
                 return False, f"Insufficient balance. Your balance is {sender_balance:.8f} BCT, attempted to send {amount:.8f} BCT", None
 
@@ -250,17 +267,17 @@ class Blockchain:
                 tx_type="transfer"
             )
 
-            # Update state
-            self.balances[clean_sender] = round(self.balances[clean_sender] - amount, 8)
-            self.balances[clean_receiver] = round(self.balances.get(clean_receiver, 0.0) + net_amount, 8)
-            self.balances[TREASURY_ADDRESS] = round(self.balances.get(TREASURY_ADDRESS, 0.0) + fee, 8)
-
             self.pending_transactions.append(tx)
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + fee, 8)
 
             if self.auto_mine:
                 self._mine_block()
+
+            # Synchronize balances directly from the verified ledger
+            self.balances[clean_sender] = self.verify_and_recalc_balance(clean_sender)
+            self.balances[clean_receiver] = self.verify_and_recalc_balance(clean_receiver)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
 
             self._save_state()
 
@@ -291,14 +308,10 @@ class Blockchain:
         return block
 
     def get_balance(self, address: str) -> float:
+        """Get mathematically verified balance directly from ledger."""
         with self.lock:
             self._load_state()
             clean_addr = address.strip()
-
-            cached = self.balances.get(clean_addr)
-            if cached is not None and cached > 0:
-                return round(cached, 8)
-
             recalc = self.verify_and_recalc_balance(clean_addr)
             self.balances[clean_addr] = recalc
             return recalc

@@ -278,6 +278,17 @@ def api_latest_transactions():
     return api_response(True, data={"transactions": txs[:limit], "total": len(txs)})
 
 
+@app.route("/api/v1/transactions/<address>", methods=["GET"])
+def api_wallet_transactions(address):
+    clean = address.strip()
+    if clean.lower() == "latest":
+        return api_latest_transactions()
+    if not is_valid_bct_address(clean):
+        return api_response(False, message="Invalid address syntax", status=400)
+    txs = blockchain.get_wallet_transactions(clean)
+    return api_response(True, data={"transactions": txs, "total": len(txs), "address": clean})
+
+
 @app.route("/api/v1/blocks/latest", methods=["GET"])
 def api_latest_blocks():
     count = min(request.args.get("count", 15, type=int), 50)

@@ -334,7 +334,7 @@
         <span>🔐 Secret Recovery Phrase</span>
       </div>
       <p style="font-size:0.85rem; color:#94a3b8; margin:0.6rem 0 1rem 0; line-height:1.5;">
-        Write down these <strong>12 secret words</strong> in order and store them in a safe place. This phrase is the <strong>only key</strong> to recover your BCT vault if you switch devices.
+        Write down these <strong>12 secret words</strong> in order and store them safely. This phrase is the <strong>only key</strong> to restore your BCT vault if you switch devices.
       </p>
 
       <div class="mnemonic-grid" id="modalWordsGrid"></div>
@@ -429,7 +429,7 @@
     <!-- PANEL 1: TRANSFER (SEND) -->
     <div class="panel active" id="tab-send">
       <div class="panel-title">Instant Wire Transfer</div>
-      <div class="panel-desc">Transfer BCT across the network with 1% automated treasury redistribution.</div>
+      <div class="panel-desc">Cryptographic BCT transfer with 1% automated treasury redistribution.</div>
 
       <div class="form-group">
         <label>Beneficiary Address</label>
@@ -472,22 +472,52 @@
         🔑 Restore Account
       </button>
 
+      <!-- Active Wallet Backup & Switch Box -->
       <div id="keyVaultBox" style="display:none; margin-top:1.5rem; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:1.2rem;">
-        <div style="font-size:0.8rem; font-weight:800; color:#60a5fa; margin-bottom:0.4rem;">🔐 Your 12-Word Recovery Phrase</div>
-        <div id="dispMnemonic" class="mnemonic-grid" style="margin:0.5rem 0;"></div>
-        <button class="btn-primary" style="background:#334155; padding:0.5rem; font-size:0.8rem; margin-top:0.5rem;" onclick="copyActiveMnemonic()">
-          Copy Words
-        </button>
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:0.85rem; font-weight:800; color:#60a5fa;">🔐 Active Account Credentials</div>
+          <button style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:0.3rem 0.7rem; border-radius:6px; font-size:0.75rem; cursor:pointer;" onclick="handleDisconnectWallet()">Disconnect / Switch</button>
+        </div>
+
+        <div style="margin-top:0.8rem; font-size:0.75rem; color:var(--text-muted);">
+          <span>Account Address:</span>
+          <div style="display:flex; gap:6px; margin-top:4px;">
+            <input type="text" id="dispAddressInput" readonly style="font-size:0.75rem; padding:0.5rem; font-family:'JetBrains Mono',monospace;">
+            <button class="btn-primary" style="width:auto; padding:0 0.8rem; font-size:0.75rem;" onclick="copyAddress()">Copy</button>
+          </div>
+        </div>
+
+        <div id="dispMnemonicWrap" style="margin-top:0.8rem;">
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">12-Word Recovery Phrase:</div>
+          <div id="dispMnemonic" class="mnemonic-grid" style="margin:0.5rem 0;"></div>
+          <button class="btn-primary" style="background:#334155; padding:0.5rem; font-size:0.8rem;" onclick="copyActiveMnemonic()">
+            📋 Copy Recovery Words
+          </button>
+        </div>
+
+        <div id="dispPkWrap" style="margin-top:0.8rem;">
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">64-Hex Private Key:</div>
+          <div style="display:flex; gap:6px;">
+            <input type="password" id="dispPkInput" readonly style="font-size:0.75rem; padding:0.5rem; font-family:'JetBrains Mono',monospace;">
+            <button class="btn-primary" style="background:#334155; width:auto; padding:0 0.8rem; font-size:0.75rem;" onclick="togglePkVisibility()">👁️</button>
+            <button class="btn-primary" style="width:auto; padding:0 0.8rem; font-size:0.75rem;" onclick="copyPrivateKey()">Copy</button>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- PANEL 3: STATEMENT -->
+    <!-- PANEL 3: STATEMENT (MY WALLET ONLY) -->
     <div class="panel" id="tab-statement">
-      <div class="panel-title">On-Chain Statements</div>
-      <div class="panel-desc">Immutable transaction history confirmed by the mainnet consensus.</div>
-      <div id="txLedgerList">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div class="panel-title">My Account Statement</div>
+          <div class="panel-desc">Personal transaction history for your connected vault.</div>
+        </div>
+        <button style="background:rgba(255,255,255,0.06); border:1px solid var(--card-border); color:var(--text-muted); padding:0.4rem 0.8rem; border-radius:8px; font-size:0.75rem; cursor:pointer;" onclick="loadMyStatement()">🔄 Refresh</button>
+      </div>
+      <div id="myStatementList">
         <div style="text-align:center; color:var(--text-muted); padding:2rem; font-size:0.85rem;">
-          Scanning on-chain ledger...
+          Loading account records...
         </div>
       </div>
     </div>
@@ -536,8 +566,8 @@
 
       <!-- Explorer View Switcher -->
       <div class="explorer-subtabs">
-        <button class="subtab-btn active" id="subtabTxsBtn" onclick="switchExplorerView('txs')">Recent Transactions</button>
-        <button class="subtab-btn" id="subtabBlocksBtn" onclick="switchExplorerView('blocks')">Latest Blocks</button>
+        <button class="subtab-btn active" id="subtabTxsBtn" onclick="switchExplorerView('txs')">Recent Global Transactions</button>
+        <button class="subtab-btn" id="subtabBlocksBtn" onclick="switchExplorerView('blocks')">Latest Mined Blocks</button>
       </div>
 
       <div id="explorerTxsView">
@@ -565,6 +595,25 @@
       setTimeout(() => el.classList.remove('show'), 3500);
     }
 
+    // ── Resilient JSON Fetch Helper ──
+    async function safeFetchJson(url, options = {}) {
+      try {
+        const res = await fetch(url, options);
+        const text = await res.text();
+        if (!text) {
+          return { ok: res.ok, status: res.status, json: null };
+        }
+        try {
+          const json = JSON.parse(text);
+          return { ok: res.ok, status: res.status, json: json };
+        } catch (parseErr) {
+          return { ok: false, status: res.status, errorText: text.slice(0, 160) };
+        }
+      } catch (netErr) {
+        return { ok: false, status: 0, networkError: netErr.message };
+      }
+    }
+
     function openTab(tabId) {
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -578,7 +627,8 @@
         document.querySelectorAll('.tab-btn')[idx].classList.add('active');
       }
 
-      if (tabId === 'statement' || tabId === 'explorer') refreshExplorerData();
+      if (tabId === 'statement') loadMyStatement();
+      if (tabId === 'explorer') refreshExplorerData();
     }
 
     function switchExplorerView(view) {
@@ -591,7 +641,7 @@
     function copyAddress() {
       if (!currentAccount) return toast("No active account connected");
       navigator.clipboard.writeText(currentAccount.address);
-      toast("Address copied!");
+      toast("Address copied to clipboard!");
     }
 
     function copyMnemonicPhrase() {
@@ -606,10 +656,39 @@
       toast("Recovery words copied!");
     }
 
+    function copyPrivateKey() {
+      if (!currentAccount || !currentAccount.private_key) return toast("No private key found");
+      navigator.clipboard.writeText(currentAccount.private_key);
+      toast("Private key copied!");
+    }
+
+    function togglePkVisibility() {
+      const input = document.getElementById('dispPkInput');
+      if (input.type === 'password') {
+        input.type = 'text';
+      } else {
+        input.type = 'password';
+      }
+    }
+
     function confirmMnemonicSaved() {
       document.getElementById('mnemonicModal').classList.remove('open');
       toast("Account secured with 12-word seed phrase!");
       openTab('send');
+    }
+
+    function handleDisconnectWallet() {
+      if (confirm("Disconnect active wallet? Make sure you have your 12 words saved.")) {
+        localStorage.removeItem('locktrace_bank_acc');
+        currentAccount = null;
+        document.getElementById('cardBalance').textContent = '0.00';
+        document.getElementById('cardHolderText').textContent = 'No Wallet Connected';
+        document.getElementById('cardMaskedNum').textContent = '•••• •••• •••• 0000';
+        document.getElementById('keyVaultBox').style.display = 'none';
+        document.getElementById('myStatementList').innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">Connect a wallet to view statements.</div>';
+        toast("Wallet disconnected.");
+        openTab('wallet');
+      }
     }
 
     function calcFee() {
@@ -619,6 +698,7 @@
     }
 
     function renderMnemonicGrid(wordsStr, targetElId) {
+      if (!wordsStr) return;
       const words = wordsStr.trim().split(/\s+/);
       const container = document.getElementById(targetElId);
       if (!container) return;
@@ -638,46 +718,63 @@
       document.getElementById('cardHolderText').textContent = shortAddr;
       document.getElementById('cardMaskedNum').textContent = '•••• •••• •••• ' + acc.address.slice(-4).toUpperCase();
       
-      if (acc.mnemonic) {
-        renderMnemonicGrid(acc.mnemonic, 'dispMnemonic');
-        document.getElementById('keyVaultBox').style.display = 'block';
+      // Update Credentials box fields
+      const addrInput = document.getElementById('dispAddressInput');
+      if (addrInput) addrInput.value = acc.address;
+      const pkInput = document.getElementById('dispPkInput');
+      if (pkInput) pkInput.value = acc.private_key || '';
+
+      // Immediately render known balance
+      if (acc.balance !== undefined && acc.balance !== null) {
+        const bal = Number(acc.balance);
+        document.getElementById('cardBalance').textContent = bal.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 8
+        });
       }
 
+      if (acc.mnemonic) {
+        renderMnemonicGrid(acc.mnemonic, 'dispMnemonic');
+        document.getElementById('dispMnemonicWrap').style.display = 'block';
+      } else {
+        document.getElementById('dispMnemonicWrap').style.display = 'none';
+      }
+      
+      document.getElementById('keyVaultBox').style.display = 'block';
+
       refreshBalance();
+      loadMyStatement();
     }
 
     async function refreshBalance() {
       if (!currentAccount) return;
-      try {
-        const res = await fetch(`${API_BASE}/balance/${currentAccount.address}`);
-        const data = await res.json();
-        if (data.success) {
-          const bal = Number(data.data.balance);
-          document.getElementById('cardBalance').textContent = bal.toLocaleString('en-US', {
-            minimumFractionDigits: 2,
-            maximumFractionDigits: 8
-          });
-        }
-      } catch (err) {
-        console.error("Balance fetch error:", err);
+      const res = await safeFetchJson(`${API_BASE}/balance/${currentAccount.address}`);
+      if (res.ok && res.json && res.json.success) {
+        const bal = Number(res.json.data.balance);
+        document.getElementById('cardBalance').textContent = bal.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 8
+        });
+        currentAccount.balance = bal;
+        localStorage.setItem('locktrace_bank_acc', JSON.stringify(currentAccount));
       }
     }
 
     async function handleCreateWallet() {
       try {
         toast("Generating 12-word seed & minting 1.00 BCT bonus...");
-        const res = await fetch(`${API_BASE}/wallet/create`, { method: 'POST' });
-        const data = await res.json();
-        if (data.success) {
-          updateAccountUI(data.data);
-          tempMnemonic = data.data.mnemonic;
+        const res = await safeFetchJson(`${API_BASE}/wallet/create`, { method: 'POST' });
+        if (res.ok && res.json && res.json.success) {
+          updateAccountUI(res.json.data);
+          tempMnemonic = res.json.data.mnemonic;
           renderMnemonicGrid(tempMnemonic, 'modalWordsGrid');
           document.getElementById('mnemonicModal').classList.add('open');
         } else {
-          toast("Error: " + data.message);
+          const msg = res.json?.message || res.errorText || res.networkError || "Account creation failed";
+          toast("Error: " + msg);
         }
       } catch (err) {
-        toast("Network error: " + err.message);
+        toast("Creation error: " + err.message);
       }
     }
 
@@ -690,25 +787,25 @@
 
       try {
         toast("Verifying cryptographic credentials...");
-        const res = await fetch(`${API_BASE}/wallet/import`, {
+        const res = await safeFetchJson(`${API_BASE}/wallet/import`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
-        if (data.success) {
-          updateAccountUI(data.data);
-          toast("Account restored! Balance: " + data.data.balance + " BCT");
+        if (res.ok && res.json && res.json.success) {
+          updateAccountUI(res.json.data);
+          toast("Account restored! Available: " + res.json.data.balance + " BCT");
           openTab('send');
         } else {
-          toast("Error: " + data.message);
+          const msg = res.json?.message || res.errorText || res.networkError || "Restoration failed";
+          toast("Declined: " + msg);
         }
       } catch (err) {
-        toast("Network error: " + err.message);
+        toast("Restoration error: " + err.message);
       }
     }
 
-    // ── Robust Wire Transfer ──
+    // ── Resilient Wire Transfer ──
     async function handleSendMoney() {
       const errBox = document.getElementById('txErrorAlert');
       errBox.style.display = 'none';
@@ -724,7 +821,7 @@
         return;
       }
 
-      if (recipient === currentAccount.address) {
+      if (recipient.toLowerCase() === currentAccount.address.toLowerCase()) {
         errBox.textContent = "Cannot send funds to your own address.";
         errBox.style.display = 'block';
         return;
@@ -732,6 +829,12 @@
 
       if (isNaN(amount) || amount <= 0) {
         errBox.textContent = "Please specify a valid transfer amount greater than 0.";
+        errBox.style.display = 'block';
+        return;
+      }
+
+      if (currentAccount.balance !== undefined && amount > currentAccount.balance) {
+        errBox.textContent = `Insufficient balance. Available: ${currentAccount.balance} BCT, requested: ${amount} BCT`;
         errBox.style.display = 'block';
         return;
       }
@@ -755,32 +858,105 @@
           payload.private_key = currentAccount.private_key;
         }
 
-        const res = await fetch(`${API_BASE}/transaction`, {
+        const res = await safeFetchJson(`${API_BASE}/transaction`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(payload)
         });
-        const data = await res.json();
 
-        if (data.success) {
+        if (res.ok && res.json && res.json.success) {
           toast("Transfer confirmed on-chain! 1% fee returned to vault.");
           document.getElementById('txRecipient').value = '';
           document.getElementById('txAmount').value = '';
           calcFee();
           refreshBalance();
+          loadMyStatement();
           openTab('statement');
         } else {
-          errBox.textContent = "Transfer Declined: " + (data.message || "Unknown error");
+          const msg = res.json?.message || res.errorText || res.networkError || "Transaction declined";
+          errBox.textContent = "Transfer Declined: " + msg;
           errBox.style.display = 'block';
-          toast("Declined: " + data.message);
+          toast("Declined: " + msg);
         }
       } catch (err) {
-        errBox.textContent = "Network Error: " + err.message;
+        errBox.textContent = "Transmission error: " + err.message;
         errBox.style.display = 'block';
         toast("Network error: " + err.message);
       } finally {
         btn.disabled = false;
         btn.textContent = "⚡ Authorize & Send Transfer";
+      }
+    }
+
+    // ── My Account Statement (Wallet-Specific Only!) ──
+    async function loadMyStatement() {
+      const container = document.getElementById('myStatementList');
+      if (!currentAccount) {
+        container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">Connect a wallet to view your personal statements.</div>';
+        return;
+      }
+
+      const res = await safeFetchJson(`${API_BASE}/transactions/${currentAccount.address}`);
+      if (res.ok && res.json && res.json.success && res.json.data.transactions) {
+        const txs = res.json.data.transactions;
+        if (txs.length === 0) {
+          container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">No transaction history for this account yet.</div>';
+          return;
+        }
+
+        container.innerHTML = txs.map(t => {
+          const isReward = t.tx_type === 'reward';
+          const isReceived = t.receiver.toLowerCase() === currentAccount.address.toLowerCase();
+          const isSent = t.sender.toLowerCase() === currentAccount.address.toLowerCase();
+
+          let icon = '💸';
+          let cls = 'bubble-send';
+          let title = 'Wire Transfer';
+          let sign = '-';
+          let valCls = 'val-neg';
+          let displayAmt = Number(t.amount).toFixed(4);
+
+          if (isReward) {
+            icon = '🎁';
+            cls = 'bubble-reward';
+            title = 'Welcome Bonus Grant';
+            sign = '+';
+            valCls = 'val-pos';
+            displayAmt = Number(t.amount).toFixed(4);
+          } else if (isReceived) {
+            icon = '📥';
+            cls = 'bubble-receive';
+            title = `Received from ${t.sender.slice(0, 8)}...`;
+            sign = '+';
+            valCls = 'val-pos';
+            displayAmt = Number(t.net_amount || t.amount).toFixed(4);
+          } else if (isSent) {
+            icon = '📤';
+            cls = 'bubble-send';
+            title = `Sent to ${t.receiver.slice(0, 8)}...`;
+            sign = '-';
+            valCls = 'val-neg';
+            displayAmt = Number(t.amount).toFixed(4);
+          }
+
+          return `
+            <div class="tx-row" onclick="inspectTx('${t.tx_hash}')">
+              <div class="tx-info-left">
+                <div class="tx-icon-bubble ${cls}">${icon}</div>
+                <div>
+                  <div class="tx-title">${title}</div>
+                  <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleString()} • Block #${t.block_index}</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div class="tx-val ${valCls}">${sign}${displayAmt} BCT</div>
+                ${isSent && t.fee > 0 ? `<div style="font-size:0.7rem; color:var(--gold);">Fee: ${Number(t.fee).toFixed(4)} BCT</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:1.5rem;">Ledger records synchronized. No transactions found.</div>';
       }
     }
 
@@ -793,122 +969,115 @@
       area.style.display = 'block';
       area.innerHTML = '<div style="color:var(--text-muted); padding:1rem; text-align:center;">Searching ledger...</div>';
 
-      try {
-        const res = await fetch(`${API_BASE}/explorer/search?q=${encodeURIComponent(q)}`);
-        const data = await res.json();
+      const res = await safeFetchJson(`${API_BASE}/explorer/search?q=${encodeURIComponent(q)}`);
+      if (res.ok && res.json && res.json.success) {
+        const type = res.json.data.type;
+        const r = res.json.data.result;
 
-        if (data.success) {
-          const type = data.data.type;
-          const r = data.data.result;
-
-          if (type === 'block') {
-            area.innerHTML = `
-              <div class="detail-card" style="border-color:var(--accent);">
-                <div style="font-weight:800; color:#60a5fa; margin-bottom:0.5rem;">📦 Block #${r.index}</div>
-                <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${r.hash}</span></div>
-                <div class="detail-row"><span class="detail-lbl">Previous Hash:</span><span class="detail-val">${r.previous_hash}</span></div>
-                <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
-                <div class="detail-row"><span class="detail-lbl">Nonce / PoW:</span><span class="detail-val">${r.nonce}</span></div>
-                <div class="detail-row"><span class="detail-lbl">Timestamp:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
-              </div>
-            `;
-          } else if (type === 'transaction') {
-            area.innerHTML = `
-              <div class="detail-card" style="border-color:var(--emerald);">
-                <div style="font-weight:800; color:var(--emerald); margin-bottom:0.5rem;">💸 Transaction Details</div>
-                <div class="detail-row"><span class="detail-lbl">Tx Hash:</span><span class="detail-val">${r.tx_hash}</span></div>
-                <div class="detail-row"><span class="detail-lbl">Block:</span><span class="detail-val">#${r.block_index} (${r.confirmations} Confirmations)</span></div>
-                <div class="detail-row"><span class="detail-lbl">Sender:</span><span class="detail-val">${r.sender}</span></div>
-                <div class="detail-row"><span class="detail-lbl">Receiver:</span><span class="detail-val">${r.receiver}</span></div>
-                <div class="detail-row"><span class="detail-lbl">Amount:</span><span class="detail-val">${r.amount} BCT</span></div>
-                <div class="detail-row"><span class="detail-lbl">1% Treasury Fee:</span><span class="detail-val" style="color:var(--gold);">${r.fee} BCT</span></div>
-                <div class="detail-row"><span class="detail-lbl">Time:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
-              </div>
-            `;
-          } else if (type === 'address') {
-            area.innerHTML = `
-              <div class="detail-card" style="border-color:var(--gold);">
-                <div style="font-weight:800; color:var(--gold); margin-bottom:0.5rem;">👤 Wallet Ledger Summary</div>
-                <div class="detail-row"><span class="detail-lbl">Address:</span><span class="detail-val">${r.address}</span></div>
-                <div class="detail-row"><span class="detail-lbl">Verified Balance:</span><span class="detail-val" style="color:var(--emerald); font-weight:700;">${r.balance} BCT</span></div>
-                <div class="detail-row"><span class="detail-lbl">Total Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
-              </div>
-            `;
-          }
-        } else {
-          area.innerHTML = `<div style="color:#f87171; padding:0.8rem; background:rgba(239,68,68,0.1); border-radius:10px; font-size:0.82rem;">${data.message}</div>`;
+        if (type === 'block') {
+          area.innerHTML = `
+            <div class="detail-card" style="border-color:var(--accent);">
+              <div style="font-weight:800; color:#60a5fa; margin-bottom:0.5rem;">📦 Block #${r.index}</div>
+              <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${r.hash}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Previous Hash:</span><span class="detail-val">${r.previous_hash}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Nonce / PoW:</span><span class="detail-val">${r.nonce}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Timestamp:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
+            </div>
+          `;
+        } else if (type === 'transaction') {
+          area.innerHTML = `
+            <div class="detail-card" style="border-color:var(--emerald);">
+              <div style="font-weight:800; color:var(--emerald); margin-bottom:0.5rem;">💸 Transaction Details</div>
+              <div class="detail-row"><span class="detail-lbl">Tx Hash:</span><span class="detail-val">${r.tx_hash}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Block:</span><span class="detail-val">#${r.block_index} (${r.confirmations} Confirmations)</span></div>
+              <div class="detail-row"><span class="detail-lbl">Sender:</span><span class="detail-val">${r.sender}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Receiver:</span><span class="detail-val">${r.receiver}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Amount:</span><span class="detail-val">${r.amount} BCT</span></div>
+              <div class="detail-row"><span class="detail-lbl">1% Treasury Fee:</span><span class="detail-val" style="color:var(--gold);">${r.fee} BCT</span></div>
+              <div class="detail-row"><span class="detail-lbl">Time:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
+            </div>
+          `;
+        } else if (type === 'address') {
+          area.innerHTML = `
+            <div class="detail-card" style="border-color:var(--gold);">
+              <div style="font-weight:800; color:var(--gold); margin-bottom:0.5rem;">👤 Wallet Ledger Summary</div>
+              <div class="detail-row"><span class="detail-lbl">Address:</span><span class="detail-val">${r.address}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Verified Balance:</span><span class="detail-val" style="color:var(--emerald); font-weight:700;">${r.balance} BCT</span></div>
+              <div class="detail-row"><span class="detail-lbl">Total Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
+            </div>
+          `;
         }
-      } catch (err) {
-        area.innerHTML = `<div style="color:#f87171; padding:0.8rem;">Search failed: ${err.message}</div>`;
+      } else {
+        const msg = res.json?.message || res.errorText || `No records found for '${q}'`;
+        area.innerHTML = `<div style="color:#f87171; padding:0.8rem; background:rgba(239,68,68,0.1); border-radius:10px; font-size:0.82rem;">${msg}</div>`;
       }
     }
 
-    // ── Refresh Explorer & Statements ──
+    // ── Refresh Global Explorer ──
     async function refreshExplorerData() {
-      try {
-        const [statsRes, txsRes, blocksRes] = await Promise.all([
-          fetch(`${API_BASE}/stats`).then(r => r.json()),
-          fetch(`${API_BASE}/transactions/latest?limit=20`).then(r => r.json()),
-          fetch(`${API_BASE}/blocks/latest?count=10`).then(r => r.json())
-        ]);
+      const [statsRes, txsRes, blocksRes] = await Promise.all([
+        safeFetchJson(`${API_BASE}/stats`),
+        safeFetchJson(`${API_BASE}/transactions/latest?limit=25`),
+        safeFetchJson(`${API_BASE}/blocks/latest?count=15`)
+      ]);
 
-        if (statsRes.success) {
-          const s = statsRes.data;
-          document.getElementById('expBlocks').textContent = s.total_blocks.toLocaleString('en-US');
-          document.getElementById('expTreasury').textContent = Number(s.treasury_balance).toLocaleString('en-US', { maximumFractionDigits: 4 }) + ' BCT';
-          document.getElementById('expCirculating').textContent = Number(s.circulating_supply).toFixed(4) + ' BCT';
-          document.getElementById('expFees').textContent = Number(s.total_fees_collected).toFixed(4) + ' BCT';
-        }
+      if (statsRes.ok && statsRes.json && statsRes.json.success) {
+        const s = statsRes.json.data;
+        document.getElementById('expBlocks').textContent = s.total_blocks.toLocaleString('en-US');
+        document.getElementById('expTreasury').textContent = Number(s.treasury_balance).toLocaleString('en-US', { maximumFractionDigits: 4 }) + ' BCT';
+        document.getElementById('expCirculating').textContent = Number(s.circulating_supply).toFixed(4) + ' BCT';
+        document.getElementById('expFees').textContent = Number(s.total_fees_collected).toFixed(4) + ' BCT';
+      }
 
-        if (txsRes.success && txsRes.data.transactions) {
-          const txs = txsRes.data.transactions;
-          const ledgerHtml = txs.map(t => {
-            const isReward = t.tx_type === 'reward';
-            const isGenesis = t.tx_type === 'genesis';
-            return `
-              <div class="tx-row" onclick="inspectTx('${t.tx_hash}')">
-                <div class="tx-info-left">
-                  <div class="tx-icon-bubble ${isReward ? 'bubble-reward' : (isGenesis ? 'bubble-receive' : 'bubble-send')}">
-                    ${isReward ? '🎁' : (isGenesis ? '🏛️' : '💸')}
-                  </div>
-                  <div>
-                    <div class="tx-title">${isReward ? 'Welcome Grant' : (isGenesis ? 'Genesis Mint' : 'Wire Transfer')}</div>
-                    <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleTimeString()} • Block #${t.block_index}</div>
-                  </div>
+      if (txsRes.ok && txsRes.json && txsRes.json.success && txsRes.json.data.transactions) {
+        document.getElementById('explorerTxsList').innerHTML = txsRes.json.data.transactions.map(t => {
+          const isReward = t.tx_type === 'reward';
+          const isGenesis = t.tx_type === 'genesis';
+          return `
+            <div class="tx-row" onclick="inspectTx('${t.tx_hash}')">
+              <div class="tx-info-left">
+                <div class="tx-icon-bubble ${isReward ? 'bubble-reward' : (isGenesis ? 'bubble-receive' : 'bubble-send')}">
+                  ${isReward ? '🎁' : (isGenesis ? '🏛️' : '💸')}
                 </div>
-                <div style="text-align:right;">
-                  <div class="tx-val ${isReward ? 'val-pos' : 'val-neg'}">${isReward ? '+' : ''}${Number(t.amount).toFixed(4)} BCT</div>
-                  ${t.fee > 0 ? `<div style="font-size:0.7rem; color:var(--gold);">Fee: ${t.fee.toFixed(4)} BCT</div>` : ''}
+                <div>
+                  <div class="tx-title">${isReward ? 'Welcome Grant' : (isGenesis ? 'Genesis Mint' : 'Public Wire Transfer')}</div>
+                  <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleTimeString()} • Block #${t.block_index}</div>
                 </div>
               </div>
-            `;
-          }).join('');
-
-          document.getElementById('txLedgerList').innerHTML = ledgerHtml || '<div style="color:var(--text-muted); padding:2rem; text-align:center;">No transactions found.</div>';
-          document.getElementById('explorerTxsList').innerHTML = ledgerHtml || '<div style="color:var(--text-muted); padding:1rem; text-align:center;">No transactions recorded.</div>';
-        }
-
-        if (blocksRes.success && blocksRes.data.blocks) {
-          document.getElementById('explorerBlocksList').innerHTML = blocksRes.data.blocks.map(b => `
-            <div class="detail-card" style="margin-bottom:0.75rem;">
-              <div style="display:flex; justify-content:space-between; font-weight:800; color:#60a5fa; margin-bottom:0.4rem;">
-                <span>📦 Block #${b.index}</span>
-                <span style="font-size:0.75rem; color:var(--text-muted);">${new Date(b.timestamp * 1000).toLocaleTimeString()}</span>
+              <div style="text-align:right;">
+                <div class="tx-val ${isReward ? 'val-pos' : 'val-neg'}">${isReward ? '+' : ''}${Number(t.amount).toFixed(4)} BCT</div>
+                ${t.fee > 0 ? `<div style="font-size:0.7rem; color:var(--gold);">Fee: ${t.fee.toFixed(4)} BCT</div>` : ''}
               </div>
-              <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${b.hash.slice(0, 16)}...${b.hash.slice(-8)}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${b.transaction_count} tx</span></div>
-              <div class="detail-row"><span class="detail-lbl">Nonce (PoW):</span><span class="detail-val">${b.nonce}</span></div>
             </div>
-          `).join('');
-        }
-      } catch (err) {
-        console.error("Explorer refresh error:", err);
+          `;
+        }).join('') || '<div style="color:var(--text-muted); padding:1rem; text-align:center;">No transactions recorded.</div>';
+      }
+
+      if (blocksRes.ok && blocksRes.json && blocksRes.json.success && blocksRes.json.data.blocks) {
+        document.getElementById('explorerBlocksList').innerHTML = blocksRes.json.data.blocks.map(b => `
+          <div class="detail-card" style="margin-bottom:0.75rem; cursor:pointer;" onclick="inspectBlock('${b.index}')">
+            <div style="display:flex; justify-content:space-between; font-weight:800; color:#60a5fa; margin-bottom:0.4rem;">
+              <span>📦 Block #${b.index}</span>
+              <span style="font-size:0.75rem; color:var(--text-muted);">${new Date(b.timestamp * 1000).toLocaleTimeString()}</span>
+            </div>
+            <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${b.hash.slice(0, 16)}...${b.hash.slice(-8)}</span></div>
+            <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${b.transaction_count} tx</span></div>
+            <div class="detail-row"><span class="detail-lbl">Nonce (PoW):</span><span class="detail-val">${b.nonce}</span></div>
+          </div>
+        `).join('');
       }
     }
 
     function inspectTx(hash) {
       openTab('explorer');
       document.getElementById('explorerSearchInput').value = hash;
+      handleExplorerSearch();
+    }
+
+    function inspectBlock(idx) {
+      openTab('explorer');
+      document.getElementById('explorerSearchInput').value = idx;
       handleExplorerSearch();
     }
 
@@ -944,8 +1113,10 @@
       refreshExplorerData();
       setInterval(() => {
         refreshBalance();
-        if (document.getElementById('tab-statement').classList.contains('active') ||
-            document.getElementById('tab-explorer').classList.contains('active')) {
+        if (document.getElementById('tab-statement').classList.contains('active')) {
+          loadMyStatement();
+        }
+        if (document.getElementById('tab-explorer').classList.contains('active')) {
           refreshExplorerData();
         }
       }, 5000);
