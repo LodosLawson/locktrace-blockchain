@@ -9,6 +9,7 @@
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg"/>
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#131315"/>
+  <meta name="mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-capable" content="yes"/>
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
   <meta name="apple-mobile-web-app-title" content="LockTrace"/>
@@ -201,6 +202,30 @@
 
   <!-- Main Content Wrapper with Left Margin for Desktop Sidebar -->
   <div class="md:pl-64">
+    <!-- Mobile Top App Bar (Optimized for handheld UX) -->
+    <header class="flex md:hidden fixed top-0 left-0 right-0 h-14 bg-surface/90 backdrop-blur-2xl border-b border-outline-variant/30 z-40 items-center justify-between px-3.5">
+      <div class="flex items-center gap-2">
+        <div class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40">
+          <span class="material-symbols-outlined text-primary text-[16px]">blur_on</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-sm font-bold tracking-tight text-on-surface leading-tight">LockTrace</span>
+          <span class="text-[9px] font-mono text-primary font-semibold uppercase leading-none">Mainnet</span>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-2">
+        <div id="mobileHeaderWalletPill" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/40 text-xs cursor-pointer active:scale-95 transition-all" onclick="openReceiveModal()">
+          <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+          <span class="font-mono text-[11px] text-on-surface font-semibold" id="mobileHeaderAddress">Cüzdan</span>
+          <span class="text-primary font-mono text-[11px] font-bold" id="mobileHeaderBalText">--</span>
+        </div>
+        <button class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center text-xs active:scale-90 transition-all" onclick="loadSpaceFeed(); refreshExplorerData();" title="Yenile" type="button">
+          <span class="material-symbols-outlined text-[16px]">refresh</span>
+        </button>
+      </div>
+    </header>
+
     <!-- Desktop Header -->
     <header class="hidden md:flex fixed top-0 left-64 right-0 h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20 z-40 items-center justify-between px-8">
       <div class="flex items-center gap-3">
@@ -1100,6 +1125,8 @@
       if (!acc) return;
       const shortAddr = acc.address.slice(0, 8) + '...' + acc.address.slice(-6);
       document.getElementById('headerAddress').textContent = shortAddr;
+      const mobAddrEl = document.getElementById('mobileHeaderAddress');
+      if (mobAddrEl) mobAddrEl.textContent = acc.address.slice(0, 6) + '...';
       document.getElementById('modalReceiveAddress').textContent = acc.address;
       document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(acc.address)}`;
 
@@ -1151,7 +1178,10 @@
         }
 
         document.getElementById('sendAvailableBal').textContent = `${bal.toFixed(4)} BCT`;
-        document.getElementById('sellAvailableBal').textContent = `${bal.toFixed(4)} BCT`;
+        const sellEl = document.getElementById('sellAvailableBal');
+        if (sellEl) sellEl.textContent = `${bal.toFixed(4)} BCT`;
+        const mobBalEl = document.getElementById('mobileHeaderBalText');
+        if (mobBalEl) mobBalEl.textContent = `${bal.toFixed(2)} BCT`;
         currentAccount.balance = bal;
         localStorage.setItem('locktrace_account', JSON.stringify(currentAccount));
         updateSpaceWalletUI();
@@ -1468,11 +1498,13 @@
     }
 
     function updateExchangeRateLabels() {
+      const el = document.getElementById('buyExchangeRateLabel');
+      if (!el) return;
       let r = bctPerUsdRate;
       if (tradeCurrency === 'EUR') r = round4(bctPerUsdRate * 1.08);
       else if (tradeCurrency === 'TRY') r = round4(bctPerUsdRate / 34.0);
 
-      document.getElementById('buyExchangeRateLabel').textContent = `1 ${tradeCurrency} ≈ ${r} BCT`;
+      el.textContent = `1 ${tradeCurrency} ≈ ${r} BCT`;
     }
 
     function setBuyFiatAmount(val) {
@@ -1825,6 +1857,7 @@
 
     function renderNodesCards(nodes) {
       const container = document.getElementById('nodesCardsGrid');
+      if (!container) return;
       if (!nodes || nodes.length === 0) {
         container.innerHTML = `<div class="p-4 text-xs text-on-surface-variant bg-surface-container-low rounded-xl">Aktif düğüm bulunamadı.</div>`;
         return;
@@ -1880,7 +1913,7 @@
         const shortHash = b.hash.slice(0, 10) + '...' + b.hash.slice(-8);
         const shortMiner = b.miner ? (b.miner.length > 12 ? b.miner.slice(0, 6) + '...' + b.miner.slice(-4) : b.miner) : 'Genesis';
         return `
-          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${b.hash || b.index}')" title="Blok Detaylarını ve Düğüm Bilgilerini İncele">
+          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${tx.block_index || tx.block_hash || ""}')" title="Blok Detaylarını ve Düğüm Bilgilerini İncele">
             <div class="flex items-center gap-2.5">
               <span class="font-mono font-bold text-primary px-2 py-0.5 rounded bg-primary/10">#${b.index}</span>
               <div class="flex flex-col">
@@ -1938,7 +1971,9 @@
 
     async function executeMineBlock() {
       const btn = document.getElementById('btnMineBlockNow');
-      btn.disabled = true;
+      if (btn) {
+        btn.disabled = true;
+      }
       btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">refresh</span><span>PoW Bloğu Kazılıyor...</span>`;
 
       const minerAddr = currentAccount?.address || 'BCT7404325cf37316e3c6396ff1eef80c4ef381c27b';
@@ -2037,16 +2072,18 @@
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      loadLocalAccount();
-      refreshExplorerData();
-      fetchTradeConfig();
-      loadSpaceFeed();
-      updateSpaceWalletUI();
+      try { loadLocalAccount(); } catch(e) { console.warn('loadLocalAccount:', e); }
+      try { refreshExplorerData(); } catch(e) { console.warn('refreshExplorerData:', e); }
+      try { fetchTradeConfig(); } catch(e) { console.warn('fetchTradeConfig:', e); }
+      try { loadSpaceFeed(); } catch(e) { console.warn('loadSpaceFeed:', e); }
+      try { updateSpaceWalletUI(); } catch(e) { console.warn('updateSpaceWalletUI:', e); }
+      
+      // Resilient background sync: ensures loadSpaceFeed ALWAYS runs even if explorer or balance encounters an issue
       setInterval(() => {
-        refreshExplorerData();
-        if (currentAccount) refreshCurrentAccountBalance();
-        loadSpaceFeed();
-      }, 10000);
+        try { refreshExplorerData(); } catch(e) { console.warn('refreshExplorerData:', e); }
+        try { if (currentAccount) refreshCurrentAccountBalance(); } catch(e) { console.warn('refreshCurrentAccountBalance:', e); }
+        try { loadSpaceFeed(); } catch(e) { console.warn('loadSpaceFeed:', e); }
+      }, 7000);
     });
 
     // ═════════════════════════════════════════════════════════════════════════
