@@ -12,6 +12,7 @@ import json
 import time
 import os
 import threading
+import secrets
 from typing import List, Dict, Optional, Tuple
 
 
@@ -37,11 +38,12 @@ def is_valid_bct_address(addr: str) -> bool:
 
 
 class Transaction:
-    """Cryptographic On-Chain Transaction."""
+    """Cryptographic On-Chain Transaction with metadata and extra_data support."""
 
     def __init__(self, sender: str, receiver: str, amount: float,
                  fee: float = 0.0, signature: str = "",
-                 timestamp: float = None, tx_type: str = "transfer"):
+                 timestamp: float = None, tx_type: str = "transfer",
+                 extra_data: Optional[dict] = None):
         self.sender = sender.strip()
         self.receiver = receiver.strip()
         self.amount = float(amount)
@@ -49,10 +51,11 @@ class Transaction:
         self.signature = signature
         self.timestamp = timestamp or time.time()
         self.tx_type = tx_type
+        self.extra_data = extra_data or {}
 
     def to_dict(self) -> dict:
         net = round(self.amount - self.fee, 8) if self.tx_type == "transfer" else round(self.amount, 8)
-        return {
+        d = {
             "sender": self.sender,
             "receiver": self.receiver,
             "amount": self.amount,
@@ -63,16 +66,22 @@ class Transaction:
             "tx_type": self.tx_type,
             "tx_hash": self.hash()
         }
+        if self.extra_data:
+            d["extra_data"] = self.extra_data
+        return d
 
     def hash(self) -> str:
-        data = json.dumps({
+        d = {
             "sender": self.sender,
             "receiver": self.receiver,
             "amount": self.amount,
             "fee": self.fee,
             "timestamp": self.timestamp,
             "tx_type": self.tx_type
-        }, sort_keys=True)
+        }
+        if self.extra_data:
+            d["extra_data"] = self.extra_data
+        data = json.dumps(d, sort_keys=True)
         return hashlib.sha256(data.encode()).hexdigest()
 
 
@@ -134,6 +143,7 @@ class Blockchain:
         self.total_transactions = 0
         self.total_fees_collected = 0.0
         self.nodes: Dict[str, dict] = {}
+        self.space_posts: Dict[str, dict] = {}
 
         with self.lock:
             if not self._load_state():
@@ -188,10 +198,17 @@ class Blockchain:
                 if tx.receiver == clean_addr:
                     if tx.tx_type == "transfer":
                         bal += round(tx.amount - tx.fee, 8)
+                    elif tx.tx_type == "space_post":
+                        bal += round(tx.amount - tx.fee, 8)
+                    elif tx.tx_type in ("space_like", "space_comment"):
+                        bal += round(tx.extra_data.get("treasury_cut", 0.0), 8)
                     else:
                         bal += round(tx.amount, 8)
                 if tx.sender == clean_addr:
                     bal -= round(tx.amount, 8)
+                if tx.tx_type in ("space_like", "space_comment") and tx.extra_data:
+                    if clean_addr == tx.extra_data.get("author"):
+                        bal += round(tx.extra_data.get("author_cut", 0.0), 8)
                 if clean_addr == TREASURY_ADDRESS and tx.tx_type == "transfer" and tx.fee > 0:
                     bal += round(tx.fee, 8)
 
@@ -199,10 +216,17 @@ class Blockchain:
             if tx.receiver == clean_addr:
                 if tx.tx_type == "transfer":
                     bal += round(tx.amount - tx.fee, 8)
+                elif tx.tx_type == "space_post":
+                    bal += round(tx.amount - tx.fee, 8)
+                elif tx.tx_type in ("space_like", "space_comment"):
+                    bal += round(tx.extra_data.get("treasury_cut", 0.0), 8)
                 else:
                     bal += round(tx.amount, 8)
             if tx.sender == clean_addr:
                 bal -= round(tx.amount, 8)
+            if tx.tx_type in ("space_like", "space_comment") and tx.extra_data:
+                if clean_addr == tx.extra_data.get("author"):
+                    bal += round(tx.extra_data.get("author_cut", 0.0), 8)
 
         return round(bal, 8)
 
@@ -323,149 +347,292 @@ class Blockchain:
 
             return True, f"Transfer confirmed! Sent: {net_amount} BCT, 1% Fee ({fee} BCT) returned to treasury vault.", tx_info
 
-    def execute_fiat_purchase(self, buyer_address: str, fiat_amount: float,
-                              currency: str = "USD", payment_ref: str = "",
-                              bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
+    def create_space_post(self, author: str, content: str, signature: str = "") -> Tuple[bool, str, Optional[dict]]:
         """
-        Allows users to purchase BCT with fiat / Thirdweb Pay on-ramp.
-        Tokens are debited from the Treasury vault and credited directly to the buyer's wallet,
-        with an on-chain block mined immediately.
+        Creates an immutable, on-chain thought/tweet in LockTrace Space.
+        Cost: 0.10 BCT.
+        Tokenomics: 80% (0.08 BCT) returns to Treasury (circulating supply deflation),
+        20% (0.02 BCT) is validator/miner fee.
+        Character Limit: 3 - 280 characters.
+        Automatically packages into a PoW block!
         """
         with self.lock:
             self._load_state()
-            clean_buyer = buyer_address.strip()
-            if not is_valid_bct_address(clean_buyer):
-                return False, f"Invalid buyer address format: '{clean_buyer}'", None
+            clean_author = author.strip()
+            if not is_valid_bct_address(clean_author):
+                return False, f"Invalid author address: '{clean_author}'", None
 
-            if fiat_amount <= 0:
-                return False, "Fiat purchase amount must be greater than zero", None
+            clean_text = content.strip()
+            if len(clean_text) < 3:
+                return False, "Düşünce metni en az 3 karakter olmalıdır.", None
+            if len(clean_text) > 280:
+                return False, "Düşünce metni maksimum 280 karakter olabilir.", None
 
-            curr = currency.upper().strip()
-            rate = bct_per_usd
-            if curr == "EUR":
-                rate = round(bct_per_usd * 1.08, 4)
-            elif curr == "TRY":
-                rate = round(bct_per_usd / 34.0, 4)
+            author_bal = self.verify_and_recalc_balance(clean_author)
+            post_cost = 0.10
+            if author_bal < post_cost:
+                return False, f"Yetersiz bakiye! Paylaşım ücreti {post_cost:.2f} BCT'dir. Mevcut bakiyeniz: {author_bal:.4f} BCT.", None
 
-            bct_amount = round(fiat_amount * rate, 8)
-            if bct_amount <= 0:
-                return False, "Calculated BCT token amount too small to mint", None
+            post_id = f"post_{secrets.token_hex(8)}"
+            fee = 0.02
+            treasury_cut = 0.08
+            sig = signature or f"space_post_sig_{post_id}"
 
-            treasury_bal = self.verify_and_recalc_balance(TREASURY_ADDRESS)
-            if treasury_bal < bct_amount:
-                return False, "Insufficient Treasury reserve to fulfill purchase request", None
-
-            if clean_buyer not in self.wallets:
-                self.wallets[clean_buyer] = {"public_key": "", "created_at": time.time()}
-
-            ref_id = payment_ref or hashlib.sha256(f"{clean_buyer}:{fiat_amount}:{time.time()}".encode()).hexdigest()[:16]
-            sig = f"thirdweb_onramp_{ref_id}"
-            tx = Transaction(
-                sender=TREASURY_ADDRESS,
-                receiver=clean_buyer,
-                amount=bct_amount,
-                fee=0.0,
-                signature=sig,
-                tx_type="fiat_buy"
-            )
-
-            self.pending_transactions.append(tx)
-            self.total_transactions += 1
-
-            # Automatically mine block to settle purchase on-chain immediately
-            block = self._mine_block()
-
-            self.balances[clean_buyer] = self.verify_and_recalc_balance(clean_buyer)
-            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
-            self._save_state()
-
-            receipt = {
-                "tx_hash": tx.hash(),
-                "block_index": block.index if block else len(self.chain),
-                "buyer_address": clean_buyer,
-                "bct_amount": bct_amount,
-                "fiat_amount": fiat_amount,
-                "currency": curr,
-                "exchange_rate": rate,
-                "payment_ref": ref_id,
-                "buyer_new_balance": self.balances[clean_buyer]
+            extra_data = {
+                "post_id": post_id,
+                "content": clean_text,
+                "author": clean_author,
+                "treasury_cut": treasury_cut
             }
-            return True, f"Successfully purchased {bct_amount:,.4f} BCT with {fiat_amount:.2f} {curr}!", receipt
 
-    def execute_fiat_sale(self, seller_address: str, bct_amount: float,
-                          payout_info: str = "", currency: str = "USD",
-                          bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
-        """
-        Allows users to sell BCT for fiat (payout / off-ramp).
-        BCT tokens are transferred back to the Treasury vault, and fiat payout is initiated.
-        """
-        with self.lock:
-            self._load_state()
-            clean_seller = seller_address.strip()
-            if not is_valid_bct_address(clean_seller):
-                return False, f"Invalid seller address format: '{clean_seller}'", None
-
-            if bct_amount <= 0:
-                return False, "BCT sell amount must be greater than zero", None
-
-            seller_bal = self.verify_and_recalc_balance(clean_seller)
-            if seller_bal < bct_amount:
-                return False, f"Insufficient balance. Your balance is {seller_bal:.4f} BCT, attempted to sell {bct_amount:.4f} BCT", None
-
-            curr = currency.upper().strip()
-            rate = bct_per_usd
-            if curr == "EUR":
-                rate = round(bct_per_usd * 1.08, 4)
-            elif curr == "TRY":
-                rate = round(bct_per_usd / 34.0, 4)
-
-            # 1% processing fee
-            fee = round(bct_amount * 0.01, 8)
-            net_bct = round(bct_amount - fee, 8)
-            fiat_payout = round(net_bct / rate, 2)
-
-            ref_id = hashlib.sha256(f"{clean_seller}:{bct_amount}:{time.time()}".encode()).hexdigest()[:16]
-            sig = f"fiat_offramp_{ref_id}"
             tx = Transaction(
-                sender=clean_seller,
+                sender=clean_author,
                 receiver=TREASURY_ADDRESS,
-                amount=bct_amount,
+                amount=post_cost,
                 fee=fee,
                 signature=sig,
-                tx_type="token_sell"
+                tx_type="space_post",
+                extra_data=extra_data
             )
 
             self.pending_transactions.append(tx)
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + fee, 8)
 
+            # Mine block to record on-chain immediately
             block = self._mine_block()
 
-            self.balances[clean_seller] = self.verify_and_recalc_balance(clean_seller)
+            # Record in fast index
+            self.space_posts[post_id] = {
+                "post_id": post_id,
+                "author": clean_author,
+                "content": clean_text,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else len(self.chain),
+                "likes_count": 0,
+                "likes": [],
+                "comments_count": 0,
+                "comments": [],
+                "author_earnings": 0.0
+            }
+
+            self.balances[clean_author] = self.verify_and_recalc_balance(clean_author)
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
 
-            receipt = {
+            res = {
+                "post_id": post_id,
                 "tx_hash": tx.hash(),
                 "block_index": block.index if block else len(self.chain),
-                "seller_address": clean_seller,
-                "bct_amount_sold": bct_amount,
-                "fee_bct": fee,
-                "fiat_payout": fiat_payout,
-                "currency": curr,
-                "payout_destination": payout_info or "Direct Bank / Thirdweb Payout",
-                "seller_new_balance": self.balances[clean_seller]
+                "author": clean_author,
+                "content": clean_text,
+                "cost": post_cost,
+                "new_balance": self.balances[clean_author]
             }
-            return True, f"Successfully sold {bct_amount:,.4f} BCT for {fiat_payout:.2f} {curr} payout!", receipt
+            return True, "Düşünceniz blokzincire başarıyla mühürlendi ve yayımlandı!", res
+
+    def like_space_post(self, liker: str, post_id: str, signature: str = "") -> Tuple[bool, str, Optional[dict]]:
+        """
+        Likes an on-chain post.
+        Cost: 0.01 BCT.
+        Tokenomics:
+        - 20% (0.002 BCT) sent directly to the original tweet author (creator economy).
+        - 70% (0.007 BCT) returned to Treasury Vault reserve.
+        - 10% (0.001 BCT) miner validation fee.
+        """
+        with self.lock:
+            self._load_state()
+            clean_liker = liker.strip()
+            if not is_valid_bct_address(clean_liker):
+                return False, f"Invalid liker address: '{clean_liker}'", None
+
+            pid = post_id.strip()
+            if pid not in self.space_posts:
+                return False, "Beğenilmek istenen gönderi bulunamadı.", None
+
+            post = self.space_posts[pid]
+            if clean_liker in post.get("likes", []):
+                return False, "Bu gönderiyi zaten beğendiniz.", None
+
+            liker_bal = self.verify_and_recalc_balance(clean_liker)
+            like_cost = 0.01
+            if liker_bal < like_cost:
+                return False, f"Yetersiz bakiye! Beğeni ücreti {like_cost:.2f} BCT'dir. Mevcut bakiyeniz: {liker_bal:.4f} BCT.", None
+
+            author_address = post["author"]
+            author_cut = 0.002
+            treasury_cut = 0.007
+            miner_fee = 0.001
+            sig = signature or f"space_like_sig_{secrets.token_hex(6)}"
+
+            extra_data = {
+                "post_id": pid,
+                "author": author_address,
+                "liker": clean_liker,
+                "author_cut": author_cut,
+                "treasury_cut": treasury_cut
+            }
+
+            tx = Transaction(
+                sender=clean_liker,
+                receiver=TREASURY_ADDRESS,
+                amount=like_cost,
+                fee=miner_fee,
+                signature=sig,
+                tx_type="space_like",
+                extra_data=extra_data
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
+
+            block = self._mine_block()
+
+            # Update index
+            if clean_liker not in post["likes"]:
+                post["likes"].append(clean_liker)
+                post["likes_count"] = len(post["likes"])
+                post["author_earnings"] = round(post["author_earnings"] + author_cut, 8)
+
+            self.balances[clean_liker] = self.verify_and_recalc_balance(clean_liker)
+            self.balances[author_address] = self.verify_and_recalc_balance(author_address)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            res = {
+                "post_id": pid,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else len(self.chain),
+                "likes_count": post["likes_count"],
+                "author_earned": author_cut,
+                "liker_new_balance": self.balances[clean_liker]
+            }
+            return True, f"Gönderi beğenildi! {author_cut} BCT yazarın cüzdanına aktarıldı.", res
+
+    def comment_space_post(self, commenter: str, post_id: str, content: str, signature: str = "") -> Tuple[bool, str, Optional[dict]]:
+        """
+        Comments on an on-chain post.
+        Cost: 0.02 BCT.
+        Tokenomics:
+        - 20% (0.004 BCT) sent directly to the original tweet author.
+        - 70% (0.014 BCT) returned to Treasury Vault reserve.
+        - 10% (0.002 BCT) miner validation fee.
+        Character Limit: 1 - 140 characters.
+        """
+        with self.lock:
+            self._load_state()
+            clean_commenter = commenter.strip()
+            if not is_valid_bct_address(clean_commenter):
+                return False, f"Invalid commenter address: '{clean_commenter}'", None
+
+            pid = post_id.strip()
+            if pid not in self.space_posts:
+                return False, "Yorum yapılacak gönderi bulunamadı.", None
+
+            clean_text = content.strip()
+            if len(clean_text) < 1 or len(clean_text) > 140:
+                return False, "Yorum metni 1 ile 140 karakter arasında olmalıdır.", None
+
+            commenter_bal = self.verify_and_recalc_balance(clean_commenter)
+            comment_cost = 0.02
+            if commenter_bal < comment_cost:
+                return False, f"Yetersiz bakiye! Yorum ücreti {comment_cost:.2f} BCT'dir. Mevcut bakiyeniz: {commenter_bal:.4f} BCT.", None
+
+            post = self.space_posts[pid]
+            author_address = post["author"]
+            author_cut = 0.004
+            treasury_cut = 0.014
+            miner_fee = 0.002
+            comment_id = f"cmt_{secrets.token_hex(6)}"
+            sig = signature or f"space_cmt_sig_{comment_id}"
+
+            extra_data = {
+                "post_id": pid,
+                "comment_id": comment_id,
+                "author": author_address,
+                "commenter": clean_commenter,
+                "content": clean_text,
+                "author_cut": author_cut,
+                "treasury_cut": treasury_cut
+            }
+
+            tx = Transaction(
+                sender=clean_commenter,
+                receiver=TREASURY_ADDRESS,
+                amount=comment_cost,
+                fee=miner_fee,
+                signature=sig,
+                tx_type="space_comment",
+                extra_data=extra_data
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
+
+            block = self._mine_block()
+
+            # Update index
+            cmt_obj = {
+                "comment_id": comment_id,
+                "commenter": clean_commenter,
+                "content": clean_text,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash()
+            }
+            post["comments"].append(cmt_obj)
+            post["comments_count"] = len(post["comments"])
+            post["author_earnings"] = round(post["author_earnings"] + author_cut, 8)
+
+            self.balances[clean_commenter] = self.verify_and_recalc_balance(clean_commenter)
+            self.balances[author_address] = self.verify_and_recalc_balance(author_address)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            res = {
+                "post_id": pid,
+                "comment": cmt_obj,
+                "block_index": block.index if block else len(self.chain),
+                "author_earned": author_cut,
+                "commenter_new_balance": self.balances[clean_commenter]
+            }
+            return True, f"Yorumunuz blokzincire işlendi! {author_cut} BCT yazarın hesabına geçti.", res
+
+    def get_space_feed(self, limit: int = 50) -> list:
+        with self.lock:
+            self._load_state()
+            feed = list(self.space_posts.values())
+            feed.sort(key=lambda p: p.get("timestamp", 0), reverse=True)
+            return feed[:limit]
+
+    def get_space_post(self, post_id: str) -> Optional[dict]:
+        with self.lock:
+            self._load_state()
+            return self.space_posts.get(post_id.strip())
+
+    def execute_fiat_purchase(self, buyer_address: str, fiat_amount: float,
+                              currency: str = "USD", payment_ref: str = "",
+                              bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
+        """Disabled: Prevents unverified mock coin acquisition."""
+        return False, "Doğrudan test amaçlı bedava token alımı durdurulmuştur. BCT tokenları LockTrace Space üzerinde düşünce paylaşarak, yorum/beğeni toplayarak veya düğüm (node) madenciliği ile kazanılabilir.", None
+
+    def execute_fiat_sale(self, seller_address: str, bct_amount: float,
+                          payout_info: str = "", currency: str = "USD",
+                          bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
+        """Disabled: Initial welcome grant cannot be dumped for free fiat."""
+        return False, "Doğrudan nakit çıkışı durdurulmuştur. Dağıtılan cüzdan bakiyeleri LockTrace Space düşünce ağı üzerinde ve transferlerde kullanılabilir.", None
 
     def _mine_block(self, miner_address: str = "") -> Optional[Block]:
         clean_miner = (miner_address or "").strip()
         if not self.pending_transactions and not (clean_miner and is_valid_bct_address(clean_miner)):
             return None
 
-        # Calculate 50% transaction fee cut for miner
-        total_fees = sum(tx.fee for tx in self.pending_transactions if tx.tx_type == "transfer")
-        miner_fee_cut = round(total_fees * MINER_FEE_SHARE, 8)
+        # Calculate transaction fee cuts for miner (50% for transfers, 100% of designated validator fee for space actions)
+        transfer_fees = sum(tx.fee for tx in self.pending_transactions if tx.tx_type == "transfer")
+        space_miner_fees = sum(tx.fee for tx in self.pending_transactions if tx.tx_type in ("space_post", "space_like", "space_comment"))
+        miner_fee_cut = round(transfer_fees * MINER_FEE_SHARE + space_miner_fees, 8)
 
         # Base block subsidy from treasury
         treasury_bal = self.verify_and_recalc_balance(TREASURY_ADDRESS)
@@ -731,7 +898,8 @@ class Blockchain:
                         fee=t_data.get("fee", 0.0),
                         signature=t_data.get("signature", ""),
                         timestamp=t_data.get("timestamp"),
-                        tx_type=t_data.get("tx_type", "transfer")
+                        tx_type=t_data.get("tx_type", "transfer"),
+                        extra_data=t_data.get("extra_data")
                     )
                     txs.append(tx)
                 block = Block(
@@ -746,6 +914,53 @@ class Blockchain:
                 new_chain.append(block)
 
             self.chain = new_chain
+
+            # Reconstruct Space Posts, Likes & Comments deterministically from on-chain history
+            self.space_posts = {}
+            for block in self.chain:
+                for tx in block.transactions:
+                    if tx.tx_type == "space_post" and tx.extra_data:
+                        pid = tx.extra_data.get("post_id")
+                        if pid:
+                            self.space_posts[pid] = {
+                                "post_id": pid,
+                                "author": tx.sender,
+                                "content": tx.extra_data.get("content", ""),
+                                "timestamp": tx.timestamp,
+                                "tx_hash": tx.hash(),
+                                "block_index": block.index,
+                                "likes_count": 0,
+                                "likes": [],
+                                "comments_count": 0,
+                                "comments": [],
+                                "author_earnings": 0.0
+                            }
+                    elif tx.tx_type == "space_like" and tx.extra_data:
+                        pid = tx.extra_data.get("post_id")
+                        liker = tx.sender
+                        if pid in self.space_posts:
+                            if liker not in self.space_posts[pid]["likes"]:
+                                self.space_posts[pid]["likes"].append(liker)
+                                self.space_posts[pid]["likes_count"] += 1
+                                self.space_posts[pid]["author_earnings"] = round(
+                                    self.space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.002), 8
+                                )
+                    elif tx.tx_type == "space_comment" and tx.extra_data:
+                        pid = tx.extra_data.get("post_id")
+                        if pid in self.space_posts:
+                            cmt = {
+                                "comment_id": tx.extra_data.get("comment_id", f"cmt_{secrets.token_hex(4)}"),
+                                "commenter": tx.sender,
+                                "content": tx.extra_data.get("content", ""),
+                                "timestamp": tx.timestamp,
+                                "tx_hash": tx.hash()
+                            }
+                            self.space_posts[pid]["comments"].append(cmt)
+                            self.space_posts[pid]["comments_count"] += 1
+                            self.space_posts[pid]["author_earnings"] = round(
+                                self.space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.004), 8
+                            )
+
             return True
         except Exception as e:
             print(f"[ERROR] Failed to load blockchain state: {e}")

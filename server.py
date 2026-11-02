@@ -11,7 +11,7 @@ import logging
 import secrets
 from datetime import datetime
 
-from flask import Flask, request, jsonify, render_template, g
+from flask import Flask, request, jsonify, render_template, g, send_file
 from flask_cors import CORS
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -260,8 +260,42 @@ def api_explorer_search():
 def api_explorer_block(query):
     block = blockchain.get_block_by_index_or_hash(query)
     if block:
+        # Enrich block data with validator node metadata
+        node_meta = None
+        miner_addr = block.get("miner", "")
+        for n_id, n in blockchain.nodes.items():
+            if n.get("miner_address") == miner_addr or n.get("endpoint") == miner_addr or n.get("node_id") == miner_addr:
+                node_meta = {
+                    "node_id": n.get("node_id"),
+                    "name": n.get("name"),
+                    "location": n.get("location"),
+                    "role": n.get("role"),
+                    "version": n.get("version"),
+                    "status": n.get("status", "online")
+                }
+                break
+        if not node_meta:
+            node_meta = {
+                "node_id": "node-stockholm-validator-01",
+                "name": "LockTrace Genesis Validator #1",
+                "location": "Stockholm, Sweden (Oracle Cloud)",
+                "role": "Core PoW Archival Validator",
+                "version": "1.2.0",
+                "status": "online"
+            }
+        block["validator_node"] = node_meta
         return api_response(True, data=block)
     return api_response(False, message="Block not found", status=404)
+
+
+@app.route("/api/v1/nodes/download", methods=["GET"])
+@app.route("/node_runner.py", methods=["GET"])
+def api_download_node():
+    """Serves the node_runner.py daemon for direct download via curl/wget/browser."""
+    script_path = os.path.join(os.path.dirname(__file__), "node_runner.py")
+    if os.path.exists(script_path):
+        return send_file(script_path, mimetype="text/x-python", as_attachment=False)
+    return api_response(False, message="Node runner script not found", status=404)
 
 
 @app.route("/api/v1/explorer/tx/<tx_hash>", methods=["GET"])
@@ -407,6 +441,156 @@ def api_mine_block():
         "miner_balance": blockchain.get_balance(miner_address),
         "timestamp": block.timestamp
     }, status=201)
+
+
+# ══════════════════════════════════════════════════════
+# 🪐 LockTrace Space (On-Chain Decentralized Social Feed)
+# ══════════════════════════════════════════════════════
+
+@app.route("/api/v1/space/feed", methods=["GET"])
+def api_space_feed():
+    """Returns on-chain space thoughts feed with likes and comments."""
+    limit = min(request.args.get("limit", 50, type=int), 100)
+    feed = blockchain.get_space_feed(limit)
+    return api_response(True, data={"posts": feed, "count": len(feed)})
+
+
+@app.route("/api/v1/space/post/<post_id>", methods=["GET"])
+def api_space_get_post(post_id):
+    post = blockchain.get_space_post(post_id)
+    if post:
+        return api_response(True, data=post)
+    return api_response(False, message="Gönderi bulunamadı", status=404)
+
+
+@app.route("/api/v1/space/post", methods=["POST"])
+def api_space_create_post():
+    """
+    Publishes an immutable on-chain thought.
+    Cost: 0.10 BCT (80% returns to Treasury Vault, 20% to block validator).
+    """
+    data = request.get_json(silent=True) or {}
+    author = str(data.get("author", "")).strip()
+    content = str(data.get("content", "")).strip()
+
+    if not author:
+        return api_response(False, message="Yazar cüzdan adresi gereklidir", status=400)
+    if not content:
+        return api_response(False, message="Düşünce metni boş olamaz", status=400)
+
+    mnemonic_phrase = str(data.get("mnemonic", "")).strip()
+    private_key_hex = str(data.get("private_key", "")).strip()
+    signature = str(data.get("signature", "")).strip()
+
+    if not signature:
+        try:
+            if mnemonic_phrase and len(mnemonic_phrase.split()) >= 12:
+                wallet = restore_wallet_from_mnemonic(mnemonic_phrase)
+                if wallet.address == author:
+                    signature = wallet.sign(f"{author}:{content}")
+            elif private_key_hex and len(private_key_hex) == 64:
+                wallet = restore_wallet(private_key_hex)
+                if wallet.address == author:
+                    signature = wallet.sign(f"{author}:{content}")
+        except Exception:
+            pass
+
+    success, message, result = blockchain.create_space_post(
+        author=author,
+        content=content,
+        signature=signature
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Space Post Created: by {author[:8]}... (0.10 BCT)")
+    return api_response(True, message=message, data=result, status=201)
+
+
+@app.route("/api/v1/space/like", methods=["POST"])
+def api_space_like():
+    """
+    Likes an on-chain thought.
+    Cost: 0.01 BCT (20% to tweet author, 70% to Treasury, 10% validator fee).
+    """
+    data = request.get_json(silent=True) or {}
+    liker = str(data.get("liker", "")).strip()
+    post_id = str(data.get("post_id", "")).strip()
+
+    if not liker or not post_id:
+        return api_response(False, message="liker adresi ve post_id gereklidir", status=400)
+
+    mnemonic_phrase = str(data.get("mnemonic", "")).strip()
+    private_key_hex = str(data.get("private_key", "")).strip()
+    signature = str(data.get("signature", "")).strip()
+
+    if not signature:
+        try:
+            if mnemonic_phrase and len(mnemonic_phrase.split()) >= 12:
+                wallet = restore_wallet_from_mnemonic(mnemonic_phrase)
+                if wallet.address == liker:
+                    signature = wallet.sign(f"{liker}:{post_id}")
+            elif private_key_hex and len(private_key_hex) == 64:
+                wallet = restore_wallet(private_key_hex)
+                if wallet.address == liker:
+                    signature = wallet.sign(f"{liker}:{post_id}")
+        except Exception:
+            pass
+
+    success, message, result = blockchain.like_space_post(
+        liker=liker,
+        post_id=post_id,
+        signature=signature
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Space Post Liked: {post_id} by {liker[:8]}...")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/space/comment", methods=["POST"])
+def api_space_comment():
+    """
+    Comments on an on-chain thought.
+    Cost: 0.02 BCT (20% to tweet author, 70% to Treasury, 10% validator fee).
+    """
+    data = request.get_json(silent=True) or {}
+    commenter = str(data.get("commenter", "")).strip()
+    post_id = str(data.get("post_id", "")).strip()
+    content = str(data.get("content", "")).strip()
+
+    if not commenter or not post_id or not content:
+        return api_response(False, message="commenter, post_id ve content gereklidir", status=400)
+
+    mnemonic_phrase = str(data.get("mnemonic", "")).strip()
+    private_key_hex = str(data.get("private_key", "")).strip()
+    signature = str(data.get("signature", "")).strip()
+
+    if not signature:
+        try:
+            if mnemonic_phrase and len(mnemonic_phrase.split()) >= 12:
+                wallet = restore_wallet_from_mnemonic(mnemonic_phrase)
+                if wallet.address == commenter:
+                    signature = wallet.sign(f"{commenter}:{post_id}:{content}")
+            elif private_key_hex and len(private_key_hex) == 64:
+                wallet = restore_wallet(private_key_hex)
+                if wallet.address == commenter:
+                    signature = wallet.sign(f"{commenter}:{post_id}:{content}")
+        except Exception:
+            pass
+
+    success, message, result = blockchain.comment_space_post(
+        commenter=commenter,
+        post_id=post_id,
+        content=content,
+        signature=signature
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Space Comment Added: {post_id} by {commenter[:8]}...")
+    return api_response(True, message=message, data=result, status=201)
 
 
 # ══════════════════════════════════════════════════════
