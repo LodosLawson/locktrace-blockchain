@@ -1,20 +1,38 @@
 """
-BlockChainT - Cüzdan Yönetimi
-==============================
-ECDSA SECP256k1 anahtar çifti ile güvenli cüzdan oluşturma.
-Bitcoin ile aynı eğriyi kullanır.
+BlockChainT - Cüzdan Yönetimi (BIP-39 Mnemonic Destekli)
+=========================================================
+ECDSA SECP256k1 anahtar çifti + BIP-39 12-kelimelik Mnemonic Kurtarma Sistemi.
 """
 
 import hashlib
 import binascii
 from ecdsa import SigningKey, VerifyingKey, SECP256k1, BadSignatureError
+from core.mnemonic import generate_mnemonic, mnemonic_to_private_key, validate_mnemonic
 
 
 class Wallet:
-    """ECDSA tabanlı blockchain cüzdanı."""
+    """ECDSA + BIP-39 Seed tabanlı blockchain cüzdanı."""
 
-    def __init__(self):
-        self.private_key = SigningKey.generate(curve=SECP256k1)
+    def __init__(self, mnemonic: str = None, private_key_hex: str = None):
+        if mnemonic:
+            self.mnemonic = " ".join(mnemonic.strip().lower().split())
+            pk_hex = mnemonic_to_private_key(self.mnemonic)
+            self.private_key = SigningKey.from_string(
+                binascii.unhexlify(pk_hex), curve=SECP256k1
+            )
+        elif private_key_hex:
+            self.mnemonic = ""
+            self.private_key = SigningKey.from_string(
+                binascii.unhexlify(private_key_hex), curve=SECP256k1
+            )
+        else:
+            # Yeni cüzdan: 12 kelimelik mnemonic üret ve anahtarı türet
+            self.mnemonic = generate_mnemonic()
+            pk_hex = mnemonic_to_private_key(self.mnemonic)
+            self.private_key = SigningKey.from_string(
+                binascii.unhexlify(pk_hex), curve=SECP256k1
+            )
+
         self.public_key = self.private_key.get_verifying_key()
         self.address = self._generate_address()
 
@@ -39,6 +57,7 @@ class Wallet:
     def to_dict(self) -> dict:
         return {
             "address": self.address,
+            "mnemonic": self.mnemonic,
             "public_key": self.get_public_key_hex(),
             "private_key": self.get_private_key_hex()
         }
@@ -46,13 +65,12 @@ class Wallet:
 
 def restore_wallet(private_key_hex: str) -> Wallet:
     """Private key'den cüzdan geri yükle."""
-    wallet = Wallet.__new__(Wallet)
-    wallet.private_key = SigningKey.from_string(
-        binascii.unhexlify(private_key_hex), curve=SECP256k1
-    )
-    wallet.public_key = wallet.private_key.get_verifying_key()
-    wallet.address = wallet._generate_address()
-    return wallet
+    return Wallet(private_key_hex=private_key_hex)
+
+
+def restore_wallet_from_mnemonic(mnemonic: str) -> Wallet:
+    """12 kelimelik mnemonic kurtarma ifadesinden cüzdan geri yükle."""
+    return Wallet(mnemonic=mnemonic)
 
 
 def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool:
@@ -64,4 +82,3 @@ def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool
         return pub_key.verify(sig_bytes, data.encode())
     except (BadSignatureError, Exception):
         return False
-

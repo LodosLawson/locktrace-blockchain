@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>LockTrace Bank | Decentralized BCT Account & Explorer</title>
   
-  <!-- PWA & Mobile Web App Meta -->
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#080c14">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -14,7 +13,6 @@
   <link rel="apple-touch-icon" href="/icons/icon-192.png">
   <link rel="icon" type="image/png" href="/icons/icon-192.png">
 
-  <!-- Inter Font -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -26,7 +24,6 @@
       --bg-card: rgba(18, 24, 38, 0.75);
       --card-border: rgba(255, 255, 255, 0.08);
       --accent: #2563eb;
-      --accent-hover: #1d4ed8;
       --accent-glow: rgba(37, 99, 235, 0.35);
       --emerald: #10b981;
       --emerald-glow: rgba(16, 185, 129, 0.25);
@@ -35,7 +32,6 @@
       --text: #f8fafc;
       --text-muted: #94a3b8;
       --text-dim: #64748b;
-      --radius-sm: 8px;
       --radius-md: 14px;
       --radius-lg: 20px;
     }
@@ -58,7 +54,6 @@
       padding-bottom: env(safe-area-inset-bottom);
     }
 
-    /* Ambient Background Glow */
     .ambient-glow {
       position: fixed;
       top: -120px;
@@ -71,7 +66,6 @@
       z-index: 0;
     }
 
-    /* Top Navigation Bar */
     header {
       position: sticky;
       top: 0;
@@ -99,7 +93,6 @@
       border-radius: 10px;
       display: grid;
       place-items: center;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.4);
     }
     .brand-title {
       font-size: 1.15rem;
@@ -155,14 +148,9 @@
       border-radius: 999px;
       border: none;
       cursor: pointer;
-      box-shadow: 0 4px 14px var(--accent-glow);
-      transition: all 0.2s;
     }
-    .btn-install.visible {
-      display: inline-flex;
-    }
+    .btn-install.visible { display: inline-flex; }
 
-    /* Main Content Wrapper */
     main {
       flex: 1;
       max-width: 860px;
@@ -175,20 +163,16 @@
       gap: 1.25rem;
     }
 
-    /* ── TITANIUM OBSIDIAN BANK CARD ── */
-    .card-scene {
-      perspective: 1000px;
-    }
+    /* Titanium Bank Card */
     .bank-card {
       position: relative;
       background: linear-gradient(135deg, #182030 0%, #0d121c 60%, #080c14 100%);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: var(--radius-lg);
       padding: 1.75rem;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 1px rgba(255,255,255,0.15);
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
       color: #fff;
       overflow: hidden;
-      transition: transform 0.3s;
     }
     .bank-card::after {
       content: '';
@@ -209,34 +193,19 @@
       height: 32px;
       background: linear-gradient(135deg, #fcd34d, #d97706);
       border-radius: 6px;
-      position: relative;
       border: 1px solid rgba(0,0,0,0.3);
-      box-shadow: inset 0 1px 2px rgba(255,255,255,0.4);
-    }
-    .emv-chip::before {
-      content: '';
-      position: absolute;
-      top: 35%; left: 0; right: 0; height: 1px;
-      background: rgba(0,0,0,0.25);
     }
     .card-brand-label {
       font-size: 0.75rem;
       font-weight: 800;
       letter-spacing: 2px;
       color: #94a3b8;
-      text-transform: uppercase;
       display: flex;
       align-items: center;
       gap: 6px;
     }
-    .nfc-icon {
-      font-size: 1.1rem;
-      color: #94a3b8;
-    }
 
-    .card-balance-section {
-      margin-bottom: 1.6rem;
-    }
+    .card-balance-section { margin-bottom: 1.6rem; }
     .card-balance-label {
       font-size: 0.75rem;
       font-weight: 600;
@@ -275,9 +244,6 @@
       font-weight: 700;
       color: #f1f5f9;
       margin-top: 2px;
-      display: flex;
-      align-items: center;
-      gap: 6px;
       cursor: pointer;
     }
     .card-acc-num {
@@ -287,7 +253,7 @@
       letter-spacing: 1px;
     }
 
-    /* ── QUICK BANKING ACTIONS ── */
+    /* Quick Grid */
     .quick-grid {
       display: grid;
       grid-template-columns: repeat(4, 1fr);
@@ -308,11 +274,7 @@
     }
     .quick-btn:hover {
       background: rgba(30, 41, 59, 0.8);
-      border-color: rgba(255,255,255,0.15);
       transform: translateY(-2px);
-    }
-    .quick-btn:active {
-      transform: scale(0.96);
     }
     .quick-btn .btn-icon-circle {
       width: 40px;
@@ -329,7 +291,7 @@
       color: #e2e8f0;
     }
 
-    /* ── NAVIGATION TABS ── */
+    /* Tabs */
     .nav-tabs {
       display: flex;
       background: rgba(255, 255, 255, 0.04);
@@ -346,17 +308,15 @@
       color: var(--text-muted);
       border-radius: 10px;
       cursor: pointer;
-      transition: 0.2s;
       border: none;
       background: transparent;
     }
     .tab-btn.active {
       background: var(--accent);
       color: #fff;
-      box-shadow: 0 4px 14px var(--accent-glow);
     }
 
-    /* ── CONTENT PANELS ── */
+    /* Panel */
     .panel {
       display: none;
       background: var(--bg-card);
@@ -364,20 +324,9 @@
       border-radius: var(--radius-lg);
       padding: 1.6rem;
       backdrop-filter: blur(16px);
-      box-shadow: 0 10px 30px rgba(0,0,0,0.3);
     }
-    .panel.active {
-      display: block;
-      animation: tabFadeIn 0.25s ease-out;
-    }
-    @keyframes tabFadeIn {
-      from { opacity: 0; transform: translateY(6px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
+    .panel.active { display: block; }
 
-    .panel-header {
-      margin-bottom: 1.25rem;
-    }
     .panel-title {
       font-size: 1.15rem;
       font-weight: 800;
@@ -387,12 +336,10 @@
     .panel-desc {
       font-size: 0.82rem;
       color: var(--text-muted);
+      margin-bottom: 1.25rem;
     }
 
-    /* Forms */
-    .form-group {
-      margin-bottom: 1.2rem;
-    }
+    .form-group { margin-bottom: 1.2rem; }
     .form-group label {
       display: block;
       font-size: 0.75rem;
@@ -411,28 +358,8 @@
       padding: 0.9rem 1.1rem;
       font-size: 0.95rem;
       outline: none;
-      transition: border 0.2s;
     }
-    input:focus, textarea:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
-    }
-    input::placeholder { color: #475569; }
-
-    .fee-calc-box {
-      background: rgba(0, 0, 0, 0.25);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      padding: 0.85rem 1rem;
-      margin-bottom: 1.25rem;
-      display: flex;
-      justify-content: space-between;
-      font-size: 0.82rem;
-      color: var(--text-muted);
-    }
-    .fee-calc-box strong {
-      color: var(--gold);
-    }
+    input:focus, textarea:focus { border-color: var(--accent); }
 
     .btn-primary {
       width: 100%;
@@ -444,27 +371,63 @@
       font-size: 0.95rem;
       font-weight: 800;
       cursor: pointer;
-      box-shadow: 0 6px 20px var(--accent-glow);
       transition: all 0.2s;
     }
-    .btn-primary:hover {
-      opacity: 0.95;
-      transform: translateY(-1px);
-    }
-    .btn-primary:active {
-      transform: scale(0.98);
-    }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
 
-    .btn-success {
-      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
-      box-shadow: 0 6px 20px var(--emerald-glow);
+    /* Mnemonic Word Grid */
+    .mnemonic-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin: 1.2rem 0;
     }
-
-    /* ── STATEMENT LIST ── */
-    .tx-ledger {
+    @media (min-width: 640px) {
+      .mnemonic-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .word-badge {
+      background: rgba(0, 0, 0, 0.45);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.6rem 0.5rem;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: #60a5fa;
       display: flex;
-      flex-direction: column;
+      align-items: center;
+      gap: 6px;
     }
+    .word-badge .num {
+      color: #64748b;
+      font-size: 0.7rem;
+      width: 18px;
+    }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      display: none;
+      place-items: center;
+      padding: 1rem;
+    }
+    .modal-overlay.open { display: grid; }
+    .modal-box {
+      background: #0f172a;
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius-lg);
+      padding: 1.8rem;
+      max-width: 520px;
+      width: 100%;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+      position: relative;
+    }
+
+    /* Ledger Rows */
     .tx-row {
       display: flex;
       justify-content: space-between;
@@ -473,93 +436,20 @@
       border-bottom: 1px solid var(--card-border);
     }
     .tx-row:last-child { border-bottom: none; }
-    .tx-info-left {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-    }
+    .tx-info-left { display: flex; align-items: center; gap: 12px; }
     .tx-icon-bubble {
-      width: 40px;
-      height: 40px;
-      border-radius: 10px;
-      display: grid;
-      place-items: center;
-      font-size: 1.15rem;
+      width: 40px; height: 40px; border-radius: 10px;
+      display: grid; place-items: center; font-size: 1.15rem;
     }
     .bubble-reward { background: rgba(16, 185, 129, 0.15); color: var(--emerald); }
     .bubble-send { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
     .bubble-receive { background: rgba(37, 99, 235, 0.15); color: #60a5fa; }
-
-    .tx-title {
-      font-size: 0.88rem;
-      font-weight: 700;
-      color: #fff;
-    }
-    .tx-time {
-      font-size: 0.72rem;
-      color: var(--text-dim);
-      margin-top: 2px;
-    }
-    .tx-amount-right {
-      text-align: right;
-    }
-    .tx-val {
-      font-size: 0.95rem;
-      font-weight: 800;
-    }
+    .tx-title { font-size: 0.88rem; font-weight: 700; color: #fff; }
+    .tx-time { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+    .tx-val { font-size: 0.95rem; font-weight: 800; }
     .val-pos { color: var(--emerald); }
     .val-neg { color: #f87171; }
-    .tx-fee-note {
-      font-size: 0.7rem;
-      color: var(--gold);
-    }
 
-    /* ── NETWORK METRICS ── */
-    .metrics-grid {
-      display: grid;
-      grid-template-columns: repeat(2, 1fr);
-      gap: 0.85rem;
-      margin-bottom: 1.25rem;
-    }
-    @media (min-width: 640px) {
-      .metrics-grid { grid-template-columns: repeat(4, 1fr); }
-    }
-    .metric-card {
-      background: rgba(0, 0, 0, 0.35);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      padding: 1rem;
-      text-align: center;
-    }
-    .metric-val {
-      font-size: 1.25rem;
-      font-weight: 800;
-      color: #60a5fa;
-    }
-    .metric-lbl {
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      color: var(--text-muted);
-      margin-top: 4px;
-    }
-
-    /* ── PWA MODAL / BANNER ── */
-    .pwa-banner {
-      display: none;
-      background: linear-gradient(135deg, rgba(37, 99, 235, 0.2), rgba(124, 58, 237, 0.2));
-      border: 1px solid rgba(59, 130, 246, 0.4);
-      border-radius: var(--radius-md);
-      padding: 1rem 1.25rem;
-      align-items: center;
-      justify-content: space-between;
-      gap: 1rem;
-    }
-    .pwa-banner.show {
-      display: flex;
-    }
-
-    /* Toast Notification */
     #toast {
       position: fixed;
       bottom: 2rem;
@@ -574,8 +464,8 @@
       box-shadow: 0 10px 30px rgba(0,0,0,0.6);
       border: 1px solid var(--card-border);
       opacity: 0;
-      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-      z-index: 100;
+      transition: all 0.3s;
+      z-index: 200;
       pointer-events: none;
     }
     #toast.show {
@@ -587,6 +477,29 @@
 <body>
   <div class="ambient-glow"></div>
   <div id="toast">Notification</div>
+
+  <!-- Mnemonic Backup Modal -->
+  <div class="modal-overlay" id="mnemonicModal">
+    <div class="modal-box">
+      <div style="font-size:1.3rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
+        <span>🔐 Secret Recovery Phrase</span>
+      </div>
+      <p style="font-size:0.85rem; color:#94a3b8; margin:0.6rem 0 1rem 0; line-height:1.5;">
+        Write down these <strong>12 secret words</strong> in order and store them in a safe place. This phrase is the <strong>only key</strong> to recover your BCT vault if you switch devices.
+      </p>
+
+      <div class="mnemonic-grid" id="modalWordsGrid"></div>
+
+      <div style="display:flex; gap:0.75rem; margin-top:1.2rem;">
+        <button class="btn-primary" style="background:#334155; padding:0.75rem;" onclick="copyMnemonicPhrase()">
+          📋 Copy Words
+        </button>
+        <button class="btn-primary btn-success" style="padding:0.75rem;" onclick="confirmMnemonicSaved()">
+          ✓ I Have Saved Them
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- Header -->
   <header>
@@ -600,56 +513,43 @@
       </button>
       <div class="status-pill">
         <div class="pulse-dot"></div>
-        <span>Mainnet Node</span>
+        <span>Oracle Mainnet</span>
       </div>
     </div>
   </header>
 
   <main>
-    <!-- PWA Install Banner (Mobile & Desktop) -->
-    <div class="pwa-banner" id="pwaBanner">
-      <div>
-        <div style="font-weight:800; font-size:0.9rem; color:#fff;">Install LockTrace Banking App</div>
-        <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Get instant standalone mobile & desktop access</div>
+    <!-- Bank Card -->
+    <section class="bank-card">
+      <div class="card-top">
+        <div class="emv-chip"></div>
+        <div class="card-brand-label">
+          <span>LOCKTRACE OBSIDIAN</span>
+          <span style="font-size:1.1rem;">🛜</span>
+        </div>
       </div>
-      <button class="btn-primary" style="width:auto; padding:0.5rem 1rem; font-size:0.8rem;" onclick="triggerPWAInstall()">
-        Install Now
-      </button>
-    </div>
 
-    <!-- ── TITANIUM BANK CARD ── -->
-    <section class="card-scene">
-      <div class="bank-card">
-        <div class="card-top">
-          <div class="emv-chip"></div>
-          <div class="card-brand-label">
-            <span>LOCKTRACE OBSIDIAN</span>
-            <span class="nfc-icon">🛜</span>
+      <div class="card-balance-section">
+        <div class="card-balance-label">Available Balance</div>
+        <div class="card-balance-num">
+          <span id="cardBalance">0.00</span>
+          <span class="curr">BCT</span>
+        </div>
+      </div>
+
+      <div class="card-bottom">
+        <div>
+          <div class="card-holder">Account Address</div>
+          <div class="card-holder-name" onclick="copyAddress()" title="Click to copy account ID">
+            <span id="cardHolderText">No Wallet Connected</span>
+            <span>📋</span>
           </div>
         </div>
-
-        <div class="card-balance-section">
-          <div class="card-balance-label">Available Balance</div>
-          <div class="card-balance-num">
-            <span id="cardBalance">0.00</span>
-            <span class="curr">BCT</span>
-          </div>
-        </div>
-
-        <div class="card-bottom">
-          <div>
-            <div class="card-holder">Account Holder</div>
-            <div class="card-holder-name" onclick="copyAddress()" title="Click to copy account ID">
-              <span id="cardHolderText">No Wallet Connected</span>
-              <span>📋</span>
-            </div>
-          </div>
-          <div class="card-acc-num" id="cardMaskedNum">•••• •••• •••• 0000</div>
-        </div>
+        <div class="card-acc-num" id="cardMaskedNum">•••• •••• •••• 0000</div>
       </div>
     </section>
 
-    <!-- ── QUICK BANKING ACTIONS ── -->
+    <!-- Quick Actions -->
     <div class="quick-grid">
       <div class="quick-btn" onclick="openTab('send')">
         <div class="btn-icon-circle">💸</div>
@@ -657,7 +557,7 @@
       </div>
       <div class="quick-btn" onclick="openTab('wallet')">
         <div class="btn-icon-circle">🎁</div>
-        <span class="label">Open / Bonus</span>
+        <span class="label">New Account</span>
       </div>
       <div class="quick-btn" onclick="openTab('statement')">
         <div class="btn-icon-circle">📜</div>
@@ -665,11 +565,11 @@
       </div>
       <div class="quick-btn" onclick="openTab('network')">
         <div class="btn-icon-circle">🌐</div>
-        <span class="label">Explorer</span>
+        <span class="label">Network</span>
       </div>
     </div>
 
-    <!-- ── TABS SELECTOR ── -->
+    <!-- Navigation Tabs -->
     <div class="nav-tabs">
       <button class="tab-btn active" onclick="openTab('send')">Transfer</button>
       <button class="tab-btn" onclick="openTab('wallet')">Account</button>
@@ -677,26 +577,24 @@
       <button class="tab-btn" onclick="openTab('network')">Network</button>
     </div>
 
-    <!-- ── PANEL 1: TRANSFER (SEND) ── -->
+    <!-- PANEL 1: TRANSFER -->
     <div class="panel active" id="tab-send">
-      <div class="panel-header">
-        <div class="panel-title">Instant Wire Transfer</div>
-        <div class="panel-desc">Transfer BCT securely across the network with 1% automated treasury redistribution.</div>
-      </div>
+      <div class="panel-title">Instant Wire Transfer</div>
+      <div class="panel-desc">Cryptographic BCT transfer with 1% automated treasury redistribution.</div>
 
       <div class="form-group">
-        <label>Beneficiary BCT Address</label>
-        <input type="text" id="txRecipient" placeholder="BCT40hexcharacters...">
+        <label>Beneficiary Address</label>
+        <input type="text" id="txRecipient" placeholder="BCT...">
       </div>
 
       <div class="form-group">
         <label>Transfer Amount (BCT)</label>
-        <input type="number" id="txAmount" placeholder="0.00000000" step="0.00000001" min="0.00000001" oninput="calcFee()">
+        <input type="number" id="txAmount" placeholder="0.00" step="0.00000001" min="0.00000001" oninput="calcFee()">
       </div>
 
-      <div class="fee-calc-box">
+      <div style="background:rgba(0,0,0,0.25); border:1px solid var(--card-border); border-radius:12px; padding:0.85rem 1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; font-size:0.82rem; color:var(--text-muted);">
         <span>Treasury Fee (1%):</span>
-        <strong id="feeDisplay">0.00000000 BCT</strong>
+        <strong id="feeDisplay" style="color:var(--gold);">0.00000000 BCT</strong>
       </div>
 
       <button class="btn-primary" onclick="handleSendMoney()">
@@ -704,93 +602,80 @@
       </button>
     </div>
 
-    <!-- ── PANEL 2: WALLET & KEYS ── -->
+    <!-- PANEL 2: WALLET & 12-WORDS -->
     <div class="panel" id="tab-wallet">
-      <div class="panel-header">
-        <div class="panel-title">Account Registration & Security</div>
-        <div class="panel-desc">Create a new institutional BCT vault or restore an existing account with your private key.</div>
-      </div>
+      <div class="panel-title">Open Account & Key Recovery</div>
+      <div class="panel-desc">Create a new vault with 12-word seed phrase or restore an existing one.</div>
 
       <button class="btn-primary btn-success" style="margin-bottom:1.5rem;" onclick="handleCreateWallet()">
-        🎁 Open New Account (Claim 1.00 BCT Welcome Bonus)
+        🎁 Open New Account (Claim 1.00 BCT Bonus)
       </button>
 
       <hr style="border:none; border-top:1px solid var(--card-border); margin:1.5rem 0;">
 
       <div class="form-group">
-        <label>Import Account via Private Key (64-hex)</label>
-        <input type="password" id="importKeyInput" placeholder="Enter private key to restore...">
+        <label>Restore via 12-Word Seed Phrase or Private Key</label>
+        <textarea id="importInput" rows="3" placeholder="Enter your 12 words separated by spaces, or 64-hex private key..."></textarea>
       </div>
       <button class="btn-primary" onclick="handleImportWallet()">
         🔑 Restore Account
       </button>
 
-      <div id="keyVaultBox" style="display:none; margin-top:1.5rem; background:rgba(0,0,0,0.4); border:1px solid rgba(239,68,68,0.3); border-radius:12px; padding:1.2rem;">
-        <div style="font-size:0.8rem; font-weight:800; color:#f87171; margin-bottom:0.4rem;">🔐 Private Key Backup (Keep Secret)</div>
-        <div id="dispPrivKey" style="font-family:'JetBrains Mono', monospace; font-size:0.75rem; word-break:break-all; color:#cbd5e1; margin-bottom:0.85rem;"></div>
-        <button class="btn-primary" style="background:#334155; padding:0.5rem; font-size:0.8rem;" onclick="copyPrivKey()">
-          Copy Private Key
+      <!-- Active Wallet Backup Box -->
+      <div id="keyVaultBox" style="display:none; margin-top:1.5rem; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:1.2rem;">
+        <div style="font-size:0.8rem; font-weight:800; color:#60a5fa; margin-bottom:0.4rem;">🔐 Your 12-Word Recovery Phrase</div>
+        <div id="dispMnemonic" class="mnemonic-grid" style="margin:0.5rem 0;"></div>
+        <button class="btn-primary" style="background:#334155; padding:0.5rem; font-size:0.8rem; margin-top:0.5rem;" onclick="copyActiveMnemonic()">
+          Copy Words
         </button>
       </div>
     </div>
 
-    <!-- ── PANEL 3: STATEMENT & ACTIVITY ── -->
+    <!-- PANEL 3: STATEMENT -->
     <div class="panel" id="tab-statement">
-      <div class="panel-header">
-        <div class="panel-title">Recent Transactions & Statements</div>
-        <div class="panel-desc">Immutable on-chain transaction records and treasury allocations.</div>
-      </div>
-
-      <div class="tx-ledger" id="txLedgerList">
+      <div class="panel-title">On-Chain Statements</div>
+      <div class="panel-desc">Immutable transaction history confirmed by the mainnet consensus.</div>
+      <div id="txLedgerList">
         <div style="text-align:center; color:var(--text-muted); padding:2rem; font-size:0.85rem;">
           Scanning on-chain ledger...
         </div>
       </div>
     </div>
 
-    <!-- ── PANEL 4: NETWORK & EXPLORER ── -->
+    <!-- PANEL 4: NETWORK -->
     <div class="panel" id="tab-network">
-      <div class="panel-header">
-        <div class="panel-title">LockTrace Network Economics</div>
-        <div class="panel-desc">Real-time macro parameters of the 1 Trillion BCT monetary policy.</div>
-      </div>
-
-      <div class="metrics-grid">
-        <div class="metric-card">
-          <div class="metric-val" id="metricSupply">1.00T</div>
-          <div class="metric-lbl">Total Supply</div>
+      <div class="panel-title">LockTrace Monetary Network</div>
+      <div class="panel-desc">Real-time macro parameters of the 1 Trillion BCT monetary policy.</div>
+      
+      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:0.75rem; margin-bottom:1.25rem;">
+        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:12px; text-align:center; border:1px solid var(--card-border);">
+          <div style="font-size:1.2rem; font-weight:800; color:#60a5fa;" id="metricSupply">1.00T</div>
+          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">TOTAL SUPPLY</div>
         </div>
-        <div class="metric-card">
-          <div class="metric-val" id="metricTreasury">-</div>
-          <div class="metric-lbl">Treasury Vault</div>
+        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:12px; text-align:center; border:1px solid var(--card-border);">
+          <div style="font-size:1.2rem; font-weight:800; color:#60a5fa;" id="metricTreasury">-</div>
+          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">TREASURY VAULT</div>
         </div>
-        <div class="metric-card">
-          <div class="metric-val" id="metricCirculating">-</div>
-          <div class="metric-lbl">Circulating</div>
+        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:12px; text-align:center; border:1px solid var(--card-border);">
+          <div style="font-size:1.2rem; font-weight:800; color:#10b981;" id="metricCirculating">-</div>
+          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">CIRCULATING</div>
         </div>
-        <div class="metric-card">
-          <div class="metric-val" id="metricBlocks">-</div>
-          <div class="metric-lbl">Blocks Mined</div>
+        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:12px; text-align:center; border:1px solid var(--card-border);">
+          <div style="font-size:1.2rem; font-weight:800; color:#60a5fa;" id="metricBlocks">-</div>
+          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">BLOCK HEIGHT</div>
         </div>
-      </div>
-
-      <div style="background:rgba(0,0,0,0.35); border:1px solid var(--card-border); border-radius:12px; padding:1.2rem; font-size:0.82rem; color:var(--text-muted); line-height:1.6;">
-        <div>⚡ <strong>Monetary Distribution:</strong> 1 Trillion initial reserve. Each newly registered account receives an automated <strong>1.00 BCT</strong> grant from the vault.</div>
-        <div style="margin-top:0.4rem;">🔄 <strong>Deflationary Redistribution:</strong> Every transfer charges an exact <strong>1% fee</strong> that cycles directly back into the 1T Treasury Pool.</div>
       </div>
     </div>
   </main>
 
   <script>
-    // API Route
     const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:5000/api/v1'
       : '/api/v1';
 
     let currentAccount = null;
-    let deferredPrompt = null;
+    let tempMnemonic = "";
 
-    // Toast
     function toast(msg) {
       const el = document.getElementById('toast');
       el.textContent = msg;
@@ -798,7 +683,6 @@
       setTimeout(() => el.classList.remove('show'), 3500);
     }
 
-    // Tabs
     function openTab(tabId) {
       document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
       document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
@@ -815,27 +699,48 @@
       if (tabId === 'statement' || tabId === 'network') refreshNetworkMetrics();
     }
 
-    // Copy Handlers
     function copyAddress() {
       if (!currentAccount) return toast("No active account connected");
       navigator.clipboard.writeText(currentAccount.address);
-      toast("Account address copied to clipboard!");
+      toast("Address copied!");
     }
 
-    function copyPrivKey() {
-      if (!currentAccount) return;
-      navigator.clipboard.writeText(currentAccount.private_key);
-      toast("Private key copied! Store it securely.");
+    function copyMnemonicPhrase() {
+      if (!tempMnemonic) return;
+      navigator.clipboard.writeText(tempMnemonic);
+      toast("12 Words copied to clipboard!");
     }
 
-    // Fee Calc
+    function copyActiveMnemonic() {
+      if (!currentAccount || !currentAccount.mnemonic) return toast("No recovery phrase found");
+      navigator.clipboard.writeText(currentAccount.mnemonic);
+      toast("Recovery words copied!");
+    }
+
+    function confirmMnemonicSaved() {
+      document.getElementById('mnemonicModal').classList.remove('open');
+      toast("Account secured with 12-word seed phrase!");
+      openTab('send');
+    }
+
     function calcFee() {
       const amt = parseFloat(document.getElementById('txAmount').value) || 0;
       const fee = amt * 0.01;
       document.getElementById('feeDisplay').textContent = fee.toFixed(8) + " BCT";
     }
 
-    // Update UI
+    function renderMnemonicGrid(wordsStr, targetElId) {
+      const words = wordsStr.trim().split(/\s+/);
+      const container = document.getElementById(targetElId);
+      if (!container) return;
+      container.innerHTML = words.map((w, i) => `
+        <div class="word-badge">
+          <span class="num">${i + 1}.</span>
+          <span>${w}</span>
+        </div>
+      `).join('');
+    }
+
     function updateAccountUI(acc) {
       currentAccount = acc;
       localStorage.setItem('locktrace_bank_acc', JSON.stringify(acc));
@@ -843,12 +748,15 @@
       const shortAddr = acc.address.slice(0, 8) + '...' + acc.address.slice(-6);
       document.getElementById('cardHolderText').textContent = shortAddr;
       document.getElementById('cardMaskedNum').textContent = '•••• •••• •••• ' + acc.address.slice(-4).toUpperCase();
-      document.getElementById('dispPrivKey').textContent = acc.private_key;
-      document.getElementById('keyVaultBox').style.display = 'block';
+      
+      if (acc.mnemonic) {
+        renderMnemonicGrid(acc.mnemonic, 'dispMnemonic');
+        document.getElementById('keyVaultBox').style.display = 'block';
+      }
+
       refreshBalance();
     }
 
-    // Refresh Balance
     async function refreshBalance() {
       if (!currentAccount) return;
       try {
@@ -866,16 +774,19 @@
       }
     }
 
-    // Open Account / Claim Bonus
+    // Open New Account with 12 words modal
     async function handleCreateWallet() {
       try {
-        toast("Opening new BCT account & minting 1.00 BCT bonus...");
+        toast("Generating 12-word seed & minting 1.00 BCT bonus...");
         const res = await fetch(`${API_BASE}/wallet/create`, { method: 'POST' });
         const data = await res.json();
         if (data.success) {
           updateAccountUI(data.data);
-          toast("Welcome! 1.00 BCT initial grant deposited.");
-          openTab('send');
+
+          // Show Mnemonic Modal
+          tempMnemonic = data.data.mnemonic;
+          renderMnemonicGrid(tempMnemonic, 'modalWordsGrid');
+          document.getElementById('mnemonicModal').classList.add('open');
         } else {
           toast("Error: " + data.message);
         }
@@ -884,21 +795,25 @@
       }
     }
 
-    // Import Account
+    // Restore via 12 words or private key
     async function handleImportWallet() {
-      const pk = document.getElementById('importKeyInput').value.trim();
-      if (!pk) return toast("Please enter a valid 64-hex private key");
+      const input = document.getElementById('importInput').value.trim();
+      if (!input) return toast("Please enter your 12 words or private key");
+
+      const isMnemonic = input.split(/\s+/).length >= 12;
+      const payload = isMnemonic ? { mnemonic: input } : { private_key: input };
 
       try {
+        toast("Verifying cryptographic credentials...");
         const res = await fetch(`${API_BASE}/wallet/import`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ private_key: pk })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (data.success) {
           updateAccountUI(data.data);
-          toast("Account successfully restored!");
+          toast("Account restored with balance: " + data.data.balance + " BCT");
           openTab('send');
         } else {
           toast("Error: " + data.message);
@@ -908,45 +823,51 @@
       }
     }
 
-    // Send Money
+    // Wire Transfer
     async function handleSendMoney() {
-      if (!currentAccount) return toast("Please open or restore an account first");
+      if (!currentAccount) return toast("Please connect your account first");
       const recipient = document.getElementById('txRecipient').value.trim();
       const amount = parseFloat(document.getElementById('txAmount').value);
 
       if (!recipient || !amount || amount <= 0) {
-        return toast("Please specify a valid recipient address and amount");
+        return toast("Specify valid recipient and amount");
       }
 
       try {
-        toast("Signing transaction cryptographically...");
+        toast("Cryptographically signing wire transfer...");
+        const payload = {
+          sender: currentAccount.address,
+          receiver: recipient,
+          amount: amount
+        };
+        if (currentAccount.mnemonic) {
+          payload.mnemonic = currentAccount.mnemonic;
+        } else {
+          payload.private_key = currentAccount.private_key;
+        }
+
         const res = await fetch(`${API_BASE}/transaction`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            sender: currentAccount.address,
-            receiver: recipient,
-            amount: amount,
-            private_key: currentAccount.private_key
-          })
+          body: JSON.stringify(payload)
         });
         const data = await res.json();
         if (data.success) {
-          toast("Transfer completed! 1% fee returned to treasury.");
+          toast("Transfer completed! 1% fee cycled to treasury.");
           document.getElementById('txRecipient').value = '';
           document.getElementById('txAmount').value = '';
           calcFee();
           refreshBalance();
           openTab('statement');
         } else {
-          toast("Transaction declined: " + data.message);
+          toast("Declined: " + data.message);
         }
       } catch (err) {
         toast("Network error: " + err.message);
       }
     }
 
-    // Metrics & Statement
+    // Network & Statements
     async function refreshNetworkMetrics() {
       try {
         const [statsRes, txsRes] = await Promise.all([
@@ -963,96 +884,56 @@
 
         if (txsRes.success && txsRes.data.transactions) {
           const list = document.getElementById('txLedgerList');
-          if (txsRes.data.transactions.length === 0) {
-            list.innerHTML = '<div style="text-align:center; color:var(--text-muted); padding:2rem;">No transaction records found.</div>';
-          } else {
-            list.innerHTML = txsRes.data.transactions.map(t => {
-              const isReward = t.tx_type === 'reward';
-              const isGenesis = t.tx_type === 'genesis';
-              const isMine = currentAccount && (t.sender === currentAccount.address || t.receiver === currentAccount.address);
-
-              let icon = '💸';
-              let cls = 'bubble-send';
-              let sign = '-';
-              let valCls = 'val-neg';
-
-              if (isReward) {
-                icon = '🎁';
-                cls = 'bubble-reward';
-                sign = '+';
-                valCls = 'val-pos';
-              } else if (isGenesis) {
-                icon = '🏛️';
-                cls = 'bubble-receive';
-                sign = '';
-                valCls = 'val-pos';
-              } else if (currentAccount && t.receiver === currentAccount.address) {
-                icon = '📥';
-                cls = 'bubble-receive';
-                sign = '+';
-                valCls = 'val-pos';
-              }
-
-              return `
-                <div class="tx-row">
-                  <div class="tx-info-left">
-                    <div class="tx-icon-bubble ${cls}">${icon}</div>
-                    <div>
-                      <div class="tx-title">${isReward ? 'Account Welcome Grant' : (isGenesis ? 'Genesis Minting' : 'BCT Wire Transfer')}</div>
-                      <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleString('en-US')} • Block #${t.block_index}</div>
-                    </div>
+          list.innerHTML = txsRes.data.transactions.map(t => {
+            const isReward = t.tx_type === 'reward';
+            const isGenesis = t.tx_type === 'genesis';
+            return `
+              <div class="tx-row">
+                <div class="tx-info-left">
+                  <div class="tx-icon-bubble ${isReward ? 'bubble-reward' : (isGenesis ? 'bubble-receive' : 'bubble-send')}">
+                    ${isReward ? '🎁' : (isGenesis ? '🏛️' : '💸')}
                   </div>
-                  <div class="tx-amount-right">
-                    <div class="tx-val ${valCls}">${sign}${Number(t.amount).toFixed(4)} BCT</div>
-                    ${t.fee > 0 ? `<div class="tx-fee-note">Fee: ${t.fee.toFixed(4)} BCT</div>` : ''}
+                  <div>
+                    <div class="tx-title">${isReward ? 'Welcome Bonus Grant' : (isGenesis ? 'Genesis Reserve' : 'BCT Wire Transfer')}</div>
+                    <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleTimeString()} • Block #${t.block_index}</div>
                   </div>
                 </div>
-              `;
-            }).join('');
-          }
+                <div style="text-align:right;">
+                  <div class="tx-val ${isReward ? 'val-pos' : 'val-neg'}">${isReward ? '+' : ''}${Number(t.amount).toFixed(4)} BCT</div>
+                  ${t.fee > 0 ? `<div style="font-size:0.7rem; color:var(--gold);">Fee: ${t.fee.toFixed(4)} BCT</div>` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
         }
       } catch (err) {
-        console.error("Statement loading error:", err);
+        console.error("Network metric error:", err);
       }
     }
 
-    // ── PWA INSTALL LOGIC (Desktop & Mobile) ──
+    // PWA Install
+    let deferredPrompt = null;
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       deferredPrompt = e;
       document.getElementById('pwaInstallHeaderBtn').classList.add('visible');
-      document.getElementById('pwaBanner').classList.add('show');
     });
 
     async function triggerPWAInstall() {
       if (deferredPrompt) {
         deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        if (outcome === 'accepted') {
-          toast("App installed successfully!");
-          document.getElementById('pwaInstallHeaderBtn').classList.remove('visible');
-          document.getElementById('pwaBanner').classList.remove('show');
-        }
         deferredPrompt = null;
       } else {
-        // iOS Safari Instructions
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-        if (isIOS) {
-          alert("To install on iOS:\n1. Tap the Share button (square with arrow)\n2. Select 'Add to Home Screen'\n3. Enjoy LockTrace Bank!");
-        } else {
-          toast("App is already installed or open in a supported browser.");
-        }
+        alert("Install App: Open browser menu and choose 'Add to Home Screen' or 'Install LockTrace Bank'");
       }
     }
 
     // Init
     window.addEventListener('load', () => {
-      // Register Service Worker
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(console.error);
       }
 
-      // Check Saved Wallet
       const saved = localStorage.getItem('locktrace_bank_acc');
       if (saved) {
         try {
@@ -1063,11 +944,10 @@
       refreshNetworkMetrics();
       setInterval(() => {
         refreshBalance();
-        if (document.getElementById('tab-statement').classList.contains('active') ||
-            document.getElementById('tab-network').classList.contains('active')) {
+        if (document.getElementById('tab-statement').classList.contains('active')) {
           refreshNetworkMetrics();
         }
-      }, 7000);
+      }, 5000);
     });
   </script>
 </body>

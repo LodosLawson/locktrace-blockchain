@@ -1,5 +1,5 @@
 [Unit]
-Description=BlockChainT Mainnet Node
+Description=LockTrace Blockchain Mainnet Node
 After=network.target
 
 [Service]
@@ -10,24 +10,21 @@ WorkingDirectory=/opt/blockchaint
 Environment="PATH=/opt/blockchaint/venv/bin:/usr/bin"
 Environment="BCT_SECRET_KEY=CHANGE_ME_IN_PRODUCTION"
 Environment="BCT_ADMIN_KEY=CHANGE_ME_IN_PRODUCTION"
-Environment="BCT_CORS_ORIGINS=https://locktrace.space,https://www.locktrace.space"
 Environment="BCT_DEBUG=false"
 Environment="BCT_LOG_LEVEL=INFO"
 ExecStart=/opt/blockchaint/venv/bin/gunicorn \
     --bind 127.0.0.1:5000 \
-    --workers 2 \
-    --timeout 30 \
-    --max-requests 1000 \
-    --max-requests-jitter 50 \
+    --workers 1 \
+    --threads 8 \
+    --timeout 60 \
     --access-logfile /opt/blockchaint/logs/access.log \
     --error-logfile /opt/blockchaint/logs/error.log \
     --log-level info \
     wsgi:app
 Restart=always
-RestartSec=5
+RestartSec=3
 StandardOutput=journal
 StandardError=journal
 
 [Install]
 WantedBy=multi-user.target
-
