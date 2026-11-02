@@ -9,11 +9,22 @@ Atomic Persistence & On-Chain Ledger Verification
 
 import hashlib
 import json
+import math
+import re
 import time
 import os
 import threading
 import secrets
+from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Dict, Optional, Tuple
+from core.wallet import public_key_to_address, verify_signature
+
+
+ATOMIC_UNIT = 100_000_000                 # 1 BCT = 10^8 atomic units (prevents IEEE-754 drift at 1T scale)
+
+
+def _to_units(val: float) -> int:
+    return int((Decimal(str(val)) * ATOMIC_UNIT).to_integral_value(rounding=ROUND_HALF_UP))
 
 
 TOTAL_SUPPLY = 1_000_000_000_000.0       # 1 Trillion BCT
@@ -193,54 +204,95 @@ class Blockchain:
         self.chain = [block]
         self._save_state()
 
-    def verify_and_recalc_balance(self, address: str) -> float:
-        """Calculate mathematically exact balance from immutable on-chain history."""
+    def verify_and_recalc_units(self, address: str) -> int:
+        """Calculate exact balance in 10^8 integer atomic units (immune to IEEE-754 float64 drift)."""
         clean_addr = address.strip()
-        bal = 0.0
-        for block in self.chain:
-            # Check if this block has a mining_reward transaction
-            has_mining_reward = any(t.tx_type == "mining_reward" for t in block.transactions)
+        units = 0
+        fee_bearing_types = ("transfer", "space_post", "space_like", "space_comment")
 
+        for block in self.chain:
             for tx in block.transactions:
+                amt_u = _to_units(tx.amount)
+                fee_u = _to_units(tx.fee)
                 if tx.receiver == clean_addr:
-                    if tx.tx_type == "transfer":
-                        bal += round(tx.amount - tx.fee, 8)
-                    elif tx.tx_type == "space_post":
-                        bal += round(tx.amount - tx.fee, 8)
+                    if tx.tx_type in ("transfer", "space_post"):
+                        units += (amt_u - fee_u)
                     elif tx.tx_type in ("space_like", "space_comment"):
-                        bal += round(tx.extra_data.get("treasury_cut", 0.0), 8)
+                        units += _to_units(tx.extra_data.get("treasury_cut", 0.0) if tx.extra_data else 0.0)
                     else:
-                        bal += round(tx.amount, 8)
+                        units += amt_u
                 if tx.sender == clean_addr:
-                    bal -= round(tx.amount, 8)
+                    units -= amt_u
                 if tx.tx_type in ("space_like", "space_comment") and tx.extra_data:
                     if clean_addr == tx.extra_data.get("author"):
-                        bal += round(tx.extra_data.get("author_cut", 0.0), 8)
-                if clean_addr == TREASURY_ADDRESS and tx.tx_type == "transfer" and tx.fee > 0:
-                    bal += round(tx.fee, 8)
+                        units += _to_units(tx.extra_data.get("author_cut", 0.0))
+                if clean_addr == TREASURY_ADDRESS and tx.tx_type in fee_bearing_types and fee_u > 0:
+                    units += fee_u
 
         for tx in self.pending_transactions:
+            amt_u = _to_units(tx.amount)
+            fee_u = _to_units(tx.fee)
             if tx.receiver == clean_addr:
-                if tx.tx_type == "transfer":
-                    bal += round(tx.amount - tx.fee, 8)
-                elif tx.tx_type == "space_post":
-                    bal += round(tx.amount - tx.fee, 8)
+                if tx.tx_type in ("transfer", "space_post"):
+                    units += (amt_u - fee_u)
                 elif tx.tx_type in ("space_like", "space_comment"):
-                    bal += round(tx.extra_data.get("treasury_cut", 0.0), 8)
+                    units += _to_units(tx.extra_data.get("treasury_cut", 0.0) if tx.extra_data else 0.0)
                 else:
-                    bal += round(tx.amount, 8)
+                    units += amt_u
             if tx.sender == clean_addr:
-                bal -= round(tx.amount, 8)
+                units -= amt_u
             if tx.tx_type in ("space_like", "space_comment") and tx.extra_data:
                 if clean_addr == tx.extra_data.get("author"):
-                    bal += round(tx.extra_data.get("author_cut", 0.0), 8)
+                    units += _to_units(tx.extra_data.get("author_cut", 0.0))
+            if clean_addr == TREASURY_ADDRESS and tx.tx_type in fee_bearing_types and fee_u > 0:
+                units += fee_u
 
-        return round(bal, 8)
+        return units
+
+    def verify_and_recalc_balance(self, address: str) -> float:
+        """Calculate mathematically exact balance from immutable on-chain history."""
+        return round(self.verify_and_recalc_units(address) / ATOMIC_UNIT, 8)
+
+    def _verify_actor_signature(self, actor_address: str, payload: str,
+                                signature: str, public_key: str = "") -> Tuple[bool, str]:
+        """Cryptographically verify ECDSA signature and bind public key to actor_address."""
+        clean_addr = (actor_address or "").strip()
+        if clean_addr.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT", "GENESIS"):
+            return False, "Sistem hazine adresi doğrudan işlem göndericisi olamaz."
+        if not signature:
+            return False, "Kriptografik imza eksik (Unauthorized)."
+
+        pub_hex = (public_key or "").strip() or self.wallets.get(clean_addr, {}).get("public_key", "")
+        if not pub_hex:
+            return False, "Cüzdan açık anahtarı (public key) doğrulanamadı. Lütfen cüzdanınızı yeniden bağlayın."
+
+        derived_addr = public_key_to_address(pub_hex)
+        if derived_addr != clean_addr:
+            return False, "Açık anahtar (public key) ile gönderici adresi uyuşmuyor!"
+
+        if not verify_signature(pub_hex, payload, signature):
+            return False, "Geçersiz ECDSA dijital imza!"
+
+        if clean_addr not in self.wallets:
+            self.wallets[clean_addr] = {"public_key": pub_hex, "created_at": time.time()}
+        elif not self.wallets[clean_addr].get("public_key"):
+            self.wallets[clean_addr]["public_key"] = pub_hex
+
+        return True, "OK"
 
     def register_wallet(self, address: str, public_key: str) -> Tuple[bool, str]:
         with self.lock:
             self._load_state()
             clean_addr = address.strip()
+            clean_pub = (public_key or "").strip()
+
+            if not is_valid_bct_address(clean_addr) or clean_addr.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
+                return False, "Geçersiz cüzdan adresi formatı."
+
+            if clean_pub:
+                derived = public_key_to_address(clean_pub)
+                if derived != clean_addr:
+                    return False, "Açık anahtar (public key) cüzdan adresiyle kriptografik olarak eşleşmiyor!"
 
             current_bal = self.verify_and_recalc_balance(clean_addr)
 
@@ -259,7 +311,7 @@ class Blockchain:
                 return True, f"Wallet already active with balance: {current_bal} BCT"
 
             self.wallets[clean_addr] = {
-                "public_key": public_key or self.wallets.get(clean_addr, {}).get("public_key", ""),
+                "public_key": clean_pub or self.wallets.get(clean_addr, {}).get("public_key", ""),
                 "created_at": self.wallets.get(clean_addr, {}).get("created_at", time.time())
             }
 
@@ -286,7 +338,8 @@ class Blockchain:
             return True, f"Wallet registered successfully! Available balance: {final_bal} BCT"
 
     def create_transaction(self, sender: str, receiver: str,
-                           amount: float, signature: str) -> Tuple[bool, str, Optional[dict]]:
+                           amount: float, signature: str,
+                           public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
         with self.lock:
             self._load_state()
 
@@ -296,11 +349,26 @@ class Blockchain:
             if clean_sender == clean_receiver:
                 return False, "Cannot send funds to your own address", None
 
+            if clean_sender.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT", "GENESIS"):
+                return False, "Reserved system address cannot initiate standard transfers", None
+
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid sender address format: '{clean_sender}'", None
 
             if not is_valid_bct_address(clean_receiver):
                 return False, f"Invalid recipient address format: '{clean_receiver}'. Must be BCT followed by 40 hex characters.", None
+
+            if not isinstance(amount, (int, float)) or not math.isfinite(amount) or amount <= 0:
+                return False, "Amount must be a finite positive number", None
+
+            amount = round(float(amount), 8)
+            if amount < 0.00000001:
+                return False, "Minimum transfer amount is 0.00000001 BCT", None
+
+            expected_payload = signed_payload or f"{clean_sender}{clean_receiver}{amount}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_sender, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
 
             # Auto-register receiver wallet if not present (Decentralized permissionless model)
             if clean_receiver not in self.wallets and clean_receiver != TREASURY_ADDRESS:
@@ -308,9 +376,6 @@ class Blockchain:
                     "public_key": "",
                     "created_at": time.time()
                 }
-
-            if amount <= 0:
-                return False, "Amount must be strictly positive", None
 
             sender_balance = self.verify_and_recalc_balance(clean_sender)
             if sender_balance < amount:
@@ -354,7 +419,8 @@ class Blockchain:
 
             return True, f"Transfer confirmed! Sent: {net_amount} BCT, 1% Fee ({fee} BCT) returned to treasury vault.", tx_info
 
-    def create_space_post(self, author: str, content: str, signature: str = "") -> Tuple[bool, str, Optional[dict]]:
+    def create_space_post(self, author: str, content: str, signature: str = "",
+                          public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
         """
         Creates an immutable, on-chain thought/tweet in LockTrace Space.
         Cost: 0.10 BCT.
@@ -375,6 +441,11 @@ class Blockchain:
             if len(clean_text) > 280:
                 return False, "Düşünce metni maksimum 280 karakter olabilir.", None
 
+            expected_payload = signed_payload or f"{clean_author}:{clean_text}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_author, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
             author_bal = self.verify_and_recalc_balance(clean_author)
             post_cost = 0.10
             if author_bal < post_cost:
@@ -383,7 +454,7 @@ class Blockchain:
             post_id = f"post_{secrets.token_hex(8)}"
             fee = 0.02
             treasury_cut = 0.08
-            sig = signature or f"space_post_sig_{post_id}"
+            sig = signature
 
             extra_data = {
                 "post_id": post_id,
@@ -439,7 +510,8 @@ class Blockchain:
             }
             return True, "Düşünceniz blokzincire başarıyla mühürlendi ve yayımlandı!", res
 
-    def like_space_post(self, liker: str, post_id: str, signature: str = "") -> Tuple[bool, str, Optional[dict]]:
+    def like_space_post(self, liker: str, post_id: str, signature: str = "",
+                        public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
         """
         Likes an on-chain post.
         Cost: 0.01 BCT.
@@ -458,6 +530,11 @@ class Blockchain:
             if pid not in self.space_posts:
                 return False, "Beğenilmek istenen gönderi bulunamadı.", None
 
+            expected_payload = signed_payload or f"{clean_liker}:{pid}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_liker, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
             post = self.space_posts[pid]
             if clean_liker in post.get("likes", []):
                 return False, "Bu gönderiyi zaten beğendiniz.", None
@@ -471,7 +548,7 @@ class Blockchain:
             author_cut = 0.002
             treasury_cut = 0.007
             miner_fee = 0.001
-            sig = signature or f"space_like_sig_{secrets.token_hex(6)}"
+            sig = signature
 
             extra_data = {
                 "post_id": pid,
@@ -518,7 +595,8 @@ class Blockchain:
             }
             return True, f"Gönderi beğenildi! {author_cut} BCT yazarın cüzdanına aktarıldı.", res
 
-    def comment_space_post(self, commenter: str, post_id: str, content: str, signature: str = "") -> Tuple[bool, str, Optional[dict]]:
+    def comment_space_post(self, commenter: str, post_id: str, content: str,
+                           signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
         """
         Comments on an on-chain post.
         Cost: 0.02 BCT.
@@ -542,6 +620,11 @@ class Blockchain:
             if len(clean_text) < 1 or len(clean_text) > 140:
                 return False, "Yorum metni 1 ile 140 karakter arasında olmalıdır.", None
 
+            expected_payload = signed_payload or f"{clean_commenter}:{pid}:{clean_text}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_commenter, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
             commenter_bal = self.verify_and_recalc_balance(clean_commenter)
             comment_cost = 0.02
             if commenter_bal < comment_cost:
@@ -553,7 +636,7 @@ class Blockchain:
             treasury_cut = 0.014
             miner_fee = 0.002
             comment_id = f"cmt_{secrets.token_hex(6)}"
-            sig = signature or f"space_cmt_sig_{comment_id}"
+            sig = signature
 
             extra_data = {
                 "post_id": pid,
@@ -631,8 +714,10 @@ class Blockchain:
         """Disabled: Initial welcome grant cannot be dumped for free fiat."""
         return False, "Doğrudan nakit çıkışı durdurulmuştur. Dağıtılan cüzdan bakiyeleri LockTrace Space düşünce ağı üzerinde ve transferlerde kullanılabilir.", None
 
-    def _mine_block(self, miner_address: str = "") -> Optional[Block]:
+    def _mine_block(self, miner_address: str = "", require_pending: bool = False) -> Optional[Block]:
         clean_miner = (miner_address or "").strip()
+        if require_pending and not self.pending_transactions:
+            return None
         if not self.pending_transactions and not (clean_miner and is_valid_bct_address(clean_miner)):
             return None
 
@@ -757,6 +842,12 @@ class Blockchain:
                     txs.append(tx_dict)
             return list(reversed(txs))
 
+    def mine_pending_block(self, miner_address: str = "") -> Optional[Block]:
+        """Thread-safe mining entrypoint for external miner nodes; strictly requires pending transactions."""
+        with self.lock:
+            self._load_state()
+            return self._mine_block(miner_address=miner_address, require_pending=True)
+
     def get_wallet_transactions(self, address: str) -> list:
         with self.lock:
             self._load_state()
@@ -764,23 +855,44 @@ class Blockchain:
             txs = []
             for block in self.chain:
                 for tx in block.transactions:
-                    if tx.sender == clean_addr or tx.receiver == clean_addr:
+                    is_author_royalty = (
+                        tx.tx_type in ("space_like", "space_comment")
+                        and bool(tx.extra_data)
+                        and tx.extra_data.get("author") == clean_addr
+                        and tx.sender != clean_addr
+                    )
+                    if tx.sender == clean_addr or tx.receiver == clean_addr or is_author_royalty:
                         tx_dict = tx.to_dict()
                         tx_dict["block_index"] = block.index
                         tx_dict["block_hash"] = block.hash
+                        if is_author_royalty:
+                            tx_dict["is_author_royalty"] = True
+                            tx_dict["royalty_amount"] = tx.extra_data.get("author_cut", 0.0)
                         txs.append(tx_dict)
             return list(reversed(txs))
 
     def is_chain_valid(self) -> bool:
         with self.lock:
+            if not self.chain:
+                return False
+            target = "0" * self.difficulty
             for i in range(1, len(self.chain)):
                 current = self.chain[i]
                 previous = self.chain[i - 1]
+                if current.index != previous.index + 1:
+                    return False
                 if current.hash != current.calculate_hash():
                     return False
                 if current.previous_hash != previous.hash:
                     return False
+                if not current.hash.startswith(target):
+                    return False
             return True
+
+    @staticmethod
+    def _sanitize_node_field(val: str, max_len: int = 64) -> str:
+        cleaned = re.sub(r'[<>"\'`\x00-\x1f\x7f]', '', str(val or '')).strip()
+        return cleaned[:max_len]
 
     def register_or_ping_node(self, node_id: str, name: str = "",
                               endpoint: str = "", role: str = "Peer Node",
@@ -790,29 +902,55 @@ class Blockchain:
                               version: str = "1.2.0") -> dict:
         with self.lock:
             self._load_state()
-            clean_id = (node_id or "").strip()
-            if not clean_id:
-                clean_id = f"node-{int(time.time())}"
+            raw_id = re.sub(r'[^a-zA-Z0-9._-]', '', (node_id or "").strip())[:64]
+            clean_id = raw_id or f"node-{secrets.token_hex(4)}"
 
-            node_info = self.nodes.get(clean_id, {
+            existing = self.nodes.get(clean_id)
+            if existing and existing.get("is_genesis"):
+                # Protect Genesis Validator metadata from external spoofing
+                existing["last_seen"] = time.time()
+                existing["block_height"] = len(self.chain)
+                self._save_state()
+                return dict(existing)
+
+            # Cap registry size to prevent memory/disk DoS (max 200 peer nodes)
+            if not existing and len(self.nodes) >= 200:
+                removable = sorted(
+                    ((nid, n) for nid, n in self.nodes.items() if not n.get("is_genesis")),
+                    key=lambda item: item[1].get("last_seen", 0)
+                )
+                for nid, _ in removable[:max(1, len(self.nodes) - 199)]:
+                    self.nodes.pop(nid, None)
+
+            node_info = existing or {
                 "node_id": clean_id,
                 "created_at": time.time(),
                 "is_genesis": False,
                 "blocks_mined": 0,
                 "total_rewards": 0.0
-            })
+            }
 
             clean_miner = (miner_address or "").strip()
+            if clean_miner and not is_valid_bct_address(clean_miner):
+                clean_miner = ""
+
+            safe_name = self._sanitize_node_field(name, 64)
+            safe_endpoint = self._sanitize_node_field(endpoint, 120)
+            safe_role = self._sanitize_node_field(role, 48)
+            safe_location = self._sanitize_node_field(location, 64)
+            safe_version = self._sanitize_node_field(version, 24)
+            safe_height = max(0, min(int(block_height or 0), len(self.chain) + 1000))
+
             node_info.update({
-                "name": (name or "").strip() or node_info.get("name", f"Community Node ({clean_id[:8]})"),
-                "endpoint": (endpoint or "").strip() or node_info.get("endpoint", "p2p-client"),
-                "role": role or node_info.get("role", "Peer Node"),
-                "location": location or node_info.get("location", "Global"),
+                "name": safe_name or node_info.get("name", f"Community Node ({clean_id[:8]})"),
+                "endpoint": safe_endpoint or node_info.get("endpoint", "p2p-client"),
+                "role": safe_role or node_info.get("role", "Peer Node"),
+                "location": safe_location or node_info.get("location", "Global"),
                 "miner_address": clean_miner or node_info.get("miner_address", ""),
                 "last_seen": time.time(),
                 "status": "online",
-                "version": version or "1.2.0",
-                "block_height": max(block_height, node_info.get("block_height", 0), len(self.chain))
+                "version": safe_version or "1.2.0",
+                "block_height": max(safe_height, len(self.chain))
             })
             self.nodes[clean_id] = node_info
             self._save_state()
@@ -840,15 +978,18 @@ class Blockchain:
     def get_stats(self) -> dict:
         with self.lock:
             self._load_state()
-            treasury_balance = self.get_balance(TREASURY_ADDRESS)
-            circulating = max(0.0, TOTAL_SUPPLY - treasury_balance)
+            total_units = _to_units(TOTAL_SUPPLY)
+            treasury_units = self.verify_and_recalc_units(TREASURY_ADDRESS)
+            circulating_units = max(0, total_units - treasury_units)
+            treasury_dec = Decimal(treasury_units) / Decimal(ATOMIC_UNIT)
+            circulating_dec = Decimal(circulating_units) / Decimal(ATOMIC_UNIT)
             return {
                 "total_supply": TOTAL_SUPPLY,
                 "total_supply_formatted": f"{TOTAL_SUPPLY:,.0f}",
-                "treasury_balance": treasury_balance,
-                "treasury_formatted": f"{treasury_balance:,.8f}",
-                "circulating_supply": circulating,
-                "circulating_formatted": f"{circulating:,.8f}",
+                "treasury_balance": float(treasury_dec),
+                "treasury_formatted": f"{treasury_dec:,.8f}",
+                "circulating_supply": float(circulating_dec),
+                "circulating_formatted": f"{circulating_dec:,.8f}",
                 "total_blocks": len(self.chain),
                 "total_wallets": len(self.wallets),
                 "total_transactions": self.total_transactions,

@@ -30,12 +30,9 @@ class Config:
     SECRET_KEY = os.environ.get("BCT_SECRET_KEY", secrets.token_hex(32))
     ADMIN_API_KEY = os.environ.get("BCT_ADMIN_KEY", secrets.token_hex(24))
 
-    # ── Thirdweb Yapılandırması (Gizli Anahtarlar Backend'de Saklanır) ──
-    THIRDWEB_CLIENT_ID = os.environ.get("THIRDWEB_CLIENT_ID", "a1fca74604210a59de7fe189ae76f156")
-    THIRDWEB_SECRET_KEY = os.environ.get(
-        "THIRDWEB_SECRET_KEY",
-        "gGarsHl3rFMziwML_BqvptsdOsvUT34Tzdl8YkwUsj3ecrgj-tyKDpjiPGUpQWv5idnRYD2KwrV7RE641E1Zow"
-    )
+    # ── Thirdweb Yapılandırması (Gizli Anahtarlar Sadece .env Üzerinden Okunur) ──
+    THIRDWEB_CLIENT_ID = os.environ.get("THIRDWEB_CLIENT_ID", "")
+    THIRDWEB_SECRET_KEY = os.environ.get("THIRDWEB_SECRET_KEY", "")
     THIRDWEB_SERVER_WALLET_ADDRESS = os.environ.get("THIRDWEB_SERVER_WALLET_ADDRESS", "")
     THIRDWEB_ENGINE_URL = os.environ.get("THIRDWEB_ENGINE_URL", "")
     THIRDWEB_DEFAULT_CHAIN = os.environ.get("THIRDWEB_DEFAULT_CHAIN", "base-sepolia")

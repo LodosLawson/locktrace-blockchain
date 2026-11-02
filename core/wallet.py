@@ -73,6 +73,19 @@ def restore_wallet_from_mnemonic(mnemonic: str) -> Wallet:
     return Wallet(mnemonic=mnemonic)
 
 
+def public_key_to_address(public_key_hex: str) -> str:
+    """Public key hex dizgesinden deterministik BCT cüzdan adresi üret ve doğrula."""
+    try:
+        pub_bytes = binascii.unhexlify((public_key_hex or "").strip())
+        # SECP256k1 eğrisi üzerinde geçerli bir nokta olduğunu doğrula
+        VerifyingKey.from_string(pub_bytes, curve=SECP256k1)
+        first_hash = hashlib.sha256(pub_bytes).hexdigest()
+        second_hash = hashlib.sha256(first_hash.encode()).hexdigest()
+        return f"BCT{second_hash[:40]}"
+    except Exception:
+        return ""
+
+
 def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool:
     """İmzayı doğrula."""
     try:

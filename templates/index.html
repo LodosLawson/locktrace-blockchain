@@ -16,15 +16,12 @@
   <link rel="apple-touch-icon" href="icons/icon-192.png"/>
   <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png"/>
   <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png"/>
-  <!-- Automatic Apex to WWW Redirect for Valid HTTPS / SSL -->
+  <!-- Canonical Apex to WWW Redirect (Preserves Deep-Link Hash & Wallet Storage Origin) -->
   <script>
     if (window.location.hostname === 'locktrace.space') {
-      window.location.replace('https://www.locktrace.space' + window.location.pathname + window.location.search);
+      window.location.replace('https://www.locktrace.space' + window.location.pathname + window.location.search + window.location.hash);
     }
   </script>
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
-  <meta name="apple-mobile-web-app-title" content="LockTrace"/>
-  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
 
   <!-- Google Fonts & Icons from Stitch -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
@@ -78,13 +75,32 @@
   <style>
     @layer base {
       html, body {
-        width: 100vw;
+        width: 100%;
+        max-width: 100%;
         margin: 0;
         padding: 0;
+        overflow-x: hidden;
       }
       body {
-        overscroll-behavior: none;
+        overscroll-behavior-y: none;
         -webkit-tap-highlight-color: transparent;
+      }
+    }
+    /* Prevent iOS Safari auto-zoom on text inputs while keeping hero amount display large */
+    @media (max-width: 768px) {
+      input[type="text"],
+      input[type="search"],
+      textarea {
+        font-size: 16px !important;
+      }
+    }
+    @media (max-width: 767px) {
+      .mobile-app-header {
+        padding-top: env(safe-area-inset-top, 0px);
+        height: calc(56px + env(safe-area-inset-top, 0px));
+      }
+      .mobile-main-offset {
+        padding-top: calc(68px + env(safe-area-inset-top, 0px)) !important;
       }
     }
     .pb-safe { padding-bottom: max(16px, env(safe-area-inset-bottom, 16px)); }
@@ -99,7 +115,7 @@
   </style>
 </head>
 
-<body class="bg-background font-sans text-on-background selection:bg-primary-container selection:text-on-primary-container min-h-screen">
+<body class="bg-background font-sans text-on-surface selection:bg-primary-container selection:text-on-primary-container min-h-screen">
 
   <!-- Desktop & Tablet Sidebar (Stitch Neobank Layout) -->
   <aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low/80 backdrop-blur-2xl z-50 flex flex-col justify-between py-6 px-4 border-r border-outline-variant/30 hidden md:flex">
@@ -157,36 +173,6 @@
     </div>
   </aside>
 
-  <!-- Mobile Top Bar (Stitch Mobile Shell Header) -->
-  <div class="md:hidden fixed top-0 left-0 right-0 h-16 bg-surface/90 backdrop-blur-xl border-b border-outline-variant/20 z-40 flex items-center justify-between px-4 pt-safe">
-    <div class="flex items-center gap-2.5">
-      <div class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center border border-primary-container/40">
-        <span class="material-symbols-outlined text-primary text-[18px]">blur_on</span>
-      </div>
-      <div class="flex flex-col">
-        <span class="text-sm font-bold text-on-surface leading-tight">LockTrace</span>
-        <span class="text-[9px] font-mono text-primary uppercase tracking-wider">Mainnet</span>
-      </div>
-    </div>
-    
-    <div class="flex items-center gap-2">
-      <!-- Mobile PWA Install Pill (shown if available) -->
-      <button id="btnPwaMobileHeader" class="hidden items-center gap-1 px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/30 text-[11px] font-semibold" onclick="triggerPwaInstall()">
-        <span class="material-symbols-outlined text-[14px]">download</span>
-        <span>Yükle</span>
-      </button>
-
-      <!-- Active Address Pill -->
-      <div class="flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-low border border-outline-variant/40" onclick="openReceiveModal()">
-        <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-        <span class="font-mono text-xs text-on-surface" id="headerMobileBal">-- BCT</span>
-      </div>
-      <div class="w-7 h-7 rounded-full bg-primary flex items-center justify-center cursor-pointer" onclick="openReceiveModal()">
-        <span class="material-symbols-outlined text-on-primary text-[16px]">person</span>
-      </div>
-    </div>
-  </div>
-
   <!-- Mobile Bottom Tab Navigation (Stitch Mobile Shell) -->
   <nav class="md:hidden fixed bottom-0 left-0 right-0 min-h-[64px] bg-surface-container-low/95 backdrop-blur-xl border-t border-outline-variant/30 z-50 flex items-center justify-around px-2 pb-safe pt-1.5" id="mobile-nav">
     <button class="mobile-nav-btn flex flex-col items-center gap-0.5 text-primary" data-tab="cuzdanim" onclick="switchTab('cuzdanim')">
@@ -213,8 +199,8 @@
 
   <!-- Main Content Wrapper with Left Margin for Desktop Sidebar -->
   <div class="md:pl-64">
-    <!-- Mobile Top App Bar (Optimized for handheld UX) -->
-    <header class="flex md:hidden fixed top-0 left-0 right-0 h-14 bg-surface/90 backdrop-blur-2xl border-b border-outline-variant/30 z-40 items-center justify-between px-3.5">
+    <!-- Unified Mobile Top App Bar (Single Compositor Layer & iOS Safe Area) -->
+    <header class="mobile-app-header flex md:hidden fixed top-0 left-0 right-0 bg-surface/95 backdrop-blur-xl border-b border-outline-variant/30 z-40 items-center justify-between px-3.5">
       <div class="flex items-center gap-2">
         <div class="w-7 h-7 rounded-full bg-primary/20 flex items-center justify-center border border-primary/40">
           <span class="material-symbols-outlined text-primary text-[16px]">blur_on</span>
@@ -225,13 +211,17 @@
         </div>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex items-center gap-1.5">
+        <button id="btnPwaMobileHeader" class="hidden items-center gap-1 px-2.5 py-1 rounded-full bg-primary/15 text-primary border border-primary/30 text-[11px] font-semibold" onclick="triggerPwaInstall()" type="button">
+          <span class="material-symbols-outlined text-[13px]">download</span>
+          <span>Yükle</span>
+        </button>
         <div id="mobileHeaderWalletPill" class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/40 text-xs cursor-pointer active:scale-95 transition-all" onclick="openReceiveModal()">
           <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
           <span class="font-mono text-[11px] text-on-surface font-semibold" id="mobileHeaderAddress">Cüzdan</span>
           <span class="text-primary font-mono text-[11px] font-bold" id="mobileHeaderBalText">--</span>
         </div>
-        <button class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center text-xs active:scale-90 transition-all" onclick="loadSpaceFeed(); refreshExplorerData();" title="Yenile" type="button">
+        <button class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center text-xs active:scale-90 transition-all" onclick="loadSpaceFeed(); refreshExplorerData(); refreshCurrentAccountBalance();" title="Yenile" type="button">
           <span class="material-symbols-outlined text-[16px]">refresh</span>
         </button>
       </div>
@@ -273,7 +263,7 @@
     </header>
 
     <!-- Main Container -->
-    <main class="w-full pt-16 md:pt-20 pb-24 md:pb-12 min-h-screen bg-background px-4 md:px-8">
+    <main class="mobile-main-offset w-full pt-16 md:pt-20 pb-28 md:pb-12 min-h-screen bg-background px-4 md:px-8">
 
       <!-- PWA Floating Prompt Banner (Mobile & Desktop) -->
       <div id="pwaBannerContainer" class="hidden w-full max-w-lg mx-auto mb-4 p-3.5 rounded-2xl bg-gradient-to-r from-surface-container via-surface-container-high to-surface-container border border-primary/30 flex items-center justify-between shadow-xl">
@@ -345,24 +335,24 @@
 
           <!-- History Section -->
           <section class="w-full flex flex-col gap-3 mt-4">
-            <div class="flex items-center justify-between w-full">
+            <div class="flex flex-wrap items-center justify-between gap-2 w-full">
               <h2 class="text-base md:text-lg text-on-surface tracking-tight font-medium">
                 İşlem Geçmişi
               </h2>
               
               <!-- Filter Pills -->
-              <div class="flex items-center p-1 bg-surface-container rounded-full" id="filter-bar">
-                <button class="filter-tab px-3 py-1 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all" onclick="filterTransactions('all', this)" type="button">
+              <div class="flex items-center p-1 bg-surface-container rounded-full overflow-x-auto max-w-full" id="filter-bar">
+                <button class="filter-tab px-3 py-1 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all shrink-0" data-filter="all" onclick="filterTransactions('all', this)" type="button">
                   Tümü
                 </button>
-                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="filterTransactions('in', this)" type="button">
+                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all shrink-0" data-filter="in" onclick="filterTransactions('in', this)" type="button">
                   Gelenler
                 </button>
-                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="filterTransactions('out', this)" type="button">
+                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all shrink-0" data-filter="out" onclick="filterTransactions('out', this)" type="button">
                   Gidenler
                 </button>
-                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="filterTransactions('trade', this)" type="button">
-                  Al/Sat
+                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all shrink-0" data-filter="space" onclick="filterTransactions('space', this)" type="button">
+                  Space
                 </button>
               </div>
             </div>
@@ -393,19 +383,19 @@
       <div id="tab-space" class="tab-content flex-col w-full items-center">
         <div class="w-full max-w-2xl mx-auto flex flex-col gap-4">
           
-          <!-- Sub-Header Status & Chain Context (Stitch Inspired) -->
-          <div class="pt-1 pb-1 flex items-center justify-between gap-3">
+          <!-- Sub-Header Status & Chain Context (Stitch Inspired, Mobile Search Ready) -->
+          <div class="pt-1 pb-1 flex flex-wrap items-center justify-between gap-2.5">
             <div class="flex items-center gap-2 bg-surface-container-low px-3.5 py-1.5 rounded-full border border-outline-variant/30 shadow-sm">
               <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
               <span class="text-xs font-semibold text-on-surface uppercase tracking-wider font-mono">LockTrace Mainnet</span>
               <span class="material-symbols-outlined text-[16px] text-on-surface-variant">check_circle</span>
             </div>
-            <div class="flex items-center gap-2">
-              <div class="relative hidden sm:block">
-                <input type="text" id="spaceSearchInput" placeholder="Düşüncelerde ara..." class="bg-surface-container-low border border-outline-variant/30 rounded-full pl-8 pr-3 py-1.5 text-xs text-on-surface placeholder:text-outline outline-none focus:border-primary transition-colors w-40 focus:w-56" oninput="filterSpaceBySearch()"/>
-                <span class="material-symbols-outlined text-[16px] text-outline absolute left-2.5 top-2">search</span>
+            <div class="flex items-center gap-2 flex-1 sm:flex-initial justify-end min-w-[180px]">
+              <div class="relative flex-1 sm:flex-initial">
+                <input type="search" id="spaceSearchInput" placeholder="Düşüncelerde ara..." class="bg-surface-container-low border border-outline-variant/30 rounded-full pl-8 pr-3 py-1.5 text-xs text-on-surface placeholder:text-outline outline-none focus:border-primary transition-colors w-full sm:w-44 sm:focus:w-56" oninput="filterSpaceBySearch()"/>
+                <span class="material-symbols-outlined text-[16px] text-outline absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none">search</span>
               </div>
-              <button aria-label="Akışı Yenile" onclick="loadSpaceFeed()" class="w-9 h-9 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high active:scale-95 transition-all" title="Akışı Yenile" type="button">
+              <button aria-label="Akışı Yenile" onclick="loadSpaceFeed()" class="w-9 h-9 rounded-full bg-surface-container-low border border-outline-variant/30 flex items-center justify-center text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high active:scale-95 transition-all shrink-0" title="Akışı Yenile" type="button">
                 <span class="material-symbols-outlined text-[18px]">refresh</span>
               </button>
             </div>
@@ -603,7 +593,7 @@
               </div>
               <div class="relative flex items-center bg-surface-container rounded-xl px-4 py-3 focus-within:bg-surface-container-high transition-colors border border-outline-variant/30">
                 <span class="material-symbols-outlined text-outline-variant text-[20px] mr-2">account_balance_wallet</span>
-                <input class="bg-transparent border-0 outline-none w-full text-on-surface text-sm placeholder:text-outline font-mono truncate" id="sendRecipientInput" placeholder="BCT... (Alıcı Cüzdan Adresi)" type="text"/>
+                <input class="bg-transparent border-0 outline-none w-full text-on-surface text-sm placeholder:text-outline font-mono truncate" id="sendRecipientInput" placeholder="BCT... (Alıcı Cüzdan Adresi)" type="text" oninput="validateRecipientInput()"/>
                 <button class="px-2.5 py-1 rounded-md bg-surface-container-highest hover:bg-surface-variant text-on-surface text-xs font-medium transition-colors ml-2 shrink-0 flex items-center gap-1" onclick="pasteRecipient()" type="button">
                   <span class="material-symbols-outlined text-[13px]">content_paste</span>
                   <span>Yapıştır</span>
@@ -675,10 +665,16 @@
             </div>
 
             <div class="flex flex-col sm:flex-row items-center justify-between gap-2.5 pt-1">
-              <button class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-all active:scale-95 shadow-sm" onclick="copyMnemonicWords()" type="button">
-                <span class="material-symbols-outlined text-[16px]">content_copy</span>
-                <span id="copyMnemonicText">Kelimeleri Kopyala</span>
-              </button>
+              <div class="flex items-center gap-2 w-full sm:w-auto">
+                <button class="flex-1 sm:flex-initial inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-all active:scale-95 shadow-sm" onclick="copyMnemonicWords()" type="button">
+                  <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  <span id="copyMnemonicText">Kelimeleri Kopyala</span>
+                </button>
+                <button class="inline-flex items-center justify-center gap-1.5 px-3.5 py-2.5 rounded-full bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-xs font-medium border border-outline-variant/30 transition-all active:scale-95" onclick="requestNewMnemonicPreview()" type="button" title="Yeni 12 Kelime Üret">
+                  <span class="material-symbols-outlined text-[15px]">refresh</span>
+                  <span>Yenile</span>
+                </button>
+              </div>
               <div class="flex items-center gap-1.5 text-on-surface-variant text-[11px] font-mono">
                 <span class="material-symbols-outlined text-[15px] text-primary">lock_reset</span>
                 <span>Standart 128-bit Kriptografik Entropi</span>
@@ -824,6 +820,17 @@
             </button>
           </div>
 
+          <!-- Active Validator & Peer Nodes Grid -->
+          <div class="flex flex-col gap-2.5">
+            <div class="flex items-center justify-between">
+              <h3 class="text-xs md:text-sm font-semibold text-on-surface">Aktif Doğrulayıcı Düğümler (Nodes)</h3>
+              <span class="text-[11px] font-mono text-outline">Canlı Ağ Topolojisi</span>
+            </div>
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3" id="nodesCardsGrid">
+              <div class="p-4 text-xs text-on-surface-variant bg-surface-container-low rounded-xl border border-outline-variant/20">Düğümler yükleniyor...</div>
+            </div>
+          </div>
+
           <!-- Latest Blocks & Transactions Dual Feed -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-5">
             <div class="flex flex-col gap-2.5">
@@ -956,9 +963,15 @@
         </button>
       </div>
 
-      <button class="w-full h-[46px] rounded-full bg-surface-container-highest hover:bg-surface-variant text-on-surface text-xs font-semibold transition-colors" onclick="closeReceiveModal()" type="button">
-        Tamam
-      </button>
+      <div class="flex items-center gap-2">
+        <button class="flex-1 h-[44px] rounded-full bg-surface-container-low hover:bg-error-container/30 text-on-surface-variant hover:text-error text-xs font-medium border border-outline-variant/30 transition-colors flex items-center justify-center gap-1.5" onclick="switchOrDisconnectWallet()" type="button">
+          <span class="material-symbols-outlined text-[15px]">logout</span>
+          <span>Cüzdan Değiştir</span>
+        </button>
+        <button class="flex-1 h-[44px] rounded-full bg-surface-container-highest hover:bg-surface-variant text-on-surface text-xs font-semibold transition-colors" onclick="closeReceiveModal()" type="button">
+          Tamam
+        </button>
+      </div>
     </div>
   </div>
 
@@ -991,19 +1004,21 @@
 
     let currentAccount = null;
     let lastRenderedBlocksHash = "";
-    let lastRenderedTxsHash = "";
+    let lastRenderedPersonalTxsHash = "";
+    let lastRenderedNetworkTxsHash = "";
     let lastRenderedSpaceHash = "";
 
     let cachedTransactions = [];
+    let currentTxFilter = "all";
     let tempMnemonic = "";
-    let tradeCurrency = "USD";
     let bctPerUsdRate = 100.0;
     let isBalanceHidden = false;
     let deferredPrompt = null;
+    const VALID_TABS = new Set(['cuzdanim', 'space', 'para-gonder', 'yeni-cuzdan', 'ag-ve-explorer', 'api-docs']);
+    const openCommentPostIds = new Set();
 
     // ── PWA Kurulum & Event Yönetimi ────────────────────────
     window.addEventListener('beforeinstallprompt', (e) => {
-      // Browser'ın varsayılan banner'ını bastır ve custom CTA göster
       e.preventDefault();
       deferredPrompt = e;
       showPwaInstallPrompts();
@@ -1016,7 +1031,6 @@
     });
 
     function showPwaInstallPrompts() {
-      // Eğer PWA zaten standalone moddaysa gösterme
       if (window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true) {
         return;
       }
@@ -1024,8 +1038,14 @@
       const deskBtn = document.getElementById('btnPwaDesktop');
       const mobileHeadBtn = document.getElementById('btnPwaMobileHeader');
       if (banner) banner.classList.remove('hidden');
-      if (deskBtn) deskBtn.classList.remove('hidden');
-      if (mobileHeadBtn) mobileHeadBtn.classList.remove('hidden');
+      if (deskBtn) {
+        deskBtn.classList.remove('hidden');
+        deskBtn.classList.add('inline-flex');
+      }
+      if (mobileHeadBtn) {
+        mobileHeadBtn.classList.remove('hidden');
+        mobileHeadBtn.classList.add('inline-flex');
+      }
     }
 
     function hidePwaInstallPrompts() {
@@ -1043,7 +1063,6 @@
     }
 
     async function triggerPwaInstall() {
-      // iOS Safari tespiti
       const isIos = /iphone|ipad|ipod/.test(navigator.userAgent.toLowerCase()) && !window.MSStream;
       const isStandalone = window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches;
 
@@ -1061,45 +1080,50 @@
         }
         deferredPrompt = null;
       } else {
-        showToast("Tarayıcınızın adres çubuğundaki 'Yükle' simgesine dokunabilirsiniz.");
+        showToast("Tarayıcınızın menüsünden 'Ana Ekrana Ekle' / 'Yükle' seçeneğini kullanabilirsiniz.");
       }
     }
 
     function openIosPwaModal() {
-      document.getElementById('ios-pwa-modal').classList.remove('hidden');
-      document.getElementById('ios-pwa-modal').classList.add('flex');
+      document.getElementById('ios-pwa-modal')?.classList.remove('hidden');
+      document.getElementById('ios-pwa-modal')?.classList.add('flex');
     }
 
     function closeIosPwaModal() {
-      document.getElementById('ios-pwa-modal').classList.remove('flex');
-      document.getElementById('ios-pwa-modal').classList.add('hidden');
+      document.getElementById('ios-pwa-modal')?.classList.remove('flex');
+      document.getElementById('ios-pwa-modal')?.classList.add('hidden');
     }
 
-    // ── 1. Tab Switching (Desktop Sidebar & Mobile Nav Sync) ──
-    function switchTab(tabId) {
+    // ── 1. Tab Switching & URL Hash Deep-Linking ────────────
+    function switchTab(tabId, updateHash = true) {
+      if (!VALID_TABS.has(tabId)) tabId = 'cuzdanim';
+
       document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       const target = document.getElementById('tab-' + tabId);
       if (target) target.classList.add('active');
+
+      if (updateHash && window.location.hash !== '#' + tabId) {
+        try { history.replaceState(null, '', '#' + tabId); } catch (e) {}
+      }
+
       if (tabId === 'space') {
         loadSpaceFeed();
         const balEl = document.getElementById('spaceUserBalBadge');
-        if (balEl && currentAccount) balEl.textContent = `${currentAccount.balance?.toFixed(4) || '0.0000'} BCT`;
+        if (balEl && currentAccount) balEl.textContent = `${(currentAccount.balance || 0).toFixed(4)} BCT`;
       }
 
       // Desktop Nav update
-      const navButtons = document.querySelectorAll('#sidebar-nav .nav-item');
-      navButtons.forEach(btn => {
+      document.querySelectorAll('#sidebar-nav .nav-item').forEach(btn => {
         btn.classList.remove('bg-surface-container-highest', 'text-on-surface', 'font-semibold');
         btn.classList.add('text-on-surface-variant', 'font-medium');
-        if (btn.getAttribute('onclick')?.includes(tabId)) {
+        if (btn.getAttribute('onclick')?.includes(`'${tabId}'`)) {
           btn.classList.add('bg-surface-container-highest', 'text-on-surface', 'font-semibold');
           btn.classList.remove('text-on-surface-variant', 'font-medium');
         }
       });
 
       // Mobile Nav update
-      const mobileBtns = document.querySelectorAll('#mobile-nav .mobile-nav-btn');
-      mobileBtns.forEach(btn => {
+      document.querySelectorAll('#mobile-nav .mobile-nav-btn').forEach(btn => {
         btn.classList.remove('text-primary');
         btn.classList.add('text-on-surface-variant');
         if (btn.getAttribute('data-tab') === tabId) {
@@ -1113,12 +1137,8 @@
       } else if (tabId === 'cuzdanim') {
         refreshCurrentAccountBalance();
         refreshPersonalTransactions();
-      } else if (tabId === 'al-sat') {
-        fetchTradeConfig();
-        if (currentAccount) {
-          const bal = parseFloat(document.getElementById('cardBalance').textContent.replace(',', '')) || 0;
-          document.getElementById('sellAvailableBal').textContent = `${bal.toFixed(4)} BCT`;
-        }
+      } else if (tabId === 'yeni-cuzdan') {
+        if (!tempMnemonic) requestNewMnemonicPreview();
       } else if (tabId === 'api-docs') {
         renderApiDocs();
       }
@@ -1126,20 +1146,25 @@
     }
 
     // ── 2. Toast System ─────────────────────────────────────
+    let toastTimerId = null;
     function showToast(text, isError = false) {
       const toast = document.getElementById('toast');
       const toastText = document.getElementById('toastText');
       const toastIcon = document.getElementById('toastIcon');
-      toastText.textContent = text;
-      toastIcon.textContent = isError ? 'error' : 'check_circle';
-      toastIcon.className = `material-symbols-outlined text-[18px] ${isError ? 'text-error' : 'text-primary'}`;
-      
+      if (!toast || !toastText || !toastIcon) return;
+
+      const errFlag = isError === true || isError === 'error' || isError === 'warning';
+      toastText.textContent = String(text || '');
+      toastIcon.textContent = errFlag ? 'error' : 'check_circle';
+      toastIcon.className = `material-symbols-outlined text-[18px] ${errFlag ? 'text-error' : 'text-primary'}`;
+
       toast.classList.remove('translate-y-20', 'opacity-0');
       toast.classList.add('translate-y-0', 'opacity-100');
-      setTimeout(() => {
+      if (toastTimerId) clearTimeout(toastTimerId);
+      toastTimerId = setTimeout(() => {
         toast.classList.remove('translate-y-0', 'opacity-100');
         toast.classList.add('translate-y-20', 'opacity-0');
-      }, 3000);
+      }, 3200);
     }
 
     async function safeFetchJson(url, opts = {}) {
@@ -1156,14 +1181,18 @@
       }
     }
 
-    // ── 3. Account Storage ──────────────────────────────────
+    // ── 3. Account Storage & Switching ──────────────────────
     function loadLocalAccount() {
       const saved = localStorage.getItem('locktrace_account');
       if (saved) {
         try {
-          currentAccount = JSON.parse(saved);
-          applyAccountUI(currentAccount);
-          return;
+          const parsed = JSON.parse(saved);
+          if (parsed && typeof parsed.address === 'string' && parsed.address.startsWith('BCT')) {
+            currentAccount = parsed;
+            applyAccountUI(currentAccount);
+            requestNewMnemonicPreview();
+            return;
+          }
         } catch (e) {}
       }
       requestNewMnemonicPreview();
@@ -1173,17 +1202,52 @@
     function saveLocalAccount(acc) {
       currentAccount = acc;
       localStorage.setItem('locktrace_account', JSON.stringify(acc));
+      lastRenderedPersonalTxsHash = "";
       applyAccountUI(acc);
     }
 
+    function switchOrDisconnectWallet() {
+      const ok = window.confirm(
+        "Mevcut cüzdan oturumunu bu cihazdan kaldırmak ve başka bir cüzdana geçmek istiyor musunuz?\n\nÖNEMLİ: 12 kelimelik kurtarma ifadenizi yedeklemediyseniz bu cüzdana tekrar erişemezsiniz!"
+      );
+      if (!ok) return;
+      localStorage.removeItem('locktrace_account');
+      currentAccount = null;
+      cachedTransactions = [];
+      lastRenderedPersonalTxsHash = "";
+
+      const headerAddr = document.getElementById('headerAddress');
+      if (headerAddr) headerAddr.textContent = 'Cüzdan Seçilmedi';
+      const mobAddr = document.getElementById('mobileHeaderAddress');
+      if (mobAddr) mobAddr.textContent = 'Cüzdan';
+      const mobBal = document.getElementById('mobileHeaderBalText');
+      if (mobBal) mobBal.textContent = '--';
+      const cardBal = document.getElementById('cardBalance');
+      if (cardBal) cardBal.textContent = '0.00';
+      const fiatEl = document.getElementById('fiatEstimateLabel');
+      if (fiatEl) fiatEl.textContent = '≈ $0.00 USD';
+      const sendAvail = document.getElementById('sendAvailableBal');
+      if (sendAvail) sendAvail.textContent = '0.00 BCT';
+
+      closeReceiveModal();
+      updateSpaceWalletUI();
+      refreshPersonalTransactions();
+      requestNewMnemonicPreview();
+      switchTab('yeni-cuzdan');
+      showToast("Cüzdan oturumu kapatıldı. Yeni cüzdan açabilir veya içe aktarabilirsiniz.");
+    }
+
     function applyAccountUI(acc) {
-      if (!acc) return;
+      if (!acc || !acc.address) return;
       const shortAddr = acc.address.slice(0, 8) + '...' + acc.address.slice(-6);
-      document.getElementById('headerAddress').textContent = shortAddr;
+      const headerAddr = document.getElementById('headerAddress');
+      if (headerAddr) headerAddr.textContent = shortAddr;
       const mobAddrEl = document.getElementById('mobileHeaderAddress');
       if (mobAddrEl) mobAddrEl.textContent = acc.address.slice(0, 6) + '...';
-      document.getElementById('modalReceiveAddress').textContent = acc.address;
-      document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(acc.address)}`;
+      const recvEl = document.getElementById('modalReceiveAddress');
+      if (recvEl) recvEl.textContent = acc.address;
+      const qrImg = document.getElementById('qrImage');
+      if (qrImg) qrImg.src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(acc.address)}`;
 
       updateSpaceWalletUI();
       refreshCurrentAccountBalance();
@@ -1193,12 +1257,12 @@
     function toggleBalanceVisibility() {
       isBalanceHidden = !isBalanceHidden;
       const icon = document.getElementById('balanceEyeIcon');
-      icon.textContent = isBalanceHidden ? 'visibility_off' : 'visibility';
+      if (icon) icon.textContent = isBalanceHidden ? 'visibility_off' : 'visibility';
       refreshCurrentAccountBalance();
     }
 
     function copyCurrentAddress() {
-      if (!currentAccount) {
+      if (!currentAccount || !currentAccount.address) {
         showToast("Önce bir cüzdan oluşturun veya içe aktarın.", true);
         return;
       }
@@ -1207,135 +1271,207 @@
     }
 
     function copyText(str) {
-      navigator.clipboard.writeText(str);
+      navigator.clipboard.writeText(String(str || ''));
       showToast("Panoya kopyalandı!");
     }
 
     // ── 4. Refresh Balance ──────────────────────────────────
     async function refreshCurrentAccountBalance() {
-      if (!currentAccount) return;
-      const res = await safeFetchJson(`${API_BASE}/balance/${currentAccount.address}`);
+      if (!currentAccount || !currentAccount.address) return;
+      const res = await safeFetchJson(`${API_BASE}/balance/${encodeURIComponent(currentAccount.address)}`);
       if (res.ok && res.json && res.json.success) {
-        const bal = Number(res.json.data.balance);
+        const bal = Number(res.json.data.balance) || 0;
         const cardBalEl = document.getElementById('cardBalance');
-        const headerMobEl = document.getElementById('headerMobileBal');
+        const mobBalEl = document.getElementById('mobileHeaderBalText');
         const fiatEl = document.getElementById('fiatEstimateLabel');
+        const sendAvailEl = document.getElementById('sendAvailableBal');
 
         if (isBalanceHidden) {
-          cardBalEl.textContent = "••••••";
-          headerMobEl.textContent = "•••• BCT";
-          fiatEl.textContent = "≈ ••••••";
+          if (cardBalEl) cardBalEl.textContent = "••••••";
+          if (mobBalEl) mobBalEl.textContent = "••••";
+          if (fiatEl) fiatEl.textContent = "≈ ••••••";
         } else {
-          cardBalEl.textContent = bal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
-          headerMobEl.textContent = `${bal.toFixed(2)} BCT`;
-          const fiatVal = (bal * 0.01).toFixed(2);
-          fiatEl.textContent = `≈ $${fiatVal} USD`;
+          if (cardBalEl) cardBalEl.textContent = bal.toLocaleString('tr-TR', { minimumFractionDigits: 2, maximumFractionDigits: 4 });
+          if (mobBalEl) mobBalEl.textContent = `${bal.toFixed(2)} BCT`;
+          const priceUsd = bctPerUsdRate > 0 ? (1 / bctPerUsdRate) : 0.01;
+          const fiatVal = (bal * priceUsd).toFixed(2);
+          if (fiatEl) fiatEl.textContent = `≈ $${fiatVal} USD`;
         }
 
-        document.getElementById('sendAvailableBal').textContent = `${bal.toFixed(4)} BCT`;
-        const sellEl = document.getElementById('sellAvailableBal');
-        if (sellEl) sellEl.textContent = `${bal.toFixed(4)} BCT`;
-        const mobBalEl = document.getElementById('mobileHeaderBalText');
-        if (mobBalEl) mobBalEl.textContent = `${bal.toFixed(2)} BCT`;
+        if (sendAvailEl) sendAvailEl.textContent = `${bal.toFixed(4)} BCT`;
         currentAccount.balance = bal;
         localStorage.setItem('locktrace_account', JSON.stringify(currentAccount));
         updateSpaceWalletUI();
       }
     }
 
-    // ── 5. Personal Transactions & Filter ───────────────────
+    async function fetchTradeConfig() {
+      const res = await safeFetchJson(`${API_BASE}/trade/config`);
+      if (res.ok && res.json && res.json.success && res.json.data) {
+        bctPerUsdRate = Number(res.json.data.bct_per_usd) || 100.0;
+      }
+    }
+
+    // ── 5. Personal Transactions & Filter (XSS-Safe) ────────
     async function refreshPersonalTransactions() {
       const container = document.getElementById('tx-list');
-      if (!currentAccount) {
-        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl">Aktif cüzdan bulunamadı. Lütfen "Yeni / İçe Aktar" sekmesinden cüzdan bağlayın.</div>`;
+      if (!container) return;
+      if (!currentAccount || !currentAccount.address) {
+        lastRenderedPersonalTxsHash = "";
+        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl border border-outline-variant/20">Aktif cüzdan bulunamadı. Lütfen "Yeni / İçe Aktar" sekmesinden cüzdan bağlayın.</div>`;
         return;
       }
 
-      const res = await safeFetchJson(`${API_BASE}/transactions/${currentAccount.address}`);
-      if (res.ok && res.json && res.json.success && res.json.data.transactions) {
+      const res = await safeFetchJson(`${API_BASE}/transactions/${encodeURIComponent(currentAccount.address)}`);
+      if (res.ok && res.json && res.json.success && Array.isArray(res.json.data.transactions)) {
         cachedTransactions = res.json.data.transactions;
         renderTransactionList(cachedTransactions);
       } else {
-        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl">Henüz işlem geçmişi yok.</div>`;
+        lastRenderedPersonalTxsHash = "";
+        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl border border-outline-variant/20">Henüz işlem geçmişi yok.</div>`;
       }
+    }
+
+    function describePersonalTx(tx) {
+      const myAddr = currentAccount?.address || '';
+      const isRoyalty = Boolean(tx.is_author_royalty) || (
+        (tx.tx_type === 'space_like' || tx.tx_type === 'space_comment') &&
+        tx.extra_data?.author === myAddr &&
+        tx.sender !== myAddr
+      );
+      const isReceiver = tx.receiver === myAddr || isRoyalty;
+
+      if (isRoyalty) {
+        const amt = tx.royalty_amount ?? tx.extra_data?.author_cut ?? 0;
+        return {
+          icon: 'workspace_premium',
+          title: tx.tx_type === 'space_like' ? 'Space Beğeni Telifi' : 'Space Yorum Telifi',
+          amountClass: 'text-primary',
+          sign: '+',
+          displayAmount: amt,
+          filterGroup: 'space',
+          counterparty: tx.sender || 'Space Kullanıcısı'
+        };
+      }
+      if (tx.tx_type === 'space_post') {
+        return {
+          icon: 'rocket_launch',
+          title: 'Space Düşünce Paylaşımı',
+          amountClass: 'text-on-surface',
+          sign: '-',
+          displayAmount: tx.amount,
+          filterGroup: 'space',
+          counterparty: 'LockTrace Space'
+        };
+      }
+      if (tx.tx_type === 'space_like') {
+        return {
+          icon: 'favorite',
+          title: 'Space Beğenisi',
+          amountClass: 'text-on-surface',
+          sign: '-',
+          displayAmount: tx.amount,
+          filterGroup: 'space',
+          counterparty: tx.extra_data?.author || 'Space Yazarı'
+        };
+      }
+      if (tx.tx_type === 'space_comment') {
+        return {
+          icon: 'chat_bubble',
+          title: 'Space Yorumu',
+          amountClass: 'text-on-surface',
+          sign: '-',
+          displayAmount: tx.amount,
+          filterGroup: 'space',
+          counterparty: tx.extra_data?.author || 'Space Yazarı'
+        };
+      }
+      if (tx.tx_type === 'mining_reward') {
+        return {
+          icon: 'memory',
+          title: 'Madencilik Ödülü (PoW)',
+          amountClass: 'text-primary',
+          sign: '+',
+          displayAmount: tx.amount,
+          filterGroup: 'in',
+          counterparty: 'BCT Hazine'
+        };
+      }
+      if (tx.tx_type === 'reward') {
+        return {
+          icon: 'redeem',
+          title: 'Hoş Geldin Hibesi',
+          amountClass: 'text-primary',
+          sign: '+',
+          displayAmount: tx.amount,
+          filterGroup: 'in',
+          counterparty: 'BCT Hazine'
+        };
+      }
+      if (isReceiver) {
+        return {
+          icon: 'south_west',
+          title: 'Gelen Transfer',
+          amountClass: 'text-primary',
+          sign: '+',
+          displayAmount: tx.net_amount ?? tx.amount,
+          filterGroup: 'in',
+          counterparty: tx.sender || 'BCT Hazine'
+        };
+      }
+      return {
+        icon: 'north_east',
+        title: 'Giden Transfer',
+        amountClass: 'text-on-surface',
+        sign: '-',
+        displayAmount: tx.amount,
+        filterGroup: 'out',
+        counterparty: tx.receiver || 'Bilinmeyen'
+      };
     }
 
     function renderTransactionList(txs) {
       const container = document.getElementById('tx-list');
+      if (!container) return;
       if (!txs || txs.length === 0) {
-        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl">Bu cüzdana ait henüz işlem bulunmuyor.</div>`;
+        lastRenderedPersonalTxsHash = "";
+        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl border border-outline-variant/20">Bu cüzdana ait henüz işlem bulunmuyor.</div>`;
         return;
       }
 
-      const currentTxsHash = txs.map(t => `${t.tx_hash}:${t.amount}`).join('|');
-      if (currentTxsHash === lastRenderedTxsHash && container.children.length > 0) {
-        return; // Skip DOM wipe if data is identical - saves iPhone memory
+      const currentTxsHash = `${currentTxFilter}:` + txs.map(t => `${t.tx_hash}:${t.amount}:${t.is_author_royalty ? 1 : 0}`).join('|');
+      if (currentTxsHash === lastRenderedPersonalTxsHash && container.children.length > 0) {
+        return;
       }
-      lastRenderedTxsHash = currentTxsHash;
-      container.innerHTML = txs.map(tx => {
-        const isReceiver = tx.receiver === currentAccount?.address;
-        const isMining = tx.tx_type === 'mining_reward';
-        const isReward = tx.tx_type === 'reward';
-        const isBuy = tx.tx_type === 'fiat_buy';
-        const isSell = tx.tx_type === 'token_sell';
-        
-        let icon = 'south_west';
-        let title = 'Gelen Transfer';
-        let amountClass = 'text-primary';
-        let sign = '+';
-        let typeBadge = 'in';
+      lastRenderedPersonalTxsHash = currentTxsHash;
 
-        if (isBuy) {
-          icon = 'add_shopping_cart';
-          title = 'BCT Satın Alındı (Fiat On-Ramp)';
-          typeBadge = 'trade';
-        } else if (isSell) {
-          icon = 'payments';
-          title = 'BCT Satıldı (Nakit Çıkışı)';
-          amountClass = 'text-on-surface';
-          sign = '-';
-          typeBadge = 'trade';
-        } else if (isMining) {
-          icon = 'memory';
-          title = 'Madencilik Ödülü (PoW)';
-          typeBadge = 'in';
-        } else if (isReward) {
-          icon = 'redeem';
-          title = 'Hoş Geldin Hibesi';
-          typeBadge = 'in';
-        } else if (!isReceiver) {
-          icon = 'north_east';
-          title = 'Giden Transfer';
-          amountClass = 'text-on-surface';
-          sign = '-';
-          typeBadge = 'out';
-        }
-
+      container.innerHTML = txs.map((tx, idx) => {
+        const meta = describePersonalTx(tx);
         const dateStr = tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString('tr-TR') : 'Tamamlandı';
-        const shortCounterparty = isReceiver 
-          ? (tx.sender ? (tx.sender.length > 12 ? tx.sender.slice(0, 6) + '...' + tx.sender.slice(-4) : tx.sender) : 'BCT Hazine')
-          : (tx.receiver ? (tx.receiver.length > 12 ? tx.receiver.slice(0, 6) + '...' + tx.receiver.slice(-4) : tx.receiver) : 'Bilinmeyen');
+        const cp = String(meta.counterparty || '');
+        const shortCounterparty = cp.length > 16 ? (cp.slice(0, 7) + '...' + cp.slice(-4)) : cp;
+        const isVisible = currentTxFilter === 'all' || meta.filterGroup === currentTxFilter || (currentTxFilter === 'in' && meta.sign === '+') || (currentTxFilter === 'out' && meta.sign === '-');
 
         return `
-          <div class="group flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container-high transition-all cursor-pointer border border-outline-variant/20" data-type="${typeBadge}" onclick='openTxDetail(${JSON.stringify(tx).replace(/'/g, "&#39;")})'>
-            <div class="flex items-center gap-3">
+          <div class="group items-center justify-between p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container-high transition-all cursor-pointer border border-outline-variant/20" style="display:${isVisible ? 'flex' : 'none'}" data-type="${escapeHtml(meta.filterGroup)}" data-sign="${meta.sign}" onclick="openTxDetailByIndex(${idx})">
+            <div class="flex items-center gap-3 min-w-0">
               <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined text-[20px]">${icon}</span>
+                <span class="material-symbols-outlined text-[20px]">${meta.icon}</span>
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-semibold text-on-surface truncate">${title}</span>
+                <span class="text-xs font-semibold text-on-surface truncate">${escapeHtml(meta.title)}</span>
                 <div class="flex items-center gap-2 mt-0.5">
-                  <span class="text-[11px] font-mono text-on-surface-variant">${shortCounterparty}</span>
+                  <span class="text-[11px] font-mono text-on-surface-variant truncate">${escapeHtml(shortCounterparty)}</span>
                   <span class="text-on-surface-variant/40 text-[8px]">•</span>
-                  <span class="text-[11px] text-on-surface-variant">${dateStr}</span>
+                  <span class="text-[11px] text-on-surface-variant shrink-0">${escapeHtml(dateStr)}</span>
                 </div>
               </div>
             </div>
             <div class="flex flex-col items-end shrink-0 pl-2">
-              <span class="text-xs ${amountClass} font-semibold font-mono tracking-tight">${sign}${tx.net_amount ?? tx.amount} BCT</span>
+              <span class="text-xs ${meta.amountClass} font-semibold font-mono tracking-tight">${meta.sign}${escapeHtml(meta.displayAmount)} BCT</span>
               <div class="flex items-center gap-1 mt-0.5">
                 <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                <span class="text-[10px] text-on-surface-variant">Blok Onaylı</span>
+                <span class="text-[10px] text-on-surface-variant">Blok #${escapeHtml(tx.block_index ?? 0)}</span>
               </div>
             </div>
           </div>
@@ -1343,47 +1479,45 @@
       }).join('');
     }
 
+    function openTxDetailByIndex(idx) {
+      const tx = cachedTransactions[idx];
+      if (tx) openTxDetail(tx);
+    }
+
     function filterTransactions(type, btn) {
+      currentTxFilter = type;
       document.querySelectorAll('#filter-bar .filter-tab').forEach(t => {
         t.classList.remove('bg-surface-container-highest', 'text-on-surface', 'font-semibold', 'shadow-sm');
         t.classList.add('text-on-surface-variant', 'font-medium');
       });
-      btn.classList.add('bg-surface-container-highest', 'text-on-surface', 'font-semibold', 'shadow-sm');
-      btn.classList.remove('text-on-surface-variant', 'font-medium');
+      if (btn) {
+        btn.classList.add('bg-surface-container-highest', 'text-on-surface', 'font-semibold', 'shadow-sm');
+        btn.classList.remove('text-on-surface-variant', 'font-medium');
+      }
 
       const items = document.querySelectorAll('#tx-list > div[data-type]');
       items.forEach(item => {
         const itemType = item.getAttribute('data-type');
-        if (type === 'all' || itemType === type) {
-          item.style.display = 'flex';
-        } else {
-          item.style.display = 'none';
-        }
+        const itemSign = item.getAttribute('data-sign');
+        const match = type === 'all' || itemType === type || (type === 'in' && itemSign === '+') || (type === 'out' && itemSign === '-');
+        item.style.display = match ? 'flex' : 'none';
       });
     }
 
     function openTxDetail(tx) {
+      if (!tx) return;
       const modal = document.getElementById('tx-modal');
       const card = document.getElementById('modal-card');
-      const isReceiver = tx.receiver === currentAccount?.address;
-      const isMining = tx.tx_type === 'mining_reward';
-      const isBuy = tx.tx_type === 'fiat_buy';
-      const isSell = tx.tx_type === 'token_sell';
-      
-      let title = 'İşlem Detayı';
-      let icon = 'south_west';
-      if (isBuy) { title = 'Token Satın Alma (On-Ramp)'; icon = 'add_shopping_cart'; }
-      else if (isSell) { title = 'Token Satma (Nakit Çıkışı)'; icon = 'payments'; }
-      else if (isMining) { title = 'Madencilik Ödülü'; icon = 'memory'; }
-      else if (!isReceiver) { title = 'Giden Transfer'; icon = 'north_east'; }
+      if (!modal || !card) return;
 
-      document.getElementById('modal-title').textContent = title;
-      document.getElementById('modal-amount').textContent = `${(isReceiver || isBuy) ? '+' : '-'}${tx.net_amount ?? tx.amount} BCT`;
-      document.getElementById('modal-counterparty').textContent = isReceiver ? (tx.sender || 'Hazine') : tx.receiver;
+      const meta = describePersonalTx(tx);
+      document.getElementById('modal-title').textContent = meta.title;
+      document.getElementById('modal-amount').textContent = `${meta.sign}${meta.displayAmount} BCT`;
+      document.getElementById('modal-counterparty').textContent = meta.counterparty;
       document.getElementById('modal-fee').textContent = `${tx.fee ?? 0.0} BCT`;
       document.getElementById('modal-hash').textContent = tx.tx_hash || 'İşleniyor';
       document.getElementById('modal-time').textContent = tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString('tr-TR') : 'Yeni';
-      document.getElementById('modal-icon').textContent = icon;
+      document.getElementById('modal-icon').textContent = meta.icon;
 
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -1396,6 +1530,7 @@
     function closeTxModal() {
       const modal = document.getElementById('tx-modal');
       const card = document.getElementById('modal-card');
+      if (!modal || !card) return;
       card.classList.remove('scale-100', 'opacity-100');
       card.classList.add('scale-95', 'opacity-0');
       setTimeout(() => {
@@ -1405,360 +1540,115 @@
     }
 
     function openReceiveModal() {
-      if (!currentAccount) {
+      if (!currentAccount || !currentAccount.address) {
         showToast("Lütfen önce bir cüzdan oluşturun veya içe aktarın.", true);
         switchTab('yeni-cuzdan');
         return;
       }
-      document.getElementById('receive-modal').classList.remove('hidden');
-      document.getElementById('receive-modal').classList.add('flex');
+      document.getElementById('receive-modal')?.classList.remove('hidden');
+      document.getElementById('receive-modal')?.classList.add('flex');
     }
 
     function closeReceiveModal() {
-      document.getElementById('receive-modal').classList.remove('flex');
-      document.getElementById('receive-modal').classList.add('hidden');
+      document.getElementById('receive-modal')?.classList.remove('flex');
+      document.getElementById('receive-modal')?.classList.add('hidden');
     }
 
-    // ── 6. AL / SAT (FIAT ON-RAMP & OFF-RAMP & THIRDWEB ENGINE) ──
-    function setTradeMode(mode) {
-      const btnBuy = document.getElementById('btnToggleBuy');
-      const btnSell = document.getElementById('btnToggleSell');
-      const btnEngine = document.getElementById('btnToggleEngine');
-      const cardBuy = document.getElementById('tradeBuyCard');
-      const cardSell = document.getElementById('tradeSellCard');
-      const cardEngine = document.getElementById('tradeEngineCard');
-
-      // Reset all buttons
-      const inactiveClass = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all';
-      const activeClass = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all';
-
-      btnBuy.className = inactiveClass;
-      btnSell.className = inactiveClass;
-      if (btnEngine) btnEngine.className = inactiveClass;
-
-      cardBuy.classList.remove('flex');
-      cardBuy.classList.add('hidden');
-      cardSell.classList.remove('flex');
-      cardSell.classList.add('hidden');
-      if (cardEngine) {
-        cardEngine.classList.remove('flex');
-        cardEngine.classList.add('hidden');
-      }
-
-      if (mode === 'buy') {
-        btnBuy.className = activeClass;
-        cardBuy.classList.remove('hidden');
-        cardBuy.classList.add('flex');
-      } else if (mode === 'sell') {
-        btnSell.className = activeClass;
-        cardSell.classList.remove('hidden');
-        cardSell.classList.add('flex');
-      } else if (mode === 'engine') {
-        if (btnEngine) btnEngine.className = activeClass;
-        if (cardEngine) {
-          cardEngine.classList.remove('hidden');
-          cardEngine.classList.add('flex');
-        }
-      }
+    // ── 6. Send Transfer Logic ─────────────────────────────
+    function isValidBctAddressClient(addr) {
+      return /^BCT[a-fA-F0-9]{40}$/.test((addr || '').trim());
     }
 
-    function fillEngineMyAddress() {
-      const myAddr = currentWallet ? currentWallet.address : localStorage.getItem('bct_active_address');
-      if (myAddr) {
-        document.getElementById('engineToAddress').value = myAddr;
+    function validateRecipientInput() {
+      const input = document.getElementById('sendRecipientInput');
+      const badge = document.getElementById('recipientValidateBadge');
+      if (!input || !badge) return;
+      const val = input.value.trim();
+      if (!val) {
+        badge.textContent = 'BCT Adresi';
+        badge.className = 'text-xs text-outline font-mono';
+      } else if (currentAccount && val === currentAccount.address) {
+        badge.textContent = 'Kendi Adresiniz!';
+        badge.className = 'text-xs text-error font-mono font-semibold';
+      } else if (isValidBctAddressClient(val)) {
+        badge.textContent = '✓ Geçerli BCT Adresi';
+        badge.className = 'text-xs text-primary font-mono font-semibold';
       } else {
-        showToast('Henüz aktif bir cüzdan oluşturmadınız veya yüklemediniz.', 'warning');
+        badge.textContent = 'Geçersiz Format (BCT + 40 hex)';
+        badge.className = 'text-xs text-error font-mono';
       }
     }
 
-    async function enqueueThirdwebClaim() {
-      const to = document.getElementById('engineToAddress').value.trim();
-      const contractAddress = document.getElementById('engineContractAddress').value.trim();
-      const tokenId = parseInt(document.getElementById('engineTokenId').value, 10) || 0;
-      const quantity = parseInt(document.getElementById('engineQuantity').value, 10) || 1;
-      const btn = document.getElementById('btnEngineEnqueue');
-      const btnText = document.getElementById('btnEngineText');
-      const resBox = document.getElementById('engineResultBox');
-      const resText = document.getElementById('engineResultText');
-
-      if (!to) {
-        showToast('Lütfen hedef alıcı cüzdan adresini girin.', 'warning');
-        return;
-      }
-      if (!contractAddress) {
-        showToast('Lütfen ERC1155 kontrat adresini girin.', 'warning');
-        return;
-      }
-
-      btn.disabled = true;
-      btnText.textContent = 'Engine Kuyruğuna Ekleniyor...';
-      resBox.classList.add('hidden');
-
-      try {
-        const res = await fetch(`${API_BASE}/thirdweb/claim-erc1155`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            to,
-            contract_address: contractAddress,
-            token_id: tokenId,
-            quantity: quantity,
-            chain: 'base-sepolia'
-          })
-        });
-        const json = await res.json();
-
-        if (json.success) {
-          showToast('İşlem Thirdweb Engine kuyruğuna alındı!', 'success');
-          resBox.classList.remove('hidden');
-          const d = json.data || {};
-          let html = `<div><strong>Durum:</strong> Başarılı</div>`;
-          if (d.transactionId) {
-            html += `<div><strong>Transaction ID:</strong> ${d.transactionId}</div>`;
-          }
-          if (d.transactionHash) {
-            html += `<div><strong>Tx Hash:</strong> <a href="https://sepolia.basescan.org/tx/${d.transactionHash}" target="_blank" class="text-primary underline">${d.transactionHash.slice(0, 16)}...</a></div>`;
-          }
-          html += `<div><strong>Hedef:</strong> ${d.to || to}</div>`;
-          html += `<div><strong>Token ID:</strong> ${d.tokenId || tokenId} | Adet: ${d.quantity || quantity}</div>`;
-          resText.innerHTML = html;
-        } else {
-          showToast(json.message || 'Thirdweb işlemi başlatılamadı.', 'error');
-          resBox.classList.remove('hidden');
-          resText.innerHTML = `<div class="text-error"><strong>Hata:</strong> ${json.message || 'Bilinmeyen hata'}</div>`;
-        }
-      } catch (e) {
-        showToast(`Bağlantı hatası: ${e.message}`, 'error');
-      } finally {
-        btn.disabled = false;
-        btnText.textContent = 'İşlemi Kuyruğa Al (Enqueue Transaction)';
-      }
-    }
-
-    async function fetchTradeConfig() {
-      const res = await safeFetchJson(`${API_BASE}/trade/config`);
-      if (res.ok && res.json && res.json.success) {
-        const d = res.json.data;
-        bctPerUsdRate = d.bct_per_usd || 100.0;
-        updateExchangeRateLabels();
-      }
-    }
-
-    function setTradeCurrency(curr, btn) {
-      tradeCurrency = curr;
-      document.querySelectorAll('.curr-btn').forEach(b => {
-        b.className = 'curr-btn px-2 py-0.5 rounded text-on-surface-variant hover:text-on-surface';
-      });
-      btn.className = 'curr-btn px-2 py-0.5 rounded bg-surface-container-highest text-primary font-bold';
-      
-      const symbols = { USD: '$', EUR: '€', TRY: '₺' };
-      document.getElementById('buyCurrencySymbol').textContent = symbols[curr] || '$';
-      updateExchangeRateLabels();
-      calculateBuyTokens();
-    }
-
-    function updateExchangeRateLabels() {
-      const el = document.getElementById('buyExchangeRateLabel');
-      if (!el) return;
-      let r = bctPerUsdRate;
-      if (tradeCurrency === 'EUR') r = round4(bctPerUsdRate * 1.08);
-      else if (tradeCurrency === 'TRY') r = round4(bctPerUsdRate / 34.0);
-
-      el.textContent = `1 ${tradeCurrency} ≈ ${r} BCT`;
-    }
-
-    function setBuyFiatAmount(val) {
-      document.getElementById('buyFiatInput').value = val;
-      calculateBuyTokens();
-    }
-
-    function calculateBuyTokens() {
-      const fiat = parseFloat(document.getElementById('buyFiatInput').value) || 0;
-      let r = bctPerUsdRate;
-      if (tradeCurrency === 'EUR') r = bctPerUsdRate * 1.08;
-      else if (tradeCurrency === 'TRY') r = bctPerUsdRate / 34.0;
-
-      const tokens = round4(fiat * r);
-      document.getElementById('buyBctResult').textContent = `${tokens.toLocaleString('tr-TR', { maximumFractionDigits: 4 })} BCT`;
-    }
-
-    async function executeBuyTokens() {
-      if (!currentAccount) {
-        showToast("Lütfen önce bir cüzdan oluşturun veya içe aktarın.", true);
-        switchTab('yeni-cuzdan');
-        return;
-      }
-
-      const fiat = parseFloat(document.getElementById('buyFiatInput').value);
-      if (!fiat || fiat <= 0) {
-        showToast("Lütfen geçerli bir satın alma tutarı girin.", true);
-        return;
-      }
-
-      const btn = document.getElementById('btnExecuteBuy');
-      const btnText = document.getElementById('btnBuyText');
-      btn.disabled = true;
-      btnText.textContent = "Ödeme Doğrulanıyor ve Tokenlar Basılıyor...";
-
-      try {
-        const payload = {
-          buyer_address: currentAccount.address,
-          fiat_amount: fiat,
-          currency: tradeCurrency,
-          payment_method: document.querySelector('input[name="payMethod"]:checked')?.value || 'card'
-        };
-
-        const res = await safeFetchJson(`${API_BASE}/trade/buy`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok && res.json && res.json.success) {
-          showToast(res.json.message || "Tebrikler! BCT tokenlarınız başarıyla cüzdanınıza aktarıldı.");
-          document.getElementById('buyFiatInput').value = '';
-          calculateBuyTokens();
-          refreshCurrentAccountBalance();
-          refreshPersonalTransactions();
-          switchTab('cuzdanim');
-        } else {
-          showToast(res.json?.message || "Satın alma gerçekleştirilemedi.", true);
-        }
-      } catch (e) {
-        showToast("İşlem hatası: " + e.message, true);
-      } finally {
-        btn.disabled = false;
-        btnText.textContent = "Güvenli Öde ve Tokenları Al";
-      }
-    }
-
-    function calculateSellPayout() {
-      const bct = parseFloat(document.getElementById('sellBctInput').value) || 0;
-      const fee = bct * 0.01;
-      const net = Math.max(0, bct - fee);
-      const fiat = net / bctPerUsdRate;
-      document.getElementById('sellFiatResult').textContent = `$${fiat.toFixed(2)} USD`;
-    }
-
-    function setSellPercent(p) {
-      if (!currentAccount) return;
-      const total = parseFloat(document.getElementById('sellAvailableBal').textContent) || 0;
-      const calc = round4(total * p);
-      document.getElementById('sellBctInput').value = calc > 0 ? calc : '';
-      calculateSellPayout();
-    }
-
-    async function executeSellTokens() {
-      if (!currentAccount) {
-        showToast("Lütfen önce bir cüzdan bağlayın.", true);
-        return;
-      }
-
-      const bctAmount = parseFloat(document.getElementById('sellBctInput').value);
-      const payoutDest = document.getElementById('sellPayoutDestInput').value.trim();
-
-      if (!bctAmount || bctAmount <= 0) {
-        showToast("Lütfen satılacak BCT miktarını girin.", true);
-        return;
-      }
-      if (!payoutDest) {
-        showToast("Lütfen ödemenin yatacağı IBAN veya hesap numarasını girin.", true);
-        return;
-      }
-
-      const btn = document.getElementById('btnExecuteSell');
-      const btnText = document.getElementById('btnSellText');
-      btn.disabled = true;
-      btnText.textContent = "Tokenlar Hazineye İletiliyor ve Nakit Çıkışı Yapılıyor...";
-
-      try {
-        const payload = {
-          seller_address: currentAccount.address,
-          bct_amount: bctAmount,
-          currency: 'USD',
-          payout_info: payoutDest
-        };
-
-        const res = await safeFetchJson(`${API_BASE}/trade/sell`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-
-        if (res.ok && res.json && res.json.success) {
-          showToast(res.json.message || "BCT satışı onaylandı ve nakit ödemeniz işleme alındı!");
-          document.getElementById('sellBctInput').value = '';
-          calculateSellPayout();
-          refreshCurrentAccountBalance();
-          refreshPersonalTransactions();
-          switchTab('cuzdanim');
-        } else {
-          showToast(res.json?.message || "Satış işlemi gerçekleştirilemedi.", true);
-        }
-      } catch (e) {
-        showToast("İşlem hatası: " + e.message, true);
-      } finally {
-        btn.disabled = false;
-        btnText.textContent = "BCT Sat ve Nakit Çıkışı Başlat";
-      }
-    }
-
-    // ── 7. Send Transfer Logic ─────────────────────────────
     function updateSendFeePreview() {
-      const val = parseFloat(document.getElementById('sendAmountInput').value) || 0;
-      const fee = round8(val * 0.01);
+      const val = parseFloat(document.getElementById('sendAmountInput')?.value) || 0;
+      const fee = round8(Math.max(0, val) * 0.01);
       const net = Math.max(0, round8(val - fee));
-      document.getElementById('sendFeePreview').textContent = `${fee.toFixed(8)} BCT`;
-      document.getElementById('sendNetPreview').textContent = `${net.toFixed(8)} BCT`;
+      const feeEl = document.getElementById('sendFeePreview');
+      const netEl = document.getElementById('sendNetPreview');
+      if (feeEl) feeEl.textContent = `${fee.toFixed(8)} BCT`;
+      if (netEl) netEl.textContent = `${net.toFixed(8)} BCT`;
     }
 
     function setSendPercent(p) {
-      if (!currentAccount) return;
-      const total = parseFloat(document.getElementById('sendAvailableBal').textContent) || 0;
-      const calc = round8(total * p);
-      document.getElementById('sendAmountInput').value = calc > 0 ? calc : '';
+      if (!currentAccount) {
+        showToast("Önce bir cüzdan bağlayın.", true);
+        return;
+      }
+      const total = Number(currentAccount.balance ?? parseFloat(document.getElementById('sendAvailableBal')?.textContent)) || 0;
+      // Floor to 8 decimals so 'Tümü' (100%) never exceeds available balance due to float rounding
+      const calc = Math.floor(total * p * 1e8) / 1e8;
+      const input = document.getElementById('sendAmountInput');
+      if (input) input.value = calc > 0 ? calc : '';
       updateSendFeePreview();
     }
 
     async function pasteRecipient() {
       try {
         const text = await navigator.clipboard.readText();
-        document.getElementById('sendRecipientInput').value = text.trim();
+        const input = document.getElementById('sendRecipientInput');
+        if (input) input.value = text.trim();
+        validateRecipientInput();
         showToast("Adres yapıştırıldı!");
       } catch (e) {
-        showToast("Panodan okunamadı.", true);
+        showToast("Panodan okunamadı. Manuel yapıştırabilirsiniz.", true);
       }
     }
 
     async function executeSendTransaction() {
-      if (!currentAccount) {
-        showToast("Lütfen önce bir cüzdan oluşturun.", true);
+      if (!currentAccount || !currentAccount.address) {
+        showToast("Lütfen önce bir cüzdan oluşturun veya içe aktarın.", true);
+        switchTab('yeni-cuzdan');
         return;
       }
 
-      const recipient = document.getElementById('sendRecipientInput').value.trim();
-      const amount = parseFloat(document.getElementById('sendAmountInput').value);
+      const recipient = (document.getElementById('sendRecipientInput')?.value || '').trim();
+      const amount = parseFloat(document.getElementById('sendAmountInput')?.value);
 
-      if (!recipient || !recipient.startsWith('BCT')) {
-        showToast("Lütfen geçerli bir BCT alıcı adresi girin.", true);
+      if (!isValidBctAddressClient(recipient)) {
+        showToast("Lütfen geçerli bir BCT alıcı adresi girin (BCT + 40 karakter).", true);
         return;
       }
-      if (!amount || amount <= 0) {
-        showToast("Lütfen geçerli bir transfer tutarı girin.", true);
+      if (recipient === currentAccount.address) {
+        showToast("Kendi cüzdan adresinize transfer gönderemezsiniz.", true);
+        return;
+      }
+      if (!Number.isFinite(amount) || amount <= 0) {
+        showToast("Lütfen geçerli ve pozitif bir transfer tutarı girin.", true);
         return;
       }
 
       const btn = document.getElementById('btnExecuteSend');
       const btnText = document.getElementById('btnSendText');
-      btn.disabled = true;
-      btnText.textContent = "İşlem İmzalanıyor ve Madencilere İletiliyor...";
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.textContent = "İşlem İmzalanıyor ve Zincire Yazılıyor...";
 
       try {
         const payload = {
           sender: currentAccount.address,
           receiver: recipient,
-          amount: amount,
-          private_key: currentAccount.private_key
+          amount: round8(amount),
+          mnemonic: currentAccount.mnemonic || "",
+          private_key: currentAccount.private_key || ""
         };
 
         const res = await safeFetchJson(`${API_BASE}/transaction`, {
@@ -1768,12 +1658,13 @@
         });
 
         if (res.ok && res.json && res.json.success) {
-          showToast(res.json.message || "Transfer başarıyla havuza iletildi!");
+          showToast(res.json.message || "Transfer başarıyla blokzincire işlendi!");
           document.getElementById('sendAmountInput').value = '';
           document.getElementById('sendRecipientInput').value = '';
+          validateRecipientInput();
           updateSendFeePreview();
-          refreshCurrentAccountBalance();
-          refreshPersonalTransactions();
+          await refreshCurrentAccountBalance();
+          await refreshPersonalTransactions();
           switchTab('cuzdanim');
         } else {
           showToast(res.json?.message || "Transfer gerçekleştirilemedi.", true);
@@ -1781,12 +1672,12 @@
       } catch (e) {
         showToast("Ağ hatası: " + e.message, true);
       } finally {
-        btn.disabled = false;
-        btnText.textContent = "Transferi Onayla ve İmzala";
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = "Transferi Onayla ve İmzala";
       }
     }
 
-    // ── 8. Wallet Create & Import Modes ───────────────────
+    // ── 7. Wallet Create & Import (Zero Phantom Minting) ───
     function setWalletMode(mode) {
       const tabCreate = document.getElementById('tabModeCreate');
       const tabImport = document.getElementById('tabModeImport');
@@ -1800,6 +1691,7 @@
         createBox.classList.add('flex');
         importBox.classList.remove('flex');
         importBox.classList.add('hidden');
+        if (!tempMnemonic) requestNewMnemonicPreview();
       } else {
         tabImport.className = 'wallet-mode-tab px-4 md:px-5 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all';
         tabCreate.className = 'wallet-mode-tab px-4 md:px-5 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all';
@@ -1811,56 +1703,73 @@
     }
 
     function toggleCreateCta() {
-      const checked = document.getElementById('createConfirmCheck').checked;
-      document.getElementById('btnCreateWallet').disabled = !checked;
+      const checked = Boolean(document.getElementById('createConfirmCheck')?.checked);
+      const btn = document.getElementById('btnCreateWallet');
+      if (btn) btn.disabled = !checked;
     }
 
     function renderMnemonicGrid(words) {
       const grid = document.getElementById('seed-grid');
-      const wordList = words.trim().split(/\s+/);
+      if (!grid) return;
+      const wordList = (words || '').trim().split(/\s+/).filter(Boolean);
       grid.innerHTML = wordList.map((w, idx) => `
         <div class="flex items-center gap-2 bg-surface-container-high hover:bg-surface-container-highest transition-colors px-2.5 py-2 rounded-lg select-all cursor-pointer">
           <span class="text-xs text-outline font-mono w-4">${String(idx + 1).padStart(2, '0')}</span>
-          <span class="text-xs text-on-surface font-medium font-mono">${w}</span>
+          <span class="text-xs text-on-surface font-medium font-mono">${escapeHtml(w)}</span>
         </div>
       `).join('');
     }
 
     async function requestNewMnemonicPreview() {
-      const res = await safeFetchJson(`${API_BASE}/wallet/create`, { method: 'POST' });
-      if (res.ok && res.json && res.json.success) {
+      const res = await safeFetchJson(`${API_BASE}/wallet/mnemonic-preview`);
+      if (res.ok && res.json && res.json.success && res.json.data?.mnemonic) {
         tempMnemonic = res.json.data.mnemonic;
         renderMnemonicGrid(tempMnemonic);
-        window.pendingCreatedAccount = res.json.data;
       }
     }
 
     function copyMnemonicWords() {
-      if (!tempMnemonic) return;
+      if (!tempMnemonic) {
+        showToast("Kelimeler henüz hazır değil, lütfen bekleyin.", true);
+        return;
+      }
       navigator.clipboard.writeText(tempMnemonic);
       const text = document.getElementById('copyMnemonicText');
-      text.textContent = "Kopyalandı!";
+      if (text) text.textContent = "Kopyalandı!";
       showToast("12 kelime panoya kopyalandı! Güvenli bir yerde saklayın.");
-      setTimeout(() => text.textContent = "Kelimeleri Kopyala", 2500);
+      setTimeout(() => { if (text) text.textContent = "Kelimeleri Kopyala"; }, 2500);
     }
 
     async function requestNewWallet() {
-      if (window.pendingCreatedAccount) {
-        saveLocalAccount(window.pendingCreatedAccount);
-        showToast("Yeni cüzdan başarıyla oluşturuldu! 1.00 BCT Hoş Geldin Hibesi tanımlandı.");
-        switchTab('cuzdanim');
-      } else {
-        const res = await safeFetchJson(`${API_BASE}/wallet/create`, { method: 'POST' });
-        if (res.ok && res.json && res.json.success) {
+      const btn = document.getElementById('btnCreateWallet');
+      if (btn) btn.disabled = true;
+      try {
+        const res = await safeFetchJson(`${API_BASE}/wallet/create`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(tempMnemonic ? { mnemonic: tempMnemonic } : {})
+        });
+        if (res.ok && res.json && res.json.success && res.json.data) {
           saveLocalAccount(res.json.data);
+          const chk = document.getElementById('createConfirmCheck');
+          if (chk) chk.checked = false;
+          tempMnemonic = "";
+          requestNewMnemonicPreview();
           showToast("Yeni cüzdan başarıyla oluşturuldu! 1.00 BCT Hoş Geldin Hibesi tanımlandı.");
           switchTab('cuzdanim');
+        } else {
+          showToast(res.json?.message || "Cüzdan oluşturulamadı.", true);
+          toggleCreateCta();
         }
+      } catch (err) {
+        showToast("Bağlantı hatası: " + err.message, true);
+        toggleCreateCta();
       }
     }
 
     async function executeImportWallet() {
-      const keyOrWords = document.getElementById('importInputKey').value.trim();
+      const inputEl = document.getElementById('importInputKey');
+      const keyOrWords = (inputEl?.value || '').trim();
       if (!keyOrWords) {
         showToast("Lütfen 12 kelimelik ifadeyi veya Private Key'i girin.", true);
         return;
@@ -1875,7 +1784,8 @@
         body: JSON.stringify(payload)
       });
 
-      if (res.ok && res.json && res.json.success) {
+      if (res.ok && res.json && res.json.success && res.json.data) {
+        if (inputEl) inputEl.value = '';
         saveLocalAccount(res.json.data);
         showToast("Cüzdan başarıyla içe aktarıldı ve doğrulandı!");
         switchTab('cuzdanim');
@@ -1884,7 +1794,7 @@
       }
     }
 
-    // ── 9. Network & Explorer Metrics ─────────────────────
+    // ── 8. Network & Explorer Metrics ─────────────────────
     async function refreshExplorerData() {
       const [statsRes, txsRes, blocksRes, nodesRes] = await Promise.all([
         safeFetchJson(`${API_BASE}/stats`),
@@ -1895,14 +1805,18 @@
 
       if (statsRes.ok && statsRes.json && statsRes.json.success) {
         const s = statsRes.json.data;
-        document.getElementById('metricCirculating').textContent = Number(s.circulating_supply).toLocaleString('tr-TR', { maximumFractionDigits: 4 });
-        document.getElementById('metricBlocks').textContent = s.total_blocks.toLocaleString('tr-TR');
-        document.getElementById('headerBlockHeight').textContent = `#${s.total_blocks}`;
+        const circEl = document.getElementById('metricCirculating');
+        const blkEl = document.getElementById('metricBlocks');
+        const headBlkEl = document.getElementById('headerBlockHeight');
+        if (circEl) circEl.textContent = Number(s.circulating_supply).toLocaleString('tr-TR', { maximumFractionDigits: 4 });
+        if (blkEl) blkEl.textContent = Number(s.total_blocks).toLocaleString('tr-TR');
+        if (headBlkEl) headBlkEl.textContent = `#${s.total_blocks}`;
       }
 
       if (nodesRes.ok && nodesRes.json && nodesRes.json.success) {
         const nd = nodesRes.json.data;
-        document.getElementById('metricNodes').textContent = nd.online_nodes || 1;
+        const mNodes = document.getElementById('metricNodes');
+        if (mNodes) mNodes.textContent = nd.online_nodes || 1;
         renderNodesCards(nd.nodes || []);
       }
 
@@ -1923,38 +1837,40 @@
         return;
       }
 
-      container.innerHTML = nodes.map(n => {
-        const isOnline = n.status === 'ONLINE';
-        const shortMiner = n.miner_address ? `${n.miner_address.slice(0, 8)}...${n.miner_address.slice(-6)}` : 'Hazine Doğrulayıcı';
+      container.innerHTML = nodes.slice(0, 6).map(n => {
+        const isOnline = String(n.status || '').toLowerCase() === 'online';
+        const mAddr = String(n.miner_address || '');
+        const shortMiner = mAddr.length > 16 ? `${mAddr.slice(0, 8)}...${mAddr.slice(-6)}` : (mAddr || 'Genesis Doğrulayıcı');
+        const rewardVal = Number(n.total_rewards ?? n.earnings ?? 0).toFixed(4);
         return `
           <div class="bg-surface-container-low rounded-2xl p-4 flex flex-col justify-between gap-3 border border-outline-variant/30 hover:border-outline-variant transition-all">
-            <div class="flex items-start justify-between">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-primary">
+            <div class="flex items-start justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-primary shrink-0">
                   <span class="material-symbols-outlined text-[16px]">dns</span>
                 </div>
-                <div class="flex flex-col">
-                  <span class="text-xs font-bold text-on-surface">${n.name || n.node_id}</span>
-                  <span class="text-[10px] text-on-surface-variant font-mono">${n.region || 'Oracle Mainnet'}</span>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-xs font-bold text-on-surface truncate">${escapeHtml(n.name || n.node_id)}</span>
+                  <span class="text-[10px] text-on-surface-variant font-mono truncate">${escapeHtml(n.location || n.region || 'Decentralized')}</span>
                 </div>
               </div>
-              <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${isOnline ? 'bg-primary-container/20 text-primary' : 'bg-surface-container text-outline'} text-[10px] font-semibold">
-                <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-primary' : 'bg-outline'}"></span>
+              <div class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full ${isOnline ? 'bg-primary-container/20 text-primary' : 'bg-surface-container text-outline'} text-[10px] font-semibold shrink-0">
+                <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-primary animate-pulse' : 'bg-outline'}"></span>
                 <span>${isOnline ? 'Çevrimiçi' : 'Çevrimdışı'}</span>
               </div>
             </div>
             <div class="flex flex-col gap-1 text-[10px] font-mono text-on-surface-variant pt-2 border-t border-outline-variant/20">
-              <div class="flex justify-between">
-                <span>Madenci Cüzdanı:</span>
-                <span class="text-on-surface font-semibold">${shortMiner}</span>
+              <div class="flex justify-between gap-2">
+                <span>Madenci:</span>
+                <span class="text-on-surface font-semibold truncate">${escapeHtml(shortMiner)}</span>
               </div>
               <div class="flex justify-between">
                 <span>Kazılan Blok:</span>
-                <span class="text-primary font-semibold">${n.blocks_mined || 0} Blok</span>
+                <span class="text-primary font-semibold">${escapeHtml(n.blocks_mined || 0)} Blok</span>
               </div>
               <div class="flex justify-between">
-                <span>Kazanılan Ödül:</span>
-                <span class="text-primary font-semibold">${Number(n.earnings || 0).toFixed(4)} BCT</span>
+                <span>Toplam Ödül:</span>
+                <span class="text-primary font-semibold">${escapeHtml(rewardVal)} BCT</span>
               </div>
             </div>
           </div>
@@ -1964,6 +1880,7 @@
 
     function renderFeedBlocks(blocks) {
       const container = document.getElementById('feedBlocksList');
+      if (!container) return;
       if (!blocks || blocks.length === 0) {
         lastRenderedBlocksHash = "";
         container.innerHTML = `<div class="p-4 text-xs text-on-surface-variant bg-surface-container-low rounded-xl">Kayıtlı blok bulunmuyor.</div>`;
@@ -1972,24 +1889,27 @@
 
       const currentBlocksHash = blocks.map(b => `${b.index}:${b.hash}`).join('|');
       if (currentBlocksHash === lastRenderedBlocksHash && container.children.length > 0) {
-        return; // Skip DOM wipe if data is identical - saves iPhone memory
+        return;
       }
       lastRenderedBlocksHash = currentBlocksHash;
       container.innerHTML = blocks.map(b => {
-        const shortHash = b.hash.slice(0, 10) + '...' + b.hash.slice(-8);
-        const shortMiner = b.miner ? (b.miner.length > 12 ? b.miner.slice(0, 6) + '...' + b.miner.slice(-4) : b.miner) : 'Genesis';
+        const hashStr = String(b.hash || '');
+        const shortHash = hashStr.length > 20 ? (hashStr.slice(0, 10) + '...' + hashStr.slice(-8)) : hashStr;
+        const minerStr = String(b.miner || 'Genesis');
+        const shortMiner = minerStr.length > 14 ? (minerStr.slice(0, 6) + '...' + minerStr.slice(-4)) : minerStr;
+        const safeBlockRef = Number.isInteger(b.index) ? String(b.index) : encodeURIComponent(hashStr);
         return `
-          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${b.index !== undefined ? b.index : (b.hash || "")}')" title="Blok Detaylarını ve Düğüm Bilgilerini İncele">
-            <div class="flex items-center gap-2.5">
-              <span class="font-mono font-bold text-primary px-2 py-0.5 rounded bg-primary/10">#${b.index}</span>
-              <div class="flex flex-col">
-                <span class="font-mono text-[11px] text-on-surface truncate max-w-[130px] md:max-w-[180px]">${shortHash}</span>
-                <span class="text-[10px] text-on-surface-variant">Madenci: ${shortMiner}</span>
+          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${escapeHtml(safeBlockRef)}')" title="Blok Detaylarını ve Düğüm Bilgilerini İncele">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <span class="font-mono font-bold text-primary px-2 py-0.5 rounded bg-primary/10 shrink-0">#${escapeHtml(b.index)}</span>
+              <div class="flex flex-col min-w-0">
+                <span class="font-mono text-[11px] text-on-surface truncate max-w-[130px] md:max-w-[180px]">${escapeHtml(shortHash)}</span>
+                <span class="text-[10px] text-on-surface-variant truncate">Madenci: ${escapeHtml(shortMiner)}</span>
               </div>
             </div>
-            <div class="flex flex-col items-end text-[10px] font-mono">
-              <span class="text-on-surface font-medium">${b.transaction_count} İşlem</span>
-              <span class="text-outline">Nonce: ${b.nonce}</span>
+            <div class="flex flex-col items-end text-[10px] font-mono shrink-0 pl-2">
+              <span class="text-on-surface font-medium">${escapeHtml(b.transaction_count ?? 0)} İşlem</span>
+              <span class="text-outline">Nonce: ${escapeHtml(b.nonce ?? 0)}</span>
             </div>
           </div>
         `;
@@ -1998,119 +1918,89 @@
 
     function renderFeedTransactions(txs) {
       const container = document.getElementById('feedTxsList');
+      if (!container) return;
       if (!txs || txs.length === 0) {
+        lastRenderedNetworkTxsHash = "";
         container.innerHTML = `<div class="p-4 text-xs text-on-surface-variant bg-surface-container-low rounded-xl">İşlem kaydı yok.</div>`;
         return;
       }
 
       const currentTxsHash = txs.map(t => `${t.tx_hash}:${t.amount}`).join('|');
-      if (currentTxsHash === lastRenderedTxsHash && container.children.length > 0) {
-        return; // Skip DOM wipe if data is identical - saves iPhone memory
+      if (currentTxsHash === lastRenderedNetworkTxsHash && container.children.length > 0) {
+        return;
       }
-      lastRenderedTxsHash = currentTxsHash;
+      lastRenderedNetworkTxsHash = currentTxsHash;
       container.innerHTML = txs.map(tx => {
-        const isMining = tx.tx_type === 'mining_reward';
-        const isReward = tx.tx_type === 'reward';
-        const isBuy = tx.tx_type === 'fiat_buy';
-        const isSell = tx.tx_type === 'token_sell';
-
         let title = 'Transfer';
         let icon = 'swap_horiz';
-        if (isBuy) { title = 'Fiat Token Alımı'; icon = 'add_shopping_cart'; }
-        else if (isSell) { title = 'Nakit Token Satışı'; icon = 'payments'; }
-        else if (isMining) { title = 'Madenci Ödülü'; icon = 'memory'; }
-        else if (isReward) { title = 'Cüzdan Hibesi'; icon = 'redeem'; }
+        if (tx.tx_type === 'space_post') { title = 'Space Düşüncesi'; icon = 'rocket_launch'; }
+        else if (tx.tx_type === 'space_like') { title = 'Space Beğenisi'; icon = 'favorite'; }
+        else if (tx.tx_type === 'space_comment') { title = 'Space Yorumu'; icon = 'chat_bubble'; }
+        else if (tx.tx_type === 'mining_reward') { title = 'Madenci Ödülü'; icon = 'memory'; }
+        else if (tx.tx_type === 'reward') { title = 'Cüzdan Hibesi'; icon = 'redeem'; }
+        else if (tx.tx_type === 'genesis') { title = 'Genesis Rezervi'; icon = 'verified'; }
 
-        const shortHash = tx.tx_hash ? `${tx.tx_hash.slice(0, 8)}...` : '--';
+        const shortHash = tx.tx_hash ? `${String(tx.tx_hash).slice(0, 10)}...` : '--';
+        const blockRef = tx.block_index !== undefined ? String(tx.block_index) : '';
         return `
-          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${tx.block_index !== undefined ? tx.block_index : (tx.block_hash || tx.tx_hash || "")}')" title="Blok Detaylarını ve Düğüm Bilgilerini İncele">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[16px] text-primary">${icon}</span>
-              <div class="flex flex-col">
-                <span class="font-semibold text-on-surface text-[11px]">${title}</span>
-                <span class="font-mono text-[9px] text-on-surface-variant">${shortHash}</span>
+          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${escapeHtml(blockRef)}')" title="Blok Detaylarını İncele">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="material-symbols-outlined text-[16px] text-primary shrink-0">${icon}</span>
+              <div class="flex flex-col min-w-0">
+                <span class="font-semibold text-on-surface text-[11px] truncate">${escapeHtml(title)}</span>
+                <span class="font-mono text-[9px] text-on-surface-variant truncate">${escapeHtml(shortHash)}</span>
               </div>
             </div>
-            <div class="flex flex-col items-end font-mono">
-              <span class="font-bold text-primary text-xs">+${tx.net_amount ?? tx.amount} BCT</span>
-              <span class="text-[9px] text-outline">Ücret: ${tx.fee ?? 0}</span>
+            <div class="flex flex-col items-end font-mono shrink-0 pl-2">
+              <span class="font-bold text-primary text-xs">${escapeHtml(tx.net_amount ?? tx.amount)} BCT</span>
+              <span class="text-[9px] text-outline">Blok #${escapeHtml(tx.block_index ?? 0)}</span>
             </div>
           </div>
         `;
       }).join('');
     }
 
-    async function executeMineBlock() {
-      const btn = document.getElementById('btnMineBlockNow');
-      if (btn) {
-        btn.disabled = true;
-      }
-      btn.innerHTML = `<span class="material-symbols-outlined text-[16px] animate-spin">refresh</span><span>PoW Bloğu Kazılıyor...</span>`;
-
-      const minerAddr = currentAccount?.address || 'BCT7404325cf37316e3c6396ff1eef80c4ef381c27b';
-      try {
-        const res = await safeFetchJson(`${API_BASE}/mine`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ miner_address: minerAddr, node_id: 'web_portal_miner' })
-        });
-
-        if (res.ok && res.json && res.json.success) {
-          showToast(res.json.message || "Tebrikler! Blok başarıyla kazıldı ve 0.05 BCT ödül hesabınıza yatırıldı.");
-          refreshCurrentAccountBalance();
-          refreshPersonalTransactions();
-          refreshExplorerData();
-        } else {
-          showToast(res.json?.message || "Madencilik işlemi tamamlanamadı.", true);
-        }
-      } catch (e) {
-        showToast("Madencilik hatası: " + e.message, true);
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = `<span class="material-symbols-outlined text-[16px]">bolt</span><span>Bloğu Doğrula ve Kaz</span>`;
-      }
-    }
-
     async function triggerExplorerSearch() {
-      const q = document.getElementById('explorerSearchInput').value.trim();
+      const q = (document.getElementById('explorerSearchInput')?.value || '').trim();
       if (!q) return;
 
       const res = await safeFetchJson(`${API_BASE}/explorer/search?q=${encodeURIComponent(q)}`);
-      if (res.ok && res.json && res.json.success) {
+      if (res.ok && res.json && res.json.success && res.json.data) {
         const type = res.json.data.type;
         const result = res.json.data.result;
         if (type === 'block') {
-          showToast(`Blok Bulundu: #${result.index} (Madenci: ${result.miner})`);
+          openBlockDetailModal(result.index);
         } else if (type === 'transaction') {
           openTxDetail(result);
-        } else if (type === 'wallet') {
-          showToast(`Cüzdan Bulundu: Bakiye ${result.balance} BCT`);
+        } else if (type === 'address' || type === 'wallet') {
+          showToast(`Cüzdan: ${result.address.slice(0, 10)}... | Bakiye: ${Number(result.balance).toFixed(4)} BCT (${result.transaction_count || 0} işlem)`);
         }
       } else {
-        showToast(res.json?.message || "Kayıt bulunamadı.", true);
+        showToast(res.json?.message || "Aranan kriterde kayıt bulunamadı.", true);
       }
     }
 
-    // ── 10. API Docs Interactive Renderer ────────────────
+    // ── 9. API Docs Interactive Renderer ─────────────────
     function renderApiDocs() {
       const container = document.getElementById('apiCardsContainer');
+      if (!container) return;
       const endpoints = [
-        { method: 'GET', path: '/trade/config', title: 'Al / Sat Yapılandırması (Thirdweb)', desc: 'İstemci kimliği (Secret Key gizlenmiş) ve fiat kur bilgilerini döner.' },
-        { method: 'POST', path: '/trade/buy', title: 'Token Satın Alma (On-Ramp)', desc: 'Fiat/Kredi kartı ile doğrudan hazineden BCT satın almayı sağlar.' },
-        { method: 'POST', path: '/trade/sell', title: 'Token Satma (Off-Ramp)', desc: 'BCT tokenlarını nakde çevirerek banka hesabına çekmeyi sağlar.' },
-        { method: 'GET', path: '/stats', title: 'Ağ İstatistikleri & Arz', desc: '1 Trilyon toplam arzı ve dolaşımdaki token miktarını listeler.' },
-        { method: 'GET', path: '/mining/job', title: 'Madencilik İşi & Zorluk', desc: 'PoW blok üretim zorluğunu ve biriken madenci ödüllerini döner.' },
-        { method: 'GET', path: '/nodes', title: 'Aktif Ağ Düğümleri', desc: 'Konsensüse bağlı tüm düğümleri ve kazançlarını listeler.' }
+        { method: 'GET', path: '/health', title: 'Ağ Sağlık & Zincir Doğrulaması', desc: 'PoW zincir bütünlüğünü (is_chain_valid) ve düğüm sürümünü gerçek zamanlı doğrular.' },
+        { method: 'GET', path: '/stats', title: 'Ağ İstatistikleri & 1 Trilyon Arz', desc: 'Sabit 1 Trilyon BCT toplam arzı, Hazine rezervini ve dolaşımdaki miktarı döner.' },
+        { method: 'GET', path: '/blocks/latest?count=5', title: 'Son Üretilen Bloklar', desc: 'PoW nonce, hash ve madenci bilgileriyle son blokları listeler.' },
+        { method: 'GET', path: '/space/feed?limit=10', title: 'LockTrace Space On-Chain Akışı', desc: 'Blokzincire mühürlenmiş düşünceleri, beğenileri ve telif gelirlerini döner.' },
+        { method: 'GET', path: '/mining/job', title: 'Madencilik İşi & Zorluk', desc: 'PoW blok üretim zorluğunu ve havuzda bekleyen işlem ücretlerini döner.' },
+        { method: 'GET', path: '/nodes', title: 'Aktif Ağ Düğümleri', desc: 'Konsensüse bağlı tüm doğrulayıcı düğümleri ve ödüllerini listeler.' }
       ];
 
       container.innerHTML = endpoints.map((ep, idx) => `
         <div class="bg-surface-container-low rounded-xl p-3.5 border border-outline-variant/30 flex flex-col gap-2.5">
-          <div class="flex items-center justify-between">
-            <div class="flex items-center gap-2">
-              <span class="px-2 py-0.5 rounded bg-primary/20 text-primary font-mono text-xs font-bold">${ep.method}</span>
-              <span class="font-mono text-xs text-on-surface font-semibold">${ep.path}</span>
+          <div class="flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="px-2 py-0.5 rounded bg-primary/20 text-primary font-mono text-xs font-bold shrink-0">${ep.method}</span>
+              <span class="font-mono text-xs text-on-surface font-semibold truncate">${ep.path}</span>
             </div>
-            <button class="px-3 py-1 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-xs text-on-surface font-semibold" onclick="testApiLive('${ep.path}', 'api_resp_${idx}')">
+            <button class="px-3 py-1 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-xs text-on-surface font-semibold shrink-0" onclick="testApiLive('${ep.path}', 'api_resp_${idx}')" type="button">
               Çalıştır
             </button>
           </div>
@@ -2122,6 +2012,7 @@
 
     async function testApiLive(path, boxId) {
       const box = document.getElementById(boxId);
+      if (!box) return;
       box.classList.remove('hidden');
       box.textContent = 'İstek gönderiliyor...';
       const res = await safeFetchJson(`${API_BASE}${path}`);
@@ -2144,20 +2035,33 @@
 
     window.addEventListener('DOMContentLoaded', () => {
       try { loadLocalAccount(); } catch(e) { console.warn('loadLocalAccount:', e); }
-      try { refreshExplorerData(); } catch(e) { console.warn('refreshExplorerData:', e); }
       try { fetchTradeConfig(); } catch(e) { console.warn('fetchTradeConfig:', e); }
+      try { refreshExplorerData(); } catch(e) { console.warn('refreshExplorerData:', e); }
       try { loadSpaceFeed(); } catch(e) { console.warn('loadSpaceFeed:', e); }
       try { updateSpaceWalletUI(); } catch(e) { console.warn('updateSpaceWalletUI:', e); }
-      
+
+      // Handle initial deep-link hash (e.g. PWA shortcuts /#space, /#para-gonder)
+      const initialHash = (window.location.hash || '').replace(/^#/, '').trim();
+      if (initialHash && VALID_TABS.has(initialHash)) {
+        switchTab(initialHash, false);
+      }
+
+      window.addEventListener('hashchange', () => {
+        const nextTab = (window.location.hash || '').replace(/^#/, '').trim();
+        if (nextTab && VALID_TABS.has(nextTab)) {
+          switchTab(nextTab, false);
+        }
+      });
+
       // Optimized iOS & Mobile Background Sync: Sleeps when phone locked or tab hidden
       let isBackgroundSyncing = false;
       async function triggerAppSync() {
         if (document.hidden || isBackgroundSyncing) return;
         isBackgroundSyncing = true;
         try {
-          try { await refreshExplorerData(); } catch(e) { console.warn('refreshExplorerData:', e); }
-          try { if (currentAccount) await refreshCurrentAccountBalance(); } catch(e) { console.warn('refreshCurrentAccountBalance:', e); }
-          try { await loadSpaceFeed(); } catch(e) { console.warn('loadSpaceFeed:', e); }
+          try { await refreshExplorerData(); } catch(e) {}
+          try { if (currentAccount) await refreshCurrentAccountBalance(); } catch(e) {}
+          try { await loadSpaceFeed(); } catch(e) {}
         } finally {
           isBackgroundSyncing = false;
         }
@@ -2172,7 +2076,7 @@
       });
     });
 
-        // ═════════════════════════════════════════════════════════════════════════
+    // ═════════════════════════════════════════════════════════════════════════
     // 🛠️ UTILITY FUNCTIONS
     // ═════════════════════════════════════════════════════════════════════════
 
@@ -2183,7 +2087,11 @@
         .replace(/</g, '&lt;')
         .replace(/>/g, '&gt;')
         .replace(/"/g, '&quot;')
-        .replace(/\'/g, '&#039;');
+        .replace(/'/g, '&#039;');
+    }
+
+    function escapeJsAttr(str) {
+      return String(str || '').replace(/[^a-zA-Z0-9_.-]/g, '');
     }
 
     function formatTimeAgo(timestamp) {
@@ -2246,12 +2154,28 @@
         const len = input.value.length;
         count.textContent = `${len} / 280`;
         if (len > 260) {
-          count.classList.remove('text-outline-variant');
+          count.classList.remove('text-outline');
           count.classList.add('text-error', 'font-bold');
         } else {
           count.classList.remove('text-error', 'font-bold');
-          count.classList.add('text-outline-variant');
+          count.classList.add('text-outline');
         }
+      }
+    }
+
+    function toggleCommentsSection(postId) {
+      const safeId = escapeJsAttr(postId);
+      const section = document.getElementById(`comments-section-${safeId}`);
+      if (!section) return;
+      const isHidden = section.classList.contains('hidden');
+      if (isHidden) {
+        section.classList.remove('hidden');
+        openCommentPostIds.add(safeId);
+        const input = document.getElementById(`comment-input-${safeId}`);
+        if (input) setTimeout(() => input.focus(), 50);
+      } else {
+        section.classList.add('hidden');
+        openCommentPostIds.delete(safeId);
       }
     }
 
@@ -2266,22 +2190,26 @@
         activeBtn.classList.add('bg-surface-container-high', 'text-on-surface', 'font-semibold');
         activeBtn.classList.remove('text-on-surface-variant');
       }
+      lastRenderedSpaceHash = "";
       renderSpacePosts(spacePostsCache);
     }
 
     function filterSpaceBySearch() {
+      lastRenderedSpaceHash = "";
       renderSpacePosts(spacePostsCache);
     }
 
     function tipAuthorPrompt(authorAddr) {
-      if (!authorAddr) return;
+      if (!authorAddr || !isValidBctAddressClient(authorAddr)) return;
       switchTab('para-gonder');
       const recipientInput = document.getElementById('sendRecipientInput');
       if (recipientInput) {
         recipientInput.value = authorAddr;
-        recipientInput.focus();
+        validateRecipientInput();
       }
-      showToast('Yazarın adresi gönderim ekranına aktarıldı. Bahşiş miktarını belirleyip mühürleyebilirsiniz!');
+      const amtInput = document.getElementById('sendAmountInput');
+      if (amtInput) amtInput.focus();
+      showToast('Yazarın adresi gönderim ekranına aktarıldı. Bahşiş miktarını belirleyip imzalayabilirsiniz!');
     }
 
     async function loadSpaceFeed() {
@@ -2304,7 +2232,7 @@
         spacePostsCache = res.json.data?.posts || [];
         renderSpacePosts(spacePostsCache);
       } catch (e) {
-        feedContainer.innerHTML = `<div class="p-4 text-xs text-error text-center">Akış yüklenemedi: ${e.message}</div>`;
+        feedContainer.innerHTML = `<div class="p-4 text-xs text-error text-center">Akış yüklenemedi: ${escapeHtml(e.message)}</div>`;
       }
     }
 
@@ -2317,19 +2245,18 @@
 
       let filtered = [...posts];
 
-      // Tab filtering
       if (currentSpaceFilter === 'mine') {
         filtered = filtered.filter(p => p.author === myAddr);
       } else if (currentSpaceFilter === 'top') {
         filtered.sort((a, b) => ((b.likes_count || 0) + (b.comments_count || 0) * 2 + (b.author_earnings || 0)) - ((a.likes_count || 0) + (a.comments_count || 0) * 2 + (a.author_earnings || 0)));
       }
 
-      // Search filtering
       if (searchQuery) {
         filtered = filtered.filter(p => (p.content || '').toLowerCase().includes(searchQuery) || (p.author || '').toLowerCase().includes(searchQuery));
       }
 
       if (filtered.length === 0) {
+        lastRenderedSpaceHash = "";
         feedContainer.innerHTML = `
           <div class="p-8 bg-surface-container-low rounded-2xl border border-outline-variant/30 text-center text-xs text-on-surface-variant flex flex-col items-center gap-3">
             <div class="w-12 h-12 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold text-xl">
@@ -2339,7 +2266,7 @@
               <span class="text-sm font-bold text-on-surface">Sonuç Bulunamadı</span>
               <span class="text-xs text-outline">Seçili filtre veya aramaya uygun düşünce bulunamadı.</span>
             </div>
-            <button onclick="document.getElementById('spacePostInput')?.focus()" class="mt-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-xs flex items-center gap-1.5 shadow active:scale-95">
+            <button onclick="document.getElementById('spacePostInput')?.focus()" class="mt-2 px-4 py-2 rounded-xl bg-primary text-on-primary font-semibold text-xs flex items-center gap-1.5 shadow active:scale-95" type="button">
               <span class="material-symbols-outlined text-[16px]">edit_note</span>
               <span>Yeni Düşünce Mühürle</span>
             </button>
@@ -2347,60 +2274,65 @@
         return;
       }
 
-      const currentSpaceHash = `${currentSpaceFilter}:${searchQuery}:` + filtered.map(p => `${p.post_id}:${p.likes_count}:${p.comments_count}`).join('|');
+      const currentSpaceHash = `${currentSpaceFilter}:${searchQuery}:${myAddr}:` + filtered.map(p => `${p.post_id}:${p.likes_count}:${p.comments_count}`).join('|');
       const activeEl = document.activeElement;
-      const isUserTypingInFeed = activeEl && (activeEl.id === 'spacePostInput' || activeEl.id === 'spaceSearchInput' || activeEl.id?.startsWith('comment-input-'));
-      
-      if (currentSpaceHash === lastRenderedSpaceHash && feedContainer.children.length > 0 && !isUserTypingInFeed) {
-        return; // Skip DOM wipe if feed data is identical - prevents scroll jump & memory thrashing
+      const isUserTypingInComment = activeEl && activeEl.id?.startsWith('comment-input-');
+
+      if (currentSpaceHash === lastRenderedSpaceHash && feedContainer.children.length > 0) {
+        return;
       }
-      if (!isUserTypingInFeed) {
-        lastRenderedSpaceHash = currentSpaceHash;
+      if (isUserTypingInComment) {
+        return;
       }
+      lastRenderedSpaceHash = currentSpaceHash;
+
       feedContainer.innerHTML = filtered.map(p => {
+        const safePostId = escapeJsAttr(p.post_id);
+        const safeAuthor = escapeJsAttr(p.author);
         const shortAuthor = p.author ? `${p.author.slice(0, 8)}...${p.author.slice(-6)}` : 'Bilinmeyen';
         const isMine = (p.author === myAddr);
         const hasLiked = (p.likes || []).includes(myAddr);
         const dateStr = p.timestamp ? formatTimeAgo(p.timestamp * 1000) : 'Az önce';
         const earnings = (p.author_earnings || 0).toFixed(4);
+        const isCommentsOpen = openCommentPostIds.has(safePostId);
 
         const commentsHtml = (p.comments || []).map(c => `
           <div class="p-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/20 flex flex-col gap-1 text-xs">
             <div class="flex items-center justify-between text-[11px]">
               <div class="flex items-center gap-1.5">
-                <span class="font-mono text-primary font-semibold">${c.commenter?.slice(0, 8)}...${c.commenter?.slice(-4)}</span>
-                ${c.commenter === myAddr ? '<span class="text-[9px] px-1.5 py-0.2 rounded bg-primary/20 text-primary font-semibold">Sen</span>' : ''}
+                <span class="font-mono text-primary font-semibold">${escapeHtml(c.commenter?.slice(0, 8))}...${escapeHtml(c.commenter?.slice(-4))}</span>
+                ${c.commenter === myAddr ? '<span class="text-[9px] px-1.5 py-0.5 rounded bg-primary/20 text-primary font-semibold">Sen</span>' : ''}
               </div>
-              <span class="text-outline text-[10px]">${formatTimeAgo(c.timestamp * 1000)}</span>
+              <span class="text-outline text-[10px]">${escapeHtml(formatTimeAgo(c.timestamp * 1000))}</span>
             </div>
             <p class="text-on-surface break-words leading-relaxed pl-2">${escapeHtml(c.content)}</p>
           </div>
         `).join('');
 
         return `
-          <div class="w-full bg-surface-container rounded-2xl p-4 md:p-5 border border-outline-variant/30 hover:border-outline-variant/70 flex flex-col gap-3 shadow-md transition-all" id="post-card-${p.post_id}">
+          <div class="w-full bg-surface-container rounded-2xl p-4 md:p-5 border border-outline-variant/30 hover:border-outline-variant/70 flex flex-col gap-3 shadow-md transition-all" id="post-card-${safePostId}">
             <!-- Post Author & Meta (Stitch) -->
-            <div class="flex items-center justify-between">
+            <div class="flex items-center justify-between gap-2">
               <div class="flex items-center gap-2.5 min-w-0">
                 <div class="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden flex items-center justify-center shrink-0 border border-outline-variant/30 shadow-inner">
                   <span class="material-symbols-outlined text-primary text-[22px]">account_circle</span>
                 </div>
                 <div class="flex flex-col min-w-0">
-                  <div class="flex items-center gap-1.5">
-                    <span class="text-xs font-bold text-on-surface font-mono cursor-pointer hover:text-primary transition-colors truncate" onclick="copyText('${p.author}'); showToast('Yazar adresi kopyalandı!');" title="Adresi Kopyala">${shortAuthor}</span>
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="text-xs font-bold text-on-surface font-mono cursor-pointer hover:text-primary transition-colors truncate" onclick="copyText('${safeAuthor}'); showToast('Yazar adresi kopyalandı!');" title="Adresi Kopyala">${escapeHtml(shortAuthor)}</span>
                     <span class="text-primary flex items-center" title="Doğrulanmış Blokzincir Hesabı">
                       <span class="material-symbols-outlined text-[15px]" style="font-variation-settings: 'FILL' 1;">verified</span>
                     </span>
-                    <span class="text-[10px] text-on-surface-variant">· ${dateStr}</span>
+                    <span class="text-[10px] text-on-surface-variant">· ${escapeHtml(dateStr)}</span>
                     ${isMine ? '<span class="px-1.5 py-0.5 rounded-full bg-primary/20 text-primary text-[9px] font-semibold">Sen</span>' : ''}
                   </div>
-                  <span class="text-[10px] text-outline font-mono truncate">${p.author}</span>
+                  <span class="text-[10px] text-outline font-mono truncate">${escapeHtml(p.author)}</span>
                 </div>
               </div>
 
               <div class="flex items-center gap-1.5 shrink-0">
-                ${p.block_index !== undefined ? `<span class="px-2 py-0.5 rounded-lg bg-surface-container-high text-outline text-[10px] font-mono cursor-pointer hover:text-primary hover:bg-surface-container-highest transition-colors" onclick="openBlockDetailModal('${p.block_index}')" title="Bloğu İncele">Blok #${p.block_index}</span>` : ''}
-                ${parseFloat(earnings) > 0 ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-semibold" title="Yazarın bu düşünceden kazandığı on-chain telif">+${earnings} BCT</span>` : ''}
+                ${p.block_index !== undefined ? `<span class="px-2 py-0.5 rounded-lg bg-surface-container-high text-outline text-[10px] font-mono cursor-pointer hover:text-primary hover:bg-surface-container-highest transition-colors" onclick="openBlockDetailModal('${escapeJsAttr(p.block_index)}')" title="Bloğu İncele">Blok #${escapeHtml(p.block_index)}</span>` : ''}
+                ${parseFloat(earnings) > 0 ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 text-[10px] font-mono font-semibold" title="Yazarın bu düşünceden kazandığı on-chain telif">+${escapeHtml(earnings)} BCT</span>` : ''}
               </div>
             </div>
 
@@ -2419,43 +2351,43 @@
             </div>
 
             <!-- Action Interaction Bar (Stitch) -->
-            <div class="flex items-center justify-between pt-2 border-t border-outline-variant/20 text-xs">
-              <div class="flex items-center gap-2">
-                <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full ${hasLiked ? 'bg-primary/20 text-primary font-bold border border-primary/30' : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'} transition-all active:scale-95" onclick="likeSpacePost('${p.post_id}')" title="Beğen (0.01 BCT - %20'si yazara)">
+            <div class="flex items-center justify-between pt-2 border-t border-outline-variant/20 text-xs gap-2">
+              <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+                <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full ${hasLiked ? 'bg-primary/20 text-primary font-bold border border-primary/30' : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'} transition-all active:scale-95" onclick="likeSpacePost('${safePostId}')" title="Beğen (0.01 BCT - %20'si yazara)" type="button">
                   <span class="material-symbols-outlined text-[16px] ${hasLiked ? 'text-primary' : ''}">${hasLiked ? 'favorite' : 'favorite_border'}</span>
-                  <span>${p.likes_count || 0}</span>
+                  <span>${escapeHtml(p.likes_count || 0)}</span>
                   ${hasLiked ? '<span class="text-[10px] text-primary hidden sm:inline">Beğendin</span>' : ''}
                 </button>
 
-                <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all active:scale-95" onclick="toggleCommentsSection('${p.post_id}')" title="Yorumları Aç / Kapat">
+                <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full ${isCommentsOpen ? 'bg-surface-container-highest text-on-surface font-semibold' : 'bg-surface-container-high text-on-surface-variant hover:text-on-surface'} transition-all active:scale-95" onclick="toggleCommentsSection('${safePostId}')" title="Yorumları Aç / Kapat" type="button">
                   <span class="material-symbols-outlined text-[16px]">chat_bubble_outline</span>
-                  <span>${p.comments_count || 0} Yorum</span>
+                  <span>${escapeHtml(p.comments_count || 0)} Yorum</span>
                 </button>
 
-                <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-surface-container-high text-outline hover:text-on-surface transition-all active:scale-95 text-[11px]" onclick="copyText('${p.post_id}'); showToast('Gönderi ID kopyalandı!');" title="Gönderi ID Kopyala">
-                  <span class="material-symbols-outlined text-[14px]">repeat</span>
+                <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-surface-container-high text-outline hover:text-on-surface transition-all active:scale-95 text-[11px]" onclick="copyText('${safePostId}'); showToast('Gönderi ID kopyalandı!');" title="Gönderi ID Kopyala" type="button">
+                  <span class="material-symbols-outlined text-[14px]">share</span>
                   <span class="hidden sm:inline">Paylaş</span>
                 </button>
               </div>
 
-              <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-on-primary active:scale-95 transition-all text-xs border border-primary/20" onclick="tipAuthorPrompt('${p.author}')" title="Yazara On-Chain Bahşiş Gönder">
+              <button class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/10 text-primary hover:bg-primary hover:text-on-primary active:scale-95 transition-all text-xs border border-primary/20 shrink-0" onclick="tipAuthorPrompt('${safeAuthor}')" title="Yazara On-Chain Bahşiş Gönder" type="button">
                 <span class="material-symbols-outlined text-[14px]">toll</span>
                 <span class="text-[11px] font-semibold">Bahşiş</span>
               </button>
             </div>
 
             <!-- Comments Accordion Section -->
-            <div class="flex flex-col gap-2.5 pt-2 border-t border-outline-variant/20 hidden" id="comments-section-${p.post_id}">
-              <div class="flex flex-col gap-2 max-h-60 overflow-y-auto" id="comments-list-${p.post_id}">
+            <div class="flex flex-col gap-2.5 pt-2 border-t border-outline-variant/20 ${isCommentsOpen ? '' : 'hidden'}" id="comments-section-${safePostId}">
+              <div class="flex flex-col gap-2 max-h-60 overflow-y-auto" id="comments-list-${safePostId}">
                 ${commentsHtml || '<div class="text-[11px] text-outline text-center py-3 bg-surface-container-lowest/50 rounded-xl">Henüz yorum yapılmadı. İlk yorumu 0.02 BCT ile sen bırak!</div>'}
               </div>
 
               <!-- Add Comment Form -->
               <div class="flex items-center gap-2 pt-1">
-                <input type="text" maxlength="140" placeholder="Yorum yaz (0.02 BCT, Enter ile gönder)..." class="flex-1 bg-surface-container-high rounded-xl px-3.5 py-2 text-xs text-on-surface placeholder:text-outline outline-none border border-outline-variant/30 focus:border-primary transition-colors" id="comment-input-${p.post_id}" onkeydown="if(event.key === 'Enter'){ submitSpaceComment('${p.post_id}'); }"/>
-                <button class="px-3.5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-semibold shrink-0 transition-all active:scale-95 flex items-center gap-1 shadow" onclick="submitSpaceComment('${p.post_id}')">
+                <input type="text" maxlength="140" placeholder="Yorum yaz (0.02 BCT, Enter ile gönder)..." class="flex-1 bg-surface-container-high rounded-xl px-3.5 py-2 text-xs text-on-surface placeholder:text-outline outline-none border border-outline-variant/30 focus:border-primary transition-colors min-w-0" id="comment-input-${safePostId}" onkeydown="if(event.key === 'Enter'){ event.preventDefault(); submitSpaceComment('${safePostId}'); }"/>
+                <button class="px-3.5 py-2 rounded-xl bg-primary hover:bg-primary/90 text-on-primary text-xs font-semibold shrink-0 transition-all active:scale-95 flex items-center gap-1 shadow" onclick="submitSpaceComment('${safePostId}')" type="button">
                   <span class="material-symbols-outlined text-[14px]">send</span>
-                  <span>Yorum Yap</span>
+                  <span>Gönder</span>
                 </button>
               </div>
             </div>
@@ -2489,15 +2421,15 @@
 
       const btn = document.getElementById('btnPublishPost');
       const btnText = document.getElementById('btnPublishPostText');
-      btn.disabled = true;
-      btnText.textContent = "Mühürleniyor...";
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.textContent = "Mühürleniyor...";
 
       try {
         const payload = {
           author: currentAccount.address,
           content: text,
-          mnemonic: currentAccount.mnemonic,
-          private_key: currentAccount.private_key
+          mnemonic: currentAccount.mnemonic || "",
+          private_key: currentAccount.private_key || ""
         };
 
         const res = await safeFetchJson(`${API_BASE}/space/post`, {
@@ -2508,18 +2440,19 @@
 
         if (res.ok && res.json && res.json.success) {
           showToast(res.json.message || "Düşünceniz blokzincire başarıyla mühürlendi!", false);
-          input.value = '';
+          if (input) input.value = '';
           updateSpaceCharCount();
-          refreshCurrentAccountBalance();
-          loadSpaceFeed();
+          lastRenderedSpaceHash = "";
+          await refreshCurrentAccountBalance();
+          await loadSpaceFeed();
         } else {
           showToast(res.json?.message || "Paylaşım gerçekleştirilemedi.", true);
         }
       } catch (err) {
         showToast(`İşlem hatası: ${err.message}`, true);
       } finally {
-        btn.disabled = false;
-        btnText.textContent = "Mühürle ve Paylaş";
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = "Paylaş";
       }
     }
 
@@ -2539,8 +2472,8 @@
         const payload = {
           liker: currentAccount.address,
           post_id: postId,
-          mnemonic: currentAccount.mnemonic,
-          private_key: currentAccount.private_key
+          mnemonic: currentAccount.mnemonic || "",
+          private_key: currentAccount.private_key || ""
         };
 
         const res = await safeFetchJson(`${API_BASE}/space/like`, {
@@ -2551,8 +2484,9 @@
 
         if (res.ok && res.json && res.json.success) {
           showToast(res.json.message || "Gönderi beğenildi! %20 pay yazara aktarıldı.", false);
-          refreshCurrentAccountBalance();
-          loadSpaceFeed();
+          lastRenderedSpaceHash = "";
+          await refreshCurrentAccountBalance();
+          await loadSpaceFeed();
         } else {
           showToast(res.json?.message || "Beğeni işlemi başarısız.", true);
         }
@@ -2568,7 +2502,8 @@
         return;
       }
 
-      const input = document.getElementById(`comment-input-${postId}`);
+      const safeId = escapeJsAttr(postId);
+      const input = document.getElementById(`comment-input-${safeId}`);
       const text = (input?.value || '').trim();
       if (!text) {
         showToast("Lütfen bir yorum metni yazın.", true);
@@ -2583,10 +2518,10 @@
       try {
         const payload = {
           commenter: currentAccount.address,
-          post_id: postId,
+          post_id: safeId,
           content: text,
-          mnemonic: currentAccount.mnemonic,
-          private_key: currentAccount.private_key
+          mnemonic: currentAccount.mnemonic || "",
+          private_key: currentAccount.private_key || ""
         };
 
         const res = await safeFetchJson(`${API_BASE}/space/comment`, {
@@ -2597,9 +2532,14 @@
 
         if (res.ok && res.json && res.json.success) {
           showToast(res.json.message || "Yorumunuz blokzincire işlendi! %20 pay yazara geçti.", false);
-          input.value = '';
-          refreshCurrentAccountBalance();
-          loadSpaceFeed();
+          if (input) {
+            input.value = '';
+            input.blur();
+          }
+          openCommentPostIds.add(safeId);
+          lastRenderedSpaceHash = "";
+          await refreshCurrentAccountBalance();
+          await loadSpaceFeed();
         } else {
           showToast(res.json?.message || "Yorum yapılamadı.", true);
         }
@@ -2609,7 +2549,7 @@
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // 🔍 BLOK DETAY VE DÜĞÜM (NODE) İNCELEME MODALI
+    // 🔍 BLOK DETAY VE DÜĞÜM (NODE) İNCELEME MODALI (XSS-Hardened)
     // ═════════════════════════════════════════════════════════════════════════
     async function openBlockDetailModal(blockQuery) {
       const modal = document.getElementById('block-detail-modal');
@@ -2623,26 +2563,27 @@
       modalBody.innerHTML = '<div class="py-8 text-center text-on-surface-variant flex flex-col items-center gap-2"><span class="material-symbols-outlined text-[24px] animate-spin text-primary">autorenew</span><span>Blok ve Düğüm verileri yükleniyor...</span></div>';
 
       try {
-        const res = await safeFetchJson(`${API_BASE}/explorer/block/${blockQuery}`);
+        const res = await safeFetchJson(`${API_BASE}/explorer/block/${encodeURIComponent(String(blockQuery ?? ''))}`);
         if (!res.ok || !res.json || !res.json.success) {
-          modalBody.innerHTML = `<div class="p-4 text-error text-center">${res.json?.message || 'Blok bulunamadı.'}</div>`;
+          modalBody.innerHTML = `<div class="p-4 text-error text-center">${escapeHtml(res.json?.message || 'Blok bulunamadı.')}</div>`;
           return;
         }
 
         const b = res.json.data;
-        modalIndex.textContent = `Blok #${b.index}`;
-        modalHash.textContent = b.hash;
+        if (modalIndex) modalIndex.textContent = `Blok #${b.index}`;
+        if (modalHash) modalHash.textContent = b.hash || '';
 
         const node = b.validator_node || {
           name: "LockTrace Stockholm Genesis Validator #1",
           node_id: "node-stockholm-validator-01",
           location: "Stockholm, Sweden (Oracle Cloud)",
           role: "Genesis Validator / Archival Node",
+          version: "1.2.1",
           status: "online"
         };
 
-        const txsHtml = (b.transactions || []).map((t, idx) => {
-          let typeLabel = t.tx_type || 'transfer';
+        const txsHtml = (b.transactions || []).map((t) => {
+          let typeLabel = escapeHtml(t.tx_type || 'transfer');
           let typeBadgeClass = 'bg-primary/20 text-primary';
           let extraContent = '';
 
@@ -2655,7 +2596,7 @@
           } else if (t.tx_type === 'space_like') {
             typeLabel = '❤️ Space Beğenisi';
             typeBadgeClass = 'bg-pink-500/20 text-pink-300';
-            extraContent = `<div class="text-[10px] text-outline font-mono">Hedef: ${t.extra_data?.post_id || ''} (Yazara: +0.002 BCT)</div>`;
+            extraContent = `<div class="text-[10px] text-outline font-mono">Hedef: ${escapeHtml(t.extra_data?.post_id || '')} (Yazara: +0.002 BCT)</div>`;
           } else if (t.tx_type === 'space_comment') {
             typeLabel = '💬 Space Yorumu';
             typeBadgeClass = 'bg-blue-500/20 text-blue-300';
@@ -2668,18 +2609,21 @@
           } else if (t.tx_type === 'reward') {
             typeLabel = '🎁 Hoşgeldin Bakiyesi';
             typeBadgeClass = 'bg-emerald-500/20 text-emerald-400';
+          } else if (t.tx_type === 'genesis') {
+            typeLabel = '🏛️ Genesis Arz Mühürü';
+            typeBadgeClass = 'bg-primary/20 text-primary';
           }
 
           return `
             <div class="p-3 bg-surface-container-low rounded-xl border border-outline-variant/20 flex flex-col gap-2">
               <div class="flex items-center justify-between text-[11px]">
                 <span class="px-2 py-0.5 rounded-md ${typeBadgeClass} font-semibold">${typeLabel}</span>
-                <span class="font-mono text-primary font-bold">${t.amount} BCT</span>
+                <span class="font-mono text-primary font-bold">${escapeHtml(t.amount)} BCT</span>
               </div>
               <div class="flex flex-col gap-0.5 font-mono text-[11px] text-on-surface-variant">
-                <div>Kimden: <span class="text-on-surface">${t.sender?.slice(0, 14)}...${t.sender?.slice(-6)}</span></div>
-                <div>Kime: <span class="text-on-surface">${t.receiver?.slice(0, 14)}...${t.receiver?.slice(-6)}</span></div>
-                ${t.fee > 0 ? `<div>Ücret: <span class="text-outline">${t.fee} BCT</span></div>` : ''}
+                <div>Kimden: <span class="text-on-surface">${escapeHtml(t.sender?.slice(0, 14))}...${escapeHtml(t.sender?.slice(-6))}</span></div>
+                <div>Kime: <span class="text-on-surface">${escapeHtml(t.receiver?.slice(0, 14))}...${escapeHtml(t.receiver?.slice(-6))}</span></div>
+                ${t.fee > 0 ? `<div>Ücret: <span class="text-outline">${escapeHtml(t.fee)} BCT</span></div>` : ''}
               </div>
               ${extraContent}
             </div>
@@ -2693,14 +2637,14 @@
               <span class="text-[11px] font-semibold text-primary uppercase font-mono tracking-wider">Doğrulayıcı Düğüm (Node) Bilgisi</span>
               <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 text-[10px] font-semibold flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
-                <span>${node.status?.toUpperCase() || 'ONLINE'}</span>
+                <span>${escapeHtml((node.status || 'online').toUpperCase())}</span>
               </span>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[11px] text-on-surface-variant font-mono">
-              <div>Düğüm Adı: <strong class="text-on-surface">${node.name || 'Validator'}</strong></div>
-              <div>Konum: <strong class="text-on-surface">${node.location || 'Decentralized'}</strong></div>
-              <div>Rol: <strong class="text-on-surface">${node.role || 'Validator'}</strong></div>
-              <div>Yazılım: <strong class="text-on-surface">v${node.version || '1.2.0'}</strong></div>
+              <div>Düğüm Adı: <strong class="text-on-surface">${escapeHtml(node.name || 'Validator')}</strong></div>
+              <div>Konum: <strong class="text-on-surface">${escapeHtml(node.location || 'Decentralized')}</strong></div>
+              <div>Rol: <strong class="text-on-surface">${escapeHtml(node.role || 'Validator')}</strong></div>
+              <div>Yazılım: <strong class="text-on-surface">v${escapeHtml(node.version || '1.2.1')}</strong></div>
             </div>
           </div>
 
@@ -2708,11 +2652,11 @@
           <div class="grid grid-cols-2 sm:grid-cols-4 gap-2 text-center font-mono">
             <div class="p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 flex flex-col">
               <span class="text-[10px] text-outline">İşlem Sayısı</span>
-              <span class="text-sm font-bold text-on-surface">${b.transactions?.length || 0}</span>
+              <span class="text-sm font-bold text-on-surface">${escapeHtml(b.transactions?.length || 0)}</span>
             </div>
             <div class="p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 flex flex-col">
               <span class="text-[10px] text-outline">Nonce</span>
-              <span class="text-sm font-bold text-on-surface">${b.nonce || 0}</span>
+              <span class="text-sm font-bold text-on-surface">${escapeHtml(b.nonce || 0)}</span>
             </div>
             <div class="p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 flex flex-col">
               <span class="text-[10px] text-outline">Zorluk</span>
@@ -2720,27 +2664,27 @@
             </div>
             <div class="p-2.5 bg-surface-container-low rounded-xl border border-outline-variant/20 flex flex-col">
               <span class="text-[10px] text-outline">Zaman</span>
-              <span class="text-[11px] font-bold text-on-surface">${b.timestamp ? formatTimeAgo(b.timestamp * 1000) : ''}</span>
+              <span class="text-[11px] font-bold text-on-surface">${escapeHtml(b.timestamp ? formatTimeAgo(b.timestamp * 1000) : '')}</span>
             </div>
           </div>
 
           <!-- Hashes -->
           <div class="p-3 bg-surface-container-lowest rounded-xl font-mono text-[11px] flex flex-col gap-1.5 border border-outline-variant/20">
-            <div><span class="text-outline">Blok Hash:</span> <span class="text-primary break-all">${b.hash}</span></div>
-            <div><span class="text-outline">Önceki Hash:</span> <span class="text-on-surface-variant break-all">${b.previous_hash}</span></div>
-            <div><span class="text-outline">Madenci Adresi:</span> <span class="text-on-surface break-all">${b.miner}</span></div>
+            <div><span class="text-outline">Blok Hash:</span> <span class="text-primary break-all">${escapeHtml(b.hash)}</span></div>
+            <div><span class="text-outline">Önceki Hash:</span> <span class="text-on-surface-variant break-all">${escapeHtml(b.previous_hash)}</span></div>
+            <div><span class="text-outline">Madenci Adresi:</span> <span class="text-on-surface break-all">${escapeHtml(b.miner)}</span></div>
           </div>
 
           <!-- Transaction List -->
           <div class="flex flex-col gap-2">
-            <span class="text-xs font-semibold text-on-surface">Blok İçerisindeki İşlemler (${b.transactions?.length || 0}):</span>
+            <span class="text-xs font-semibold text-on-surface">Blok İçerisindeki İşlemler (${escapeHtml(b.transactions?.length || 0)}):</span>
             <div class="flex flex-col gap-2 max-h-72 overflow-y-auto pr-1">
               ${txsHtml || '<div class="text-outline text-center py-4">İşlem bulunamadı.</div>'}
             </div>
           </div>
         `;
       } catch (err) {
-        modalBody.innerHTML = `<div class="p-4 text-error text-center">Yükleme hatası: ${err.message}</div>`;
+        modalBody.innerHTML = `<div class="p-4 text-error text-center">Yükleme hatası: ${escapeHtml(err.message)}</div>`;
       }
     }
 
@@ -2779,18 +2723,19 @@
             let clean = decodedText.trim();
             if (clean.toLowerCase().startsWith('bct:')) clean = clean.substring(4);
             const match = clean.match(/BCT[a-fA-F0-9]{40}/);
-            const validAddr = match ? match[0] : (clean.startsWith('BCT') && clean.length === 43 ? clean : null);
+            const validAddr = match ? match[0] : null;
 
             if (validAddr) {
               const input = document.getElementById('sendRecipientInput');
               if (input) input.value = validAddr;
+              validateRecipientInput();
               closeQrScannerModal();
               showToast(`Karekod Başarıyla Okundu: ${validAddr.slice(0, 8)}...`, false);
             } else {
               showToast("Okunan karekod geçerli bir BCT cüzdan adresi içermiyor.", true);
             }
           },
-          (err) => {}
+          () => {}
         );
       } catch (err) {
         showToast(`Kamera erişim hatası: ${err.message || err}`, true);
@@ -2815,7 +2760,6 @@
         modal.classList.remove('flex');
       }
     }
-
   </script>
 
   <!-- MODAL: BLOK DETAY İNCELEME PENCERESİ -->

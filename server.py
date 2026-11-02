@@ -1,30 +1,50 @@
 """
 BlockChainT - Hardened & Transparent API Server
 ===============================================
-Universal Explorer Endpoints & High-Resiliency Transaction Processing.
+Universal Explorer Endpoints, Cryptographic Signature Verification,
+Thread-Safe Rate Limiting & High-Resiliency Transaction Processing.
 """
 
 import os
+import re
 import sys
+import math
 import time
 import logging
 import secrets
+import threading
+from collections import deque
 from datetime import datetime
+from typing import Optional
 
 from flask import Flask, request, jsonify, render_template, g, send_file
 from flask_cors import CORS
 
 sys.path.insert(0, os.path.dirname(__file__))
 from config import Config
-from core.blockchain import Blockchain, TREASURY_ADDRESS, TOTAL_SUPPLY, is_valid_bct_address
-from core.wallet import Wallet, restore_wallet, restore_wallet_from_mnemonic
-from core.mnemonic import validate_mnemonic
+from core.blockchain import (
+    Blockchain,
+    TREASURY_ADDRESS,
+    TOTAL_SUPPLY,
+    BLOCK_REWARD,
+    MINER_FEE_SHARE,
+    is_valid_bct_address,
+)
+from core.wallet import (
+    Wallet,
+    restore_wallet,
+    restore_wallet_from_mnemonic,
+    public_key_to_address,
+    verify_signature,
+)
+from core.mnemonic import generate_mnemonic, validate_mnemonic
 from core.thirdweb_service import thirdweb_service
 
-app = Flask(__name__, template_folder="templates", static_folder="static")
+app = Flask(__name__, template_folder="templates", static_folder="frontend", static_url_path="")
 app.config.from_object(Config)
+app.config["MAX_CONTENT_LENGTH"] = 1 * 1024 * 1024  # 1 MB strict JSON body cap
 
-CORS(app, resources={r"/api/*": {"origins": "*"}})
+CORS(app, resources={r"/api/*": {"origins": Config.CORS_ORIGINS or "*"}})
 
 # Logging
 os.makedirs("logs", exist_ok=True)
@@ -34,12 +54,168 @@ logging.basicConfig(
     handlers=[
         logging.StreamHandler(),
         logging.FileHandler(Config.LOG_FILE, encoding="utf-8"),
-    ]
+    ],
 )
 logger = logging.getLogger("LockTrace")
 
 blockchain = Blockchain(auto_mine=True)
 logger.info(f"LockTrace Initialized: {len(blockchain.chain)} blocks, {len(blockchain.wallets)} wallets")
+
+EVM_ADDRESS_RE = re.compile(r"^0x[a-fA-F0-9]{40}$")
+SAFE_CHAIN_RE = re.compile(r"^[a-zA-Z0-9_-]{1,32}$")
+SAFE_TX_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{4,128}$")
+
+
+# ── Thread-Safe Sliding Window Rate Limiter & Replay Cache ───
+class SlidingWindowRateLimiter:
+    def __init__(self):
+        self._lock = threading.Lock()
+        self._buckets = {}
+        self._used_signatures = {}
+        self._last_cleanup = time.time()
+
+    def _cleanup_if_needed(self, now: float):
+        if now - self._last_cleanup < 120:
+            return
+        self._last_cleanup = now
+        stale_keys = [k for k, dq in self._buckets.items() if not dq or (now - dq[-1] > 3600)]
+        for k in stale_keys:
+            self._buckets.pop(k, None)
+        expired_sigs = [s for s, exp in self._used_signatures.items() if now > exp]
+        for s in expired_sigs:
+            self._used_signatures.pop(s, None)
+
+    def allow(self, key: str, limit: int, window_seconds: int) -> bool:
+        now = time.time()
+        with self._lock:
+            self._cleanup_if_needed(now)
+            dq = self._buckets.get(key)
+            if dq is None:
+                dq = deque()
+                self._buckets[key] = dq
+            cutoff = now - window_seconds
+            while dq and dq[0] < cutoff:
+                dq.popleft()
+            if len(dq) >= limit:
+                return False
+            dq.append(now)
+            return True
+
+    def register_signature_once(self, sig_hex: str, ttl_seconds: int = 600) -> bool:
+        """Returns True if signature has not been seen inside replay window."""
+        now = time.time()
+        with self._lock:
+            self._cleanup_if_needed(now)
+            exp = self._used_signatures.get(sig_hex)
+            if exp and now <= exp:
+                return False
+            self._used_signatures[sig_hex] = now + ttl_seconds
+            return True
+
+
+rate_limiter = SlidingWindowRateLimiter()
+
+
+def get_client_ip() -> str:
+    """Resolve client IP safely (prefers Nginx X-Real-IP over spoofable headers)."""
+    real_ip = request.headers.get("X-Real-IP", "").strip()
+    if real_ip:
+        return real_ip[:64]
+    return (request.remote_addr or "127.0.0.1")[:64]
+
+
+def check_rate_limit(scope: str, limit: int, window_seconds: int = 60) -> bool:
+    ip = get_client_ip()
+    return rate_limiter.allow(f"{scope}:{ip}", limit, window_seconds)
+
+
+def safe_float(val, default: Optional[float] = None) -> Optional[float]:
+    try:
+        num = float(val)
+        if not math.isfinite(num):
+            return default
+        return num
+    except (ValueError, TypeError):
+        return default
+
+
+def safe_int(val, default: int = 0, min_val: Optional[int] = None, max_val: Optional[int] = None) -> int:
+    try:
+        num = int(val)
+    except (ValueError, TypeError):
+        num = default
+    if min_val is not None:
+        num = max(min_val, num)
+    if max_val is not None:
+        num = min(max_val, num)
+    return num
+
+
+def resolve_authenticated_action(data: dict, expected_address: str, canonical_payload: str):
+    """
+    Cryptographically authenticate a state-changing wallet action.
+    Supports:
+      1) Custodial-assisted signing via 12-word `mnemonic` or 64-hex `private_key`
+      2) Non-custodial client-side ECDSA signing via `public_key`, `signature`, and `timestamp`
+    Returns: (ok: bool, status_code: int, error_msg: str, signature: str, public_key: str, signed_payload: str)
+    """
+    clean_expected = (expected_address or "").strip()
+    if not is_valid_bct_address(clean_expected) or clean_expected.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
+        return False, 400, "Geçersiz cüzdan adresi formatı.", "", "", ""
+
+    mnemonic_phrase = str(data.get("mnemonic", "") or "").strip()
+    private_key_hex = str(data.get("private_key", "") or "").strip()
+    client_sig = str(data.get("signature", "") or "").strip()
+    client_pub = str(data.get("public_key", "") or "").strip()
+    client_ts = data.get("timestamp")
+
+    # Path 1: Mnemonic or Private Key provided
+    if mnemonic_phrase or private_key_hex:
+        try:
+            if mnemonic_phrase and len(mnemonic_phrase.split()) >= 12:
+                wallet = restore_wallet_from_mnemonic(mnemonic_phrase)
+            elif private_key_hex and len(private_key_hex) == 64:
+                wallet = restore_wallet(private_key_hex)
+            else:
+                return False, 400, "Geçersiz imza anahtarı (12 kelime kurtarma ifadesi veya 64 karakter özel anahtar gerekli).", "", "", ""
+
+            if wallet.address != clean_expected:
+                logger.warning(f"Auth mismatch: key {wallet.address[:10]}... attempted action as {clean_expected[:10]}...")
+                return False, 403, "İmza anahtarı belirtilen cüzdan adresiyle eşleşmiyor!", "", "", ""
+
+            nonce_ts = f"{int(time.time() * 1000)}:{secrets.token_hex(4)}"
+            signed_payload = f"{canonical_payload}:{nonce_ts}"
+            sig = wallet.sign(signed_payload)
+            return True, 200, "", sig, wallet.get_public_key_hex(), signed_payload
+        except Exception:
+            return False, 400, "Cüzdan anahtarı doğrulanamadı.", "", "", ""
+
+    # Path 2: Client-side ECDSA signature (Non-custodial mode)
+    if client_sig:
+        pub_hex = client_pub or blockchain.wallets.get(clean_expected, {}).get("public_key", "")
+        if not pub_hex:
+            return False, 401, "İmza doğrulaması için public_key gereklidir.", "", "", ""
+
+        if public_key_to_address(pub_hex) != clean_expected:
+            return False, 403, "Açık anahtar (public_key) cüzdan adresiyle uyuşmuyor!", "", "", ""
+
+        if client_ts is not None:
+            ts_val = safe_float(client_ts)
+            if ts_val is None or abs(time.time() - ts_val) > 300:
+                return False, 401, "İmza zaman damgası (timestamp) süresi dolmuş veya geçersiz.", "", "", ""
+            signed_payload = f"{canonical_payload}:{client_ts}"
+        else:
+            signed_payload = canonical_payload
+
+        if not verify_signature(pub_hex, signed_payload, client_sig):
+            return False, 403, "Geçersiz ECDSA dijital imza!", "", "", ""
+
+        if not rate_limiter.register_signature_once(client_sig):
+            return False, 409, "Tekrarlanan (replay) imza reddedildi.", "", "", ""
+
+        return True, 200, "", client_sig, pub_hex, signed_payload
+
+    return False, 401, "Bu işlem için cüzdan imzası (kimlik doğrulaması) zorunludur.", "", "", ""
 
 
 @app.before_request
@@ -47,13 +223,21 @@ def before_request():
     g.start_time = time.time()
     g.request_id = secrets.token_hex(8)
 
+
 @app.after_request
 def after_request(response):
-    duration = time.time() - getattr(g, 'start_time', time.time())
-    response.headers["X-Request-ID"] = getattr(g, 'request_id', 'unknown')
+    duration = time.time() - getattr(g, "start_time", time.time())
+    response.headers["X-Request-ID"] = getattr(g, "request_id", "unknown")
     response.headers["X-Response-Time"] = f"{duration:.4f}s"
-    response.headers["X-Powered-By"] = "LockTrace-Blockchain/1.1"
-    response.headers["Access-Control-Allow-Origin"] = "*"
+    response.headers["X-Powered-By"] = "LockTrace-Blockchain/1.2"
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    origin = request.headers.get("Origin", "")
+    allowed = [o.strip() for o in (Config.CORS_ORIGINS or []) if o.strip()]
+    if origin and (not allowed or "*" in allowed or origin in allowed):
+        response.headers["Access-Control-Allow-Origin"] = origin
+    elif "Access-Control-Allow-Origin" not in response.headers:
+        response.headers["Access-Control-Allow-Origin"] = allowed[0] if allowed else "*"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-API-Key"
     return response
@@ -63,7 +247,7 @@ def api_response(success: bool, data=None, message=None, status=200, **extra):
     body = {
         "success": success,
         "timestamp": datetime.utcnow().isoformat() + "Z",
-        "request_id": getattr(g, 'request_id', None),
+        "request_id": getattr(g, "request_id", None),
     }
     if data is not None:
         body["data"] = data
@@ -73,14 +257,43 @@ def api_response(success: bool, data=None, message=None, status=200, **extra):
     return jsonify(body), status
 
 
+@app.errorhandler(404)
+def handle_404(_err):
+    if request.path.startswith("/api/"):
+        return api_response(False, message="API uç noktası bulunamadı.", status=404)
+    return render_template("index.html")
+
+
+@app.errorhandler(405)
+def handle_405(_err):
+    return api_response(False, message="Bu uç nokta için HTTP metodu desteklenmiyor.", status=405)
+
+
+@app.errorhandler(413)
+def handle_413(_err):
+    return api_response(False, message="İstek boyutu çok büyük (Maksimum 1 MB).", status=413)
+
+
+@app.errorhandler(500)
+def handle_500(err):
+    logger.error(f"Unhandled server error [{getattr(g, 'request_id', '-')}]: {err}")
+    return api_response(False, message="Sunucu tarafında beklenmeyen bir hata oluştu.", status=500)
+
+
+# ── Web Shell Entrypoint (Local / Fallback) ──────────────────
+@app.route("/", methods=["GET"])
+def index_page():
+    return render_template("index.html")
+
+
 # ── Health & Stats ───────────────────────────────────────────
 @app.route("/api/v1/health", methods=["GET"])
 def api_health():
     return api_response(True, data={
         "status": "healthy",
-        "version": "1.2.0",
+        "version": "1.2.1",
         "network": "mainnet",
-        "chain_valid": blockchain.is_chain_valid()
+        "chain_valid": blockchain.is_chain_valid(),
     })
 
 
@@ -89,63 +302,90 @@ def api_stats():
     return api_response(True, data=blockchain.get_stats())
 
 
-# ── Wallet Creation ──────────────────────────────────────────
+# ── Wallet Mnemonic Preview & Creation ───────────────────────
+@app.route("/api/v1/wallet/mnemonic-preview", methods=["GET"])
+def api_mnemonic_preview():
+    """Generates a 12-word BIP-39 phrase in memory without minting a block or spending Treasury funds."""
+    if not check_rate_limit("mnemonic_preview", limit=20, window_seconds=60):
+        return api_response(False, message="Çok fazla kelime üretme isteği gönderildi. Lütfen 1 dakika bekleyin.", status=429)
+    phrase = generate_mnemonic()
+    return api_response(True, data={"mnemonic": phrase})
+
+
 @app.route("/api/v1/wallet/create", methods=["POST"])
 def api_create_wallet():
+    if not check_rate_limit("wallet_create_min", limit=5, window_seconds=60) or not check_rate_limit("wallet_create_hr", limit=15, window_seconds=3600):
+        return api_response(False, message="Cüzdan oluşturma sınırına ulaştınız. Lütfen daha sonra tekrar deneyin.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    provided_mnemonic = str(data.get("mnemonic", "") or "").strip()
+
     try:
-        wallet = Wallet()
+        if provided_mnemonic:
+            cleaned = " ".join(provided_mnemonic.lower().split())
+            if not validate_mnemonic(cleaned):
+                return api_response(False, message="Geçersiz 12 kelimelik BIP-39 kurtarma ifadesi.", status=400)
+            wallet = Wallet(mnemonic=cleaned)
+        else:
+            wallet = Wallet()
+
         success, message = blockchain.register_wallet(
             wallet.address, wallet.get_public_key_hex()
         )
         if success:
-            logger.info(f"Account Created: {wallet.address} with 1.00 BCT")
+            logger.info(f"Account Created: {wallet.address} (ip={get_client_ip()})")
             return api_response(True, message=message, data={
                 "address": wallet.address,
                 "mnemonic": wallet.mnemonic,
                 "public_key": wallet.get_public_key_hex(),
                 "private_key": wallet.get_private_key_hex(),
-                "balance": blockchain.get_balance(wallet.address)
+                "balance": blockchain.get_balance(wallet.address),
             }, status=201)
         return api_response(False, message=message, status=400)
     except Exception as e:
         logger.error(f"Account creation exception: {e}")
-        return api_response(False, message=str(e), status=500)
+        return api_response(False, message="Cüzdan oluşturulurken bir hata oluştu.", status=500)
 
 
 # ── Wallet Import ────────────────────────────────────────────
 @app.route("/api/v1/wallet/import", methods=["POST"])
 def api_import_wallet():
+    if not check_rate_limit("wallet_import", limit=15, window_seconds=60):
+        return api_response(False, message="Çok fazla içe aktarma denemesi. Lütfen 1 dakika bekleyin.", status=429)
+
     data = request.get_json(silent=True) or {}
-    mnemonic_phrase = data.get("mnemonic", "").strip()
-    private_key_hex = data.get("private_key", "").strip()
+    mnemonic_phrase = str(data.get("mnemonic", "") or "").strip()
+    private_key_hex = str(data.get("private_key", "") or "").strip()
 
     try:
         if mnemonic_phrase:
-            words = mnemonic_phrase.split()
-            if len(words) < 12:
-                return api_response(False, message="Mnemonic must contain 12 words", status=400)
+            words = mnemonic_phrase.lower().split()
+            if len(words) != 12:
+                return api_response(False, message="Kurtarma ifadesi tam 12 kelimeden oluşmalıdır.", status=400)
             wallet = restore_wallet_from_mnemonic(" ".join(words))
         elif private_key_hex:
             clean_pk = private_key_hex.strip()
-            if len(clean_pk) != 64:
-                return api_response(False, message="Private key must be 64 hex characters", status=400)
+            if len(clean_pk) != 64 or not all(c in "0123456789abcdefABCDEF" for c in clean_pk):
+                return api_response(False, message="Özel anahtar 64 karakterlik hex formatında olmalıdır.", status=400)
             wallet = restore_wallet(clean_pk)
         else:
-            return api_response(False, message="Provide 12 words mnemonic or private key", status=400)
+            return api_response(False, message="12 kelimelik kurtarma ifadesi veya özel anahtar girin.", status=400)
 
-        blockchain.register_wallet(wallet.address, wallet.get_public_key_hex())
+        ok, msg = blockchain.register_wallet(wallet.address, wallet.get_public_key_hex())
+        if not ok:
+            return api_response(False, message=msg, status=400)
         bal = blockchain.get_balance(wallet.address)
 
-        return api_response(True, message="Wallet successfully restored!", data={
+        return api_response(True, message="Cüzdan başarıyla geri yüklendi!", data={
             "address": wallet.address,
-            "mnemonic": getattr(wallet, 'mnemonic', ''),
+            "mnemonic": getattr(wallet, "mnemonic", ""),
             "public_key": wallet.get_public_key_hex(),
             "private_key": wallet.get_private_key_hex(),
-            "balance": bal
+            "balance": bal,
         })
     except Exception as e:
         logger.warning(f"Wallet restoration failed: {e}")
-        return api_response(False, message=f"Restoration failed: {str(e)}", status=400)
+        return api_response(False, message="Cüzdan geri yüklenemedi. Anahtarınızı kontrol edin.", status=400)
 
 
 # ── Balance ──────────────────────────────────────────────────
@@ -159,58 +399,46 @@ def api_balance(address):
     return api_response(True, data={
         "address": clean_addr,
         "balance": bal,
-        "exists": clean_addr in blockchain.wallets or clean_addr == TREASURY_ADDRESS
+        "exists": clean_addr in blockchain.wallets or clean_addr == TREASURY_ADDRESS,
     })
 
 
-# ── Wire Transfer (Robust Validation & Logging) ──────────────
+# ── Wire Transfer (Cryptographically Verified) ───────────────
 @app.route("/api/v1/transaction", methods=["POST"])
 def api_transaction():
-    data = request.get_json(silent=True) or {}
-    logger.info(f"Incoming Transaction Request: sender={data.get('sender')} receiver={data.get('receiver')} amount={data.get('amount')}")
+    if not check_rate_limit("tx_submit", limit=30, window_seconds=60):
+        return api_response(False, message="Çok sık transfer isteği gönderildi. Lütfen kısa süre bekleyin.", status=429)
 
-    sender = str(data.get("sender", "")).strip()
-    receiver = str(data.get("receiver", "")).strip()
+    data = request.get_json(silent=True) or {}
+    sender = str(data.get("sender", "") or "").strip()
+    receiver = str(data.get("receiver", "") or "").strip()
     amount_raw = data.get("amount")
 
     if not sender or not receiver or amount_raw is None:
         return api_response(False, message="Missing required fields: sender, receiver, amount", status=400)
 
-    try:
-        amount = float(amount_raw)
-        if amount <= 0:
-            return api_response(False, message="Amount must be positive", status=400)
-    except (ValueError, TypeError):
-        return api_response(False, message="Invalid numeric amount", status=400)
+    amount = safe_float(amount_raw)
+    if amount is None or amount <= 0:
+        return api_response(False, message="Geçerli ve pozitif bir tutar girilmelidir.", status=400)
 
-    mnemonic_phrase = str(data.get("mnemonic", "")).strip()
-    private_key_hex = str(data.get("private_key", "")).strip()
+    if amount > Config.MAX_TRANSACTION:
+        return api_response(False, message=f"Tek seferde maksimum transfer sınırı {Config.MAX_TRANSACTION:,.0f} BCT'dir.", status=400)
 
-    try:
-        if mnemonic_phrase and len(mnemonic_phrase.split()) >= 12:
-            wallet = restore_wallet_from_mnemonic(mnemonic_phrase)
-        elif private_key_hex and len(private_key_hex) == 64:
-            wallet = restore_wallet(private_key_hex)
-        else:
-            logger.warning(f"Transfer rejected: missing signature credentials for sender {sender}")
-            return api_response(False, message="Signing credentials required (12 words mnemonic or 64-hex private key)", status=400)
-
-        if wallet.address != sender:
-            logger.warning(f"Key mismatch: wallet {wallet.address} tried to sign for {sender}")
-            return api_response(False, message="Signing key does not match sender address", status=403)
-    except Exception as e:
-        logger.warning(f"Signature resolution error: {e}")
-        return api_response(False, message=f"Key verification error: {str(e)}", status=400)
-
-    # Sign transaction
-    tx_data = f"{sender}{receiver}{amount}"
-    signature = wallet.sign(tx_data)
+    amount = round(amount, 8)
+    canonical = f"{sender}{receiver}{amount}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, sender, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
 
     success, message, tx_info = blockchain.create_transaction(
         sender=sender,
         receiver=receiver,
         amount=amount,
-        signature=signature
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
     )
 
     if success:
@@ -225,21 +453,18 @@ def api_transaction():
 @app.route("/api/v1/explorer/search", methods=["GET"])
 def api_explorer_search():
     """Universal search across Blocks, Transactions, and Addresses."""
-    q = request.args.get("q", "").strip()
+    q = request.args.get("q", "").strip()[:128]
     if not q:
         return api_response(False, message="Search query cannot be empty", status=400)
 
-    # 1. Search Block
     block = blockchain.get_block_by_index_or_hash(q)
     if block:
         return api_response(True, data={"type": "block", "result": block})
 
-    # 2. Search Transaction
     tx = blockchain.get_tx_by_hash(q)
     if tx:
         return api_response(True, data={"type": "transaction", "result": tx})
 
-    # 3. Search Wallet Address
     if is_valid_bct_address(q):
         bal = blockchain.get_balance(q)
         history = blockchain.get_wallet_transactions(q)
@@ -249,29 +474,29 @@ def api_explorer_search():
                 "address": q,
                 "balance": bal,
                 "transaction_count": len(history),
-                "transactions": history
-            }
+                "transactions": history[:50],
+            },
         })
 
-    return api_response(False, message=f"No blockchain records found matching '{q}'", status=404)
+    return api_response(False, message="Aranan kriterlere uygun blok, işlem veya cüzdan bulunamadı.", status=404)
 
 
 @app.route("/api/v1/explorer/block/<query>", methods=["GET"])
 def api_explorer_block(query):
-    block = blockchain.get_block_by_index_or_hash(query)
+    clean_q = (query or "").strip()[:128]
+    block = blockchain.get_block_by_index_or_hash(clean_q)
     if block:
-        # Enrich block data with validator node metadata
         node_meta = None
         miner_addr = block.get("miner", "")
-        for n_id, n in blockchain.nodes.items():
-            if n.get("miner_address") == miner_addr or n.get("endpoint") == miner_addr or n.get("node_id") == miner_addr:
+        for _n_id, n in blockchain.nodes.items():
+            if miner_addr and (n.get("miner_address") == miner_addr or n.get("endpoint") == miner_addr or n.get("node_id") == miner_addr):
                 node_meta = {
                     "node_id": n.get("node_id"),
                     "name": n.get("name"),
                     "location": n.get("location"),
                     "role": n.get("role"),
                     "version": n.get("version"),
-                    "status": n.get("status", "online")
+                    "status": n.get("status", "online"),
                 }
                 break
         if not node_meta:
@@ -280,8 +505,8 @@ def api_explorer_block(query):
                 "name": "LockTrace Genesis Validator #1",
                 "location": "Stockholm, Sweden (Oracle Cloud)",
                 "role": "Core PoW Archival Validator",
-                "version": "1.2.0",
-                "status": "online"
+                "version": "1.2.1",
+                "status": "online",
             }
         block["validator_node"] = node_meta
         return api_response(True, data=block)
@@ -300,7 +525,7 @@ def api_download_node():
 
 @app.route("/api/v1/explorer/tx/<tx_hash>", methods=["GET"])
 def api_explorer_tx(tx_hash):
-    tx = blockchain.get_tx_by_hash(tx_hash)
+    tx = blockchain.get_tx_by_hash((tx_hash or "").strip()[:128])
     if tx:
         return api_response(True, data=tx)
     return api_response(False, message="Transaction not found", status=404)
@@ -308,7 +533,7 @@ def api_explorer_tx(tx_hash):
 
 @app.route("/api/v1/transactions/latest", methods=["GET"])
 def api_latest_transactions():
-    limit = min(request.args.get("limit", 20, type=int), 100)
+    limit = safe_int(request.args.get("limit", 20), default=20, min_val=1, max_val=100)
     txs = blockchain.get_all_transactions()
     return api_response(True, data={"transactions": txs[:limit], "total": len(txs)})
 
@@ -326,7 +551,7 @@ def api_wallet_transactions(address):
 
 @app.route("/api/v1/blocks/latest", methods=["GET"])
 def api_latest_blocks():
-    count = min(request.args.get("count", 15, type=int), 50)
+    count = safe_int(request.args.get("count", 15), default=15, min_val=1, max_val=50)
     return api_response(True, data={"blocks": blockchain.get_latest_blocks(count)})
 
 
@@ -339,22 +564,28 @@ def api_get_nodes():
     return api_response(True, data={
         "total_nodes": len(nodes),
         "online_nodes": online_count,
-        "nodes": nodes
+        "nodes": nodes,
     })
 
 
 @app.route("/api/v1/nodes/register", methods=["POST"])
 def api_register_node():
     """Register or announce a community node into the decentralized network."""
+    if not check_rate_limit("node_register", limit=20, window_seconds=60):
+        return api_response(False, message="Çok sık düğüm kayıt isteği gönderildi.", status=429)
+
     data = request.get_json(silent=True) or {}
-    node_id = str(data.get("node_id", "")).strip()
-    name = str(data.get("name", "")).strip()
-    endpoint = str(data.get("endpoint", "")).strip()
-    role = str(data.get("role", "Peer Node")).strip()
-    location = str(data.get("location", "Decentralized")).strip()
-    miner_address = str(data.get("miner_address", "")).strip()
-    block_height = int(data.get("block_height", 0))
-    version = str(data.get("version", "1.2.0")).strip()
+    node_id = str(data.get("node_id", "") or "").strip()
+    name = str(data.get("name", "") or "").strip()
+    endpoint = str(data.get("endpoint", "") or "").strip()
+    role = str(data.get("role", "Peer Node") or "Peer Node").strip()
+    location = str(data.get("location", "Decentralized") or "Decentralized").strip()
+    miner_address = str(data.get("miner_address", "") or "").strip()
+    block_height = safe_int(data.get("block_height", 0), default=0, min_val=0)
+    version = str(data.get("version", "1.2.0") or "1.2.0").strip()
+
+    if miner_address and not is_valid_bct_address(miner_address):
+        return api_response(False, message="Geçersiz madenci cüzdan adresi formatı.", status=400)
 
     if not node_id:
         node_id = f"node-{secrets.token_hex(4)}"
@@ -367,69 +598,83 @@ def api_register_node():
         location=location,
         miner_address=miner_address,
         block_height=block_height,
-        version=version
+        version=version,
     )
-    logger.info(f"Node Registered / Heartbeat: {node_info['name']} [{node_info['node_id']}] miner={miner_address[:8]} from {location}")
+    logger.info(f"Node Registered / Heartbeat: {node_info['name']} [{node_info['node_id']}]")
     return api_response(True, message="Node registered successfully in LockTrace network", data=node_info, status=201)
 
 
 @app.route("/api/v1/nodes/ping", methods=["POST"])
 def api_ping_node():
     """Heartbeat endpoint for connected nodes."""
+    if not check_rate_limit("node_ping", limit=30, window_seconds=60):
+        return api_response(False, message="Rate limit exceeded", status=429)
+
     data = request.get_json(silent=True) or {}
-    node_id = str(data.get("node_id", "")).strip()
+    node_id = str(data.get("node_id", "") or "").strip()
     if not node_id:
         return api_response(False, message="Node ID required", status=400)
 
-    node_info = blockchain.register_or_ping_node(
+    miner_addr = str(data.get("miner_address", "") or "").strip()
+    if miner_addr and not is_valid_bct_address(miner_addr):
+        miner_addr = ""
+
+    blockchain.register_or_ping_node(
         node_id=node_id,
-        block_height=int(data.get("block_height", len(blockchain.chain))),
-        miner_address=str(data.get("miner_address", "")).strip()
+        block_height=safe_int(data.get("block_height", len(blockchain.chain)), default=len(blockchain.chain), min_val=0),
+        miner_address=miner_addr,
     )
-    return api_response(True, message="Pong", data={"node_id": node_id, "status": "online", "network_height": len(blockchain.chain)})
+    return api_response(True, message="Pong", data={"node_id": node_id[:64], "status": "online", "network_height": len(blockchain.chain)})
 
 
 # ── Mining & Node Reward Endpoints ───────────────────────────
 @app.route("/api/v1/mining/job", methods=["GET"])
 def api_mining_job():
     """Provides current mining difficulty, pending fees, and block reward metrics."""
-    pending_fees = sum(tx.fee for tx in blockchain.pending_transactions if tx.tx_type == "transfer")
-    from core.blockchain import BLOCK_REWARD, MINER_FEE_SHARE
-    miner_cut = round(pending_fees * MINER_FEE_SHARE, 8)
+    with blockchain.lock:
+        pending_count = len(blockchain.pending_transactions)
+        pending_fees = sum(tx.fee for tx in blockchain.pending_transactions if tx.tx_type == "transfer")
+        space_fees = sum(tx.fee for tx in blockchain.pending_transactions if tx.tx_type in ("space_post", "space_like", "space_comment"))
+        miner_cut = round(pending_fees * MINER_FEE_SHARE + space_fees, 8)
+        block_index = len(blockchain.chain)
+        prev_hash = blockchain.chain[-1].hash if blockchain.chain else "0" * 64
+        difficulty = blockchain.difficulty
+
     return api_response(True, data={
-        "block_index": len(blockchain.chain),
-        "previous_hash": blockchain.chain[-1].hash if blockchain.chain else "0" * 64,
-        "difficulty": blockchain.difficulty,
-        "pending_transactions": len(blockchain.pending_transactions),
-        "block_subsidy": BLOCK_REWARD,
-        "pending_fees": pending_fees,
-        "potential_miner_reward": round(BLOCK_REWARD + miner_cut, 8)
+        "block_index": block_index,
+        "previous_hash": prev_hash,
+        "difficulty": difficulty,
+        "pending_transactions": pending_count,
+        "block_subsidy": BLOCK_REWARD if pending_count > 0 else 0.0,
+        "pending_fees": round(pending_fees + space_fees, 8),
+        "potential_miner_reward": round(BLOCK_REWARD + miner_cut, 8) if pending_count > 0 else 0.0,
     })
 
 
 @app.route("/api/v1/mine", methods=["POST"])
 def api_mine_block():
-    """Forge and mine a new Proof-of-Work block, claiming the 50% fee share and 0.05 BCT block reward."""
+    """Forge and mine a new Proof-of-Work block when pending transactions exist in the mempool."""
+    if not check_rate_limit("mine_block", limit=15, window_seconds=60):
+        return api_response(False, message="Madencilik istek sınırına ulaşıldı. Lütfen bekleyin.", status=429)
+
     data = request.get_json(silent=True) or {}
-    miner_address = str(data.get("miner_address", "")).strip()
-    node_id = str(data.get("node_id", "")).strip()
+    miner_address = str(data.get("miner_address", "") or "").strip()
 
     if not miner_address:
         return api_response(False, message="Miner address is required to receive block rewards", status=400)
 
-    if not is_valid_bct_address(miner_address):
-        return api_response(False, message=f"Invalid miner address format: '{miner_address}'", status=400)
+    if not is_valid_bct_address(miner_address) or miner_address.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
+        return api_response(False, message="Invalid miner address format", status=400)
 
-    # Mine block with the provided miner address
-    block = blockchain._mine_block(miner_address=miner_address)
+    # Strictly require pending transactions so empty blocks cannot be farmed for free BCT
+    block = blockchain.mine_pending_block(miner_address=miner_address)
     if not block:
-        return api_response(False, message="No pending transactions or mining tasks to package into a block.", status=400)
+        return api_response(False, message="Havuzda bekleyen işlem yok. Boş blok üretimi ve karşılıksız ödül dağıtımı kapalıdır.", status=400)
 
-    # Find coinbase transaction
     coinbase = next((t for t in block.transactions if t.tx_type == "mining_reward"), None)
     reward_val = coinbase.amount if coinbase else 0.0
 
-    logger.info(f"Block #{block.index} successfully mined by {miner_address[:10]}... Reward: {reward_val} BCT")
+    logger.info(f"Block #{block.index} mined by {miner_address[:10]}... Reward: {reward_val} BCT")
 
     return api_response(True, message=f"Block #{block.index} successfully mined! Deposited {reward_val:.8f} BCT reward.", data={
         "block_index": block.index,
@@ -439,7 +684,7 @@ def api_mine_block():
         "miner_address": miner_address,
         "miner_reward": reward_val,
         "miner_balance": blockchain.get_balance(miner_address),
-        "timestamp": block.timestamp
+        "timestamp": block.timestamp,
     }, status=201)
 
 
@@ -450,14 +695,14 @@ def api_mine_block():
 @app.route("/api/v1/space/feed", methods=["GET"])
 def api_space_feed():
     """Returns on-chain space thoughts feed with likes and comments."""
-    limit = min(request.args.get("limit", 50, type=int), 100)
+    limit = safe_int(request.args.get("limit", 50), default=50, min_val=1, max_val=100)
     feed = blockchain.get_space_feed(limit)
     return api_response(True, data={"posts": feed, "count": len(feed)})
 
 
 @app.route("/api/v1/space/post/<post_id>", methods=["GET"])
 def api_space_get_post(post_id):
-    post = blockchain.get_space_post(post_id)
+    post = blockchain.get_space_post((post_id or "")[:64])
     if post:
         return api_response(True, data=post)
     return api_response(False, message="Gönderi bulunamadı", status=404)
@@ -466,39 +711,34 @@ def api_space_get_post(post_id):
 @app.route("/api/v1/space/post", methods=["POST"])
 def api_space_create_post():
     """
-    Publishes an immutable on-chain thought.
-    Cost: 0.10 BCT (80% returns to Treasury Vault, 20% to block validator).
+    Publishes an immutable on-chain thought (Requires cryptographic wallet authentication).
+    Cost: 0.10 BCT (80% returns to Treasury Vault, 20% validator fee).
     """
+    if not check_rate_limit("space_post", limit=15, window_seconds=60):
+        return api_response(False, message="Çok hızlı paylaşım yapıyorsunuz. Lütfen kısa süre bekleyin.", status=429)
+
     data = request.get_json(silent=True) or {}
-    author = str(data.get("author", "")).strip()
-    content = str(data.get("content", "")).strip()
+    author = str(data.get("author", "") or "").strip()
+    content = str(data.get("content", "") or "").strip()
 
     if not author:
         return api_response(False, message="Yazar cüzdan adresi gereklidir", status=400)
     if not content:
         return api_response(False, message="Düşünce metni boş olamaz", status=400)
 
-    mnemonic_phrase = str(data.get("mnemonic", "")).strip()
-    private_key_hex = str(data.get("private_key", "")).strip()
-    signature = str(data.get("signature", "")).strip()
-
-    if not signature:
-        try:
-            if mnemonic_phrase and len(mnemonic_phrase.split()) >= 12:
-                wallet = restore_wallet_from_mnemonic(mnemonic_phrase)
-                if wallet.address == author:
-                    signature = wallet.sign(f"{author}:{content}")
-            elif private_key_hex and len(private_key_hex) == 64:
-                wallet = restore_wallet(private_key_hex)
-                if wallet.address == author:
-                    signature = wallet.sign(f"{author}:{content}")
-        except Exception:
-            pass
+    canonical = f"{author}:{content}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, author, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
 
     success, message, result = blockchain.create_space_post(
         author=author,
         content=content,
-        signature=signature
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
     )
     if not success:
         return api_response(False, message=message, status=400)
@@ -510,37 +750,32 @@ def api_space_create_post():
 @app.route("/api/v1/space/like", methods=["POST"])
 def api_space_like():
     """
-    Likes an on-chain thought.
+    Likes an on-chain thought (Requires cryptographic wallet authentication).
     Cost: 0.01 BCT (20% to tweet author, 70% to Treasury, 10% validator fee).
     """
+    if not check_rate_limit("space_like", limit=30, window_seconds=60):
+        return api_response(False, message="Çok hızlı beğeni işlemi gönderildi. Lütfen kısa süre bekleyin.", status=429)
+
     data = request.get_json(silent=True) or {}
-    liker = str(data.get("liker", "")).strip()
-    post_id = str(data.get("post_id", "")).strip()
+    liker = str(data.get("liker", "") or "").strip()
+    post_id = str(data.get("post_id", "") or "").strip()
 
     if not liker or not post_id:
         return api_response(False, message="liker adresi ve post_id gereklidir", status=400)
 
-    mnemonic_phrase = str(data.get("mnemonic", "")).strip()
-    private_key_hex = str(data.get("private_key", "")).strip()
-    signature = str(data.get("signature", "")).strip()
-
-    if not signature:
-        try:
-            if mnemonic_phrase and len(mnemonic_phrase.split()) >= 12:
-                wallet = restore_wallet_from_mnemonic(mnemonic_phrase)
-                if wallet.address == liker:
-                    signature = wallet.sign(f"{liker}:{post_id}")
-            elif private_key_hex and len(private_key_hex) == 64:
-                wallet = restore_wallet(private_key_hex)
-                if wallet.address == liker:
-                    signature = wallet.sign(f"{liker}:{post_id}")
-        except Exception:
-            pass
+    canonical = f"{liker}:{post_id}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, liker, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
 
     success, message, result = blockchain.like_space_post(
         liker=liker,
         post_id=post_id,
-        signature=signature
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
     )
     if not success:
         return api_response(False, message=message, status=400)
@@ -552,39 +787,34 @@ def api_space_like():
 @app.route("/api/v1/space/comment", methods=["POST"])
 def api_space_comment():
     """
-    Comments on an on-chain thought.
+    Comments on an on-chain thought (Requires cryptographic wallet authentication).
     Cost: 0.02 BCT (20% to tweet author, 70% to Treasury, 10% validator fee).
     """
+    if not check_rate_limit("space_comment", limit=20, window_seconds=60):
+        return api_response(False, message="Çok hızlı yorum gönderildi. Lütfen kısa süre bekleyin.", status=429)
+
     data = request.get_json(silent=True) or {}
-    commenter = str(data.get("commenter", "")).strip()
-    post_id = str(data.get("post_id", "")).strip()
-    content = str(data.get("content", "")).strip()
+    commenter = str(data.get("commenter", "") or "").strip()
+    post_id = str(data.get("post_id", "") or "").strip()
+    content = str(data.get("content", "") or "").strip()
 
     if not commenter or not post_id or not content:
         return api_response(False, message="commenter, post_id ve content gereklidir", status=400)
 
-    mnemonic_phrase = str(data.get("mnemonic", "")).strip()
-    private_key_hex = str(data.get("private_key", "")).strip()
-    signature = str(data.get("signature", "")).strip()
-
-    if not signature:
-        try:
-            if mnemonic_phrase and len(mnemonic_phrase.split()) >= 12:
-                wallet = restore_wallet_from_mnemonic(mnemonic_phrase)
-                if wallet.address == commenter:
-                    signature = wallet.sign(f"{commenter}:{post_id}:{content}")
-            elif private_key_hex and len(private_key_hex) == 64:
-                wallet = restore_wallet(private_key_hex)
-                if wallet.address == commenter:
-                    signature = wallet.sign(f"{commenter}:{post_id}:{content}")
-        except Exception:
-            pass
+    canonical = f"{commenter}:{post_id}:{content}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, commenter, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
 
     success, message, result = blockchain.comment_space_post(
         commenter=commenter,
         post_id=post_id,
         content=content,
-        signature=signature
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
     )
     if not success:
         return api_response(False, message=message, status=400)
@@ -594,19 +824,16 @@ def api_space_comment():
 
 
 # ══════════════════════════════════════════════════════
-# 💱 Fiat On-Ramp & Buy/Sell Coin Trading (Thirdweb Protected)
+# 💱 Fiat On-Ramp & Buy/Sell Coin Trading (Disabled / Protected)
 # ══════════════════════════════════════════════════════
 
 @app.route("/api/v1/trade/config", methods=["GET"])
 def api_trade_config():
-    """
-    Returns public trade parameters and public Thirdweb Client ID.
-    CRITICAL: Secret keys are strictly protected on the backend and never exposed.
-    """
+    """Returns public trade parameters and public Thirdweb Client ID (never secret keys)."""
     rates = {
         "USD": Config.BCT_PER_USD,
         "EUR": round(Config.BCT_PER_USD * 1.08, 4),
-        "TRY": round(Config.BCT_PER_USD / 34.0, 4)
+        "TRY": round(Config.BCT_PER_USD / 34.0, 4),
     }
     return api_response(True, data={
         "thirdweb_client_id": Config.THIRDWEB_CLIENT_ID,
@@ -615,83 +842,53 @@ def api_trade_config():
         "min_buy_usd": Config.MIN_BUY_USD,
         "max_buy_usd": Config.MAX_BUY_USD,
         "supported_currencies": ["USD", "EUR", "TRY"],
-        "rates": rates
+        "rates": rates,
     })
 
 
 @app.route("/api/v1/trade/buy", methods=["POST"])
 def api_trade_buy():
-    """
-    Executes a fiat purchase of BCT tokens via Thirdweb Pay or direct payment.
-    Debits Treasury reserves and delivers BCT directly into buyer's address with PoW block settlement.
-    """
     data = request.get_json(silent=True) or {}
-    buyer_address = str(data.get("buyer_address", "")).strip()
-    fiat_amount = float(data.get("fiat_amount", 0.0))
-    currency = str(data.get("currency", "USD")).strip().upper()
-    payment_method = str(data.get("payment_method", "credit_card")).strip()
-    session_token = str(data.get("session_token", "")).strip()
+    buyer_address = str(data.get("buyer_address", "") or "").strip()
+    fiat_amount = safe_float(data.get("fiat_amount", 0.0), default=0.0)
+    currency = str(data.get("currency", "USD") or "USD").strip().upper()[:8]
+    session_token = str(data.get("session_token", "") or "").strip()[:128]
 
-    if not buyer_address:
-        return api_response(False, message="Buyer wallet address is required", status=400)
-
-    if not is_valid_bct_address(buyer_address):
-        return api_response(False, message=f"Invalid buyer address: '{buyer_address}'", status=400)
-
-    if fiat_amount < Config.MIN_BUY_USD:
-        return api_response(False, message=f"Minimum purchase amount is ${Config.MIN_BUY_USD:.2f}", status=400)
-
-    if fiat_amount > Config.MAX_BUY_USD:
-        return api_response(False, message=f"Maximum purchase amount is ${Config.MAX_BUY_USD:,.2f}", status=400)
+    if not buyer_address or not is_valid_bct_address(buyer_address):
+        return api_response(False, message="Geçerli bir alıcı BCT cüzdan adresi gereklidir.", status=400)
 
     success, message, receipt = blockchain.execute_fiat_purchase(
         buyer_address=buyer_address,
         fiat_amount=fiat_amount,
         currency=currency,
         payment_ref=session_token,
-        bct_per_usd=Config.BCT_PER_USD
+        bct_per_usd=Config.BCT_PER_USD,
     )
-
     if not success:
         return api_response(False, message=message, status=400)
-
-    logger.info(f"Token Purchase: {buyer_address[:10]} bought {receipt['bct_amount']} BCT with {fiat_amount} {currency}")
     return api_response(True, message=message, data=receipt, status=201)
 
 
 @app.route("/api/v1/trade/sell", methods=["POST"])
 def api_trade_sell():
-    """
-    Executes a sale of BCT tokens for fiat payout.
-    Transfers BCT back to Treasury vault and initiates off-ramp payout.
-    """
     data = request.get_json(silent=True) or {}
-    seller_address = str(data.get("seller_address", "")).strip()
-    bct_amount = float(data.get("bct_amount", 0.0))
-    currency = str(data.get("currency", "USD")).strip().upper()
-    payout_info = str(data.get("payout_info", "")).strip()
+    seller_address = str(data.get("seller_address", "") or "").strip()
+    bct_amount = safe_float(data.get("bct_amount", 0.0), default=0.0)
+    currency = str(data.get("currency", "USD") or "USD").strip().upper()[:8]
+    payout_info = str(data.get("payout_info", "") or "").strip()[:128]
 
-    if not seller_address:
-        return api_response(False, message="Seller wallet address is required", status=400)
-
-    if not is_valid_bct_address(seller_address):
-        return api_response(False, message=f"Invalid seller address: '{seller_address}'", status=400)
-
-    if bct_amount <= 0:
-        return api_response(False, message="Sell amount must be greater than zero", status=400)
+    if not seller_address or not is_valid_bct_address(seller_address):
+        return api_response(False, message="Geçerli bir satıcı BCT cüzdan adresi gereklidir.", status=400)
 
     success, message, receipt = blockchain.execute_fiat_sale(
         seller_address=seller_address,
         bct_amount=bct_amount,
         payout_info=payout_info,
         currency=currency,
-        bct_per_usd=Config.BCT_PER_USD
+        bct_per_usd=Config.BCT_PER_USD,
     )
-
     if not success:
         return api_response(False, message=message, status=400)
-
-    logger.info(f"Token Sale: {seller_address[:10]} sold {bct_amount} BCT for {receipt['fiat_payout']} {currency}")
     return api_response(True, message=message, data=receipt, status=201)
 
 
@@ -699,6 +896,8 @@ def api_trade_sell():
 def api_trade_orders(address: str):
     """Returns buy & sell order history for a specific wallet address."""
     clean_addr = address.strip()
+    if not is_valid_bct_address(clean_addr):
+        return api_response(False, message="Invalid address syntax", status=400)
     orders = []
     with blockchain.lock:
         blockchain._load_state()
@@ -706,44 +905,68 @@ def api_trade_orders(address: str):
             for tx in b.transactions:
                 if (tx.sender == clean_addr or tx.receiver == clean_addr) and tx.tx_type in ("fiat_buy", "token_sell"):
                     orders.append({
-                        "tx_hash": tx.tx_hash,
+                        "tx_hash": tx.hash(),
                         "block_index": b.index,
                         "type": tx.tx_type,
                         "amount": tx.amount,
                         "fee": tx.fee,
                         "timestamp": tx.timestamp,
-                        "signature": tx.signature
+                        "signature": tx.signature,
                     })
     return api_response(True, data={"address": clean_addr, "orders": orders})
 
 
 # ══════════════════════════════════════════════════════
-# 🌐 Thirdweb Engine & Server Wallet Endpoints
+# 🌐 Thirdweb Engine & Server Wallet Endpoints (Admin-Protected)
 # ══════════════════════════════════════════════════════
+
+def _require_admin_api_key() -> bool:
+    provided = request.headers.get("X-API-Key", "").strip()
+    if not provided or not Config.ADMIN_API_KEY:
+        return False
+    return secrets.compare_digest(provided, Config.ADMIN_API_KEY)
+
 
 @app.route("/api/v1/thirdweb/info", methods=["GET"])
 def api_thirdweb_info():
-    """Returns Thirdweb backend status and configuration info."""
+    """Returns non-sensitive Thirdweb backend readiness info."""
+    if not check_rate_limit("tw_info", limit=15, window_seconds=60):
+        return api_response(False, message="Rate limit exceeded", status=429)
     return api_response(True, data=thirdweb_service.get_info())
 
 
 @app.route("/api/v1/thirdweb/claim-erc1155", methods=["POST"])
 def api_thirdweb_claim_erc1155():
     """
-    Mints / Claims ERC1155 NFT to a recipient address using Thirdweb SDK / Engine Server Wallet.
+    Mints / Claims ERC1155 NFT via Server Wallet.
+    Strictly protected by X-API-Key (ADMIN_API_KEY) to prevent unauthorized server-wallet gas/NFT draining.
     """
-    data = request.get_json(silent=True) or {}
-    contract_address = str(data.get("contract_address", "")).strip()
-    to_address = str(data.get("to", data.get("to_address", ""))).strip()
-    token_id = int(data.get("token_id", 0))
-    quantity = int(data.get("quantity", 1))
-    chain = str(data.get("chain", Config.THIRDWEB_DEFAULT_CHAIN)).strip()
-    server_wallet = str(data.get("server_wallet", "")).strip() or None
+    if not check_rate_limit("tw_claim", limit=10, window_seconds=60):
+        return api_response(False, message="Rate limit exceeded", status=429)
 
-    if not contract_address:
-        return api_response(False, message="contract_address is required", status=400)
-    if not to_address:
-        return api_response(False, message="recipient 'to' address is required", status=400)
+    if not _require_admin_api_key():
+        return api_response(False, message="Yetkisiz erişim: Geçerli X-API-Key başlığı gereklidir.", status=401)
+
+    data = request.get_json(silent=True) or {}
+    contract_address = str(data.get("contract_address", "") or "").strip()
+    to_address = str(data.get("to", data.get("to_address", "")) or "").strip()
+    token_id = safe_int(data.get("token_id", 0), default=-1)
+    quantity = safe_int(data.get("quantity", 1), default=0)
+    chain = str(data.get("chain", Config.THIRDWEB_DEFAULT_CHAIN) or Config.THIRDWEB_DEFAULT_CHAIN).strip()
+    server_wallet = str(data.get("server_wallet", "") or "").strip() or None
+
+    if not EVM_ADDRESS_RE.match(contract_address):
+        return api_response(False, message="Geçersiz EVM kontrat adresi (0x + 40 hex karakter olmalı).", status=400)
+    if not EVM_ADDRESS_RE.match(to_address):
+        return api_response(False, message="Geçersiz hedef EVM cüzdan adresi (0x + 40 hex karakter olmalı).", status=400)
+    if server_wallet and not EVM_ADDRESS_RE.match(server_wallet):
+        return api_response(False, message="Geçersiz server_wallet adresi.", status=400)
+    if token_id < 0 or token_id > 10**18:
+        return api_response(False, message="Geçersiz token_id değeri.", status=400)
+    if quantity < 1 or quantity > 1000:
+        return api_response(False, message="quantity 1 ile 1000 arasında olmalıdır.", status=400)
+    if not SAFE_CHAIN_RE.match(chain):
+        return api_response(False, message="Geçersiz chain parametresi.", status=400)
 
     result = thirdweb_service.claim_erc1155(
         contract_address=contract_address,
@@ -751,44 +974,44 @@ def api_thirdweb_claim_erc1155():
         token_id=token_id,
         quantity=quantity,
         chain=chain,
-        server_wallet_address=server_wallet
+        server_wallet_address=server_wallet,
     )
 
     if not result.get("success", False):
         err = result.get("error", "Failed to enqueue Thirdweb transaction")
         return api_response(False, message=err, status=400)
 
-    logger.info(f"Thirdweb Claim Enqueued/Executed: to={to_address} contract={contract_address} token={token_id}")
+    logger.info(f"Thirdweb Claim Executed: to={to_address} contract={contract_address} token={token_id}")
     return api_response(True, message="Thirdweb transaction successfully processed", data=result.get("data", {}), status=201)
 
 
 @app.route("/api/v1/thirdweb/status/<transaction_id>", methods=["GET"])
 def api_thirdweb_status(transaction_id: str):
-    """Checks the execution status of an enqueued Engine transaction."""
-    clean_tx_id = transaction_id.strip()
-    if not clean_tx_id:
-        return api_response(False, message="transaction_id is required", status=400)
+    if not check_rate_limit("tw_status", limit=20, window_seconds=60):
+        return api_response(False, message="Rate limit exceeded", status=429)
+    clean_tx_id = (transaction_id or "").strip()
+    if not SAFE_TX_ID_RE.match(clean_tx_id):
+        return api_response(False, message="Geçersiz transaction_id formatı.", status=400)
 
     result = thirdweb_service.get_transaction_status(clean_tx_id)
     if not result.get("success", False):
         return api_response(False, message=result.get("error", "Failed to retrieve transaction status"), status=400)
-
     return api_response(True, data=result.get("data", {}))
 
 
 @app.route("/api/v1/thirdweb/wait-hash/<transaction_id>", methods=["GET"])
 def api_thirdweb_wait_hash(transaction_id: str):
-    """Waits for and returns onchain transaction hash."""
-    clean_tx_id = transaction_id.strip()
-    if not clean_tx_id:
-        return api_response(False, message="transaction_id is required", status=400)
+    if not check_rate_limit("tw_wait", limit=10, window_seconds=60):
+        return api_response(False, message="Rate limit exceeded", status=429)
+    clean_tx_id = (transaction_id or "").strip()
+    if not SAFE_TX_ID_RE.match(clean_tx_id):
+        return api_response(False, message="Geçersiz transaction_id formatı.", status=400)
 
     result = thirdweb_service.wait_for_transaction_hash(clean_tx_id)
     if not result.get("success", False):
         return api_response(False, message=result.get("error", "Failed to get transaction hash"), status=400)
-
     return api_response(True, data=result.get("data", {}))
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000)
+    app.run(host=Config.HOST, port=Config.PORT, debug=Config.DEBUG)
