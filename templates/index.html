@@ -1,1024 +1,1097 @@
 <!DOCTYPE html>
-<html lang="en">
+<html class="dark" lang="tr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>LockTrace Bank | Decentralized BCT Account & Transparent Explorer</title>
-  
-  <link rel="manifest" href="/manifest.json">
-  <meta name="theme-color" content="#080c14">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="LockTrace">
-  <link rel="apple-touch-icon" href="/icons/icon-192.png">
-  <link rel="icon" type="image/png" href="/icons/icon-192.png">
+  <meta charset="utf-8"/>
+  <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+  <title>LockTrace — Web3 Minimalist Blockchain & Neobank</title>
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg"/>
+  <link rel="manifest" href="manifest.json"/>
+  <meta name="theme-color" content="#131315"/>
 
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+  <!-- Google Fonts & Icons from Stitch -->
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Geist:wght@100..900&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
+
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script id="tailwind-config">
+    tailwind.config = {
+      darkMode: "class",
+      theme: {
+        extend: {
+          colors: {
+            "error": "#ffb4ab",
+            "on-error": "#690005",
+            "error-container": "#93000a",
+            "surface-bright": "#39393b",
+            "surface-container-lowest": "#0e0e10",
+            "surface-container-low": "#1b1b1d",
+            "surface-container": "#1f1f21",
+            "surface-container-high": "#2a2a2c",
+            "surface-container-highest": "#353437",
+            "surface": "#131315",
+            "background": "#131315",
+            "primary": "#4edea3",
+            "primary-container": "#10b981",
+            "on-primary": "#003824",
+            "on-primary-container": "#00422b",
+            "secondary": "#adc6ff",
+            "secondary-container": "#0566d9",
+            "on-surface": "#e5e1e4",
+            "on-surface-variant": "#bbcabf",
+            "outline": "#86948a",
+            "outline-variant": "#3c4a42"
+          },
+          fontFamily: {
+            sans: ["Geist", "system-ui", "sans-serif"],
+            mono: ["JetBrains Mono", "monospace"]
+          }
+        }
+      }
+    };
+  </script>
 
   <style>
-    :root {
-      --bg: #07090e;
-      --bg-surface: #0d121d;
-      --bg-card: rgba(18, 24, 38, 0.75);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --accent: #2563eb;
-      --accent-glow: rgba(37, 99, 235, 0.35);
-      --emerald: #10b981;
-      --emerald-glow: rgba(16, 185, 129, 0.25);
-      --gold: #f59e0b;
-      --danger: #ef4444;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --text-dim: #64748b;
-      --radius-md: 14px;
-      --radius-lg: 20px;
+    @layer base {
+      html, body { margin: 0; padding: 0; }
+      body { overscroll-behavior: none; }
     }
-
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      -webkit-tap-highlight-color: transparent;
-      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    ::-webkit-scrollbar { display: none; }
+    .tab-content { display: none; }
+    .tab-content.active { display: flex; }
+    .glass-card {
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
     }
-
-    body {
-      background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      overflow-x: hidden;
-      padding-bottom: env(safe-area-inset-bottom);
+    @keyframes pulse-subtle {
+      0%, 100% { opacity: 1; }
+      50% { opacity: 0.6; }
     }
-
-    .ambient-glow {
-      position: fixed;
-      top: -120px;
-      left: 50%;
-      transform: translateX(-50%);
-      width: 700px;
-      height: 380px;
-      background: radial-gradient(circle, rgba(37, 99, 235, 0.18) 0%, rgba(139, 92, 246, 0.08) 50%, rgba(0, 0, 0, 0) 80%);
-      pointer-events: none;
-      z-index: 0;
+    .animate-pulse-subtle {
+      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
     }
-
-    header {
-      position: sticky;
-      top: 0;
-      z-index: 60;
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      background: rgba(7, 9, 14, 0.85);
-      border-bottom: 1px solid var(--card-border);
-      padding: 0.85rem 1.5rem;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .brand-wrap { display: flex; align-items: center; gap: 0.75rem; }
-    .brand-logo {
-      width: 36px; height: 36px;
-      background: linear-gradient(135deg, #1e293b, #0f172a);
-      border: 1px solid rgba(255, 255, 255, 0.15);
-      border-radius: 10px;
-      display: grid; place-items: center;
-    }
-    .brand-title {
-      font-size: 1.15rem; font-weight: 800; letter-spacing: -0.4px; color: #fff;
-    }
-    .brand-title span {
-      background: linear-gradient(135deg, #60a5fa, #a78bfa);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
-
-    .header-actions { display: flex; align-items: center; gap: 0.75rem; }
-    .status-pill {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 0.72rem; font-weight: 600;
-      background: rgba(16, 185, 129, 0.12); color: var(--emerald);
-      padding: 0.35rem 0.75rem; border-radius: 999px;
-      border: 1px solid rgba(16, 185, 129, 0.25);
-    }
-    .pulse-dot {
-      width: 6px; height: 6px; background: var(--emerald); border-radius: 50%;
-      animation: pulse 2s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: 0.4; transform: scale(0.85); }
-    }
-
-    .btn-install {
-      display: none; align-items: center; gap: 6px;
-      font-size: 0.75rem; font-weight: 700;
-      background: linear-gradient(135deg, #2563eb, #7c3aed);
-      color: #fff; padding: 0.4rem 0.85rem; border-radius: 999px; border: none; cursor: pointer;
-    }
-    .btn-install.visible { display: inline-flex; }
-
-    main {
-      flex: 1; max-width: 860px; width: 100%; margin: 0 auto;
-      padding: 1.25rem; z-index: 1; display: flex; flex-direction: column; gap: 1.25rem;
-    }
-
-    /* Bank Card */
-    .bank-card {
-      position: relative;
-      background: linear-gradient(135deg, #182030 0%, #0d121c 60%, #080c14 100%);
-      border: 1px solid rgba(255, 255, 255, 0.12);
-      border-radius: var(--radius-lg);
-      padding: 1.75rem; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-      color: #fff; overflow: hidden;
-    }
-    .bank-card::after {
-      content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
-      background: radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
-      pointer-events: none;
-    }
-
-    .card-top {
-      display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.8rem;
-    }
-    .emv-chip {
-      width: 44px; height: 32px; background: linear-gradient(135deg, #fcd34d, #d97706);
-      border-radius: 6px; border: 1px solid rgba(0,0,0,0.3);
-    }
-    .card-brand-label {
-      font-size: 0.75rem; font-weight: 800; letter-spacing: 2px; color: #94a3b8;
-      display: flex; align-items: center; gap: 6px;
-    }
-
-    .card-balance-section { margin-bottom: 1.6rem; }
-    .card-balance-label {
-      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
-      letter-spacing: 1.5px; color: #94a3b8; margin-bottom: 0.3rem;
-    }
-    .card-balance-num {
-      font-size: 2.6rem; font-weight: 800; letter-spacing: -1px;
-      display: flex; align-items: baseline; gap: 8px;
-    }
-    .card-balance-num .curr { font-size: 1.3rem; color: #60a5fa; font-weight: 700; }
-
-    .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
-    .card-holder { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; }
-    .card-holder-name {
-      font-size: 0.85rem; font-weight: 700; color: #f1f5f9; margin-top: 2px; cursor: pointer;
-    }
-    .card-acc-num {
-      font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #cbd5e1; letter-spacing: 1px;
-    }
-
-    /* Quick Grid */
-    .quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
-    .quick-btn {
-      background: var(--bg-card); border: 1px solid var(--card-border);
-      border-radius: var(--radius-md); padding: 0.9rem 0.5rem;
-      display: flex; flex-direction: column; align-items: center; gap: 6px;
-      color: var(--text); cursor: pointer; transition: all 0.2s;
-    }
-    .quick-btn:hover { background: rgba(30, 41, 59, 0.8); transform: translateY(-2px); }
-    .quick-btn .btn-icon-circle {
-      width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.05);
-      display: grid; place-items: center; font-size: 1.25rem;
-    }
-    .quick-btn span.label { font-size: 0.78rem; font-weight: 700; color: #e2e8f0; }
-
-    /* Tabs */
-    .nav-tabs {
-      display: flex; background: rgba(255, 255, 255, 0.04); padding: 4px; border-radius: var(--radius-md); gap: 4px;
-      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
-    }
-    .nav-tabs::-webkit-scrollbar { display: none; }
-    .tab-btn {
-      flex: 1; text-align: center; padding: 0.7rem 0.8rem; font-size: 0.82rem; font-weight: 700;
-      color: var(--text-muted); border-radius: 10px; cursor: pointer; border: none; background: transparent;
-      white-space: nowrap;
-    }
-    .tab-btn.active { background: var(--accent); color: #fff; }
-
-    /* Quick Grid */
-    .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
-    @media (min-width: 640px) {
-      .quick-grid { grid-template-columns: repeat(6, 1fr); }
-    }
-
-    /* Code Box & Badges */
-    .badge-get { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 2px 7px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
-    .badge-post { background: rgba(37, 99, 235, 0.2); color: #60a5fa; border: 1px solid rgba(37, 99, 235, 0.4); padding: 2px 7px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
-    
-    .code-box {
-      position: relative; background: #070a10; border: 1px solid rgba(255,255,255,0.08);
-      border-radius: 10px; padding: 0.9rem; margin: 0.5rem 0; overflow-x: auto;
-    }
-    .code-box pre { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #cbd5e1; line-height: 1.5; }
-    .btn-copy-code {
-      position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
-      color: #cbd5e1; font-size: 0.7rem; padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer;
-    }
-    .btn-copy-code:hover { background: rgba(255,255,255,0.18); color: #fff; }
-
-    /* API Endpoint Cards */
-    .api-card {
-      background: rgba(0, 0, 0, 0.35); border: 1px solid var(--card-border);
-      border-radius: 12px; padding: 1.1rem; margin-bottom: 0.9rem; transition: border-color 0.2s;
-    }
-    .api-card:hover { border-color: rgba(255, 255, 255, 0.16); }
-    .api-card-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
-    .api-endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
-    .api-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
-    .live-response-box {
-      margin-top: 0.8rem; background: #05070c; border: 1px solid rgba(37, 99, 235, 0.3);
-      border-radius: 8px; padding: 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
-      color: #93c5fd; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
-    }
-
-    /* Panel */
-    .panel {
-      display: none; background: var(--bg-card); border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg); padding: 1.6rem; backdrop-filter: blur(16px);
-    }
-    .panel.active { display: block; }
-
-    .panel-title { font-size: 1.15rem; font-weight: 800; color: #fff; margin-bottom: 0.3rem; }
-    .panel-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.25rem; }
-
-    .form-group { margin-bottom: 1.2rem; }
-    .form-group label {
-      display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
-      letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.45rem;
-    }
-    input, textarea {
-      width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--card-border);
-      border-radius: 12px; color: #fff; padding: 0.9rem 1.1rem; font-size: 0.95rem; outline: none;
-    }
-    input:focus, textarea:focus { border-color: var(--accent); }
-
-    .btn-primary {
-      width: 100%; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      color: #fff; border: none; border-radius: 12px; padding: 1rem; font-size: 0.95rem; font-weight: 800; cursor: pointer;
-    }
-    .btn-primary:active { transform: scale(0.98); }
-    .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
-
-    /* Mnemonic Word Grid */
-    .mnemonic-grid {
-      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 1.2rem 0;
-    }
-    @media (min-width: 640px) {
-      .mnemonic-grid { grid-template-columns: repeat(4, 1fr); }
-    }
-    .word-badge {
-      background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 0.6rem 0.5rem; border-radius: 8px; font-size: 0.8rem;
-      font-family: 'JetBrains Mono', monospace; color: #60a5fa; display: flex; align-items: center; gap: 6px;
-    }
-    .word-badge .num { color: #64748b; font-size: 0.7rem; width: 18px; }
-
-    /* Modal */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
-      z-index: 100; display: none; place-items: center; padding: 1rem;
-    }
-    .modal-overlay.open { display: grid; }
-    .modal-box {
-      background: #0f172a; border: 1px solid rgba(255,255,255,0.15);
-      border-radius: var(--radius-lg); padding: 1.8rem; max-width: 520px; width: 100%;
-      box-shadow: 0 25px 50px rgba(0,0,0,0.8);
-    }
-
-    /* Ledger Rows */
-    .tx-row {
-      display: flex; justify-content: space-between; align-items: center;
-      padding: 1rem 0; border-bottom: 1px solid var(--card-border);
-      cursor: pointer; transition: background 0.2s;
-    }
-    .tx-row:hover { background: rgba(255,255,255,0.02); }
-    .tx-row:last-child { border-bottom: none; }
-    .tx-info-left { display: flex; align-items: center; gap: 12px; }
-    .tx-icon-bubble {
-      width: 40px; height: 40px; border-radius: 10px;
-      display: grid; place-items: center; font-size: 1.15rem;
-    }
-    .bubble-reward { background: rgba(16, 185, 129, 0.15); color: var(--emerald); }
-    .bubble-send { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
-    .bubble-receive { background: rgba(37, 99, 235, 0.15); color: #60a5fa; }
-    .tx-title { font-size: 0.88rem; font-weight: 700; color: #fff; }
-    .tx-time { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
-    .tx-val { font-size: 0.95rem; font-weight: 800; }
-    .val-pos { color: var(--emerald); }
-    .val-neg { color: #f87171; }
-
-    /* Explorer Search & Cards */
-    .search-box-wrap {
-      display: flex; gap: 8px; margin-bottom: 1.25rem;
-    }
-    .search-box-wrap input {
-      flex: 1; padding: 0.85rem 1rem; font-size: 0.9rem;
-    }
-    .btn-search {
-      background: var(--accent); color: #fff; border: none;
-      padding: 0 1.4rem; border-radius: 12px; font-weight: 700; cursor: pointer;
-    }
-
-    .explorer-subtabs {
-      display: flex; gap: 8px; margin-bottom: 1rem;
-    }
-    .subtab-btn {
-      padding: 0.4rem 0.9rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
-      background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--card-border);
-      cursor: pointer;
-    }
-    .subtab-btn.active {
-      background: rgba(37, 99, 235, 0.2); color: #60a5fa; border-color: rgba(37, 99, 235, 0.4);
-    }
-
-    .detail-card {
-      background: rgba(0, 0, 0, 0.35); border: 1px solid var(--card-border);
-      border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem;
-    }
-    .detail-row {
-      display: flex; justify-content: space-between; padding: 0.5rem 0;
-      border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.82rem;
-    }
-    .detail-row:last-child { border-bottom: none; }
-    .detail-lbl { color: var(--text-muted); }
-    .detail-val { font-family: 'JetBrains Mono', monospace; color: #fff; word-break: break-all; }
-
-    #toast {
-      position: fixed; bottom: 2rem; left: 50%;
-      transform: translateX(-50%) translateY(100px);
-      background: #1e293b; color: #fff; padding: 0.85rem 1.6rem;
-      border-radius: 999px; font-size: 0.85rem; font-weight: 700;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 1px solid var(--card-border);
-      opacity: 0; transition: all 0.3s; z-index: 200; pointer-events: none;
-    }
-    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
 </head>
-<body>
-  <div class="ambient-glow"></div>
-  <div id="toast">Notification</div>
 
-  <!-- 12-Word Recovery Modal -->
-  <div class="modal-overlay" id="mnemonicModal">
-    <div class="modal-box">
-      <div style="font-size:1.3rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
-        <span>🔐 Secret Recovery Phrase</span>
+<body class="bg-background font-sans text-on-background selection:bg-primary-container selection:text-on-primary-container min-h-screen">
+
+  <!-- Desktop & Tablet Sidebar (Stitch Design) -->
+  <aside class="fixed left-0 top-0 h-full w-64 bg-surface-container-low/80 backdrop-blur-2xl z-50 flex flex-col justify-between py-6 px-4 border-r border-outline-variant/30 hidden md:flex">
+    <div class="flex flex-col gap-8">
+      <!-- Brand Logo -->
+      <div class="flex items-center gap-3 px-2">
+        <div class="w-9 h-9 rounded-full bg-primary-container/20 flex items-center justify-center border border-primary-container/40 shadow-sm">
+          <span class="material-symbols-outlined text-primary text-[20px]">blur_on</span>
+        </div>
+        <div class="flex flex-col">
+          <span class="text-xl font-bold tracking-tight text-on-surface">LockTrace</span>
+          <span class="text-[10px] uppercase font-mono tracking-widest text-primary font-medium">Neobank & Chain</span>
+        </div>
       </div>
-      <p style="font-size:0.85rem; color:#94a3b8; margin:0.6rem 0 1rem 0; line-height:1.5;">
-        Write down these <strong>12 secret words</strong> in order and store them safely. This phrase is the <strong>only key</strong> to restore your BCT vault if you switch devices.
-      </p>
 
-      <div class="mnemonic-grid" id="modalWordsGrid"></div>
+      <!-- Navigation Tabs -->
+      <nav class="flex flex-col gap-1.5" id="sidebar-nav">
+        <button class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface font-semibold bg-surface-container-highest transition-all duration-150 text-sm" onclick="switchTab('cuzdanim')">
+          <span class="material-symbols-outlined text-[20px] text-primary">account_balance_wallet</span>
+          <span>Cüzdanım</span>
+        </button>
+        <button class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all duration-150 text-sm font-medium" onclick="switchTab('para-gonder')">
+          <span class="material-symbols-outlined text-[20px]">send</span>
+          <span>Para Gönder</span>
+        </button>
+        <button class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all duration-150 text-sm font-medium" onclick="switchTab('yeni-cuzdan')">
+          <span class="material-symbols-outlined text-[20px]">add_circle</span>
+          <span>Yeni / İçe Aktar</span>
+        </button>
+        <button class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all duration-150 text-sm font-medium" onclick="switchTab('ag-ve-explorer')">
+          <span class="material-symbols-outlined text-[20px]">lan</span>
+          <span>Ağ & Explorer</span>
+        </button>
+        <button class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all duration-150 text-sm font-medium" onclick="switchTab('api-docs')">
+          <span class="material-symbols-outlined text-[20px]">terminal</span>
+          <span>API & Düğüm</span>
+        </button>
+      </nav>
+    </div>
 
-      <div style="display:flex; gap:0.75rem; margin-top:1.2rem;">
-        <button class="btn-primary" style="background:#334155; padding:0.75rem;" onclick="copyMnemonicPhrase()">
-          📋 Copy Words
-        </button>
-        <button class="btn-primary btn-success" style="padding:0.75rem;" onclick="confirmMnemonicSaved()">
-          ✓ I Have Saved Them
-        </button>
+    <!-- Mainnet Status Badge -->
+    <div class="px-2 flex flex-col gap-2">
+      <div class="p-3 rounded-xl bg-surface-container-lowest/80 border border-outline-variant/30 flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+          <span class="text-xs font-mono text-on-surface-variant">BCT Mainnet v1.0.4</span>
+        </div>
+        <span class="material-symbols-outlined text-outline text-[16px]">lock</span>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Mobile Top Bar & Bottom Nav -->
+  <div class="md:hidden fixed top-0 left-0 right-0 h-14 bg-surface-container-low/90 backdrop-blur-xl border-b border-outline-variant/20 z-50 flex items-center justify-between px-4">
+    <div class="flex items-center gap-2">
+      <div class="w-7 h-7 rounded-full bg-primary-container/20 flex items-center justify-center border border-primary-container/40">
+        <span class="material-symbols-outlined text-primary text-[16px]">blur_on</span>
+      </div>
+      <span class="text-base font-bold text-on-surface">LockTrace</span>
+    </div>
+    <div class="flex items-center gap-2">
+      <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/40 text-xs">
+        <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+        <span class="font-mono text-on-surface" id="headerMobileBal">-- BCT</span>
       </div>
     </div>
   </div>
 
-  <!-- Header -->
-  <header>
-    <div class="brand-wrap">
-      <div class="brand-logo">🛡️</div>
-      <div class="brand-title">LockTrace <span>Bank</span></div>
-    </div>
-    <div class="header-actions">
-      <button class="btn-install" id="pwaInstallHeaderBtn" onclick="triggerPWAInstall()">
-        📲 Install App
-      </button>
-      <div class="status-pill">
-        <div class="pulse-dot"></div>
-        <span>Oracle Mainnet</span>
-      </div>
-    </div>
-  </header>
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-xl border-t border-outline-variant/30 z-50 flex items-center justify-around px-2">
+    <button class="flex flex-col items-center gap-1 text-primary" onclick="switchTab('cuzdanim')">
+      <span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+      <span class="text-[11px] font-medium">Cüzdan</span>
+    </button>
+    <button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-on-surface" onclick="switchTab('para-gonder')">
+      <span class="material-symbols-outlined text-[20px]">send</span>
+      <span class="text-[11px] font-medium">Gönder</span>
+    </button>
+    <button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-on-surface" onclick="switchTab('yeni-cuzdan')">
+      <span class="material-symbols-outlined text-[20px]">add_circle</span>
+      <span class="text-[11px] font-medium">Hesap</span>
+    </button>
+    <button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-on-surface" onclick="switchTab('ag-ve-explorer')">
+      <span class="material-symbols-outlined text-[20px]">lan</span>
+      <span class="text-[11px] font-medium">Ağ</span>
+    </button>
+    <button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-on-surface" onclick="switchTab('api-docs')">
+      <span class="material-symbols-outlined text-[20px]">terminal</span>
+      <span class="text-[11px] font-medium">API</span>
+    </button>
+  </nav>
 
-  <main>
-    <!-- Bank Card -->
-    <section class="bank-card">
-      <div class="card-top">
-        <div class="emv-chip"></div>
-        <div class="card-brand-label">
-          <span>LOCKTRACE OBSIDIAN</span>
-          <span style="font-size:1.1rem;">🛜</span>
+  <!-- Main Content Wrapper with Left Margin for Desktop Sidebar -->
+  <div class="md:pl-64">
+    <!-- Desktop Header (Stitch Design) -->
+    <header class="hidden md:flex fixed top-0 left-64 right-0 h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/20 z-40 items-center justify-between px-8">
+      <div class="flex items-center gap-3">
+        <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container border border-outline-variant/40">
+          <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+          <span class="text-xs font-semibold text-on-surface">LockTrace Mainnet</span>
+          <span class="text-xs text-on-surface-variant">• Aktif</span>
+        </div>
+        <div class="text-xs font-mono text-on-surface-variant">
+          Blok: <span id="headerBlockHeight" class="text-primary font-medium">--</span>
         </div>
       </div>
 
-      <div class="card-balance-section">
-        <div class="card-balance-label">Available Balance</div>
-        <div class="card-balance-num">
-          <span id="cardBalance">0.00</span>
-          <span class="curr">BCT</span>
-        </div>
-      </div>
-
-      <div class="card-bottom">
-        <div>
-          <div class="card-holder">Account Address</div>
-          <div class="card-holder-name" onclick="copyAddress()" title="Click to copy account ID">
-            <span id="cardHolderText">No Wallet Connected</span>
-            <span>📋</span>
-          </div>
-        </div>
-        <div class="card-acc-num" id="cardMaskedNum">•••• •••• •••• 0000</div>
-      </div>
-    </section>
-
-    <!-- Quick Actions -->
-    <div class="quick-grid">
-      <div class="quick-btn" onclick="openTab('send')">
-        <div class="btn-icon-circle">💸</div>
-        <span class="label">Send</span>
-      </div>
-      <div class="quick-btn" onclick="openTab('wallet')">
-        <div class="btn-icon-circle">🎁</div>
-        <span class="label">New Account</span>
-      </div>
-      <div class="quick-btn" onclick="openTab('statement')">
-        <div class="btn-icon-circle">📜</div>
-        <span class="label">Statement</span>
-      </div>
-      <div class="quick-btn" onclick="openTab('explorer')">
-        <div class="btn-icon-circle">🔍</div>
-        <span class="label">Explorer</span>
-      </div>
-      <div class="quick-btn" onclick="openTab('nodes')">
-        <div class="btn-icon-circle">🌐</div>
-        <span class="label">Nodes</span>
-      </div>
-      <div class="quick-btn" onclick="openTab('api')">
-        <div class="btn-icon-circle">⚡</div>
-        <span class="label">API Docs</span>
-      </div>
-    </div>
-
-    <!-- Navigation Tabs -->
-    <div class="nav-tabs">
-      <button class="tab-btn active" onclick="openTab('send')">Transfer</button>
-      <button class="tab-btn" onclick="openTab('wallet')">Account</button>
-      <button class="tab-btn" onclick="openTab('statement')">Statement</button>
-      <button class="tab-btn" onclick="openTab('explorer')">Explorer</button>
-      <button class="tab-btn" onclick="openTab('nodes')">Nodes</button>
-      <button class="tab-btn" onclick="openTab('api')">API Docs</button>
-    </div>
-
-    <!-- PANEL 1: TRANSFER (SEND) -->
-    <div class="panel active" id="tab-send">
-      <div class="panel-title">Instant Wire Transfer</div>
-      <div class="panel-desc">Cryptographic BCT transfer with 1% automated treasury redistribution.</div>
-
-      <div class="form-group">
-        <label>Beneficiary Address</label>
-        <input type="text" id="txRecipient" placeholder="BCT40hexcharacters...">
-      </div>
-
-      <div class="form-group">
-        <label>Transfer Amount (BCT)</label>
-        <input type="number" id="txAmount" placeholder="0.00" step="0.00000001" min="0.00000001" oninput="calcFee()">
-      </div>
-
-      <div style="background:rgba(0,0,0,0.25); border:1px solid var(--card-border); border-radius:12px; padding:0.85rem 1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; font-size:0.82rem; color:var(--text-muted);">
-        <span>Treasury Fee (1%):</span>
-        <strong id="feeDisplay" style="color:var(--gold);">0.00000000 BCT</strong>
-      </div>
-
-      <div id="txErrorAlert" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:0.85rem; border-radius:10px; font-size:0.82rem; margin-bottom:1rem;"></div>
-
-      <button class="btn-primary" id="btnSendMoney" onclick="handleSendMoney()">
-        ⚡ Authorize & Send Transfer
-      </button>
-    </div>
-
-    <!-- PANEL 2: WALLET & 12-WORDS -->
-    <div class="panel" id="tab-wallet">
-      <div class="panel-title">Open Account & Key Recovery</div>
-      <div class="panel-desc">Create a new vault with 12-word seed phrase or restore an existing one.</div>
-
-      <button class="btn-primary btn-success" style="margin-bottom:1.5rem;" onclick="handleCreateWallet()">
-        🎁 Open New Account (Claim 1.00 BCT Bonus)
-      </button>
-
-      <hr style="border:none; border-top:1px solid var(--card-border); margin:1.5rem 0;">
-
-      <div class="form-group">
-        <label>Restore via 12-Word Seed Phrase or Private Key</label>
-        <textarea id="importInput" rows="3" placeholder="Enter your 12 words separated by spaces, or 64-hex private key..."></textarea>
-      </div>
-      <button class="btn-primary" onclick="handleImportWallet()">
-        🔑 Restore Account
-      </button>
-
-      <!-- Active Wallet Backup & Switch Box -->
-      <div id="keyVaultBox" style="display:none; margin-top:1.5rem; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:1.2rem;">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div style="font-size:0.85rem; font-weight:800; color:#60a5fa;">🔐 Active Account Credentials</div>
-          <button style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:0.3rem 0.7rem; border-radius:6px; font-size:0.75rem; cursor:pointer;" onclick="handleDisconnectWallet()">Disconnect / Switch</button>
-        </div>
-
-        <div style="margin-top:0.8rem; font-size:0.75rem; color:var(--text-muted);">
-          <span>Account Address:</span>
-          <div style="display:flex; gap:6px; margin-top:4px;">
-            <input type="text" id="dispAddressInput" readonly style="font-size:0.75rem; padding:0.5rem; font-family:'JetBrains Mono',monospace;">
-            <button class="btn-primary" style="width:auto; padding:0 0.8rem; font-size:0.75rem;" onclick="copyAddress()">Copy</button>
-          </div>
-        </div>
-
-        <div id="dispMnemonicWrap" style="margin-top:0.8rem;">
-          <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">12-Word Recovery Phrase:</div>
-          <div id="dispMnemonic" class="mnemonic-grid" style="margin:0.5rem 0;"></div>
-          <button class="btn-primary" style="background:#334155; padding:0.5rem; font-size:0.8rem;" onclick="copyActiveMnemonic()">
-            📋 Copy Recovery Words
+      <div class="flex items-center gap-4">
+        <!-- Active Account Pill -->
+        <div class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-low border border-outline-variant/40 hover:border-outline-variant transition-colors group cursor-pointer" onclick="openReceiveModal()">
+          <span class="text-xs text-on-surface-variant font-mono" id="headerAddress">Cüzdan Seçilmedi</span>
+          <button class="flex items-center justify-center text-outline group-hover:text-on-surface transition-colors" title="Kopyala" type="button" onclick="event.stopPropagation(); copyCurrentAddress();">
+            <span class="material-symbols-outlined text-[15px]">content_copy</span>
           </button>
         </div>
 
-        <div id="dispPkWrap" style="margin-top:0.8rem;">
-          <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">64-Hex Private Key:</div>
-          <div style="display:flex; gap:6px;">
-            <input type="password" id="dispPkInput" readonly style="font-size:0.75rem; padding:0.5rem; font-family:'JetBrains Mono',monospace;">
-            <button class="btn-primary" style="background:#334155; width:auto; padding:0 0.8rem; font-size:0.75rem;" onclick="togglePkVisibility()">👁️</button>
-            <button class="btn-primary" style="width:auto; padding:0 0.8rem; font-size:0.75rem;" onclick="copyPrivateKey()">Copy</button>
+        <!-- User Avatar / Info -->
+        <div class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shadow-sm cursor-pointer" onclick="openReceiveModal()" title="Cüzdan Bilgileri">
+          <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Container -->
+    <main class="w-full pt-16 md:pt-20 pb-20 md:pb-12 min-h-screen bg-background px-4 md:px-8">
+
+      <!-- ========================================================================= -->
+      <!-- TAB 1: CÜZDANIM (Stitch Apple & Cash App Minimalist Frame)               -->
+      <!-- ========================================================================= -->
+      <div id="tab-cuzdanim" class="tab-content active flex-col w-full items-center">
+        <div class="w-full max-w-[620px] flex flex-col items-center">
+          
+          <!-- Balance & Hero Section -->
+          <section class="w-full flex flex-col items-center text-center my-6">
+            <span class="text-xs text-on-surface-variant tracking-widest uppercase mb-1 font-semibold">
+              Toplam Bakiye
+            </span>
+
+            <!-- Dominant Financial Figure -->
+            <div class="flex items-baseline justify-center tracking-tight text-on-surface my-2 select-none">
+              <h1 class="text-5xl md:text-6xl tracking-tighter text-on-surface font-semibold" id="cardBalance">
+                0.00
+              </h1>
+              <span class="text-2xl md:text-3xl font-light text-primary ml-2 font-mono">BCT</span>
+            </div>
+
+            <!-- Fiat Estimate & Status -->
+            <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-container mt-2">
+              <span class="material-symbols-outlined text-primary text-[15px]">verified</span>
+              <span class="text-xs text-primary font-semibold tracking-wide">100% Kriptografik Güvence</span>
+              <span class="text-xs text-on-surface-variant font-normal">• 1T BCT Sabit Arz</span>
+            </div>
+
+            <!-- Hero Action Buttons (Gönder & Al) -->
+            <div class="grid grid-cols-2 gap-4 w-full max-w-[340px] mt-8">
+              <button class="h-[52px] rounded-full bg-primary text-on-primary font-semibold text-sm flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] hover:opacity-95" onclick="switchTab('para-gonder')" type="button">
+                <span class="material-symbols-outlined text-[20px]">north_east</span>
+                <span>Gönder</span>
+              </button>
+              <button class="h-[52px] rounded-full bg-surface-container-high text-on-surface font-semibold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] hover:bg-surface-container-highest" onclick="openReceiveModal()" type="button">
+                <span class="material-symbols-outlined text-[20px]">south_west</span>
+                <span>Al / Paylaş</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- History Section -->
+          <section class="w-full flex flex-col gap-4 mt-6">
+            <div class="flex items-center justify-between w-full">
+              <h2 class="text-lg text-on-surface tracking-tight font-medium">
+                İşlem Geçmişi
+              </h2>
+              
+              <!-- Filter Pills -->
+              <div class="flex items-center p-1 bg-surface-container rounded-full" id="filter-bar">
+                <button class="filter-tab px-3 py-1 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all" onclick="filterTransactions('all', this)" type="button">
+                  Tümü
+                </button>
+                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="filterTransactions('in', this)" type="button">
+                  Gelenler
+                </button>
+                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="filterTransactions('out', this)" type="button">
+                  Gidenler
+                </button>
+                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="filterTransactions('mining_reward', this)" type="button">
+                  Madenci
+                </button>
+              </div>
+            </div>
+
+            <!-- Transaction Stream -->
+            <div class="flex flex-col gap-2 w-full" id="tx-list">
+              <div class="p-8 text-center text-on-surface-variant text-sm bg-surface-container-low rounded-2xl border border-outline-variant/20">
+                Cüzdan işlemleri yükleniyor...
+              </div>
+            </div>
+
+            <!-- Security Footnote -->
+            <div class="mt-4 p-4 rounded-2xl bg-surface-container-lowest/60 flex items-center justify-between border border-outline-variant/20">
+              <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-outline text-[18px]">verified_user</span>
+                <span class="text-xs text-on-surface-variant">Tüm transferler PoW konsensüsü ile SHA-256 zincirine işlenir.</span>
+              </div>
+              <button class="text-xs text-primary font-mono hover:underline" onclick="switchTab('ag-ve-explorer')">Ağ Detayları</button>
+            </div>
+          </section>
+
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 2: PARA GÖNDER (Stitch Transfer Card)                                -->
+      <!-- ========================================================================= -->
+      <div id="tab-para-gonder" class="tab-content flex-col w-full items-center">
+        <div class="relative w-full max-w-lg">
+          <div class="absolute -top-16 left-1/2 -translate-x-1/2 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
+          
+          <div class="w-full bg-surface-container-low rounded-2xl p-6 md:p-8 shadow-xl flex flex-col gap-6 border border-outline-variant/30">
+            <!-- Header -->
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col">
+                <span class="text-[11px] font-semibold text-primary uppercase tracking-widest">BCT Web3 Transfer</span>
+                <h1 class="text-2xl font-bold text-on-surface">Para Gönder</h1>
+                <p class="text-xs text-on-surface-variant mt-0.5">Hızlı, şeffaf ve güvenli blokzincir transferi</p>
+              </div>
+              <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-[20px]">send</span>
+              </div>
+            </div>
+
+            <!-- Step 1: Varlık -->
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-on-surface-variant font-medium">1. Varlık Seçimi</span>
+                <span class="text-xs text-on-surface-variant">Kullanılabilir: <strong class="text-on-surface font-mono font-medium" id="sendAvailableBal">0.00 BCT</strong></span>
+              </div>
+              <div class="p-3 bg-surface-container rounded-xl flex items-center justify-between border border-outline-variant/30">
+                <div class="flex items-center gap-3">
+                  <div class="w-9 h-9 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-sm">
+                    BCT
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="text-sm font-semibold text-on-surface">LockTrace Token</span>
+                    <span class="text-xs text-on-surface-variant">Ana Ağ Birimi</span>
+                  </div>
+                </div>
+                <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary-container/20 text-primary text-xs font-semibold">
+                  <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                  <span>Ana Ağ</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Step 2: Amount Entry -->
+            <div class="flex flex-col items-center justify-center py-4 bg-surface-container-lowest rounded-xl p-4 gap-2 relative border border-outline-variant/20">
+              <div class="flex items-center justify-between w-full">
+                <span class="text-xs text-on-surface-variant font-medium">2. Tutar Belirleyin</span>
+                <span class="text-xs font-mono text-primary font-medium" id="feeNotice">Ağ Ücreti: %1 (%50 Madenci, %50 Hazine)</span>
+              </div>
+              
+              <!-- Input -->
+              <div class="flex items-center justify-center w-full my-2">
+                <input class="bg-transparent border-0 outline-none text-center text-4xl md:text-5xl text-on-surface placeholder:text-outline-variant w-full p-0 font-semibold tracking-tight" id="sendAmountInput" inputmode="decimal" placeholder="0.00" type="number" step="any" oninput="updateSendFeePreview()"/>
+              </div>
+
+              <!-- Quick Percent Pills -->
+              <div class="flex items-center gap-2 mt-2">
+                <button class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high text-xs font-medium transition-colors" onclick="setSendPercent(0.25)" type="button">%25</button>
+                <button class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high text-xs font-medium transition-colors" onclick="setSendPercent(0.50)" type="button">%50</button>
+                <button class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high text-xs font-medium transition-colors" onclick="setSendPercent(0.75)" type="button">%75</button>
+                <button class="px-3 py-1 rounded-full bg-surface-container text-primary text-xs font-semibold hover:bg-surface-container-high transition-colors" onclick="setSendPercent(1.00)" type="button">Tümü</button>
+              </div>
+            </div>
+
+            <!-- Step 3: Recipient Address -->
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-on-surface-variant font-medium">3. Alıcı Adresi</span>
+                <span class="text-xs text-outline font-mono" id="recipientValidateBadge">BCT Adresi</span>
+              </div>
+              <div class="relative flex items-center bg-surface-container rounded-xl px-4 py-3 focus-within:bg-surface-container-high transition-colors border border-outline-variant/30">
+                <span class="material-symbols-outlined text-outline-variant text-[20px] mr-2">account_balance_wallet</span>
+                <input class="bg-transparent border-0 outline-none w-full text-on-surface text-sm placeholder:text-outline font-mono truncate" id="sendRecipientInput" placeholder="BCT... (Alıcı Cüzdan Adresi)" type="text"/>
+                <button class="px-2.5 py-1 rounded-md bg-surface-container-highest hover:bg-surface-variant text-on-surface text-xs font-medium transition-colors ml-2 shrink-0 flex items-center gap-1" onclick="pasteRecipient()" type="button">
+                  <span class="material-symbols-outlined text-[13px]">content_paste</span>
+                  <span>Yapıştır</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Fee & Net Calculation Breakdown -->
+            <div class="flex flex-col gap-1.5 p-3.5 rounded-xl bg-surface-container-lowest text-xs text-on-surface-variant border border-outline-variant/20">
+              <div class="flex items-center justify-between">
+                <span>Alıcıya Geçecek Net:</span>
+                <span class="font-mono text-on-surface font-semibold" id="sendNetPreview">0.00000000 BCT</span>
+              </div>
+              <div class="flex items-center justify-between">
+                <span>İşlem Ücreti (%1.00):</span>
+                <span class="font-mono text-primary font-medium" id="sendFeePreview">0.00000000 BCT</span>
+              </div>
+              <div class="flex items-center justify-between text-[11px] text-outline pt-1 border-t border-outline-variant/20">
+                <span>Ödül Dağılımı:</span>
+                <span>%50 Bloğu Kazan Madenciye • %50 Hazineye</span>
+              </div>
+            </div>
+
+            <!-- Submit Button -->
+            <button class="w-full h-[52px] rounded-full bg-primary-container text-on-primary-container text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-105 active:scale-[0.99] shadow-lg disabled:opacity-40 disabled:cursor-not-allowed" id="btnExecuteSend" onclick="executeSendTransaction()" type="button">
+              <span class="material-symbols-outlined text-[20px]">send</span>
+              <span id="btnSendText">Transferi Onayla ve İmzala</span>
+            </button>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- PANEL 3: STATEMENT (MY WALLET ONLY) -->
-    <div class="panel" id="tab-statement">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div>
-          <div class="panel-title">My Account Statement</div>
-          <div class="panel-desc">Personal transaction history for your connected vault.</div>
+      <!-- ========================================================================= -->
+      <!-- TAB 3: YENİ CÜZDAN & İÇE AKTAR (Stitch 12-Word Mnemonic Screen)           -->
+      <!-- ========================================================================= -->
+      <div id="tab-yeni-cuzdan" class="tab-content flex-col w-full items-center">
+        <div class="w-full max-w-2xl mx-auto flex flex-col items-center">
+          
+          <!-- Mode Toggle -->
+          <div class="flex items-center p-1 bg-surface-container rounded-full mb-6 border border-outline-variant/30">
+            <button class="wallet-mode-tab px-5 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all" id="tabModeCreate" onclick="setWalletMode('create')">
+              Yeni Cüzdan Oluştur (+1.0 BCT)
+            </button>
+            <button class="wallet-mode-tab px-5 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" id="tabModeImport" onclick="setWalletMode('import')">
+              Cüzdan İçe Aktar
+            </button>
+          </div>
+
+          <!-- CREATE CONTAINER -->
+          <div id="walletCreateContainer" class="w-full bg-surface-container rounded-2xl p-6 md:p-8 shadow-xl flex flex-col gap-6 border border-outline-variant/30">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[18px]">verified_user</span>
+                </div>
+                <div>
+                  <h2 class="text-lg text-on-surface font-semibold">12 Kelimelik Kurtarma İfadeniz</h2>
+                  <p class="text-xs text-on-surface-variant">Bu kelimeler cüzdanınıza ve fonlarınıza erişimin yegâne anahtarıdır.</p>
+                </div>
+              </div>
+              <span class="text-xs px-3 py-1 rounded-full bg-surface-container-highest text-primary font-mono font-semibold">BIP-39</span>
+            </div>
+
+            <!-- Seed Words Grid (4x3 Responsive) -->
+            <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
+              <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5" id="seed-grid">
+                <!-- Dynamically populated or default placeholders -->
+              </div>
+            </div>
+
+            <!-- Actions row -->
+            <div class="flex flex-col sm:flex-row items-center justify-between gap-3 pt-1">
+              <button class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-all active:scale-95 shadow-sm" onclick="copyMnemonicWords()" type="button">
+                <span class="material-symbols-outlined text-[18px]">content_copy</span>
+                <span id="copyMnemonicText">Kelimeleri Kopyala</span>
+              </button>
+              <div class="flex items-center gap-1.5 text-on-surface-variant text-xs font-mono">
+                <span class="material-symbols-outlined text-[16px] text-primary">lock_reset</span>
+                <span>Standart 128-bit Kriptografik Entropi</span>
+              </div>
+            </div>
+
+            <!-- Warning Box -->
+            <div class="p-4 rounded-xl bg-surface-container-low flex items-start gap-3 border border-outline-variant/20">
+              <div class="w-8 h-8 rounded-full bg-secondary-container/20 text-secondary flex items-center justify-center shrink-0 mt-0.5">
+                <span class="material-symbols-outlined text-[18px]">security</span>
+              </div>
+              <div class="flex flex-col gap-0.5">
+                <span class="text-xs text-on-surface font-semibold">Kritik Güvenlik İlkesi</span>
+                <p class="text-xs text-on-surface-variant leading-relaxed">
+                  Bu 12 kelimeyi asla kimseyle paylaşmayın. Bilgisayarınız kaybolsa dahi paranızı kurtarmanın tek yoludur.
+                </p>
+              </div>
+            </div>
+
+            <!-- Confirm & Finish CTA -->
+            <div class="flex flex-col gap-4">
+              <label class="flex items-center gap-3 p-3.5 rounded-xl bg-surface-container-high/60 hover:bg-surface-container-high cursor-pointer select-none transition-colors group">
+                <input class="peer sr-only" id="createConfirmCheck" type="checkbox" onchange="toggleCreateCta()"/>
+                <div class="w-5 h-5 rounded-md bg-surface-container-highest flex items-center justify-center text-transparent peer-checked:bg-primary-container peer-checked:text-on-primary-container transition-all shrink-0">
+                  <span class="material-symbols-outlined text-[16px] font-bold">check</span>
+                </div>
+                <span class="text-xs text-on-surface group-hover:text-primary transition-colors">
+                  Kelimelerimi güvenli bir yere not aldığımı ve sakladığımı onaylıyorum.
+                </span>
+              </label>
+
+              <button class="w-full h-[52px] rounded-full bg-primary-container text-on-primary-container text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 disabled:opacity-40 disabled:cursor-not-allowed enabled:hover:brightness-105 enabled:active:scale-[0.99] enabled:shadow-lg" id="btnCreateWallet" disabled onclick="requestNewWallet()" type="button">
+                <span>Yeni Cüzdanı Oluştur ve 1.00 BCT Kazan</span>
+                <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- IMPORT CONTAINER -->
+          <div id="walletImportContainer" class="w-full bg-surface-container rounded-2xl p-6 md:p-8 shadow-xl flex-col gap-6 border border-outline-variant/30 hidden">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-full bg-primary/10 text-primary flex items-center justify-center">
+                <span class="material-symbols-outlined text-[18px]">key</span>
+              </div>
+              <div>
+                <h2 class="text-lg text-on-surface font-semibold">Var Olan Cüzdanı İçe Aktar</h2>
+                <p class="text-xs text-on-surface-variant">12 kelimelik kurtarma ifadenizi veya Private Key'inizi girin.</p>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-3">
+              <label class="text-xs text-on-surface-variant font-medium">12 Kelimelik Kurtarma İfadesi veya Özel Anahtar:</label>
+              <textarea id="importInputKey" rows="3" class="w-full bg-surface-container-low rounded-xl p-3.5 text-sm font-mono text-on-surface placeholder:text-outline border border-outline-variant/30 focus:outline-none focus:border-primary" placeholder="river galaxy silver anchor velvet orbit flame crystal bridge summit harbor pulse"></textarea>
+            </div>
+
+            <button class="w-full h-[52px] rounded-full bg-primary text-on-primary text-sm font-semibold flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] hover:opacity-95" onclick="executeImportWallet()" type="button">
+              <span class="material-symbols-outlined text-[20px]">login</span>
+              <span>Cüzdanı Geri Yükle ve Giriş Yap</span>
+            </button>
+          </div>
+
         </div>
-        <button style="background:rgba(255,255,255,0.06); border:1px solid var(--card-border); color:var(--text-muted); padding:0.4rem 0.8rem; border-radius:8px; font-size:0.75rem; cursor:pointer;" onclick="loadMyStatement()">🔄 Refresh</button>
       </div>
-      <div id="myStatementList">
-        <div style="text-align:center; color:var(--text-muted); padding:2rem; font-size:0.85rem;">
-          Loading account records...
+
+      <!-- ========================================================================= -->
+      <!-- TAB 4: AĞ & EXPLORER (Stitch Network Explorer Screen)                     -->
+      <!-- ========================================================================= -->
+      <div id="tab-ag-ve-explorer" class="tab-content flex-col w-full">
+        <div class="w-full max-w-5xl mx-auto flex flex-col gap-8">
+          
+          <!-- Explorer Header -->
+          <div class="flex flex-col gap-2 text-left">
+            <div class="flex items-center gap-2 text-on-surface-variant text-xs uppercase tracking-wider">
+              <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+              <span>Canlı Blokzincir Monitörü</span>
+            </div>
+            <div class="flex flex-col md:flex-row md:items-end justify-between gap-4">
+              <div>
+                <h1 class="text-3xl font-bold text-on-surface tracking-tight">Ağ & Blok Explorer</h1>
+                <p class="text-xs text-on-surface-variant mt-1">Blokzincir durumunu canlı izleyin, işlemleri ve blokları saniyeler içinde doğrulayın.</p>
+              </div>
+              <div class="bg-surface-container-low px-4 py-2 rounded-full flex items-center gap-2.5 shadow-sm border border-outline-variant/30">
+                <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                <span class="text-xs text-on-surface font-mono" id="statConsensusStatus">Konsensüs: Aktif (PoW)</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Explorer Search Bar -->
+          <div class="w-full bg-surface-container-low rounded-2xl p-2 shadow-md border border-outline-variant/30">
+            <form class="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 w-full" onsubmit="event.preventDefault(); triggerExplorerSearch();">
+              <div class="relative flex-1 flex items-center pl-4">
+                <span class="material-symbols-outlined text-outline text-[22px] select-none">search</span>
+                <input autocomplete="off" class="w-full bg-transparent px-3 py-3 text-on-surface text-sm placeholder:text-outline focus:outline-none font-mono" id="explorerSearchInput" placeholder="İşlem Özeti (Tx Hash), Blok No veya Cüzdan Adresi ara..." spellcheck="false" type="text"/>
+              </div>
+              <button class="bg-primary-container text-on-primary-container text-xs font-semibold px-6 py-3 rounded-xl flex items-center justify-center gap-2 transition-opacity hover:opacity-95 active:scale-[0.99]" type="submit">
+                <span>Ara</span>
+                <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </button>
+            </form>
+          </div>
+
+          <!-- Network Metrics Grid -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div class="bg-surface-container-low rounded-xl p-4 flex flex-col gap-1 border border-outline-variant/30">
+              <span class="text-xs text-on-surface-variant font-medium">Toplam Arz</span>
+              <span class="text-lg font-bold font-mono text-on-surface">1,000,000,000,000</span>
+              <span class="text-[10px] text-primary font-mono">BCT (Sabit Limit)</span>
+            </div>
+            <div class="bg-surface-container-low rounded-xl p-4 flex flex-col gap-1 border border-outline-variant/30">
+              <span class="text-xs text-on-surface-variant font-medium">Dolaşımdaki Arz</span>
+              <span class="text-lg font-bold font-mono text-primary" id="metricCirculating">--</span>
+              <span class="text-[10px] text-on-surface-variant font-mono">BCT Toplam Hak</span>
+            </div>
+            <div class="bg-surface-container-low rounded-xl p-4 flex flex-col gap-1 border border-outline-variant/30">
+              <span class="text-xs text-on-surface-variant font-medium">Güncel Blok Yüksekliği</span>
+              <span class="text-lg font-bold font-mono text-on-surface" id="metricBlocks">--</span>
+              <span class="text-[10px] text-on-surface-variant font-mono" id="metricDifficulty">Zorluk: 3 (PoW)</span>
+            </div>
+            <div class="bg-surface-container-low rounded-xl p-4 flex flex-col gap-1 border border-outline-variant/30">
+              <span class="text-xs text-on-surface-variant font-medium">Aktif Düğümler</span>
+              <span class="text-lg font-bold font-mono text-on-surface" id="metricNodes">1</span>
+              <span class="text-[10px] text-primary font-mono">P2P Senkron</span>
+            </div>
+          </div>
+
+          <!-- Mining & Block Forging Card (Teşvik Modeli) -->
+          <div class="w-full bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-low rounded-2xl p-6 border border-primary/30 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
+            <div class="flex items-center gap-4">
+              <div class="w-12 h-12 rounded-2xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[26px]">memory</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                  <span class="text-base font-bold text-on-surface">Madencilik & Blok Üretme Konsolu</span>
+                  <span class="px-2 py-0.5 rounded-full bg-primary-container/20 text-primary text-[10px] font-semibold">+0.05 BCT Ödül</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1">
+                  Yeni bloğu anında kazın. Blok sübvansiyonunu (0.05 BCT) ve transferlerden kesilen %50 madenci işlem payını cüzdanınıza aktarın!
+                </p>
+              </div>
+            </div>
+            <button class="w-full md:w-auto h-[48px] px-6 rounded-full bg-primary text-on-primary font-semibold text-xs flex items-center justify-center gap-2 shadow-lg transition-all active:scale-95 shrink-0 hover:brightness-105" id="btnMineBlockNow" onclick="executeMineBlock()" type="button">
+              <span class="material-symbols-outlined text-[18px]">bolt</span>
+              <span>Bloğu Doğrula ve Kaz</span>
+            </button>
+          </div>
+
+          <!-- Active Nodes Section -->
+          <div class="flex flex-col gap-4">
+            <div class="flex items-center justify-between">
+              <h2 class="text-lg text-on-surface font-semibold">Aktif Ağ Düğümleri</h2>
+              <span class="text-xs text-on-surface-variant font-mono">Canlı Telemetri</span>
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="nodesCardsGrid">
+              <!-- Dynamically populated from /api/v1/nodes -->
+            </div>
+          </div>
+
+          <!-- Latest Blocks & Transactions Dual Feed -->
+          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <!-- Latest Blocks -->
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-on-surface">Son Bloklar</h3>
+                <span class="text-xs font-mono text-outline">En Son 10 Blok</span>
+              </div>
+              <div class="flex flex-col gap-2" id="feedBlocksList">
+                <div class="p-6 text-center text-xs text-on-surface-variant bg-surface-container-low rounded-xl">Yükleniyor...</div>
+              </div>
+            </div>
+
+            <!-- Latest Transactions -->
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-semibold text-on-surface">Son Ağ İşlemleri</h3>
+                <span class="text-xs font-mono text-outline">En Son 10 İşlem</span>
+              </div>
+              <div class="flex flex-col gap-2" id="feedTxsList">
+                <div class="p-6 text-center text-xs text-on-surface-variant bg-surface-container-low rounded-xl">Yükleniyor...</div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
-    </div>
 
-    <!-- PANEL 4: TRANSPARENT EXPLORER -->
-    <div class="panel" id="tab-explorer">
-      <div class="panel-title">LockTrace On-Chain Explorer</div>
-      <div class="panel-desc">Transparent public verification of Blocks, Transactions, and the 1T Reserve.</div>
+      <!-- ========================================================================= -->
+      <!-- TAB 5: GELİŞTİRİCİ & API (Interaktif Dokümantasyon)                      -->
+      <!-- ========================================================================= -->
+      <div id="tab-api-docs" class="tab-content flex-col w-full">
+        <div class="w-full max-w-4xl mx-auto flex flex-col gap-6">
+          <div class="flex flex-col gap-1">
+            <span class="text-xs text-primary font-mono font-medium">BCT REST API & NODE SDK</span>
+            <h1 class="text-2xl font-bold text-on-surface">Geliştirici Dokümantasyonu & Düğüm Kurulumu</h1>
+            <p class="text-xs text-on-surface-variant">LockTrace blokzincir API'lerini canlı test edin veya kendi bilgisayarınızda node çalıştırın.</p>
+          </div>
 
-      <!-- Universal Search Bar -->
-      <div class="search-box-wrap">
-        <input type="text" id="explorerSearchInput" placeholder="Search by Block #, Tx Hash, or BCT Address...">
-        <button class="btn-search" onclick="handleExplorerSearch()">Search</button>
-      </div>
+          <!-- Node Setup Guide Snippet -->
+          <div class="p-5 rounded-2xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-3">
+            <span class="text-xs font-semibold text-on-surface">Kendi Bilgisayarınızda Node Çalıştırın (Windows / Linux / macOS)</span>
+            <div class="p-3 rounded-xl bg-surface-container-lowest font-mono text-xs text-primary flex items-center justify-between">
+              <code>git clone https://github.com/LodosLawson/locktrace-blockchain.git &amp;&amp; python node_runner.py</code>
+              <button class="text-xs text-outline hover:text-on-surface" onclick="copyText('git clone https://github.com/LodosLawson/locktrace-blockchain.git &amp;&amp; python node_runner.py')">Kopyala</button>
+            </div>
+          </div>
 
-      <!-- Search Result Container -->
-      <div id="searchResultArea" style="display:none;"></div>
-
-      <!-- Macro Monetary Policy Proof of Reserve -->
-      <div class="detail-card" style="border-color:rgba(37,99,235,0.3); background:rgba(15,23,42,0.6);">
-        <div style="font-size:0.85rem; font-weight:800; color:#60a5fa; margin-bottom:0.8rem; display:flex; justify-content:space-between;">
-          <span>🏛️ Proof of Reserve (1 Trillion BCT Policy)</span>
-          <span style="color:var(--emerald);">Verified ✓</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-lbl">Total Supply:</span>
-          <span class="detail-val" id="expSupply">1,000,000,000,000 BCT</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-lbl">Treasury Vault Pool:</span>
-          <span class="detail-val" id="expTreasury">-</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-lbl">Circulating in Accounts:</span>
-          <span class="detail-val" id="expCirculating" style="color:var(--emerald);">-</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-lbl">1% Fees Recycled to Vault:</span>
-          <span class="detail-val" id="expFees" style="color:var(--gold);">-</span>
-        </div>
-        <div class="detail-row">
-          <span class="detail-lbl">Consensus Block Height:</span>
-          <span class="detail-val" id="expBlocks">-</span>
-        </div>
-      </div>
-
-      <!-- Explorer View Switcher -->
-      <div class="explorer-subtabs">
-        <button class="subtab-btn active" id="subtabTxsBtn" onclick="switchExplorerView('txs')">Recent Global Transactions</button>
-        <button class="subtab-btn" id="subtabBlocksBtn" onclick="switchExplorerView('blocks')">Latest Mined Blocks</button>
-      </div>
-
-      <div id="explorerTxsView">
-        <div id="explorerTxsList">Loading transactions...</div>
-      </div>
-
-      <div id="explorerBlocksView" style="display:none;">
-        <div id="explorerBlocksList">Loading blocks...</div>
-      </div>
-    </div>
-
-    <!-- PANEL 5: DECENTRALIZED NETWORK NODES -->
-    <div class="panel" id="tab-nodes">
-      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
-        <div>
-          <div class="panel-title">Decentralized Network Nodes</div>
-          <div class="panel-desc">Live P2P validator peers, archival seed nodes, and community operators.</div>
-        </div>
-        <button style="background:rgba(255,255,255,0.06); border:1px solid var(--card-border); color:var(--text-muted); padding:0.4rem 0.8rem; border-radius:8px; font-size:0.75rem; cursor:pointer;" onclick="refreshNodesData()">🔄 Refresh</button>
-      </div>
-
-      <!-- Network Overview Counters -->
-      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom:1.25rem;">
-        <div class="detail-card" style="margin:0; text-align:center; padding:1.2rem;">
-          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; letter-spacing:1px;">ACTIVE PEER NODES</div>
-          <div id="statTotalNodes" style="font-size:1.8rem; font-weight:800; color:#60a5fa; margin-top:4px;">1</div>
-        </div>
-        <div class="detail-card" style="margin:0; text-align:center; padding:1.2rem;">
-          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; letter-spacing:1px;">NETWORK CONSENSUS</div>
-          <div id="statConsensusStatus" style="font-size:1.8rem; font-weight:800; color:var(--emerald); margin-top:4px;">100% HEALTHY</div>
-        </div>
-      </div>
-
-      <!-- Live Nodes List -->
-      <div style="font-size:0.9rem; font-weight:800; color:#fff; margin-bottom:0.6rem;">🌐 Active Network Nodes</div>
-      <div id="nodesListContainer">
-        <div style="color:var(--text-muted); padding:1.5rem; text-align:center;">Discovering active nodes...</div>
-      </div>
-
-      <hr style="border:none; border-top:1px solid var(--card-border); margin:1.5rem 0;">
-
-      <!-- Run Your Own Node Guide -->
-      <div class="detail-card" style="border-color:rgba(37,99,235,0.4); background:rgba(15,23,42,0.7);">
-        <div style="font-size:1rem; font-weight:800; color:#60a5fa; margin-bottom:0.4rem; display:flex; align-items:center; gap:8px;">
-          <span>🖥️ Run Your Own Node (Linux / macOS / Windows)</span>
-        </div>
-        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem; line-height:1.5;">
-          Join the decentralized network! Run an independent node on your local machine or VPS, sync the complete ledger, verify Proof-of-Work blocks locally, and announce your node in real-time.
-        </p>
-
-        <!-- OS Selection Subtabs -->
-        <div class="explorer-subtabs" style="margin-bottom:0.8rem;">
-          <button class="subtab-btn active" id="btnOsLinux" onclick="switchOsGuide('linux')">🐧 Linux</button>
-          <button class="subtab-btn" id="btnOsMac" onclick="switchOsGuide('mac')">🍎 macOS</button>
-          <button class="subtab-btn" id="btnOsWin" onclick="switchOsGuide('win')">🪟 Windows</button>
-        </div>
-
-        <!-- Linux Guide -->
-        <div id="guideLinux" class="os-guide-content">
-          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Run in Terminal (Ubuntu / Debian / CentOS / Arch):</div>
-          <div class="code-box">
-            <pre id="codeLinux">git clone https://github.com/LodosLawson/locktrace-blockchain.git
-cd locktrace-blockchain
-pip3 install -r requirements.txt
-python3 node_runner.py --name "My-Linux-Node" --location "Istanbul, Turkey"</pre>
-            <button class="btn-copy-code" onclick="copySnippet('codeLinux')">📋 Copy</button>
+          <!-- Interactive API Test Endpoints -->
+          <div class="flex flex-col gap-4" id="apiCardsContainer">
+            <!-- Populated dynamically -->
           </div>
         </div>
-
-        <!-- macOS Guide -->
-        <div id="guideMac" class="os-guide-content" style="display:none;">
-          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Run in Terminal (macOS with Python 3):</div>
-          <div class="code-box">
-            <pre id="codeMac">git clone https://github.com/LodosLawson/locktrace-blockchain.git
-cd locktrace-blockchain
-chmod +x scripts/run_node.sh
-./scripts/run_node.sh</pre>
-            <button class="btn-copy-code" onclick="copySnippet('codeMac')">📋 Copy</button>
-          </div>
-        </div>
-
-        <!-- Windows Guide -->
-        <div id="guideWin" class="os-guide-content" style="display:none;">
-          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Run in Windows PowerShell:</div>
-          <div class="code-box">
-            <pre id="codeWin">git clone https://github.com/LodosLawson/locktrace-blockchain.git
-cd locktrace-blockchain
-.\scripts\run_node.ps1</pre>
-            <button class="btn-copy-code" onclick="copySnippet('codeWin')">📋 Copy</button>
-          </div>
-        </div>
-
-        <!-- Quick Browser Node Announce -->
-        <div style="margin-top:1.2rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:0.9rem;">
-          <div style="font-size:0.8rem; font-weight:700; color:#fff; margin-bottom:0.4rem;">⚡ Quick Announce a Node to Network</div>
-          <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:6px;">
-            <input type="text" id="quickNodeName" placeholder="Node Name (e.g. My-Home-Node)" style="font-size:0.8rem; padding:0.6rem;">
-            <input type="text" id="quickNodeLoc" placeholder="Location (e.g. Berlin, Germany)" style="font-size:0.8rem; padding:0.6rem;">
-            <button class="btn-primary" style="width:auto; padding:0 1.2rem; font-size:0.8rem;" onclick="handleQuickNodeAnnounce()">Register Node</button>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- PANEL 6: DEVELOPER REST API DOCUMENTATION -->
-    <div class="panel" id="tab-api">
-      <div class="panel-title">Developer REST API v1 Specification</div>
-      <div class="panel-desc">Interactive cryptographic documentation for wallets, atomic transfers, ledger inspection, and peer telemetry.</div>
-
-      <!-- Base URL box -->
-      <div style="background:rgba(0,0,0,0.4); border:1px solid var(--card-border); border-radius:12px; padding:0.85rem 1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center;">
-        <div>
-          <span style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Active Base URL</span>
-          <div style="font-family:'JetBrains Mono',monospace; font-size:0.88rem; color:#60a5fa; margin-top:2px;" id="dispApiBaseUrl">/api/v1</div>
-        </div>
-        <button class="btn-primary" style="width:auto; padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="copyApiBase()">📋 Copy Base URL</button>
       </div>
 
-      <!-- Interactive API Endpoint List -->
-      <div id="apiEndpointsContainer"></div>
-    </div>
-  </main>
+    </main>
+  </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL 1: İŞLEM DETAY ÇEKMECESİ (Stitch Inspired Apple Drawer)             -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-4" id="tx-modal" onclick="if(event.target===this) closeTxModal();">
+    <div class="w-full max-w-[420px] rounded-3xl bg-surface-container p-6 flex flex-col gap-6 shadow-2xl transition-all scale-95 opacity-0 border border-outline-variant/30" id="modal-card">
+      <div class="flex items-center justify-between">
+        <div class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center">
+          <span class="material-symbols-outlined text-[18px] text-on-surface" id="modal-icon">south_west</span>
+        </div>
+        <span class="text-sm font-semibold text-on-surface" id="modal-title">İşlem Detayı</span>
+        <button class="w-8 h-8 rounded-full bg-surface-container-highest hover:bg-surface-variant text-on-surface flex items-center justify-center transition-colors" onclick="closeTxModal()" type="button">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <div class="flex flex-col items-center justify-center py-2 text-center">
+        <span class="text-3xl font-bold tracking-tight text-on-surface tabular-nums" id="modal-amount">+0.00 BCT</span>
+        <span class="text-xs text-on-surface-variant mt-1" id="modal-fiat">Kriptografik BCT Varlığı</span>
+      </div>
+
+      <div class="flex flex-col gap-2.5 bg-surface-container-low rounded-2xl p-4 text-xs">
+        <div class="flex items-center justify-between">
+          <span class="text-on-surface-variant">Durum:</span>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+            <span class="text-on-surface font-medium" id="modal-status">Doğrulandı (On-Chain)</span>
+          </div>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-on-surface-variant">Tarih:</span>
+          <span class="text-on-surface font-mono" id="modal-time">--</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-on-surface-variant">Karşı Taraf:</span>
+          <span class="text-on-surface font-mono text-[11px]" id="modal-counterparty">--</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-on-surface-variant">Ağ Ücreti:</span>
+          <span class="text-on-surface font-mono" id="modal-fee">0.00 BCT</span>
+        </div>
+        <div class="flex items-center justify-between pt-1 border-t border-outline-variant/20">
+          <span class="text-on-surface-variant">İşlem Özeti (Hash):</span>
+          <span class="text-primary font-mono text-[11px] truncate max-w-[180px]" id="modal-hash">--</span>
+        </div>
+      </div>
+
+      <button class="w-full h-[46px] rounded-full bg-surface-container-highest hover:bg-surface-variant text-on-surface text-xs font-semibold transition-colors" onclick="closeTxModal()" type="button">
+        Kapat
+      </button>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: AL / PAYLAŞ CÜZDAN BİLGİLERİ (Stitch Modal)                     -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-4" id="receive-modal" onclick="if(event.target===this) closeReceiveModal();">
+    <div class="w-full max-w-[420px] rounded-3xl bg-surface-container p-6 flex flex-col gap-6 shadow-2xl border border-outline-variant/30">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined text-primary text-[20px]">qr_code_2</span>
+          <span class="text-sm font-semibold text-on-surface">Cüzdan Adresiniz</span>
+        </div>
+        <button class="w-8 h-8 rounded-full bg-surface-container-highest hover:bg-surface-variant text-on-surface flex items-center justify-center transition-colors" onclick="closeReceiveModal()" type="button">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <div class="flex flex-col items-center justify-center gap-4 py-2">
+        <!-- QR Placeholder with SVG visual -->
+        <div class="w-44 h-44 rounded-2xl bg-white p-3 flex items-center justify-center shadow-lg" id="qrContainer">
+          <!-- Live QR code will be generated via API or SVG -->
+          <img id="qrImage" class="w-full h-full object-contain" alt="QR Code"/>
+        </div>
+        <span class="text-xs text-on-surface-variant text-center max-w-xs">
+          Bu adrese gönderilen tüm BCT transferleri ve madenci ödülleri anında bakiyenize yansır.
+        </span>
+      </div>
+
+      <div class="p-3 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/30">
+        <span class="text-xs font-mono text-on-surface truncate pr-2" id="modalReceiveAddress">BCT...</span>
+        <button class="px-3 py-1.5 rounded-lg bg-primary-container text-on-primary-container text-xs font-semibold shrink-0" onclick="copyCurrentAddress()">
+          Kopyala
+        </button>
+      </div>
+
+      <button class="w-full h-[46px] rounded-full bg-surface-container-highest hover:bg-surface-variant text-on-surface text-xs font-semibold transition-colors" onclick="closeReceiveModal()" type="button">
+        Tamam
+      </button>
+    </div>
+  </div>
+
+  <!-- TOAST NOTIFICATION (Stitch Floating Pill) -->
+  <div class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-surface-container-highest text-on-surface px-5 py-3 rounded-full text-xs font-medium shadow-2xl flex items-center gap-2.5 translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50 border border-outline-variant/30" id="toast">
+    <span class="material-symbols-outlined text-primary text-[18px]" id="toastIcon">check_circle</span>
+    <span id="toastText">İşlem başarıyla gerçekleşti</span>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- JAVASCRIPT LOGIC & LIVE API WIRING                                        -->
+  <!-- ========================================================================= -->
   <script>
+    // API endpoint configuration
     const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:5000/api/v1'
       : '/api/v1';
 
     let currentAccount = null;
+    let cachedTransactions = [];
     let tempMnemonic = "";
 
-    function toast(msg) {
-      const el = document.getElementById('toast');
-      el.textContent = msg;
-      el.classList.add('show');
-      setTimeout(() => el.classList.remove('show'), 3500);
-    }
-
-    // ── Resilient JSON Fetch Helper ──
-    async function safeFetchJson(url, options = {}) {
-      try {
-        const res = await fetch(url, options);
-        const text = await res.text();
-        if (!text) {
-          return { ok: res.ok, status: res.status, json: null };
-        }
-        try {
-          const json = JSON.parse(text);
-          return { ok: res.ok, status: res.status, json: json };
-        } catch (parseErr) {
-          return { ok: false, status: res.status, errorText: text.slice(0, 160) };
-        }
-      } catch (netErr) {
-        return { ok: false, status: 0, networkError: netErr.message };
-      }
-    }
-
-    function openTab(tabId) {
-      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      
+    // 1. Tab Switching
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
       const target = document.getElementById('tab-' + tabId);
       if (target) target.classList.add('active');
 
-      const tabs = ['send', 'wallet', 'statement', 'explorer', 'nodes', 'api'];
-      const idx = tabs.indexOf(tabId);
-      if (idx !== -1) {
-        document.querySelectorAll('.tab-btn')[idx].classList.add('active');
-      }
+      // Update active nav button styling in sidebar
+      const navButtons = document.querySelectorAll('#sidebar-nav .nav-item');
+      navButtons.forEach(btn => {
+        btn.classList.remove('bg-surface-container-highest', 'text-on-surface', 'font-semibold');
+        btn.classList.add('text-on-surface-variant', 'font-medium');
+      });
 
-      if (tabId === 'statement') loadMyStatement();
-      if (tabId === 'explorer') refreshExplorerData();
-      if (tabId === 'nodes') refreshNodesData();
-      if (tabId === 'api') renderApiDocs();
-    }
+      // Highlight active button
+      navButtons.forEach(btn => {
+        if (btn.getAttribute('onclick')?.includes(tabId)) {
+          btn.classList.add('bg-surface-container-highest', 'text-on-surface', 'font-semibold');
+          btn.classList.remove('text-on-surface-variant', 'font-medium');
+        }
+      });
 
-    function switchExplorerView(view) {
-      document.getElementById('explorerTxsView').style.display = view === 'txs' ? 'block' : 'none';
-      document.getElementById('explorerBlocksView').style.display = view === 'blocks' ? 'block' : 'none';
-      document.getElementById('subtabTxsBtn').classList.toggle('active', view === 'txs');
-      document.getElementById('subtabBlocksBtn').classList.toggle('active', view === 'blocks');
-    }
-
-    function copyAddress() {
-      if (!currentAccount) return toast("No active account connected");
-      navigator.clipboard.writeText(currentAccount.address);
-      toast("Address copied to clipboard!");
-    }
-
-    function copyMnemonicPhrase() {
-      if (!tempMnemonic) return;
-      navigator.clipboard.writeText(tempMnemonic);
-      toast("12 Words copied to clipboard!");
-    }
-
-    function copyActiveMnemonic() {
-      if (!currentAccount || !currentAccount.mnemonic) return toast("No recovery phrase found");
-      navigator.clipboard.writeText(currentAccount.mnemonic);
-      toast("Recovery words copied!");
-    }
-
-    function copyPrivateKey() {
-      if (!currentAccount || !currentAccount.private_key) return toast("No private key found");
-      navigator.clipboard.writeText(currentAccount.private_key);
-      toast("Private key copied!");
-    }
-
-    function togglePkVisibility() {
-      const input = document.getElementById('dispPkInput');
-      if (input.type === 'password') {
-        input.type = 'text';
-      } else {
-        input.type = 'password';
+      if (tabId === 'ag-ve-explorer') {
+        refreshExplorerData();
+      } else if (tabId === 'cuzdanim') {
+        refreshCurrentAccountBalance();
+        refreshPersonalTransactions();
+      } else if (tabId === 'api-docs') {
+        renderApiDocs();
       }
     }
 
-    function confirmMnemonicSaved() {
-      document.getElementById('mnemonicModal').classList.remove('open');
-      toast("Account secured with 12-word seed phrase!");
-      openTab('send');
+    // 2. Toast System
+    function showToast(text, isError = false) {
+      const toast = document.getElementById('toast');
+      const toastText = document.getElementById('toastText');
+      const toastIcon = document.getElementById('toastIcon');
+      toastText.textContent = text;
+      toastIcon.textContent = isError ? 'error' : 'check_circle';
+      toastIcon.className = `material-symbols-outlined text-[18px] ${isError ? 'text-error' : 'text-primary'}`;
+      
+      toast.classList.remove('translate-y-20', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+      setTimeout(() => {
+        toast.classList.remove('translate-y-0', 'opacity-100');
+        toast.classList.add('translate-y-20', 'opacity-0');
+      }, 3000);
     }
 
-    function handleDisconnectWallet() {
-      if (confirm("Disconnect active wallet? Make sure you have your 12 words saved.")) {
-        localStorage.removeItem('locktrace_bank_acc');
-        currentAccount = null;
-        document.getElementById('cardBalance').textContent = '0.00';
-        document.getElementById('cardHolderText').textContent = 'No Wallet Connected';
-        document.getElementById('cardMaskedNum').textContent = '•••• •••• •••• 0000';
-        document.getElementById('keyVaultBox').style.display = 'none';
-        document.getElementById('myStatementList').innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">Connect a wallet to view statements.</div>';
-        toast("Wallet disconnected.");
-        openTab('wallet');
+    // Safe JSON Fetch
+    async function safeFetchJson(url, opts = {}) {
+      try {
+        const res = await fetch(url, opts);
+        const text = await res.text();
+        let json = null;
+        if (text && text.trim().length > 0) {
+          try { json = JSON.parse(text); } catch (e) { json = null; }
+        }
+        return { ok: res.ok, status: res.status, json, text };
+      } catch (err) {
+        return { ok: false, status: 0, error: err.message };
       }
     }
 
-    function calcFee() {
-      const amt = parseFloat(document.getElementById('txAmount').value) || 0;
-      const fee = amt * 0.01;
-      document.getElementById('feeDisplay').textContent = fee.toFixed(8) + " BCT";
+    // 3. Account Storage & Initialization
+    function loadLocalAccount() {
+      const saved = localStorage.getItem('locktrace_account');
+      if (saved) {
+        try {
+          currentAccount = JSON.parse(saved);
+          applyAccountUI(currentAccount);
+          return;
+        } catch (e) {}
+      }
+      // No saved account, prepare create view
+      requestNewMnemonicPreview();
     }
 
-    function renderMnemonicGrid(wordsStr, targetElId) {
-      if (!wordsStr) return;
-      const words = wordsStr.trim().split(/\s+/);
-      const container = document.getElementById(targetElId);
-      if (!container) return;
-      container.innerHTML = words.map((w, i) => `
-        <div class="word-badge">
-          <span class="num">${i + 1}.</span>
-          <span>${w}</span>
-        </div>
-      `).join('');
-    }
-
-    function updateAccountUI(acc) {
+    function saveLocalAccount(acc) {
       currentAccount = acc;
-      localStorage.setItem('locktrace_bank_acc', JSON.stringify(acc));
-      
-      const shortAddr = acc.address.slice(0, 8) + '...' + acc.address.slice(-6);
-      document.getElementById('cardHolderText').textContent = shortAddr;
-      document.getElementById('cardMaskedNum').textContent = '•••• •••• •••• ' + acc.address.slice(-4).toUpperCase();
-      
-      // Update Credentials box fields
-      const addrInput = document.getElementById('dispAddressInput');
-      if (addrInput) addrInput.value = acc.address;
-      const pkInput = document.getElementById('dispPkInput');
-      if (pkInput) pkInput.value = acc.private_key || '';
-
-      // Immediately render known balance
-      if (acc.balance !== undefined && acc.balance !== null) {
-        const bal = Number(acc.balance);
-        document.getElementById('cardBalance').textContent = bal.toLocaleString('en-US', {
-          minimumFractionDigits: 2,
-          maximumFractionDigits: 8
-        });
-      }
-
-      if (acc.mnemonic) {
-        renderMnemonicGrid(acc.mnemonic, 'dispMnemonic');
-        document.getElementById('dispMnemonicWrap').style.display = 'block';
-      } else {
-        document.getElementById('dispMnemonicWrap').style.display = 'none';
-      }
-      
-      document.getElementById('keyVaultBox').style.display = 'block';
-
-      refreshBalance();
-      loadMyStatement();
+      localStorage.setItem('locktrace_account', JSON.stringify(acc));
+      applyAccountUI(acc);
     }
 
-    async function refreshBalance() {
+    function applyAccountUI(acc) {
+      if (!acc) return;
+      const shortAddr = acc.address.slice(0, 8) + '...' + acc.address.slice(-6);
+      document.getElementById('headerAddress').textContent = shortAddr;
+      document.getElementById('modalReceiveAddress').textContent = acc.address;
+      document.getElementById('qrImage').src = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(acc.address)}`;
+
+      refreshCurrentAccountBalance();
+      refreshPersonalTransactions();
+    }
+
+    function copyCurrentAddress() {
+      if (!currentAccount) {
+        showToast("Önce bir cüzdan oluşturun veya içe aktarın.", true);
+        return;
+      }
+      navigator.clipboard.writeText(currentAccount.address);
+      showToast("Cüzdan adresi panoya kopyalandı!");
+    }
+
+    function copyText(str) {
+      navigator.clipboard.writeText(str);
+      showToast("Panoya kopyalandı!");
+    }
+
+    // 4. Refresh Balance
+    async function refreshCurrentAccountBalance() {
       if (!currentAccount) return;
       const res = await safeFetchJson(`${API_BASE}/balance/${currentAccount.address}`);
       if (res.ok && res.json && res.json.success) {
         const bal = Number(res.json.data.balance);
-        document.getElementById('cardBalance').textContent = bal.toLocaleString('en-US', {
+        document.getElementById('cardBalance').textContent = bal.toLocaleString('tr-TR', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 8
         });
-        currentAccount.balance = bal;
-        localStorage.setItem('locktrace_bank_acc', JSON.stringify(currentAccount));
+        document.getElementById('headerMobileBal').textContent = `${bal.toFixed(2)} BCT`;
+        document.getElementById('sendAvailableBal').textContent = `${bal.toFixed(4)} BCT`;
       }
     }
 
-    async function handleCreateWallet() {
-      try {
-        toast("Generating 12-word seed & minting 1.00 BCT bonus...");
-        const res = await safeFetchJson(`${API_BASE}/wallet/create`, { method: 'POST' });
-        if (res.ok && res.json && res.json.success) {
-          updateAccountUI(res.json.data);
-          tempMnemonic = res.json.data.mnemonic;
-          renderMnemonicGrid(tempMnemonic, 'modalWordsGrid');
-          document.getElementById('mnemonicModal').classList.add('open');
-        } else {
-          const msg = res.json?.message || res.errorText || res.networkError || "Account creation failed";
-          toast("Error: " + msg);
+    // 5. Personal Transaction History
+    async function refreshPersonalTransactions() {
+      const container = document.getElementById('tx-list');
+      if (!currentAccount) {
+        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl">Aktif cüzdan bulunamadı. Lütfen "Yeni / İçe Aktar" sekmesinden cüzdan bağlayın.</div>`;
+        return;
+      }
+
+      const res = await safeFetchJson(`${API_BASE}/transactions/${currentAccount.address}`);
+      if (res.ok && res.json && res.json.success && res.json.data.transactions) {
+        cachedTransactions = res.json.data.transactions;
+        renderTransactionList(cachedTransactions);
+      } else {
+        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl">Henüz işlem geçmişi yok. Yeni cüzdan hibesi veya madenci ödülü kazandığınızda burada görünecektir.</div>`;
+      }
+    }
+
+    function renderTransactionList(txs) {
+      const container = document.getElementById('tx-list');
+      if (!txs || txs.length === 0) {
+        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl">Bu cüzdana ait henüz işlem bulunmuyor.</div>`;
+        return;
+      }
+
+      container.innerHTML = txs.map(tx => {
+        const isReceiver = tx.receiver === currentAccount?.address;
+        const isMining = tx.tx_type === 'mining_reward';
+        const isReward = tx.tx_type === 'reward';
+        
+        let icon = 'south_west';
+        let title = 'Gelen Transfer';
+        let amountClass = 'text-primary';
+        let sign = '+';
+        let typeBadge = 'in';
+
+        if (isMining) {
+          icon = 'memory';
+          title = 'Madencilik Ödülü (PoW)';
+          typeBadge = 'mining_reward';
+        } else if (isReward) {
+          icon = 'redeem';
+          title = 'Hoş Geldin Hibesi';
+          typeBadge = 'in';
+        } else if (!isReceiver) {
+          icon = 'north_east';
+          title = 'Giden Transfer';
+          amountClass = 'text-on-surface';
+          sign = '-';
+          typeBadge = 'out';
         }
-      } catch (err) {
-        toast("Creation error: " + err.message);
-      }
+
+        const dateStr = tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString('tr-TR') : 'Tamamlandı';
+        const shortCounterparty = isReceiver 
+          ? (tx.sender ? (tx.sender.length > 12 ? tx.sender.slice(0, 6) + '...' + tx.sender.slice(-4) : tx.sender) : 'BCT Hazine')
+          : (tx.receiver ? (tx.receiver.length > 12 ? tx.receiver.slice(0, 6) + '...' + tx.receiver.slice(-4) : tx.receiver) : 'Bilinmeyen');
+
+        return `
+          <div class="group flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container-high transition-all cursor-pointer border border-outline-variant/20" data-type="${typeBadge}" onclick='openTxDetail(${JSON.stringify(tx).replace(/'/g, "&#39;")})'>
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">${icon}</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-semibold text-on-surface truncate">${title}</span>
+                <div class="flex items-center gap-2 mt-0.5">
+                  <span class="text-[11px] font-mono text-on-surface-variant">${shortCounterparty}</span>
+                  <span class="text-on-surface-variant/40 text-[8px]">•</span>
+                  <span class="text-[11px] text-on-surface-variant">${dateStr}</span>
+                </div>
+              </div>
+            </div>
+            <div class="flex flex-col items-end shrink-0 pl-2">
+              <span class="text-xs ${amountClass} font-semibold font-mono tracking-tight">${sign}${tx.net_amount ?? tx.amount} BCT</span>
+              <div class="flex items-center gap-1 mt-0.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                <span class="text-[10px] text-on-surface-variant">Blok Onaylı</span>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
-    async function handleImportWallet() {
-      const input = document.getElementById('importInput').value.trim();
-      if (!input) return toast("Please enter your 12 words or private key");
+    function filterTransactions(type, btn) {
+      document.querySelectorAll('#filter-bar .filter-tab').forEach(t => {
+        t.classList.remove('bg-surface-container-highest', 'text-on-surface', 'font-semibold', 'shadow-sm');
+        t.classList.add('text-on-surface-variant', 'font-medium');
+      });
+      btn.classList.add('bg-surface-container-highest', 'text-on-surface', 'font-semibold', 'shadow-sm');
+      btn.classList.remove('text-on-surface-variant', 'font-medium');
 
-      const isMnemonic = input.split(/\s+/).length >= 12;
-      const payload = isMnemonic ? { mnemonic: input } : { private_key: input };
-
-      try {
-        toast("Verifying cryptographic credentials...");
-        const res = await safeFetchJson(`${API_BASE}/wallet/import`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload)
-        });
-        if (res.ok && res.json && res.json.success) {
-          updateAccountUI(res.json.data);
-          toast("Account restored! Available: " + res.json.data.balance + " BCT");
-          openTab('send');
+      const items = document.querySelectorAll('#tx-list > div[data-type]');
+      items.forEach(item => {
+        const itemType = item.getAttribute('data-type');
+        if (type === 'all' || itemType === type) {
+          item.style.display = 'flex';
         } else {
-          const msg = res.json?.message || res.errorText || res.networkError || "Restoration failed";
-          toast("Declined: " + msg);
+          item.style.display = 'none';
         }
-      } catch (err) {
-        toast("Restoration error: " + err.message);
+      });
+    }
+
+    // 6. Transaction Detail Modal (Apple Style Drawer)
+    function openTxDetail(tx) {
+      const modal = document.getElementById('tx-modal');
+      const card = document.getElementById('modal-card');
+      const isReceiver = tx.receiver === currentAccount?.address;
+      const isMining = tx.tx_type === 'mining_reward';
+      
+      document.getElementById('modal-title').textContent = isMining ? 'Madencilik Ödülü' : (isReceiver ? 'Gelen Transfer' : 'Giden Transfer');
+      document.getElementById('modal-amount').textContent = `${isReceiver ? '+' : '-'}${tx.net_amount ?? tx.amount} BCT`;
+      document.getElementById('modal-counterparty').textContent = isReceiver ? (tx.sender || 'Hazine') : tx.receiver;
+      document.getElementById('modal-fee').textContent = `${tx.fee ?? 0.0} BCT`;
+      document.getElementById('modal-hash').textContent = tx.tx_hash || 'İşleniyor';
+      document.getElementById('modal-time').textContent = tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString('tr-TR') : 'Yeni';
+      document.getElementById('modal-icon').textContent = isMining ? 'memory' : (isReceiver ? 'south_west' : 'north_east');
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => {
+        card.classList.remove('scale-95', 'opacity-0');
+        card.classList.add('scale-100', 'opacity-100');
+      }, 10);
+    }
+
+    function closeTxModal() {
+      const modal = document.getElementById('tx-modal');
+      const card = document.getElementById('modal-card');
+      card.classList.remove('scale-100', 'opacity-100');
+      card.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }, 150);
+    }
+
+    // 7. Receive Modal
+    function openReceiveModal() {
+      if (!currentAccount) {
+        showToast("Lütfen önce bir cüzdan oluşturun veya içe aktarın.", true);
+        switchTab('yeni-cuzdan');
+        return;
+      }
+      document.getElementById('receive-modal').classList.remove('hidden');
+      document.getElementById('receive-modal').classList.add('flex');
+    }
+
+    function closeReceiveModal() {
+      document.getElementById('receive-modal').classList.remove('flex');
+      document.getElementById('receive-modal').classList.add('hidden');
+    }
+
+    // 8. Send Transfer Logic
+    function updateSendFeePreview() {
+      const val = parseFloat(document.getElementById('sendAmountInput').value) || 0;
+      const fee = round8(val * 0.01);
+      const net = Math.max(0, round8(val - fee));
+      document.getElementById('sendFeePreview').textContent = `${fee.toFixed(8)} BCT`;
+      document.getElementById('sendNetPreview').textContent = `${net.toFixed(8)} BCT`;
+    }
+
+    function setSendPercent(p) {
+      if (!currentAccount) return;
+      const total = parseFloat(document.getElementById('sendAvailableBal').textContent) || 0;
+      const calc = round8(total * p);
+      document.getElementById('sendAmountInput').value = calc > 0 ? calc : '';
+      updateSendFeePreview();
+    }
+
+    async function pasteRecipient() {
+      try {
+        const text = await navigator.clipboard.readText();
+        document.getElementById('sendRecipientInput').value = text.trim();
+        showToast("Adres yapıştırıldı!");
+      } catch (e) {
+        showToast("Panodan okunamadı.", true);
       }
     }
 
-    // ── Resilient Wire Transfer ──
-    async function handleSendMoney() {
-      const errBox = document.getElementById('txErrorAlert');
-      errBox.style.display = 'none';
-
-      if (!currentAccount) return toast("Please connect your account first");
-
-      const recipient = document.getElementById('txRecipient').value.trim();
-      const amount = parseFloat(document.getElementById('txAmount').value);
-
-      if (!recipient) {
-        errBox.textContent = "Please enter beneficiary address.";
-        errBox.style.display = 'block';
+    async function executeSendTransaction() {
+      if (!currentAccount) {
+        showToast("Lütfen önce bir cüzdan oluşturun.", true);
         return;
       }
 
-      if (recipient.toLowerCase() === currentAccount.address.toLowerCase()) {
-        errBox.textContent = "Cannot send funds to your own address.";
-        errBox.style.display = 'block';
+      const recipient = document.getElementById('sendRecipientInput').value.trim();
+      const amount = parseFloat(document.getElementById('sendAmountInput').value);
+
+      if (!recipient || !recipient.startsWith('BCT')) {
+        showToast("Lütfen geçerli bir BCT alıcı adresi girin.", true);
+        return;
+      }
+      if (!amount || amount <= 0) {
+        showToast("Lütfen geçerli bir transfer tutarı girin.", true);
         return;
       }
 
-      if (isNaN(amount) || amount <= 0) {
-        errBox.textContent = "Please specify a valid transfer amount greater than 0.";
-        errBox.style.display = 'block';
-        return;
-      }
-
-      if (currentAccount.balance !== undefined && amount > currentAccount.balance) {
-        errBox.textContent = `Insufficient balance. Available: ${currentAccount.balance} BCT, requested: ${amount} BCT`;
-        errBox.style.display = 'block';
-        return;
-      }
-
-      const btn = document.getElementById('btnSendMoney');
+      const btn = document.getElementById('btnExecuteSend');
+      const btnText = document.getElementById('btnSendText');
       btn.disabled = true;
-      btn.textContent = "Signing & Transmitting...";
+      btnText.textContent = "İşlem İmzalanıyor ve Madencilere İletiliyor...";
 
       try {
-        toast("Cryptographically signing wire transfer...");
         const payload = {
           sender: currentAccount.address,
           receiver: recipient,
-          amount: amount
+          amount: amount,
+          private_key: currentAccount.private_key
         };
-
-        if (currentAccount.mnemonic) {
-          payload.mnemonic = currentAccount.mnemonic;
-        }
-        if (currentAccount.private_key) {
-          payload.private_key = currentAccount.private_key;
-        }
 
         const res = await safeFetchJson(`${API_BASE}/transaction`, {
           method: 'POST',
@@ -1027,536 +1100,358 @@ cd locktrace-blockchain
         });
 
         if (res.ok && res.json && res.json.success) {
-          toast("Transfer confirmed on-chain! 1% fee returned to vault.");
-          document.getElementById('txRecipient').value = '';
-          document.getElementById('txAmount').value = '';
-          calcFee();
-          refreshBalance();
-          loadMyStatement();
-          openTab('statement');
+          showToast(res.json.message || "Transfer başarıyla havuza iletildi!");
+          document.getElementById('sendAmountInput').value = '';
+          document.getElementById('sendRecipientInput').value = '';
+          updateSendFeePreview();
+          refreshCurrentAccountBalance();
+          refreshPersonalTransactions();
+          switchTab('cuzdanim');
         } else {
-          const msg = res.json?.message || res.errorText || res.networkError || "Transaction declined";
-          errBox.textContent = "Transfer Declined: " + msg;
-          errBox.style.display = 'block';
-          toast("Declined: " + msg);
+          showToast(res.json?.message || "Transfer gerçekleştirilemedi.", true);
         }
-      } catch (err) {
-        errBox.textContent = "Transmission error: " + err.message;
-        errBox.style.display = 'block';
-        toast("Network error: " + err.message);
+      } catch (e) {
+        showToast("Ağ hatası: " + e.message, true);
       } finally {
         btn.disabled = false;
-        btn.textContent = "⚡ Authorize & Send Transfer";
+        btnText.textContent = "Transferi Onayla ve İmzala";
       }
     }
 
-    // ── My Account Statement (Wallet-Specific Only!) ──
-    async function loadMyStatement() {
-      const container = document.getElementById('myStatementList');
-      if (!currentAccount) {
-        container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">Connect a wallet to view your personal statements.</div>';
+    // 9. Wallet Create & Import Modes
+    function setWalletMode(mode) {
+      const tabCreate = document.getElementById('tabModeCreate');
+      const tabImport = document.getElementById('tabModeImport');
+      const createBox = document.getElementById('walletCreateContainer');
+      const importBox = document.getElementById('walletImportContainer');
+
+      if (mode === 'create') {
+        tabCreate.className = 'wallet-mode-tab px-5 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all';
+        tabImport.className = 'wallet-mode-tab px-5 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all';
+        createBox.classList.remove('hidden');
+        createBox.classList.add('flex');
+        importBox.classList.remove('flex');
+        importBox.classList.add('hidden');
+      } else {
+        tabImport.className = 'wallet-mode-tab px-5 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all';
+        tabCreate.className = 'wallet-mode-tab px-5 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all';
+        importBox.classList.remove('hidden');
+        importBox.classList.add('flex');
+        createBox.classList.remove('flex');
+        createBox.classList.add('hidden');
+      }
+    }
+
+    function toggleCreateCta() {
+      const checked = document.getElementById('createConfirmCheck').checked;
+      document.getElementById('btnCreateWallet').disabled = !checked;
+    }
+
+    function renderMnemonicGrid(words) {
+      const grid = document.getElementById('seed-grid');
+      const wordList = words.trim().split(/\s+/);
+      grid.innerHTML = wordList.map((w, idx) => `
+        <div class="flex items-center gap-2 bg-surface-container-high hover:bg-surface-container-highest transition-colors px-3 py-2 rounded-lg select-all cursor-pointer">
+          <span class="text-xs text-outline font-mono w-4">${String(idx + 1).padStart(2, '0')}</span>
+          <span class="text-xs text-on-surface font-medium font-mono">${w}</span>
+        </div>
+      `).join('');
+    }
+
+    async function requestNewMnemonicPreview() {
+      // Create a fresh wallet from the server
+      const res = await safeFetchJson(`${API_BASE}/wallet/create`, { method: 'POST' });
+      if (res.ok && res.json && res.json.success) {
+        tempMnemonic = res.json.data.mnemonic;
+        renderMnemonicGrid(tempMnemonic);
+        // Stash pending created account
+        window.pendingCreatedAccount = res.json.data;
+      }
+    }
+
+    function copyMnemonicWords() {
+      if (!tempMnemonic) return;
+      navigator.clipboard.writeText(tempMnemonic);
+      const text = document.getElementById('copyMnemonicText');
+      text.textContent = "Kopyalandı!";
+      showToast("12 kelime panoya kopyalandı! Güvenli bir yerde saklayın.");
+      setTimeout(() => text.textContent = "Kelimeleri Kopyala", 2500);
+    }
+
+    async function requestNewWallet() {
+      if (window.pendingCreatedAccount) {
+        saveLocalAccount(window.pendingCreatedAccount);
+        showToast("Yeni cüzdan başarıyla oluşturuldu! 1.00 BCT Hoş Geldin Hibesi tanımlandı.");
+        switchTab('cuzdanim');
+      } else {
+        const res = await safeFetchJson(`${API_BASE}/wallet/create`, { method: 'POST' });
+        if (res.ok && res.json && res.json.success) {
+          saveLocalAccount(res.json.data);
+          showToast("Yeni cüzdan başarıyla oluşturuldu! 1.00 BCT Hoş Geldin Hibesi tanımlandı.");
+          switchTab('cuzdanim');
+        }
+      }
+    }
+
+    async function executeImportWallet() {
+      const keyOrWords = document.getElementById('importInputKey').value.trim();
+      if (!keyOrWords) {
+        showToast("Lütfen 12 kelimelik ifadeyi veya Private Key'i girin.", true);
         return;
       }
 
-      const res = await safeFetchJson(`${API_BASE}/transactions/${currentAccount.address}`);
-      if (res.ok && res.json && res.json.success && res.json.data.transactions) {
-        const txs = res.json.data.transactions;
-        if (txs.length === 0) {
-          container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">No transaction history for this account yet.</div>';
-          return;
-        }
+      const isWords = keyOrWords.split(/\s+/).length >= 12;
+      const payload = isWords ? { mnemonic: keyOrWords } : { private_key: keyOrWords };
 
-        container.innerHTML = txs.map(t => {
-          const isReward = t.tx_type === 'reward';
-          const isReceived = t.receiver.toLowerCase() === currentAccount.address.toLowerCase();
-          const isSent = t.sender.toLowerCase() === currentAccount.address.toLowerCase();
-
-          let icon = '💸';
-          let cls = 'bubble-send';
-          let title = 'Wire Transfer';
-          let sign = '-';
-          let valCls = 'val-neg';
-          let displayAmt = Number(t.amount).toFixed(4);
-
-          if (isReward) {
-            icon = '🎁';
-            cls = 'bubble-reward';
-            title = 'Welcome Bonus Grant';
-            sign = '+';
-            valCls = 'val-pos';
-            displayAmt = Number(t.amount).toFixed(4);
-          } else if (t.tx_type === 'mining_reward') {
-            icon = '⛏️';
-            cls = 'bubble-reward';
-            title = 'Mining Reward & 50% Fee Share';
-            sign = '+';
-            valCls = 'val-pos';
-            displayAmt = Number(t.amount).toFixed(4);
-          } else if (isReceived) {
-            icon = '📥';
-            cls = 'bubble-receive';
-            title = `Received from ${t.sender.slice(0, 8)}...`;
-            sign = '+';
-            valCls = 'val-pos';
-            displayAmt = Number(t.net_amount || t.amount).toFixed(4);
-          } else if (isSent) {
-            icon = '📤';
-            cls = 'bubble-send';
-            title = `Sent to ${t.receiver.slice(0, 8)}...`;
-            sign = '-';
-            valCls = 'val-neg';
-            displayAmt = Number(t.amount).toFixed(4);
-          }
-
-          return `
-            <div class="tx-row" onclick="inspectTx('${t.tx_hash}')">
-              <div class="tx-info-left">
-                <div class="tx-icon-bubble ${cls}">${icon}</div>
-                <div>
-                  <div class="tx-title">${title}</div>
-                  <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleString()} • Block #${t.block_index}</div>
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div class="tx-val ${valCls}">${sign}${displayAmt} BCT</div>
-                ${isSent && t.fee > 0 ? `<div style="font-size:0.7rem; color:var(--gold);">Fee: ${Number(t.fee).toFixed(4)} BCT</div>` : ''}
-              </div>
-            </div>
-          `;
-        }).join('');
-      } else {
-        container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:1.5rem;">Ledger records synchronized. No transactions found.</div>';
-      }
-    }
-
-    // ── Universal Explorer Search ──
-    async function handleExplorerSearch() {
-      const q = document.getElementById('explorerSearchInput').value.trim();
-      const area = document.getElementById('searchResultArea');
-      if (!q) return;
-
-      area.style.display = 'block';
-      area.innerHTML = '<div style="color:var(--text-muted); padding:1rem; text-align:center;">Searching ledger...</div>';
-
-      const res = await safeFetchJson(`${API_BASE}/explorer/search?q=${encodeURIComponent(q)}`);
-      if (res.ok && res.json && res.json.success) {
-        const type = res.json.data.type;
-        const r = res.json.data.result;
-
-        if (type === 'block') {
-          area.innerHTML = `
-            <div class="detail-card" style="border-color:var(--accent);">
-              <div style="font-weight:800; color:#60a5fa; margin-bottom:0.5rem;">📦 Block #${r.index}</div>
-              <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${r.hash}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Previous Hash:</span><span class="detail-val">${r.previous_hash}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Nonce / PoW:</span><span class="detail-val">${r.nonce}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Timestamp:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
-            </div>
-          `;
-        } else if (type === 'transaction') {
-          area.innerHTML = `
-            <div class="detail-card" style="border-color:var(--emerald);">
-              <div style="font-weight:800; color:var(--emerald); margin-bottom:0.5rem;">💸 Transaction Details</div>
-              <div class="detail-row"><span class="detail-lbl">Tx Hash:</span><span class="detail-val">${r.tx_hash}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Block:</span><span class="detail-val">#${r.block_index} (${r.confirmations} Confirmations)</span></div>
-              <div class="detail-row"><span class="detail-lbl">Sender:</span><span class="detail-val">${r.sender}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Receiver:</span><span class="detail-val">${r.receiver}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Amount:</span><span class="detail-val">${r.amount} BCT</span></div>
-              <div class="detail-row"><span class="detail-lbl">1% Treasury Fee:</span><span class="detail-val" style="color:var(--gold);">${r.fee} BCT</span></div>
-              <div class="detail-row"><span class="detail-lbl">Time:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
-            </div>
-          `;
-        } else if (type === 'address') {
-          area.innerHTML = `
-            <div class="detail-card" style="border-color:var(--gold);">
-              <div style="font-weight:800; color:var(--gold); margin-bottom:0.5rem;">👤 Wallet Ledger Summary</div>
-              <div class="detail-row"><span class="detail-lbl">Address:</span><span class="detail-val">${r.address}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Verified Balance:</span><span class="detail-val" style="color:var(--emerald); font-weight:700;">${r.balance} BCT</span></div>
-              <div class="detail-row"><span class="detail-lbl">Total Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
-            </div>
-          `;
-        }
-      } else {
-        const msg = res.json?.message || res.errorText || `No records found for '${q}'`;
-        area.innerHTML = `<div style="color:#f87171; padding:0.8rem; background:rgba(239,68,68,0.1); border-radius:10px; font-size:0.82rem;">${msg}</div>`;
-      }
-    }
-
-    // ── Refresh Global Explorer ──
-    async function refreshExplorerData() {
-      const [statsRes, txsRes, blocksRes] = await Promise.all([
-        safeFetchJson(`${API_BASE}/stats`),
-        safeFetchJson(`${API_BASE}/transactions/latest?limit=25`),
-        safeFetchJson(`${API_BASE}/blocks/latest?count=15`)
-      ]);
-
-      if (statsRes.ok && statsRes.json && statsRes.json.success) {
-        const s = statsRes.json.data;
-        document.getElementById('expBlocks').textContent = s.total_blocks.toLocaleString('en-US');
-        document.getElementById('expTreasury').textContent = Number(s.treasury_balance).toLocaleString('en-US', { maximumFractionDigits: 4 }) + ' BCT';
-        document.getElementById('expCirculating').textContent = Number(s.circulating_supply).toFixed(4) + ' BCT';
-        document.getElementById('expFees').textContent = Number(s.total_fees_collected).toFixed(4) + ' BCT';
-      }
-
-      if (txsRes.ok && txsRes.json && txsRes.json.success && txsRes.json.data.transactions) {
-        document.getElementById('explorerTxsList').innerHTML = txsRes.json.data.transactions.map(t => {
-          const isReward = t.tx_type === 'reward';
-          const isGenesis = t.tx_type === 'genesis';
-          return `
-            <div class="tx-row" onclick="inspectTx('${t.tx_hash}')">
-              <div class="tx-info-left">
-                <div class="tx-icon-bubble ${isReward ? 'bubble-reward' : (isGenesis ? 'bubble-receive' : 'bubble-send')}">
-                  ${isReward ? '🎁' : (isGenesis ? '🏛️' : '💸')}
-                </div>
-                <div>
-                  <div class="tx-title">${isReward ? 'Welcome Grant' : (isGenesis ? 'Genesis Mint' : 'Public Wire Transfer')}</div>
-                  <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleTimeString()} • Block #${t.block_index}</div>
-                </div>
-              </div>
-              <div style="text-align:right;">
-                <div class="tx-val ${isReward ? 'val-pos' : 'val-neg'}">${isReward ? '+' : ''}${Number(t.amount).toFixed(4)} BCT</div>
-                ${t.fee > 0 ? `<div style="font-size:0.7rem; color:var(--gold);">Fee: ${t.fee.toFixed(4)} BCT</div>` : ''}
-              </div>
-            </div>
-          `;
-        }).join('') || '<div style="color:var(--text-muted); padding:1rem; text-align:center;">No transactions recorded.</div>';
-      }
-
-      if (blocksRes.ok && blocksRes.json && blocksRes.json.success && blocksRes.json.data.blocks) {
-        document.getElementById('explorerBlocksList').innerHTML = blocksRes.json.data.blocks.map(b => `
-          <div class="detail-card" style="margin-bottom:0.75rem; cursor:pointer;" onclick="inspectBlock('${b.index}')">
-            <div style="display:flex; justify-content:space-between; font-weight:800; color:#60a5fa; margin-bottom:0.4rem;">
-              <span>📦 Block #${b.index}</span>
-              <span style="font-size:0.75rem; color:var(--text-muted);">${new Date(b.timestamp * 1000).toLocaleTimeString()}</span>
-            </div>
-            <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${b.hash.slice(0, 16)}...${b.hash.slice(-8)}</span></div>
-            <div class="detail-row"><span class="detail-lbl">Mined By:</span><span class="detail-val" style="color:var(--gold); font-weight:700;">${b.miner ? (b.miner.length > 20 ? b.miner.slice(0, 10) + '...' + b.miner.slice(-6) : b.miner) : 'Genesis-Validator'}</span></div>
-            <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${b.transaction_count} tx</span></div>
-            <div class="detail-row"><span class="detail-lbl">Nonce (PoW):</span><span class="detail-val">${b.nonce}</span></div>
-          </div>
-        `).join('');
-      }
-    }
-
-    function inspectTx(hash) {
-      openTab('explorer');
-      document.getElementById('explorerSearchInput').value = hash;
-      handleExplorerSearch();
-    }
-
-    function inspectBlock(idx) {
-      openTab('explorer');
-      document.getElementById('explorerSearchInput').value = idx;
-      handleExplorerSearch();
-    }
-
-    // ── Nodes & Multi-OS Guide Handlers ──
-    function switchOsGuide(os) {
-      document.getElementById('guideLinux').style.display = os === 'linux' ? 'block' : 'none';
-      document.getElementById('guideMac').style.display = os === 'mac' ? 'block' : 'none';
-      document.getElementById('guideWin').style.display = os === 'win' ? 'block' : 'none';
-      document.getElementById('btnOsLinux').classList.toggle('active', os === 'linux');
-      document.getElementById('btnOsMac').classList.toggle('active', os === 'mac');
-      document.getElementById('btnOsWin').classList.toggle('active', os === 'win');
-    }
-
-    function copySnippet(elementId) {
-      const el = document.getElementById(elementId);
-      if (!el) return;
-      navigator.clipboard.writeText(el.innerText);
-      toast("Node setup commands copied to clipboard!");
-    }
-
-    async function refreshNodesData() {
-      const res = await safeFetchJson(`${API_BASE}/nodes`);
-      const container = document.getElementById('nodesListContainer');
-      if (res.ok && res.json && res.json.success) {
-        const data = res.json.data;
-        document.getElementById('statTotalNodes').textContent = data.total_nodes || 1;
-        document.getElementById('statConsensusStatus').textContent = data.online_nodes + " ONLINE";
-
-        if (!data.nodes || data.nodes.length === 0) {
-          container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:1.5rem;">No active nodes found.</div>';
-          return;
-        }
-
-        container.innerHTML = data.nodes.map(n => {
-          const isGenesis = n.is_genesis;
-          const isOnline = n.status === 'online';
-          const badgeClass = isGenesis ? 'background:rgba(245,158,11,0.15); color:var(--gold); border:1px solid rgba(245,158,11,0.3);' : 'background:rgba(37,99,235,0.15); color:#60a5fa; border:1px solid rgba(37,99,235,0.3);';
-
-          return `
-            <div class="detail-card" style="margin-bottom:0.75rem; border-color:${isGenesis ? 'rgba(245,158,11,0.3)' : 'var(--card-border)'};">
-              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
-                <div>
-                  <div style="font-weight:800; font-size:0.95rem; color:#fff; display:flex; align-items:center; gap:8px;">
-                    <span>${isGenesis ? '🏛️' : '🖥️'} ${n.name}</span>
-                    <span style="font-size:0.68rem; padding:2px 8px; border-radius:999px; ${badgeClass}">
-                      ${n.role}
-                    </span>
-                  </div>
-                  <div style="font-size:0.72rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-top:2px;">
-                    ID: ${n.node_id} • v${n.version}
-                  </div>
-                </div>
-                <div style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:700; color:${isOnline ? 'var(--emerald)' : 'var(--danger)'};">
-                  <div style="width:7px; height:7px; border-radius:50%; background:${isOnline ? 'var(--emerald)' : 'var(--danger)'};"></div>
-                  <span>${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
-                </div>
-              </div>
-
-              <div class="detail-row"><span class="detail-lbl">Geographic Region:</span><span class="detail-val" style="color:#e2e8f0;">📍 ${n.location}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Miner Payout Wallet:</span><span class="detail-val" style="color:var(--gold); font-weight:700;">${n.miner_address ? n.miner_address.slice(0, 10) + '...' + n.miner_address.slice(-6) : 'Genesis Vault'}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Blocks Mined:</span><span class="detail-val" style="color:#60a5fa; font-weight:700;">${n.blocks_mined || 0} blocks</span></div>
-              <div class="detail-row"><span class="detail-lbl">Total Mining Earnings:</span><span class="detail-val" style="color:var(--emerald); font-weight:700;">+${Number(n.total_rewards || 0).toFixed(4)} BCT</span></div>
-              <div class="detail-row"><span class="detail-lbl">P2P Endpoint:</span><span class="detail-val">${n.endpoint}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Consensus Block Height:</span><span class="detail-val" style="color:#60a5fa; font-weight:700;">#${n.block_height}</span></div>
-              <div class="detail-row"><span class="detail-lbl">Last Heartbeat:</span><span class="detail-val">${new Date(n.last_seen * 1000).toLocaleTimeString()}</span></div>
-            </div>
-          `;
-        }).join('');
-      } else {
-        container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:1.5rem;">Unable to load nodes telemetry.</div>';
-      }
-    }
-
-    async function handleQuickNodeAnnounce() {
-      const name = document.getElementById('quickNodeName').value.trim();
-      const loc = document.getElementById('quickNodeLoc').value.trim();
-      if (!name) return toast("Please provide a name for your node");
-
-      const payload = {
-        name: name,
-        location: loc || "Decentralized",
-        role: "Community Peer Node",
-        endpoint: "https://locktrace.space"
-      };
-
-      const res = await safeFetchJson(`${API_BASE}/nodes/register`, {
+      const res = await safeFetchJson(`${API_BASE}/wallet/import`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
 
       if (res.ok && res.json && res.json.success) {
-        toast(`Node '${name}' announced to network!`);
-        document.getElementById('quickNodeName').value = '';
-        document.getElementById('quickNodeLoc').value = '';
-        refreshNodesData();
+        saveLocalAccount(res.json.data);
+        showToast("Cüzdan başarıyla içe aktarıldı ve doğrulandı!");
+        switchTab('cuzdanim');
       } else {
-        toast("Registration error: " + (res.json?.message || "Failed"));
+        showToast(res.json?.message || "Cüzdan içe aktarılamadı. Anahtarınızı kontrol edin.", true);
       }
     }
 
-    // ── Interactive API Documentation ──
-    const API_ENDPOINTS = [
-      {
-        method: 'GET',
-        path: '/health',
-        desc: 'Check blockchain node daemon health, consensus validity, and network version.',
-        curl: `curl -X GET "${window.location.origin}/api/v1/health"`,
-        testable: true,
-        samplePayload: null
-      },
-      {
-        method: 'GET',
-        path: '/stats',
-        desc: 'Returns global macro metrics: 1T total supply, treasury balance, circulating BCT, total blocks, and 1% fees recycled.',
-        curl: `curl -X GET "${window.location.origin}/api/v1/stats"`,
-        testable: true,
-        samplePayload: null
-      },
-      {
-        method: 'POST',
-        path: '/wallet/create',
-        desc: 'Cryptographically generates a 12-word BIP-39 mnemonic seed, derives SECP256k1 keys, and deposits 1.00 BCT welcome bonus.',
-        curl: `curl -X POST "${window.location.origin}/api/v1/wallet/create"`,
-        testable: true,
-        samplePayload: null
-      },
-      {
-        method: 'POST',
-        path: '/wallet/import',
-        desc: 'Restore an account from a 12-word seed phrase or 64-hex private key.',
-        curl: `curl -X POST "${window.location.origin}/api/v1/wallet/import" -H "Content-Type: application/json" -d '{"mnemonic":"stick process eagle life uncover pilot sick aisle inmate visa put doll"}'`,
-        testable: false,
-        samplePayload: null
-      },
-      {
-        method: 'GET',
-        path: '/balance/{address}',
-        desc: 'Calculates mathematically exact available balance directly from immutable on-chain blocks.',
-        curl: `curl -X GET "${window.location.origin}/api/v1/balance/BCT_HAZINE_0000000000000000000000000000000000000000"`,
-        testable: true,
-        execPath: '/balance/BCT_HAZINE_0000000000000000000000000000000000000000'
-      },
-      {
-        method: 'POST',
-        path: '/transaction',
-        desc: 'Executes a cryptographic transfer between accounts with 1% automated treasury redistribution.',
-        curl: `curl -X POST "${window.location.origin}/api/v1/transaction" -H "Content-Type: application/json" -d '{"sender":"BCT...","receiver":"BCT...","amount":1.0,"mnemonic":"..."}'`,
-        testable: false,
-        samplePayload: null
-      },
-      {
-        method: 'GET',
-        path: '/transactions/latest?limit=10',
-        desc: 'Lists the latest confirmed transactions across the entire network.',
-        curl: `curl -X GET "${window.location.origin}/api/v1/transactions/latest?limit=10"`,
-        testable: true,
-        samplePayload: null
-      },
-      {
-        method: 'GET',
-        path: '/blocks/latest?count=10',
-        desc: 'Fetches recent Proof-of-Work mined blocks with transaction count, nonce, and hash.',
-        curl: `curl -X GET "${window.location.origin}/api/v1/blocks/latest?count=10"`,
-        testable: true,
-        samplePayload: null
-      },
-      {
-        method: 'GET',
-        path: '/explorer/search?q={query}',
-        desc: 'Universal ledger search by block number (e.g. 0), 64-hex transaction hash, or BCT address.',
-        curl: `curl -X GET "${window.location.origin}/api/v1/explorer/search?q=0"`,
-        testable: true,
-        execPath: '/explorer/search?q=0'
-      },
-      {
-        method: 'GET',
-        path: '/nodes',
-        desc: 'List all active P2P validator peers, telemetry status, and consensus block heights.',
-        curl: `curl -X GET "${window.location.origin}/api/v1/nodes"`,
-        testable: true,
-        samplePayload: null
-      },
-      {
-        method: 'POST',
-        path: '/nodes/register',
-        desc: 'Register a community node daemon into the decentralized network.',
-        curl: `curl -X POST "${window.location.origin}/api/v1/nodes/register" -H "Content-Type: application/json" -d '{"name":"Stockholm-Node","location":"Sweden","miner_address":"BCT..."}'`,
-        testable: true,
-        samplePayload: { name: "Web-Explorer-Test-Node", location: "Global Cloud" }
-      },
-      {
-        method: 'GET',
-        path: '/mining/job',
-        desc: 'Fetches mining difficulty, pending transaction fees, and potential block rewards.',
-        curl: `curl -X GET "${window.location.origin}/api/v1/mining/job"`,
-        testable: true,
-        samplePayload: null
-      },
-      {
-        method: 'POST',
-        path: '/mine',
-        desc: 'Mine and seal a Proof-of-Work block to earn 50% transaction fee cut + 0.05 BCT block subsidy directly to your wallet.',
-        curl: `curl -X POST "${window.location.origin}/api/v1/mine" -H "Content-Type: application/json" -d '{"miner_address":"BCT7404325cf37316e3c6396ff1eef80c4ef381c27b"}'`,
-        testable: true,
-        samplePayload: { miner_address: "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b" }
+    // 10. Network & Explorer Metrics
+    async function refreshExplorerData() {
+      const [statsRes, txsRes, blocksRes, nodesRes] = await Promise.all([
+        safeFetchJson(`${API_BASE}/stats`),
+        safeFetchJson(`${API_BASE}/transactions/latest?limit=10`),
+        safeFetchJson(`${API_BASE}/blocks/latest?count=10`),
+        safeFetchJson(`${API_BASE}/nodes`)
+      ]);
+
+      if (statsRes.ok && statsRes.json && statsRes.json.success) {
+        const s = statsRes.json.data;
+        document.getElementById('metricCirculating').textContent = Number(s.circulating_supply).toLocaleString('tr-TR', { maximumFractionDigits: 4 });
+        document.getElementById('metricBlocks').textContent = s.total_blocks.toLocaleString('tr-TR');
+        document.getElementById('headerBlockHeight').textContent = `#${s.total_blocks}`;
       }
-    ];
 
-    function renderApiDocs() {
-      const container = document.getElementById('apiEndpointsContainer');
-      const baseEl = document.getElementById('dispApiBaseUrl');
-      if (baseEl) baseEl.textContent = window.location.origin + API_BASE;
-      if (!container || container.children.length > 0) return;
+      if (nodesRes.ok && nodesRes.json && nodesRes.json.success) {
+        const nd = nodesRes.json.data;
+        document.getElementById('metricNodes').textContent = nd.online_nodes || 1;
+        renderNodesCards(nd.nodes || []);
+      }
 
-      container.innerHTML = API_ENDPOINTS.map((ep, idx) => {
-        const isGet = ep.method === 'GET';
-        const cardId = `api_resp_${idx}`;
+      if (blocksRes.ok && blocksRes.json && blocksRes.json.success) {
+        renderFeedBlocks(blocksRes.json.data.blocks || []);
+      }
 
+      if (txsRes.ok && txsRes.json && txsRes.json.success) {
+        renderFeedTransactions(txsRes.json.data.transactions || []);
+      }
+    }
+
+    function renderNodesCards(nodes) {
+      const container = document.getElementById('nodesCardsGrid');
+      if (!nodes || nodes.length === 0) {
+        container.innerHTML = `<div class="p-4 text-xs text-on-surface-variant bg-surface-container-low rounded-xl">Aktif düğüm bulunamadı.</div>`;
+        return;
+      }
+
+      container.innerHTML = nodes.map(n => {
+        const isOnline = n.status === 'ONLINE';
+        const shortMiner = n.miner_address ? `${n.miner_address.slice(0, 8)}...${n.miner_address.slice(-6)}` : 'Hazine Doğrulayıcı';
         return `
-          <div class="api-card">
-            <div class="api-card-header">
-              <div class="api-endpoint-path">
-                <span class="${isGet ? 'badge-get' : 'badge-post'}">${ep.method}</span>
-                <span>/api/v1${ep.path}</span>
+          <div class="bg-surface-container-low rounded-2xl p-4 flex flex-col justify-between gap-4 border border-outline-variant/30 hover:border-outline-variant transition-all">
+            <div class="flex items-start justify-between">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-full bg-surface-container-highest flex items-center justify-center text-primary">
+                  <span class="material-symbols-outlined text-[18px]">dns</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-xs font-bold text-on-surface">${n.name || n.node_id}</span>
+                  <span class="text-[10px] text-on-surface-variant font-mono">${n.region || 'Oracle Mainnet'}</span>
+                </div>
               </div>
-              ${ep.testable ? `<button class="btn-primary" style="width:auto; padding:0.3rem 0.75rem; font-size:0.72rem;" onclick="tryApiLive(${idx})">⚡ Try Live</button>` : ''}
+              <div class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full ${isOnline ? 'bg-primary-container/20 text-primary' : 'bg-surface-container text-outline'} text-[10px] font-semibold">
+                <span class="w-1.5 h-1.5 rounded-full ${isOnline ? 'bg-primary' : 'bg-outline'}"></span>
+                <span>${isOnline ? 'Çevrimiçi' : 'Çevrimdışı'}</span>
+              </div>
             </div>
-            <div class="api-desc">${ep.desc}</div>
-
-            <div class="code-box" style="margin-top:0.6rem;">
-              <pre id="curl_${idx}">${ep.curl}</pre>
-              <button class="btn-copy-code" onclick="copySnippet('curl_${idx}')">📋 Copy</button>
+            <div class="flex flex-col gap-1 text-[11px] font-mono text-on-surface-variant pt-2 border-t border-outline-variant/20">
+              <div class="flex justify-between">
+                <span>Madenci Cüzdanı:</span>
+                <span class="text-on-surface font-semibold">${shortMiner}</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Kazılan Blok:</span>
+                <span class="text-primary font-semibold">${n.blocks_mined || 0} Blok</span>
+              </div>
+              <div class="flex justify-between">
+                <span>Kazanılan Ödül:</span>
+                <span class="text-primary font-semibold">${Number(n.earnings || 0).toFixed(4)} BCT</span>
+              </div>
             </div>
-
-            <div id="${cardId}" class="live-response-box" style="display:none;"></div>
           </div>
         `;
       }).join('');
     }
 
-    function copyApiBase() {
-      navigator.clipboard.writeText(window.location.origin + API_BASE);
-      toast("Base URL copied to clipboard!");
+    function renderFeedBlocks(blocks) {
+      const container = document.getElementById('feedBlocksList');
+      if (!blocks || blocks.length === 0) {
+        container.innerHTML = `<div class="p-4 text-xs text-on-surface-variant bg-surface-container-low rounded-xl">Kayıtlı blok bulunmuyor.</div>`;
+        return;
+      }
+
+      container.innerHTML = blocks.map(b => {
+        const shortHash = b.hash.slice(0, 10) + '...' + b.hash.slice(-8);
+        const shortMiner = b.miner ? (b.miner.length > 12 ? b.miner.slice(0, 6) + '...' + b.miner.slice(-4) : b.miner) : 'Genesis';
+        return `
+          <div class="p-3 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-outline-variant transition-colors text-xs">
+            <div class="flex items-center gap-3">
+              <span class="font-mono font-bold text-primary px-2 py-0.5 rounded bg-primary/10">#${b.index}</span>
+              <div class="flex flex-col">
+                <span class="font-mono text-[11px] text-on-surface truncate max-w-[140px] md:max-w-[200px]">${shortHash}</span>
+                <span class="text-[10px] text-on-surface-variant">Madenci: ${shortMiner}</span>
+              </div>
+            </div>
+            <div class="flex flex-col items-end text-[11px] font-mono">
+              <span class="text-on-surface font-medium">${b.transaction_count} İşlem</span>
+              <span class="text-outline text-[10px]">Nonce: ${b.nonce}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
-    async function tryApiLive(idx) {
-      const ep = API_ENDPOINTS[idx];
-      const targetPath = ep.execPath || ep.path;
-      const respBox = document.getElementById(`api_resp_${idx}`);
-      respBox.style.display = 'block';
-      respBox.textContent = `Sending ${ep.method} request to ${API_BASE}${targetPath}...`;
+    function renderFeedTransactions(txs) {
+      const container = document.getElementById('feedTxsList');
+      if (!txs || txs.length === 0) {
+        container.innerHTML = `<div class="p-4 text-xs text-on-surface-variant bg-surface-container-low rounded-xl">İşlem kaydı yok.</div>`;
+        return;
+      }
 
+      container.innerHTML = txs.map(tx => {
+        const isMining = tx.tx_type === 'mining_reward';
+        const isReward = tx.tx_type === 'reward';
+        const title = isMining ? 'Madenci Ödülü' : (isReward ? 'Cüzdan Hibesi' : 'Transfer');
+        const shortHash = tx.tx_hash ? `${tx.tx_hash.slice(0, 8)}...` : '--';
+        return `
+          <div class="p-3 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-outline-variant transition-colors text-xs">
+            <div class="flex items-center gap-2.5">
+              <span class="material-symbols-outlined text-[16px] text-primary">${isMining ? 'memory' : 'swap_horiz'}</span>
+              <div class="flex flex-col">
+                <span class="font-semibold text-on-surface">${title}</span>
+                <span class="font-mono text-[10px] text-on-surface-variant">${shortHash}</span>
+              </div>
+            </div>
+            <div class="flex flex-col items-end font-mono">
+              <span class="font-bold text-primary">+${tx.net_amount ?? tx.amount} BCT</span>
+              <span class="text-[10px] text-outline">Ücret: ${tx.fee ?? 0}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 11. Live PoW Mining Button
+    async function executeMineBlock() {
+      const btn = document.getElementById('btnMineBlockNow');
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>PoW Bloğu Kazılıyor...</span>`;
+
+      const minerAddr = currentAccount?.address || 'BCT7404325cf37316e3c6396ff1eef80c4ef381c27b';
       try {
-        const opts = { method: ep.method };
-        if (ep.method === 'POST') {
-          opts.headers = { 'Content-Type': 'application/json' };
-          if (ep.samplePayload) {
-            opts.body = JSON.stringify(ep.samplePayload);
-          }
+        const res = await safeFetchJson(`${API_BASE}/mine`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ miner_address: minerAddr, node_id: 'web_portal_miner' })
+        });
+
+        if (res.ok && res.json && res.json.success) {
+          showToast(res.json.message || "Tebrikler! Blok başarıyla kazıldı ve 0.05 BCT ödül hesabınıza yatırıldı.");
+          refreshCurrentAccountBalance();
+          refreshPersonalTransactions();
+          refreshExplorerData();
+        } else {
+          showToast(res.json?.message || "Madencilik işlemi tamamlanamadı.", true);
         }
-
-        const res = await fetch(`${API_BASE}${targetPath}`, opts);
-        const data = await res.json();
-        respBox.textContent = `HTTP ${res.status} ${res.statusText}\n\n` + JSON.stringify(data, null, 2);
-      } catch (err) {
-        respBox.textContent = `Request failed: ${err.message}`;
+      } catch (e) {
+        showToast("Madencilik hatası: " + e.message, true);
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = `<span class="material-symbols-outlined text-[18px]">bolt</span><span>Bloğu Doğrula ve Kaz</span>`;
       }
     }
 
-    // PWA Install
-    let deferredPrompt = null;
-    window.addEventListener('beforeinstallprompt', (e) => {
-      e.preventDefault();
-      deferredPrompt = e;
-      document.getElementById('pwaInstallHeaderBtn').classList.add('visible');
-    });
+    // 12. Explorer Search
+    async function triggerExplorerSearch() {
+      const q = document.getElementById('explorerSearchInput').value.trim();
+      if (!q) return;
 
-    async function triggerPWAInstall() {
-      if (deferredPrompt) {
-        deferredPrompt.prompt();
-        deferredPrompt = null;
+      const res = await safeFetchJson(`${API_BASE}/explorer/search?q=${encodeURIComponent(q)}`);
+      if (res.ok && res.json && res.json.success) {
+        const type = res.json.data.type;
+        const result = res.json.data.result;
+        if (type === 'block') {
+          showToast(`Blok Bulundu: #${result.index} (Madenci: ${result.miner})`);
+        } else if (type === 'transaction') {
+          openTxDetail(result);
+        } else if (type === 'wallet') {
+          showToast(`Cüzdan Bulundu: Bakiye ${result.balance} BCT`);
+        }
       } else {
-        alert("To install LockTrace Bank: Open your browser menu and choose 'Add to Home Screen' or 'Install App'.");
+        showToast(res.json?.message || "Kayıt bulunamadı.", true);
       }
     }
 
-    window.addEventListener('load', () => {
-      if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.register('/sw.js').catch(console.error);
-      }
+    // 13. API Docs Interactive Renderer
+    function renderApiDocs() {
+      const container = document.getElementById('apiCardsContainer');
+      const endpoints = [
+        { method: 'GET', path: '/stats', title: 'Ağ İstatistikleri & Arz', desc: '1 Trilyon toplam arzı ve dolaşımdaki token miktarını listeler.' },
+        { method: 'GET', path: '/mining/job', title: 'Madencilik İşi & Zorluk', desc: 'PoW blok üretim zorluğunu ve biriken madenci ödüllerini döner.' },
+        { method: 'GET', path: '/nodes', title: 'Aktif Ağ Düğümleri', desc: 'Konsensüse bağlı tüm düğümleri ve kazançlarını listeler.' },
+        { method: 'GET', path: '/blocks/latest?count=5', title: 'Son Bloklar', desc: 'Zincire eklenen en son blokları döner.' },
+        { method: 'GET', path: '/transactions/latest?limit=5', title: 'Son İşlemler', desc: 'Ağdaki son onaylanmış transferleri döner.' }
+      ];
 
-      const saved = localStorage.getItem('locktrace_bank_acc');
-      if (saved) {
-        try {
-          updateAccountUI(JSON.parse(saved));
-        } catch (e) {}
-      }
+      container.innerHTML = endpoints.map((ep, idx) => `
+        <div class="bg-surface-container-low rounded-xl p-4 border border-outline-variant/30 flex flex-col gap-3">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2">
+              <span class="px-2 py-0.5 rounded bg-primary/20 text-primary font-mono text-xs font-bold">${ep.method}</span>
+              <span class="font-mono text-xs text-on-surface font-semibold">${ep.path}</span>
+            </div>
+            <button class="px-3 py-1 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-xs text-on-surface font-semibold" onclick="testApiLive('${ep.path}', 'api_resp_${idx}')">
+              Çalıştır
+            </button>
+          </div>
+          <p class="text-xs text-on-surface-variant">${ep.desc}</p>
+          <pre class="bg-surface-container-lowest p-3 rounded-lg text-[11px] font-mono text-primary overflow-x-auto hidden" id="api_resp_${idx}"></pre>
+        </div>
+      `).join('');
+    }
 
+    async function testApiLive(path, boxId) {
+      const box = document.getElementById(boxId);
+      box.classList.remove('hidden');
+      box.textContent = 'İstek gönderiliyor...';
+      const res = await safeFetchJson(`${API_BASE}${path}`);
+      box.textContent = JSON.stringify(res.json || res.text, null, 2);
+    }
+
+    function round8(n) {
+      return Math.round(n * 1e8) / 1e8;
+    }
+
+    // Auto-init on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      loadLocalAccount();
       refreshExplorerData();
       setInterval(() => {
-        refreshBalance();
-        if (document.getElementById('tab-statement').classList.contains('active')) {
-          loadMyStatement();
-        }
-        if (document.getElementById('tab-explorer').classList.contains('active')) {
-          refreshExplorerData();
-        }
-      }, 5000);
+        refreshExplorerData();
+        if (currentAccount) refreshCurrentAccountBalance();
+      }, 12000);
     });
   </script>
 </body>
