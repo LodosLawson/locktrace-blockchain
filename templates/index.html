@@ -1,850 +1,1563 @@
 <!DOCTYPE html>
-<html lang="tr">
+<html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>BlockChainT - Kompakt Blockchain</title>
-    <style>
-        :root {
-            --bg: #0a0e17;
-            --bg2: #111827;
-            --bg3: #1f2937;
-            --accent: #3b82f6;
-            --accent2: #8b5cf6;
-            --green: #10b981;
-            --red: #ef4444;
-            --yellow: #f59e0b;
-            --text: #e5e7eb;
-            --text2: #9ca3af;
-            --border: #374151;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>LockTrace Bank | Decentralized BCT Account & Transparent Explorer</title>
+  
+  <link rel="manifest" href="/manifest.json">
+  <meta name="theme-color" content="#080c14">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="LockTrace">
+  <link rel="apple-touch-icon" href="/icons/icon-192.png">
+  <link rel="icon" type="image/png" href="/icons/icon-192.png">
 
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
 
-        body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            background: var(--bg);
-            color: var(--text);
-            min-height: 100vh;
-        }
+  <style>
+    :root {
+      --bg: #07090e;
+      --bg-surface: #0d121d;
+      --bg-card: rgba(18, 24, 38, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --accent: #2563eb;
+      --accent-glow: rgba(37, 99, 235, 0.35);
+      --emerald: #10b981;
+      --emerald-glow: rgba(16, 185, 129, 0.25);
+      --gold: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --radius-md: 14px;
+      --radius-lg: 20px;
+    }
 
-        /* ── Header ─────────────────────────── */
-        .header {
-            background: linear-gradient(135deg, var(--bg2), var(--bg3));
-            border-bottom: 1px solid var(--border);
-            padding: 1rem 2rem;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-        .header h1 {
-            font-size: 1.5rem;
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-        }
-        .header .chain-status {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-            font-size: 0.85rem;
-            color: var(--text2);
-        }
-        .status-dot {
-            width: 8px; height: 8px; border-radius: 50%;
-            background: var(--green);
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.4; }
-        }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Plus Jakarta Sans', -apple-system, sans-serif;
+    }
 
-        /* ── Layout ─────────────────────────── */
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 1.5rem;
-        }
+    body {
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      padding-bottom: env(safe-area-inset-bottom);
+    }
 
-        /* ── Stats Grid ─────────────────────── */
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 1rem;
-            margin-bottom: 1.5rem;
-        }
-        .stat-card {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.2rem;
-        }
-        .stat-card .label {
-            font-size: 0.75rem;
-            color: var(--text2);
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            margin-bottom: 0.5rem;
-        }
-        .stat-card .value {
-            font-size: 1.4rem;
-            font-weight: 700;
-            color: var(--accent);
-        }
-        .stat-card .value.green { color: var(--green); }
-        .stat-card .value.yellow { color: var(--yellow); }
+    .ambient-glow {
+      position: fixed;
+      top: -120px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 700px;
+      height: 380px;
+      background: radial-gradient(circle, rgba(37, 99, 235, 0.18) 0%, rgba(139, 92, 246, 0.08) 50%, rgba(0, 0, 0, 0) 80%);
+      pointer-events: none;
+      z-index: 0;
+    }
 
-        /* ── Tabs ───────────────────────────── */
-        .tabs {
-            display: flex;
-            gap: 0;
-            border-bottom: 1px solid var(--border);
-            margin-bottom: 1.5rem;
-            overflow-x: auto;
-        }
-        .tab {
-            padding: 0.8rem 1.5rem;
-            cursor: pointer;
-            border-bottom: 2px solid transparent;
-            color: var(--text2);
-            font-size: 0.9rem;
-            transition: all 0.2s;
-            white-space: nowrap;
-        }
-        .tab:hover { color: var(--text); }
-        .tab.active {
-            color: var(--accent);
-            border-bottom-color: var(--accent);
-        }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 60;
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(7, 9, 14, 0.85);
+      border-bottom: 1px solid var(--card-border);
+      padding: 0.85rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
 
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
+    .brand-wrap { display: flex; align-items: center; gap: 0.75rem; }
+    .brand-logo {
+      width: 36px; height: 36px;
+      background: linear-gradient(135deg, #1e293b, #0f172a);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 10px;
+      display: grid; place-items: center;
+    }
+    .brand-title {
+      font-size: 1.15rem; font-weight: 800; letter-spacing: -0.4px; color: #fff;
+    }
+    .brand-title span {
+      background: linear-gradient(135deg, #60a5fa, #a78bfa);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
 
-        /* ── Cards ──────────────────────────── */
-        .card {
-            background: var(--bg2);
-            border: 1px solid var(--border);
-            border-radius: 12px;
-            padding: 1.5rem;
-            margin-bottom: 1.5rem;
-        }
-        .card h3 {
-            font-size: 1.1rem;
-            margin-bottom: 1rem;
-            color: var(--text);
-        }
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; }
+    .status-pill {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.72rem; font-weight: 600;
+      background: rgba(16, 185, 129, 0.12); color: var(--emerald);
+      padding: 0.35rem 0.75rem; border-radius: 999px;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+    }
+    .pulse-dot {
+      width: 6px; height: 6px; background: var(--emerald); border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.4; transform: scale(0.85); }
+    }
 
-        /* ── Forms ──────────────────────────── */
-        .form-group {
-            margin-bottom: 1rem;
-        }
-        .form-group label {
-            display: block;
-            font-size: 0.8rem;
-            color: var(--text2);
-            margin-bottom: 0.3rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        input, textarea {
-            width: 100%;
-            padding: 0.7rem 1rem;
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: var(--text);
-            font-family: 'Courier New', monospace;
-            font-size: 0.85rem;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-        input:focus, textarea:focus {
-            border-color: var(--accent);
-        }
-        textarea { resize: vertical; min-height: 60px; }
+    .btn-install {
+      display: none; align-items: center; gap: 6px;
+      font-size: 0.75rem; font-weight: 700;
+      background: linear-gradient(135deg, #2563eb, #7c3aed);
+      color: #fff; padding: 0.4rem 0.85rem; border-radius: 999px; border: none; cursor: pointer;
+    }
+    .btn-install.visible { display: inline-flex; }
 
-        /* ── Buttons ────────────────────────── */
-        .btn {
-            padding: 0.7rem 1.5rem;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 0.9rem;
-            font-weight: 600;
-            transition: all 0.2s;
-            display: inline-flex;
-            align-items: center;
-            gap: 0.4rem;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, var(--accent), var(--accent2));
-            color: white;
-        }
-        .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
-        .btn-green {
-            background: var(--green);
-            color: white;
-        }
-        .btn-green:hover { opacity: 0.9; }
-        .btn-sm {
-            padding: 0.4rem 0.8rem;
-            font-size: 0.8rem;
-        }
-        .btn-red { background: var(--red); color: white; }
-        .btn-yellow { background: var(--yellow); color: var(--bg); }
+    main {
+      flex: 1; max-width: 860px; width: 100%; margin: 0 auto;
+      padding: 1.25rem; z-index: 1; display: flex; flex-direction: column; gap: 1.25rem;
+    }
 
-        /* ── Wallet Result ──────────────────── */
-        .wallet-result {
-            display: none;
-            background: var(--bg);
-            border: 1px solid var(--green);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-top: 1rem;
-        }
-        .wallet-result.show { display: block; }
-        .wallet-result .key-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 0.5rem 0;
-            border-bottom: 1px solid var(--border);
-        }
-        .wallet-result .key-row:last-child { border-bottom: none; }
-        .wallet-result .key-label {
-            font-size: 0.75rem;
-            color: var(--text2);
-            min-width: 90px;
-        }
-        .wallet-result .key-value {
-            font-family: 'Courier New', monospace;
-            font-size: 0.75rem;
-            color: var(--green);
-            word-break: break-all;
-            flex: 1;
-            margin: 0 0.5rem;
-        }
-        .copy-btn {
-            background: var(--bg3);
-            border: 1px solid var(--border);
-            color: var(--text2);
-            padding: 0.2rem 0.5rem;
-            border-radius: 4px;
-            cursor: pointer;
-            font-size: 0.7rem;
-        }
-        .copy-btn:hover { color: var(--accent); border-color: var(--accent); }
+    /* Bank Card */
+    .bank-card {
+      position: relative;
+      background: linear-gradient(135deg, #182030 0%, #0d121c 60%, #080c14 100%);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: var(--radius-lg);
+      padding: 1.75rem; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      color: #fff; overflow: hidden;
+    }
+    .bank-card::after {
+      content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
+      background: radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
+      pointer-events: none;
+    }
 
-        /* ── Table ──────────────────────────── */
-        .table-wrap { overflow-x: auto; }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-        }
-        th, td {
-            padding: 0.6rem 0.8rem;
-            text-align: left;
-            border-bottom: 1px solid var(--border);
-            font-size: 0.8rem;
-        }
-        th {
-            color: var(--text2);
-            font-weight: 600;
-            text-transform: uppercase;
-            font-size: 0.7rem;
-            letter-spacing: 0.5px;
-        }
-        td { color: var(--text); }
-        tr:hover td { background: var(--bg3); }
+    .card-top {
+      display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.8rem;
+    }
+    .emv-chip {
+      width: 44px; height: 32px; background: linear-gradient(135deg, #fcd34d, #d97706);
+      border-radius: 6px; border: 1px solid rgba(0,0,0,0.3);
+    }
+    .card-brand-label {
+      font-size: 0.75rem; font-weight: 800; letter-spacing: 2px; color: #94a3b8;
+      display: flex; align-items: center; gap: 6px;
+    }
 
-        .addr {
-            font-family: 'Courier New', monospace;
-            font-size: 0.75rem;
-            color: var(--accent);
-        }
-        .amount { font-weight: 600; }
-        .amount.positive { color: var(--green); }
-        .amount.negative { color: var(--red); }
-        .fee { color: var(--yellow); font-size: 0.75rem; }
-        .tx-type {
-            display: inline-block;
-            padding: 0.15rem 0.5rem;
-            border-radius: 4px;
-            font-size: 0.7rem;
-            font-weight: 600;
-        }
-        .tx-type.genesis { background: var(--accent2); color: white; }
-        .tx-type.reward { background: var(--green); color: white; }
-        .tx-type.transfer { background: var(--accent); color: white; }
+    .card-balance-section { margin-bottom: 1.6rem; }
+    .card-balance-label {
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1.5px; color: #94a3b8; margin-bottom: 0.3rem;
+    }
+    .card-balance-num {
+      font-size: 2.6rem; font-weight: 800; letter-spacing: -1px;
+      display: flex; align-items: baseline; gap: 8px;
+    }
+    .card-balance-num .curr { font-size: 1.3rem; color: #60a5fa; font-weight: 700; }
 
-        /* ── Toast ──────────────────────────── */
-        .toast {
-            position: fixed;
-            top: 1rem;
-            right: 1rem;
-            padding: 0.8rem 1.2rem;
-            border-radius: 8px;
-            font-size: 0.85rem;
-            z-index: 1000;
-            transform: translateX(120%);
-            transition: transform 0.3s ease;
-            max-width: 400px;
-        }
-        .toast.show { transform: translateX(0); }
-        .toast.success { background: var(--green); color: white; }
-        .toast.error { background: var(--red); color: white; }
-        .toast.info { background: var(--accent); color: white; }
+    .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+    .card-holder { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; }
+    .card-holder-name {
+      font-size: 0.85rem; font-weight: 700; color: #f1f5f9; margin-top: 2px; cursor: pointer;
+    }
+    .card-acc-num {
+      font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #cbd5e1; letter-spacing: 1px;
+    }
 
-        /* ── Loading ────────────────────────── */
-        .spinner {
-            display: inline-block;
-            width: 16px; height: 16px;
-            border: 2px solid var(--border);
-            border-top-color: var(--accent);
-            border-radius: 50%;
-            animation: spin 0.6s linear infinite;
-        }
-        @keyframes spin { to { transform: rotate(360deg); } }
+    /* Quick Grid */
+    .quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
+    .quick-btn {
+      background: var(--bg-card); border: 1px solid var(--card-border);
+      border-radius: var(--radius-md); padding: 0.9rem 0.5rem;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      color: var(--text); cursor: pointer; transition: all 0.2s;
+    }
+    .quick-btn:hover { background: rgba(30, 41, 59, 0.8); transform: translateY(-2px); }
+    .quick-btn .btn-icon-circle {
+      width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.05);
+      display: grid; place-items: center; font-size: 1.25rem;
+    }
+    .quick-btn span.label { font-size: 0.78rem; font-weight: 700; color: #e2e8f0; }
 
-        /* ── Responsive ─────────────────────── */
-        @media (max-width: 768px) {
-            .container { padding: 1rem; }
-            .stats-grid { grid-template-columns: repeat(2, 1fr); }
-            .header { padding: 0.8rem 1rem; }
-            .header h1 { font-size: 1.2rem; }
-        }
+    /* Tabs */
+    .nav-tabs {
+      display: flex; background: rgba(255, 255, 255, 0.04); padding: 4px; border-radius: var(--radius-md); gap: 4px;
+      overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none;
+    }
+    .nav-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn {
+      flex: 1; text-align: center; padding: 0.7rem 0.8rem; font-size: 0.82rem; font-weight: 700;
+      color: var(--text-muted); border-radius: 10px; cursor: pointer; border: none; background: transparent;
+      white-space: nowrap;
+    }
+    .tab-btn.active { background: var(--accent); color: #fff; }
 
-        /* ── Warning Box ────────────────────── */
-        .warning-box {
-            background: rgba(245, 158, 11, 0.1);
-            border: 1px solid var(--yellow);
-            border-radius: 8px;
-            padding: 0.8rem 1rem;
-            margin-top: 0.8rem;
-            font-size: 0.8rem;
-            color: var(--yellow);
-        }
+    /* Quick Grid */
+    .quick-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.75rem; }
+    @media (min-width: 640px) {
+      .quick-grid { grid-template-columns: repeat(6, 1fr); }
+    }
 
-        .two-col {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 1.5rem;
-        }
-        @media (max-width: 768px) {
-            .two-col { grid-template-columns: 1fr; }
-        }
+    /* Code Box & Badges */
+    .badge-get { background: rgba(16, 185, 129, 0.2); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.4); padding: 2px 7px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    .badge-post { background: rgba(37, 99, 235, 0.2); color: #60a5fa; border: 1px solid rgba(37, 99, 235, 0.4); padding: 2px 7px; border-radius: 6px; font-size: 0.7rem; font-weight: 800; font-family: 'JetBrains Mono', monospace; }
+    
+    .code-box {
+      position: relative; background: #070a10; border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 10px; padding: 0.9rem; margin: 0.5rem 0; overflow-x: auto;
+    }
+    .code-box pre { margin: 0; font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; color: #cbd5e1; line-height: 1.5; }
+    .btn-copy-code {
+      position: absolute; top: 8px; right: 8px; background: rgba(255,255,255,0.08); border: 1px solid rgba(255,255,255,0.15);
+      color: #cbd5e1; font-size: 0.7rem; padding: 0.25rem 0.6rem; border-radius: 6px; cursor: pointer;
+    }
+    .btn-copy-code:hover { background: rgba(255,255,255,0.18); color: #fff; }
 
-        .block-card {
-            background: var(--bg);
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            padding: 1rem;
-            margin-bottom: 0.8rem;
-        }
-        .block-card .block-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 0.5rem;
-        }
-        .block-card .block-index {
-            font-weight: 700;
-            color: var(--accent);
-            font-size: 1rem;
-        }
-        .block-card .block-hash {
-            font-family: 'Courier New', monospace;
-            font-size: 0.7rem;
-            color: var(--text2);
-            word-break: break-all;
-        }
-        .block-card .block-meta {
-            font-size: 0.75rem;
-            color: var(--text2);
-            display: flex;
-            gap: 1rem;
-        }
+    /* API Endpoint Cards */
+    .api-card {
+      background: rgba(0, 0, 0, 0.35); border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 1.1rem; margin-bottom: 0.9rem; transition: border-color 0.2s;
+    }
+    .api-card:hover { border-color: rgba(255, 255, 255, 0.16); }
+    .api-card-header { display: flex; justify-content: space-between; align-items: center; cursor: pointer; }
+    .api-endpoint-path { font-family: 'JetBrains Mono', monospace; font-size: 0.85rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+    .api-desc { font-size: 0.78rem; color: var(--text-muted); margin-top: 6px; line-height: 1.4; }
+    .live-response-box {
+      margin-top: 0.8rem; background: #05070c; border: 1px solid rgba(37, 99, 235, 0.3);
+      border-radius: 8px; padding: 0.8rem; font-family: 'JetBrains Mono', monospace; font-size: 0.75rem;
+      color: #93c5fd; max-height: 220px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    }
 
-        .empty-state {
-            text-align: center;
-            padding: 2rem;
-            color: var(--text2);
-        }
-    </style>
+    /* Panel */
+    .panel {
+      display: none; background: var(--bg-card); border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg); padding: 1.6rem; backdrop-filter: blur(16px);
+    }
+    .panel.active { display: block; }
+
+    .panel-title { font-size: 1.15rem; font-weight: 800; color: #fff; margin-bottom: 0.3rem; }
+    .panel-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.25rem; }
+
+    .form-group { margin-bottom: 1.2rem; }
+    .form-group label {
+      display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.45rem;
+    }
+    input, textarea {
+      width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--card-border);
+      border-radius: 12px; color: #fff; padding: 0.9rem 1.1rem; font-size: 0.95rem; outline: none;
+    }
+    input:focus, textarea:focus { border-color: var(--accent); }
+
+    .btn-primary {
+      width: 100%; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #fff; border: none; border-radius: 12px; padding: 1rem; font-size: 0.95rem; font-weight: 800; cursor: pointer;
+    }
+    .btn-primary:active { transform: scale(0.98); }
+    .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+
+    /* Mnemonic Word Grid */
+    .mnemonic-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 1.2rem 0;
+    }
+    @media (min-width: 640px) {
+      .mnemonic-grid { grid-template-columns: repeat(4, 1fr); }
+    }
+    .word-badge {
+      background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.6rem 0.5rem; border-radius: 8px; font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace; color: #60a5fa; display: flex; align-items: center; gap: 6px;
+    }
+    .word-badge .num { color: #64748b; font-size: 0.7rem; width: 18px; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+      z-index: 100; display: none; place-items: center; padding: 1rem;
+    }
+    .modal-overlay.open { display: grid; }
+    .modal-box {
+      background: #0f172a; border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius-lg); padding: 1.8rem; max-width: 520px; width: 100%;
+      box-shadow: 0 25px 50px rgba(0,0,0,0.8);
+    }
+
+    /* Ledger Rows */
+    .tx-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 0; border-bottom: 1px solid var(--card-border);
+      cursor: pointer; transition: background 0.2s;
+    }
+    .tx-row:hover { background: rgba(255,255,255,0.02); }
+    .tx-row:last-child { border-bottom: none; }
+    .tx-info-left { display: flex; align-items: center; gap: 12px; }
+    .tx-icon-bubble {
+      width: 40px; height: 40px; border-radius: 10px;
+      display: grid; place-items: center; font-size: 1.15rem;
+    }
+    .bubble-reward { background: rgba(16, 185, 129, 0.15); color: var(--emerald); }
+    .bubble-send { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
+    .bubble-receive { background: rgba(37, 99, 235, 0.15); color: #60a5fa; }
+    .tx-title { font-size: 0.88rem; font-weight: 700; color: #fff; }
+    .tx-time { font-size: 0.72rem; color: var(--text-dim); margin-top: 2px; }
+    .tx-val { font-size: 0.95rem; font-weight: 800; }
+    .val-pos { color: var(--emerald); }
+    .val-neg { color: #f87171; }
+
+    /* Explorer Search & Cards */
+    .search-box-wrap {
+      display: flex; gap: 8px; margin-bottom: 1.25rem;
+    }
+    .search-box-wrap input {
+      flex: 1; padding: 0.85rem 1rem; font-size: 0.9rem;
+    }
+    .btn-search {
+      background: var(--accent); color: #fff; border: none;
+      padding: 0 1.4rem; border-radius: 12px; font-weight: 700; cursor: pointer;
+    }
+
+    .explorer-subtabs {
+      display: flex; gap: 8px; margin-bottom: 1rem;
+    }
+    .subtab-btn {
+      padding: 0.4rem 0.9rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+      background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--card-border);
+      cursor: pointer;
+    }
+    .subtab-btn.active {
+      background: rgba(37, 99, 235, 0.2); color: #60a5fa; border-color: rgba(37, 99, 235, 0.4);
+    }
+
+    .detail-card {
+      background: rgba(0, 0, 0, 0.35); border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem;
+    }
+    .detail-row {
+      display: flex; justify-content: space-between; padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.82rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-lbl { color: var(--text-muted); }
+    .detail-val { font-family: 'JetBrains Mono', monospace; color: #fff; word-break: break-all; }
+
+    #toast {
+      position: fixed; bottom: 2rem; left: 50%;
+      transform: translateX(-50%) translateY(100px);
+      background: #1e293b; color: #fff; padding: 0.85rem 1.6rem;
+      border-radius: 999px; font-size: 0.85rem; font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 1px solid var(--card-border);
+      opacity: 0; transition: all 0.3s; z-index: 200; pointer-events: none;
+    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
+  </style>
 </head>
 <body>
+  <div class="ambient-glow"></div>
+  <div id="toast">Notification</div>
 
-<!-- Toast -->
-<div id="toast" class="toast"></div>
+  <!-- 12-Word Recovery Modal -->
+  <div class="modal-overlay" id="mnemonicModal">
+    <div class="modal-box">
+      <div style="font-size:1.3rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
+        <span>🔐 Secret Recovery Phrase</span>
+      </div>
+      <p style="font-size:0.85rem; color:#94a3b8; margin:0.6rem 0 1rem 0; line-height:1.5;">
+        Write down these <strong>12 secret words</strong> in order and store them safely. This phrase is the <strong>only key</strong> to restore your BCT vault if you switch devices.
+      </p>
 
-<!-- Header -->
-<div class="header">
-    <h1>🔗 BlockChainT</h1>
-    <div class="chain-status">
-        <div class="status-dot" id="statusDot"></div>
-        <span id="chainStatus">Bağlanıyor...</span>
+      <div class="mnemonic-grid" id="modalWordsGrid"></div>
+
+      <div style="display:flex; gap:0.75rem; margin-top:1.2rem;">
+        <button class="btn-primary" style="background:#334155; padding:0.75rem;" onclick="copyMnemonicPhrase()">
+          📋 Copy Words
+        </button>
+        <button class="btn-primary btn-success" style="padding:0.75rem;" onclick="confirmMnemonicSaved()">
+          ✓ I Have Saved Them
+        </button>
+      </div>
     </div>
-</div>
+  </div>
 
-<!-- Container -->
-<div class="container">
-
-    <!-- Stats -->
-    <div class="stats-grid" id="statsGrid">
-        <div class="stat-card">
-            <div class="label">Toplam Arz</div>
-            <div class="value" id="statSupply">-</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Hazine Bakiyesi</div>
-            <div class="value yellow" id="statTreasury">-</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Dolaşımdaki</div>
-            <div class="value green" id="statCirculating">-</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Toplam Blok</div>
-            <div class="value" id="statBlocks">-</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Toplam Cüzdan</div>
-            <div class="value" id="statWallets">-</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Toplam İşlem</div>
-            <div class="value" id="statTx">-</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Toplanan Ücret</div>
-            <div class="value yellow" id="statFees">-</div>
-        </div>
-        <div class="stat-card">
-            <div class="label">Zincir Durumu</div>
-            <div class="value green" id="statValid">-</div>
-        </div>
+  <!-- Header -->
+  <header>
+    <div class="brand-wrap">
+      <div class="brand-logo">🛡️</div>
+      <div class="brand-title">LockTrace <span>Bank</span></div>
     </div>
-
-    <!-- Tabs -->
-    <div class="tabs">
-        <div class="tab active" data-tab="wallet">💳 Cüzdan</div>
-        <div class="tab" data-tab="send">📤 Gönder</div>
-        <div class="tab" data-tab="explorer">🔍 Gezgin</div>
-        <div class="tab" data-tab="blocks">📦 Bloklar</div>
-        <div class="tab" data-tab="wallets">👥 Cüzdanlar</div>
+    <div class="header-actions">
+      <button class="btn-install" id="pwaInstallHeaderBtn" onclick="triggerPWAInstall()">
+        📲 Install App
+      </button>
+      <div class="status-pill">
+        <div class="pulse-dot"></div>
+        <span>Oracle Mainnet</span>
+      </div>
     </div>
+  </header>
 
-    <!-- TAB: Cüzdan -->
-    <div class="tab-content active" id="tab-wallet">
-        <div class="two-col">
-            <div class="card">
-                <h3>🆕 Yeni Cüzdan Oluştur</h3>
-                <p style="font-size:0.85rem; color:var(--text2); margin-bottom:1rem;">
-                    Yeni bir BCT cüzdanı oluştur. Otomatik olarak hazineden <strong>1 BCT</strong> ödül alırsın.
-                </p>
-                <button class="btn btn-primary" onclick="createWallet()">
-                    ✨ Cüzdan Oluştur
-                </button>
-                <div id="walletResult" class="wallet-result">
-                    <div class="key-row">
-                        <span class="key-label">Adres:</span>
-                        <span class="key-value" id="walletAddr"></span>
-                        <button class="copy-btn" onclick="copy('walletAddr')">Kopyala</button>
-                    </div>
-                    <div class="key-row">
-                        <span class="key-label">Public Key:</span>
-                        <span class="key-value" id="walletPub"></span>
-                        <button class="copy-btn" onclick="copy('walletPub')">Kopyala</button>
-                    </div>
-                    <div class="key-row">
-                        <span class="key-label">Private Key:</span>
-                        <span class="key-value" id="walletPriv" style="color:var(--red)"></span>
-                        <button class="copy-btn" onclick="copy('walletPriv')">Kopyala</button>
-                    </div>
-                    <div class="warning-box">
-                        ⚠️ Private key'inizi güvenli bir yerde saklayın! Kaybederseniz cüzdanınıza erişemezsiniz.
-                    </div>
-                </div>
-            </div>
-
-            <div class="card">
-                <h3>🔑 Cüzdan İçe Aktar</h3>
-                <p style="font-size:0.85rem; color:var(--text2); margin-bottom:1rem;">
-                    Private key ile mevcut cüzdanınızı geri yükleyin.
-                </p>
-                <div class="form-group">
-                    <label>Private Key</label>
-                    <input type="text" id="importKey" placeholder="Private key'inizi girin...">
-                </div>
-                <button class="btn btn-green" onclick="importWallet()">
-                    📥 İçe Aktar
-                </button>
-                <div id="importResult" class="wallet-result"></div>
-            </div>
+  <main>
+    <!-- Bank Card -->
+    <section class="bank-card">
+      <div class="card-top">
+        <div class="emv-chip"></div>
+        <div class="card-brand-label">
+          <span>LOCKTRACE OBSIDIAN</span>
+          <span style="font-size:1.1rem;">🛜</span>
         </div>
+      </div>
 
-        <!-- Bakiye Sorgula -->
-        <div class="card">
-            <h3>💰 Bakiye Sorgula</h3>
-            <div style="display:flex; gap:0.5rem;">
-                <input type="text" id="balanceAddr" placeholder="BCT adresini girin..." style="flex:1;">
-                <button class="btn btn-primary" onclick="checkBalance()">Sorgula</button>
-            </div>
-            <div id="balanceResult" style="margin-top:0.8rem; font-size:0.9rem;"></div>
+      <div class="card-balance-section">
+        <div class="card-balance-label">Available Balance</div>
+        <div class="card-balance-num">
+          <span id="cardBalance">0.00</span>
+          <span class="curr">BCT</span>
         </div>
+      </div>
+
+      <div class="card-bottom">
+        <div>
+          <div class="card-holder">Account Address</div>
+          <div class="card-holder-name" onclick="copyAddress()" title="Click to copy account ID">
+            <span id="cardHolderText">No Wallet Connected</span>
+            <span>📋</span>
+          </div>
+        </div>
+        <div class="card-acc-num" id="cardMaskedNum">•••• •••• •••• 0000</div>
+      </div>
+    </section>
+
+    <!-- Quick Actions -->
+    <div class="quick-grid">
+      <div class="quick-btn" onclick="openTab('send')">
+        <div class="btn-icon-circle">💸</div>
+        <span class="label">Send</span>
+      </div>
+      <div class="quick-btn" onclick="openTab('wallet')">
+        <div class="btn-icon-circle">🎁</div>
+        <span class="label">New Account</span>
+      </div>
+      <div class="quick-btn" onclick="openTab('statement')">
+        <div class="btn-icon-circle">📜</div>
+        <span class="label">Statement</span>
+      </div>
+      <div class="quick-btn" onclick="openTab('explorer')">
+        <div class="btn-icon-circle">🔍</div>
+        <span class="label">Explorer</span>
+      </div>
+      <div class="quick-btn" onclick="openTab('nodes')">
+        <div class="btn-icon-circle">🌐</div>
+        <span class="label">Nodes</span>
+      </div>
+      <div class="quick-btn" onclick="openTab('api')">
+        <div class="btn-icon-circle">⚡</div>
+        <span class="label">API Docs</span>
+      </div>
     </div>
 
-    <!-- TAB: Gönder -->
-    <div class="tab-content" id="tab-send">
-        <div class="card">
-            <h3>📤 BCT Gönder</h3>
-            <p style="font-size:0.85rem; color:var(--text2); margin-bottom:1rem;">
-                Başka bir cüzdana BCT gönderin. İşlem ücreti: <strong>%1</strong> (hazineye döner).
-            </p>
-            <div class="form-group">
-                <label>Gönderen Adres</label>
-                <input type="text" id="txSender" placeholder="BCT...">
-            </div>
-            <div class="form-group">
-                <label>Private Key (Gönderen)</label>
-                <input type="password" id="txPrivKey" placeholder="İşlemi imzalamak için private key">
-            </div>
-            <div class="form-group">
-                <label>Alıcı Adres</label>
-                <input type="text" id="txReceiver" placeholder="BCT...">
-            </div>
-            <div class="form-group">
-                <label>Miktar (BCT)</label>
-                <input type="number" id="txAmount" placeholder="0.00" step="0.00000001" min="0">
-            </div>
-            <div id="txFeePreview" style="font-size:0.8rem; color:var(--text2); margin-bottom:1rem;"></div>
-            <button class="btn btn-primary" onclick="sendTransaction()">
-                🚀 Gönder
-            </button>
-            <div id="txResult" style="margin-top:1rem;"></div>
-        </div>
+    <!-- Navigation Tabs -->
+    <div class="nav-tabs">
+      <button class="tab-btn active" onclick="openTab('send')">Transfer</button>
+      <button class="tab-btn" onclick="openTab('wallet')">Account</button>
+      <button class="tab-btn" onclick="openTab('statement')">Statement</button>
+      <button class="tab-btn" onclick="openTab('explorer')">Explorer</button>
+      <button class="tab-btn" onclick="openTab('nodes')">Nodes</button>
+      <button class="tab-btn" onclick="openTab('api')">API Docs</button>
     </div>
 
-    <!-- TAB: Gezgin -->
-    <div class="tab-content" id="tab-explorer">
-        <div class="card">
-            <h3>📋 Son İşlemler</h3>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Blok</th>
-                            <th>Tür</th>
-                            <th>Gönderen</th>
-                            <th>Alıcı</th>
-                            <th>Miktar</th>
-                            <th>Ücret</th>
-                            <th>Zaman</th>
-                        </tr>
-                    </thead>
-                    <tbody id="txTable">
-                        <tr><td colspan="7" class="empty-state">Yükleniyor...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
+    <!-- PANEL 1: TRANSFER (SEND) -->
+    <div class="panel active" id="tab-send">
+      <div class="panel-title">Instant Wire Transfer</div>
+      <div class="panel-desc">Cryptographic BCT transfer with 1% automated treasury redistribution.</div>
+
+      <div class="form-group">
+        <label>Beneficiary Address</label>
+        <input type="text" id="txRecipient" placeholder="BCT40hexcharacters...">
+      </div>
+
+      <div class="form-group">
+        <label>Transfer Amount (BCT)</label>
+        <input type="number" id="txAmount" placeholder="0.00" step="0.00000001" min="0.00000001" oninput="calcFee()">
+      </div>
+
+      <div style="background:rgba(0,0,0,0.25); border:1px solid var(--card-border); border-radius:12px; padding:0.85rem 1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; font-size:0.82rem; color:var(--text-muted);">
+        <span>Treasury Fee (1%):</span>
+        <strong id="feeDisplay" style="color:var(--gold);">0.00000000 BCT</strong>
+      </div>
+
+      <div id="txErrorAlert" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:0.85rem; border-radius:10px; font-size:0.82rem; margin-bottom:1rem;"></div>
+
+      <button class="btn-primary" id="btnSendMoney" onclick="handleSendMoney()">
+        ⚡ Authorize & Send Transfer
+      </button>
     </div>
 
-    <!-- TAB: Bloklar -->
-    <div class="tab-content" id="tab-blocks">
-        <div class="card">
-            <h3>📦 Son Bloklar</h3>
-            <div id="blocksContainer">
-                <div class="empty-state">Yükleniyor...</div>
-            </div>
+    <!-- PANEL 2: WALLET & 12-WORDS -->
+    <div class="panel" id="tab-wallet">
+      <div class="panel-title">Open Account & Key Recovery</div>
+      <div class="panel-desc">Create a new vault with 12-word seed phrase or restore an existing one.</div>
+
+      <button class="btn-primary btn-success" style="margin-bottom:1.5rem;" onclick="handleCreateWallet()">
+        🎁 Open New Account (Claim 1.00 BCT Bonus)
+      </button>
+
+      <hr style="border:none; border-top:1px solid var(--card-border); margin:1.5rem 0;">
+
+      <div class="form-group">
+        <label>Restore via 12-Word Seed Phrase or Private Key</label>
+        <textarea id="importInput" rows="3" placeholder="Enter your 12 words separated by spaces, or 64-hex private key..."></textarea>
+      </div>
+      <button class="btn-primary" onclick="handleImportWallet()">
+        🔑 Restore Account
+      </button>
+
+      <!-- Active Wallet Backup & Switch Box -->
+      <div id="keyVaultBox" style="display:none; margin-top:1.5rem; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:1.2rem;">
+        <div style="display:flex; justify-content:space-between; align-items:center;">
+          <div style="font-size:0.85rem; font-weight:800; color:#60a5fa;">🔐 Active Account Credentials</div>
+          <button style="background:rgba(239,68,68,0.2); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:0.3rem 0.7rem; border-radius:6px; font-size:0.75rem; cursor:pointer;" onclick="handleDisconnectWallet()">Disconnect / Switch</button>
         </div>
+
+        <div style="margin-top:0.8rem; font-size:0.75rem; color:var(--text-muted);">
+          <span>Account Address:</span>
+          <div style="display:flex; gap:6px; margin-top:4px;">
+            <input type="text" id="dispAddressInput" readonly style="font-size:0.75rem; padding:0.5rem; font-family:'JetBrains Mono',monospace;">
+            <button class="btn-primary" style="width:auto; padding:0 0.8rem; font-size:0.75rem;" onclick="copyAddress()">Copy</button>
+          </div>
+        </div>
+
+        <div id="dispMnemonicWrap" style="margin-top:0.8rem;">
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">12-Word Recovery Phrase:</div>
+          <div id="dispMnemonic" class="mnemonic-grid" style="margin:0.5rem 0;"></div>
+          <button class="btn-primary" style="background:#334155; padding:0.5rem; font-size:0.8rem;" onclick="copyActiveMnemonic()">
+            📋 Copy Recovery Words
+          </button>
+        </div>
+
+        <div id="dispPkWrap" style="margin-top:0.8rem;">
+          <div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:4px;">64-Hex Private Key:</div>
+          <div style="display:flex; gap:6px;">
+            <input type="password" id="dispPkInput" readonly style="font-size:0.75rem; padding:0.5rem; font-family:'JetBrains Mono',monospace;">
+            <button class="btn-primary" style="background:#334155; width:auto; padding:0 0.8rem; font-size:0.75rem;" onclick="togglePkVisibility()">👁️</button>
+            <button class="btn-primary" style="width:auto; padding:0 0.8rem; font-size:0.75rem;" onclick="copyPrivateKey()">Copy</button>
+          </div>
+        </div>
+      </div>
     </div>
 
-    <!-- TAB: Cüzdanlar -->
-    <div class="tab-content" id="tab-wallets">
-        <div class="card">
-            <h3>👥 Kayıtlı Cüzdanlar</h3>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Adres</th>
-                            <th>Bakiye (BCT)</th>
-                            <th>Oluşturulma</th>
-                        </tr>
-                    </thead>
-                    <tbody id="walletsTable">
-                        <tr><td colspan="3" class="empty-state">Yükleniyor...</td></tr>
-                    </tbody>
-                </table>
-            </div>
+    <!-- PANEL 3: STATEMENT (MY WALLET ONLY) -->
+    <div class="panel" id="tab-statement">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div class="panel-title">My Account Statement</div>
+          <div class="panel-desc">Personal transaction history for your connected vault.</div>
         </div>
+        <button style="background:rgba(255,255,255,0.06); border:1px solid var(--card-border); color:var(--text-muted); padding:0.4rem 0.8rem; border-radius:8px; font-size:0.75rem; cursor:pointer;" onclick="loadMyStatement()">🔄 Refresh</button>
+      </div>
+      <div id="myStatementList">
+        <div style="text-align:center; color:var(--text-muted); padding:2rem; font-size:0.85rem;">
+          Loading account records...
+        </div>
+      </div>
     </div>
-</div>
 
-<script>
-const API = '';
+    <!-- PANEL 4: TRANSPARENT EXPLORER -->
+    <div class="panel" id="tab-explorer">
+      <div class="panel-title">LockTrace On-Chain Explorer</div>
+      <div class="panel-desc">Transparent public verification of Blocks, Transactions, and the 1T Reserve.</div>
 
-// ── Yardımcılar ──────────────────────────────
-function showToast(msg, type = 'info') {
-    const t = document.getElementById('toast');
-    t.textContent = msg;
-    t.className = `toast ${type} show`;
-    setTimeout(() => t.classList.remove('show'), 3500);
-}
+      <!-- Universal Search Bar -->
+      <div class="search-box-wrap">
+        <input type="text" id="explorerSearchInput" placeholder="Search by Block #, Tx Hash, or BCT Address...">
+        <button class="btn-search" onclick="handleExplorerSearch()">Search</button>
+      </div>
 
-function copy(elemId) {
-    const text = document.getElementById(elemId).textContent;
-    navigator.clipboard.writeText(text).then(() => showToast('Kopyalandı!', 'success'));
-}
+      <!-- Search Result Container -->
+      <div id="searchResultArea" style="display:none;"></div>
 
-function shortAddr(addr) {
-    if (!addr || addr.length < 20) return addr;
-    return addr.slice(0, 12) + '...' + addr.slice(-8);
-}
+      <!-- Macro Monetary Policy Proof of Reserve -->
+      <div class="detail-card" style="border-color:rgba(37,99,235,0.3); background:rgba(15,23,42,0.6);">
+        <div style="font-size:0.85rem; font-weight:800; color:#60a5fa; margin-bottom:0.8rem; display:flex; justify-content:space-between;">
+          <span>🏛️ Proof of Reserve (1 Trillion BCT Policy)</span>
+          <span style="color:var(--emerald);">Verified ✓</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-lbl">Total Supply:</span>
+          <span class="detail-val" id="expSupply">1,000,000,000,000 BCT</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-lbl">Treasury Vault Pool:</span>
+          <span class="detail-val" id="expTreasury">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-lbl">Circulating in Accounts:</span>
+          <span class="detail-val" id="expCirculating" style="color:var(--emerald);">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-lbl">1% Fees Recycled to Vault:</span>
+          <span class="detail-val" id="expFees" style="color:var(--gold);">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-lbl">Consensus Block Height:</span>
+          <span class="detail-val" id="expBlocks">-</span>
+        </div>
+      </div>
 
-function formatTime(ts) {
-    return new Date(ts * 1000).toLocaleString('tr-TR');
-}
+      <!-- Explorer View Switcher -->
+      <div class="explorer-subtabs">
+        <button class="subtab-btn active" id="subtabTxsBtn" onclick="switchExplorerView('txs')">Recent Global Transactions</button>
+        <button class="subtab-btn" id="subtabBlocksBtn" onclick="switchExplorerView('blocks')">Latest Mined Blocks</button>
+      </div>
 
-function formatNum(n) {
-    if (n >= 1e9) return (n / 1e9).toFixed(2) + 'B';
-    if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
-    if (n >= 1e3) return (n / 1e3).toFixed(2) + 'K';
-    return Number(n).toFixed(n < 1 ? 8 : 2);
-}
+      <div id="explorerTxsView">
+        <div id="explorerTxsList">Loading transactions...</div>
+      </div>
 
-async function apiCall(endpoint, options = {}) {
-    try {
-        const res = await fetch(API + endpoint, {
-            headers: { 'Content-Type': 'application/json' },
-            ...options
+      <div id="explorerBlocksView" style="display:none;">
+        <div id="explorerBlocksList">Loading blocks...</div>
+      </div>
+    </div>
+
+    <!-- PANEL 5: DECENTRALIZED NETWORK NODES -->
+    <div class="panel" id="tab-nodes">
+      <div style="display:flex; justify-content:space-between; align-items:flex-start;">
+        <div>
+          <div class="panel-title">Decentralized Network Nodes</div>
+          <div class="panel-desc">Live P2P validator peers, archival seed nodes, and community operators.</div>
+        </div>
+        <button style="background:rgba(255,255,255,0.06); border:1px solid var(--card-border); color:var(--text-muted); padding:0.4rem 0.8rem; border-radius:8px; font-size:0.75rem; cursor:pointer;" onclick="refreshNodesData()">🔄 Refresh</button>
+      </div>
+
+      <!-- Network Overview Counters -->
+      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:10px; margin-bottom:1.25rem;">
+        <div class="detail-card" style="margin:0; text-align:center; padding:1.2rem;">
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; letter-spacing:1px;">ACTIVE PEER NODES</div>
+          <div id="statTotalNodes" style="font-size:1.8rem; font-weight:800; color:#60a5fa; margin-top:4px;">1</div>
+        </div>
+        <div class="detail-card" style="margin:0; text-align:center; padding:1.2rem;">
+          <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700; letter-spacing:1px;">NETWORK CONSENSUS</div>
+          <div id="statConsensusStatus" style="font-size:1.8rem; font-weight:800; color:var(--emerald); margin-top:4px;">100% HEALTHY</div>
+        </div>
+      </div>
+
+      <!-- Live Nodes List -->
+      <div style="font-size:0.9rem; font-weight:800; color:#fff; margin-bottom:0.6rem;">🌐 Active Network Nodes</div>
+      <div id="nodesListContainer">
+        <div style="color:var(--text-muted); padding:1.5rem; text-align:center;">Discovering active nodes...</div>
+      </div>
+
+      <hr style="border:none; border-top:1px solid var(--card-border); margin:1.5rem 0;">
+
+      <!-- Run Your Own Node Guide -->
+      <div class="detail-card" style="border-color:rgba(37,99,235,0.4); background:rgba(15,23,42,0.7);">
+        <div style="font-size:1rem; font-weight:800; color:#60a5fa; margin-bottom:0.4rem; display:flex; align-items:center; gap:8px;">
+          <span>🖥️ Run Your Own Node (Linux / macOS / Windows)</span>
+        </div>
+        <p style="font-size:0.82rem; color:var(--text-muted); margin-bottom:1rem; line-height:1.5;">
+          Join the decentralized network! Run an independent node on your local machine or VPS, sync the complete ledger, verify Proof-of-Work blocks locally, and announce your node in real-time.
+        </p>
+
+        <!-- OS Selection Subtabs -->
+        <div class="explorer-subtabs" style="margin-bottom:0.8rem;">
+          <button class="subtab-btn active" id="btnOsLinux" onclick="switchOsGuide('linux')">🐧 Linux</button>
+          <button class="subtab-btn" id="btnOsMac" onclick="switchOsGuide('mac')">🍎 macOS</button>
+          <button class="subtab-btn" id="btnOsWin" onclick="switchOsGuide('win')">🪟 Windows</button>
+        </div>
+
+        <!-- Linux Guide -->
+        <div id="guideLinux" class="os-guide-content">
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Run in Terminal (Ubuntu / Debian / CentOS / Arch):</div>
+          <div class="code-box">
+            <pre id="codeLinux">git clone https://github.com/LodosLawson/locktrace-blockchain.git
+cd locktrace-blockchain
+pip3 install -r requirements.txt
+python3 node_runner.py --name "My-Linux-Node" --location "Istanbul, Turkey"</pre>
+            <button class="btn-copy-code" onclick="copySnippet('codeLinux')">📋 Copy</button>
+          </div>
+        </div>
+
+        <!-- macOS Guide -->
+        <div id="guideMac" class="os-guide-content" style="display:none;">
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Run in Terminal (macOS with Python 3):</div>
+          <div class="code-box">
+            <pre id="codeMac">git clone https://github.com/LodosLawson/locktrace-blockchain.git
+cd locktrace-blockchain
+chmod +x scripts/run_node.sh
+./scripts/run_node.sh</pre>
+            <button class="btn-copy-code" onclick="copySnippet('codeMac')">📋 Copy</button>
+          </div>
+        </div>
+
+        <!-- Windows Guide -->
+        <div id="guideWin" class="os-guide-content" style="display:none;">
+          <div style="font-size:0.75rem; color:#94a3b8; margin-bottom:6px;">Run in Windows PowerShell:</div>
+          <div class="code-box">
+            <pre id="codeWin">git clone https://github.com/LodosLawson/locktrace-blockchain.git
+cd locktrace-blockchain
+.\scripts\run_node.ps1</pre>
+            <button class="btn-copy-code" onclick="copySnippet('codeWin')">📋 Copy</button>
+          </div>
+        </div>
+
+        <!-- Quick Browser Node Announce -->
+        <div style="margin-top:1.2rem; background:rgba(0,0,0,0.3); border:1px solid rgba(255,255,255,0.06); border-radius:10px; padding:0.9rem;">
+          <div style="font-size:0.8rem; font-weight:700; color:#fff; margin-bottom:0.4rem;">⚡ Quick Announce a Node to Network</div>
+          <div style="display:grid; grid-template-columns:1fr 1fr auto; gap:6px;">
+            <input type="text" id="quickNodeName" placeholder="Node Name (e.g. My-Home-Node)" style="font-size:0.8rem; padding:0.6rem;">
+            <input type="text" id="quickNodeLoc" placeholder="Location (e.g. Berlin, Germany)" style="font-size:0.8rem; padding:0.6rem;">
+            <button class="btn-primary" style="width:auto; padding:0 1.2rem; font-size:0.8rem;" onclick="handleQuickNodeAnnounce()">Register Node</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PANEL 6: DEVELOPER REST API DOCUMENTATION -->
+    <div class="panel" id="tab-api">
+      <div class="panel-title">Developer REST API v1 Specification</div>
+      <div class="panel-desc">Interactive cryptographic documentation for wallets, atomic transfers, ledger inspection, and peer telemetry.</div>
+
+      <!-- Base URL box -->
+      <div style="background:rgba(0,0,0,0.4); border:1px solid var(--card-border); border-radius:12px; padding:0.85rem 1rem; margin-bottom:1.25rem; display:flex; justify-content:space-between; align-items:center;">
+        <div>
+          <span style="font-size:0.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:1px; font-weight:700;">Active Base URL</span>
+          <div style="font-family:'JetBrains Mono',monospace; font-size:0.88rem; color:#60a5fa; margin-top:2px;" id="dispApiBaseUrl">/api/v1</div>
+        </div>
+        <button class="btn-primary" style="width:auto; padding:0.4rem 0.8rem; font-size:0.75rem;" onclick="copyApiBase()">📋 Copy Base URL</button>
+      </div>
+
+      <!-- Interactive API Endpoint List -->
+      <div id="apiEndpointsContainer"></div>
+    </div>
+  </main>
+
+  <script>
+    const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+      ? 'http://localhost:5000/api/v1'
+      : '/api/v1';
+
+    let currentAccount = null;
+    let tempMnemonic = "";
+
+    function toast(msg) {
+      const el = document.getElementById('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), 3500);
+    }
+
+    // ── Resilient JSON Fetch Helper ──
+    async function safeFetchJson(url, options = {}) {
+      try {
+        const res = await fetch(url, options);
+        const text = await res.text();
+        if (!text) {
+          return { ok: res.ok, status: res.status, json: null };
+        }
+        try {
+          const json = JSON.parse(text);
+          return { ok: res.ok, status: res.status, json: json };
+        } catch (parseErr) {
+          return { ok: false, status: res.status, errorText: text.slice(0, 160) };
+        }
+      } catch (netErr) {
+        return { ok: false, status: 0, networkError: netErr.message };
+      }
+    }
+
+    function openTab(tabId) {
+      document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      
+      const target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.add('active');
+
+      const tabs = ['send', 'wallet', 'statement', 'explorer', 'nodes', 'api'];
+      const idx = tabs.indexOf(tabId);
+      if (idx !== -1) {
+        document.querySelectorAll('.tab-btn')[idx].classList.add('active');
+      }
+
+      if (tabId === 'statement') loadMyStatement();
+      if (tabId === 'explorer') refreshExplorerData();
+      if (tabId === 'nodes') refreshNodesData();
+      if (tabId === 'api') renderApiDocs();
+    }
+
+    function switchExplorerView(view) {
+      document.getElementById('explorerTxsView').style.display = view === 'txs' ? 'block' : 'none';
+      document.getElementById('explorerBlocksView').style.display = view === 'blocks' ? 'block' : 'none';
+      document.getElementById('subtabTxsBtn').classList.toggle('active', view === 'txs');
+      document.getElementById('subtabBlocksBtn').classList.toggle('active', view === 'blocks');
+    }
+
+    function copyAddress() {
+      if (!currentAccount) return toast("No active account connected");
+      navigator.clipboard.writeText(currentAccount.address);
+      toast("Address copied to clipboard!");
+    }
+
+    function copyMnemonicPhrase() {
+      if (!tempMnemonic) return;
+      navigator.clipboard.writeText(tempMnemonic);
+      toast("12 Words copied to clipboard!");
+    }
+
+    function copyActiveMnemonic() {
+      if (!currentAccount || !currentAccount.mnemonic) return toast("No recovery phrase found");
+      navigator.clipboard.writeText(currentAccount.mnemonic);
+      toast("Recovery words copied!");
+    }
+
+    function copyPrivateKey() {
+      if (!currentAccount || !currentAccount.private_key) return toast("No private key found");
+      navigator.clipboard.writeText(currentAccount.private_key);
+      toast("Private key copied!");
+    }
+
+    function togglePkVisibility() {
+      const input = document.getElementById('dispPkInput');
+      if (input.type === 'password') {
+        input.type = 'text';
+      } else {
+        input.type = 'password';
+      }
+    }
+
+    function confirmMnemonicSaved() {
+      document.getElementById('mnemonicModal').classList.remove('open');
+      toast("Account secured with 12-word seed phrase!");
+      openTab('send');
+    }
+
+    function handleDisconnectWallet() {
+      if (confirm("Disconnect active wallet? Make sure you have your 12 words saved.")) {
+        localStorage.removeItem('locktrace_bank_acc');
+        currentAccount = null;
+        document.getElementById('cardBalance').textContent = '0.00';
+        document.getElementById('cardHolderText').textContent = 'No Wallet Connected';
+        document.getElementById('cardMaskedNum').textContent = '•••• •••• •••• 0000';
+        document.getElementById('keyVaultBox').style.display = 'none';
+        document.getElementById('myStatementList').innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">Connect a wallet to view statements.</div>';
+        toast("Wallet disconnected.");
+        openTab('wallet');
+      }
+    }
+
+    function calcFee() {
+      const amt = parseFloat(document.getElementById('txAmount').value) || 0;
+      const fee = amt * 0.01;
+      document.getElementById('feeDisplay').textContent = fee.toFixed(8) + " BCT";
+    }
+
+    function renderMnemonicGrid(wordsStr, targetElId) {
+      if (!wordsStr) return;
+      const words = wordsStr.trim().split(/\s+/);
+      const container = document.getElementById(targetElId);
+      if (!container) return;
+      container.innerHTML = words.map((w, i) => `
+        <div class="word-badge">
+          <span class="num">${i + 1}.</span>
+          <span>${w}</span>
+        </div>
+      `).join('');
+    }
+
+    function updateAccountUI(acc) {
+      currentAccount = acc;
+      localStorage.setItem('locktrace_bank_acc', JSON.stringify(acc));
+      
+      const shortAddr = acc.address.slice(0, 8) + '...' + acc.address.slice(-6);
+      document.getElementById('cardHolderText').textContent = shortAddr;
+      document.getElementById('cardMaskedNum').textContent = '•••• •••• •••• ' + acc.address.slice(-4).toUpperCase();
+      
+      // Update Credentials box fields
+      const addrInput = document.getElementById('dispAddressInput');
+      if (addrInput) addrInput.value = acc.address;
+      const pkInput = document.getElementById('dispPkInput');
+      if (pkInput) pkInput.value = acc.private_key || '';
+
+      // Immediately render known balance
+      if (acc.balance !== undefined && acc.balance !== null) {
+        const bal = Number(acc.balance);
+        document.getElementById('cardBalance').textContent = bal.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 8
         });
-        return await res.json();
-    } catch (e) {
-        showToast('API hatası: ' + e.message, 'error');
-        return { success: false, message: e.message };
+      }
+
+      if (acc.mnemonic) {
+        renderMnemonicGrid(acc.mnemonic, 'dispMnemonic');
+        document.getElementById('dispMnemonicWrap').style.display = 'block';
+      } else {
+        document.getElementById('dispMnemonicWrap').style.display = 'none';
+      }
+      
+      document.getElementById('keyVaultBox').style.display = 'block';
+
+      refreshBalance();
+      loadMyStatement();
     }
-}
 
-// ── Tab Sistemi ──────────────────────────────
-document.querySelectorAll('.tab').forEach(tab => {
-    tab.addEventListener('click', () => {
-        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-        tab.classList.add('active');
-        document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
-
-        if (tab.dataset.tab === 'explorer') loadTransactions();
-        if (tab.dataset.tab === 'blocks') loadBlocks();
-        if (tab.dataset.tab === 'wallets') loadWallets();
-    });
-});
-
-// ── İstatistikler ────────────────────────────
-async function loadStats() {
-    const res = await apiCall('/api/stats');
-    if (!res.success) return;
-    const d = res.data;
-
-    document.getElementById('statSupply').textContent = d.total_supply_formatted;
-    document.getElementById('statTreasury').textContent = formatNum(d.treasury_balance);
-    document.getElementById('statCirculating').textContent = formatNum(d.circulating_supply);
-    document.getElementById('statBlocks').textContent = d.total_blocks;
-    document.getElementById('statWallets').textContent = d.total_wallets;
-    document.getElementById('statTx').textContent = d.total_transactions;
-    document.getElementById('statFees').textContent = formatNum(d.total_fees_collected);
-    document.getElementById('statValid').textContent = d.chain_valid ? '✓ Geçerli' : '✗ Bozuk';
-    document.getElementById('statValid').style.color = d.chain_valid ? 'var(--green)' : 'var(--red)';
-
-    document.getElementById('chainStatus').textContent = 'Çevrimiçi • Blok #' + (d.total_blocks - 1);
-    document.getElementById('statusDot').style.background = 'var(--green)';
-}
-
-// ── Cüzdan Oluştur ──────────────────────────
-async function createWallet() {
-    const res = await apiCall('/api/wallet/create', { method: 'POST' });
-    if (res.success) {
-        const w = res.wallet;
-        document.getElementById('walletAddr').textContent = w.address;
-        document.getElementById('walletPub').textContent = w.public_key;
-        document.getElementById('walletPriv').textContent = w.private_key;
-        document.getElementById('walletResult').classList.add('show');
-        showToast(res.message, 'success');
-        loadStats();
-    } else {
-        showToast(res.message, 'error');
+    async function refreshBalance() {
+      if (!currentAccount) return;
+      const res = await safeFetchJson(`${API_BASE}/balance/${currentAccount.address}`);
+      if (res.ok && res.json && res.json.success) {
+        const bal = Number(res.json.data.balance);
+        document.getElementById('cardBalance').textContent = bal.toLocaleString('en-US', {
+          minimumFractionDigits: 2,
+          maximumFractionDigits: 8
+        });
+        currentAccount.balance = bal;
+        localStorage.setItem('locktrace_bank_acc', JSON.stringify(currentAccount));
+      }
     }
-}
 
-// ── Cüzdan İçe Aktar ────────────────────────
-async function importWallet() {
-    const key = document.getElementById('importKey').value.trim();
-    if (!key) return showToast('Private key girin', 'error');
+    async function handleCreateWallet() {
+      try {
+        toast("Generating 12-word seed & minting 1.00 BCT bonus...");
+        const res = await safeFetchJson(`${API_BASE}/wallet/create`, { method: 'POST' });
+        if (res.ok && res.json && res.json.success) {
+          updateAccountUI(res.json.data);
+          tempMnemonic = res.json.data.mnemonic;
+          renderMnemonicGrid(tempMnemonic, 'modalWordsGrid');
+          document.getElementById('mnemonicModal').classList.add('open');
+        } else {
+          const msg = res.json?.message || res.errorText || res.networkError || "Account creation failed";
+          toast("Error: " + msg);
+        }
+      } catch (err) {
+        toast("Creation error: " + err.message);
+      }
+    }
 
-    const res = await apiCall('/api/wallet/import', {
+    async function handleImportWallet() {
+      const input = document.getElementById('importInput').value.trim();
+      if (!input) return toast("Please enter your 12 words or private key");
+
+      const isMnemonic = input.split(/\s+/).length >= 12;
+      const payload = isMnemonic ? { mnemonic: input } : { private_key: input };
+
+      try {
+        toast("Verifying cryptographic credentials...");
+        const res = await safeFetchJson(`${API_BASE}/wallet/import`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        if (res.ok && res.json && res.json.success) {
+          updateAccountUI(res.json.data);
+          toast("Account restored! Available: " + res.json.data.balance + " BCT");
+          openTab('send');
+        } else {
+          const msg = res.json?.message || res.errorText || res.networkError || "Restoration failed";
+          toast("Declined: " + msg);
+        }
+      } catch (err) {
+        toast("Restoration error: " + err.message);
+      }
+    }
+
+    // ── Resilient Wire Transfer ──
+    async function handleSendMoney() {
+      const errBox = document.getElementById('txErrorAlert');
+      errBox.style.display = 'none';
+
+      if (!currentAccount) return toast("Please connect your account first");
+
+      const recipient = document.getElementById('txRecipient').value.trim();
+      const amount = parseFloat(document.getElementById('txAmount').value);
+
+      if (!recipient) {
+        errBox.textContent = "Please enter beneficiary address.";
+        errBox.style.display = 'block';
+        return;
+      }
+
+      if (recipient.toLowerCase() === currentAccount.address.toLowerCase()) {
+        errBox.textContent = "Cannot send funds to your own address.";
+        errBox.style.display = 'block';
+        return;
+      }
+
+      if (isNaN(amount) || amount <= 0) {
+        errBox.textContent = "Please specify a valid transfer amount greater than 0.";
+        errBox.style.display = 'block';
+        return;
+      }
+
+      if (currentAccount.balance !== undefined && amount > currentAccount.balance) {
+        errBox.textContent = `Insufficient balance. Available: ${currentAccount.balance} BCT, requested: ${amount} BCT`;
+        errBox.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('btnSendMoney');
+      btn.disabled = true;
+      btn.textContent = "Signing & Transmitting...";
+
+      try {
+        toast("Cryptographically signing wire transfer...");
+        const payload = {
+          sender: currentAccount.address,
+          receiver: recipient,
+          amount: amount
+        };
+
+        if (currentAccount.mnemonic) {
+          payload.mnemonic = currentAccount.mnemonic;
+        }
+        if (currentAccount.private_key) {
+          payload.private_key = currentAccount.private_key;
+        }
+
+        const res = await safeFetchJson(`${API_BASE}/transaction`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok && res.json && res.json.success) {
+          toast("Transfer confirmed on-chain! 1% fee returned to vault.");
+          document.getElementById('txRecipient').value = '';
+          document.getElementById('txAmount').value = '';
+          calcFee();
+          refreshBalance();
+          loadMyStatement();
+          openTab('statement');
+        } else {
+          const msg = res.json?.message || res.errorText || res.networkError || "Transaction declined";
+          errBox.textContent = "Transfer Declined: " + msg;
+          errBox.style.display = 'block';
+          toast("Declined: " + msg);
+        }
+      } catch (err) {
+        errBox.textContent = "Transmission error: " + err.message;
+        errBox.style.display = 'block';
+        toast("Network error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "⚡ Authorize & Send Transfer";
+      }
+    }
+
+    // ── My Account Statement (Wallet-Specific Only!) ──
+    async function loadMyStatement() {
+      const container = document.getElementById('myStatementList');
+      if (!currentAccount) {
+        container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">Connect a wallet to view your personal statements.</div>';
+        return;
+      }
+
+      const res = await safeFetchJson(`${API_BASE}/transactions/${currentAccount.address}`);
+      if (res.ok && res.json && res.json.success && res.json.data.transactions) {
+        const txs = res.json.data.transactions;
+        if (txs.length === 0) {
+          container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:2rem;">No transaction history for this account yet.</div>';
+          return;
+        }
+
+        container.innerHTML = txs.map(t => {
+          const isReward = t.tx_type === 'reward';
+          const isReceived = t.receiver.toLowerCase() === currentAccount.address.toLowerCase();
+          const isSent = t.sender.toLowerCase() === currentAccount.address.toLowerCase();
+
+          let icon = '💸';
+          let cls = 'bubble-send';
+          let title = 'Wire Transfer';
+          let sign = '-';
+          let valCls = 'val-neg';
+          let displayAmt = Number(t.amount).toFixed(4);
+
+          if (isReward) {
+            icon = '🎁';
+            cls = 'bubble-reward';
+            title = 'Welcome Bonus Grant';
+            sign = '+';
+            valCls = 'val-pos';
+            displayAmt = Number(t.amount).toFixed(4);
+          } else if (t.tx_type === 'mining_reward') {
+            icon = '⛏️';
+            cls = 'bubble-reward';
+            title = 'Mining Reward & 50% Fee Share';
+            sign = '+';
+            valCls = 'val-pos';
+            displayAmt = Number(t.amount).toFixed(4);
+          } else if (isReceived) {
+            icon = '📥';
+            cls = 'bubble-receive';
+            title = `Received from ${t.sender.slice(0, 8)}...`;
+            sign = '+';
+            valCls = 'val-pos';
+            displayAmt = Number(t.net_amount || t.amount).toFixed(4);
+          } else if (isSent) {
+            icon = '📤';
+            cls = 'bubble-send';
+            title = `Sent to ${t.receiver.slice(0, 8)}...`;
+            sign = '-';
+            valCls = 'val-neg';
+            displayAmt = Number(t.amount).toFixed(4);
+          }
+
+          return `
+            <div class="tx-row" onclick="inspectTx('${t.tx_hash}')">
+              <div class="tx-info-left">
+                <div class="tx-icon-bubble ${cls}">${icon}</div>
+                <div>
+                  <div class="tx-title">${title}</div>
+                  <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleString()} • Block #${t.block_index}</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div class="tx-val ${valCls}">${sign}${displayAmt} BCT</div>
+                ${isSent && t.fee > 0 ? `<div style="font-size:0.7rem; color:var(--gold);">Fee: ${Number(t.fee).toFixed(4)} BCT</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:1.5rem;">Ledger records synchronized. No transactions found.</div>';
+      }
+    }
+
+    // ── Universal Explorer Search ──
+    async function handleExplorerSearch() {
+      const q = document.getElementById('explorerSearchInput').value.trim();
+      const area = document.getElementById('searchResultArea');
+      if (!q) return;
+
+      area.style.display = 'block';
+      area.innerHTML = '<div style="color:var(--text-muted); padding:1rem; text-align:center;">Searching ledger...</div>';
+
+      const res = await safeFetchJson(`${API_BASE}/explorer/search?q=${encodeURIComponent(q)}`);
+      if (res.ok && res.json && res.json.success) {
+        const type = res.json.data.type;
+        const r = res.json.data.result;
+
+        if (type === 'block') {
+          area.innerHTML = `
+            <div class="detail-card" style="border-color:var(--accent);">
+              <div style="font-weight:800; color:#60a5fa; margin-bottom:0.5rem;">📦 Block #${r.index}</div>
+              <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${r.hash}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Previous Hash:</span><span class="detail-val">${r.previous_hash}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Nonce / PoW:</span><span class="detail-val">${r.nonce}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Timestamp:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
+            </div>
+          `;
+        } else if (type === 'transaction') {
+          area.innerHTML = `
+            <div class="detail-card" style="border-color:var(--emerald);">
+              <div style="font-weight:800; color:var(--emerald); margin-bottom:0.5rem;">💸 Transaction Details</div>
+              <div class="detail-row"><span class="detail-lbl">Tx Hash:</span><span class="detail-val">${r.tx_hash}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Block:</span><span class="detail-val">#${r.block_index} (${r.confirmations} Confirmations)</span></div>
+              <div class="detail-row"><span class="detail-lbl">Sender:</span><span class="detail-val">${r.sender}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Receiver:</span><span class="detail-val">${r.receiver}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Amount:</span><span class="detail-val">${r.amount} BCT</span></div>
+              <div class="detail-row"><span class="detail-lbl">1% Treasury Fee:</span><span class="detail-val" style="color:var(--gold);">${r.fee} BCT</span></div>
+              <div class="detail-row"><span class="detail-lbl">Time:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
+            </div>
+          `;
+        } else if (type === 'address') {
+          area.innerHTML = `
+            <div class="detail-card" style="border-color:var(--gold);">
+              <div style="font-weight:800; color:var(--gold); margin-bottom:0.5rem;">👤 Wallet Ledger Summary</div>
+              <div class="detail-row"><span class="detail-lbl">Address:</span><span class="detail-val">${r.address}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Verified Balance:</span><span class="detail-val" style="color:var(--emerald); font-weight:700;">${r.balance} BCT</span></div>
+              <div class="detail-row"><span class="detail-lbl">Total Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
+            </div>
+          `;
+        }
+      } else {
+        const msg = res.json?.message || res.errorText || `No records found for '${q}'`;
+        area.innerHTML = `<div style="color:#f87171; padding:0.8rem; background:rgba(239,68,68,0.1); border-radius:10px; font-size:0.82rem;">${msg}</div>`;
+      }
+    }
+
+    // ── Refresh Global Explorer ──
+    async function refreshExplorerData() {
+      const [statsRes, txsRes, blocksRes] = await Promise.all([
+        safeFetchJson(`${API_BASE}/stats`),
+        safeFetchJson(`${API_BASE}/transactions/latest?limit=25`),
+        safeFetchJson(`${API_BASE}/blocks/latest?count=15`)
+      ]);
+
+      if (statsRes.ok && statsRes.json && statsRes.json.success) {
+        const s = statsRes.json.data;
+        document.getElementById('expBlocks').textContent = s.total_blocks.toLocaleString('en-US');
+        document.getElementById('expTreasury').textContent = Number(s.treasury_balance).toLocaleString('en-US', { maximumFractionDigits: 4 }) + ' BCT';
+        document.getElementById('expCirculating').textContent = Number(s.circulating_supply).toFixed(4) + ' BCT';
+        document.getElementById('expFees').textContent = Number(s.total_fees_collected).toFixed(4) + ' BCT';
+      }
+
+      if (txsRes.ok && txsRes.json && txsRes.json.success && txsRes.json.data.transactions) {
+        document.getElementById('explorerTxsList').innerHTML = txsRes.json.data.transactions.map(t => {
+          const isReward = t.tx_type === 'reward';
+          const isGenesis = t.tx_type === 'genesis';
+          return `
+            <div class="tx-row" onclick="inspectTx('${t.tx_hash}')">
+              <div class="tx-info-left">
+                <div class="tx-icon-bubble ${isReward ? 'bubble-reward' : (isGenesis ? 'bubble-receive' : 'bubble-send')}">
+                  ${isReward ? '🎁' : (isGenesis ? '🏛️' : '💸')}
+                </div>
+                <div>
+                  <div class="tx-title">${isReward ? 'Welcome Grant' : (isGenesis ? 'Genesis Mint' : 'Public Wire Transfer')}</div>
+                  <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleTimeString()} • Block #${t.block_index}</div>
+                </div>
+              </div>
+              <div style="text-align:right;">
+                <div class="tx-val ${isReward ? 'val-pos' : 'val-neg'}">${isReward ? '+' : ''}${Number(t.amount).toFixed(4)} BCT</div>
+                ${t.fee > 0 ? `<div style="font-size:0.7rem; color:var(--gold);">Fee: ${t.fee.toFixed(4)} BCT</div>` : ''}
+              </div>
+            </div>
+          `;
+        }).join('') || '<div style="color:var(--text-muted); padding:1rem; text-align:center;">No transactions recorded.</div>';
+      }
+
+      if (blocksRes.ok && blocksRes.json && blocksRes.json.success && blocksRes.json.data.blocks) {
+        document.getElementById('explorerBlocksList').innerHTML = blocksRes.json.data.blocks.map(b => `
+          <div class="detail-card" style="margin-bottom:0.75rem; cursor:pointer;" onclick="inspectBlock('${b.index}')">
+            <div style="display:flex; justify-content:space-between; font-weight:800; color:#60a5fa; margin-bottom:0.4rem;">
+              <span>📦 Block #${b.index}</span>
+              <span style="font-size:0.75rem; color:var(--text-muted);">${new Date(b.timestamp * 1000).toLocaleTimeString()}</span>
+            </div>
+            <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${b.hash.slice(0, 16)}...${b.hash.slice(-8)}</span></div>
+            <div class="detail-row"><span class="detail-lbl">Mined By:</span><span class="detail-val" style="color:var(--gold); font-weight:700;">${b.miner ? (b.miner.length > 20 ? b.miner.slice(0, 10) + '...' + b.miner.slice(-6) : b.miner) : 'Genesis-Validator'}</span></div>
+            <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${b.transaction_count} tx</span></div>
+            <div class="detail-row"><span class="detail-lbl">Nonce (PoW):</span><span class="detail-val">${b.nonce}</span></div>
+          </div>
+        `).join('');
+      }
+    }
+
+    function inspectTx(hash) {
+      openTab('explorer');
+      document.getElementById('explorerSearchInput').value = hash;
+      handleExplorerSearch();
+    }
+
+    function inspectBlock(idx) {
+      openTab('explorer');
+      document.getElementById('explorerSearchInput').value = idx;
+      handleExplorerSearch();
+    }
+
+    // ── Nodes & Multi-OS Guide Handlers ──
+    function switchOsGuide(os) {
+      document.getElementById('guideLinux').style.display = os === 'linux' ? 'block' : 'none';
+      document.getElementById('guideMac').style.display = os === 'mac' ? 'block' : 'none';
+      document.getElementById('guideWin').style.display = os === 'win' ? 'block' : 'none';
+      document.getElementById('btnOsLinux').classList.toggle('active', os === 'linux');
+      document.getElementById('btnOsMac').classList.toggle('active', os === 'mac');
+      document.getElementById('btnOsWin').classList.toggle('active', os === 'win');
+    }
+
+    function copySnippet(elementId) {
+      const el = document.getElementById(elementId);
+      if (!el) return;
+      navigator.clipboard.writeText(el.innerText);
+      toast("Node setup commands copied to clipboard!");
+    }
+
+    async function refreshNodesData() {
+      const res = await safeFetchJson(`${API_BASE}/nodes`);
+      const container = document.getElementById('nodesListContainer');
+      if (res.ok && res.json && res.json.success) {
+        const data = res.json.data;
+        document.getElementById('statTotalNodes').textContent = data.total_nodes || 1;
+        document.getElementById('statConsensusStatus').textContent = data.online_nodes + " ONLINE";
+
+        if (!data.nodes || data.nodes.length === 0) {
+          container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:1.5rem;">No active nodes found.</div>';
+          return;
+        }
+
+        container.innerHTML = data.nodes.map(n => {
+          const isGenesis = n.is_genesis;
+          const isOnline = n.status === 'online';
+          const badgeClass = isGenesis ? 'background:rgba(245,158,11,0.15); color:var(--gold); border:1px solid rgba(245,158,11,0.3);' : 'background:rgba(37,99,235,0.15); color:#60a5fa; border:1px solid rgba(37,99,235,0.3);';
+
+          return `
+            <div class="detail-card" style="margin-bottom:0.75rem; border-color:${isGenesis ? 'rgba(245,158,11,0.3)' : 'var(--card-border)'};">
+              <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:0.5rem;">
+                <div>
+                  <div style="font-weight:800; font-size:0.95rem; color:#fff; display:flex; align-items:center; gap:8px;">
+                    <span>${isGenesis ? '🏛️' : '🖥️'} ${n.name}</span>
+                    <span style="font-size:0.68rem; padding:2px 8px; border-radius:999px; ${badgeClass}">
+                      ${n.role}
+                    </span>
+                  </div>
+                  <div style="font-size:0.72rem; color:var(--text-dim); font-family:'JetBrains Mono',monospace; margin-top:2px;">
+                    ID: ${n.node_id} • v${n.version}
+                  </div>
+                </div>
+                <div style="display:flex; align-items:center; gap:6px; font-size:0.72rem; font-weight:700; color:${isOnline ? 'var(--emerald)' : 'var(--danger)'};">
+                  <div style="width:7px; height:7px; border-radius:50%; background:${isOnline ? 'var(--emerald)' : 'var(--danger)'};"></div>
+                  <span>${isOnline ? 'ONLINE' : 'OFFLINE'}</span>
+                </div>
+              </div>
+
+              <div class="detail-row"><span class="detail-lbl">Geographic Region:</span><span class="detail-val" style="color:#e2e8f0;">📍 ${n.location}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Miner Payout Wallet:</span><span class="detail-val" style="color:var(--gold); font-weight:700;">${n.miner_address ? n.miner_address.slice(0, 10) + '...' + n.miner_address.slice(-6) : 'Genesis Vault'}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Blocks Mined:</span><span class="detail-val" style="color:#60a5fa; font-weight:700;">${n.blocks_mined || 0} blocks</span></div>
+              <div class="detail-row"><span class="detail-lbl">Total Mining Earnings:</span><span class="detail-val" style="color:var(--emerald); font-weight:700;">+${Number(n.total_rewards || 0).toFixed(4)} BCT</span></div>
+              <div class="detail-row"><span class="detail-lbl">P2P Endpoint:</span><span class="detail-val">${n.endpoint}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Consensus Block Height:</span><span class="detail-val" style="color:#60a5fa; font-weight:700;">#${n.block_height}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Last Heartbeat:</span><span class="detail-val">${new Date(n.last_seen * 1000).toLocaleTimeString()}</span></div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        container.innerHTML = '<div style="color:var(--text-muted); text-align:center; padding:1.5rem;">Unable to load nodes telemetry.</div>';
+      }
+    }
+
+    async function handleQuickNodeAnnounce() {
+      const name = document.getElementById('quickNodeName').value.trim();
+      const loc = document.getElementById('quickNodeLoc').value.trim();
+      if (!name) return toast("Please provide a name for your node");
+
+      const payload = {
+        name: name,
+        location: loc || "Decentralized",
+        role: "Community Peer Node",
+        endpoint: "https://locktrace.space"
+      };
+
+      const res = await safeFetchJson(`${API_BASE}/nodes/register`, {
         method: 'POST',
-        body: JSON.stringify({ private_key: key })
-    });
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    const div = document.getElementById('importResult');
-    if (res.success) {
-        const w = res.wallet;
-        div.innerHTML = `
-            <div class="key-row">
-                <span class="key-label">Adres:</span>
-                <span class="key-value" style="color:var(--green)">${w.address}</span>
-            </div>
-            <div class="key-row">
-                <span class="key-label">Bakiye:</span>
-                <span class="key-value" style="color:var(--accent)">${res.balance} BCT</span>
-            </div>
-        `;
-        div.classList.add('show');
-        showToast(res.message, 'success');
-        loadStats();
-    } else {
-        div.innerHTML = `<p style="color:var(--red)">${res.message}</p>`;
-        div.classList.add('show');
-        showToast(res.message, 'error');
-    }
-}
-
-// ── Bakiye Sorgula ───────────────────────────
-async function checkBalance() {
-    const addr = document.getElementById('balanceAddr').value.trim();
-    if (!addr) return showToast('Adres girin', 'error');
-
-    const res = await apiCall('/api/balance/' + addr);
-    const div = document.getElementById('balanceResult');
-    if (res.success) {
-        const color = res.exists ? 'var(--green)' : 'var(--red)';
-        div.innerHTML = `
-            <span style="color:${color}; font-weight:700; font-size:1.2rem;">
-                ${formatNum(res.balance)} BCT
-            </span>
-            <span style="color:var(--text2); font-size:0.8rem;">
-                ${res.exists ? '(Kayıtlı cüzdan)' : '(Cüzdan bulunamadı)'}
-            </span>
-        `;
-    }
-}
-
-// ── İşlem Ücreti Önizleme ────────────────────
-document.getElementById('txAmount')?.addEventListener('input', function() {
-    const amount = parseFloat(this.value) || 0;
-    const fee = amount * 0.01;
-    const net = amount - fee;
-    document.getElementById('txFeePreview').innerHTML = amount > 0
-        ? `Alıcı alır: <strong>${net.toFixed(8)} BCT</strong> | Ücret: <strong>${fee.toFixed(8)} BCT</strong> (%1)`
-        : '';
-});
-
-// ── İşlem Gönder ─────────────────────────────
-async function sendTransaction() {
-    const sender = document.getElementById('txSender').value.trim();
-    const privKey = document.getElementById('txPrivKey').value.trim();
-    const receiver = document.getElementById('txReceiver').value.trim();
-    const amount = parseFloat(document.getElementById('txAmount').value);
-
-    if (!sender || !privKey || !receiver || !amount) {
-        return showToast('Tüm alanları doldurun', 'error');
+      if (res.ok && res.json && res.json.success) {
+        toast(`Node '${name}' announced to network!`);
+        document.getElementById('quickNodeName').value = '';
+        document.getElementById('quickNodeLoc').value = '';
+        refreshNodesData();
+      } else {
+        toast("Registration error: " + (res.json?.message || "Failed"));
+      }
     }
 
-    const res = await apiCall('/api/transaction', {
+    // ── Interactive API Documentation ──
+    const API_ENDPOINTS = [
+      {
+        method: 'GET',
+        path: '/health',
+        desc: 'Check blockchain node daemon health, consensus validity, and network version.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/health"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/stats',
+        desc: 'Returns global macro metrics: 1T total supply, treasury balance, circulating BCT, total blocks, and 1% fees recycled.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/stats"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
         method: 'POST',
-        body: JSON.stringify({
-            sender, receiver, amount,
-            private_key: privKey
-        })
+        path: '/wallet/create',
+        desc: 'Cryptographically generates a 12-word BIP-39 mnemonic seed, derives SECP256k1 keys, and deposits 1.00 BCT welcome bonus.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/wallet/create"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'POST',
+        path: '/wallet/import',
+        desc: 'Restore an account from a 12-word seed phrase or 64-hex private key.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/wallet/import" -H "Content-Type: application/json" -d '{"mnemonic":"stick process eagle life uncover pilot sick aisle inmate visa put doll"}'`,
+        testable: false,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/balance/{address}',
+        desc: 'Calculates mathematically exact available balance directly from immutable on-chain blocks.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/balance/BCT_HAZINE_0000000000000000000000000000000000000000"`,
+        testable: true,
+        execPath: '/balance/BCT_HAZINE_0000000000000000000000000000000000000000'
+      },
+      {
+        method: 'POST',
+        path: '/transaction',
+        desc: 'Executes a cryptographic transfer between accounts with 1% automated treasury redistribution.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/transaction" -H "Content-Type: application/json" -d '{"sender":"BCT...","receiver":"BCT...","amount":1.0,"mnemonic":"..."}'`,
+        testable: false,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/transactions/latest?limit=10',
+        desc: 'Lists the latest confirmed transactions across the entire network.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/transactions/latest?limit=10"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/blocks/latest?count=10',
+        desc: 'Fetches recent Proof-of-Work mined blocks with transaction count, nonce, and hash.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/blocks/latest?count=10"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'GET',
+        path: '/explorer/search?q={query}',
+        desc: 'Universal ledger search by block number (e.g. 0), 64-hex transaction hash, or BCT address.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/explorer/search?q=0"`,
+        testable: true,
+        execPath: '/explorer/search?q=0'
+      },
+      {
+        method: 'GET',
+        path: '/nodes',
+        desc: 'List all active P2P validator peers, telemetry status, and consensus block heights.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/nodes"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'POST',
+        path: '/nodes/register',
+        desc: 'Register a community node daemon into the decentralized network.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/nodes/register" -H "Content-Type: application/json" -d '{"name":"Stockholm-Node","location":"Sweden","miner_address":"BCT..."}'`,
+        testable: true,
+        samplePayload: { name: "Web-Explorer-Test-Node", location: "Global Cloud" }
+      },
+      {
+        method: 'GET',
+        path: '/mining/job',
+        desc: 'Fetches mining difficulty, pending transaction fees, and potential block rewards.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/mining/job"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'POST',
+        path: '/mine',
+        desc: 'Mine and seal a Proof-of-Work block to earn 50% transaction fee cut + 0.05 BCT block subsidy directly to your wallet.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/mine" -H "Content-Type: application/json" -d '{"miner_address":"BCT7404325cf37316e3c6396ff1eef80c4ef381c27b"}'`,
+        testable: true,
+        samplePayload: { miner_address: "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b" }
+      }
+    ];
+
+    function renderApiDocs() {
+      const container = document.getElementById('apiEndpointsContainer');
+      const baseEl = document.getElementById('dispApiBaseUrl');
+      if (baseEl) baseEl.textContent = window.location.origin + API_BASE;
+      if (!container || container.children.length > 0) return;
+
+      container.innerHTML = API_ENDPOINTS.map((ep, idx) => {
+        const isGet = ep.method === 'GET';
+        const cardId = `api_resp_${idx}`;
+
+        return `
+          <div class="api-card">
+            <div class="api-card-header">
+              <div class="api-endpoint-path">
+                <span class="${isGet ? 'badge-get' : 'badge-post'}">${ep.method}</span>
+                <span>/api/v1${ep.path}</span>
+              </div>
+              ${ep.testable ? `<button class="btn-primary" style="width:auto; padding:0.3rem 0.75rem; font-size:0.72rem;" onclick="tryApiLive(${idx})">⚡ Try Live</button>` : ''}
+            </div>
+            <div class="api-desc">${ep.desc}</div>
+
+            <div class="code-box" style="margin-top:0.6rem;">
+              <pre id="curl_${idx}">${ep.curl}</pre>
+              <button class="btn-copy-code" onclick="copySnippet('curl_${idx}')">📋 Copy</button>
+            </div>
+
+            <div id="${cardId}" class="live-response-box" style="display:none;"></div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function copyApiBase() {
+      navigator.clipboard.writeText(window.location.origin + API_BASE);
+      toast("Base URL copied to clipboard!");
+    }
+
+    async function tryApiLive(idx) {
+      const ep = API_ENDPOINTS[idx];
+      const targetPath = ep.execPath || ep.path;
+      const respBox = document.getElementById(`api_resp_${idx}`);
+      respBox.style.display = 'block';
+      respBox.textContent = `Sending ${ep.method} request to ${API_BASE}${targetPath}...`;
+
+      try {
+        const opts = { method: ep.method };
+        if (ep.method === 'POST') {
+          opts.headers = { 'Content-Type': 'application/json' };
+          if (ep.samplePayload) {
+            opts.body = JSON.stringify(ep.samplePayload);
+          }
+        }
+
+        const res = await fetch(`${API_BASE}${targetPath}`, opts);
+        const data = await res.json();
+        respBox.textContent = `HTTP ${res.status} ${res.statusText}\n\n` + JSON.stringify(data, null, 2);
+      } catch (err) {
+        respBox.textContent = `Request failed: ${err.message}`;
+      }
+    }
+
+    // PWA Install
+    let deferredPrompt = null;
+    window.addEventListener('beforeinstallprompt', (e) => {
+      e.preventDefault();
+      deferredPrompt = e;
+      document.getElementById('pwaInstallHeaderBtn').classList.add('visible');
     });
 
-    const div = document.getElementById('txResult');
-    if (res.success) {
-        const tx = res.transaction;
-        div.innerHTML = `
-            <div style="background:var(--bg); border:1px solid var(--green); border-radius:8px; padding:1rem;">
-                <p style="color:var(--green); font-weight:700; margin-bottom:0.5rem;">✓ ${res.message}</p>
-                <p style="font-size:0.8rem; color:var(--text2);">
-                    TX Hash: <span class="addr">${tx.tx_hash}</span>
-                </p>
-            </div>
-        `;
-        showToast(res.message, 'success');
-        loadStats();
-    } else {
-        div.innerHTML = `<p style="color:var(--red);">✗ ${res.message}</p>`;
-        showToast(res.message, 'error');
+    async function triggerPWAInstall() {
+      if (deferredPrompt) {
+        deferredPrompt.prompt();
+        deferredPrompt = null;
+      } else {
+        alert("To install LockTrace Bank: Open your browser menu and choose 'Add to Home Screen' or 'Install App'.");
+      }
     }
-}
 
-// ── İşlem Listesi ────────────────────────────
-async function loadTransactions() {
-    const res = await apiCall('/api/transactions/latest?limit=50');
-    const tbody = document.getElementById('txTable');
-    if (!res.success || !res.transactions.length) {
-        tbody.innerHTML = '<tr><td colspan="7" class="empty-state">Henüz işlem yok</td></tr>';
-        return;
-    }
-    tbody.innerHTML = res.transactions.map(tx => `
-        <tr>
-            <td>#${tx.block_index}</td>
-            <td><span class="tx-type ${tx.tx_type}">${tx.tx_type}</span></td>
-            <td class="addr" title="${tx.sender}">${shortAddr(tx.sender)}</td>
-            <td class="addr" title="${tx.receiver}">${shortAddr(tx.receiver)}</td>
-            <td class="amount positive">${formatNum(tx.net_amount)} BCT</td>
-            <td class="fee">${tx.fee > 0 ? formatNum(tx.fee) : '-'}</td>
-            <td style="font-size:0.75rem; color:var(--text2)">${formatTime(tx.timestamp)}</td>
-        </tr>
-    `).join('');
-}
+    window.addEventListener('load', () => {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('/sw.js').catch(console.error);
+      }
 
-// ── Blok Listesi ─────────────────────────────
-async function loadBlocks() {
-    const res = await apiCall('/api/blocks/latest?count=20');
-    const container = document.getElementById('blocksContainer');
-    if (!res.success || !res.blocks.length) {
-        container.innerHTML = '<div class="empty-state">Henüz blok yok</div>';
-        return;
-    }
-    container.innerHTML = res.blocks.map(b => `
-        <div class="block-card">
-            <div class="block-header">
-                <span class="block-index">📦 Blok #${b.index}</span>
-                <span class="block-meta">
-                    <span>📝 ${b.transaction_count} işlem</span>
-                    <span>⛏️ Nonce: ${b.nonce}</span>
-                </span>
-            </div>
-            <div class="block-hash">Hash: ${b.hash}</div>
-            <div class="block-hash" style="margin-top:0.2rem;">Önceki: ${shortAddr(b.previous_hash)}</div>
-            <div style="font-size:0.75rem; color:var(--text2); margin-top:0.3rem;">${formatTime(b.timestamp)}</div>
-        </div>
-    `).join('');
-}
+      const saved = localStorage.getItem('locktrace_bank_acc');
+      if (saved) {
+        try {
+          updateAccountUI(JSON.parse(saved));
+        } catch (e) {}
+      }
 
-// ── Cüzdan Listesi ───────────────────────────
-async function loadWallets() {
-    const res = await apiCall('/api/wallet/list');
-    const tbody = document.getElementById('walletsTable');
-    if (!res.success || !res.wallets.length) {
-        tbody.innerHTML = '<tr><td colspan="3" class="empty-state">Henüz cüzdan yok</td></tr>';
-        return;
-    }
-    tbody.innerHTML = res.wallets.map(w => `
-        <tr>
-            <td class="addr" title="${w.address}">${w.address}</td>
-            <td class="amount positive">${formatNum(w.balance)} BCT</td>
-            <td style="font-size:0.75rem; color:var(--text2)">${formatTime(w.created_at)}</td>
-        </tr>
-    `).join('');
-}
-
-// ── Otomatik Yenileme ────────────────────────
-loadStats();
-setInterval(loadStats, 5000);
-</script>
+      refreshExplorerData();
+      setInterval(() => {
+        refreshBalance();
+        if (document.getElementById('tab-statement').classList.contains('active')) {
+          loadMyStatement();
+        }
+        if (document.getElementById('tab-explorer').classList.contains('active')) {
+          refreshExplorerData();
+        }
+      }, 5000);
+    });
+  </script>
 </body>
 </html>
-

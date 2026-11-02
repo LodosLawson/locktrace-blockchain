@@ -30,3 +30,4 @@ if ([string]::IsNullOrWhiteSpace($loc)) { $loc = "Global" }
 
 Write-Host "Starting LockTrace Node daemon..." -ForegroundColor Green
 python node_runner.py --name "$name" --location "$loc"
+

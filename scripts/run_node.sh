@@ -30,3 +30,4 @@ NODE_LOC=${NODE_LOC:-"Global"}
 
 echo "Starting LockTrace Node daemon..."
 python3 node_runner.py --name "$NODE_NAME" --location "$NODE_LOC"
+

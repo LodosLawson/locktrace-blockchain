@@ -18,6 +18,9 @@ from typing import List, Dict, Optional, Tuple
 TOTAL_SUPPLY = 1_000_000_000_000.0       # 1 Trillion BCT
 TREASURY_ADDRESS = "BCT_HAZINE_0000000000000000000000000000000000000000"
 FEE_PERCENT = 0.01                       # 1%
+MINER_FEE_SHARE = 0.50                   # 50% of the 1% fee directly to the block miner
+TREASURY_FEE_SHARE = 0.50                # 50% returned to Treasury Vault
+BLOCK_REWARD = 0.05                      # 0.05 BCT fixed block subsidy from treasury
 MINING_DIFFICULTY = 3                    # Proof of Work Difficulty
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
@@ -74,15 +77,17 @@ class Transaction:
 
 
 class Block:
-    """Immutable Blockchain Block with Proof-of-Work."""
+    """Immutable Blockchain Block with Proof-of-Work and Miner Attribution."""
 
     def __init__(self, index: int, transactions: List[Transaction],
-                 previous_hash: str, timestamp: float = None, nonce: int = 0):
+                 previous_hash: str, timestamp: float = None, nonce: int = 0,
+                 miner: str = ""):
         self.index = index
         self.transactions = transactions
         self.previous_hash = previous_hash
         self.timestamp = timestamp or time.time()
         self.nonce = nonce
+        self.miner = miner or "Genesis-Validator"
         self.hash = self.calculate_hash()
 
     def calculate_hash(self) -> str:
@@ -109,6 +114,7 @@ class Block:
             "previous_hash": self.previous_hash,
             "timestamp": self.timestamp,
             "nonce": self.nonce,
+            "miner": self.miner,
             "transaction_count": len(self.transactions),
             "transactions": [tx.to_dict() for tx in self.transactions]
         }
@@ -175,6 +181,9 @@ class Blockchain:
         clean_addr = address.strip()
         bal = 0.0
         for block in self.chain:
+            # Check if this block has a mining_reward transaction
+            has_mining_reward = any(t.tx_type == "mining_reward" for t in block.transactions)
+
             for tx in block.transactions:
                 if tx.receiver == clean_addr:
                     if tx.tx_type == "transfer":
@@ -183,7 +192,7 @@ class Blockchain:
                         bal += round(tx.amount, 8)
                 if tx.sender == clean_addr:
                     bal -= round(tx.amount, 8)
-                if clean_addr == TREASURY_ADDRESS and tx.fee > 0:
+                if clean_addr == TREASURY_ADDRESS and tx.tx_type == "transfer" and tx.fee > 0:
                     bal += round(tx.fee, 8)
 
         for tx in self.pending_transactions:
@@ -194,8 +203,6 @@ class Blockchain:
                     bal += round(tx.amount, 8)
             if tx.sender == clean_addr:
                 bal -= round(tx.amount, 8)
-            if clean_addr == TREASURY_ADDRESS and tx.fee > 0:
-                bal += round(tx.fee, 8)
 
         return round(bal, 8)
 
@@ -316,19 +323,66 @@ class Blockchain:
 
             return True, f"Transfer confirmed! Sent: {net_amount} BCT, 1% Fee ({fee} BCT) returned to treasury vault.", tx_info
 
-    def _mine_block(self) -> Optional[Block]:
-        if not self.pending_transactions:
+    def _mine_block(self, miner_address: str = "") -> Optional[Block]:
+        clean_miner = (miner_address or "").strip()
+        if not self.pending_transactions and not (clean_miner and is_valid_bct_address(clean_miner)):
             return None
+
+        # Calculate 50% transaction fee cut for miner
+        total_fees = sum(tx.fee for tx in self.pending_transactions if tx.tx_type == "transfer")
+        miner_fee_cut = round(total_fees * MINER_FEE_SHARE, 8)
+
+        # Base block subsidy from treasury
+        treasury_bal = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+        subsidy = BLOCK_REWARD if treasury_bal >= BLOCK_REWARD else 0.0
+
+        block_txs = list(self.pending_transactions)
+        total_miner_payout = 0.0
+
+        # If miner address is provided and valid, add Coinbase mining reward transaction
+        if clean_miner and is_valid_bct_address(clean_miner) and clean_miner != TREASURY_ADDRESS:
+            total_miner_payout = round(subsidy + miner_fee_cut, 8)
+            if total_miner_payout > 0:
+                coinbase_tx = Transaction(
+                    sender=TREASURY_ADDRESS,
+                    receiver=clean_miner,
+                    amount=total_miner_payout,
+                    fee=0.0,
+                    signature=f"coinbase_pow_reward_block_{len(self.chain)}",
+                    tx_type="mining_reward"
+                )
+                block_txs.append(coinbase_tx)
+                self.total_transactions += 1
+
+                # Ensure miner wallet is registered
+                if clean_miner not in self.wallets:
+                    self.wallets[clean_miner] = {"public_key": "", "created_at": time.time()}
 
         previous_hash = self.chain[-1].hash if self.chain else "0" * 64
         block = Block(
             index=len(self.chain),
-            transactions=list(self.pending_transactions),
-            previous_hash=previous_hash
+            transactions=block_txs,
+            previous_hash=previous_hash,
+            miner=clean_miner or "Genesis-Validator"
         )
         block.mine(self.difficulty)
         self.chain.append(block)
         self.pending_transactions = []
+
+        # Update node statistics if miner matches a registered node
+        if clean_miner:
+            for n_id, node in self.nodes.items():
+                if node.get("miner_address") == clean_miner or node.get("endpoint") == clean_miner:
+                    node["blocks_mined"] = node.get("blocks_mined", 0) + 1
+                    node["total_rewards"] = round(node.get("total_rewards", 0.0) + total_miner_payout, 8)
+                    node["block_height"] = len(self.chain)
+
+        # Sync balances directly from verified ledger
+        if clean_miner and clean_miner != TREASURY_ADDRESS:
+            self.balances[clean_miner] = self.verify_and_recalc_balance(clean_miner)
+        self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+
+        self._save_state()
         return block
 
     def get_balance(self, address: str) -> float:
@@ -423,6 +477,7 @@ class Blockchain:
                               endpoint: str = "", role: str = "Peer Node",
                               location: str = "Decentralized",
                               block_height: int = 0,
+                              miner_address: str = "",
                               version: str = "1.2.0") -> dict:
         with self.lock:
             self._load_state()
@@ -433,14 +488,18 @@ class Blockchain:
             node_info = self.nodes.get(clean_id, {
                 "node_id": clean_id,
                 "created_at": time.time(),
-                "is_genesis": False
+                "is_genesis": False,
+                "blocks_mined": 0,
+                "total_rewards": 0.0
             })
 
+            clean_miner = (miner_address or "").strip()
             node_info.update({
                 "name": (name or "").strip() or node_info.get("name", f"Community Node ({clean_id[:8]})"),
                 "endpoint": (endpoint or "").strip() or node_info.get("endpoint", "p2p-client"),
                 "role": role or node_info.get("role", "Peer Node"),
                 "location": location or node_info.get("location", "Global"),
+                "miner_address": clean_miner or node_info.get("miner_address", ""),
                 "last_seen": time.time(),
                 "status": "online",
                 "version": version or "1.2.0",
@@ -545,7 +604,8 @@ class Blockchain:
                     transactions=txs,
                     previous_hash=b_data["previous_hash"],
                     timestamp=b_data["timestamp"],
-                    nonce=b_data["nonce"]
+                    nonce=b_data["nonce"],
+                    miner=b_data.get("miner", "Genesis-Validator")
                 )
                 block.hash = b_data["hash"]
                 new_chain.append(block)

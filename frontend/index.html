@@ -1085,6 +1085,13 @@ cd locktrace-blockchain
             sign = '+';
             valCls = 'val-pos';
             displayAmt = Number(t.amount).toFixed(4);
+          } else if (t.tx_type === 'mining_reward') {
+            icon = '⛏️';
+            cls = 'bubble-reward';
+            title = 'Mining Reward & 50% Fee Share';
+            sign = '+';
+            valCls = 'val-pos';
+            displayAmt = Number(t.amount).toFixed(4);
           } else if (isReceived) {
             icon = '📥';
             cls = 'bubble-receive';
@@ -1224,6 +1231,7 @@ cd locktrace-blockchain
               <span style="font-size:0.75rem; color:var(--text-muted);">${new Date(b.timestamp * 1000).toLocaleTimeString()}</span>
             </div>
             <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${b.hash.slice(0, 16)}...${b.hash.slice(-8)}</span></div>
+            <div class="detail-row"><span class="detail-lbl">Mined By:</span><span class="detail-val" style="color:var(--gold); font-weight:700;">${b.miner ? (b.miner.length > 20 ? b.miner.slice(0, 10) + '...' + b.miner.slice(-6) : b.miner) : 'Genesis-Validator'}</span></div>
             <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${b.transaction_count} tx</span></div>
             <div class="detail-row"><span class="detail-lbl">Nonce (PoW):</span><span class="detail-val">${b.nonce}</span></div>
           </div>
@@ -1299,6 +1307,9 @@ cd locktrace-blockchain
               </div>
 
               <div class="detail-row"><span class="detail-lbl">Geographic Region:</span><span class="detail-val" style="color:#e2e8f0;">📍 ${n.location}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Miner Payout Wallet:</span><span class="detail-val" style="color:var(--gold); font-weight:700;">${n.miner_address ? n.miner_address.slice(0, 10) + '...' + n.miner_address.slice(-6) : 'Genesis Vault'}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Blocks Mined:</span><span class="detail-val" style="color:#60a5fa; font-weight:700;">${n.blocks_mined || 0} blocks</span></div>
+              <div class="detail-row"><span class="detail-lbl">Total Mining Earnings:</span><span class="detail-val" style="color:var(--emerald); font-weight:700;">+${Number(n.total_rewards || 0).toFixed(4)} BCT</span></div>
               <div class="detail-row"><span class="detail-lbl">P2P Endpoint:</span><span class="detail-val">${n.endpoint}</span></div>
               <div class="detail-row"><span class="detail-lbl">Consensus Block Height:</span><span class="detail-val" style="color:#60a5fa; font-weight:700;">#${n.block_height}</span></div>
               <div class="detail-row"><span class="detail-lbl">Last Heartbeat:</span><span class="detail-val">${new Date(n.last_seen * 1000).toLocaleTimeString()}</span></div>
@@ -1424,9 +1435,25 @@ cd locktrace-blockchain
         method: 'POST',
         path: '/nodes/register',
         desc: 'Register a community node daemon into the decentralized network.',
-        curl: `curl -X POST "${window.location.origin}/api/v1/nodes/register" -H "Content-Type: application/json" -d '{"name":"Stockholm-Node","location":"Sweden"}'`,
+        curl: `curl -X POST "${window.location.origin}/api/v1/nodes/register" -H "Content-Type: application/json" -d '{"name":"Stockholm-Node","location":"Sweden","miner_address":"BCT..."}'`,
         testable: true,
         samplePayload: { name: "Web-Explorer-Test-Node", location: "Global Cloud" }
+      },
+      {
+        method: 'GET',
+        path: '/mining/job',
+        desc: 'Fetches mining difficulty, pending transaction fees, and potential block rewards.',
+        curl: `curl -X GET "${window.location.origin}/api/v1/mining/job"`,
+        testable: true,
+        samplePayload: null
+      },
+      {
+        method: 'POST',
+        path: '/mine',
+        desc: 'Mine and seal a Proof-of-Work block to earn 50% transaction fee cut + 0.05 BCT block subsidy directly to your wallet.',
+        curl: `curl -X POST "${window.location.origin}/api/v1/mine" -H "Content-Type: application/json" -d '{"miner_address":"BCT7404325cf37316e3c6396ff1eef80c4ef381c27b"}'`,
+        testable: true,
+        samplePayload: { miner_address: "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b" }
       }
     ];
 

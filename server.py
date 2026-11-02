@@ -317,6 +317,7 @@ def api_register_node():
     endpoint = str(data.get("endpoint", "")).strip()
     role = str(data.get("role", "Peer Node")).strip()
     location = str(data.get("location", "Decentralized")).strip()
+    miner_address = str(data.get("miner_address", "")).strip()
     block_height = int(data.get("block_height", 0))
     version = str(data.get("version", "1.2.0")).strip()
 
@@ -329,10 +330,11 @@ def api_register_node():
         endpoint=endpoint,
         role=role,
         location=location,
+        miner_address=miner_address,
         block_height=block_height,
         version=version
     )
-    logger.info(f"Node Registered / Heartbeat: {node_info['name']} [{node_info['node_id']}] from {location}")
+    logger.info(f"Node Registered / Heartbeat: {node_info['name']} [{node_info['node_id']}] miner={miner_address[:8]} from {location}")
     return api_response(True, message="Node registered successfully in LockTrace network", data=node_info, status=201)
 
 
@@ -346,9 +348,64 @@ def api_ping_node():
 
     node_info = blockchain.register_or_ping_node(
         node_id=node_id,
-        block_height=int(data.get("block_height", len(blockchain.chain)))
+        block_height=int(data.get("block_height", len(blockchain.chain))),
+        miner_address=str(data.get("miner_address", "")).strip()
     )
     return api_response(True, message="Pong", data={"node_id": node_id, "status": "online", "network_height": len(blockchain.chain)})
+
+
+# ── Mining & Node Reward Endpoints ───────────────────────────
+@app.route("/api/v1/mining/job", methods=["GET"])
+def api_mining_job():
+    """Provides current mining difficulty, pending fees, and block reward metrics."""
+    pending_fees = sum(tx.fee for tx in blockchain.pending_transactions if tx.tx_type == "transfer")
+    from core.blockchain import BLOCK_REWARD, MINER_FEE_SHARE
+    miner_cut = round(pending_fees * MINER_FEE_SHARE, 8)
+    return api_response(True, data={
+        "block_index": len(blockchain.chain),
+        "previous_hash": blockchain.chain[-1].hash if blockchain.chain else "0" * 64,
+        "difficulty": blockchain.difficulty,
+        "pending_transactions": len(blockchain.pending_transactions),
+        "block_subsidy": BLOCK_REWARD,
+        "pending_fees": pending_fees,
+        "potential_miner_reward": round(BLOCK_REWARD + miner_cut, 8)
+    })
+
+
+@app.route("/api/v1/mine", methods=["POST"])
+def api_mine_block():
+    """Forge and mine a new Proof-of-Work block, claiming the 50% fee share and 0.05 BCT block reward."""
+    data = request.get_json(silent=True) or {}
+    miner_address = str(data.get("miner_address", "")).strip()
+    node_id = str(data.get("node_id", "")).strip()
+
+    if not miner_address:
+        return api_response(False, message="Miner address is required to receive block rewards", status=400)
+
+    if not is_valid_bct_address(miner_address):
+        return api_response(False, message=f"Invalid miner address format: '{miner_address}'", status=400)
+
+    # Mine block with the provided miner address
+    block = blockchain._mine_block(miner_address=miner_address)
+    if not block:
+        return api_response(False, message="No pending transactions or mining tasks to package into a block.", status=400)
+
+    # Find coinbase transaction
+    coinbase = next((t for t in block.transactions if t.tx_type == "mining_reward"), None)
+    reward_val = coinbase.amount if coinbase else 0.0
+
+    logger.info(f"Block #{block.index} successfully mined by {miner_address[:10]}... Reward: {reward_val} BCT")
+
+    return api_response(True, message=f"Block #{block.index} successfully mined! Deposited {reward_val:.8f} BCT reward.", data={
+        "block_index": block.index,
+        "block_hash": block.hash,
+        "nonce": block.nonce,
+        "transactions_packaged": len(block.transactions),
+        "miner_address": miner_address,
+        "miner_reward": reward_val,
+        "miner_balance": blockchain.get_balance(miner_address),
+        "timestamp": block.timestamp
+    }, status=201)
 
 
 if __name__ == "__main__":
