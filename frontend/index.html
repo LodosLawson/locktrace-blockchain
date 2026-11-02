@@ -1958,7 +1958,7 @@
         const shortHash = b.hash.slice(0, 10) + '...' + b.hash.slice(-8);
         const shortMiner = b.miner ? (b.miner.length > 12 ? b.miner.slice(0, 6) + '...' + b.miner.slice(-4) : b.miner) : 'Genesis';
         return `
-          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${tx.block_index || tx.block_hash || ""}')" title="Blok Detaylarını ve Düğüm Bilgilerini İncele">
+          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${b.index !== undefined ? b.index : (b.hash || "")}')" title="Blok Detaylarını ve Düğüm Bilgilerini İncele">
             <div class="flex items-center gap-2.5">
               <span class="font-mono font-bold text-primary px-2 py-0.5 rounded bg-primary/10">#${b.index}</span>
               <div class="flex flex-col">
@@ -1997,7 +1997,7 @@
 
         const shortHash = tx.tx_hash ? `${tx.tx_hash.slice(0, 8)}...` : '--';
         return `
-          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${b.hash || b.index}')" title="Blok Detaylarını ve Düğüm Bilgilerini İncele">
+          <div class="p-2.5 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-primary/50 cursor-pointer transition-all text-xs" onclick="openBlockDetailModal('${tx.block_index !== undefined ? tx.block_index : (tx.block_hash || tx.tx_hash || "")}')" title="Blok Detaylarını ve Düğüm Bilgilerini İncele">
             <div class="flex items-center gap-2">
               <span class="material-symbols-outlined text-[16px] text-primary">${icon}</span>
               <div class="flex flex-col">
@@ -2132,6 +2132,39 @@
     });
 
         // ═════════════════════════════════════════════════════════════════════════
+    // 🛠️ UTILITY FUNCTIONS
+    // ═════════════════════════════════════════════════════════════════════════
+
+    function escapeHtml(str) {
+      if (str === null || str === undefined) return '';
+      return String(str)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/\'/g, '&#039;');
+    }
+
+    function formatTimeAgo(timestamp) {
+      if (!timestamp) return 'Az önce';
+      let ms = Number(timestamp);
+      if (isNaN(ms)) return 'Az önce';
+      if (ms < 10000000000) {
+        ms *= 1000;
+      }
+      const diffSec = Math.floor((Date.now() - ms) / 1000);
+      if (diffSec < 10) return 'Az önce';
+      if (diffSec < 60) return `${diffSec} sn önce`;
+      const diffMin = Math.floor(diffSec / 60);
+      if (diffMin < 60) return `${diffMin} dk önce`;
+      const diffHours = Math.floor(diffMin / 60);
+      if (diffHours < 24) return `${diffHours} saat önce`;
+      const diffDays = Math.floor(diffHours / 24);
+      if (diffDays < 30) return `${diffDays} gün önce`;
+      return new Date(ms).toLocaleDateString('tr-TR');
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
     // 🪐 LOCKTRACE SPACE & ON-CHAIN DÜŞÜNCE AKIŞI (Stitch Enhanced)
     // ═════════════════════════════════════════════════════════════════════════
 
