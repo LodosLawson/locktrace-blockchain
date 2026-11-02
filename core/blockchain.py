@@ -48,7 +48,14 @@ class Transaction:
         self.receiver = receiver.strip()
         self.amount = float(amount)
         self.fee = float(fee)
-        self.signature = signature
+        if hasattr(signature, 'to_string'):
+            self.signature = signature.to_string().hex()
+        elif isinstance(signature, bytes):
+            self.signature = signature.hex()
+        elif signature is not None:
+            self.signature = str(signature)
+        else:
+            self.signature = ""
         self.timestamp = timestamp or time.time()
         self.tx_type = tx_type
         self.extra_data = extra_data or {}
