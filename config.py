@@ -36,6 +36,9 @@ class Config:
         "THIRDWEB_SECRET_KEY",
         "gGarsHl3rFMziwML_BqvptsdOsvUT34Tzdl8YkwUsj3ecrgj-tyKDpjiPGUpQWv5idnRYD2KwrV7RE641E1Zow"
     )
+    THIRDWEB_SERVER_WALLET_ADDRESS = os.environ.get("THIRDWEB_SERVER_WALLET_ADDRESS", "")
+    THIRDWEB_ENGINE_URL = os.environ.get("THIRDWEB_ENGINE_URL", "")
+    THIRDWEB_DEFAULT_CHAIN = os.environ.get("THIRDWEB_DEFAULT_CHAIN", "base-sepolia")
 
     # ── Fiyat ve Ticaret Oranları ─────────────────────
     BCT_PER_USD = float(os.environ.get("BCT_PER_USD", "100.0"))       # 1 USD = 100 BCT

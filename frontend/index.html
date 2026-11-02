@@ -353,10 +353,13 @@
           
           <div class="flex items-center p-1 bg-surface-container rounded-full border border-outline-variant/30">
             <button class="trade-toggle-btn flex-1 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all" id="btnToggleBuy" onclick="setTradeMode('buy')">
-              BCT Satın Al (Kart / Fiat)
+              BCT Satın Al (Fiat)
             </button>
             <button class="trade-toggle-btn flex-1 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" id="btnToggleSell" onclick="setTradeMode('sell')">
-              BCT Nakde Çevir (Sat)
+              BCT Nakde Çevir
+            </button>
+            <button class="trade-toggle-btn flex-1 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" id="btnToggleEngine" onclick="setTradeMode('engine')">
+              Thirdweb Engine
             </button>
           </div>
 
@@ -509,6 +512,78 @@
               <span class="material-symbols-outlined text-[18px]">account_balance</span>
               <span id="btnSellText">BCT Sat ve Nakit Çıkışı Başlat</span>
             </button>
+          </div>
+
+          <!-- THIRDWEB ENGINE CONTAINER -->
+          <div id="tradeEngineCard" class="w-full bg-surface-container-low rounded-2xl p-5 md:p-8 shadow-xl flex-col gap-5 border border-outline-variant/30 hidden">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col">
+                <span class="text-[10px] font-semibold text-primary uppercase tracking-widest font-mono">Thirdweb SDK & Engine API</span>
+                <h1 class="text-xl md:text-2xl font-bold text-on-surface">Sunucu Cüzdanı & Minting</h1>
+                <p class="text-xs text-on-surface-variant mt-0.5">Backend Engine cüzdanından işlem kuyruğuna alın ve NFT/Token mint edin</p>
+              </div>
+              <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-[20px]">smart_toy</span>
+              </div>
+            </div>
+
+            <!-- Server Wallet & Status Banner -->
+            <div class="p-3.5 bg-surface-container rounded-xl border border-outline-variant/30 flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <div class="flex items-center gap-2">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span class="text-xs font-semibold text-on-surface">Thirdweb Backend Engine</span>
+                </div>
+                <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-primary/10 text-primary border border-primary/20">Secret Key Korumalı</span>
+              </div>
+              <div class="text-[11px] text-on-surface-variant font-mono break-all flex flex-col gap-1">
+                <div>Client ID: <span class="text-on-surface font-semibold" id="engineClientId">a1fca74604210a59de7fe189ae76f156</span></div>
+                <div>Ağ: <span class="text-on-surface">Base Sepolia (84532) / EVM</span></div>
+              </div>
+            </div>
+
+            <!-- Mint Form -->
+            <div class="flex flex-col gap-3">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs text-on-surface-variant font-medium">Hedef Alıcı Adresi (to):</label>
+                <div class="flex items-center bg-surface-container rounded-xl px-4 py-3 border border-outline-variant/30 focus-within:border-primary transition-colors">
+                  <input class="bg-transparent border-0 outline-none w-full text-xs font-mono text-on-surface placeholder:text-outline" id="engineToAddress" placeholder="0x... veya BCT Cüzdan Adresi"/>
+                  <button type="button" class="text-primary hover:underline text-xs ml-2 whitespace-nowrap" onclick="fillEngineMyAddress()">Cüzdanım</button>
+                </div>
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label class="text-xs text-on-surface-variant font-medium">ERC1155 / NFT Kontrat Adresi:</label>
+                <div class="flex items-center bg-surface-container rounded-xl px-4 py-3 border border-outline-variant/30 focus-within:border-primary transition-colors">
+                  <input class="bg-transparent border-0 outline-none w-full text-xs font-mono text-on-surface placeholder:text-outline" id="engineContractAddress" placeholder="0x... (ERC1155 Token Kontratı)"/>
+                </div>
+              </div>
+
+              <div class="grid grid-cols-2 gap-3">
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs text-on-surface-variant font-medium">Token ID:</label>
+                  <input class="bg-surface-container rounded-xl px-4 py-3 border border-outline-variant/30 text-xs font-mono text-on-surface outline-none focus:border-primary" id="engineTokenId" type="number" value="0" min="0"/>
+                </div>
+                <div class="flex flex-col gap-1">
+                  <label class="text-xs text-on-surface-variant font-medium">Adet (Quantity):</label>
+                  <input class="bg-surface-container rounded-xl px-4 py-3 border border-outline-variant/30 text-xs font-mono text-on-surface outline-none focus:border-primary" id="engineQuantity" type="number" value="1" min="1"/>
+                </div>
+              </div>
+
+              <button class="w-full h-[50px] rounded-full bg-primary text-on-primary text-xs md:text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-105 active:scale-[0.99] shadow-lg disabled:opacity-40" id="btnEngineEnqueue" onclick="enqueueThirdwebClaim()" type="button">
+                <span class="material-symbols-outlined text-[18px]">bolt</span>
+                <span id="btnEngineText">İşlemi Kuyruğa Al (Enqueue Transaction)</span>
+              </button>
+            </div>
+
+            <!-- Transaction Result Box -->
+            <div id="engineResultBox" class="p-3.5 bg-surface-container rounded-xl border border-outline-variant/30 flex flex-col gap-2 hidden">
+              <span class="text-xs font-bold text-primary flex items-center gap-1.5">
+                <span class="material-symbols-outlined text-[16px]">check_circle</span>
+                İşlem Kuyruk Durumu
+              </span>
+              <div class="text-[11px] font-mono text-on-surface break-all flex flex-col gap-1" id="engineResultText"></div>
+            </div>
           </div>
 
         </div>
@@ -1378,27 +1453,119 @@
       document.getElementById('receive-modal').classList.add('hidden');
     }
 
-    // ── 6. AL / SAT (FIAT ON-RAMP & OFF-RAMP) ────────────────
+    // ── 6. AL / SAT (FIAT ON-RAMP & OFF-RAMP & THIRDWEB ENGINE) ──
     function setTradeMode(mode) {
       const btnBuy = document.getElementById('btnToggleBuy');
       const btnSell = document.getElementById('btnToggleSell');
+      const btnEngine = document.getElementById('btnToggleEngine');
       const cardBuy = document.getElementById('tradeBuyCard');
       const cardSell = document.getElementById('tradeSellCard');
+      const cardEngine = document.getElementById('tradeEngineCard');
+
+      // Reset all buttons
+      const inactiveClass = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all';
+      const activeClass = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all';
+
+      btnBuy.className = inactiveClass;
+      btnSell.className = inactiveClass;
+      if (btnEngine) btnEngine.className = inactiveClass;
+
+      cardBuy.classList.remove('flex');
+      cardBuy.classList.add('hidden');
+      cardSell.classList.remove('flex');
+      cardSell.classList.add('hidden');
+      if (cardEngine) {
+        cardEngine.classList.remove('flex');
+        cardEngine.classList.add('hidden');
+      }
 
       if (mode === 'buy') {
-        btnBuy.className = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all';
-        btnSell.className = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all';
+        btnBuy.className = activeClass;
         cardBuy.classList.remove('hidden');
         cardBuy.classList.add('flex');
-        cardSell.classList.remove('flex');
-        cardSell.classList.add('hidden');
-      } else {
-        btnSell.className = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all';
-        btnBuy.className = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all';
+      } else if (mode === 'sell') {
+        btnSell.className = activeClass;
         cardSell.classList.remove('hidden');
         cardSell.classList.add('flex');
-        cardBuy.classList.remove('flex');
-        cardBuy.classList.add('hidden');
+      } else if (mode === 'engine') {
+        if (btnEngine) btnEngine.className = activeClass;
+        if (cardEngine) {
+          cardEngine.classList.remove('hidden');
+          cardEngine.classList.add('flex');
+        }
+      }
+    }
+
+    function fillEngineMyAddress() {
+      const myAddr = currentWallet ? currentWallet.address : localStorage.getItem('bct_active_address');
+      if (myAddr) {
+        document.getElementById('engineToAddress').value = myAddr;
+      } else {
+        showToast('Henüz aktif bir cüzdan oluşturmadınız veya yüklemediniz.', 'warning');
+      }
+    }
+
+    async function enqueueThirdwebClaim() {
+      const to = document.getElementById('engineToAddress').value.trim();
+      const contractAddress = document.getElementById('engineContractAddress').value.trim();
+      const tokenId = parseInt(document.getElementById('engineTokenId').value, 10) || 0;
+      const quantity = parseInt(document.getElementById('engineQuantity').value, 10) || 1;
+      const btn = document.getElementById('btnEngineEnqueue');
+      const btnText = document.getElementById('btnEngineText');
+      const resBox = document.getElementById('engineResultBox');
+      const resText = document.getElementById('engineResultText');
+
+      if (!to) {
+        showToast('Lütfen hedef alıcı cüzdan adresini girin.', 'warning');
+        return;
+      }
+      if (!contractAddress) {
+        showToast('Lütfen ERC1155 kontrat adresini girin.', 'warning');
+        return;
+      }
+
+      btn.disabled = true;
+      btnText.textContent = 'Engine Kuyruğuna Ekleniyor...';
+      resBox.classList.add('hidden');
+
+      try {
+        const res = await fetch(`${API_BASE}/thirdweb/claim-erc1155`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to,
+            contract_address: contractAddress,
+            token_id: tokenId,
+            quantity: quantity,
+            chain: 'base-sepolia'
+          })
+        });
+        const json = await res.json();
+
+        if (json.success) {
+          showToast('İşlem Thirdweb Engine kuyruğuna alındı!', 'success');
+          resBox.classList.remove('hidden');
+          const d = json.data || {};
+          let html = `<div><strong>Durum:</strong> Başarılı</div>`;
+          if (d.transactionId) {
+            html += `<div><strong>Transaction ID:</strong> ${d.transactionId}</div>`;
+          }
+          if (d.transactionHash) {
+            html += `<div><strong>Tx Hash:</strong> <a href="https://sepolia.basescan.org/tx/${d.transactionHash}" target="_blank" class="text-primary underline">${d.transactionHash.slice(0, 16)}...</a></div>`;
+          }
+          html += `<div><strong>Hedef:</strong> ${d.to || to}</div>`;
+          html += `<div><strong>Token ID:</strong> ${d.tokenId || tokenId} | Adet: ${d.quantity || quantity}</div>`;
+          resText.innerHTML = html;
+        } else {
+          showToast(json.message || 'Thirdweb işlemi başlatılamadı.', 'error');
+          resBox.classList.remove('hidden');
+          resText.innerHTML = `<div class="text-error"><strong>Hata:</strong> ${json.message || 'Bilinmeyen hata'}</div>`;
+        }
+      } catch (e) {
+        showToast(`Bağlantı hatası: ${e.message}`, 'error');
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = 'İşlemi Kuyruğa Al (Enqueue Transaction)';
       }
     }
 

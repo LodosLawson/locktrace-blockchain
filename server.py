@@ -19,6 +19,7 @@ from config import Config
 from core.blockchain import Blockchain, TREASURY_ADDRESS, TOTAL_SUPPLY, is_valid_bct_address
 from core.wallet import Wallet, restore_wallet, restore_wallet_from_mnemonic
 from core.mnemonic import validate_mnemonic
+from core.thirdweb_service import thirdweb_service
 
 app = Flask(__name__, template_folder="templates", static_folder="static")
 app.config.from_object(Config)
@@ -530,6 +531,79 @@ def api_trade_orders(address: str):
                         "signature": tx.signature
                     })
     return api_response(True, data={"address": clean_addr, "orders": orders})
+
+
+# ══════════════════════════════════════════════════════
+# 🌐 Thirdweb Engine & Server Wallet Endpoints
+# ══════════════════════════════════════════════════════
+
+@app.route("/api/v1/thirdweb/info", methods=["GET"])
+def api_thirdweb_info():
+    """Returns Thirdweb backend status and configuration info."""
+    return api_response(True, data=thirdweb_service.get_info())
+
+
+@app.route("/api/v1/thirdweb/claim-erc1155", methods=["POST"])
+def api_thirdweb_claim_erc1155():
+    """
+    Mints / Claims ERC1155 NFT to a recipient address using Thirdweb SDK / Engine Server Wallet.
+    """
+    data = request.get_json(silent=True) or {}
+    contract_address = str(data.get("contract_address", "")).strip()
+    to_address = str(data.get("to", data.get("to_address", ""))).strip()
+    token_id = int(data.get("token_id", 0))
+    quantity = int(data.get("quantity", 1))
+    chain = str(data.get("chain", Config.THIRDWEB_DEFAULT_CHAIN)).strip()
+    server_wallet = str(data.get("server_wallet", "")).strip() or None
+
+    if not contract_address:
+        return api_response(False, message="contract_address is required", status=400)
+    if not to_address:
+        return api_response(False, message="recipient 'to' address is required", status=400)
+
+    result = thirdweb_service.claim_erc1155(
+        contract_address=contract_address,
+        to_address=to_address,
+        token_id=token_id,
+        quantity=quantity,
+        chain=chain,
+        server_wallet_address=server_wallet
+    )
+
+    if not result.get("success", False):
+        err = result.get("error", "Failed to enqueue Thirdweb transaction")
+        return api_response(False, message=err, status=400)
+
+    logger.info(f"Thirdweb Claim Enqueued/Executed: to={to_address} contract={contract_address} token={token_id}")
+    return api_response(True, message="Thirdweb transaction successfully processed", data=result.get("data", {}), status=201)
+
+
+@app.route("/api/v1/thirdweb/status/<transaction_id>", methods=["GET"])
+def api_thirdweb_status(transaction_id: str):
+    """Checks the execution status of an enqueued Engine transaction."""
+    clean_tx_id = transaction_id.strip()
+    if not clean_tx_id:
+        return api_response(False, message="transaction_id is required", status=400)
+
+    result = thirdweb_service.get_transaction_status(clean_tx_id)
+    if not result.get("success", False):
+        return api_response(False, message=result.get("error", "Failed to retrieve transaction status"), status=400)
+
+    return api_response(True, data=result.get("data", {}))
+
+
+@app.route("/api/v1/thirdweb/wait-hash/<transaction_id>", methods=["GET"])
+def api_thirdweb_wait_hash(transaction_id: str):
+    """Waits for and returns onchain transaction hash."""
+    clean_tx_id = transaction_id.strip()
+    if not clean_tx_id:
+        return api_response(False, message="transaction_id is required", status=400)
+
+    result = thirdweb_service.wait_for_transaction_hash(clean_tx_id)
+    if not result.get("success", False):
+        return api_response(False, message=result.get("error", "Failed to get transaction hash"), status=400)
+
+    return api_response(True, data=result.get("data", {}))
 
 
 if __name__ == "__main__":

@@ -8,3 +8,7 @@ data/
 deploy_package.tar.gz
 frontend_update.tar.gz
 .env
+node_modules/
+package-lock.json
+*.bak
+*.tar.gz
