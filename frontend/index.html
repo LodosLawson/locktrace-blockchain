@@ -142,28 +142,50 @@
   </script>
 
   <style>
-    @layer base {
-      html, body {
-        width: 100%;
-        max-width: 100%;
-        margin: 0;
-        padding: 0;
-        background-color: #131315;
-        color: #e5e1e4;
-        overflow-x: hidden;
-      }
-      body {
-        overscroll-behavior-y: none;
-        -webkit-tap-highlight-color: transparent;
-        font-family: 'Geist', system-ui, -apple-system, sans-serif;
-        min-height: 100dvh;
-      }
-      .pb-safe {
-        padding-bottom: env(safe-area-inset-bottom, 0px);
-      }
-      .pt-safe {
-        padding-top: env(safe-area-inset-top, 0px);
-      }
+    html {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #131315;
+      color: #e5e1e4;
+      overflow-x: hidden;
+      overflow-y: auto;
+      scroll-behavior: smooth;
+    }
+    body {
+      width: 100%;
+      margin: 0;
+      padding: 0;
+      background-color: #131315;
+      color: #e5e1e4;
+      overflow-x: hidden;
+      overflow-y: visible;
+      -webkit-tap-highlight-color: transparent;
+      font-family: 'Geist', system-ui, -apple-system, sans-serif;
+      min-height: 100vh;
+      min-height: 100dvh;
+    }
+    .pb-safe {
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    .pt-safe {
+      padding-top: env(safe-area-inset-top, 0px);
+    }
+    /* Sleek minimalist scrollbar for desktop mouse wheel & mouse drag */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #131315;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #2a2a2c;
+      border-radius: 9999px;
+      border: 2px solid #131315;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #4edea3;
     }
     /* Prevent iOS Safari input auto-zoom ONLY on small fields while preserving 40px hero amount input */
     @media (max-width: 768px) {
@@ -178,7 +200,7 @@
         padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px)) !important;
       }
     }
-    ::-webkit-scrollbar { display: none; }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
     .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
     .tab-content { display: none; }
     .tab-content.active { display: flex; }
@@ -1005,7 +1027,7 @@
             </div>
           </div>
 
-          <div class="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-2.5">
+          <div class="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-3">
             <div class="flex items-center justify-between">
               <span class="font-label-lg text-label-lg text-on-surface font-medium">Tek Komutla Düğüm Çalıştır (Windows / Linux / macOS)</span>
               <a class="font-label-sm text-label-sm text-primary hover:underline flex items-center gap-1" href="/node_runner.py" target="_blank" rel="noopener">
@@ -1016,6 +1038,28 @@
             <div class="p-3 rounded-lg bg-surface-container-lowest font-mono text-xs text-primary flex items-center justify-between gap-2 overflow-x-auto border border-outline-variant/15">
               <code>git clone https://github.com/LodosLawson/locktrace-blockchain.git &amp;&amp; cd locktrace-blockchain &amp;&amp; python node_runner.py</code>
               <button class="px-3 py-1 rounded-full bg-surface-container-high text-on-surface font-label-sm text-label-sm shrink-0" onclick="copyText('git clone https://github.com/LodosLawson/locktrace-blockchain.git && cd locktrace-blockchain && python node_runner.py')" type="button">Kopyala</button>
+            </div>
+
+            <!-- Düğüm Ödülü Nasıl Alınır ve Harcanır? -->
+            <div class="mt-2 pt-3 border-t border-outline-variant/15 flex flex-col gap-2">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[18px]">payments</span>
+                <span class="font-label-md text-label-md text-on-surface font-semibold">Düğüm Ödülleri Nasıl Alınır ve Cüzdandan Harcanır?</span>
+              </div>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-2.5 text-xs text-on-surface-variant font-body-sm">
+                <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
+                  <span class="font-semibold text-primary font-mono">1. Otomatik Yatırım (Claim Yok)</span>
+                  <span>Kazdığınız (%70 PoW) ve onayladığınız (%30 Quorum) her blokta ödüller hiçbir işlem ücreti ödemeden doğrudan düğüm cüzdanınıza yansır.</span>
+                </div>
+                <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
+                  <span class="font-semibold text-secondary font-mono">2. Kendi Web Cüzdanını Bağlama</span>
+                  <span>Düğümü başlatırken <code class="text-on-surface">--wallet BCTcuzdaniniz</code> parametresi verirseniz, ödüller doğrudan buradaki web cüzdanınıza yatar.</span>
+                </div>
+                <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
+                  <span class="font-semibold text-primary font-mono">3. Web'den Harcama / İçe Aktar</span>
+                  <span>Düğümün ürettiği <code class="text-on-surface">miner_wallet.json</code> dosyasındaki 12 kelimeyi veya private key'i kopyalayıp <strong>Cüzdan Aç / Aktar</strong> sekmesinden tarayıcınıza aktarabilirsiniz.</span>
+                </div>
+              </div>
             </div>
           </div>
 
