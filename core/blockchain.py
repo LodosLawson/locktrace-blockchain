@@ -18,6 +18,7 @@ import secrets
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Dict, Optional, Tuple
 from core.wallet import public_key_to_address, verify_signature
+from core.storage import SQLiteStorage
 
 
 ATOMIC_UNIT = 100_000_000                 # 1 BCT = 10^8 atomic units (prevents IEEE-754 drift at 1T scale)
@@ -103,31 +104,107 @@ class Transaction:
         return hashlib.sha256(data.encode()).hexdigest()
 
 
+def compute_merkle_root(tx_hashes: List[str]) -> str:
+    """Compute canonical binary SHA-256 Merkle root over ordered transaction hashes."""
+    if not tx_hashes:
+        return "0" * 64
+    level = [str(h).strip().lower() for h in tx_hashes]
+    while len(level) > 1:
+        if len(level) % 2 == 1:
+            level.append(level[-1])
+        next_level = []
+        for i in range(0, len(level), 2):
+            combined = f"{level[i]}{level[i + 1]}".encode("utf-8")
+            next_level.append(hashlib.sha256(combined).hexdigest())
+        level = next_level
+    return level[0]
+
+
+def compute_merkle_proof(tx_hashes: List[str], target_hash: str) -> Optional[List[dict]]:
+    """Build SPV Merkle inclusion proof path for target_hash inside tx_hashes."""
+    target = (target_hash or "").strip().lower()
+    level = [str(h).strip().lower() for h in tx_hashes]
+    if target not in level:
+        return None
+    idx = level.index(target)
+    proof: List[dict] = []
+    while len(level) > 1:
+        if len(level) % 2 == 1:
+            level.append(level[-1])
+        if idx % 2 == 0:
+            sibling_idx = idx + 1
+            position = "right"
+        else:
+            sibling_idx = idx - 1
+            position = "left"
+        proof.append({"position": position, "hash": level[sibling_idx]})
+        next_level = []
+        for i in range(0, len(level), 2):
+            combined = f"{level[i]}{level[i + 1]}".encode("utf-8")
+            next_level.append(hashlib.sha256(combined).hexdigest())
+        level = next_level
+        idx //= 2
+    return proof
+
+
+def verify_merkle_proof(tx_hash: str, proof: List[dict], expected_root: str) -> bool:
+    """Verify SPV Merkle inclusion proof deterministically."""
+    current = (tx_hash or "").strip().lower()
+    for step in (proof or []):
+        sibling = str(step.get("hash", "")).strip().lower()
+        pos = step.get("position")
+        if pos == "right":
+            current = hashlib.sha256(f"{current}{sibling}".encode("utf-8")).hexdigest()
+        elif pos == "left":
+            current = hashlib.sha256(f"{sibling}{current}".encode("utf-8")).hexdigest()
+        else:
+            return False
+    return current == (expected_root or "").strip().lower()
+
+
 class Block:
-    """Immutable Blockchain Block with Proof-of-Work and Miner Attribution."""
+    """Immutable Blockchain Block with Proof-of-Work, Merkle Root, and Miner Attribution."""
 
     def __init__(self, index: int, transactions: List[Transaction],
                  previous_hash: str, timestamp: float = None, nonce: int = 0,
-                 miner: str = ""):
+                 miner: str = "", version: int = 2, merkle_root: str = ""):
         self.index = index
         self.transactions = transactions
         self.previous_hash = previous_hash
         self.timestamp = timestamp or time.time()
         self.nonce = nonce
         self.miner = miner or "Genesis-Validator"
+        self.version = int(version)
+        self.merkle_root = merkle_root or compute_merkle_root([tx.hash() for tx in self.transactions])
         self.hash = self.calculate_hash()
 
     def calculate_hash(self) -> str:
-        block_data = json.dumps({
-            "index": self.index,
-            "transactions": [tx.to_dict() for tx in self.transactions],
-            "previous_hash": self.previous_hash,
-            "timestamp": self.timestamp,
-            "nonce": self.nonce
-        }, sort_keys=True)
+        if self.version >= 2:
+            # v2 Header: Cryptographically commits merkle_root & miner into PoW hash
+            payload = {
+                "index": self.index,
+                "version": self.version,
+                "merkle_root": self.merkle_root,
+                "miner": self.miner,
+                "transactions": [tx.to_dict() for tx in self.transactions],
+                "previous_hash": self.previous_hash,
+                "timestamp": self.timestamp,
+                "nonce": self.nonce,
+            }
+        else:
+            # v1 Legacy Header: Preserves 100% hash validity for historical mainnet blocks 0..N
+            payload = {
+                "index": self.index,
+                "transactions": [tx.to_dict() for tx in self.transactions],
+                "previous_hash": self.previous_hash,
+                "timestamp": self.timestamp,
+                "nonce": self.nonce,
+            }
+        block_data = json.dumps(payload, sort_keys=True)
         return hashlib.sha256(block_data.encode()).hexdigest()
 
     def mine(self, difficulty: int):
+        self.merkle_root = compute_merkle_root([tx.hash() for tx in self.transactions])
         target = "0" * difficulty
         self.hash = self.calculate_hash()
         while not self.hash.startswith(target):
@@ -137,8 +214,10 @@ class Block:
     def to_dict(self) -> dict:
         return {
             "index": self.index,
+            "version": self.version,
             "hash": self.hash,
             "previous_hash": self.previous_hash,
+            "merkle_root": self.merkle_root,
             "timestamp": self.timestamp,
             "nonce": self.nonce,
             "miner": self.miner,
@@ -148,9 +227,9 @@ class Block:
 
 
 class Blockchain:
-    """Thread-safe, crash-resilient Blockchain Ledger."""
+    """Thread-safe, crash-resilient Blockchain Ledger backed by SQLite WAL."""
 
-    def __init__(self, auto_mine: bool = True):
+    def __init__(self, auto_mine: bool = True, data_dir: Optional[str] = None):
         self.chain: List[Block] = []
         self.pending_transactions: List[Transaction] = []
         self.balances: Dict[str, float] = {}
@@ -162,11 +241,26 @@ class Blockchain:
         self.total_fees_collected = 0.0
         self.nodes: Dict[str, dict] = {}
         self.space_posts: Dict[str, dict] = {}
+        self._custom_data_dir = data_dir
+        self._storage: Optional[SQLiteStorage] = None
+        self._storage_dir_bound = ""
+        self._loaded_revision = -1
 
         with self.lock:
             if not self._load_state():
                 self._create_genesis_block()
             self._init_default_nodes()
+
+    def _get_active_data_dir(self) -> str:
+        return self._custom_data_dir or DATA_DIR
+
+    def _get_storage(self) -> SQLiteStorage:
+        active_dir = self._get_active_data_dir()
+        if self._storage is None or self._storage_dir_bound != active_dir:
+            self._storage = SQLiteStorage(os.path.join(active_dir, "blockchain.db"))
+            self._storage_dir_bound = active_dir
+            self._loaded_revision = -1
+        return self._storage
 
     def _init_default_nodes(self):
         genesis_node = {
@@ -871,11 +965,54 @@ class Blockchain:
                         txs.append(tx_dict)
             return list(reversed(txs))
 
+    def get_account_nonce(self, address: str) -> int:
+        """Compute exact sequential outgoing transaction nonce for an address from on-chain + pending history."""
+        with self.lock:
+            self._load_state()
+            clean_addr = (address or "").strip()
+            if not clean_addr:
+                return 0
+            count = sum(
+                1 for block in self.chain for tx in block.transactions if tx.sender == clean_addr
+            ) + sum(
+                1 for tx in self.pending_transactions if tx.sender == clean_addr
+            )
+            return count
+
+    def get_merkle_proof(self, tx_hash: str) -> Optional[dict]:
+        """Generate and cryptographically verify SPV Merkle inclusion proof for any confirmed transaction."""
+        with self.lock:
+            self._load_state()
+            target = (tx_hash or "").strip().lower()
+            if not target:
+                return None
+            for b in self.chain:
+                tx_hashes = [tx.hash() for tx in b.transactions]
+                if target in [h.lower() for h in tx_hashes]:
+                    proof = compute_merkle_proof(tx_hashes, target)
+                    if proof is None:
+                        return None
+                    verified = verify_merkle_proof(target, proof, b.merkle_root)
+                    return {
+                        "tx_hash": target,
+                        "block_index": b.index,
+                        "block_version": b.version,
+                        "block_hash": b.hash,
+                        "merkle_root": b.merkle_root,
+                        "transaction_count": len(tx_hashes),
+                        "proof": proof,
+                        "verified": verified,
+                    }
+            return None
+
     def is_chain_valid(self) -> bool:
         with self.lock:
             if not self.chain:
                 return False
             target = "0" * self.difficulty
+            genesis = self.chain[0]
+            if genesis.merkle_root != compute_merkle_root([tx.hash() for tx in genesis.transactions]):
+                return False
             for i in range(1, len(self.chain)):
                 current = self.chain[i]
                 previous = self.chain[i - 1]
@@ -886,6 +1023,9 @@ class Blockchain:
                 if current.previous_hash != previous.hash:
                     return False
                 if not current.hash.startswith(target):
+                    return False
+                expected_merkle = compute_merkle_root([tx.hash() for tx in current.transactions])
+                if current.merkle_root != expected_merkle:
                     return False
             return True
 
@@ -996,23 +1136,49 @@ class Blockchain:
                 "total_fees_collected": self.total_fees_collected,
                 "pending_transactions": len(self.pending_transactions),
                 "difficulty": self.difficulty,
+                "storage_engine": "sqlite-wal",
                 "chain_valid": self.is_chain_valid(),
-                "latest_block_hash": self.chain[-1].hash if self.chain else "N/A"
+                "latest_block_hash": self.chain[-1].hash if self.chain else "N/A",
+                "latest_merkle_root": self.chain[-1].merkle_root if self.chain else "N/A",
             }
 
     def _save_state(self):
         try:
-            os.makedirs(DATA_DIR, exist_ok=True)
+            active_dir = self._get_active_data_dir()
+            os.makedirs(active_dir, exist_ok=True)
+            # Update monotonic per-wallet nonces before persisting
+            tx_counts: Dict[str, int] = {}
+            for blk in self.chain:
+                for tx in blk.transactions:
+                    tx_counts[tx.sender] = tx_counts.get(tx.sender, 0) + 1
+            for addr, w_info in self.wallets.items():
+                if isinstance(w_info, dict):
+                    w_info["nonce"] = tx_counts.get(addr, 0)
+
+            blocks_dicts = [b.to_dict() for b in self.chain]
+
+            # 1) Primary ACID SQLite WAL persistence (incremental block writes + revision bump)
+            storage = self._get_storage()
+            new_rev = storage.save_state(
+                blocks_dicts=blocks_dicts,
+                wallets=self.wallets,
+                nodes=self.nodes,
+                total_transactions=self.total_transactions,
+                total_fees_collected=self.total_fees_collected,
+            )
+            self._loaded_revision = new_rev
+
+            # 2) Atomic JSON mirror snapshot for transparent archival backup
             state = {
-                "chain": [b.to_dict() for b in self.chain],
+                "chain": blocks_dicts,
                 "balances": self.balances,
                 "wallets": self.wallets,
                 "nodes": self.nodes,
                 "total_transactions": self.total_transactions,
-                "total_fees_collected": self.total_fees_collected
+                "total_fees_collected": self.total_fees_collected,
             }
-            path = os.path.join(DATA_DIR, "blockchain.json")
-            tmp_path = path + ".tmp"
+            path = os.path.join(active_dir, "blockchain.json")
+            tmp_path = f"{path}.{os.getpid()}.{threading.get_ident()}.tmp"
             with open(tmp_path, "w", encoding="utf-8") as f:
                 json.dump(state, f, indent=2, ensure_ascii=False)
             os.replace(tmp_path, path)
@@ -1020,14 +1186,28 @@ class Blockchain:
             print(f"[ERROR] Failed to save blockchain state: {e}")
 
     def _load_state(self) -> bool:
-        path = os.path.join(DATA_DIR, "blockchain.json")
-        if not os.path.exists(path):
-            return False
-        try:
-            with open(path, "r", encoding="utf-8") as f:
-                state = json.load(f)
+        active_dir = self._get_active_data_dir()
+        json_path = os.path.join(active_dir, "blockchain.json")
+        db_path = os.path.join(active_dir, "blockchain.db")
 
-            self.balances = state.get("balances", {})
+        if not os.path.exists(db_path) and not os.path.exists(json_path):
+            return False
+
+        try:
+            storage = self._get_storage()
+            if storage.get_block_count() == 0 and os.path.exists(json_path):
+                storage.migrate_from_json_if_empty(json_path, compute_merkle_root)
+
+            current_rev = storage.get_state_revision()
+            if self.chain and current_rev > 0 and current_rev == self._loaded_revision:
+                # O(1) fast-path: In-memory state is already synchronized with SQLite WAL revision
+                return True
+
+            loaded = storage.load_full_state()
+            if not loaded:
+                return False
+
+            rev, state = loaded
             self.wallets = state.get("wallets", {})
             self.nodes = state.get("nodes", {})
             self.total_transactions = state.get("total_transactions", 0)
@@ -1050,18 +1230,23 @@ class Blockchain:
                         extra_data=t_data.get("extra_data")
                     )
                     txs.append(tx)
+                b_ver = int(b_data.get("version", 1))
+                b_merkle = b_data.get("merkle_root") or compute_merkle_root([tx.hash() for tx in txs])
                 block = Block(
                     index=b_data["index"],
                     transactions=txs,
                     previous_hash=b_data["previous_hash"],
                     timestamp=b_data["timestamp"],
                     nonce=b_data["nonce"],
-                    miner=b_data.get("miner", "Genesis-Validator")
+                    miner=b_data.get("miner", "Genesis-Validator"),
+                    version=b_ver,
+                    merkle_root=b_merkle,
                 )
                 block.hash = b_data["hash"]
                 new_chain.append(block)
 
             self.chain = new_chain
+            self._loaded_revision = rev
 
             # Reconstruct Space Posts, Likes & Comments deterministically from on-chain history
             self.space_posts = {}

@@ -183,8 +183,9 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
                 logger.warning(f"Auth mismatch: key {wallet.address[:10]}... attempted action as {clean_expected[:10]}...")
                 return False, 403, "İmza anahtarı belirtilen cüzdan adresiyle eşleşmiyor!", "", "", ""
 
+            cand_primary = canonical_payload[0] if isinstance(canonical_payload, (list, tuple)) else canonical_payload
             nonce_ts = f"{int(time.time() * 1000)}:{secrets.token_hex(4)}"
-            signed_payload = f"{canonical_payload}:{nonce_ts}"
+            signed_payload = f"{cand_primary}:{nonce_ts}"
             sig = wallet.sign(signed_payload)
             return True, 200, "", sig, wallet.get_public_key_hex(), signed_payload
         except Exception:
@@ -199,15 +200,30 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
         if public_key_to_address(pub_hex) != clean_expected:
             return False, 403, "Açık anahtar (public_key) cüzdan adresiyle uyuşmuyor!", "", "", ""
 
-        if client_ts is not None:
-            ts_val = safe_float(client_ts)
-            if ts_val is None or abs(time.time() - ts_val) > 300:
-                return False, 401, "İmza zaman damgası (timestamp) süresi dolmuş veya geçersiz.", "", "", ""
-            signed_payload = f"{canonical_payload}:{client_ts}"
-        else:
-            signed_payload = canonical_payload
+        client_nonce = data.get("nonce")
+        expected_nonce = None
+        if client_nonce is not None:
+            expected_nonce = blockchain.get_account_nonce(clean_expected)
+            if safe_int(client_nonce, default=-1) != expected_nonce:
+                return False, 409, f"Geçersiz işlem sırası (nonce). Beklenen: {expected_nonce}", "", "", ""
 
-        if not verify_signature(pub_hex, signed_payload, client_sig):
+        candidates = canonical_payload if isinstance(canonical_payload, (list, tuple)) else [canonical_payload]
+        signed_payload = ""
+        verified_ok = False
+        for cand in candidates:
+            if client_ts is not None:
+                ts_val = safe_float(client_ts)
+                if ts_val is None or abs(time.time() - ts_val) > 300:
+                    return False, 401, "İmza zaman damgası (timestamp) süresi dolmuş veya geçersiz.", "", "", ""
+                cand_signed = f"{cand}:{client_ts}:{expected_nonce}" if expected_nonce is not None else f"{cand}:{client_ts}"
+            else:
+                cand_signed = f"{cand}:{expected_nonce}" if expected_nonce is not None else cand
+            if verify_signature(pub_hex, cand_signed, client_sig):
+                signed_payload = cand_signed
+                verified_ok = True
+                break
+
+        if not verified_ok:
             return False, 403, "Geçersiz ECDSA dijital imza!", "", "", ""
 
         if not rate_limiter.register_signature_once(client_sig):
@@ -229,7 +245,7 @@ def after_request(response):
     duration = time.time() - getattr(g, "start_time", time.time())
     response.headers["X-Request-ID"] = getattr(g, "request_id", "unknown")
     response.headers["X-Response-Time"] = f"{duration:.4f}s"
-    response.headers["X-Powered-By"] = "LockTrace-Blockchain/1.2"
+    response.headers["X-Powered-By"] = "LockTrace-Blockchain/1.3"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     origin = request.headers.get("Origin", "")
@@ -291,8 +307,11 @@ def index_page():
 def api_health():
     return api_response(True, data={
         "status": "healthy",
-        "version": "1.2.1",
+        "version": "1.3.0",
         "network": "mainnet",
+        "storage_engine": "sqlite-wal",
+        "merkle_enabled": True,
+        "non_custodial_signing": True,
         "chain_valid": blockchain.is_chain_valid(),
     })
 
@@ -340,6 +359,7 @@ def api_create_wallet():
                 "public_key": wallet.get_public_key_hex(),
                 "private_key": wallet.get_private_key_hex(),
                 "balance": blockchain.get_balance(wallet.address),
+                "nonce": blockchain.get_account_nonce(wallet.address),
             }, status=201)
         return api_response(False, message=message, status=400)
     except Exception as e:
@@ -382,6 +402,7 @@ def api_import_wallet():
             "public_key": wallet.get_public_key_hex(),
             "private_key": wallet.get_private_key_hex(),
             "balance": bal,
+            "nonce": blockchain.get_account_nonce(wallet.address),
         })
     except Exception as e:
         logger.warning(f"Wallet restoration failed: {e}")
@@ -396,9 +417,11 @@ def api_balance(address):
         return api_response(False, message="Invalid address syntax", status=400)
 
     bal = blockchain.get_balance(clean_addr)
+    nonce = blockchain.get_account_nonce(clean_addr)
     return api_response(True, data={
         "address": clean_addr,
         "balance": bal,
+        "nonce": nonce,
         "exists": clean_addr in blockchain.wallets or clean_addr == TREASURY_ADDRESS,
     })
 
@@ -425,9 +448,15 @@ def api_transaction():
         return api_response(False, message=f"Tek seferde maksimum transfer sınırı {Config.MAX_TRANSACTION:,.0f} BCT'dir.", status=400)
 
     amount = round(amount, 8)
-    canonical = f"{sender}{receiver}{amount}"
+    amt_str_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
+    canonical_variants = list(dict.fromkeys([
+        f"{sender}{receiver}{amount}",
+        f"{sender}{receiver}{amt_str_trim}",
+        f"{sender}{receiver}{amount:.8f}",
+        f"{sender}{receiver}{amount_raw}",
+    ]))
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
-        data, sender, canonical
+        data, sender, canonical_variants
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
@@ -529,6 +558,15 @@ def api_explorer_tx(tx_hash):
     if tx:
         return api_response(True, data=tx)
     return api_response(False, message="Transaction not found", status=404)
+
+
+@app.route("/api/v1/explorer/merkle-proof/<tx_hash>", methods=["GET"])
+def api_explorer_merkle_proof(tx_hash):
+    """Generates and cryptographically verifies SPV Merkle proof for a confirmed transaction."""
+    proof_data = blockchain.get_merkle_proof((tx_hash or "").strip()[:128])
+    if proof_data:
+        return api_response(True, data=proof_data)
+    return api_response(False, message="İşlem veya Merkle kanıtı bulunamadı.", status=404)
 
 
 @app.route("/api/v1/transactions/latest", methods=["GET"])

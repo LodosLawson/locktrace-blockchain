@@ -7,6 +7,7 @@ ECDSA SECP256k1 anahtar çifti + BIP-39 12-kelimelik Mnemonic Kurtarma Sistemi.
 import hashlib
 import binascii
 from ecdsa import SigningKey, VerifyingKey, SECP256k1, BadSignatureError
+from ecdsa.util import sigencode_string, sigdecode_string
 from core.mnemonic import generate_mnemonic, mnemonic_to_private_key, validate_mnemonic
 
 
@@ -44,8 +45,12 @@ class Wallet:
         return f"BCT{second_hash[:40]}"
 
     def sign(self, data: str) -> str:
-        """Veriyi private key ile imzala."""
-        signature = self.private_key.sign(data.encode())
+        """Veriyi private key ile deterministik SHA-256 ECDSA (SECP256k1) olarak imzala."""
+        signature = self.private_key.sign_deterministic(
+            data.encode("utf-8"),
+            hashfunc=hashlib.sha256,
+            sigencode=sigencode_string,
+        )
         return binascii.hexlify(signature).decode()
 
     def get_public_key_hex(self) -> str:
@@ -73,10 +78,23 @@ def restore_wallet_from_mnemonic(mnemonic: str) -> Wallet:
     return Wallet(mnemonic=mnemonic)
 
 
+def _normalize_uncompressed_pubkey_bytes(public_key_hex: str) -> bytes:
+    """64-bayt ham (x||y) veya 65-bayt (04||x||y) açık anahtarı 64 bayta normalize et."""
+    clean = (public_key_hex or "").strip()
+    if clean.startswith("0x") or clean.startswith("0X"):
+        clean = clean[2:]
+    raw = binascii.unhexlify(clean)
+    if len(raw) == 65 and raw[0] == 0x04:
+        return raw[1:]
+    return raw
+
+
 def public_key_to_address(public_key_hex: str) -> str:
     """Public key hex dizgesinden deterministik BCT cüzdan adresi üret ve doğrula."""
     try:
-        pub_bytes = binascii.unhexlify((public_key_hex or "").strip())
+        pub_bytes = _normalize_uncompressed_pubkey_bytes(public_key_hex)
+        if len(pub_bytes) != 64:
+            return ""
         # SECP256k1 eğrisi üzerinde geçerli bir nokta olduğunu doğrula
         VerifyingKey.from_string(pub_bytes, curve=SECP256k1)
         first_hash = hashlib.sha256(pub_bytes).hexdigest()
@@ -87,11 +105,26 @@ def public_key_to_address(public_key_hex: str) -> str:
 
 
 def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool:
-    """İmzayı doğrula."""
+    """SECP256k1 ECDSA imzasını doğrula (SHA-256 birincil, eski SHA-1 geriye dönük uyumlu)."""
     try:
-        pub_bytes = binascii.unhexlify(public_key_hex)
+        pub_bytes = _normalize_uncompressed_pubkey_bytes(public_key_hex)
+        if len(pub_bytes) != 64:
+            return False
         pub_key = VerifyingKey.from_string(pub_bytes, curve=SECP256k1)
-        sig_bytes = binascii.unhexlify(signature_hex)
-        return pub_key.verify(sig_bytes, data.encode())
+        clean_sig = (signature_hex or "").strip()
+        if clean_sig.startswith("0x") or clean_sig.startswith("0X"):
+            clean_sig = clean_sig[2:]
+        sig_bytes = binascii.unhexlify(clean_sig)
+        msg_bytes = data.encode("utf-8")
+
+        # 1) Modern SHA-256 ECDSA (Tarayıcı Non-Custodial & v1.3+ Sunucu İmzaları)
+        try:
+            if pub_key.verify(sig_bytes, msg_bytes, hashfunc=hashlib.sha256, sigdecode=sigdecode_string):
+                return True
+        except BadSignatureError:
+            pass
+
+        # 2) Geriye dönük uyumluluk: Eski ecdsa varsayılanı (SHA-1)
+        return pub_key.verify(sig_bytes, msg_bytes, sigdecode=sigdecode_string)
     except (BadSignatureError, Exception):
         return False

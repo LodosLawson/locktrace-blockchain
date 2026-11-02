@@ -16,6 +16,7 @@ import sys
 import time
 import json
 import socket
+import hashlib
 import argparse
 import urllib.request
 import urllib.error
@@ -23,7 +24,23 @@ from datetime import datetime
 
 DEFAULT_SEED = "https://locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "1.2.0"
+VERSION = "1.3.0"
+
+
+def compute_merkle_root(tx_hashes: list) -> str:
+    """Canonical binary SHA-256 Merkle root verification for archival peer nodes."""
+    if not tx_hashes:
+        return "0" * 64
+    level = [str(h).strip().lower() for h in tx_hashes]
+    while len(level) > 1:
+        if len(level) % 2 == 1:
+            level.append(level[-1])
+        next_level = []
+        for i in range(0, len(level), 2):
+            combined = f"{level[i]}{level[i + 1]}".encode("utf-8")
+            next_level.append(hashlib.sha256(combined).hexdigest())
+        level = next_level
+    return level[0]
 
 
 class LockTraceNode:
@@ -40,6 +57,8 @@ class LockTraceNode:
         self.blocks_mined = 0
         self.total_rewards = 0.0
         self.wallet_balance = 0.0
+        self.verified_blocks = 0
+        self.integrity_ok = True
 
         self.home_dir = os.path.join(os.path.expanduser("~"), ".locktrace")
         self.data_dir = os.path.join(self.home_dir, "node_data")
@@ -123,22 +142,57 @@ class LockTraceNode:
         }
         self.request("/api/v1/nodes/ping", data=payload, method="POST")
 
+    def verify_synced_blocks(self, blocks: list, difficulty: int = 3) -> bool:
+        """Independently verify PoW target, hash linkage, and Merkle roots across synced blocks."""
+        if not blocks:
+            return True
+        ordered = sorted(blocks, key=lambda b: int(b.get("index", 0)))
+        target = "0" * max(1, int(difficulty))
+        valid_count = 0
+
+        for idx, blk in enumerate(ordered):
+            b_idx = int(blk.get("index", 0))
+            b_hash = str(blk.get("hash", ""))
+            if b_idx > 0 and not b_hash.startswith(target):
+                self.integrity_ok = False
+                return False
+
+            txs = blk.get("transactions", [])
+            tx_hashes = [t.get("tx_hash", "") for t in txs if t.get("tx_hash")]
+            if tx_hashes and blk.get("merkle_root"):
+                if compute_merkle_root(tx_hashes) != str(blk["merkle_root"]).lower():
+                    self.integrity_ok = False
+                    return False
+
+            if idx > 0 and b_idx == int(ordered[idx - 1].get("index", -99)) + 1:
+                if blk.get("previous_hash") != ordered[idx - 1].get("hash"):
+                    self.integrity_ok = False
+                    return False
+            valid_count += 1
+
+        self.verified_blocks = valid_count
+        self.integrity_ok = True
+        return True
+
     def sync_chain(self):
+        difficulty = 3
         stats = self.request("/api/v1/stats")
         if stats.get("success"):
             data = stats.get("data", {})
             self.network_height = data.get("total_blocks", 0)
+            difficulty = int(data.get("difficulty", 3))
 
         blocks_res = self.request("/api/v1/blocks/latest?count=50")
         if blocks_res.get("success"):
             blocks = blocks_res.get("data", {}).get("blocks", [])
             if blocks:
-                self.local_height = max(b["index"] for b in blocks) + 1
-                self.synced = (self.local_height >= self.network_height)
+                if self.verify_synced_blocks(blocks, difficulty=difficulty):
+                    self.local_height = max(b["index"] for b in blocks) + 1
+                    self.synced = (self.local_height >= self.network_height)
 
-                cache_file = os.path.join(self.data_dir, "synced_blocks.json")
-                with open(cache_file, "w", encoding="utf-8") as f:
-                    json.dump(blocks, f, indent=2)
+                    cache_file = os.path.join(self.data_dir, "synced_blocks.json")
+                    with open(cache_file, "w", encoding="utf-8") as f:
+                        json.dump(blocks, f, indent=2)
 
         # Refresh wallet balance
         if self.wallet_address.startswith("BCT"):
@@ -178,9 +232,9 @@ class LockTraceNode:
         print(f" Blocks Mined     : {self.blocks_mined} blocks forged")
         print(f" Total Earnings   : +{self.total_rewards:.8f} BCT (50% Fees + Block Subsidy)")
         print("-" * 66)
-        status_icon = "🟢 SYNCHRONIZED" if self.synced else "🟡 SYNCING"
+        status_icon = "🟢 SYNCHRONIZED & VERIFIED" if (self.synced and self.integrity_ok) else "🟡 SYNCING"
         print(f" Consensus Status : {status_icon}")
-        print(f" Synced Blocks    : {self.local_height} / {self.network_height}")
+        print(f" Synced Blocks    : {self.local_height} / {self.network_height} ({self.verified_blocks} Merkle+PoW Verified)")
         print(f" Last Heartbeat   : {datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
         print("=" * 66)
         print(" Node active, validating blocks & mining fees. Press Ctrl+C to stop.")
