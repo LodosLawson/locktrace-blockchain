@@ -267,3 +267,4 @@ def validate_mnemonic(mnemonic: str) -> bool:
     if len(words) != 12:
         return False
     return all(w in WORDS for w in words)
+

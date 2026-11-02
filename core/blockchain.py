@@ -1,6 +1,6 @@
 """
-BlockChainT - Enterprise Grade Blockchain Core
-==============================================
+BlockChainT - Enterprise Grade Blockchain Core (Hardened & Transparent)
+========================================================================
 Total Supply: 1 Trillion BCT
 Wallet Genesis Reward: 1.00 BCT
 Transaction Fee: 1% (Returned to Treasury Vault)
@@ -22,14 +22,24 @@ MINING_DIFFICULTY = 3                    # Proof of Work Difficulty
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
 
+def is_valid_bct_address(addr: str) -> bool:
+    """Validate BCT address syntax."""
+    if not addr or not isinstance(addr, str):
+        return False
+    clean = addr.strip()
+    if clean == TREASURY_ADDRESS or clean == "GENESIS_VAULT":
+        return True
+    return clean.startswith("BCT") and len(clean) == 43 and all(c in "0123456789abcdefABCDEF" for c in clean[3:])
+
+
 class Transaction:
     """Cryptographic On-Chain Transaction."""
 
     def __init__(self, sender: str, receiver: str, amount: float,
                  fee: float = 0.0, signature: str = "",
                  timestamp: float = None, tx_type: str = "transfer"):
-        self.sender = sender
-        self.receiver = receiver
+        self.sender = sender.strip()
+        self.receiver = receiver.strip()
         self.amount = float(amount)
         self.fee = float(fee)
         self.signature = signature
@@ -116,12 +126,10 @@ class Blockchain:
         self.total_transactions = 0
         self.total_fees_collected = 0.0
 
-        # Initialize or reload state
         with self.lock:
             if not self._load_state():
                 self._create_genesis_block()
 
-    # ── Genesis ───────────────────────────────────────────
     def _create_genesis_block(self):
         self.balances[TREASURY_ADDRESS] = TOTAL_SUPPLY
         genesis_tx = Transaction(
@@ -137,119 +145,120 @@ class Blockchain:
         self.chain = [block]
         self._save_state()
 
-    # ── Double-Check Balance From Entire Chain ─────────────
     def verify_and_recalc_balance(self, address: str) -> float:
-        """
-        Calculates balance from the entire immutable chain history.
-        Guarantees funds can NEVER be lost due to memory glitches.
-        """
+        clean_addr = address.strip()
         bal = 0.0
         for block in self.chain:
             for tx in block.transactions:
-                if tx.receiver == address:
+                if tx.receiver == clean_addr:
                     if tx.tx_type == "transfer":
                         bal += round(tx.amount - tx.fee, 8)
                     else:
                         bal += round(tx.amount, 8)
-                if tx.sender == address:
+                if tx.sender == clean_addr:
                     bal -= round(tx.amount, 8)
 
-        # Also account for pending unmined transactions
         for tx in self.pending_transactions:
-            if tx.receiver == address:
+            if tx.receiver == clean_addr:
                 if tx.tx_type == "transfer":
                     bal += round(tx.amount - tx.fee, 8)
                 else:
                     bal += round(tx.amount, 8)
-            if tx.sender == address:
+            if tx.sender == clean_addr:
                 bal -= round(tx.amount, 8)
 
         return round(bal, 8)
 
-    # ── Register Wallet with 1.00 BCT Grant ────────────────
     def register_wallet(self, address: str, public_key: str) -> Tuple[bool, str]:
         with self.lock:
-            # Refresh state from disk to prevent cross-worker drift
             self._load_state()
+            clean_addr = address.strip()
 
-            if address in self.wallets:
-                # Wallet already exists, return current verified balance
-                bal = self.get_balance(address)
-                return True, f"Wallet already registered with balance: {bal} BCT"
+            if clean_addr in self.wallets:
+                bal = self.get_balance(clean_addr)
+                return True, f"Wallet already active with balance: {bal} BCT"
 
-            self.wallets[address] = {
+            self.wallets[clean_addr] = {
                 "public_key": public_key,
                 "created_at": time.time()
             }
 
-            # Grant 1.00 BCT from Treasury
             treasury_bal = self.get_balance(TREASURY_ADDRESS)
             if treasury_bal >= 1.0:
                 reward_tx = Transaction(
                     sender=TREASURY_ADDRESS,
-                    receiver=address,
+                    receiver=clean_addr,
                     amount=1.0,
                     fee=0.0,
                     signature="automated_welcome_grant_1bct",
                     tx_type="reward"
                 )
                 self.balances[TREASURY_ADDRESS] = round(treasury_bal - 1.0, 8)
-                self.balances[address] = 1.0
+                self.balances[clean_addr] = 1.0
                 self.pending_transactions.append(reward_tx)
                 self.total_transactions += 1
 
-                # Force mine immediately into a block so it's permanently sealed on-chain
                 self._mine_block()
                 self._save_state()
-
-                return True, "Wallet created! 1.00 BCT welcome bonus permanently deposited."
+                return True, "Wallet created! 1.00 BCT welcome bonus deposited."
             else:
-                self.balances[address] = 0.0
+                self.balances[clean_addr] = 0.0
                 self._save_state()
-                return True, "Wallet created, but treasury is depleted."
+                return True, "Wallet created, treasury pool depleted."
 
-    # ── Wire Transfer with 1% Treasury Allocation ──────────
     def create_transaction(self, sender: str, receiver: str,
                            amount: float, signature: str) -> Tuple[bool, str, Optional[dict]]:
         with self.lock:
             self._load_state()
 
-            if sender == receiver:
-                return False, "Cannot send to your own address", None
-            if sender not in self.wallets and sender != TREASURY_ADDRESS:
-                return False, "Sender address not registered on network", None
-            if receiver not in self.wallets and receiver != TREASURY_ADDRESS:
-                return False, "Recipient address not found on network", None
+            clean_sender = sender.strip()
+            clean_receiver = receiver.strip()
+
+            if clean_sender == clean_receiver:
+                return False, "Cannot send funds to your own address", None
+
+            if not is_valid_bct_address(clean_sender):
+                return False, f"Invalid sender address format: '{clean_sender}'", None
+
+            if not is_valid_bct_address(clean_receiver):
+                return False, f"Invalid recipient address format: '{clean_receiver}'. Must be BCT followed by 40 hex characters.", None
+
+            # Auto-register receiver wallet if not present (Decentralized permissionless model)
+            if clean_receiver not in self.wallets and clean_receiver != TREASURY_ADDRESS:
+                self.wallets[clean_receiver] = {
+                    "public_key": "",
+                    "created_at": time.time()
+                }
+
             if amount <= 0:
-                return False, "Amount must be greater than 0", None
+                return False, "Amount must be strictly positive", None
 
-            sender_balance = self.get_balance(sender)
+            sender_balance = self.get_balance(clean_sender)
             if sender_balance < amount:
-                return False, f"Insufficient funds. Balance: {sender_balance:.8f} BCT, Required: {amount:.8f} BCT", None
+                return False, f"Insufficient balance. Your balance is {sender_balance:.8f} BCT, attempted to send {amount:.8f} BCT", None
 
-            # 1% Treasury fee
+            # Calculate 1% fee returned to treasury
             fee = round(amount * FEE_PERCENT, 8)
             net_amount = round(amount - fee, 8)
 
             tx = Transaction(
-                sender=sender,
-                receiver=receiver,
+                sender=clean_sender,
+                receiver=clean_receiver,
                 amount=amount,
                 fee=fee,
                 signature=signature,
                 tx_type="transfer"
             )
 
-            # Update balances
-            self.balances[sender] = round(self.balances[sender] - amount, 8)
-            self.balances[receiver] = round(self.balances.get(receiver, 0.0) + net_amount, 8)
+            # Update state
+            self.balances[clean_sender] = round(self.balances[clean_sender] - amount, 8)
+            self.balances[clean_receiver] = round(self.balances.get(clean_receiver, 0.0) + net_amount, 8)
             self.balances[TREASURY_ADDRESS] = round(self.balances.get(TREASURY_ADDRESS, 0.0) + fee, 8)
 
             self.pending_transactions.append(tx)
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + fee, 8)
 
-            # Mine block to secure ledger
             if self.auto_mine:
                 self._mine_block()
 
@@ -257,16 +266,15 @@ class Blockchain:
 
             tx_info = {
                 "tx_hash": tx.hash(),
-                "sender": sender,
-                "receiver": receiver,
+                "sender": clean_sender,
+                "receiver": clean_receiver,
                 "amount": amount,
                 "fee": fee,
                 "net_amount": net_amount
             }
 
-            return True, f"Transfer confirmed! Net: {net_amount} BCT, 1% Fee: {fee} BCT returned to vault", tx_info
+            return True, f"Transfer confirmed! Sent: {net_amount} BCT, 1% Fee ({fee} BCT) returned to treasury vault.", tx_info
 
-    # ── Mining ────────────────────────────────────────────
     def _mine_block(self) -> Optional[Block]:
         if not self.pending_transactions:
             return None
@@ -282,33 +290,50 @@ class Blockchain:
         self.pending_transactions = []
         return block
 
-    def mine_pending(self) -> Tuple[Optional[dict], str]:
-        with self.lock:
-            if not self.pending_transactions:
-                return None, "No pending transactions in mempool"
-            block = self._mine_block()
-            if block:
-                self._save_state()
-                return block.to_dict(), f"Block #{block.index} successfully mined! ({len(block.transactions)} txs)"
-            return None, "Mining failed"
-
-    # ── Balance Query with Ledger Verification ─────────────
     def get_balance(self, address: str) -> float:
         with self.lock:
-            # Sync with disk
             self._load_state()
-            
-            # Primary: cached fast lookup
-            cached = self.balances.get(address)
+            clean_addr = address.strip()
+
+            cached = self.balances.get(clean_addr)
             if cached is not None and cached > 0:
                 return round(cached, 8)
 
-            # Verification fallback: Compute from immutable chain
-            recalc = self.verify_and_recalc_balance(address)
-            self.balances[address] = recalc
+            recalc = self.verify_and_recalc_balance(clean_addr)
+            self.balances[clean_addr] = recalc
             return recalc
 
-    # ── Queries ───────────────────────────────────────────
+    def get_block_by_index_or_hash(self, query: str) -> Optional[dict]:
+        with self.lock:
+            self._load_state()
+            query = query.strip()
+            # Try index
+            try:
+                idx = int(query)
+                if 0 <= idx < len(self.chain):
+                    return self.chain[idx].to_dict()
+            except ValueError:
+                pass
+            # Try hash
+            for b in self.chain:
+                if b.hash.lower() == query.lower() or b.previous_hash.lower() == query.lower():
+                    return b.to_dict()
+            return None
+
+    def get_tx_by_hash(self, tx_hash: str) -> Optional[dict]:
+        with self.lock:
+            self._load_state()
+            target = tx_hash.strip().lower()
+            for b in self.chain:
+                for tx in b.transactions:
+                    if tx.hash().lower() == target:
+                        d = tx.to_dict()
+                        d["block_index"] = b.index
+                        d["block_hash"] = b.hash
+                        d["confirmations"] = len(self.chain) - b.index
+                        return d
+            return None
+
     def get_chain_data(self) -> list:
         with self.lock:
             self._load_state()
@@ -328,32 +353,23 @@ class Blockchain:
                 for tx in block.transactions:
                     tx_dict = tx.to_dict()
                     tx_dict["block_index"] = block.index
+                    tx_dict["block_hash"] = block.hash
                     txs.append(tx_dict)
             return list(reversed(txs))
 
     def get_wallet_transactions(self, address: str) -> list:
         with self.lock:
             self._load_state()
+            clean_addr = address.strip()
             txs = []
             for block in self.chain:
                 for tx in block.transactions:
-                    if tx.sender == address or tx.receiver == address:
+                    if tx.sender == clean_addr or tx.receiver == clean_addr:
                         tx_dict = tx.to_dict()
                         tx_dict["block_index"] = block.index
+                        tx_dict["block_hash"] = block.hash
                         txs.append(tx_dict)
             return list(reversed(txs))
-
-    def get_wallet_list(self) -> list:
-        with self.lock:
-            self._load_state()
-            result = []
-            for addr, info in self.wallets.items():
-                result.append({
-                    "address": addr,
-                    "balance": self.get_balance(addr),
-                    "created_at": info.get("created_at", 0)
-                })
-            return sorted(result, key=lambda x: x["created_at"], reverse=True)
 
     def is_chain_valid(self) -> bool:
         with self.lock:
@@ -388,7 +404,6 @@ class Blockchain:
                 "latest_block_hash": self.chain[-1].hash if self.chain else "N/A"
             }
 
-    # ── Atomic Disk Storage ────────────────────────────────
     def _save_state(self):
         try:
             os.makedirs(DATA_DIR, exist_ok=True)
@@ -450,14 +465,3 @@ class Blockchain:
         except Exception as e:
             print(f"[ERROR] Failed to load blockchain state: {e}")
             return False
-
-    def reset(self):
-        with self.lock:
-            self.chain = []
-            self.pending_transactions = []
-            self.balances = {TREASURY_ADDRESS: TOTAL_SUPPLY}
-            self.wallets = {}
-            self.total_transactions = 0
-            self.total_fees_collected = 0.0
-            self._create_genesis_block()
-            return True, "Blockchain state reset to genesis"

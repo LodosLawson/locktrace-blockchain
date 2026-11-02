@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-  <title>LockTrace Bank | Decentralized BCT Account & Explorer</title>
+  <title>LockTrace Bank | Decentralized BCT Account & Transparent Explorer</title>
   
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#080c14">
@@ -80,25 +80,16 @@
       align-items: center;
     }
 
-    .brand-wrap {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
+    .brand-wrap { display: flex; align-items: center; gap: 0.75rem; }
     .brand-logo {
-      width: 36px;
-      height: 36px;
+      width: 36px; height: 36px;
       background: linear-gradient(135deg, #1e293b, #0f172a);
       border: 1px solid rgba(255, 255, 255, 0.15);
       border-radius: 10px;
-      display: grid;
-      place-items: center;
+      display: grid; place-items: center;
     }
     .brand-title {
-      font-size: 1.15rem;
-      font-weight: 800;
-      letter-spacing: -0.4px;
-      color: #fff;
+      font-size: 1.15rem; font-weight: 800; letter-spacing: -0.4px; color: #fff;
     }
     .brand-title span {
       background: linear-gradient(135deg, #60a5fa, #a78bfa);
@@ -106,29 +97,16 @@
       -webkit-text-fill-color: transparent;
     }
 
-    .header-actions {
-      display: flex;
-      align-items: center;
-      gap: 0.75rem;
-    }
-
+    .header-actions { display: flex; align-items: center; gap: 0.75rem; }
     .status-pill {
-      display: flex;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      background: rgba(16, 185, 129, 0.12);
-      color: var(--emerald);
-      padding: 0.35rem 0.75rem;
-      border-radius: 999px;
+      display: flex; align-items: center; gap: 6px;
+      font-size: 0.72rem; font-weight: 600;
+      background: rgba(16, 185, 129, 0.12); color: var(--emerald);
+      padding: 0.35rem 0.75rem; border-radius: 999px;
       border: 1px solid rgba(16, 185, 129, 0.25);
     }
     .pulse-dot {
-      width: 6px;
-      height: 6px;
-      background: var(--emerald);
-      border-radius: 50%;
+      width: 6px; height: 6px; background: var(--emerald); border-radius: 50%;
       animation: pulse 2s infinite;
     }
     @keyframes pulse {
@@ -137,304 +115,152 @@
     }
 
     .btn-install {
-      display: none;
-      align-items: center;
-      gap: 6px;
-      font-size: 0.75rem;
-      font-weight: 700;
+      display: none; align-items: center; gap: 6px;
+      font-size: 0.75rem; font-weight: 700;
       background: linear-gradient(135deg, #2563eb, #7c3aed);
-      color: #fff;
-      padding: 0.4rem 0.85rem;
-      border-radius: 999px;
-      border: none;
-      cursor: pointer;
+      color: #fff; padding: 0.4rem 0.85rem; border-radius: 999px; border: none; cursor: pointer;
     }
     .btn-install.visible { display: inline-flex; }
 
     main {
-      flex: 1;
-      max-width: 860px;
-      width: 100%;
-      margin: 0 auto;
-      padding: 1.25rem;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      gap: 1.25rem;
+      flex: 1; max-width: 860px; width: 100%; margin: 0 auto;
+      padding: 1.25rem; z-index: 1; display: flex; flex-direction: column; gap: 1.25rem;
     }
 
-    /* Titanium Bank Card */
+    /* Bank Card */
     .bank-card {
       position: relative;
       background: linear-gradient(135deg, #182030 0%, #0d121c 60%, #080c14 100%);
       border: 1px solid rgba(255, 255, 255, 0.12);
       border-radius: var(--radius-lg);
-      padding: 1.75rem;
-      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
-      color: #fff;
-      overflow: hidden;
+      padding: 1.75rem; box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+      color: #fff; overflow: hidden;
     }
     .bank-card::after {
-      content: '';
-      position: absolute;
-      top: 0; right: 0; bottom: 0; left: 0;
+      content: ''; position: absolute; top: 0; right: 0; bottom: 0; left: 0;
       background: radial-gradient(circle at 85% 20%, rgba(255, 255, 255, 0.08) 0%, transparent 60%);
       pointer-events: none;
     }
 
     .card-top {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-start;
-      margin-bottom: 1.8rem;
+      display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.8rem;
     }
     .emv-chip {
-      width: 44px;
-      height: 32px;
-      background: linear-gradient(135deg, #fcd34d, #d97706);
-      border-radius: 6px;
-      border: 1px solid rgba(0,0,0,0.3);
+      width: 44px; height: 32px; background: linear-gradient(135deg, #fcd34d, #d97706);
+      border-radius: 6px; border: 1px solid rgba(0,0,0,0.3);
     }
     .card-brand-label {
-      font-size: 0.75rem;
-      font-weight: 800;
-      letter-spacing: 2px;
-      color: #94a3b8;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      font-size: 0.75rem; font-weight: 800; letter-spacing: 2px; color: #94a3b8;
+      display: flex; align-items: center; gap: 6px;
     }
 
     .card-balance-section { margin-bottom: 1.6rem; }
     .card-balance-label {
-      font-size: 0.75rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 1.5px;
-      color: #94a3b8;
-      margin-bottom: 0.3rem;
+      font-size: 0.75rem; font-weight: 600; text-transform: uppercase;
+      letter-spacing: 1.5px; color: #94a3b8; margin-bottom: 0.3rem;
     }
     .card-balance-num {
-      font-size: 2.6rem;
-      font-weight: 800;
-      letter-spacing: -1px;
-      display: flex;
-      align-items: baseline;
-      gap: 8px;
+      font-size: 2.6rem; font-weight: 800; letter-spacing: -1px;
+      display: flex; align-items: baseline; gap: 8px;
     }
-    .card-balance-num .curr {
-      font-size: 1.3rem;
-      color: #60a5fa;
-      font-weight: 700;
-    }
+    .card-balance-num .curr { font-size: 1.3rem; color: #60a5fa; font-weight: 700; }
 
-    .card-bottom {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
-    .card-holder {
-      font-size: 0.7rem;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #64748b;
-    }
+    .card-bottom { display: flex; justify-content: space-between; align-items: flex-end; }
+    .card-holder { font-size: 0.7rem; text-transform: uppercase; letter-spacing: 1px; color: #64748b; }
     .card-holder-name {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: #f1f5f9;
-      margin-top: 2px;
-      cursor: pointer;
+      font-size: 0.85rem; font-weight: 700; color: #f1f5f9; margin-top: 2px; cursor: pointer;
     }
     .card-acc-num {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.8rem;
-      color: #cbd5e1;
-      letter-spacing: 1px;
+      font-family: 'JetBrains Mono', monospace; font-size: 0.8rem; color: #cbd5e1; letter-spacing: 1px;
     }
 
     /* Quick Grid */
-    .quick-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0.75rem;
-    }
+    .quick-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0.75rem; }
     .quick-btn {
-      background: var(--bg-card);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-md);
-      padding: 0.9rem 0.5rem;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 6px;
-      color: var(--text);
-      cursor: pointer;
-      transition: all 0.2s;
+      background: var(--bg-card); border: 1px solid var(--card-border);
+      border-radius: var(--radius-md); padding: 0.9rem 0.5rem;
+      display: flex; flex-direction: column; align-items: center; gap: 6px;
+      color: var(--text); cursor: pointer; transition: all 0.2s;
     }
-    .quick-btn:hover {
-      background: rgba(30, 41, 59, 0.8);
-      transform: translateY(-2px);
-    }
+    .quick-btn:hover { background: rgba(30, 41, 59, 0.8); transform: translateY(-2px); }
     .quick-btn .btn-icon-circle {
-      width: 40px;
-      height: 40px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.05);
-      display: grid;
-      place-items: center;
-      font-size: 1.25rem;
+      width: 40px; height: 40px; border-radius: 50%; background: rgba(255,255,255,0.05);
+      display: grid; place-items: center; font-size: 1.25rem;
     }
-    .quick-btn span.label {
-      font-size: 0.78rem;
-      font-weight: 700;
-      color: #e2e8f0;
-    }
+    .quick-btn span.label { font-size: 0.78rem; font-weight: 700; color: #e2e8f0; }
 
     /* Tabs */
     .nav-tabs {
-      display: flex;
-      background: rgba(255, 255, 255, 0.04);
-      padding: 4px;
-      border-radius: var(--radius-md);
-      gap: 4px;
+      display: flex; background: rgba(255, 255, 255, 0.04); padding: 4px; border-radius: var(--radius-md); gap: 4px;
     }
     .tab-btn {
-      flex: 1;
-      text-align: center;
-      padding: 0.7rem 0;
-      font-size: 0.82rem;
-      font-weight: 700;
-      color: var(--text-muted);
-      border-radius: 10px;
-      cursor: pointer;
-      border: none;
-      background: transparent;
+      flex: 1; text-align: center; padding: 0.7rem 0; font-size: 0.82rem; font-weight: 700;
+      color: var(--text-muted); border-radius: 10px; cursor: pointer; border: none; background: transparent;
     }
-    .tab-btn.active {
-      background: var(--accent);
-      color: #fff;
-    }
+    .tab-btn.active { background: var(--accent); color: #fff; }
 
     /* Panel */
     .panel {
-      display: none;
-      background: var(--bg-card);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius-lg);
-      padding: 1.6rem;
-      backdrop-filter: blur(16px);
+      display: none; background: var(--bg-card); border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg); padding: 1.6rem; backdrop-filter: blur(16px);
     }
     .panel.active { display: block; }
 
-    .panel-title {
-      font-size: 1.15rem;
-      font-weight: 800;
-      color: #fff;
-      margin-bottom: 0.3rem;
-    }
-    .panel-desc {
-      font-size: 0.82rem;
-      color: var(--text-muted);
-      margin-bottom: 1.25rem;
-    }
+    .panel-title { font-size: 1.15rem; font-weight: 800; color: #fff; margin-bottom: 0.3rem; }
+    .panel-desc { font-size: 0.82rem; color: var(--text-muted); margin-bottom: 1.25rem; }
 
     .form-group { margin-bottom: 1.2rem; }
     .form-group label {
-      display: block;
-      font-size: 0.75rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-      color: var(--text-muted);
-      margin-bottom: 0.45rem;
+      display: block; font-size: 0.75rem; font-weight: 700; text-transform: uppercase;
+      letter-spacing: 0.5px; color: var(--text-muted); margin-bottom: 0.45rem;
     }
     input, textarea {
-      width: 100%;
-      background: rgba(0, 0, 0, 0.4);
-      border: 1px solid var(--card-border);
-      border-radius: 12px;
-      color: #fff;
-      padding: 0.9rem 1.1rem;
-      font-size: 0.95rem;
-      outline: none;
+      width: 100%; background: rgba(0, 0, 0, 0.4); border: 1px solid var(--card-border);
+      border-radius: 12px; color: #fff; padding: 0.9rem 1.1rem; font-size: 0.95rem; outline: none;
     }
     input:focus, textarea:focus { border-color: var(--accent); }
 
     .btn-primary {
-      width: 100%;
-      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-      color: #fff;
-      border: none;
-      border-radius: 12px;
-      padding: 1rem;
-      font-size: 0.95rem;
-      font-weight: 800;
-      cursor: pointer;
-      transition: all 0.2s;
+      width: 100%; background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: #fff; border: none; border-radius: 12px; padding: 1rem; font-size: 0.95rem; font-weight: 800; cursor: pointer;
     }
     .btn-primary:active { transform: scale(0.98); }
     .btn-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
 
     /* Mnemonic Word Grid */
     .mnemonic-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin: 1.2rem 0;
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 1.2rem 0;
     }
     @media (min-width: 640px) {
       .mnemonic-grid { grid-template-columns: repeat(4, 1fr); }
     }
     .word-badge {
-      background: rgba(0, 0, 0, 0.45);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      padding: 0.6rem 0.5rem;
-      border-radius: 8px;
-      font-size: 0.8rem;
-      font-family: 'JetBrains Mono', monospace;
-      color: #60a5fa;
-      display: flex;
-      align-items: center;
-      gap: 6px;
+      background: rgba(0, 0, 0, 0.45); border: 1px solid rgba(255, 255, 255, 0.1);
+      padding: 0.6rem 0.5rem; border-radius: 8px; font-size: 0.8rem;
+      font-family: 'JetBrains Mono', monospace; color: #60a5fa; display: flex; align-items: center; gap: 6px;
     }
-    .word-badge .num {
-      color: #64748b;
-      font-size: 0.7rem;
-      width: 18px;
-    }
+    .word-badge .num { color: #64748b; font-size: 0.7rem; width: 18px; }
 
     /* Modal */
     .modal-overlay {
-      position: fixed;
-      top: 0; left: 0; right: 0; bottom: 0;
-      background: rgba(0,0,0,0.85);
-      backdrop-filter: blur(8px);
-      z-index: 100;
-      display: none;
-      place-items: center;
-      padding: 1rem;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+      background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+      z-index: 100; display: none; place-items: center; padding: 1rem;
     }
     .modal-overlay.open { display: grid; }
     .modal-box {
-      background: #0f172a;
-      border: 1px solid rgba(255,255,255,0.15);
-      border-radius: var(--radius-lg);
-      padding: 1.8rem;
-      max-width: 520px;
-      width: 100%;
+      background: #0f172a; border: 1px solid rgba(255,255,255,0.15);
+      border-radius: var(--radius-lg); padding: 1.8rem; max-width: 520px; width: 100%;
       box-shadow: 0 25px 50px rgba(0,0,0,0.8);
-      position: relative;
     }
 
     /* Ledger Rows */
     .tx-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 1rem 0;
-      border-bottom: 1px solid var(--card-border);
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 1rem 0; border-bottom: 1px solid var(--card-border);
+      cursor: pointer; transition: background 0.2s;
     }
+    .tx-row:hover { background: rgba(255,255,255,0.02); }
     .tx-row:last-child { border-bottom: none; }
     .tx-info-left { display: flex; align-items: center; gap: 12px; }
     .tx-icon-bubble {
@@ -450,35 +276,58 @@
     .val-pos { color: var(--emerald); }
     .val-neg { color: #f87171; }
 
+    /* Explorer Search & Cards */
+    .search-box-wrap {
+      display: flex; gap: 8px; margin-bottom: 1.25rem;
+    }
+    .search-box-wrap input {
+      flex: 1; padding: 0.85rem 1rem; font-size: 0.9rem;
+    }
+    .btn-search {
+      background: var(--accent); color: #fff; border: none;
+      padding: 0 1.4rem; border-radius: 12px; font-weight: 700; cursor: pointer;
+    }
+
+    .explorer-subtabs {
+      display: flex; gap: 8px; margin-bottom: 1rem;
+    }
+    .subtab-btn {
+      padding: 0.4rem 0.9rem; border-radius: 999px; font-size: 0.75rem; font-weight: 700;
+      background: rgba(255,255,255,0.06); color: var(--text-muted); border: 1px solid var(--card-border);
+      cursor: pointer;
+    }
+    .subtab-btn.active {
+      background: rgba(37, 99, 235, 0.2); color: #60a5fa; border-color: rgba(37, 99, 235, 0.4);
+    }
+
+    .detail-card {
+      background: rgba(0, 0, 0, 0.35); border: 1px solid var(--card-border);
+      border-radius: 12px; padding: 1.2rem; margin-bottom: 1rem;
+    }
+    .detail-row {
+      display: flex; justify-content: space-between; padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.05); font-size: 0.82rem;
+    }
+    .detail-row:last-child { border-bottom: none; }
+    .detail-lbl { color: var(--text-muted); }
+    .detail-val { font-family: 'JetBrains Mono', monospace; color: #fff; word-break: break-all; }
+
     #toast {
-      position: fixed;
-      bottom: 2rem;
-      left: 50%;
+      position: fixed; bottom: 2rem; left: 50%;
       transform: translateX(-50%) translateY(100px);
-      background: #1e293b;
-      color: #fff;
-      padding: 0.85rem 1.6rem;
-      border-radius: 999px;
-      font-size: 0.85rem;
-      font-weight: 700;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
-      border: 1px solid var(--card-border);
-      opacity: 0;
-      transition: all 0.3s;
-      z-index: 200;
-      pointer-events: none;
+      background: #1e293b; color: #fff; padding: 0.85rem 1.6rem;
+      border-radius: 999px; font-size: 0.85rem; font-weight: 700;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6); border: 1px solid var(--card-border);
+      opacity: 0; transition: all 0.3s; z-index: 200; pointer-events: none;
     }
-    #toast.show {
-      transform: translateX(-50%) translateY(0);
-      opacity: 1;
-    }
+    #toast.show { transform: translateX(-50%) translateY(0); opacity: 1; }
   </style>
 </head>
 <body>
   <div class="ambient-glow"></div>
   <div id="toast">Notification</div>
 
-  <!-- Mnemonic Backup Modal -->
+  <!-- 12-Word Recovery Modal -->
   <div class="modal-overlay" id="mnemonicModal">
     <div class="modal-box">
       <div style="font-size:1.3rem; font-weight:800; color:#fff; display:flex; align-items:center; gap:8px;">
@@ -563,9 +412,9 @@
         <div class="btn-icon-circle">📜</div>
         <span class="label">Statement</span>
       </div>
-      <div class="quick-btn" onclick="openTab('network')">
-        <div class="btn-icon-circle">🌐</div>
-        <span class="label">Network</span>
+      <div class="quick-btn" onclick="openTab('explorer')">
+        <div class="btn-icon-circle">🔍</div>
+        <span class="label">Explorer</span>
       </div>
     </div>
 
@@ -574,17 +423,17 @@
       <button class="tab-btn active" onclick="openTab('send')">Transfer</button>
       <button class="tab-btn" onclick="openTab('wallet')">Account</button>
       <button class="tab-btn" onclick="openTab('statement')">Statement</button>
-      <button class="tab-btn" onclick="openTab('network')">Network</button>
+      <button class="tab-btn" onclick="openTab('explorer')">Explorer</button>
     </div>
 
-    <!-- PANEL 1: TRANSFER -->
+    <!-- PANEL 1: TRANSFER (SEND) -->
     <div class="panel active" id="tab-send">
       <div class="panel-title">Instant Wire Transfer</div>
-      <div class="panel-desc">Cryptographic BCT transfer with 1% automated treasury redistribution.</div>
+      <div class="panel-desc">Transfer BCT across the network with 1% automated treasury redistribution.</div>
 
       <div class="form-group">
         <label>Beneficiary Address</label>
-        <input type="text" id="txRecipient" placeholder="BCT...">
+        <input type="text" id="txRecipient" placeholder="BCT40hexcharacters...">
       </div>
 
       <div class="form-group">
@@ -597,7 +446,9 @@
         <strong id="feeDisplay" style="color:var(--gold);">0.00000000 BCT</strong>
       </div>
 
-      <button class="btn-primary" onclick="handleSendMoney()">
+      <div id="txErrorAlert" style="display:none; background:rgba(239,68,68,0.15); border:1px solid rgba(239,68,68,0.4); color:#fca5a5; padding:0.85rem; border-radius:10px; font-size:0.82rem; margin-bottom:1rem;"></div>
+
+      <button class="btn-primary" id="btnSendMoney" onclick="handleSendMoney()">
         ⚡ Authorize & Send Transfer
       </button>
     </div>
@@ -621,7 +472,6 @@
         🔑 Restore Account
       </button>
 
-      <!-- Active Wallet Backup Box -->
       <div id="keyVaultBox" style="display:none; margin-top:1.5rem; background:rgba(0,0,0,0.4); border:1px solid rgba(255,255,255,0.1); border-radius:12px; padding:1.2rem;">
         <div style="font-size:0.8rem; font-weight:800; color:#60a5fa; margin-bottom:0.4rem;">🔐 Your 12-Word Recovery Phrase</div>
         <div id="dispMnemonic" class="mnemonic-grid" style="margin:0.5rem 0;"></div>
@@ -642,28 +492,60 @@
       </div>
     </div>
 
-    <!-- PANEL 4: NETWORK -->
-    <div class="panel" id="tab-network">
-      <div class="panel-title">LockTrace Monetary Network</div>
-      <div class="panel-desc">Real-time macro parameters of the 1 Trillion BCT monetary policy.</div>
-      
-      <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:0.75rem; margin-bottom:1.25rem;">
-        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:12px; text-align:center; border:1px solid var(--card-border);">
-          <div style="font-size:1.2rem; font-weight:800; color:#60a5fa;" id="metricSupply">1.00T</div>
-          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">TOTAL SUPPLY</div>
+    <!-- PANEL 4: TRANSPARENT EXPLORER -->
+    <div class="panel" id="tab-explorer">
+      <div class="panel-title">LockTrace On-Chain Explorer</div>
+      <div class="panel-desc">Transparent public verification of Blocks, Transactions, and the 1T Reserve.</div>
+
+      <!-- Universal Search Bar -->
+      <div class="search-box-wrap">
+        <input type="text" id="explorerSearchInput" placeholder="Search by Block #, Tx Hash, or BCT Address...">
+        <button class="btn-search" onclick="handleExplorerSearch()">Search</button>
+      </div>
+
+      <!-- Search Result Container -->
+      <div id="searchResultArea" style="display:none;"></div>
+
+      <!-- Macro Monetary Policy Proof of Reserve -->
+      <div class="detail-card" style="border-color:rgba(37,99,235,0.3); background:rgba(15,23,42,0.6);">
+        <div style="font-size:0.85rem; font-weight:800; color:#60a5fa; margin-bottom:0.8rem; display:flex; justify-content:space-between;">
+          <span>🏛️ Proof of Reserve (1 Trillion BCT Policy)</span>
+          <span style="color:var(--emerald);">Verified ✓</span>
         </div>
-        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:12px; text-align:center; border:1px solid var(--card-border);">
-          <div style="font-size:1.2rem; font-weight:800; color:#60a5fa;" id="metricTreasury">-</div>
-          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">TREASURY VAULT</div>
+        <div class="detail-row">
+          <span class="detail-lbl">Total Supply:</span>
+          <span class="detail-val" id="expSupply">1,000,000,000,000 BCT</span>
         </div>
-        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:12px; text-align:center; border:1px solid var(--card-border);">
-          <div style="font-size:1.2rem; font-weight:800; color:#10b981;" id="metricCirculating">-</div>
-          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">CIRCULATING</div>
+        <div class="detail-row">
+          <span class="detail-lbl">Treasury Vault Pool:</span>
+          <span class="detail-val" id="expTreasury">-</span>
         </div>
-        <div style="background:rgba(0,0,0,0.3); padding:1rem; border-radius:12px; text-align:center; border:1px solid var(--card-border);">
-          <div style="font-size:1.2rem; font-weight:800; color:#60a5fa;" id="metricBlocks">-</div>
-          <div style="font-size:0.7rem; color:var(--text-muted); margin-top:4px;">BLOCK HEIGHT</div>
+        <div class="detail-row">
+          <span class="detail-lbl">Circulating in Accounts:</span>
+          <span class="detail-val" id="expCirculating" style="color:var(--emerald);">-</span>
         </div>
+        <div class="detail-row">
+          <span class="detail-lbl">1% Fees Recycled to Vault:</span>
+          <span class="detail-val" id="expFees" style="color:var(--gold);">-</span>
+        </div>
+        <div class="detail-row">
+          <span class="detail-lbl">Consensus Block Height:</span>
+          <span class="detail-val" id="expBlocks">-</span>
+        </div>
+      </div>
+
+      <!-- Explorer View Switcher -->
+      <div class="explorer-subtabs">
+        <button class="subtab-btn active" id="subtabTxsBtn" onclick="switchExplorerView('txs')">Recent Transactions</button>
+        <button class="subtab-btn" id="subtabBlocksBtn" onclick="switchExplorerView('blocks')">Latest Blocks</button>
+      </div>
+
+      <div id="explorerTxsView">
+        <div id="explorerTxsList">Loading transactions...</div>
+      </div>
+
+      <div id="explorerBlocksView" style="display:none;">
+        <div id="explorerBlocksList">Loading blocks...</div>
       </div>
     </div>
   </main>
@@ -690,13 +572,20 @@
       const target = document.getElementById('tab-' + tabId);
       if (target) target.classList.add('active');
 
-      const tabs = ['send', 'wallet', 'statement', 'network'];
+      const tabs = ['send', 'wallet', 'statement', 'explorer'];
       const idx = tabs.indexOf(tabId);
       if (idx !== -1) {
         document.querySelectorAll('.tab-btn')[idx].classList.add('active');
       }
 
-      if (tabId === 'statement' || tabId === 'network') refreshNetworkMetrics();
+      if (tabId === 'statement' || tabId === 'explorer') refreshExplorerData();
+    }
+
+    function switchExplorerView(view) {
+      document.getElementById('explorerTxsView').style.display = view === 'txs' ? 'block' : 'none';
+      document.getElementById('explorerBlocksView').style.display = view === 'blocks' ? 'block' : 'none';
+      document.getElementById('subtabTxsBtn').classList.toggle('active', view === 'txs');
+      document.getElementById('subtabBlocksBtn').classList.toggle('active', view === 'blocks');
     }
 
     function copyAddress() {
@@ -774,7 +663,6 @@
       }
     }
 
-    // Open New Account with 12 words modal
     async function handleCreateWallet() {
       try {
         toast("Generating 12-word seed & minting 1.00 BCT bonus...");
@@ -782,8 +670,6 @@
         const data = await res.json();
         if (data.success) {
           updateAccountUI(data.data);
-
-          // Show Mnemonic Modal
           tempMnemonic = data.data.mnemonic;
           renderMnemonicGrid(tempMnemonic, 'modalWordsGrid');
           document.getElementById('mnemonicModal').classList.add('open');
@@ -795,7 +681,6 @@
       }
     }
 
-    // Restore via 12 words or private key
     async function handleImportWallet() {
       const input = document.getElementById('importInput').value.trim();
       if (!input) return toast("Please enter your 12 words or private key");
@@ -813,7 +698,7 @@
         const data = await res.json();
         if (data.success) {
           updateAccountUI(data.data);
-          toast("Account restored with balance: " + data.data.balance + " BCT");
+          toast("Account restored! Balance: " + data.data.balance + " BCT");
           openTab('send');
         } else {
           toast("Error: " + data.message);
@@ -823,15 +708,37 @@
       }
     }
 
-    // Wire Transfer
+    // ── Robust Wire Transfer ──
     async function handleSendMoney() {
+      const errBox = document.getElementById('txErrorAlert');
+      errBox.style.display = 'none';
+
       if (!currentAccount) return toast("Please connect your account first");
+
       const recipient = document.getElementById('txRecipient').value.trim();
       const amount = parseFloat(document.getElementById('txAmount').value);
 
-      if (!recipient || !amount || amount <= 0) {
-        return toast("Specify valid recipient and amount");
+      if (!recipient) {
+        errBox.textContent = "Please enter beneficiary address.";
+        errBox.style.display = 'block';
+        return;
       }
+
+      if (recipient === currentAccount.address) {
+        errBox.textContent = "Cannot send funds to your own address.";
+        errBox.style.display = 'block';
+        return;
+      }
+
+      if (isNaN(amount) || amount <= 0) {
+        errBox.textContent = "Please specify a valid transfer amount greater than 0.";
+        errBox.style.display = 'block';
+        return;
+      }
+
+      const btn = document.getElementById('btnSendMoney');
+      btn.disabled = true;
+      btn.textContent = "Signing & Transmitting...";
 
       try {
         toast("Cryptographically signing wire transfer...");
@@ -840,9 +747,11 @@
           receiver: recipient,
           amount: amount
         };
+
         if (currentAccount.mnemonic) {
           payload.mnemonic = currentAccount.mnemonic;
-        } else {
+        }
+        if (currentAccount.private_key) {
           payload.private_key = currentAccount.private_key;
         }
 
@@ -852,49 +761,118 @@
           body: JSON.stringify(payload)
         });
         const data = await res.json();
+
         if (data.success) {
-          toast("Transfer completed! 1% fee cycled to treasury.");
+          toast("Transfer confirmed on-chain! 1% fee returned to vault.");
           document.getElementById('txRecipient').value = '';
           document.getElementById('txAmount').value = '';
           calcFee();
           refreshBalance();
           openTab('statement');
         } else {
+          errBox.textContent = "Transfer Declined: " + (data.message || "Unknown error");
+          errBox.style.display = 'block';
           toast("Declined: " + data.message);
         }
       } catch (err) {
+        errBox.textContent = "Network Error: " + err.message;
+        errBox.style.display = 'block';
         toast("Network error: " + err.message);
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "⚡ Authorize & Send Transfer";
       }
     }
 
-    // Network & Statements
-    async function refreshNetworkMetrics() {
+    // ── Universal Explorer Search ──
+    async function handleExplorerSearch() {
+      const q = document.getElementById('explorerSearchInput').value.trim();
+      const area = document.getElementById('searchResultArea');
+      if (!q) return;
+
+      area.style.display = 'block';
+      area.innerHTML = '<div style="color:var(--text-muted); padding:1rem; text-align:center;">Searching ledger...</div>';
+
       try {
-        const [statsRes, txsRes] = await Promise.all([
+        const res = await fetch(`${API_BASE}/explorer/search?q=${encodeURIComponent(q)}`);
+        const data = await res.json();
+
+        if (data.success) {
+          const type = data.data.type;
+          const r = data.data.result;
+
+          if (type === 'block') {
+            area.innerHTML = `
+              <div class="detail-card" style="border-color:var(--accent);">
+                <div style="font-weight:800; color:#60a5fa; margin-bottom:0.5rem;">📦 Block #${r.index}</div>
+                <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${r.hash}</span></div>
+                <div class="detail-row"><span class="detail-lbl">Previous Hash:</span><span class="detail-val">${r.previous_hash}</span></div>
+                <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
+                <div class="detail-row"><span class="detail-lbl">Nonce / PoW:</span><span class="detail-val">${r.nonce}</span></div>
+                <div class="detail-row"><span class="detail-lbl">Timestamp:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
+              </div>
+            `;
+          } else if (type === 'transaction') {
+            area.innerHTML = `
+              <div class="detail-card" style="border-color:var(--emerald);">
+                <div style="font-weight:800; color:var(--emerald); margin-bottom:0.5rem;">💸 Transaction Details</div>
+                <div class="detail-row"><span class="detail-lbl">Tx Hash:</span><span class="detail-val">${r.tx_hash}</span></div>
+                <div class="detail-row"><span class="detail-lbl">Block:</span><span class="detail-val">#${r.block_index} (${r.confirmations} Confirmations)</span></div>
+                <div class="detail-row"><span class="detail-lbl">Sender:</span><span class="detail-val">${r.sender}</span></div>
+                <div class="detail-row"><span class="detail-lbl">Receiver:</span><span class="detail-val">${r.receiver}</span></div>
+                <div class="detail-row"><span class="detail-lbl">Amount:</span><span class="detail-val">${r.amount} BCT</span></div>
+                <div class="detail-row"><span class="detail-lbl">1% Treasury Fee:</span><span class="detail-val" style="color:var(--gold);">${r.fee} BCT</span></div>
+                <div class="detail-row"><span class="detail-lbl">Time:</span><span class="detail-val">${new Date(r.timestamp * 1000).toLocaleString()}</span></div>
+              </div>
+            `;
+          } else if (type === 'address') {
+            area.innerHTML = `
+              <div class="detail-card" style="border-color:var(--gold);">
+                <div style="font-weight:800; color:var(--gold); margin-bottom:0.5rem;">👤 Wallet Ledger Summary</div>
+                <div class="detail-row"><span class="detail-lbl">Address:</span><span class="detail-val">${r.address}</span></div>
+                <div class="detail-row"><span class="detail-lbl">Verified Balance:</span><span class="detail-val" style="color:var(--emerald); font-weight:700;">${r.balance} BCT</span></div>
+                <div class="detail-row"><span class="detail-lbl">Total Transactions:</span><span class="detail-val">${r.transaction_count}</span></div>
+              </div>
+            `;
+          }
+        } else {
+          area.innerHTML = `<div style="color:#f87171; padding:0.8rem; background:rgba(239,68,68,0.1); border-radius:10px; font-size:0.82rem;">${data.message}</div>`;
+        }
+      } catch (err) {
+        area.innerHTML = `<div style="color:#f87171; padding:0.8rem;">Search failed: ${err.message}</div>`;
+      }
+    }
+
+    // ── Refresh Explorer & Statements ──
+    async function refreshExplorerData() {
+      try {
+        const [statsRes, txsRes, blocksRes] = await Promise.all([
           fetch(`${API_BASE}/stats`).then(r => r.json()),
-          fetch(`${API_BASE}/transactions/latest?limit=15`).then(r => r.json())
+          fetch(`${API_BASE}/transactions/latest?limit=20`).then(r => r.json()),
+          fetch(`${API_BASE}/blocks/latest?count=10`).then(r => r.json())
         ]);
 
         if (statsRes.success) {
           const s = statsRes.data;
-          document.getElementById('metricBlocks').textContent = s.total_blocks.toLocaleString('en-US');
-          document.getElementById('metricTreasury').textContent = (s.treasury_balance / 1e9).toFixed(2) + 'B';
-          document.getElementById('metricCirculating').textContent = (s.circulating_supply).toFixed(2);
+          document.getElementById('expBlocks').textContent = s.total_blocks.toLocaleString('en-US');
+          document.getElementById('expTreasury').textContent = Number(s.treasury_balance).toLocaleString('en-US', { maximumFractionDigits: 4 }) + ' BCT';
+          document.getElementById('expCirculating').textContent = Number(s.circulating_supply).toFixed(4) + ' BCT';
+          document.getElementById('expFees').textContent = Number(s.total_fees_collected).toFixed(4) + ' BCT';
         }
 
         if (txsRes.success && txsRes.data.transactions) {
-          const list = document.getElementById('txLedgerList');
-          list.innerHTML = txsRes.data.transactions.map(t => {
+          const txs = txsRes.data.transactions;
+          const ledgerHtml = txs.map(t => {
             const isReward = t.tx_type === 'reward';
             const isGenesis = t.tx_type === 'genesis';
             return `
-              <div class="tx-row">
+              <div class="tx-row" onclick="inspectTx('${t.tx_hash}')">
                 <div class="tx-info-left">
                   <div class="tx-icon-bubble ${isReward ? 'bubble-reward' : (isGenesis ? 'bubble-receive' : 'bubble-send')}">
                     ${isReward ? '🎁' : (isGenesis ? '🏛️' : '💸')}
                   </div>
                   <div>
-                    <div class="tx-title">${isReward ? 'Welcome Bonus Grant' : (isGenesis ? 'Genesis Reserve' : 'BCT Wire Transfer')}</div>
+                    <div class="tx-title">${isReward ? 'Welcome Grant' : (isGenesis ? 'Genesis Mint' : 'Wire Transfer')}</div>
                     <div class="tx-time">${new Date(t.timestamp * 1000).toLocaleTimeString()} • Block #${t.block_index}</div>
                   </div>
                 </div>
@@ -905,10 +883,33 @@
               </div>
             `;
           }).join('');
+
+          document.getElementById('txLedgerList').innerHTML = ledgerHtml || '<div style="color:var(--text-muted); padding:2rem; text-align:center;">No transactions found.</div>';
+          document.getElementById('explorerTxsList').innerHTML = ledgerHtml || '<div style="color:var(--text-muted); padding:1rem; text-align:center;">No transactions recorded.</div>';
+        }
+
+        if (blocksRes.success && blocksRes.data.blocks) {
+          document.getElementById('explorerBlocksList').innerHTML = blocksRes.data.blocks.map(b => `
+            <div class="detail-card" style="margin-bottom:0.75rem;">
+              <div style="display:flex; justify-content:space-between; font-weight:800; color:#60a5fa; margin-bottom:0.4rem;">
+                <span>📦 Block #${b.index}</span>
+                <span style="font-size:0.75rem; color:var(--text-muted);">${new Date(b.timestamp * 1000).toLocaleTimeString()}</span>
+              </div>
+              <div class="detail-row"><span class="detail-lbl">Hash:</span><span class="detail-val">${b.hash.slice(0, 16)}...${b.hash.slice(-8)}</span></div>
+              <div class="detail-row"><span class="detail-lbl">Transactions:</span><span class="detail-val">${b.transaction_count} tx</span></div>
+              <div class="detail-row"><span class="detail-lbl">Nonce (PoW):</span><span class="detail-val">${b.nonce}</span></div>
+            </div>
+          `).join('');
         }
       } catch (err) {
-        console.error("Network metric error:", err);
+        console.error("Explorer refresh error:", err);
       }
+    }
+
+    function inspectTx(hash) {
+      openTab('explorer');
+      document.getElementById('explorerSearchInput').value = hash;
+      handleExplorerSearch();
     }
 
     // PWA Install
@@ -924,11 +925,10 @@
         deferredPrompt.prompt();
         deferredPrompt = null;
       } else {
-        alert("Install App: Open browser menu and choose 'Add to Home Screen' or 'Install LockTrace Bank'");
+        alert("To install LockTrace Bank: Open your browser menu and choose 'Add to Home Screen' or 'Install App'.");
       }
     }
 
-    // Init
     window.addEventListener('load', () => {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.register('/sw.js').catch(console.error);
@@ -941,11 +941,12 @@
         } catch (e) {}
       }
 
-      refreshNetworkMetrics();
+      refreshExplorerData();
       setInterval(() => {
         refreshBalance();
-        if (document.getElementById('tab-statement').classList.contains('active')) {
-          refreshNetworkMetrics();
+        if (document.getElementById('tab-statement').classList.contains('active') ||
+            document.getElementById('tab-explorer').classList.contains('active')) {
+          refreshExplorerData();
         }
       }, 5000);
     });
