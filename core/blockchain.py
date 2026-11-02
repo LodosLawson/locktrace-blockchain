@@ -323,6 +323,141 @@ class Blockchain:
 
             return True, f"Transfer confirmed! Sent: {net_amount} BCT, 1% Fee ({fee} BCT) returned to treasury vault.", tx_info
 
+    def execute_fiat_purchase(self, buyer_address: str, fiat_amount: float,
+                              currency: str = "USD", payment_ref: str = "",
+                              bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Allows users to purchase BCT with fiat / Thirdweb Pay on-ramp.
+        Tokens are debited from the Treasury vault and credited directly to the buyer's wallet,
+        with an on-chain block mined immediately.
+        """
+        with self.lock:
+            self._load_state()
+            clean_buyer = buyer_address.strip()
+            if not is_valid_bct_address(clean_buyer):
+                return False, f"Invalid buyer address format: '{clean_buyer}'", None
+
+            if fiat_amount <= 0:
+                return False, "Fiat purchase amount must be greater than zero", None
+
+            curr = currency.upper().strip()
+            rate = bct_per_usd
+            if curr == "EUR":
+                rate = round(bct_per_usd * 1.08, 4)
+            elif curr == "TRY":
+                rate = round(bct_per_usd / 34.0, 4)
+
+            bct_amount = round(fiat_amount * rate, 8)
+            if bct_amount <= 0:
+                return False, "Calculated BCT token amount too small to mint", None
+
+            treasury_bal = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            if treasury_bal < bct_amount:
+                return False, "Insufficient Treasury reserve to fulfill purchase request", None
+
+            if clean_buyer not in self.wallets:
+                self.wallets[clean_buyer] = {"public_key": "", "created_at": time.time()}
+
+            ref_id = payment_ref or hashlib.sha256(f"{clean_buyer}:{fiat_amount}:{time.time()}".encode()).hexdigest()[:16]
+            sig = f"thirdweb_onramp_{ref_id}"
+            tx = Transaction(
+                sender=TREASURY_ADDRESS,
+                receiver=clean_buyer,
+                amount=bct_amount,
+                fee=0.0,
+                signature=sig,
+                tx_type="fiat_buy"
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+
+            # Automatically mine block to settle purchase on-chain immediately
+            block = self._mine_block()
+
+            self.balances[clean_buyer] = self.verify_and_recalc_balance(clean_buyer)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            receipt = {
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else len(self.chain),
+                "buyer_address": clean_buyer,
+                "bct_amount": bct_amount,
+                "fiat_amount": fiat_amount,
+                "currency": curr,
+                "exchange_rate": rate,
+                "payment_ref": ref_id,
+                "buyer_new_balance": self.balances[clean_buyer]
+            }
+            return True, f"Successfully purchased {bct_amount:,.4f} BCT with {fiat_amount:.2f} {curr}!", receipt
+
+    def execute_fiat_sale(self, seller_address: str, bct_amount: float,
+                          payout_info: str = "", currency: str = "USD",
+                          bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Allows users to sell BCT for fiat (payout / off-ramp).
+        BCT tokens are transferred back to the Treasury vault, and fiat payout is initiated.
+        """
+        with self.lock:
+            self._load_state()
+            clean_seller = seller_address.strip()
+            if not is_valid_bct_address(clean_seller):
+                return False, f"Invalid seller address format: '{clean_seller}'", None
+
+            if bct_amount <= 0:
+                return False, "BCT sell amount must be greater than zero", None
+
+            seller_bal = self.verify_and_recalc_balance(clean_seller)
+            if seller_bal < bct_amount:
+                return False, f"Insufficient balance. Your balance is {seller_bal:.4f} BCT, attempted to sell {bct_amount:.4f} BCT", None
+
+            curr = currency.upper().strip()
+            rate = bct_per_usd
+            if curr == "EUR":
+                rate = round(bct_per_usd * 1.08, 4)
+            elif curr == "TRY":
+                rate = round(bct_per_usd / 34.0, 4)
+
+            # 1% processing fee
+            fee = round(bct_amount * 0.01, 8)
+            net_bct = round(bct_amount - fee, 8)
+            fiat_payout = round(net_bct / rate, 2)
+
+            ref_id = hashlib.sha256(f"{clean_seller}:{bct_amount}:{time.time()}".encode()).hexdigest()[:16]
+            sig = f"fiat_offramp_{ref_id}"
+            tx = Transaction(
+                sender=clean_seller,
+                receiver=TREASURY_ADDRESS,
+                amount=bct_amount,
+                fee=fee,
+                signature=sig,
+                tx_type="token_sell"
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + fee, 8)
+
+            block = self._mine_block()
+
+            self.balances[clean_seller] = self.verify_and_recalc_balance(clean_seller)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            receipt = {
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else len(self.chain),
+                "seller_address": clean_seller,
+                "bct_amount_sold": bct_amount,
+                "fee_bct": fee,
+                "fiat_payout": fiat_payout,
+                "currency": curr,
+                "payout_destination": payout_info or "Direct Bank / Thirdweb Payout",
+                "seller_new_balance": self.balances[clean_seller]
+            }
+            return True, f"Successfully sold {bct_amount:,.4f} BCT for {fiat_payout:.2f} {curr} payout!", receipt
+
     def _mine_block(self, miner_address: str = "") -> Optional[Block]:
         clean_miner = (miner_address or "").strip()
         if not self.pending_transactions and not (clean_miner and is_valid_bct_address(clean_miner)):

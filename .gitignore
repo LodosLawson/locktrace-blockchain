@@ -7,3 +7,4 @@ data/
 *.pem
 deploy_package.tar.gz
 frontend_update.tar.gz
+.env

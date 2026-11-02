@@ -17,7 +17,9 @@ LockTrace is an enterprise-grade, high-performance decentralized blockchain ledg
 | **Total Supply** | **1,000,000,000,000.00 BCT** (1 Trillion) | Fixed in Genesis Block #0. No inflation or extra minting. |
 | **Genesis Vault** | `BCT_HAZINE_0000000000000000000000000000000000000000` | Holds uncirculated tokens. |
 | **Welcome Grant** | **1.00 BCT** automated welcome grant | Deposited from Treasury Vault to every new unique wallet. |
-| **Transaction Fee** | **1.0%** strictly automated | 100% of fees cycle directly back into the Treasury Vault pool. |
+| **Transaction Fee** | **1.0%** strictly automated | 50% to miner/forger, 50% to Treasury Vault pool. |
+| **Fiat On-Ramp** | **Thirdweb Pay / Card / Bank** | Buy BCT with USD ($0.01/BCT), EUR, or TRY directly from Treasury. |
+| **Fiat Off-Ramp** | **Nakit Çıkışı / Payout** | Sell BCT back to Treasury for bank/card payout. |
 | **Key Derivation** | **BIP-39 Mnemonic** + ECDSA SECP256k1 | 12-word secret seed phrase + 64-hex private key. |
 | **Consensus Engine** | **Proof-of-Work (SHA-256)** | Target difficulty with atomic persistence. |
 

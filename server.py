@@ -408,5 +408,129 @@ def api_mine_block():
     }, status=201)
 
 
+# ══════════════════════════════════════════════════════
+# 💱 Fiat On-Ramp & Buy/Sell Coin Trading (Thirdweb Protected)
+# ══════════════════════════════════════════════════════
+
+@app.route("/api/v1/trade/config", methods=["GET"])
+def api_trade_config():
+    """
+    Returns public trade parameters and public Thirdweb Client ID.
+    CRITICAL: Secret keys are strictly protected on the backend and never exposed.
+    """
+    rates = {
+        "USD": Config.BCT_PER_USD,
+        "EUR": round(Config.BCT_PER_USD * 1.08, 4),
+        "TRY": round(Config.BCT_PER_USD / 34.0, 4)
+    }
+    return api_response(True, data={
+        "thirdweb_client_id": Config.THIRDWEB_CLIENT_ID,
+        "bct_per_usd": Config.BCT_PER_USD,
+        "bct_price_usd": Config.BCT_PRICE_USD,
+        "min_buy_usd": Config.MIN_BUY_USD,
+        "max_buy_usd": Config.MAX_BUY_USD,
+        "supported_currencies": ["USD", "EUR", "TRY"],
+        "rates": rates
+    })
+
+
+@app.route("/api/v1/trade/buy", methods=["POST"])
+def api_trade_buy():
+    """
+    Executes a fiat purchase of BCT tokens via Thirdweb Pay or direct payment.
+    Debits Treasury reserves and delivers BCT directly into buyer's address with PoW block settlement.
+    """
+    data = request.get_json(silent=True) or {}
+    buyer_address = str(data.get("buyer_address", "")).strip()
+    fiat_amount = float(data.get("fiat_amount", 0.0))
+    currency = str(data.get("currency", "USD")).strip().upper()
+    payment_method = str(data.get("payment_method", "credit_card")).strip()
+    session_token = str(data.get("session_token", "")).strip()
+
+    if not buyer_address:
+        return api_response(False, message="Buyer wallet address is required", status=400)
+
+    if not is_valid_bct_address(buyer_address):
+        return api_response(False, message=f"Invalid buyer address: '{buyer_address}'", status=400)
+
+    if fiat_amount < Config.MIN_BUY_USD:
+        return api_response(False, message=f"Minimum purchase amount is ${Config.MIN_BUY_USD:.2f}", status=400)
+
+    if fiat_amount > Config.MAX_BUY_USD:
+        return api_response(False, message=f"Maximum purchase amount is ${Config.MAX_BUY_USD:,.2f}", status=400)
+
+    success, message, receipt = blockchain.execute_fiat_purchase(
+        buyer_address=buyer_address,
+        fiat_amount=fiat_amount,
+        currency=currency,
+        payment_ref=session_token,
+        bct_per_usd=Config.BCT_PER_USD
+    )
+
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Token Purchase: {buyer_address[:10]} bought {receipt['bct_amount']} BCT with {fiat_amount} {currency}")
+    return api_response(True, message=message, data=receipt, status=201)
+
+
+@app.route("/api/v1/trade/sell", methods=["POST"])
+def api_trade_sell():
+    """
+    Executes a sale of BCT tokens for fiat payout.
+    Transfers BCT back to Treasury vault and initiates off-ramp payout.
+    """
+    data = request.get_json(silent=True) or {}
+    seller_address = str(data.get("seller_address", "")).strip()
+    bct_amount = float(data.get("bct_amount", 0.0))
+    currency = str(data.get("currency", "USD")).strip().upper()
+    payout_info = str(data.get("payout_info", "")).strip()
+
+    if not seller_address:
+        return api_response(False, message="Seller wallet address is required", status=400)
+
+    if not is_valid_bct_address(seller_address):
+        return api_response(False, message=f"Invalid seller address: '{seller_address}'", status=400)
+
+    if bct_amount <= 0:
+        return api_response(False, message="Sell amount must be greater than zero", status=400)
+
+    success, message, receipt = blockchain.execute_fiat_sale(
+        seller_address=seller_address,
+        bct_amount=bct_amount,
+        payout_info=payout_info,
+        currency=currency,
+        bct_per_usd=Config.BCT_PER_USD
+    )
+
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Token Sale: {seller_address[:10]} sold {bct_amount} BCT for {receipt['fiat_payout']} {currency}")
+    return api_response(True, message=message, data=receipt, status=201)
+
+
+@app.route("/api/v1/trade/orders/<address>", methods=["GET"])
+def api_trade_orders(address: str):
+    """Returns buy & sell order history for a specific wallet address."""
+    clean_addr = address.strip()
+    orders = []
+    with blockchain.lock:
+        blockchain._load_state()
+        for b in blockchain.chain:
+            for tx in b.transactions:
+                if (tx.sender == clean_addr or tx.receiver == clean_addr) and tx.tx_type in ("fiat_buy", "token_sell"):
+                    orders.append({
+                        "tx_hash": tx.tx_hash,
+                        "block_index": b.index,
+                        "type": tx.tx_type,
+                        "amount": tx.amount,
+                        "fee": tx.fee,
+                        "timestamp": tx.timestamp,
+                        "signature": tx.signature
+                    })
+    return api_response(True, data={"address": clean_addr, "orders": orders})
+
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)

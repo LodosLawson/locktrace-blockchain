@@ -64,13 +64,6 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
     }
-    @keyframes pulse-subtle {
-      0%, 100% { opacity: 1; }
-      50% { opacity: 0.6; }
-    }
-    .animate-pulse-subtle {
-      animation: pulse-subtle 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-    }
   </style>
 </head>
 
@@ -95,6 +88,10 @@
         <button class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface font-semibold bg-surface-container-highest transition-all duration-150 text-sm" onclick="switchTab('cuzdanim')">
           <span class="material-symbols-outlined text-[20px] text-primary">account_balance_wallet</span>
           <span>Cüzdanım</span>
+        </button>
+        <button class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all duration-150 text-sm font-medium" onclick="switchTab('al-sat')">
+          <span class="material-symbols-outlined text-[20px]">currency_exchange</span>
+          <span>Al / Sat (Fiat)</span>
         </button>
         <button class="nav-item flex items-center gap-3 px-4 py-3 rounded-xl text-on-surface-variant hover:bg-surface-container-high hover:text-on-surface transition-all duration-150 text-sm font-medium" onclick="switchTab('para-gonder')">
           <span class="material-symbols-outlined text-[20px]">send</span>
@@ -146,23 +143,23 @@
   <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-xl border-t border-outline-variant/30 z-50 flex items-center justify-around px-2">
     <button class="flex flex-col items-center gap-1 text-primary" onclick="switchTab('cuzdanim')">
       <span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
-      <span class="text-[11px] font-medium">Cüzdan</span>
+      <span class="text-[10px] font-medium">Cüzdan</span>
+    </button>
+    <button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-on-surface" onclick="switchTab('al-sat')">
+      <span class="material-symbols-outlined text-[20px]">currency_exchange</span>
+      <span class="text-[10px] font-medium">Al/Sat</span>
     </button>
     <button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-on-surface" onclick="switchTab('para-gonder')">
       <span class="material-symbols-outlined text-[20px]">send</span>
-      <span class="text-[11px] font-medium">Gönder</span>
+      <span class="text-[10px] font-medium">Gönder</span>
     </button>
     <button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-on-surface" onclick="switchTab('yeni-cuzdan')">
       <span class="material-symbols-outlined text-[20px]">add_circle</span>
-      <span class="text-[11px] font-medium">Hesap</span>
+      <span class="text-[10px] font-medium">Hesap</span>
     </button>
     <button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-on-surface" onclick="switchTab('ag-ve-explorer')">
       <span class="material-symbols-outlined text-[20px]">lan</span>
-      <span class="text-[11px] font-medium">Ağ</span>
-    </button>
-    <button class="flex flex-col items-center gap-1 text-on-surface-variant hover:text-on-surface" onclick="switchTab('api-docs')">
-      <span class="material-symbols-outlined text-[20px]">terminal</span>
-      <span class="text-[11px] font-medium">API</span>
+      <span class="text-[10px] font-medium">Ağ</span>
     </button>
   </nav>
 
@@ -224,17 +221,21 @@
             <div class="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-surface-container mt-2">
               <span class="material-symbols-outlined text-primary text-[15px]">verified</span>
               <span class="text-xs text-primary font-semibold tracking-wide">100% Kriptografik Güvence</span>
-              <span class="text-xs text-on-surface-variant font-normal">• 1T BCT Sabit Arz</span>
+              <span class="text-xs text-on-surface-variant font-normal">• 1 BCT = $0.01 USD</span>
             </div>
 
-            <!-- Hero Action Buttons (Gönder & Al) -->
-            <div class="grid grid-cols-2 gap-4 w-full max-w-[340px] mt-8">
-              <button class="h-[52px] rounded-full bg-primary text-on-primary font-semibold text-sm flex items-center justify-center gap-2 shadow-lg transition-all active:scale-[0.98] hover:opacity-95" onclick="switchTab('para-gonder')" type="button">
-                <span class="material-symbols-outlined text-[20px]">north_east</span>
+            <!-- Hero Action Buttons (Al / Sat, Gönder, Al) -->
+            <div class="grid grid-cols-3 gap-3 w-full max-w-[420px] mt-8">
+              <button class="h-[50px] rounded-full bg-primary text-on-primary font-semibold text-xs flex items-center justify-center gap-1.5 shadow-lg transition-all active:scale-[0.98] hover:opacity-95" onclick="switchTab('al-sat')" type="button">
+                <span class="material-symbols-outlined text-[18px]">currency_exchange</span>
+                <span>Al / Sat</span>
+              </button>
+              <button class="h-[50px] rounded-full bg-surface-container-high text-on-surface font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98] hover:bg-surface-container-highest" onclick="switchTab('para-gonder')" type="button">
+                <span class="material-symbols-outlined text-[18px]">north_east</span>
                 <span>Gönder</span>
               </button>
-              <button class="h-[52px] rounded-full bg-surface-container-high text-on-surface font-semibold text-sm flex items-center justify-center gap-2 shadow-sm transition-all active:scale-[0.98] hover:bg-surface-container-highest" onclick="openReceiveModal()" type="button">
-                <span class="material-symbols-outlined text-[20px]">south_west</span>
+              <button class="h-[50px] rounded-full bg-surface-container-high text-on-surface font-semibold text-xs flex items-center justify-center gap-1.5 shadow-sm transition-all active:scale-[0.98] hover:bg-surface-container-highest" onclick="openReceiveModal()" type="button">
+                <span class="material-symbols-outlined text-[18px]">south_west</span>
                 <span>Al / Paylaş</span>
               </button>
             </div>
@@ -258,15 +259,15 @@
                 <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="filterTransactions('out', this)" type="button">
                   Gidenler
                 </button>
-                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="filterTransactions('mining_reward', this)" type="button">
-                  Madenci
+                <button class="filter-tab px-3 py-1 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" onclick="filterTransactions('trade', this)" type="button">
+                  Al/Sat
                 </button>
               </div>
             </div>
 
             <!-- Transaction Stream -->
             <div class="flex flex-col gap-2 w-full" id="tx-list">
-              <div class="p-8 text-center text-on-surface-variant text-sm bg-surface-container-low rounded-2xl border border-outline-variant/20">
+              <div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl border border-outline-variant/20">
                 Cüzdan işlemleri yükleniyor...
               </div>
             </div>
@@ -285,17 +286,189 @@
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 2: PARA GÖNDER (Stitch Transfer Card)                                -->
+      <!-- TAB 2: AL / SAT (Thirdweb Güvenli Fiat On-Ramp & Off-Ramp)               -->
+      <!-- ========================================================================= -->
+      <div id="tab-al-sat" class="tab-content flex-col w-full items-center">
+        <div class="w-full max-w-lg mx-auto flex flex-col gap-6">
+          
+          <!-- Mode Switch: Satın Al vs Sat / Nakde Çevir -->
+          <div class="flex items-center p-1 bg-surface-container rounded-full border border-outline-variant/30">
+            <button class="trade-toggle-btn flex-1 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all" id="btnToggleBuy" onclick="setTradeMode('buy')">
+              BCT Satın Al (Kart / Fiat)
+            </button>
+            <button class="trade-toggle-btn flex-1 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all" id="btnToggleSell" onclick="setTradeMode('sell')">
+              BCT Nakde Çevir (Sat)
+            </button>
+          </div>
+
+          <!-- BUY CONTAINER -->
+          <div id="tradeBuyCard" class="w-full bg-surface-container-low rounded-2xl p-6 md:p-8 shadow-xl flex flex-col gap-6 border border-outline-variant/30">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col">
+                <span class="text-[11px] font-semibold text-primary uppercase tracking-widest font-mono">Thirdweb Pay Entegrasyonu</span>
+                <h1 class="text-2xl font-bold text-on-surface">BCT Satın Al</h1>
+                <p class="text-xs text-on-surface-variant mt-0.5">Kredi kartı veya banka hesabıyla anında token alın</p>
+              </div>
+              <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
+                <span class="material-symbols-outlined text-[20px]">add_shopping_cart</span>
+              </div>
+            </div>
+
+            <!-- Currency & Preset Selection -->
+            <div class="flex flex-col gap-3">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-on-surface-variant font-medium">1. Para Birimi &amp; Tutar Seçin</span>
+                <div class="flex items-center gap-1 bg-surface-container rounded-lg p-0.5 text-xs font-mono">
+                  <button class="curr-btn px-2 py-0.5 rounded bg-surface-container-highest text-primary font-bold" onclick="setTradeCurrency('USD', this)">USD ($)</button>
+                  <button class="curr-btn px-2 py-0.5 rounded text-on-surface-variant hover:text-on-surface" onclick="setTradeCurrency('EUR', this)">EUR (€)</button>
+                  <button class="curr-btn px-2 py-0.5 rounded text-on-surface-variant hover:text-on-surface" onclick="setTradeCurrency('TRY', this)">TRY (₺)</button>
+                </div>
+              </div>
+
+              <!-- Quick Preset Packs -->
+              <div class="grid grid-cols-4 gap-2">
+                <button class="px-2 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface border border-outline-variant/30 transition-colors flex flex-col items-center" onclick="setBuyFiatAmount(10)">
+                  <span>$10</span>
+                  <span class="text-[10px] text-primary font-mono">1,000 BCT</span>
+                </button>
+                <button class="px-2 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface border border-outline-variant/30 transition-colors flex flex-col items-center" onclick="setBuyFiatAmount(25)">
+                  <span>$25</span>
+                  <span class="text-[10px] text-primary font-mono">2,500 BCT</span>
+                </button>
+                <button class="px-2 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface border border-outline-variant/30 transition-colors flex flex-col items-center" onclick="setBuyFiatAmount(50)">
+                  <span>$50</span>
+                  <span class="text-[10px] text-primary font-mono">5,000 BCT</span>
+                </button>
+                <button class="px-2 py-2.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface border border-outline-variant/30 transition-colors flex flex-col items-center" onclick="setBuyFiatAmount(100)">
+                  <span>$100</span>
+                  <span class="text-[10px] text-primary font-mono">10,000 BCT</span>
+                </button>
+              </div>
+
+              <!-- Custom Amount Input -->
+              <div class="flex items-center bg-surface-container rounded-xl px-4 py-3 border border-outline-variant/30 focus-within:border-primary transition-colors">
+                <span class="text-lg font-bold text-outline-variant mr-2" id="buyCurrencySymbol">$</span>
+                <input class="bg-transparent border-0 outline-none w-full text-lg font-semibold text-on-surface placeholder:text-outline font-mono" id="buyFiatInput" placeholder="Tutar girin (örn. 50)" type="number" step="any" oninput="calculateBuyTokens()"/>
+              </div>
+            </div>
+
+            <!-- Output Calculation Box -->
+            <div class="p-4 rounded-xl bg-surface-container-lowest flex items-center justify-between border border-outline-variant/20">
+              <div class="flex flex-col">
+                <span class="text-[11px] text-on-surface-variant font-medium">Cüzdanınıza Geçecek BCT:</span>
+                <span class="text-2xl font-bold font-mono text-primary" id="buyBctResult">0.0000 BCT</span>
+              </div>
+              <div class="text-right flex flex-col">
+                <span class="text-[10px] text-outline font-mono">Birim Fiyat:</span>
+                <span class="text-xs font-mono text-on-surface-variant" id="buyExchangeRateLabel">1 USD = 100 BCT</span>
+              </div>
+            </div>
+
+            <!-- Payment Method Selection -->
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-on-surface-variant font-medium">2. Ödeme Yöntemi</span>
+              <div class="grid grid-cols-2 gap-2">
+                <label class="flex items-center gap-2.5 p-3 rounded-xl bg-surface-container border border-primary/40 cursor-pointer">
+                  <input type="radio" name="payMethod" value="card" checked class="accent-primary"/>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-semibold text-on-surface">Kredi / Banka Kartı</span>
+                    <span class="text-[10px] text-on-surface-variant">Visa, Mastercard</span>
+                  </div>
+                </label>
+                <label class="flex items-center gap-2.5 p-3 rounded-xl bg-surface-container border border-outline-variant/30 cursor-pointer hover:border-outline-variant">
+                  <input type="radio" name="payMethod" value="thirdweb" class="accent-primary"/>
+                  <div class="flex flex-col">
+                    <span class="text-xs font-semibold text-on-surface">Thirdweb Pay</span>
+                    <span class="text-[10px] text-on-surface-variant">Crypto / Apple Pay</span>
+                  </div>
+                </label>
+              </div>
+            </div>
+
+            <!-- Security Assurance Note -->
+            <div class="p-3.5 rounded-xl bg-surface-container-lowest/80 flex items-center gap-3 border border-outline-variant/20 text-xs">
+              <span class="material-symbols-outlined text-primary text-[20px] shrink-0">verified_user</span>
+              <div class="flex flex-col">
+                <span class="text-on-surface font-semibold text-[11px]">Gizli Anahtarlar Backend'de Güvence Altındadır</span>
+                <span class="text-on-surface-variant text-[10px]">Thirdweb API istemci kimliği ile güvenli doğrulanır; gizli anahtarlar asla tarayıcıya iletilmez.</span>
+              </div>
+            </div>
+
+            <!-- Execute Buy Button -->
+            <button class="w-full h-[52px] rounded-full bg-primary-container text-on-primary-container text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-105 active:scale-[0.99] shadow-lg disabled:opacity-40 disabled:cursor-not-allowed" id="btnExecuteBuy" onclick="executeBuyTokens()" type="button">
+              <span class="material-symbols-outlined text-[20px]">credit_card</span>
+              <span id="btnBuyText">Güvenli Öde ve Tokenları Al</span>
+            </button>
+          </div>
+
+          <!-- SELL CONTAINER -->
+          <div id="tradeSellCard" class="w-full bg-surface-container-low rounded-2xl p-6 md:p-8 shadow-xl flex-col gap-6 border border-outline-variant/30 hidden">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col">
+                <span class="text-[11px] font-semibold text-secondary uppercase tracking-widest font-mono">BCT Nakde Çevirme (Off-Ramp)</span>
+                <h1 class="text-2xl font-bold text-on-surface">BCT Sat</h1>
+                <p class="text-xs text-on-surface-variant mt-0.5">Tokenlarınızı nakde çevirin ve banka hesabınıza çekin</p>
+              </div>
+              <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-secondary">
+                <span class="material-symbols-outlined text-[20px]">payments</span>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-xs text-on-surface-variant font-medium">Satılacak BCT Miktarı:</span>
+                <span class="text-xs text-on-surface-variant">Bakiye: <strong class="text-on-surface font-mono" id="sellAvailableBal">0.00 BCT</strong></span>
+              </div>
+              <div class="flex items-center bg-surface-container rounded-xl px-4 py-3 border border-outline-variant/30 focus-within:border-primary transition-colors">
+                <input class="bg-transparent border-0 outline-none w-full text-lg font-semibold text-on-surface placeholder:text-outline font-mono" id="sellBctInput" placeholder="0.00" type="number" step="any" oninput="calculateSellPayout()"/>
+                <span class="text-xs font-mono font-bold text-primary ml-2">BCT</span>
+              </div>
+              <div class="flex items-center gap-2 mt-1">
+                <button class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-medium" onclick="setSellPercent(0.25)">%25</button>
+                <button class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-medium" onclick="setSellPercent(0.50)">%50</button>
+                <button class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface text-xs font-medium" onclick="setSellPercent(0.75)">%75</button>
+                <button class="px-3 py-1 rounded-full bg-surface-container text-primary text-xs font-semibold" onclick="setSellPercent(1.00)">Tümü</button>
+              </div>
+            </div>
+
+            <!-- Payout Target Input -->
+            <div class="flex flex-col gap-2">
+              <span class="text-xs text-on-surface-variant font-medium">Ödeme Bilgileriniz (IBAN / Banka Hesabı / Cüzdan):</span>
+              <input class="bg-surface-container border border-outline-variant/30 rounded-xl px-4 py-3 text-xs text-on-surface placeholder:text-outline font-mono focus:outline-none focus:border-primary" id="sellPayoutDestInput" placeholder="TR00 0000 0000 0000 0000 0000 00"/>
+            </div>
+
+            <!-- Sell Payout Calculation -->
+            <div class="p-4 rounded-xl bg-surface-container-lowest flex items-center justify-between border border-outline-variant/20">
+              <div class="flex flex-col">
+                <span class="text-[11px] text-on-surface-variant font-medium">Hesabınıza Yatacak Tutar:</span>
+                <span class="text-2xl font-bold font-mono text-secondary" id="sellFiatResult">$0.00</span>
+              </div>
+              <div class="text-right flex flex-col">
+                <span class="text-[10px] text-outline font-mono">İşlem Payı: %1.00</span>
+                <span class="text-[11px] text-on-surface-variant font-mono">Net Nakit Çıkışı</span>
+              </div>
+            </div>
+
+            <button class="w-full h-[52px] rounded-full bg-secondary-container text-on-secondary-container text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-105 active:scale-[0.99] shadow-lg disabled:opacity-40" id="btnExecuteSell" onclick="executeSellTokens()" type="button">
+              <span class="material-symbols-outlined text-[20px]">account_balance</span>
+              <span id="btnSellText">BCT Sat ve Nakit Çıkışı Başlat</span>
+            </button>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ========================================================================= -->
+      <!-- TAB 3: PARA GÖNDER (Stitch Transfer Card)                                -->
       <!-- ========================================================================= -->
       <div id="tab-para-gonder" class="tab-content flex-col w-full items-center">
         <div class="relative w-full max-w-lg">
           <div class="absolute -top-16 left-1/2 -translate-x-1/2 w-80 h-80 bg-primary/10 rounded-full blur-3xl pointer-events-none -z-10"></div>
           
           <div class="w-full bg-surface-container-low rounded-2xl p-6 md:p-8 shadow-xl flex flex-col gap-6 border border-outline-variant/30">
-            <!-- Header -->
             <div class="flex items-center justify-between">
               <div class="flex flex-col">
-                <span class="text-[11px] font-semibold text-primary uppercase tracking-widest">BCT Web3 Transfer</span>
+                <span class="text-[11px] font-semibold text-primary uppercase tracking-widest font-mono">BCT Web3 Transfer</span>
                 <h1 class="text-2xl font-bold text-on-surface">Para Gönder</h1>
                 <p class="text-xs text-on-surface-variant mt-0.5">Hızlı, şeffaf ve güvenli blokzincir transferi</p>
               </div>
@@ -334,12 +507,10 @@
                 <span class="text-xs font-mono text-primary font-medium" id="feeNotice">Ağ Ücreti: %1 (%50 Madenci, %50 Hazine)</span>
               </div>
               
-              <!-- Input -->
               <div class="flex items-center justify-center w-full my-2">
                 <input class="bg-transparent border-0 outline-none text-center text-4xl md:text-5xl text-on-surface placeholder:text-outline-variant w-full p-0 font-semibold tracking-tight" id="sendAmountInput" inputmode="decimal" placeholder="0.00" type="number" step="any" oninput="updateSendFeePreview()"/>
               </div>
 
-              <!-- Quick Percent Pills -->
               <div class="flex items-center gap-2 mt-2">
                 <button class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high text-xs font-medium transition-colors" onclick="setSendPercent(0.25)" type="button">%25</button>
                 <button class="px-3 py-1 rounded-full bg-surface-container text-on-surface-variant hover:text-on-surface hover:bg-surface-container-high text-xs font-medium transition-colors" onclick="setSendPercent(0.50)" type="button">%50</button>
@@ -364,7 +535,6 @@
               </div>
             </div>
 
-            <!-- Fee & Net Calculation Breakdown -->
             <div class="flex flex-col gap-1.5 p-3.5 rounded-xl bg-surface-container-lowest text-xs text-on-surface-variant border border-outline-variant/20">
               <div class="flex items-center justify-between">
                 <span>Alıcıya Geçecek Net:</span>
@@ -380,7 +550,6 @@
               </div>
             </div>
 
-            <!-- Submit Button -->
             <button class="w-full h-[52px] rounded-full bg-primary-container text-on-primary-container text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 hover:brightness-105 active:scale-[0.99] shadow-lg disabled:opacity-40 disabled:cursor-not-allowed" id="btnExecuteSend" onclick="executeSendTransaction()" type="button">
               <span class="material-symbols-outlined text-[20px]">send</span>
               <span id="btnSendText">Transferi Onayla ve İmzala</span>
@@ -390,7 +559,7 @@
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 3: YENİ CÜZDAN & İÇE AKTAR (Stitch 12-Word Mnemonic Screen)           -->
+      <!-- TAB 4: YENİ CÜZDAN & İÇE AKTAR (Stitch 12-Word Mnemonic Screen)           -->
       <!-- ========================================================================= -->
       <div id="tab-yeni-cuzdan" class="tab-content flex-col w-full items-center">
         <div class="w-full max-w-2xl mx-auto flex flex-col items-center">
@@ -423,7 +592,6 @@
             <!-- Seed Words Grid (4x3 Responsive) -->
             <div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/30">
               <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2.5" id="seed-grid">
-                <!-- Dynamically populated or default placeholders -->
               </div>
             </div>
 
@@ -498,12 +666,11 @@
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 4: AĞ & EXPLORER (Stitch Network Explorer Screen)                     -->
+      <!-- TAB 5: AĞ & EXPLORER (Stitch Network Explorer Screen)                     -->
       <!-- ========================================================================= -->
       <div id="tab-ag-ve-explorer" class="tab-content flex-col w-full">
         <div class="w-full max-w-5xl mx-auto flex flex-col gap-8">
           
-          <!-- Explorer Header -->
           <div class="flex flex-col gap-2 text-left">
             <div class="flex items-center gap-2 text-on-surface-variant text-xs uppercase tracking-wider">
               <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
@@ -559,7 +726,7 @@
             </div>
           </div>
 
-          <!-- Mining & Block Forging Card (Teşvik Modeli) -->
+          <!-- Mining & Block Forging Card -->
           <div class="w-full bg-gradient-to-r from-surface-container-low via-surface-container to-surface-container-low rounded-2xl p-6 border border-primary/30 flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
             <div class="flex items-center gap-4">
               <div class="w-12 h-12 rounded-2xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
@@ -588,13 +755,11 @@
               <span class="text-xs text-on-surface-variant font-mono">Canlı Telemetri</span>
             </div>
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4" id="nodesCardsGrid">
-              <!-- Dynamically populated from /api/v1/nodes -->
             </div>
           </div>
 
           <!-- Latest Blocks & Transactions Dual Feed -->
           <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Latest Blocks -->
             <div class="flex flex-col gap-3">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-on-surface">Son Bloklar</h3>
@@ -605,7 +770,6 @@
               </div>
             </div>
 
-            <!-- Latest Transactions -->
             <div class="flex flex-col gap-3">
               <div class="flex items-center justify-between">
                 <h3 class="text-sm font-semibold text-on-surface">Son Ağ İşlemleri</h3>
@@ -621,17 +785,16 @@
       </div>
 
       <!-- ========================================================================= -->
-      <!-- TAB 5: GELİŞTİRİCİ & API (Interaktif Dokümantasyon)                      -->
+      <!-- TAB 6: GELİŞTİRİCİ & API (Interaktif Dokümantasyon)                      -->
       <!-- ========================================================================= -->
       <div id="tab-api-docs" class="tab-content flex-col w-full">
         <div class="w-full max-w-4xl mx-auto flex flex-col gap-6">
           <div class="flex flex-col gap-1">
-            <span class="text-xs text-primary font-mono font-medium">BCT REST API & NODE SDK</span>
-            <h1 class="text-2xl font-bold text-on-surface">Geliştirici Dokümantasyonu & Düğüm Kurulumu</h1>
+            <span class="text-xs text-primary font-mono font-medium">BCT REST API &amp; THIRDWEB ON-RAMP</span>
+            <h1 class="text-2xl font-bold text-on-surface">Geliştirici Dokümantasyonu &amp; Düğüm Kurulumu</h1>
             <p class="text-xs text-on-surface-variant">LockTrace blokzincir API'lerini canlı test edin veya kendi bilgisayarınızda node çalıştırın.</p>
           </div>
 
-          <!-- Node Setup Guide Snippet -->
           <div class="p-5 rounded-2xl bg-surface-container-low border border-outline-variant/30 flex flex-col gap-3">
             <span class="text-xs font-semibold text-on-surface">Kendi Bilgisayarınızda Node Çalıştırın (Windows / Linux / macOS)</span>
             <div class="p-3 rounded-xl bg-surface-container-lowest font-mono text-xs text-primary flex items-center justify-between">
@@ -640,9 +803,7 @@
             </div>
           </div>
 
-          <!-- Interactive API Test Endpoints -->
           <div class="flex flex-col gap-4" id="apiCardsContainer">
-            <!-- Populated dynamically -->
           </div>
         </div>
       </div>
@@ -650,9 +811,7 @@
     </main>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- MODAL 1: İŞLEM DETAY ÇEKMECESİ (Stitch Inspired Apple Drawer)             -->
-  <!-- ========================================================================= -->
+  <!-- MODAL 1: İŞLEM DETAY ÇEKMECESİ -->
   <div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-4" id="tx-modal" onclick="if(event.target===this) closeTxModal();">
     <div class="w-full max-w-[420px] rounded-3xl bg-surface-container p-6 flex flex-col gap-6 shadow-2xl transition-all scale-95 opacity-0 border border-outline-variant/30" id="modal-card">
       <div class="flex items-center justify-between">
@@ -702,9 +861,7 @@
     </div>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- MODAL 2: AL / PAYLAŞ CÜZDAN BİLGİLERİ (Stitch Modal)                     -->
-  <!-- ========================================================================= -->
+  <!-- MODAL 2: AL / PAYLAŞ CÜZDAN BİLGİLERİ -->
   <div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-4" id="receive-modal" onclick="if(event.target===this) closeReceiveModal();">
     <div class="w-full max-w-[420px] rounded-3xl bg-surface-container p-6 flex flex-col gap-6 shadow-2xl border border-outline-variant/30">
       <div class="flex items-center justify-between">
@@ -718,13 +875,11 @@
       </div>
 
       <div class="flex flex-col items-center justify-center gap-4 py-2">
-        <!-- QR Placeholder with SVG visual -->
         <div class="w-44 h-44 rounded-2xl bg-white p-3 flex items-center justify-center shadow-lg" id="qrContainer">
-          <!-- Live QR code will be generated via API or SVG -->
           <img id="qrImage" class="w-full h-full object-contain" alt="QR Code"/>
         </div>
         <span class="text-xs text-on-surface-variant text-center max-w-xs">
-          Bu adrese gönderilen tüm BCT transferleri ve madenci ödülleri anında bakiyenize yansır.
+          Bu adrese gönderilen tüm BCT transferleri ve satın alımlar anında bakiyenize yansır.
         </span>
       </div>
 
@@ -741,17 +896,13 @@
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION (Stitch Floating Pill) -->
+  <!-- TOAST NOTIFICATION -->
   <div class="fixed bottom-8 left-1/2 -translate-x-1/2 bg-surface-container-highest text-on-surface px-5 py-3 rounded-full text-xs font-medium shadow-2xl flex items-center gap-2.5 translate-y-20 opacity-0 pointer-events-none transition-all duration-300 z-50 border border-outline-variant/30" id="toast">
     <span class="material-symbols-outlined text-primary text-[18px]" id="toastIcon">check_circle</span>
     <span id="toastText">İşlem başarıyla gerçekleşti</span>
   </div>
 
-  <!-- ========================================================================= -->
-  <!-- JAVASCRIPT LOGIC & LIVE API WIRING                                        -->
-  <!-- ========================================================================= -->
   <script>
-    // API endpoint configuration
     const API_BASE = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
       ? 'http://localhost:5000/api/v1'
       : '/api/v1';
@@ -759,6 +910,8 @@
     let currentAccount = null;
     let cachedTransactions = [];
     let tempMnemonic = "";
+    let tradeCurrency = "USD";
+    let bctPerUsdRate = 100.0;
 
     // 1. Tab Switching
     function switchTab(tabId) {
@@ -766,14 +919,12 @@
       const target = document.getElementById('tab-' + tabId);
       if (target) target.classList.add('active');
 
-      // Update active nav button styling in sidebar
       const navButtons = document.querySelectorAll('#sidebar-nav .nav-item');
       navButtons.forEach(btn => {
         btn.classList.remove('bg-surface-container-highest', 'text-on-surface', 'font-semibold');
         btn.classList.add('text-on-surface-variant', 'font-medium');
       });
 
-      // Highlight active button
       navButtons.forEach(btn => {
         if (btn.getAttribute('onclick')?.includes(tabId)) {
           btn.classList.add('bg-surface-container-highest', 'text-on-surface', 'font-semibold');
@@ -786,6 +937,12 @@
       } else if (tabId === 'cuzdanim') {
         refreshCurrentAccountBalance();
         refreshPersonalTransactions();
+      } else if (tabId === 'al-sat') {
+        fetchTradeConfig();
+        if (currentAccount) {
+          const bal = parseFloat(document.getElementById('cardBalance').textContent.replace(',', '')) || 0;
+          document.getElementById('sellAvailableBal').textContent = `${bal.toFixed(4)} BCT`;
+        }
       } else if (tabId === 'api-docs') {
         renderApiDocs();
       }
@@ -808,7 +965,6 @@
       }, 3000);
     }
 
-    // Safe JSON Fetch
     async function safeFetchJson(url, opts = {}) {
       try {
         const res = await fetch(url, opts);
@@ -823,7 +979,7 @@
       }
     }
 
-    // 3. Account Storage & Initialization
+    // 3. Account Storage
     function loadLocalAccount() {
       const saved = localStorage.getItem('locktrace_account');
       if (saved) {
@@ -833,7 +989,6 @@
           return;
         } catch (e) {}
       }
-      // No saved account, prepare create view
       requestNewMnemonicPreview();
     }
 
@@ -880,10 +1035,11 @@
         });
         document.getElementById('headerMobileBal').textContent = `${bal.toFixed(2)} BCT`;
         document.getElementById('sendAvailableBal').textContent = `${bal.toFixed(4)} BCT`;
+        document.getElementById('sellAvailableBal').textContent = `${bal.toFixed(4)} BCT`;
       }
     }
 
-    // 5. Personal Transaction History
+    // 5. Personal Transactions & Filter
     async function refreshPersonalTransactions() {
       const container = document.getElementById('tx-list');
       if (!currentAccount) {
@@ -896,7 +1052,7 @@
         cachedTransactions = res.json.data.transactions;
         renderTransactionList(cachedTransactions);
       } else {
-        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl">Henüz işlem geçmişi yok. Yeni cüzdan hibesi veya madenci ödülü kazandığınızda burada görünecektir.</div>`;
+        container.innerHTML = `<div class="p-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-2xl">Henüz işlem geçmişi yok.</div>`;
       }
     }
 
@@ -911,6 +1067,8 @@
         const isReceiver = tx.receiver === currentAccount?.address;
         const isMining = tx.tx_type === 'mining_reward';
         const isReward = tx.tx_type === 'reward';
+        const isBuy = tx.tx_type === 'fiat_buy';
+        const isSell = tx.tx_type === 'token_sell';
         
         let icon = 'south_west';
         let title = 'Gelen Transfer';
@@ -918,10 +1076,20 @@
         let sign = '+';
         let typeBadge = 'in';
 
-        if (isMining) {
+        if (isBuy) {
+          icon = 'add_shopping_cart';
+          title = 'BCT Satın Alındı (Fiat On-Ramp)';
+          typeBadge = 'trade';
+        } else if (isSell) {
+          icon = 'payments';
+          title = 'BCT Satıldı (Nakit Çıkışı)';
+          amountClass = 'text-on-surface';
+          sign = '-';
+          typeBadge = 'trade';
+        } else if (isMining) {
           icon = 'memory';
           title = 'Madencilik Ödülü (PoW)';
-          typeBadge = 'mining_reward';
+          typeBadge = 'in';
         } else if (isReward) {
           icon = 'redeem';
           title = 'Hoş Geldin Hibesi';
@@ -985,20 +1153,28 @@
       });
     }
 
-    // 6. Transaction Detail Modal (Apple Style Drawer)
     function openTxDetail(tx) {
       const modal = document.getElementById('tx-modal');
       const card = document.getElementById('modal-card');
       const isReceiver = tx.receiver === currentAccount?.address;
       const isMining = tx.tx_type === 'mining_reward';
+      const isBuy = tx.tx_type === 'fiat_buy';
+      const isSell = tx.tx_type === 'token_sell';
       
-      document.getElementById('modal-title').textContent = isMining ? 'Madencilik Ödülü' : (isReceiver ? 'Gelen Transfer' : 'Giden Transfer');
-      document.getElementById('modal-amount').textContent = `${isReceiver ? '+' : '-'}${tx.net_amount ?? tx.amount} BCT`;
+      let title = 'İşlem Detayı';
+      let icon = 'south_west';
+      if (isBuy) { title = 'Token Satın Alma (On-Ramp)'; icon = 'add_shopping_cart'; }
+      else if (isSell) { title = 'Token Satma (Nakit Çıkışı)'; icon = 'payments'; }
+      else if (isMining) { title = 'Madencilik Ödülü'; icon = 'memory'; }
+      else if (!isReceiver) { title = 'Giden Transfer'; icon = 'north_east'; }
+
+      document.getElementById('modal-title').textContent = title;
+      document.getElementById('modal-amount').textContent = `${(isReceiver || isBuy) ? '+' : '-'}${tx.net_amount ?? tx.amount} BCT`;
       document.getElementById('modal-counterparty').textContent = isReceiver ? (tx.sender || 'Hazine') : tx.receiver;
       document.getElementById('modal-fee').textContent = `${tx.fee ?? 0.0} BCT`;
       document.getElementById('modal-hash').textContent = tx.tx_hash || 'İşleniyor';
       document.getElementById('modal-time').textContent = tx.timestamp ? new Date(tx.timestamp * 1000).toLocaleString('tr-TR') : 'Yeni';
-      document.getElementById('modal-icon').textContent = isMining ? 'memory' : (isReceiver ? 'south_west' : 'north_east');
+      document.getElementById('modal-icon').textContent = icon;
 
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -1019,7 +1195,6 @@
       }, 150);
     }
 
-    // 7. Receive Modal
     function openReceiveModal() {
       if (!currentAccount) {
         showToast("Lütfen önce bir cüzdan oluşturun veya içe aktarın.", true);
@@ -1035,7 +1210,197 @@
       document.getElementById('receive-modal').classList.add('hidden');
     }
 
-    // 8. Send Transfer Logic
+    // ── 6. AL / SAT (FIAT ON-RAMP & OFF-RAMP) ────────────────
+    function setTradeMode(mode) {
+      const btnBuy = document.getElementById('btnToggleBuy');
+      const btnSell = document.getElementById('btnToggleSell');
+      const cardBuy = document.getElementById('tradeBuyCard');
+      const cardSell = document.getElementById('tradeSellCard');
+
+      if (mode === 'buy') {
+        btnBuy.className = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all';
+        btnSell.className = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all';
+        cardBuy.classList.remove('hidden');
+        cardBuy.classList.add('flex');
+        cardSell.classList.remove('flex');
+        cardSell.classList.add('hidden');
+      } else {
+        btnSell.className = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-semibold bg-surface-container-highest text-on-surface shadow-sm transition-all';
+        btnBuy.className = 'trade-toggle-btn flex-1 py-2 rounded-full text-xs font-medium text-on-surface-variant hover:text-on-surface transition-all';
+        cardSell.classList.remove('hidden');
+        cardSell.classList.add('flex');
+        cardBuy.classList.remove('flex');
+        cardBuy.classList.add('hidden');
+      }
+    }
+
+    async function fetchTradeConfig() {
+      const res = await safeFetchJson(`${API_BASE}/trade/config`);
+      if (res.ok && res.json && res.json.success) {
+        const d = res.json.data;
+        bctPerUsdRate = d.bct_per_usd || 100.0;
+        updateExchangeRateLabels();
+      }
+    }
+
+    function setTradeCurrency(curr, btn) {
+      tradeCurrency = curr;
+      document.querySelectorAll('.curr-btn').forEach(b => {
+        b.className = 'curr-btn px-2 py-0.5 rounded text-on-surface-variant hover:text-on-surface';
+      });
+      btn.className = 'curr-btn px-2 py-0.5 rounded bg-surface-container-highest text-primary font-bold';
+      
+      const symbols = { USD: '$', EUR: '€', TRY: '₺' };
+      document.getElementById('buyCurrencySymbol').textContent = symbols[curr] || '$';
+      updateExchangeRateLabels();
+      calculateBuyTokens();
+    }
+
+    function updateExchangeRateLabels() {
+      let r = bctPerUsdRate;
+      if (tradeCurrency === 'EUR') r = round4(bctPerUsdRate * 1.08);
+      else if (tradeCurrency === 'TRY') r = round4(bctPerUsdRate / 34.0);
+
+      document.getElementById('buyExchangeRateLabel').textContent = `1 ${tradeCurrency} ≈ ${r} BCT`;
+    }
+
+    function setBuyFiatAmount(val) {
+      document.getElementById('buyFiatInput').value = val;
+      calculateBuyTokens();
+    }
+
+    function calculateBuyTokens() {
+      const fiat = parseFloat(document.getElementById('buyFiatInput').value) || 0;
+      let r = bctPerUsdRate;
+      if (tradeCurrency === 'EUR') r = bctPerUsdRate * 1.08;
+      else if (tradeCurrency === 'TRY') r = bctPerUsdRate / 34.0;
+
+      const tokens = round4(fiat * r);
+      document.getElementById('buyBctResult').textContent = `${tokens.toLocaleString('tr-TR', { maximumFractionDigits: 4 })} BCT`;
+    }
+
+    async function executeBuyTokens() {
+      if (!currentAccount) {
+        showToast("Lütfen önce bir cüzdan oluşturun veya içe aktarın.", true);
+        switchTab('yeni-cuzdan');
+        return;
+      }
+
+      const fiat = parseFloat(document.getElementById('buyFiatInput').value);
+      if (!fiat || fiat <= 0) {
+        showToast("Lütfen geçerli bir satın alma tutarı girin.", true);
+        return;
+      }
+
+      const btn = document.getElementById('btnExecuteBuy');
+      const btnText = document.getElementById('btnBuyText');
+      btn.disabled = true;
+      btnText.textContent = "Ödeme Doğrulanıyor ve Tokenlar Basılıyor...";
+
+      try {
+        const payload = {
+          buyer_address: currentAccount.address,
+          fiat_amount: fiat,
+          currency: tradeCurrency,
+          payment_method: document.querySelector('input[name="payMethod"]:checked')?.value || 'card'
+        };
+
+        const res = await safeFetchJson(`${API_BASE}/trade/buy`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok && res.json && res.json.success) {
+          showToast(res.json.message || "Tebrikler! BCT tokenlarınız başarıyla cüzdanınıza aktarıldı.");
+          document.getElementById('buyFiatInput').value = '';
+          calculateBuyTokens();
+          refreshCurrentAccountBalance();
+          refreshPersonalTransactions();
+          switchTab('cuzdanim');
+        } else {
+          showToast(res.json?.message || "Satın alma gerçekleştirilemedi.", true);
+        }
+      } catch (e) {
+        showToast("İşlem hatası: " + e.message, true);
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = "Güvenli Öde ve Tokenları Al";
+      }
+    }
+
+    function calculateSellPayout() {
+      const bct = parseFloat(document.getElementById('sellBctInput').value) || 0;
+      const fee = bct * 0.01;
+      const net = Math.max(0, bct - fee);
+      const fiat = net / bctPerUsdRate;
+      document.getElementById('sellFiatResult').textContent = `$${fiat.toFixed(2)} USD`;
+    }
+
+    function setSellPercent(p) {
+      if (!currentAccount) return;
+      const total = parseFloat(document.getElementById('sellAvailableBal').textContent) || 0;
+      const calc = round4(total * p);
+      document.getElementById('sellBctInput').value = calc > 0 ? calc : '';
+      calculateSellPayout();
+    }
+
+    async function executeSellTokens() {
+      if (!currentAccount) {
+        showToast("Lütfen önce bir cüzdan bağlayın.", true);
+        return;
+      }
+
+      const bctAmount = parseFloat(document.getElementById('sellBctInput').value);
+      const payoutDest = document.getElementById('sellPayoutDestInput').value.trim();
+
+      if (!bctAmount || bctAmount <= 0) {
+        showToast("Lütfen satılacak BCT miktarını girin.", true);
+        return;
+      }
+      if (!payoutDest) {
+        showToast("Lütfen ödemenin yatacağı IBAN veya hesap numarasını girin.", true);
+        return;
+      }
+
+      const btn = document.getElementById('btnExecuteSell');
+      const btnText = document.getElementById('btnSellText');
+      btn.disabled = true;
+      btnText.textContent = "Tokenlar Hazineye İletiliyor ve Nakit Çıkışı Yapılıyor...";
+
+      try {
+        const payload = {
+          seller_address: currentAccount.address,
+          bct_amount: bctAmount,
+          currency: 'USD',
+          payout_info: payoutDest
+        };
+
+        const res = await safeFetchJson(`${API_BASE}/trade/sell`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (res.ok && res.json && res.json.success) {
+          showToast(res.json.message || "BCT satışı onaylandı ve nakit ödemeniz işleme alındı!");
+          document.getElementById('sellBctInput').value = '';
+          calculateSellPayout();
+          refreshCurrentAccountBalance();
+          refreshPersonalTransactions();
+          switchTab('cuzdanim');
+        } else {
+          showToast(res.json?.message || "Satış işlemi gerçekleştirilemedi.", true);
+        }
+      } catch (e) {
+        showToast("İşlem hatası: " + e.message, true);
+      } finally {
+        btn.disabled = false;
+        btnText.textContent = "BCT Sat ve Nakit Çıkışı Başlat";
+      }
+    }
+
+    // ── 7. Send Transfer Logic ─────────────────────────────
     function updateSendFeePreview() {
       const val = parseFloat(document.getElementById('sendAmountInput').value) || 0;
       const fee = round8(val * 0.01);
@@ -1118,7 +1483,7 @@
       }
     }
 
-    // 9. Wallet Create & Import Modes
+    // ── 8. Wallet Create & Import Modes ───────────────────
     function setWalletMode(mode) {
       const tabCreate = document.getElementById('tabModeCreate');
       const tabImport = document.getElementById('tabModeImport');
@@ -1159,12 +1524,10 @@
     }
 
     async function requestNewMnemonicPreview() {
-      // Create a fresh wallet from the server
       const res = await safeFetchJson(`${API_BASE}/wallet/create`, { method: 'POST' });
       if (res.ok && res.json && res.json.success) {
         tempMnemonic = res.json.data.mnemonic;
         renderMnemonicGrid(tempMnemonic);
-        // Stash pending created account
         window.pendingCreatedAccount = res.json.data;
       }
     }
@@ -1218,7 +1581,7 @@
       }
     }
 
-    // 10. Network & Explorer Metrics
+    // ── 9. Network & Explorer Metrics ─────────────────────
     async function refreshExplorerData() {
       const [statsRes, txsRes, blocksRes, nodesRes] = await Promise.all([
         safeFetchJson(`${API_BASE}/stats`),
@@ -1333,12 +1696,21 @@
       container.innerHTML = txs.map(tx => {
         const isMining = tx.tx_type === 'mining_reward';
         const isReward = tx.tx_type === 'reward';
-        const title = isMining ? 'Madenci Ödülü' : (isReward ? 'Cüzdan Hibesi' : 'Transfer');
+        const isBuy = tx.tx_type === 'fiat_buy';
+        const isSell = tx.tx_type === 'token_sell';
+
+        let title = 'Transfer';
+        let icon = 'swap_horiz';
+        if (isBuy) { title = 'Fiat Token Alımı'; icon = 'add_shopping_cart'; }
+        else if (isSell) { title = 'Nakit Token Satışı'; icon = 'payments'; }
+        else if (isMining) { title = 'Madenci Ödülü'; icon = 'memory'; }
+        else if (isReward) { title = 'Cüzdan Hibesi'; icon = 'redeem'; }
+
         const shortHash = tx.tx_hash ? `${tx.tx_hash.slice(0, 8)}...` : '--';
         return `
           <div class="p-3 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 hover:border-outline-variant transition-colors text-xs">
             <div class="flex items-center gap-2.5">
-              <span class="material-symbols-outlined text-[16px] text-primary">${isMining ? 'memory' : 'swap_horiz'}</span>
+              <span class="material-symbols-outlined text-[16px] text-primary">${icon}</span>
               <div class="flex flex-col">
                 <span class="font-semibold text-on-surface">${title}</span>
                 <span class="font-mono text-[10px] text-on-surface-variant">${shortHash}</span>
@@ -1353,7 +1725,6 @@
       }).join('');
     }
 
-    // 11. Live PoW Mining Button
     async function executeMineBlock() {
       const btn = document.getElementById('btnMineBlockNow');
       btn.disabled = true;
@@ -1383,7 +1754,6 @@
       }
     }
 
-    // 12. Explorer Search
     async function triggerExplorerSearch() {
       const q = document.getElementById('explorerSearchInput').value.trim();
       if (!q) return;
@@ -1404,15 +1774,16 @@
       }
     }
 
-    // 13. API Docs Interactive Renderer
+    // ── 10. API Docs Interactive Renderer ────────────────
     function renderApiDocs() {
       const container = document.getElementById('apiCardsContainer');
       const endpoints = [
+        { method: 'GET', path: '/trade/config', title: 'Al / Sat Yapılandırması (Thirdweb)', desc: 'İstemci kimliği (Secret Key gizlenmiş) ve fiat kur bilgilerini döner.' },
+        { method: 'POST', path: '/trade/buy', title: 'Token Satın Alma (On-Ramp)', desc: 'Fiat/Kredi kartı ile doğrudan hazineden BCT satın almayı sağlar.' },
+        { method: 'POST', path: '/trade/sell', title: 'Token Satma (Off-Ramp)', desc: 'BCT tokenlarını nakde çevirerek banka hesabına çekmeyi sağlar.' },
         { method: 'GET', path: '/stats', title: 'Ağ İstatistikleri & Arz', desc: '1 Trilyon toplam arzı ve dolaşımdaki token miktarını listeler.' },
         { method: 'GET', path: '/mining/job', title: 'Madencilik İşi & Zorluk', desc: 'PoW blok üretim zorluğunu ve biriken madenci ödüllerini döner.' },
-        { method: 'GET', path: '/nodes', title: 'Aktif Ağ Düğümleri', desc: 'Konsensüse bağlı tüm düğümleri ve kazançlarını listeler.' },
-        { method: 'GET', path: '/blocks/latest?count=5', title: 'Son Bloklar', desc: 'Zincire eklenen en son blokları döner.' },
-        { method: 'GET', path: '/transactions/latest?limit=5', title: 'Son İşlemler', desc: 'Ağdaki son onaylanmış transferleri döner.' }
+        { method: 'GET', path: '/nodes', title: 'Aktif Ağ Düğümleri', desc: 'Konsensüse bağlı tüm düğümleri ve kazançlarını listeler.' }
       ];
 
       container.innerHTML = endpoints.map((ep, idx) => `
@@ -1440,14 +1811,13 @@
       box.textContent = JSON.stringify(res.json || res.text, null, 2);
     }
 
-    function round8(n) {
-      return Math.round(n * 1e8) / 1e8;
-    }
+    function round4(n) { return Math.round(n * 1e4) / 1e4; }
+    function round8(n) { return Math.round(n * 1e8) / 1e8; }
 
-    // Auto-init on page load
     window.addEventListener('DOMContentLoaded', () => {
       loadLocalAccount();
       refreshExplorerData();
+      fetchTradeConfig();
       setInterval(() => {
         refreshExplorerData();
         if (currentAccount) refreshCurrentAccountBalance();
