@@ -1,4 +1,4 @@
-const CACHE_NAME = 'locktrace-pwa-v4';
+const CACHE_NAME = 'locktrace-pwa-v5';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -18,7 +18,7 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: Clean up previous version caches
+// Activate: Clean up previous version caches immediately
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((keys) => {
@@ -33,20 +33,28 @@ self.addEventListener('activate', (event) => {
   );
 });
 
-// Fetch: Strategy Network-first for APIs, Stale-while-revalidate for static assets
+// Fetch: Optimized for iOS WebKit & Desktop
 self.addEventListener('fetch', (event) => {
+  // Only handle GET requests
+  if (event.request.method !== 'GET') return;
+
   const url = new URL(event.request.url);
 
-  // 1. API Requests: Direct passthrough - never synthesize 503
+  // 1. Never intercept or cache API requests (direct passthrough to blockchain node)
   if (url.pathname.startsWith('/api/')) {
     return;
   }
 
-  // 2. Static Resources & Shell: Stale-While-Revalidate
+  // 2. Only cache same-origin static requests
+  if (url.origin !== self.location.origin) {
+    return;
+  }
+
+  // 3. Stale-While-Revalidate for local static assets
   event.respondWith(
     caches.match(event.request).then((cachedResponse) => {
       const fetchPromise = fetch(event.request).then((networkResponse) => {
-        if (networkResponse && networkResponse.status === 200 && event.request.method === 'GET') {
+        if (networkResponse && networkResponse.status === 200) {
           const responseToCache = networkResponse.clone();
           caches.open(CACHE_NAME).then((cache) => {
             cache.put(event.request, responseToCache);
@@ -54,7 +62,6 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
-        // Fallback for navigation requests
         if (event.request.mode === 'navigate') {
           return caches.match('/index.html');
         }

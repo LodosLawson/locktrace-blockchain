@@ -10,6 +10,12 @@
   <link rel="manifest" href="manifest.json"/>
   <meta name="theme-color" content="#131315"/>
   <meta name="mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-capable" content="yes"/>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent"/>
+  <meta name="apple-mobile-web-app-title" content="LockTrace"/>
+  <link rel="apple-touch-icon" href="icons/icon-192.png"/>
+  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png"/>
+  <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png"/>
   <!-- Automatic Apex to WWW Redirect for Valid HTTPS / SSL -->
   <script>
     if (window.location.hostname === 'locktrace.space') {
@@ -182,7 +188,7 @@
   </div>
 
   <!-- Mobile Bottom Tab Navigation (Stitch Mobile Shell) -->
-  <nav class="md:hidden fixed bottom-0 left-0 right-0 h-16 bg-surface-container-low/95 backdrop-blur-xl border-t border-outline-variant/30 z-50 flex items-center justify-around px-2 pb-safe" id="mobile-nav">
+  <nav class="md:hidden fixed bottom-0 left-0 right-0 min-h-[64px] bg-surface-container-low/95 backdrop-blur-xl border-t border-outline-variant/30 z-50 flex items-center justify-around px-2 pb-safe pt-1.5" id="mobile-nav">
     <button class="mobile-nav-btn flex flex-col items-center gap-0.5 text-primary" data-tab="cuzdanim" onclick="switchTab('cuzdanim')">
       <span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
       <span class="text-[10px] font-medium">Cüzdan</span>
@@ -984,6 +990,10 @@
       : (window.location.hostname.includes('locktrace.space') ? 'https://www.locktrace.space/api/v1' : '/api/v1');
 
     let currentAccount = null;
+    let lastRenderedBlocksHash = "";
+    let lastRenderedTxsHash = "";
+    let lastRenderedSpaceHash = "";
+
     let cachedTransactions = [];
     let tempMnemonic = "";
     let tradeCurrency = "USD";
@@ -1257,6 +1267,11 @@
         return;
       }
 
+      const currentTxsHash = txs.map(t => `${t.tx_hash}:${t.amount}`).join('|');
+      if (currentTxsHash === lastRenderedTxsHash && container.children.length > 0) {
+        return; // Skip DOM wipe if data is identical - saves iPhone memory
+      }
+      lastRenderedTxsHash = currentTxsHash;
       container.innerHTML = txs.map(tx => {
         const isReceiver = tx.receiver === currentAccount?.address;
         const isMining = tx.tx_type === 'mining_reward';
@@ -1950,10 +1965,16 @@
     function renderFeedBlocks(blocks) {
       const container = document.getElementById('feedBlocksList');
       if (!blocks || blocks.length === 0) {
+        lastRenderedBlocksHash = "";
         container.innerHTML = `<div class="p-4 text-xs text-on-surface-variant bg-surface-container-low rounded-xl">Kayıtlı blok bulunmuyor.</div>`;
         return;
       }
 
+      const currentBlocksHash = blocks.map(b => `${b.index}:${b.hash}`).join('|');
+      if (currentBlocksHash === lastRenderedBlocksHash && container.children.length > 0) {
+        return; // Skip DOM wipe if data is identical - saves iPhone memory
+      }
+      lastRenderedBlocksHash = currentBlocksHash;
       container.innerHTML = blocks.map(b => {
         const shortHash = b.hash.slice(0, 10) + '...' + b.hash.slice(-8);
         const shortMiner = b.miner ? (b.miner.length > 12 ? b.miner.slice(0, 6) + '...' + b.miner.slice(-4) : b.miner) : 'Genesis';
@@ -1982,6 +2003,11 @@
         return;
       }
 
+      const currentTxsHash = txs.map(t => `${t.tx_hash}:${t.amount}`).join('|');
+      if (currentTxsHash === lastRenderedTxsHash && container.children.length > 0) {
+        return; // Skip DOM wipe if data is identical - saves iPhone memory
+      }
+      lastRenderedTxsHash = currentTxsHash;
       container.innerHTML = txs.map(tx => {
         const isMining = tx.tx_type === 'mining_reward';
         const isReward = tx.tx_type === 'reward';
@@ -2123,12 +2149,27 @@
       try { loadSpaceFeed(); } catch(e) { console.warn('loadSpaceFeed:', e); }
       try { updateSpaceWalletUI(); } catch(e) { console.warn('updateSpaceWalletUI:', e); }
       
-      // Resilient background sync: ensures loadSpaceFeed ALWAYS runs even if explorer or balance encounters an issue
-      setInterval(() => {
-        try { refreshExplorerData(); } catch(e) { console.warn('refreshExplorerData:', e); }
-        try { if (currentAccount) refreshCurrentAccountBalance(); } catch(e) { console.warn('refreshCurrentAccountBalance:', e); }
-        try { loadSpaceFeed(); } catch(e) { console.warn('loadSpaceFeed:', e); }
-      }, 7000);
+      // Optimized iOS & Mobile Background Sync: Sleeps when phone locked or tab hidden
+      let isBackgroundSyncing = false;
+      async function triggerAppSync() {
+        if (document.hidden || isBackgroundSyncing) return;
+        isBackgroundSyncing = true;
+        try {
+          try { await refreshExplorerData(); } catch(e) { console.warn('refreshExplorerData:', e); }
+          try { if (currentAccount) await refreshCurrentAccountBalance(); } catch(e) { console.warn('refreshCurrentAccountBalance:', e); }
+          try { await loadSpaceFeed(); } catch(e) { console.warn('loadSpaceFeed:', e); }
+        } finally {
+          isBackgroundSyncing = false;
+        }
+      }
+
+      setInterval(triggerAppSync, 8000);
+
+      document.addEventListener('visibilitychange', () => {
+        if (!document.hidden) {
+          triggerAppSync();
+        }
+      });
     });
 
         // ═════════════════════════════════════════════════════════════════════════
@@ -2306,6 +2347,16 @@
         return;
       }
 
+      const currentSpaceHash = `${currentSpaceFilter}:${searchQuery}:` + filtered.map(p => `${p.post_id}:${p.likes_count}:${p.comments_count}`).join('|');
+      const activeEl = document.activeElement;
+      const isUserTypingInFeed = activeEl && (activeEl.id === 'spacePostInput' || activeEl.id === 'spaceSearchInput' || activeEl.id?.startsWith('comment-input-'));
+      
+      if (currentSpaceHash === lastRenderedSpaceHash && feedContainer.children.length > 0 && !isUserTypingInFeed) {
+        return; // Skip DOM wipe if feed data is identical - prevents scroll jump & memory thrashing
+      }
+      if (!isUserTypingInFeed) {
+        lastRenderedSpaceHash = currentSpaceHash;
+      }
       feedContainer.innerHTML = filtered.map(p => {
         const shortAuthor = p.author ? `${p.author.slice(0, 8)}...${p.author.slice(-6)}` : 'Bilinmeyen';
         const isMine = (p.author === myAddr);
@@ -2749,8 +2800,14 @@
     async function closeQrScannerModal() {
       if (html5QrScannerInstance) {
         try {
-          await html5QrScannerInstance.stop();
-        } catch(e) {}
+          if (html5QrScannerInstance.isScanning) {
+            await html5QrScannerInstance.stop();
+          }
+          await html5QrScannerInstance.clear();
+        } catch(e) {
+          console.warn('QR scanner release error:', e);
+        }
+        html5QrScannerInstance = null;
       }
       const modal = document.getElementById('qr-scanner-modal');
       if (modal) {
