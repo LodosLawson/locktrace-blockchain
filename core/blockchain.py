@@ -97,6 +97,7 @@ class Block:
 
     def mine(self, difficulty: int):
         target = "0" * difficulty
+        self.hash = self.calculate_hash()
         while not self.hash.startswith(target):
             self.nonce += 1
             self.hash = self.calculate_hash()
