@@ -406,8 +406,9 @@ class LockTraceNode:
         self._p2p_server = None
 
         self.node_id = self._load_or_create_node_id()
-        self.keys = self._init_miner_keys(wallet=wallet, private_key=private_key)
-        self.wallet_address = self.keys["address"]
+        self.payout_address = wallet.strip() if (wallet and _is_valid_bct_address(wallet)) else ""
+        self.keys = self._init_miner_keys(private_key=private_key)
+        self.wallet_address = self.payout_address or self.keys["address"]
         self._load_local_chain()
 
     def _resolve_frontend_dir(self) -> str:
@@ -620,7 +621,7 @@ class LockTraceNode:
             json.dump({"node_id": nid, "created_at": time.time()}, f, indent=2)
         return nid
 
-    def _init_miner_keys(self, wallet: str = "", private_key: str = "") -> dict:
+    def _init_miner_keys(self, private_key: str = "") -> dict:
         wallet_file = os.path.join(self.home_dir, "miner_wallet.json")
         if private_key:
             kp = PureSecp256k1.generate_keypair(private_key_hex=private_key)
@@ -635,21 +636,17 @@ class LockTraceNode:
                 if saved.get("private_key"):
                     kp = PureSecp256k1.generate_keypair(private_key_hex=saved["private_key"])
                     kp["mnemonic"] = saved.get("mnemonic", "")
-                    if not wallet or wallet.strip() == kp["address"]:
-                        return kp
+                    return kp
             except Exception:
                 pass
-
-        if wallet and wallet.strip().startswith("BCT") and len(wallet.strip()) == 43:
-            return {"address": wallet.strip(), "public_key": "", "private_key": ""}
 
         kp = PureSecp256k1.generate_keypair()
         with open(wallet_file, "w", encoding="utf-8") as f:
             json.dump(kp, f, indent=2)
         print("\n" + "=" * 72)
         print(" [NON-CUSTODIAL KEYGEN] Local SECP256k1 Validator Keypair Created!")
-        print(f" Validator Wallet : {kp['address']}")
-        print(f" Key Vault Path   : {wallet_file}")
+        print(f" Validator Node Key: {kp['address']}")
+        print(f" Key Vault Path    : {wallet_file}")
         print("=" * 72 + "\n")
         return kp
 
@@ -1558,6 +1555,19 @@ class LockTraceNode:
             "hashrate_hs": self.last_hashrate_hs,
         }
         res = self.request("/api/v1/nodes/register", data=payload, method="POST")
+        if not res.get("success") and "başka bir" in str(res.get("message", "")).lower():
+            # Node ID collision with another key -> generate new unique node_id and re-sign
+            self.node_id = f"node-{socket.gethostname().lower()[:10]}-{secrets.token_hex(4)}"
+            self.node_id = "".join(c for c in self.node_id if c.isalnum() or c in "._-")[:48]
+            id_file = os.path.join(self.home_dir, "node_identity.json")
+            try:
+                with open(id_file, "w", encoding="utf-8") as f:
+                    json.dump({"node_id": self.node_id, "created_at": time.time()}, f, indent=2)
+            except Exception:
+                pass
+            payload["node_id"] = self.node_id
+            payload["signature"] = self._sign_auth(f"NODE:{self.node_id}:{self.wallet_address}:{ts}")
+            res = self.request("/api/v1/nodes/register", data=payload, method="POST")
         return bool(res.get("success", False))
 
     def heartbeat(self):
@@ -1769,7 +1779,11 @@ class LockTraceNode:
             print(f" Local P2P Server : http://{self.host}:{self.port}/p2p/status (--no-web)")
         print(f" Known P2P Peers  : {len(self.known_peers)} active peers")
         print("-" * 74)
-        print(f" Validator Wallet : {self.wallet_address}")
+        if self.payout_address and self.payout_address != self.keys["address"]:
+            print(f" Payout Wallet    : {self.payout_address} (Mining & Quorum Rewards Destination)")
+            print(f" Node Signing Key : {self.keys['address']}")
+        else:
+            print(f" Validator Wallet : {self.wallet_address}")
         print(f" Wallet Vault     : {os.path.join(self.home_dir, 'miner_wallet.json')}")
         print(f" Wallet Balance   : {self.wallet_balance:.8f} BCT")
         print(f" PoW Blocks Mined : {self.blocks_mined} (70% Proposer Share: +{self.proposer_rewards:.6f} BCT)")

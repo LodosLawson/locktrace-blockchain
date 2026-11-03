@@ -1747,11 +1747,14 @@ class Blockchain:
             clean_pub = (public_key or "").strip()
             auth_ok = False
             ts_str = str(timestamp).strip() if timestamp is not None else ""
-            if clean_pub and signature and clean_miner and ts_str:
-                if abs(time.time() - float(ts_str)) <= 300 and public_key_to_address(clean_pub) == clean_miner:
-                    auth_msg = f"NODE:{clean_id}:{clean_miner}:{ts_str}"
-                    if verify_signature(clean_pub, auth_msg, signature):
-                        auth_ok = True
+            if clean_pub and signature and ts_str:
+                try:
+                    if abs(time.time() - float(ts_str)) <= 600:
+                        auth_msg = f"NODE:{clean_id}:{clean_miner}:{ts_str}"
+                        if verify_signature(clean_pub, auth_msg, signature):
+                            auth_ok = True
+                except Exception:
+                    pass
 
             if existing and existing.get("owner_public_key"):
                 if not auth_ok or existing["owner_public_key"] != clean_pub:
