@@ -359,10 +359,11 @@ Content-Type: application/json
 2. **Immutable On-Chain Balance Resolution:** Balances are not stored in mutable single registers; instead, every balance inquiry computes the exact sum of verified genesis, reward, and transfer transactions across the Proof-of-Work blockchain.
 3. **Double-Spend Prevention:** Automatic nonces and signature verifications prevent replay and double-spending attempts.
 4. **Thread-Safe Atomic Persistence:** State synchronization is protected by a process-wide `RLock` and written via atomic file swaps (`blockchain.json.tmp` -> `blockchain.json`).
-5. **SHA-256 & ECDSA Signed Decentralized Frontend (v1.5.0):**
-   - `frontend/index.html` SHA-256: `d7ec373dad7f5736ae948a174e1b24c98aa12ff3ce786f6774df9183eee2a2f9`
-   - IPFS CIDv1: `ipfs://bafkreigx5q3t3ll7k43k5fekc5hbwjgjrkqs746opbxwo5g7sgb65yvc7e`
+5. **SHA-256 & ECDSA Signed Decentralized Frontend (v1.5.1):**
+   - `frontend/index.html` SHA-256: `901d35a50a1d2108c10562853b54984e5a988c5a14d7f402db7994c3ac1ca517`
+   - IPFS CIDv1: `ipfs://bafkreieqdu22kcq5eeemcblcqu5vjgcolkmiywqu272afw3zstb2yhffc4`
    - Release Authority Address: `BCT5014d104d8063cbe2d64faea57925e96295ac3b8`
+   - Includes full **LockTrace Space Landing Page (Home)** and **Master Documentation Center (Whitepaper, Space Protocol, Node Setup Guide, Cryptography & Security, REST/P2P API, FAQ)**.
    - Every node verifies the canonical SHA-256 checksum and SECP256k1 ECDSA release signature (`frontend/integrity.json` + on-chain `frontend_release` block) before serving the Web Wallet. Any unauthorized modification triggers an immediate `HTTP 403` security lockout.
 
 ### Run Decentralized Frontend Locally or as a Public/LAN Server

@@ -179,3 +179,4 @@ if __name__ == "__main__":
         sys.exit(0 if verify_local_frontend() else 1)
     else:
         sign_release(args.version, args.key_file)
+

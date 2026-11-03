@@ -215,7 +215,7 @@
   <aside class="hidden md:flex fixed left-0 top-0 h-full w-64 bg-surface-container-low/95 backdrop-blur-2xl z-50 flex-col justify-between py-6 px-4 border-r border-outline-variant/20">
     <div class="flex flex-col gap-7">
       <!-- Brand -->
-      <div class="flex items-center gap-3 px-2 cursor-pointer" onclick="switchTab('cuzdanim')">
+      <div class="flex items-center gap-3 px-2 cursor-pointer" onclick="switchTab('ana-sayfa')">
         <div class="w-9 h-9 rounded-full bg-primary-container/20 flex items-center justify-center border border-primary/30 shadow-sm">
           <span class="material-symbols-outlined text-primary text-[20px]">blur_on</span>
         </div>
@@ -227,8 +227,12 @@
 
       <!-- Desktop Navigation -->
       <nav class="flex flex-col gap-1" id="sidebar-nav">
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface font-semibold bg-surface-container-high transition-all font-label-lg text-label-lg" data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
-          <span class="material-symbols-outlined text-[20px] text-primary">account_balance_wallet</span>
+        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="ana-sayfa" onclick="switchTab('ana-sayfa')" type="button">
+          <span class="material-symbols-outlined text-[20px]">explore</span>
+          <span>Ana Sayfa</span>
+        </button>
+        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
+          <span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
           <span>Cüzdanım</span>
         </button>
         <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="para-gonder" onclick="switchTab('para-gonder')" type="button">
@@ -250,7 +254,7 @@
         </button>
         <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="api-docs" onclick="switchTab('api-docs')" type="button">
           <span class="material-symbols-outlined text-[20px]">terminal</span>
-          <span>API &amp; Düğüm</span>
+          <span>Dokümantasyon &amp; Kılavuz</span>
         </button>
       </nav>
     </div>
@@ -377,6 +381,277 @@
       <!-- ===================================================================== -->
       <!-- SCREEN 1: CÜZDANIM VE GEÇMİŞ (Exact Stitch Screen A — Mobile & Web)   -->
       <!-- ===================================================================== -->
+      
+      <!-- ===================================================================== -->
+      <!-- SCREEN 0: ANA SAYFA (LOCKTRACE SPACE NEDİR? VİZYON & GİRİŞ)           -->
+      <!-- ===================================================================== -->
+      <div id="tab-ana-sayfa" class="tab-content flex-col w-full items-center">
+        <div class="flex flex-col w-full max-w-5xl mx-auto px-margin md:px-6 pb-space-xl gap-8">
+
+          <!-- 1. HERO BANNER -->
+          <div class="relative overflow-hidden rounded-3xl bg-gradient-to-b from-surface-container-high/60 via-surface-container-low to-surface-container-lowest p-6 md:p-12 border border-outline-variant/30 shadow-2xl mt-2">
+            <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-primary/10 blur-3xl pointer-events-none"></div>
+            <div class="absolute -bottom-24 -left-24 w-96 h-96 rounded-full bg-secondary/10 blur-3xl pointer-events-none"></div>
+
+            <div class="relative z-10 flex flex-col gap-5 max-w-3xl">
+              <div class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-surface-container border border-outline-variant/30 self-start">
+                <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                <span class="font-label-sm text-label-sm text-on-surface uppercase tracking-wider font-semibold font-mono">Web3 On-Chain Sosyal Protokol • %100 Non-Custodial</span>
+              </div>
+
+              <h1 class="font-headline-lg md:text-[46px] md:leading-[52px] font-bold text-on-surface tracking-tight">
+                Özgür, Sansürsüz ve Üreticiyi Ödüllendiren Yeni Nesil Blokzincir: <span class="text-transparent bg-clip-text bg-gradient-to-r from-primary via-primary-fixed-dim to-secondary">LockTrace Space</span>
+              </h1>
+
+              <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+                LockTrace Space; aracı kurumları, merkezi sunucu bağımlılığını ve sansürü tamamen ortadan kaldıran; her düşüncenin blokzincir defterine kriptografik olarak mühürlendiği, beğenilerin ve yorumların doğrudan içerik üreticisinin cüzdanına on-chain telif olarak aktığı bağımsız bir Web3 sosyal ve finansal ekosistemidir.
+              </p>
+
+              <!-- Hero Call to Action Buttons -->
+              <div class="flex flex-wrap items-center gap-3 pt-2">
+                <button class="h-12 px-6 rounded-full bg-primary text-on-primary font-label-lg text-label-lg font-semibold flex items-center gap-2 hover:brightness-105 active:scale-95 transition-all shadow-lg shadow-primary/15" onclick="switchTab('yeni-cuzdan')" type="button">
+                  <span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
+                  <span>Cüzdan Aç (+1.00 BCT Hibe)</span>
+                </button>
+                <button class="h-12 px-6 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-lg text-label-lg font-semibold flex items-center gap-2 border border-outline-variant/30 active:scale-95 transition-all" onclick="switchTab('space')" type="button">
+                  <span class="material-symbols-outlined text-[20px] text-primary">forum</span>
+                  <span>Space Akışını Keşfet</span>
+                </button>
+                <button class="h-12 px-5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant hover:text-on-surface font-label-lg text-label-lg flex items-center gap-2 transition-all" onclick="switchTab('api-docs')" type="button">
+                  <span class="material-symbols-outlined text-[18px]">menu_book</span>
+                  <span>Kılavuz &amp; Node Kurulumu</span>
+                </button>
+              </div>
+
+              <!-- Live Stats Mini Ticker -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-6 mt-2 border-t border-outline-variant/20">
+                <div class="flex flex-col">
+                  <span class="text-[11px] font-mono uppercase text-on-surface-variant">Blok Yüksekliği</span>
+                  <span class="font-headline-sm text-headline-sm text-primary font-mono font-bold" id="homeHeroBlockHeight">#--</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-[11px] font-mono uppercase text-on-surface-variant">Sabit Toplam Arz</span>
+                  <span class="font-headline-sm text-headline-sm text-on-surface font-mono font-bold">1 Trilyon BCT</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-[11px] font-mono uppercase text-on-surface-variant">Konsensüs</span>
+                  <span class="font-headline-sm text-headline-sm text-secondary font-mono font-bold">%70 PoW + %30 Quorum</span>
+                </div>
+                <div class="flex flex-col">
+                  <span class="text-[11px] font-mono uppercase text-on-surface-variant">Güvenlik Mührü</span>
+                  <span class="font-headline-sm text-headline-sm text-primary font-mono font-bold flex items-center gap-1">
+                    <span class="material-symbols-outlined text-[18px]">verified</span>
+                    <span>SHA-256 + ECDSA</span>
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 2. LOCKTRACE SPACE NEDİR? (DERİNLEMESİNE BAKIŞ) -->
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+              <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">ON-CHAIN SOSYAL PARADİGMA</span>
+              <h2 class="font-headline-lg text-headline-lg text-on-surface">LockTrace Space Nedir?</h2>
+              <p class="font-body-md text-body-md text-on-surface-variant max-w-3xl">
+                LockTrace Space, klasik sosyal medya ağlarının (Twitter/X, Facebook vb.) getirdiği merkeziyetçi sömürü, veri satışı ve sansür mekanizmalarını kökten reddeder. Blokzincirin defter tutma yeteneğini sosyal etkileşimle birleştiren öncü bir protokoldür.
+              </p>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
+              <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-3">
+                <div class="w-12 h-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[26px]">gavel</span>
+                </div>
+                <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Sansürlenemez Düşünce Mülkiyeti</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  Paylaştığınız her metin doğrudan Proof-of-Work bloklarına birer işlem (<code class="text-primary font-mono">space_post</code>) olarak kazınır. Hiçbir CEO, şirket veya sunucu yöneticisi fikirlerinizi silemez, sansürleyemez ya da hesabınızı engelleyemez.
+                </p>
+              </div>
+
+              <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-3">
+                <div class="w-12 h-12 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[26px]">paid</span>
+                </div>
+                <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Aracısız On-Chain Telif Geliri</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  İçerikleriniz üzerinden para kazanan reklam şirketleri devreden çıkar. Gönderinizi beğenen birinden <strong>+0.002 BCT</strong>, fikir belirten her yorumcudan <strong>+0.005 BCT</strong> telif anında cüzdanınıza yansır.
+                </p>
+              </div>
+
+              <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-3">
+                <div class="w-12 h-12 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
+                  <span class="material-symbols-outlined text-[26px]">fingerprint</span>
+                </div>
+                <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Sıfır Kişisel Veri &amp; Tam Egemenlik</h3>
+                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  Telefon numarası, e-posta veya kimlik doğrulaması gerekmez. Kimliğiniz sadece 12 kelimelik BIP-39 tohum ifadeniz ve SECP256k1 cüzdan adresinizdir. Gizliliğiniz matematiksel olarak korunur.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3. WEB2 VS WEB3 KARŞILAŞTIRMA TABLOSU -->
+          <div class="p-6 md:p-8 rounded-3xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-5">
+            <div class="flex flex-col gap-1">
+              <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">ŞEFFAFLIK KARŞILAŞTIRMASI</span>
+              <h3 class="font-headline-md text-headline-md text-on-surface">Geleneksel Sosyal Medya vs LockTrace Space</h3>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-left font-body-sm text-body-sm">
+                <thead>
+                  <tr class="border-b border-outline-variant/25 text-on-surface-variant font-mono text-xs uppercase">
+                    <th class="py-3 px-3">Kriter</th>
+                    <th class="py-3 px-3 text-error">Geleneksel Ağlar (Web2)</th>
+                    <th class="py-3 px-3 text-primary">LockTrace Space (Web3)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant/15 text-on-surface">
+                  <tr>
+                    <td class="py-3.5 px-3 font-semibold">İçerik Mülkiyeti</td>
+                    <td class="py-3.5 px-3 text-on-surface-variant">Şirketin sunucusundadır, tek tuşla silinebilir.</td>
+                    <td class="py-3.5 px-3 text-primary font-medium">Kullanıcıya aittir; blokzincire mühürlenir, silinemez.</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3.5 px-3 font-semibold">Gelir Modeli</td>
+                    <td class="py-3.5 px-3 text-on-surface-variant">Reklam şirketleri milyarlar kazanır, üreticiye sıfır pay.</td>
+                    <td class="py-3.5 px-3 text-primary font-medium">Her beğeni ve yorum doğrudan yazara on-chain telif öder.</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3.5 px-3 font-semibold">Kullanıcı Gizliliği</td>
+                    <td class="py-3.5 px-3 text-on-surface-variant">Telefon, e-posta, konum ve çerezler reklamcılara satılır.</td>
+                    <td class="py-3.5 px-3 text-primary font-medium">Sıfır kişisel veri! Yalnızca 12 kelimelik kriptografik anahtar.</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3.5 px-3 font-semibold">Akış Algoritması</td>
+                    <td class="py-3.5 px-3 text-on-surface-variant">Dikkat bağımlılığı ve manipülasyon için gizli kara kutu.</td>
+                    <td class="py-3.5 px-3 text-primary font-medium">Kronolojik, açık kaynaklı ve manipülasyondan arındırılmış akış.</td>
+                  </tr>
+                  <tr>
+                    <td class="py-3.5 px-3 font-semibold">Sunucu Bağımlılığı</td>
+                    <td class="py-3.5 px-3 text-on-surface-variant">Şirket fişi çekerse veya engellerse platform ölür.</td>
+                    <td class="py-3.5 px-3 text-primary font-medium">P2P Düğüm (Node) ağı sayesinde dünya çapında ölümsüzdür.</td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- 4. EKOSİSTEMİN 4 GÜÇLÜ MİMARİ SÜTUNU -->
+          <div class="flex flex-col gap-4">
+            <div class="flex flex-col gap-1">
+              <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">TEKNOLOJİ &amp; PROTOKOL</span>
+              <h2 class="font-headline-lg text-headline-lg text-on-surface">LockTrace Mimarisinin Temel Sütunları</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2">
+              <!-- Sütun 1: Hibrit Konsensüs -->
+              <div class="p-6 rounded-2xl bg-surface-container border border-outline-variant/20 flex flex-col gap-2.5">
+                <div class="flex items-center gap-2 text-primary">
+                  <span class="material-symbols-outlined text-[24px]">memory</span>
+                  <span class="font-headline-sm text-headline-sm font-semibold text-on-surface">1. Hibrit %70 PoW + %30 Quorum</span>
+                </div>
+                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  Blok üretiminde dev madencilik tekelleri yerine standart CPU'larla evde kazılabilen Proof-of-Work kullanılır. Üretilen bloğun ödülünün %70'i bloğu bulan madenciye, %30'u ise bloğu eşzamanlı onaylayan P2P doğrulayıcı düğümlere (Quorum) eşit paylaştırılır.
+                </p>
+              </div>
+
+              <!-- Sütun 2: Non-Custodial Güvenlik -->
+              <div class="p-6 rounded-2xl bg-surface-container border border-outline-variant/20 flex flex-col gap-2.5">
+                <div class="flex items-center gap-2 text-primary">
+                  <span class="material-symbols-outlined text-[24px]">shield</span>
+                  <span class="font-headline-sm text-headline-sm font-semibold text-on-surface">2. %100 Non-Custodial Güvenlik</span>
+                </div>
+                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  BIP-39 tohum ifadeniz ve SECP256k1 özel anahtarınız asla tarayıcınızdan çıkmaz. Tüm transferler ve Space gönderileri tarayıcınızda yerel WebCrypto / Pure-JS motoruyla imzalanır. Sunucular bile anahtarınızı göremez.
+                </p>
+              </div>
+
+              <!-- Sütun 3: SHA-256 İmzalı Frontend Kalkanı -->
+              <div class="p-6 rounded-2xl bg-surface-container border border-outline-variant/20 flex flex-col gap-2.5">
+                <div class="flex items-center gap-2 text-primary">
+                  <span class="material-symbols-outlined text-[24px]">verified_user</span>
+                  <span class="font-headline-sm text-headline-sm font-semibold text-on-surface">3. Değiştirilemez Frontend Kalkanı</span>
+                </div>
+                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  Web arayüzü SHA-256 sağlama toplamı, resmi ECDSA sürüm imzası ve IPFS CIDv1 ile korunur. Kötü niyetli birisi kodun içine tek bir karakter bile eklerse, düğüm güvenlik kilidini devreye sokarak dosyayı çalıştırmayı reddeder.
+                </p>
+              </div>
+
+              <!-- Sütun 4: Otonom Node & Web Sunucusu -->
+              <div class="p-6 rounded-2xl bg-surface-container border border-outline-variant/20 flex flex-col gap-2.5">
+                <div class="flex items-center gap-2 text-primary">
+                  <span class="material-symbols-outlined text-[24px]">dns</span>
+                  <span class="font-headline-sm text-headline-sm font-semibold text-on-surface">4. Her Düğüm Kendi Web Cüzdanını Sunar</span>
+                </div>
+                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  <code class="text-primary font-mono">node_runner.py</code> tek komutla hem tam arşiv düğümü hem de doğrulanmış Web Cüzdanı sunar. Ana alan adı kapansa dahi kendi bilgisayarınızda <code class="text-on-surface font-mono">http://127.0.0.1:5050</code> üzerinden cüzdanınızı kullanmaya devam edebilirsiniz.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 5. NASIL BAŞLANIR? (3 DAKİKADA BAŞLANGIÇ ADIMLARI) -->
+          <div class="p-6 md:p-8 rounded-3xl bg-gradient-to-r from-surface-container to-surface-container-high border border-outline-variant/30 flex flex-col gap-6">
+            <div class="flex items-center justify-between flex-wrap gap-2">
+              <div class="flex flex-col">
+                <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">HIZLI BAŞLANGIÇ REHBERİ</span>
+                <h3 class="font-headline-md text-headline-md text-on-surface">3 Adımda LockTrace Space Ekosistemine Katılın</h3>
+              </div>
+              <button class="px-5 py-2.5 rounded-full bg-primary text-on-primary font-label-md text-label-md font-semibold hover:brightness-105 active:scale-95 transition-all" onclick="switchTab('yeni-cuzdan')" type="button">
+                Hemen Cüzdan Oluştur
+              </button>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/15 flex flex-col gap-2">
+                <span class="text-xs font-mono font-bold text-primary">ADIM 01</span>
+                <h4 class="font-headline-sm text-headline-sm text-on-surface font-medium">12 Kelimelik Cüzdanını Aç</h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Tek tıkla üretilen 12 kelimelik kurtarma ifadesini not al. Anında <strong>+1.00 BCT Genesis Hoş Geldin Hibesi</strong> hesabına tanımlansın.
+                </p>
+              </div>
+
+              <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/15 flex flex-col gap-2">
+                <span class="text-xs font-mono font-bold text-secondary">ADIM 02</span>
+                <h4 class="font-headline-sm text-headline-sm text-on-surface font-medium">Space'te Düşünceni Paylaş</h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Sansürsüz Space akışına ilk gönderini gönder. Topluluğun yaptığı her beğeni ve yorumla doğrudan cüzdanında BCT biriktir.
+                </p>
+              </div>
+
+              <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/15 flex flex-col gap-2">
+                <span class="text-xs font-mono font-bold text-primary">ADIM 03</span>
+                <h4 class="font-headline-sm text-headline-sm text-on-surface font-medium">Düğüm (Node) Çalıştır &amp; Kazan</h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Bilgisayarında tek satır kodla düğüm başlat; blok üretiminden %70 PoW madencilik veya %30 Quorum doğrulayıcı ödülü kazan.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- 6. BOTTOM BANNER & DOCUMENTATION HOOK -->
+          <div class="p-6 md:p-8 rounded-3xl bg-surface-container-lowest border border-outline-variant/25 flex flex-col md:flex-row items-center justify-between gap-5">
+            <div class="flex items-center gap-4">
+              <div class="w-14 h-14 rounded-2xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[32px]">menu_book</span>
+              </div>
+              <div class="flex flex-col">
+                <h4 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Tüm Teknik Ayrıntıları İncelemek İster misiniz?</h4>
+                <p class="font-body-sm text-body-sm text-on-surface-variant">
+                  Whitepaper, tokenomik matematiksel formülleri, P2P protokolü ve REST API dokümantasyonunu keşfedin.
+                </p>
+              </div>
+            </div>
+            <button class="h-11 px-6 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-label-md text-label-md font-semibold border border-outline-variant/30 shrink-0 transition-all active:scale-95" onclick="switchTab('api-docs')" type="button">
+              Dokümantasyonu Aç
+            </button>
+          </div>
+
+        </div>
+      </div>
+
       <div id="tab-cuzdanim" class="tab-content active flex-col w-full items-center">
         <div class="flex flex-col w-full max-w-[600px] mx-auto px-margin md:px-6 pb-space-lg">
 
@@ -1019,77 +1294,286 @@
       <!-- ===================================================================== -->
       <!-- SCREEN 7: GELİŞTİRİCİ API & NODE KILAVUZU                             -->
       <!-- ===================================================================== -->
+      <!-- ===================================================================== -->
+      <!-- SCREEN 7: GELİŞTİRİCİ DOKÜMANTASYONU & MASTER KILAVUZ                  -->
+      <!-- ===================================================================== -->
       <div id="tab-api-docs" class="tab-content flex-col w-full items-center">
-        <div class="w-full max-w-4xl mx-auto px-margin md:px-6 pb-space-lg flex flex-col gap-5">
-          <div class="flex items-center justify-between mt-space-sm">
-            <div class="flex flex-col gap-1">
-              <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">REST &amp; P2P API v1.5 • SHA-256 İMZALI FRONTEND • QUORUM RPC</span>
-              <h1 class="font-headline-md text-headline-md text-on-surface">Geliştirici API &amp; Merkeziyetsiz Düğüm / Web Sunucu Kurulumu</h1>
-              <p class="font-body-sm text-body-sm text-on-surface-variant">Kendi bilgisayarınızda veya sunucunuzda bağımsız P2P PoW + Doğrulayıcı düğüm ve SHA-256 imzalı yerel Web Cüzdanı çalıştırın. Her blok ödülünün %70'i PoW üreticisine, %30'u ise aktif ECDSA doğrulayıcı düğümlere dağıtılır.</p>
+        <div class="w-full max-w-4xl mx-auto px-margin md:px-6 pb-space-lg flex flex-col gap-6">
+
+          <!-- Header & Documentation Badge -->
+          <div class="flex flex-col gap-1 mt-space-sm">
+            <div class="flex items-center gap-2">
+              <span class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE MASTER DOCS v1.5</span>
+              <span class="text-outline text-xs">•</span>
+              <span class="text-on-surface-variant font-mono text-xs">Açık Kaynak &amp; Merkeziyetsiz Protokol</span>
+            </div>
+            <h1 class="font-headline-md md:text-3xl text-on-surface font-bold">LockTrace &amp; Space Protokol Kılavuzu</h1>
+            <p class="font-body-sm text-body-sm text-on-surface-variant max-w-2xl">
+              Blokzincir mimarisi, on-chain telif dağıtımı, bağımsız P2P düğüm kurulumu, kriptografik güvenlik ilkeleri ve REST/P2P API referansı.
+            </p>
+          </div>
+
+          <!-- Documentation Sub-Navigation Tabs -->
+          <div class="flex items-center gap-1.5 p-1 bg-surface-container-low rounded-2xl overflow-x-auto no-scrollbar border border-outline-variant/20" id="docsSubNavContainer">
+            <button class="doc-tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all bg-surface-container-high text-on-surface shadow-sm" onclick="switchDocSection('architecture')" type="button">1. Mimari &amp; Tokenomik</button>
+            <button class="doc-tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all text-on-surface-variant hover:text-on-surface" onclick="switchDocSection('space')" type="button">2. Space Telif Protokolü</button>
+            <button class="doc-tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all text-on-surface-variant hover:text-on-surface" onclick="switchDocSection('node')" type="button">3. Düğüm (Node) Kurulumu</button>
+            <button class="doc-tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all text-on-surface-variant hover:text-on-surface" onclick="switchDocSection('security')" type="button">4. Kriptografi &amp; Güvenlik</button>
+            <button class="doc-tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all text-on-surface-variant hover:text-on-surface" onclick="switchDocSection('api')" type="button">5. REST API Referansı</button>
+            <button class="doc-tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all text-on-surface-variant hover:text-on-surface" onclick="switchDocSection('faq')" type="button">6. SSS (FAQ)</button>
+          </div>
+
+          <!-- SECTION 1: MİMARİ & TOKENOMİK -->
+          <div class="doc-section flex flex-col gap-4" id="doc-sec-architecture">
+            <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-4">
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[22px]">account_tree</span>
+                <span>Protokol Mimarisi &amp; 1 Trilyon Sabit Arz Tokenomiği</span>
+              </h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                LockTrace; geleneksel tek düğümlü veya merkezi doğrulayıcılı zincirlerin aksine, <strong>Hibrit PoW (Proof of Work) v2 + Aktif Quorum Eş Doğrulayıcı</strong> modelini benimser. Defter durumu SQLite WAL ve kalıcı JSON blok zinciri üzerinden işletilir.
+              </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 pt-2">
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                  <span class="text-xs font-mono font-semibold text-primary uppercase">1. Sabit Arz &amp; Hazine Kasası</span>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    Maksimum arz <strong>1,000,000,000,000.00000000 BCT</strong> olarak koda matematiksel olarak sabitlenmiştir. Yeni cüzdan açılış hibeleri (1.00 BCT) ve blok madencilik sübvansiyonları (0.05 BCT) doğrudan Genesis Hazine Kasası'ndan (<code class="text-on-surface font-mono">BCT_HAZINE_...</code>) tahsis edilir. Ekstra enflasyon veya token basımı imkansızdır.
+                  </p>
+                </div>
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                  <span class="text-xs font-mono font-semibold text-secondary uppercase">2. %1 Transfer Ücreti Paylaşımı</span>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    Ağ üzerindeki tüm transferlerde %1 işlem ücreti alınır. Bu ücretin <strong>%50'si Hazine Kasası'na</strong> dönerek arzı korur, diğer <strong>%50'si ise bloğu mühürleyen madenciye ve aktif doğrulayıcılara</strong> dağıtılır.
+                  </p>
+                </div>
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                  <span class="text-xs font-mono font-semibold text-primary uppercase">3. %70 / %30 Hibrit Blok Ödülü</span>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    Mühürlenen her blokta oluşan toplam ödül havuzunun <strong>%70'i bloğu CPU ile ilk çözen PoW madencisine</strong>, <strong>%30'u ise bloğa kriptografik imza veren aktif P2P doğrulayıcı düğümlere (Quorum Pool)</strong> eşit olarak dağıtılır.
+                  </p>
+                </div>
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                  <span class="text-xs font-mono font-semibold text-secondary uppercase">4. 10^8 Atomik Birim (Zero Drift)</span>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    1 Trilyonluk büyük ölçekte IEEE-754 ondalık kaymalarını önlemek amacıyla tüm bakiye ve ücret hesaplamaları 10^8 atomik tamsayı birimi (<code class="text-on-surface font-mono">1 BCT = 100,000,000 unit</code>) ile gerçekleştirilir.
+                  </p>
+                </div>
+              </div>
             </div>
           </div>
 
-          <div class="p-space-md rounded-xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-3">
-            <div class="flex items-center justify-between">
-              <span class="font-label-lg text-label-lg text-on-surface font-medium">1. Yerel (Local) veya Sunucu (Server) Olarak Frontend + Node Çalıştır</span>
-              <div class="flex items-center gap-3">
-                <button class="font-label-sm text-label-sm text-secondary hover:underline flex items-center gap-1" onclick="openNetworkSecurityModal()" type="button">
-                  <span class="material-symbols-outlined text-[14px]">shield_lock</span>
-                  <span>SHA-256 &amp; RPC Kalkanı</span>
-                </button>
-                <a class="font-label-sm text-label-sm text-primary hover:underline flex items-center gap-1" href="/node_runner.py" target="_blank" rel="noopener">
+          <!-- SECTION 2: SPACE TELİF PROTOKOLÜ -->
+          <div class="doc-section hidden flex-col gap-4" id="doc-sec-space">
+            <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-4">
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[22px]">forum</span>
+                <span>LockTrace Space On-Chain Sosyal &amp; Telif Protokolü</span>
+              </h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                LockTrace Space, sosyal medya gönderilerini blokzincirin UTXO transfer yapısına entegre eder. Gönderiler, beğeniler ve yorumlar akıllı birer ekonomik işlem olarak zincir üzerinde gerçekleşir.
+              </p>
+
+              <div class="flex flex-col gap-3 font-mono text-xs">
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+                  <div class="flex items-center justify-between text-primary font-bold">
+                    <span>A) GÖNDERİ PAYLAŞIMI (space_post)</span>
+                    <span>Ücret: 0.05 BCT</span>
+                  </div>
+                  <p class="text-on-surface-variant font-sans">
+                    Yazar 0.05 BCT ödeyerek gönderi metnini zincire mühürler. Bu ücret Hazine'ye aktarılarak ağ spam'e karşı korunur ve içeriklerin değeri artırılır.
+                  </p>
+                  <code class="text-on-surface bg-surface-container p-2 rounded break-all">Kanonik İmza: {author_address}:{content}</code>
+                </div>
+
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+                  <div class="flex items-center justify-between text-secondary font-bold">
+                    <span>B) BEĞENİ TELİFİ (space_like)</span>
+                    <span>Maliyet: 0.003 BCT (Yazara: +0.002 BCT)</span>
+                  </div>
+                  <p class="text-on-surface-variant font-sans">
+                    Kullanıcı bir gönderiyi beğendiğinde toplam 0.003 BCT öder. Bunun <strong>+0.002 BCT'si anında gönderi sahibinin cüzdanına yatar</strong>; 0.001 BCT ise Hazine'ye kesilir.
+                  </p>
+                  <code class="text-on-surface bg-surface-container p-2 rounded break-all">Kanonik İmza: {liker_address}:{post_id}</code>
+                </div>
+
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+                  <div class="flex items-center justify-between text-primary font-bold">
+                    <span>C) YORUM TELİFİ (space_comment)</span>
+                    <span>Maliyet: 0.02 BCT (Yazara: +0.005 BCT)</span>
+                  </div>
+                  <p class="text-on-surface-variant font-sans">
+                    Gönderiye on-chain yorum yapıldığında 0.02 BCT işlem oluşturulur. Bunun <strong>+0.005 BCT'si gönderi sahibinin cüzdanına aktarılır</strong>; kalan kısım Hazine ve ağ güvenliğine gider.
+                  </p>
+                  <code class="text-on-surface bg-surface-container p-2 rounded break-all">Kanonik İmza: {commenter_address}:{post_id}:{content}</code>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 3: DÜĞÜM (NODE) KURULUM REHBERİ -->
+          <div class="doc-section hidden flex-col gap-4" id="doc-sec-node">
+            <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-4">
+              <div class="flex items-center justify-between flex-wrap gap-2">
+                <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold flex items-center gap-2">
+                  <span class="material-symbols-outlined text-primary text-[22px]">terminal</span>
+                  <span>Bağımsız P2P Düğüm &amp; Web Sunucusu Kurulumu</span>
+                </h3>
+                <a class="px-3.5 py-1.5 rounded-full bg-primary/15 text-primary text-xs font-semibold hover:bg-primary/25 transition-all flex items-center gap-1.5" href="/node_runner.py" target="_blank" rel="noopener">
+                  <span class="material-symbols-outlined text-[16px]">download</span>
                   <span>node_runner.py İndir</span>
-                  <span class="material-symbols-outlined text-[14px]">download</span>
                 </a>
               </div>
-            </div>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-              <div class="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-semibold text-primary uppercase font-mono">A) Yerel Bilgisayarda Aç (Sadece Size Özel)</span>
-                  <button class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface text-[11px]" onclick="copyText('python node_runner.py --local --open')" type="button">Kopyala</button>
-                </div>
-                <code class="font-mono text-xs text-on-surface overflow-x-auto">python node_runner.py --local --open</code>
-                <span class="text-[11px] text-on-surface-variant">SHA-256 + ECDSA bütünlüğünü doğrular ve cüzdanı <code class="text-primary">http://127.0.0.1:5050</code> adresinde açar.</span>
-              </div>
-              <div class="p-3 rounded-lg bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
-                <div class="flex items-center justify-between">
-                  <span class="text-[11px] font-semibold text-secondary uppercase font-mono">B) Genel Web &amp; RPC Sunucusu Olarak Aç</span>
-                  <button class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-on-surface text-[11px]" onclick="copyText('python node_runner.py --server --port 5050')" type="button">Kopyala</button>
-                </div>
-                <code class="font-mono text-xs text-on-surface overflow-x-auto">python node_runner.py --server --port 5050</code>
-                <span class="text-[11px] text-on-surface-variant">Ağdaki tüm cihazlara <code class="text-secondary">http://SUNUCU_IP:5050</code> üzerinden doğrulanmış Web Arayüzü ve P2P RPC sunar.</span>
-              </div>
-            </div>
+              <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                <code class="text-primary font-mono">node_runner.py</code>, sıfır harici paket bağımlılığıyla (harici pip kütüphanesi gerektirmez, saf Python standart kütüphanesidir) Windows, macOS ve Linux üzerinde bağımsız bir arşiv düğümü ve Web Cüzdanı çalıştırır.
+              </p>
 
-            <!-- Kriptografik Bütünlük & Ödül Kartları -->
-            <div class="mt-2 pt-3 border-t border-outline-variant/15 flex flex-col gap-2">
-              <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
-                <span class="font-label-md text-label-md text-on-surface font-semibold">Kriptografik Frontend Koruması &amp; Ödül Rehberi</span>
+              <!-- Komut Kartları -->
+              <div class="flex flex-col gap-3 font-mono text-xs">
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-primary">A) YEREL MOD (SADECE KENDİ BİLGİSAYARINIZDA)</span>
+                    <button class="px-2.5 py-0.5 rounded bg-surface-container-high text-on-surface hover:bg-surface-variant text-[11px]" onclick="copyText('python node_runner.py --local --open')" type="button">Kopyala</button>
+                  </div>
+                  <code class="text-on-surface bg-surface-container p-2 rounded">python node_runner.py --local --open</code>
+                  <span class="text-on-surface-variant font-sans text-xs">SHA-256 bütünlüğünü doğrular, <code class="text-primary font-mono">http://127.0.0.1:5050</code> adresinde yerel web cüzdanını başlatır ve tarayıcınızı otomatik açar.</span>
+                </div>
+
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-secondary">B) SUNUCU / LAN MODU (HERKESE AÇIK WEB &amp; RPC)</span>
+                    <button class="px-2.5 py-0.5 rounded bg-surface-container-high text-on-surface hover:bg-surface-variant text-[11px]" onclick="copyText('python node_runner.py --server --port 5050')" type="button">Kopyala</button>
+                  </div>
+                  <code class="text-on-surface bg-surface-container p-2 rounded">python node_runner.py --server --port 5050</code>
+                  <span class="text-on-surface-variant font-sans text-xs">Ağınızdaki veya internetteki tüm cihazlara <code class="text-secondary font-mono">http://SUNUCU_IP:5050</code> üzerinden hem Web Cüzdanını hem de merkeziyetsiz RPC uç noktalarını sunar.</span>
+                </div>
+
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="font-bold text-primary">C) KENDİ WEB CÜZDANINI DÜĞÜME BAĞLAMA</span>
+                    <button class="px-2.5 py-0.5 rounded bg-surface-container-high text-on-surface hover:bg-surface-variant text-[11px]" onclick="copyText('python node_runner.py --wallet BCTcuzdaniniz...')" type="button">Kopyala</button>
+                  </div>
+                  <code class="text-on-surface bg-surface-container p-2 rounded">python node_runner.py --wallet BCTcuzdaniniz...</code>
+                  <span class="text-on-surface-variant font-sans text-xs">Kazanılan tüm PoW madenci (%70) ve Quorum doğrulayıcı (%30) ödüllerinin doğrudan tarayıcınızdaki web cüzdanınıza akmasını sağlar.</span>
+                </div>
               </div>
-              <div class="grid grid-cols-1 md:grid-cols-4 gap-2.5 text-xs text-on-surface-variant font-body-sm">
-                <div class="bg-surface-container p-3 rounded-xl border border-primary/20 flex flex-col gap-1">
-                  <span class="font-semibold text-primary font-mono">SHA-256 &amp; ECDSA Kalkanı</span>
-                  <span>Düğüm açılışta <code class="text-on-surface">index.html</code> SHA-256 özetini ve blokzincir mührünü doğrular; 1 harf bile değiştirilmişse çalıştırmayı reddeder.</span>
+
+              <!-- Ödül Alma & Harcama Detayı -->
+              <div class="p-4 rounded-xl bg-surface-container border border-primary/20 flex flex-col gap-2 mt-1">
+                <span class="font-semibold text-primary font-mono text-xs flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">info</span>
+                  <span>Ödüller Nasıl Harcanır? (Claim / Talep Gerekmez)</span>
+                </span>
+                <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                  Ödüller bir akıllı sözleşmede bekletilmez; doğrudan on-chain transfer olarak cüzdan adresinize yazılır. Eğer düğümü cüzdan belirtmeden başlattıysanız sistem otomatik olarak <code class="text-on-surface font-mono">~/.locktrace/miner_wallet.json</code> dosyası üretir. Bu dosya içindeki 64 karakterlik <strong>Private Key</strong>'i kopyalayıp web sitemizdeki <strong>Cüzdan Aç / Aktar</strong> sekmesine yapıştırarak kazandığınız tüm BCT bakiyesini tarayıcınızda açabilir ve transfer edebilirsiniz.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 4: KRİPTOGRAFİ & GÜVENLİK -->
+          <div class="doc-section hidden flex-col gap-4" id="doc-sec-security">
+            <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-4">
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[22px]">enhanced_encryption</span>
+                <span>Kriptografik Güvenlik &amp; İmzalı Sürüm Bütünlüğü</span>
+              </h3>
+              <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                LockTrace; kullanıcı varlıklarının ve sistem kodlarının güvenliğini matematiksel kanıtlarla garanti altına alır.
+              </p>
+
+              <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                  <span class="font-mono font-bold text-primary uppercase">1. SECP256k1 &amp; Deterministic Low-S</span>
+                  <p class="text-on-surface-variant leading-relaxed">
+                    Bitcoin ve Ethereum ile aynı eliptik eğri standardı kullanılır. RFC 6979 deterministik HMAC-SHA256 k-üretimi ve kanonik Low-S imza zorunluluğu sayesinde imza esnekliği (signature malleability) saldırıları engellenir.
+                  </p>
                 </div>
-                <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
-                  <span class="font-semibold text-primary font-mono">Otomatik Yatırım (Claim Yok)</span>
-                  <span>Kazdığınız (%70 PoW) ve onayladığınız (%30 Quorum) blok ödülleri ek işlem ücreti gerektirmeden doğrudan cüzdanınıza yansır.</span>
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                  <span class="font-mono font-bold text-secondary uppercase">2. İkili Merkle Ağacı &amp; SPV Kanıtı</span>
+                  <p class="text-on-surface-variant leading-relaxed">
+                    Her bloktaki işlemler ikili SHA-256 Merkle ağacına dizilir. Hafif istemciler (tarayıcılar), tüm blok zincirini indirmeden sadece <code class="text-on-surface font-mono">O(log N)</code> Merkle kanıtı adımıyla işlemin onaylandığını matematiksel olarak doğrular.
+                  </p>
                 </div>
-                <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
-                  <span class="font-semibold text-secondary font-mono">Web Cüzdanını Bağlama</span>
-                  <span><code class="text-on-surface">--wallet BCTcuzdaniniz</code> parametresi verirseniz ödüller doğrudan tarayıcı cüzdanınıza yatar.</span>
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                  <span class="font-mono font-bold text-primary uppercase">3. AES-256-GCM PIN Kasası</span>
+                  <p class="text-on-surface-variant leading-relaxed">
+                    Kullanıcı cüzdanını 6 haneli bir PIN ile şifrelediğinde, özel anahtarlar WebCrypto PBKDF2 (100,000 tur) ve rastgele 16-bayt tuz/12-bayt IV ile AES-256-GCM algoritmasıyla şifrelenir. Doğru PIN girilmeden diske ulaşılamaz.
+                  </p>
                 </div>
-                <div class="bg-surface-container p-3 rounded-xl border border-outline-variant/10 flex flex-col gap-1">
-                  <span class="font-semibold text-primary font-mono">miner_wallet.json Aktarma</span>
-                  <span><code class="text-on-surface">~/.locktrace/miner_wallet.json</code> içindeki anahtarı <strong>Cüzdan Aç / Aktar</strong> sekmesinden güvenle içe aktarabilirsiniz.</span>
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                  <span class="font-mono font-bold text-secondary uppercase">4. SHA-256 Sürüm Mührü &amp; IPFS CID</span>
+                  <p class="text-on-surface-variant leading-relaxed">
+                    Resmi arayüzün SHA-256 özeti ve IPFS CIDv1 adresi Release Authority açık anahtarıyla imzalanır ve blokzincire mühürlenir. Düğüm kötü niyetli bir karakter tespit ederse arayüzü çalıştırmayı reddeder.
+                  </p>
                 </div>
               </div>
             </div>
           </div>
 
-          <div class="flex flex-col gap-3" id="apiCardsContainer"></div>
+          <!-- SECTION 5: REST API REFERANSI -->
+          <div class="doc-section hidden flex-col gap-4" id="doc-sec-api">
+            <div class="flex items-center justify-between">
+              <div class="flex flex-col">
+                <span class="text-xs font-mono uppercase text-primary">CANLI ETKİLEŞİMLİ REST UÇ NOKTALARI</span>
+                <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Tüm API Uç Noktaları</h3>
+              </div>
+            </div>
+            <div class="flex flex-col gap-3" id="apiCardsContainer"></div>
+          </div>
+
+          <!-- SECTION 6: SIKÇA SORULAN SORULAR (FAQ) -->
+          <div class="doc-section hidden flex-col gap-4" id="doc-sec-faq">
+            <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-4">
+              <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[22px]">help</span>
+                <span>Sıkça Sorulan Sorular (SSS)</span>
+              </h3>
+
+              <div class="flex flex-col gap-3">
+                <details class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/15 group cursor-pointer">
+                  <summary class="font-semibold text-on-surface text-sm flex items-center justify-between">
+                    <span>LockTrace Space'in diğer blokzincirlerden (Ethereum, Solana vb.) farkı nedir?</span>
+                    <span class="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                  </summary>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant pt-2 leading-relaxed">
+                    Ethereum veya Solana genel amaçlı pahalı akıllı sözleşme platformlarıdır ve sosyal medya gönderileri gibi yüksek hacimli etkileşimler için çok pahalı kalırlar. LockTrace Space ise sosyal ağ dinamiklerini (gönderi, beğeni, yorum, telif ve içerik üretici hakları) doğrudan 1. Katman (L1) blokzincir çekirdeğine entegre eder. Sıfır karmaşık sözleşme riski, sıfır gas tahmin hatası ve anında cüzdana yatan mikro-ödemeler sunar.
+                  </p>
+                </details>
+
+                <details class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/15 group cursor-pointer">
+                  <summary class="font-semibold text-on-surface text-sm flex items-center justify-between">
+                    <span>Ana sunucu (locktrace.space) kapanırsa veya kurucu ayrılırsa cüzdanım ne olur?</span>
+                    <span class="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                  </summary>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant pt-2 leading-relaxed">
+                    Paranız ve gönderileriniz asla kaybolmaz. Çünkü LockTrace %100 Non-Custodial mimaridedir; özel anahtarınız yalnızca sizin elinizdeki 12 kelimedir. Merkezi sunucu tamamen kapansa bile kendi bilgisayarınızda <code class="text-primary font-mono">python node_runner.py --local --open</code> çalıştırarak kendi yerel web arayüzünüzden bakiyenizi görebilir, işlem imzalayabilir ve diğer P2P düğümlere yayabilirsiniz.
+                  </p>
+                </details>
+
+                <details class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/15 group cursor-pointer">
+                  <summary class="font-semibold text-on-surface text-sm flex items-center justify-between">
+                    <span>Düğüm (Node) çalıştırmak için güçlü bir sunucu veya ASIC madenci gerekir mi?</span>
+                    <span class="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                  </summary>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant pt-2 leading-relaxed">
+                    Hayır! LockTrace v1.5.0 konsensüsü CPU dostu olarak tasarlanmıştır. Standart bir dizüstü bilgisayar, ev bilgisayarı veya en ucuz bulut sunucusunda (1 vCPU, 1 GB RAM) dahi sıfır ek paket kurulumuyla çalışır. Hem %70 PoW madencilik hem de %30 Quorum doğrulayıcı ödüllerinden pay alabilirsiniz.
+                  </p>
+                </details>
+
+                <details class="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/15 group cursor-pointer">
+                  <summary class="font-semibold text-on-surface text-sm flex items-center justify-between">
+                    <span>12 Kelimelik Kurtarma İfademi kaybedersem hesabımı kurtarabilir miyim?</span>
+                    <span class="material-symbols-outlined text-outline group-open:rotate-180 transition-transform">expand_more</span>
+                  </summary>
+                  <p class="font-body-sm text-body-sm text-on-surface-variant pt-2 leading-relaxed">
+                    Hayır. LockTrace gerçek bir merkeziyetsiz blokzincirdir. Hiçbir yönetici, destek ekibi veya yazılımcı sizin özel anahtarınıza sahip değildir. Bu nedenle 12 kelimenizi mutlaka fiziksel bir kağıda not edip güvenli bir yerde saklamalısınız.
+                  </p>
+                </details>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
 
@@ -1101,25 +1585,33 @@
   <!-- ========================================================================= -->
   <nav class="md:hidden fixed bottom-0 w-full z-40 pb-safe bg-surface/85 backdrop-blur-xl border-t border-outline-variant/20 shadow-[0_-4px_16px_rgba(0,0,0,0.2)]" id="mobile-nav">
     <div class="h-16 px-space-xs flex items-center justify-around">
-      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[58px] h-12 gap-0.5 text-primary font-semibold transition-colors" data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
-        <span class="material-symbols-outlined text-[23px]">account_balance_wallet</span>
+      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[54px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="ana-sayfa" onclick="switchTab('ana-sayfa')" type="button">
+        <span class="material-symbols-outlined text-[22px]">explore</span>
+        <span class="font-label-sm text-label-sm">Keşfet</span>
+      </button>
+      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[54px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
+        <span class="material-symbols-outlined text-[22px]">account_balance_wallet</span>
         <span class="font-label-sm text-label-sm">Cüzdanım</span>
       </button>
-      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[58px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="para-gonder" onclick="switchTab('para-gonder')" type="button">
+      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[50px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="para-gonder" onclick="switchTab('para-gonder')" type="button">
         <span class="material-symbols-outlined text-[23px]">send</span>
         <span class="font-label-sm text-label-sm">Gönder</span>
       </button>
-      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[58px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="space" onclick="switchTab('space')" type="button">
+      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[50px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="space" onclick="switchTab('space')" type="button">
         <span class="material-symbols-outlined text-[23px]">forum</span>
         <span class="font-label-sm text-label-sm">Space</span>
       </button>
-      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[58px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="yeni-cuzdan" onclick="switchTab('yeni-cuzdan')" type="button">
+      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[50px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="yeni-cuzdan" onclick="switchTab('yeni-cuzdan')" type="button">
         <span class="material-symbols-outlined text-[23px]">add_circle</span>
         <span class="font-label-sm text-label-sm">Cüzdan Aç</span>
       </button>
-      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[58px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="ag-ve-explorer" onclick="switchTab('ag-ve-explorer')" type="button">
-        <span class="material-symbols-outlined text-[23px]">hub</span>
+      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[50px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="ag-ve-explorer" onclick="switchTab('ag-ve-explorer')" type="button">
+        <span class="material-symbols-outlined text-[22px]">hub</span>
         <span class="font-label-sm text-label-sm">Explorer</span>
+      </button>
+      <button class="mobile-nav-btn flex flex-col items-center justify-center min-w-[50px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors" data-tab="api-docs" onclick="switchTab('api-docs')" type="button">
+        <span class="material-symbols-outlined text-[22px]">menu_book</span>
+        <span class="font-label-sm text-label-sm">Kılavuz</span>
       </button>
     </div>
   </nav>
@@ -2490,9 +2982,38 @@
 
     // =========================================================================
     // 5. NAVIGATION & STITCH SHELL CONTROLLER
+
+    // =========================================================================
+    // 11B. DOCUMENTATION MASTER SUB-NAVIGATION & HOME HERO STATS
+    // =========================================================================
+    function switchDocSection(secId) {
+      const allSecs = ['architecture', 'space', 'node', 'security', 'api', 'faq'];
+      const target = allSecs.includes(secId) ? secId : 'architecture';
+      allSecs.forEach((s) => {
+        const el = document.getElementById('doc-sec-' + s);
+        if (el) el.classList.toggle('hidden', s !== target);
+      });
+      document.querySelectorAll('#docsSubNavContainer .doc-tab-btn').forEach((btn, idx) => {
+        const isSel = allSecs[idx] === target;
+        btn.className = isSel
+          ? 'doc-tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all bg-surface-container-high text-on-surface shadow-sm'
+          : 'doc-tab-btn px-4 py-2 rounded-xl text-xs font-semibold whitespace-nowrap transition-all text-on-surface-variant hover:text-on-surface';
+      });
+      if (target === 'api') {
+        renderApiDocs();
+      }
+    }
+
+    function refreshHomeHeroStats(statsData) {
+      if (!statsData) return;
+      const bHeight = document.getElementById('homeHeroBlockHeight');
+      const hCount = Number(statsData.total_blocks || 0);
+      if (bHeight) bHeight.textContent = '#' + (hCount > 0 ? hCount - 1 : 0);
+    }
+
     // =========================================================================
     function switchTab(tabId, updateHash = true) {
-      const validTabs = ['cuzdanim', 'para-gonder', 'space', 'yeni-cuzdan', 'ag-ve-explorer', 'api-docs'];
+      const validTabs = ['ana-sayfa', 'cuzdanim', 'para-gonder', 'space', 'yeni-cuzdan', 'ag-ve-explorer', 'api-docs'];
       const target = validTabs.includes(tabId) ? tabId : 'cuzdanim';
 
       // Always reset Space Detail Stack Header & restore mobile nav when switching main tabs
@@ -2520,8 +3041,8 @@
       document.querySelectorAll('#mobile-nav .mobile-nav-btn').forEach((btn) => {
         const active = btn.getAttribute('data-tab') === target;
         btn.className = active
-          ? 'mobile-nav-btn flex flex-col items-center justify-center min-w-[58px] h-12 gap-0.5 text-primary font-semibold transition-colors'
-          : 'mobile-nav-btn flex flex-col items-center justify-center min-w-[58px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors';
+          ? 'mobile-nav-btn flex flex-col items-center justify-center min-w-[50px] h-12 gap-0.5 text-primary font-semibold transition-colors'
+          : 'mobile-nav-btn flex flex-col items-center justify-center min-w-[50px] h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors';
       });
 
       if (updateHash) {
@@ -2530,7 +3051,9 @@
       window.scrollTo({ top: 0, behavior: 'instant' });
 
       // Refresh tab-specific live data
-      if (target === 'cuzdanim') {
+      if (target === 'ana-sayfa') {
+        refreshExplorerData();
+      } else if (target === 'cuzdanim') {
         refreshCurrentAccountBalance();
         refreshPersonalTransactions();
       } else if (target === 'para-gonder') {
@@ -3384,6 +3907,7 @@
 
         if (statsRes.ok && statsRes.body.data) {
           const st = statsRes.body.data;
+          refreshHomeHeroStats(st);
           const height = Number(st.total_blocks || 0);
           const hdrHeight = document.getElementById('headerBlockHeight');
           const mBlocks = document.getElementById('metricBlocks');
@@ -4617,7 +5141,7 @@
       refreshExplorerData();
 
       const hashTab = (window.location.hash || '').replace(/^#/, '').trim();
-      const initialTab = hashTab || 'cuzdanim';
+      const initialTab = hashTab || (currentAccount && currentAccount.address ? 'cuzdanim' : 'ana-sayfa');
       switchTab(initialTab, false);
 
       // Pause background polling when tab is hidden (prevents iOS WebKit battery/memory crashes)
