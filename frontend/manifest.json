@@ -45,24 +45,24 @@
   ],
   "shortcuts": [
     {
-      "name": "Cüzdanım",
+      "name": "My Wallet",
       "url": "/#cuzdanim",
-      "description": "Portföy ve bakiye görüntüle"
+      "description": "View portfolio and balance"
     },
     {
       "name": "LockTrace Space",
       "url": "/#space",
-      "description": "On-Chain düşünceler ve sosyal akış"
+      "description": "On-chain thoughts and social feed"
     },
     {
-      "name": "Para Gönder",
+      "name": "Send Crypto",
       "url": "/#para-gonder",
-      "description": "Anında BCT transferi yap"
+      "description": "Instant BCT transfers"
     },
     {
-      "name": "Ağ & Explorer",
+      "name": "Network & Explorer",
       "url": "/#ag-ve-explorer",
-      "description": "Canlı blokzincir durumu ve madencilik"
+      "description": "Live blockchain status and explorer"
     }
   ]
 }
