@@ -1742,6 +1742,157 @@
                 </div>
               </div>
             </div>
+
+            <!-- SYSTEM ARCHITECTURE & FULL COMPONENT MAP -->
+            <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/25 flex flex-col gap-6 mt-2">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-outline-variant/20 pb-4">
+                <div class="flex flex-col gap-1">
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[24px]">hub</span>
+                    <h3 class="font-headline-sm text-headline-sm text-on-surface font-bold">LockTrace End-to-End System Blueprint</h3>
+                  </div>
+                  <p class="text-xs text-on-surface-variant">Comprehensive Architectural Map of the Layer-1 Blockchain Core &amp; Web3 Frontend DApp</p>
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary font-mono text-[11px] font-semibold flex items-center gap-1">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                    <span>v1.9.2 Active</span>
+                  </span>
+                  <span class="px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/20 text-on-surface-variant font-mono text-[11px]">
+                    4-Tier Stack
+                  </span>
+                </div>
+              </div>
+
+              <!-- 4-Tier Interactive Architectural Grid -->
+              <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                
+                <!-- TIER 1: CLIENT FRONTEND & DAPP -->
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/20 flex flex-col gap-3 relative group hover:border-primary/40 transition-all">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2 py-0.5 rounded-md bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold uppercase tracking-wider">Tier 1 • Client</span>
+                    <span class="material-symbols-outlined text-emerald-400 text-[18px]">devices</span>
+                  </div>
+                  <h4 class="font-label-lg text-label-lg text-on-surface font-bold">Web3 Frontend &amp; DApp</h4>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    Browser-based single-page application executing non-custodial cryptography directly in client memory.
+                  </p>
+                  <ul class="flex flex-col gap-2 font-mono text-[11px] text-on-surface-variant pt-2 border-t border-outline-variant/10">
+                    <li class="flex items-start gap-1.5"><span class="text-primary font-bold">▸</span><span><strong>Key Management:</strong> Pure WebCrypto SECP256k1 &amp; BIP-39 (Zero key transmission)</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-primary font-bold">▸</span><span><strong>Secure Vault:</strong> AES-256-GCM local keystore with PIN salt derivation</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-primary font-bold">▸</span><span><strong>Navigation:</strong> 10 Router screens (Wallet, Space, Bridge, BNS, Explorer)</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-primary font-bold">▸</span><span><strong>Optimistic UX:</strong> Instant social reaction feedback with mempool auto-retry</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-primary font-bold">▸</span><span><strong>PWA Engine:</strong> Service Worker (sw.js) with immutable offline caching</span></li>
+                  </ul>
+                  <div class="mt-auto pt-2 text-[10px] text-on-surface-variant/80 font-mono">
+                    Files: <code class="text-on-surface">frontend/index.html</code>, <code class="text-on-surface">sw.js</code>
+                  </div>
+                </div>
+
+                <!-- TIER 2: GATEWAY & MEMPOOL SEQUENCER -->
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/20 flex flex-col gap-3 relative group hover:border-secondary/40 transition-all">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2 py-0.5 rounded-md bg-sky-500/15 text-sky-400 font-mono text-[10px] font-bold uppercase tracking-wider">Tier 2 • Mempool</span>
+                    <span class="material-symbols-outlined text-sky-400 text-[18px]">dns</span>
+                  </div>
+                  <h4 class="font-label-lg text-label-lg text-on-surface font-bold">Gateway &amp; Hybrid Sequencer</h4>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    High-throughput entry gate managing rate limits, cryptographic authentication, and time-and-quota transaction batching.
+                  </p>
+                  <ul class="flex flex-col gap-2 font-mono text-[11px] text-on-surface-variant pt-2 border-t border-outline-variant/10">
+                    <li class="flex items-start gap-1.5"><span class="text-secondary font-bold">▸</span><span><strong>REST API Gateway:</strong> Flask / Gunicorn + Multi-threaded Node Runner RPC</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-secondary font-bold">▸</span><span><strong>Hybrid Batching:</strong> Likes (20s/15-tx), Comments (50s/10-tx), General (20s/25-tx)</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-secondary font-bold">▸</span><span><strong>Replay Protection:</strong> SlidingWindowRateLimiter + Unique signature registration</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-secondary font-bold">▸</span><span><strong>Nonce Synchronization:</strong> Real-time on-chain + mempool sequential counter</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-secondary font-bold">▸</span><span><strong>P2P Ingestion:</strong> Block gossip handler and peer attestation intake</span></li>
+                  </ul>
+                  <div class="mt-auto pt-2 text-[10px] text-on-surface-variant/80 font-mono">
+                    Files: <code class="text-on-surface">server.py</code>, <code class="text-on-surface">node_runner.py</code>
+                  </div>
+                </div>
+
+                <!-- TIER 3: LAYER-1 CORE ENGINE & PERSISTENCE -->
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/20 flex flex-col gap-3 relative group hover:border-tertiary/40 transition-all">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2 py-0.5 rounded-md bg-purple-500/15 text-purple-400 font-mono text-[10px] font-bold uppercase tracking-wider">Tier 3 • Consensus</span>
+                    <span class="material-symbols-outlined text-purple-400 text-[18px]">token</span>
+                  </div>
+                  <h4 class="font-label-lg text-label-lg text-on-surface font-bold">Layer-1 Core Engine</h4>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    Deterministic cryptographic consensus layer orchestrating Proof-of-Work, atomic balances, and domain records.
+                  </p>
+                  <ul class="flex flex-col gap-2 font-mono text-[11px] text-on-surface-variant pt-2 border-t border-outline-variant/10">
+                    <li class="flex items-start gap-1.5"><span class="text-tertiary font-bold">▸</span><span><strong>Consensus:</strong> 70% PoW Block Producer + 30% Active Quorum Validator Pool</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-tertiary font-bold">▸</span><span><strong>Cryptographic Merkle:</strong> SHA-256 v2 Tree committing tx hashes &amp; miner</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-tertiary font-bold">▸</span><span><strong>Storage Engine:</strong> SQLite WAL mode + atomic unit transactions (10^8 units)</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-tertiary font-bold">▸</span><span><strong>Vault Reserves:</strong> Genesis Treasury Vault &amp; Bridge Collateral Vault</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-tertiary font-bold">▸</span><span><strong>BNS Protocol:</strong> Tiered pricing, primary handles, secondary marketplace</span></li>
+                  </ul>
+                  <div class="mt-auto pt-2 text-[10px] text-on-surface-variant/80 font-mono">
+                    Files: <code class="text-on-surface">core/blockchain.py</code>, <code class="text-on-surface">core/storage.py</code>
+                  </div>
+                </div>
+
+                <!-- TIER 4: CROSS-CHAIN & P2P ORCHESTRATION -->
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/20 flex flex-col gap-3 relative group hover:border-amber-400/40 transition-all">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2 py-0.5 rounded-md bg-amber-500/15 text-amber-400 font-mono text-[10px] font-bold uppercase tracking-wider">Tier 4 • Network</span>
+                    <span class="material-symbols-outlined text-amber-400 text-[18px]">polyline</span>
+                  </div>
+                  <h4 class="font-label-lg text-label-lg text-on-surface font-bold">Cross-Chain &amp; P2P Fabric</h4>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    Decentralized boundary bridges connecting native BCT to EVM Layer-2 and external community validator nodes.
+                  </p>
+                  <ul class="flex flex-col gap-2 font-mono text-[11px] text-on-surface-variant pt-2 border-t border-outline-variant/10">
+                    <li class="flex items-start gap-1.5"><span class="text-amber-300 font-bold">▸</span><span><strong>Base L2 Bridge:</strong> WrappedBCT ERC-20 contract (0xA3C74...254)</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-amber-300 font-bold">▸</span><span><strong>Bridge Relayer:</strong> Automated dual-direction lock-and-burn listener daemon</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-amber-300 font-bold">▸</span><span><strong>Community Nodes:</strong> Lightweight CPU PoW mining &amp; P2P block attestation</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-amber-300 font-bold">▸</span><span><strong>Release Anchor:</strong> SECP256k1 signed frontend integrity (IPFS CIDv1 verified)</span></li>
+                    <li class="flex items-start gap-1.5"><span class="text-amber-300 font-bold">▸</span><span><strong>Global Gossip:</strong> Multi-node block propagation with latency mitigation</span></li>
+                  </ul>
+                  <div class="mt-auto pt-2 text-[10px] text-on-surface-variant/80 font-mono">
+                    Files: <code class="text-on-surface">core/bridge_relayer.py</code>, <code class="text-on-surface">WrappedBCT.sol</code>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Data Flow & Life of a Transaction Flowchart -->
+              <div class="p-5 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-3">
+                <span class="font-mono text-xs font-bold text-primary uppercase flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px]">sync_alt</span>
+                  <span>Data Flow: The Lifecycle of a Batched Web3 Transaction</span>
+                </span>
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5 pt-1 font-mono text-xs">
+                  <div class="p-3 rounded-lg bg-surface-container border border-outline-variant/10 flex flex-col gap-1">
+                    <span class="text-[10px] font-bold text-primary">STEP 1 • CLIENT SIGN</span>
+                    <span class="font-sans text-xs text-on-surface font-medium">User signs payload via Pure WebCrypto ECDSA in browser.</span>
+                    <span class="text-[10px] text-on-surface-variant">Zero secret keys touch network.</span>
+                  </div>
+                  <div class="p-3 rounded-lg bg-surface-container border border-outline-variant/10 flex flex-col gap-1">
+                    <span class="text-[10px] font-bold text-secondary">STEP 2 • INGESTION</span>
+                    <span class="font-sans text-xs text-on-surface font-medium">Gateway validates signature, nonce, and rate limit.</span>
+                    <span class="text-[10px] text-on-surface-variant">Prevents replay attacks.</span>
+                  </div>
+                  <div class="p-3 rounded-lg bg-surface-container border border-outline-variant/10 flex flex-col gap-1">
+                    <span class="text-[10px] font-bold text-tertiary">STEP 3 • MEMPOOL BATCH</span>
+                    <span class="font-sans text-xs text-on-surface font-medium">Tx enters mempool with optimistic UI update.</span>
+                    <span class="text-[10px] text-on-surface-variant">Evaluates 20s/50s window &amp; quota.</span>
+                  </div>
+                  <div class="p-3 rounded-lg bg-surface-container border border-outline-variant/10 flex flex-col gap-1">
+                    <span class="text-[10px] font-bold text-amber-300">STEP 4 • POW SEALING</span>
+                    <span class="font-sans text-xs text-on-surface font-medium">Sequencer/Miner packages batch into PoW Block.</span>
+                    <span class="text-[10px] text-on-surface-variant">Calculates SHA-256 Merkle root.</span>
+                  </div>
+                  <div class="p-3 rounded-lg bg-surface-container border border-outline-variant/10 flex flex-col gap-1">
+                    <span class="text-[10px] font-bold text-emerald-400">STEP 5 • SETTLEMENT</span>
+                    <span class="font-sans text-xs text-on-surface font-medium">Block committed to SQLite WAL and gossiped to P2P peers.</span>
+                    <span class="text-[10px] text-on-surface-variant">70% Miner / 30% Quorum paid.</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
           </div>
 
           <!-- SECTION 2: SPACE ROYALTY PROTOCOL -->
