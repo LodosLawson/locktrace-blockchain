@@ -115,6 +115,20 @@ class BridgeRelayer:
         if not os.path.exists(self.db_path):
             return 0
 
+        # Check relayer ETH balance on Base Mainnet first
+        try:
+            bal_wei = self.w3.eth.get_balance(self.account.address)
+            if bal_wei < self.w3.to_wei(0.00005, "ether"):
+                bal_eth = float(self.w3.from_wei(bal_wei, "ether"))
+                logger.warning(
+                    f"Relayer has low ETH balance ({bal_eth:.8f} ETH). "
+                    f"Base gas requires ~0.0001 ETH. Please fund {self.account.address} with Base ETH to resume automatic minting."
+                )
+                return 0
+        except Exception as e:
+            logger.error(f"Failed to check relayer balance: {e}")
+            return 0
+
         conn = sqlite3.connect(self.db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
         
@@ -128,6 +142,7 @@ class BridgeRelayer:
                   AND (tx_hash_evm IS NULL OR tx_hash_evm = '')
                   AND tx_hash_l1 IS NOT NULL
                 ORDER BY created_at ASC
+                LIMIT 10
             """).fetchall()
         finally:
             conn.close()
@@ -146,7 +161,8 @@ class BridgeRelayer:
 
             # Validate destination
             if not Web3.is_address(evm_dest) or evm_dest.lower() == WBCT_CONTRACT.lower():
-                logger.warning(f"Skipping bridge {bridge_id}: invalid destination {evm_dest}")
+                logger.warning(f"Rejecting bridge {bridge_id}: invalid destination or token contract address ({evm_dest})")
+                self._mark_failed(bridge_id, "Geçersiz EVM adresi veya kontrat adresine gönderim yapılamaz.")
                 continue
 
             # Exact amount in 18 decimals (immune to float64 IEEE-754 drift)
@@ -213,6 +229,18 @@ class BridgeRelayer:
         finally:
             conn.close()
 
+    def _mark_failed(self, bridge_id: str, error_message: str):
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        try:
+            with conn:
+                conn.execute("""
+                    UPDATE bridge_transactions
+                    SET status = 'FAILED', error_message = ?, updated_at = ?
+                    WHERE bridge_id = ?
+                """, (str(error_message)[:255], time.time(), bridge_id))
+        finally:
+            conn.close()
+
     def process_pending_burns(self) -> int:
         """Finds EVM_TO_L1 bridge orders that need L1 unlock."""
         if not os.path.exists(self.db_path):
@@ -229,6 +257,7 @@ class BridgeRelayer:
                   AND direction = 'EVM_TO_L1'
                   AND tx_hash_evm IS NOT NULL AND tx_hash_evm != ''
                 ORDER BY created_at ASC
+                LIMIT 10
             """).fetchall()
         finally:
             conn.close()
@@ -236,7 +265,7 @@ class BridgeRelayer:
         if not rows:
             return 0
 
-        logger.info(f"Found {len(rows)} pending EVM burn(s) awaiting LockTrace L1 unlock.")
+        logger.info(f"Processing up to {len(rows)} pending EVM burn(s) for LockTrace L1 unlock.")
         processed = 0
 
         import urllib.request
@@ -262,17 +291,26 @@ class BridgeRelayer:
                 with urllib.request.urlopen(req, timeout=10) as resp:
                     resp_json = json.loads(resp.read().decode("utf-8"))
                     if resp_json.get("success"):
+                        self._mark_completed(bridge_id, evm_hash)
                         processed += 1
                         logger.info(f"Bridge {bridge_id} EVM->L1 unlock SUCCESS: {amt} BCT to {bct_dest}")
                     else:
-                        logger.warning(f"Bridge {bridge_id} unlock returned error: {resp_json.get('message')}")
+                        msg = str(resp_json.get("message", ""))
+                        if "daha önce" in msg or "already" in msg:
+                            self._mark_completed(bridge_id, evm_hash)
+                            logger.info(f"Bridge {bridge_id} was already processed on L1. Marked COMPLETED.")
+                        else:
+                            self._mark_failed(bridge_id, msg)
+                            logger.warning(f"Bridge {bridge_id} unlock rejected: {msg}")
+                time.sleep(1.0)
             except Exception as e:
                 logger.error(f"Failed to process EVM burn {bridge_id}: {e}")
+                time.sleep(2.0)
 
         return processed
 
 
-def run_daemon(interval_seconds: int = 5):
+def run_daemon(interval_seconds: int = 10):
     relayer = BridgeRelayer()
     status = relayer.get_status()
     print("=========================================================")

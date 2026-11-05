@@ -255,6 +255,25 @@ class BridgeManager:
         net = round(amount_bct - fee, 8)
         now = time.time()
 
+        # Deduplication check: if order with this tx_hash already exists, return existing order
+        if tx_hash_evm:
+            with self._get_connection() as conn:
+                existing = conn.execute(
+                    "SELECT * FROM bridge_transactions WHERE tx_hash_evm = ? LIMIT 1",
+                    (tx_hash_evm,)
+                ).fetchone()
+                if existing:
+                    return {"success": True, "data": dict(existing)}
+
+        if tx_hash_l1:
+            with self._get_connection() as conn:
+                existing = conn.execute(
+                    "SELECT * FROM bridge_transactions WHERE tx_hash_l1 = ? LIMIT 1",
+                    (tx_hash_l1,)
+                ).fetchone()
+                if existing:
+                    return {"success": True, "data": dict(existing)}
+
         # Generate unique deterministic bridge identifier
         seed_str = f"{direction}:{clean_bct}:{clean_evm}:{amount_bct}:{now}:{os.urandom(8).hex()}"
         bridge_id = f"brg_{hashlib.sha256(seed_str.encode('utf-8')).hexdigest()[:24]}"
