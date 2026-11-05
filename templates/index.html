@@ -225,56 +225,80 @@
         </div>
         <div class="flex flex-col">
           <span class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.8.6</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.9.4</span>
         </div>
       </div>
 
-      <!-- Desktop Navigation -->
-      <nav class="flex flex-col gap-1" id="sidebar-nav">
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="ana-sayfa" onclick="switchTab('ana-sayfa')" type="button">
-          <span class="material-symbols-outlined text-[20px]">explore</span>
-          <span>Home</span>
-        </button>
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
-          <span class="material-symbols-outlined text-[20px]">account_balance_wallet</span>
-          <span>My Wallet</span>
-        </button>
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="para-gonder" onclick="switchTab('para-gonder')" type="button">
-          <span class="material-symbols-outlined text-[20px]">send</span>
-          <span>Send Crypto</span>
-        </button>
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="bns" onclick="switchTab('bns')" type="button">
-          <span class="material-symbols-outlined text-[20px]">badge</span>
-          <span>BNS Handles (.bct)</span>
-          <span class="ml-auto px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[10px] font-bold">New</span>
-        </button>
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="space" onclick="switchTab('space')" type="button">
-          <span class="material-symbols-outlined text-[20px]">forum</span>
-          <span>Space Feed</span>
-          <span class="ml-auto px-2 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-label-sm">On-Chain</span>
-        </button>
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="yeni-cuzdan" onclick="switchTab('yeni-cuzdan')" type="button">
-          <span class="material-symbols-outlined text-[20px]">add_circle</span>
-          <span>Create / Import</span>
-        </button>
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="ag-ve-explorer" onclick="switchTab('ag-ve-explorer')" type="button">
-          <span class="material-symbols-outlined text-[20px]">hub</span>
-          <span>Network &amp; Explorer</span>
-        </button>
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="kopru" onclick="switchTab('kopru')" type="button">
-          <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
-          <span>Bridge (wBCT)</span>
-          <span class="ml-auto px-2 py-0.5 rounded-full bg-secondary/15 text-secondary font-label-sm text-[10px] font-bold">Base</span>
-        </button>
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="api-docs" onclick="switchTab('api-docs')" type="button">
-          <span class="material-symbols-outlined text-[20px]">terminal</span>
-          <span>Docs &amp; Guide</span>
-        </button>
-        <button class="nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg" data-tab="guvenlik" onclick="switchTab('guvenlik')" type="button">
-          <span class="material-symbols-outlined text-[20px]">security</span>
-          <span>Security &amp; Policy</span>
-          <span class="ml-auto px-2 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-[10px] font-bold">Audit</span>
-        </button>
+      <!-- Desktop Categorized Navigation -->
+      <nav class="flex flex-col gap-3.5 overflow-y-auto no-scrollbar pr-0.5" id="sidebar-nav">
+        <!-- 1. WALLET & ACCOUNT -->
+        <div class="flex flex-col gap-0.5">
+          <span class="px-3 pb-1 text-[10px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Wallet &amp; Account</span>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
+            <span class="material-symbols-outlined text-[19px]">account_balance_wallet</span>
+            <span class="font-medium">My Wallet</span>
+          </button>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="para-gonder" onclick="switchTab('para-gonder')" type="button">
+            <span class="material-symbols-outlined text-[19px]">send</span>
+            <span class="font-medium">Send Crypto</span>
+          </button>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="yeni-cuzdan" onclick="switchTab('yeni-cuzdan')" type="button">
+            <span class="material-symbols-outlined text-[19px]">add_circle</span>
+            <span class="font-medium">Create / Import</span>
+          </button>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="bns" onclick="switchTab('bns')" type="button">
+            <span class="material-symbols-outlined text-[19px]">badge</span>
+            <span class="font-medium">BNS Handles (.bct)</span>
+            <span class="ml-auto px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[9px] font-bold">New</span>
+          </button>
+        </div>
+
+        <!-- 2. SOCIAL & SPACE -->
+        <div class="flex flex-col gap-0.5 pt-2 border-t border-outline-variant/15">
+          <span class="px-3 pb-1 text-[10px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Social &amp; Space</span>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="ana-sayfa" onclick="switchTab('ana-sayfa')" type="button">
+            <span class="material-symbols-outlined text-[19px]">explore</span>
+            <span class="font-medium">Home Feed</span>
+          </button>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="space" onclick="switchTab('space')" type="button">
+            <span class="material-symbols-outlined text-[19px]">forum</span>
+            <span class="font-medium">Space Social</span>
+            <span class="ml-auto px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-[9px] font-bold">L1</span>
+          </button>
+        </div>
+
+        <!-- 3. NETWORK & PROTOCOL -->
+        <div class="flex flex-col gap-0.5 pt-2 border-t border-outline-variant/15">
+          <span class="px-3 pb-1 text-[10px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Network &amp; DeFi</span>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="ag-ve-explorer" onclick="switchTab('ag-ve-explorer')" type="button">
+            <span class="material-symbols-outlined text-[19px]">hub</span>
+            <span class="font-medium">Network &amp; Explorer</span>
+          </button>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="system-wallets" onclick="switchTab('system-wallets')" type="button">
+            <span class="material-symbols-outlined text-[19px]">account_balance</span>
+            <span class="font-medium">System Wallets</span>
+            <span class="ml-auto px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-[9px] font-bold">Official</span>
+          </button>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="kopru" onclick="switchTab('kopru')" type="button">
+            <span class="material-symbols-outlined text-[19px]">swap_horiz</span>
+            <span class="font-medium">Bridge (wBCT)</span>
+            <span class="ml-auto px-1.5 py-0.5 rounded-full bg-secondary/15 text-secondary font-label-sm text-[9px] font-bold">Base</span>
+          </button>
+        </div>
+
+        <!-- 4. RESOURCES & SECURITY -->
+        <div class="flex flex-col gap-0.5 pt-2 border-t border-outline-variant/15">
+          <span class="px-3 pb-1 text-[10px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Resources &amp; Security</span>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="api-docs" onclick="switchTab('api-docs')" type="button">
+            <span class="material-symbols-outlined text-[19px]">terminal</span>
+            <span class="font-medium">Docs &amp; Guide</span>
+          </button>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="guvenlik" onclick="switchTab('guvenlik')" type="button">
+            <span class="material-symbols-outlined text-[19px]">security</span>
+            <span class="font-medium">Security &amp; Policy</span>
+            <span class="ml-auto px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-[9px] font-bold">Audit</span>
+          </button>
+        </div>
       </nav>
 
       <!-- Social Media & Official Community Links -->
@@ -1167,7 +1191,7 @@
           </section>
 
           <!-- Compact Stitch Search Bar -->
-          <section class="mb-space-lg">
+          <section class="mb-space-md">
             <form class="relative flex items-center bg-surface-container-low rounded-xl p-1.5 transition-all focus-within:bg-surface-container border border-outline-variant/20" onsubmit="event.preventDefault(); triggerExplorerSearch();">
               <div class="pl-3 pr-2 flex items-center pointer-events-none text-on-surface-variant">
                 <span class="material-symbols-outlined text-[20px]">search</span>
@@ -1178,6 +1202,28 @@
                 <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
               </button>
             </form>
+          </section>
+
+          <!-- Official System Wallets & Contracts Quick Link Banner -->
+          <section class="mb-space-lg">
+            <div class="p-3.5 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5 transition-colors cursor-pointer group" onclick="switchTab('system-wallets')">
+              <div class="flex items-center gap-3">
+                <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                  <span class="material-symbols-outlined text-[20px]">account_balance</span>
+                </div>
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-2">
+                    <span class="text-xs font-semibold text-on-surface">Official Addresses &amp; System Wallets Directory</span>
+                    <span class="px-1.5 py-0.2 rounded bg-primary/15 text-primary text-[9.5px] font-mono font-bold">Verified</span>
+                  </div>
+                  <span class="text-[11px] text-on-surface-variant">Burn addresses, Treasury Escrow, Bridge Vault, Relayer Mint/Burn, and Validator nodes</span>
+                </div>
+              </div>
+              <button type="button" class="px-3 py-1 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center gap-1 shrink-0 group-hover:bg-primary group-hover:text-on-primary transition-all">
+                <span>View All Addresses</span>
+                <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+              </button>
+            </div>
           </section>
 
           <!-- Active Nodes Section (Exact Stitch Featured L1 Card + Peer Cards) -->
@@ -1419,6 +1465,398 @@
       <!-- ===================================================================== -->
       <!-- SCREEN 5 & 6: SPACE - SOCIAL FEED + POST DETAILS & COMMENTS         -->
       <!-- ===================================================================== -->
+      <!-- ===================================================================== -->
+      <!-- SCREEN: OFFICIAL & SYSTEM WALLETS DIRECTORY                           -->
+      <!-- ===================================================================== -->
+      <div id="tab-system-wallets" class="tab-content flex-col w-full items-center">
+        <div class="flex flex-col w-full max-w-[600px] lg:max-w-5xl mx-auto px-margin md:px-6 pb-space-lg">
+
+          <!-- Header Section -->
+          <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-space-md mb-space-lg">
+            <div class="flex flex-col">
+              <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">Transparency &amp; Governance</span>
+              <h1 class="font-headline-md text-headline-md text-on-surface tracking-tight font-semibold">Official Addresses &amp; System Wallets</h1>
+              <p class="text-body-sm text-on-surface-variant mt-1 max-w-2xl">
+                Publicly verifiable cryptographic addresses, contracts, and protocol vaults powering LockTrace L1 tokenomics, cross-chain bridge collateralization, automated minting, deflationary burns, and network consensus.
+              </p>
+            </div>
+            <div class="flex items-center gap-2 self-start sm:self-center shrink-0">
+              <button onclick="refreshSystemWalletsData(); showToast('System wallets refreshed');" class="flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container px-3 py-1.5 rounded-full border border-outline-variant/20 text-on-surface text-xs font-medium transition-all active:scale-95" type="button" title="Refresh live balances">
+                <span class="material-symbols-outlined text-[16px] text-primary">sync</span>
+                <span>Refresh Live</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- System Overview Metric Badges -->
+          <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 mb-space-xl">
+            <div class="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/15 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                <span class="text-[11px] font-mono uppercase">Tracked Entities</span>
+                <span class="material-symbols-outlined text-[16px] text-primary">account_tree</span>
+              </div>
+              <span class="font-mono text-lg font-bold text-on-surface">8 Endpoints</span>
+              <span class="text-[10px] text-emerald-400 font-medium mt-1">100% On-Chain Verifiable</span>
+            </div>
+            <div class="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/15 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                <span class="text-[11px] font-mono uppercase">Bridge Collateral</span>
+                <span class="material-symbols-outlined text-[16px] text-secondary">lock</span>
+              </div>
+              <span class="font-mono text-lg font-bold text-secondary" id="sysMetricBridgeLocked">85.09M BCT</span>
+              <span class="text-[10px] text-on-surface-variant mt-1">1:1 Backing Base wBCT</span>
+            </div>
+            <div class="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/15 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                <span class="text-[11px] font-mono uppercase">Treasury Escrow</span>
+                <span class="material-symbols-outlined text-[16px] text-outline">shield</span>
+              </div>
+              <span class="font-mono text-lg font-bold text-on-surface" id="sysMetricTreasuryEscrow">999.89B BCT</span>
+              <span class="text-[10px] text-on-surface-variant mt-1">PoW Consensus Emission</span>
+            </div>
+            <div class="bg-surface-container-low p-3.5 rounded-xl border border-outline-variant/15 flex flex-col justify-between">
+              <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                <span class="text-[11px] font-mono uppercase">Active Consensus</span>
+                <span class="material-symbols-outlined text-[16px] text-primary">verified</span>
+              </div>
+              <span class="font-mono text-lg font-bold text-primary">PoW + Quorum</span>
+              <span class="text-[10px] text-primary/80 mt-1">70% Miner / 30% Validator</span>
+            </div>
+          </div>
+
+          <!-- Section A: Cross-Chain Bridge & Smart Contracts -->
+          <div class="mb-space-xl">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined text-secondary text-[20px]">swap_horiz</span>
+              <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Cross-Chain Bridge &amp; Automated Relayer</h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+
+              <!-- 1. Wrapped BCT (wBCT) Contract on Base -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-secondary/30 bg-gradient-to-br from-secondary/5 via-transparent to-transparent flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full bg-secondary/15 text-secondary text-[11px] font-mono font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                      Base Mainnet (Chain ID 8453)
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-surface-container text-on-surface-variant text-[10.5px] font-mono">ERC-20 + EIP-2612</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Wrapped BCT (wBCT) Smart Contract</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Audited multi-chain token enabling BCT utility, Uniswap v3 liquidity, and DeFi interoperability on Base Ethereum Layer-2.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate" id="sysWbctAddr">0xA3C743113a41cFd0146917065d4578337Bb77254</span>
+                  <button type="button" onclick="copyToClipboard('0xA3C743113a41cFd0146917065d4578337Bb77254'); showToast('wBCT contract address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+
+                <div class="flex flex-wrap items-center gap-2 pt-1 border-t border-outline-variant/10 text-xs">
+                  <a href="https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-medium flex items-center gap-1 transition-colors">
+                    <span>BaseScan</span>
+                    <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+                  </a>
+                  <a href="https://app.uniswap.org/#/swap?chain=base&outputCurrency=0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary font-medium flex items-center gap-1 transition-colors">
+                    <span>Uniswap v3 Pool</span>
+                    <span class="material-symbols-outlined text-[13px]">currency_exchange</span>
+                  </a>
+                  <a href="https://dexscreener.com/base/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-emerald-400 font-medium flex items-center gap-1 transition-colors">
+                    <span>DexScreener</span>
+                    <span class="material-symbols-outlined text-[13px]">monitoring</span>
+                  </a>
+                </div>
+              </div>
+
+              <!-- 2. Automated Bridge Relayer / Mint & Burn Operator -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-secondary/30 bg-gradient-to-br from-secondary/5 via-transparent to-transparent flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full bg-secondary/15 text-secondary text-[11px] font-mono font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                      Automated Bridge Operator
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10.5px] font-mono font-bold">MINTER_ROLE</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Bridge Relayer (Automated Mint &amp; Burn Daemon)</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      The automated bridge relayer that listens for confirmed L1 locks to mint wBCT on Base, and listens for Base burns to release native BCT on Layer-1.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate" id="sysRelayerAddr">0x7007d5863336FFaeFFc5A4076AC0f9fcB47c1940</span>
+                  <button type="button" onclick="copyToClipboard('0x7007d5863336FFaeFFc5A4076AC0f9fcB47c1940'); showToast('Bridge relayer address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant/10 text-xs">
+                  <a href="https://basescan.org/address/0x7007d5863336FFaeFFc5A4076AC0f9fcB47c1940" target="_blank" rel="noopener noreferrer" class="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-medium flex items-center gap-1 transition-colors">
+                    <span>View Relayer on BaseScan</span>
+                    <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+                  </a>
+                  <span class="text-[11px] text-on-surface-variant font-mono">Service: blockchaint-relayer</span>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Section B: Protocol Vaults & Hard-Capped Tokenomics -->
+          <div class="mb-space-xl">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined text-primary text-[20px]">account_balance</span>
+              <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Protocol Vaults &amp; Collateral Reserves (Layer-1)</h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+
+              <!-- 3. Bridge Collateral Lock Vault (L1) -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/15 flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full bg-secondary/15 text-secondary text-[11px] font-mono font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>
+                      Layer-1 Collateral Escrow
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-surface-container text-on-surface-variant text-[10.5px] font-mono">1:1 Backing</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Bridge Collateral Vault</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Holds 100% full-reserve native BCT backing for every wrapped wBCT token on Base. Tokens remain locked here until burned on Base.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate">BCT_BRIDGE_VAULT_COLLATERAL_LOCK_000000</span>
+                  <button type="button" onclick="copyToClipboard('BCT_BRIDGE_VAULT_COLLATERAL_LOCK_000000'); showToast('Bridge vault address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-xs">
+                  <span class="text-on-surface-variant">Locked Collateral: <strong class="text-secondary font-mono" id="sysValBridgeVaultBal">85,091,883.63 BCT</strong></span>
+                  <button type="button" onclick="switchTab('ag-ve-explorer'); setTimeout(() => { const inp = document.getElementById('explorerSearchInput'); if (inp) { inp.value = 'BCT_BRIDGE_VAULT_COLLATERAL_LOCK_000000'; triggerExplorerSearch(); } }, 150);" class="text-primary hover:underline flex items-center gap-0.5">
+                    <span>Explorer</span>
+                    <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 4. Protocol Treasury & Escrow Vault (L1) -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/15 flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary text-[11px] font-mono font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                      Layer-1 Genesis Escrow
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-surface-container text-on-surface-variant text-[10.5px] font-mono">1 Trillion Cap</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Genesis Treasury &amp; Reserve Vault</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Protocol escrow holding unreleased supply. Released strictly through cryptographic PoW block proposer rewards and validator quorum pools.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate">BCT_HAZINE_00000000000000000000000000000000</span>
+                  <button type="button" onclick="copyToClipboard('BCT_HAZINE_00000000000000000000000000000000'); showToast('Treasury address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-xs">
+                  <span class="text-on-surface-variant">Escrow Reserve: <strong class="text-on-surface font-mono" id="sysValTreasuryBal">999,899,999,101.94 BCT</strong></span>
+                  <button type="button" onclick="switchTab('ag-ve-explorer'); setTimeout(() => { const inp = document.getElementById('explorerSearchInput'); if (inp) { inp.value = 'BCT_HAZINE_00000000000000000000000000000000'; triggerExplorerSearch(); } }, 150);" class="text-primary hover:underline flex items-center gap-0.5">
+                    <span>Explorer</span>
+                    <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Section C: Burn Addresses & Deflationary Mechanisms -->
+          <div class="mb-space-xl">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined text-rose-400 text-[20px]">local_fire_department</span>
+              <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Deflationary &amp; Permanent Burn Addresses</h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+
+              <!-- 5. Layer-1 Burn Address -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-rose-500/20 bg-gradient-to-br from-rose-500/5 via-transparent to-transparent flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[11px] font-mono font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                      LockTrace Layer-1
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 text-[10.5px] font-mono font-semibold">Provably Unspendable</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Layer-1 Protocol Burn Address</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Mathematical zero address without private key. Any BCT sent here is permanently destroyed from circulation, reducing circulating supply.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate">BCT0000000000000000000000000000000000000000</span>
+                  <button type="button" onclick="copyToClipboard('BCT0000000000000000000000000000000000000000'); showToast('L1 Burn address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-xs">
+                  <span class="text-on-surface-variant">Burned Native BCT: <strong class="text-rose-400 font-mono" id="sysValBurnBal">0.00 BCT</strong></span>
+                  <button type="button" onclick="switchTab('ag-ve-explorer'); setTimeout(() => { const inp = document.getElementById('explorerSearchInput'); if (inp) { inp.value = 'BCT0000000000000000000000000000000000000000'; triggerExplorerSearch(); } }, 150);" class="text-primary hover:underline flex items-center gap-0.5">
+                    <span>Explorer</span>
+                    <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+
+              <!-- 6. EVM Dead Address (Base) -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-rose-500/20 bg-gradient-to-br from-rose-500/5 via-transparent to-transparent flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 text-[11px] font-mono font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-rose-400"></span>
+                      Base Mainnet (EVM)
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-rose-500/10 text-rose-400 text-[10.5px] font-mono font-semibold">Standard Dead</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Base EVM Dead Address</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Standard EVM dead address used for permanent token burns and unrecoverable removals on Base L2.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate">0x000000000000000000000000000000000000dEaD</span>
+                  <button type="button" onclick="copyToClipboard('0x000000000000000000000000000000000000dEaD'); showToast('EVM dead address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-xs">
+                  <span class="text-on-surface-variant">Network: Base EVM (Chain 8453)</span>
+                  <a href="https://basescan.org/address/0x000000000000000000000000000000000000dEaD" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline flex items-center gap-0.5">
+                    <span>BaseScan</span>
+                    <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+                  </a>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Section D: Validators & Release Authority -->
+          <div class="mb-space-xl">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined text-primary text-[20px]">verified_user</span>
+              <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Validators &amp; Release Authority</h2>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-3.5">
+
+              <!-- 7. Your Local PC Validator Node Wallet -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-primary/30 bg-gradient-to-br from-primary/5 via-transparent to-transparent flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary text-[11px] font-mono font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                      Local PC Validator
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-emerald-500/10 text-emerald-400 text-[10.5px] font-mono font-bold">PoW + 30% Quorum</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">LockTrace-Ngrok-Validator (Your PC Node)</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Your decentralized node running on this PC. Proposes blocks via CPU PoW and signs cryptographic block attestations for the 30% validator reward pool.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate">BCT3fec00e39c728050c1f1cef4cbe78fcc85881572</span>
+                  <button type="button" onclick="copyToClipboard('BCT3fec00e39c728050c1f1cef4cbe78fcc85881572'); showToast('Validator wallet copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant/10 text-xs">
+                  <span class="text-on-surface-variant">Validator Balance: <strong class="text-primary font-mono" id="sysValValidatorBal">14,891,831.69 BCT</strong></span>
+                  <div class="flex items-center gap-2">
+                    <a href="http://127.0.0.1:5050" target="_blank" class="text-primary hover:underline font-mono text-[11px]">Local RPC :5050</a>
+                    <button type="button" onclick="switchTab('ag-ve-explorer'); setTimeout(() => { const inp = document.getElementById('explorerSearchInput'); if (inp) { inp.value = 'BCT3fec00e39c728050c1f1cef4cbe78fcc85881572'; triggerExplorerSearch(); } }, 150);" class="text-primary hover:underline flex items-center gap-0.5">
+                      <span>Explorer</span>
+                      <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 8. Cryptographic Release Authority Key -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/15 flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full bg-surface-container text-on-surface text-[11px] font-mono font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                      On-Chain Release Anchor
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-surface-container text-on-surface-variant text-[10.5px] font-mono">SECP256k1</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Frontend Release Authority</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Authorized key that cryptographically signs all web releases. The SHA-256 integrity hash is anchored directly in the Layer-1 ledger to prevent tampering.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate">BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080</span>
+                  <button type="button" onclick="copyToClipboard('BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080'); showToast('Release authority address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant/10 text-xs">
+                  <span class="text-on-surface-variant font-mono text-[11px]">Pubkey: 5e3686d4...a150</span>
+                  <button type="button" onclick="openNetworkSecurityModal();" class="text-primary hover:underline flex items-center gap-0.5">
+                    <span>View Tamper Proof</span>
+                    <span class="material-symbols-outlined text-[13px]">shield</span>
+                  </button>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <div id="tab-space" class="tab-content flex-col w-full items-center">
         <!-- 5A: MAIN SPACE FEED VIEW (Exact Stitch Screen E) -->
         <div id="spaceFeedMainView" class="flex flex-col w-full max-w-[600px] mx-auto pb-12">
@@ -2917,77 +3355,136 @@
         </div>
       </div>
 
-      <!-- Quick Action Grid -->
-      <div class="grid grid-cols-2 gap-2.5">
-        <button class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2.5 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('ana-sayfa');" type="button">
-          <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[20px]">explore</span>
-          </div>
-          <div class="flex flex-col min-w-0">
-            <span class="font-label-md text-label-md font-semibold text-on-surface">Explore / Home</span>
-            <span class="text-[11px] text-on-surface-variant line-clamp-1">Vision, on-chain social</span>
-          </div>
-        </button>
+      <!-- Categorized Mobile Navigation Grid -->
+      <div class="flex flex-col gap-3.5">
 
-        <button class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2.5 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('para-gonder');" type="button">
-          <div class="w-9 h-9 rounded-xl bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[20px]">send</span>
+        <!-- 1. WALLET & ASSETS -->
+        <div class="flex flex-col gap-1.5">
+          <span class="text-[10.5px] font-mono uppercase font-bold text-on-surface-variant/80 tracking-wider px-1">Wallet &amp; Account</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('cuzdanim');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">My Wallet</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">Balance &amp; assets</span>
+              </div>
+            </button>
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('para-gonder');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">send</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">Send Crypto</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">Zero-fee BCT</span>
+              </div>
+            </button>
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('yeni-cuzdan');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-surface-container text-on-surface flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">add_circle</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">Create / Import</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">Seed phrase</span>
+              </div>
+            </button>
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('bns');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">badge</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">BNS Handles (.bct)</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">Identity &amp; domains</span>
+              </div>
+            </button>
           </div>
-          <div class="flex flex-col min-w-0">
-            <span class="font-label-md text-label-md font-semibold text-on-surface">Send Crypto</span>
-            <span class="text-[11px] text-on-surface-variant line-clamp-1">Zero-fee BCT transfers</span>
-          </div>
-        </button>
+        </div>
 
-        <button class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2.5 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('bns');" type="button">
-          <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[20px]">badge</span>
+        <!-- 2. SOCIAL & SPACE -->
+        <div class="flex flex-col gap-1.5 pt-2 border-t border-outline-variant/10">
+          <span class="text-[10.5px] font-mono uppercase font-bold text-on-surface-variant/80 tracking-wider px-1">Social &amp; Space</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('ana-sayfa');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">explore</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">Home Feed</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">Updates &amp; vision</span>
+              </div>
+            </button>
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('space');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">forum</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">Space Social</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">On-chain microblog</span>
+              </div>
+            </button>
           </div>
-          <div class="flex flex-col min-w-0">
-            <span class="font-label-md text-label-md font-semibold text-on-surface">BNS Handles (.bct)</span>
-            <span class="text-[11px] text-on-surface-variant line-clamp-1">Domain names &amp; market</span>
-          </div>
-        </button>
+        </div>
 
-        <button class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2.5 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('ag-ve-explorer');" type="button">
-          <div class="w-9 h-9 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[20px]">hub</span>
+        <!-- 3. NETWORK & PROTOCOL -->
+        <div class="flex flex-col gap-1.5 pt-2 border-t border-outline-variant/10">
+          <span class="text-[10.5px] font-mono uppercase font-bold text-on-surface-variant/80 tracking-wider px-1">Network &amp; Protocol</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('ag-ve-explorer');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">hub</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">Explorer</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">Blocks, txs &amp; nodes</span>
+              </div>
+            </button>
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-primary/20 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('system-wallets');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">account_balance</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">System Wallets</span>
+                <span class="text-[10px] text-primary/80 line-clamp-1">Burn, Vaults &amp; Nodes</span>
+              </div>
+            </button>
+            <button class="col-span-2 p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('kopru');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">Cross-Chain Bridge (wBCT)</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">Base Mainnet L2 liquidity &amp; Uniswap v3 Pool</span>
+              </div>
+            </button>
           </div>
-          <div class="flex flex-col min-w-0">
-            <span class="font-label-md text-label-md font-semibold text-on-surface">Network &amp; Blocks</span>
-            <span class="text-[11px] text-on-surface-variant line-clamp-1">Mempool, nodes &amp; stats</span>
-          </div>
-        </button>
+        </div>
 
-        <button class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2.5 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('api-docs');" type="button">
-          <div class="w-9 h-9 rounded-xl bg-surface-container-high text-on-surface flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[20px]">menu_book</span>
+        <!-- 4. RESOURCES & SECURITY -->
+        <div class="flex flex-col gap-1.5 pt-2 border-t border-outline-variant/10">
+          <span class="text-[10.5px] font-mono uppercase font-bold text-on-surface-variant/80 tracking-wider px-1">Resources &amp; Security</span>
+          <div class="grid grid-cols-2 gap-2">
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('api-docs');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-surface-container text-on-surface flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">terminal</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">Docs &amp; Guide</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">Architecture &amp; nodes</span>
+              </div>
+            </button>
+            <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('guvenlik');" type="button">
+              <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[18px]">security</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="font-label-md text-xs font-semibold text-on-surface">Security &amp; Policy</span>
+                <span class="text-[10px] text-on-surface-variant line-clamp-1">Audit &amp; cryptography</span>
+              </div>
+            </button>
           </div>
-          <div class="flex flex-col min-w-0">
-            <span class="font-label-md text-label-md font-semibold text-on-surface">Docs &amp; Guide</span>
-            <span class="text-[11px] text-on-surface-variant line-clamp-1">Node runner, API guide</span>
-          </div>
-        </button>
+        </div>
 
-        <button class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2.5 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('guvenlik');" type="button">
-          <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[20px]">security</span>
-          </div>
-          <div class="flex flex-col min-w-0">
-            <span class="font-label-md text-label-md font-semibold text-on-surface">Security &amp; Policy</span>
-            <span class="text-[11px] text-on-surface-variant line-clamp-1">Audit, non-custodial rules</span>
-          </div>
-        </button>
-
-        <button class="p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2.5 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('kopru');" type="button">
-          <div class="w-9 h-9 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
-            <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
-          </div>
-          <div class="flex flex-col min-w-0">
-            <span class="font-label-md text-label-md font-semibold text-on-surface">Bridge (wBCT Liquidity)</span>
-            <span class="text-[11px] text-on-surface-variant line-clamp-1">Base Mainnet, Uniswap v3 Pool</span>
-          </div>
-        </button>
       </div>
 
       <!-- System & Security Utilities -->
@@ -4789,7 +5286,7 @@
 
     // =========================================================================
     function switchTab(tabId, updateHash = true) {
-      const validTabs = ['ana-sayfa', 'cuzdanim', 'para-gonder', 'space', 'yeni-cuzdan', 'ag-ve-explorer', 'api-docs', 'kopru', 'guvenlik', 'bns'];
+      const validTabs = ['ana-sayfa', 'cuzdanim', 'para-gonder', 'space', 'yeni-cuzdan', 'ag-ve-explorer', 'system-wallets', 'api-docs', 'kopru', 'guvenlik', 'bns'];
       const target = validTabs.includes(tabId) ? tabId : 'cuzdanim';
 
       // Always reset Space Detail Stack Header & restore mobile nav when switching main tabs
@@ -4838,6 +5335,8 @@
         if (!previewMnemonicPhrase) requestNewMnemonicPreview();
       } else if (target === 'ag-ve-explorer') {
         refreshExplorerData();
+      } else if (target === 'system-wallets') {
+        refreshSystemWalletsData();
       } else if (target === 'space') {
         fetchAndSyncMyBnsHandles();
         loadSpaceFeed();
@@ -4851,7 +5350,45 @@
     }
 
     // =========================================================================
-    // 6. SCREEN 1: MY WALLET & HISTORY (EXACT STITCH SCREEN A)
+
+    // =========================================================================
+    // SYSTEM WALLETS & OFFICIAL CONTRACTS DATA SYNC
+    // =========================================================================
+    async function refreshSystemWalletsData() {
+      try {
+        // 1. Fetch stats for Vaults & Metrics
+        const statsRes = await apiFetch('/stats');
+        if (statsRes && statsRes.data) {
+          const d = statsRes.data;
+          const bridgeVaultBal = document.getElementById('sysValBridgeVaultBal');
+          const treasuryBal = document.getElementById('sysValTreasuryBal');
+          const metricBridge = document.getElementById('sysMetricBridgeLocked');
+          const metricTreasury = document.getElementById('sysMetricTreasuryEscrow');
+          if (bridgeVaultBal && d.bridge_vault_formatted) bridgeVaultBal.textContent = d.bridge_vault_formatted + ' BCT';
+          if (treasuryBal && d.treasury_formatted) treasuryBal.textContent = d.treasury_formatted + ' BCT';
+          if (metricBridge && d.bridge_vault_locked) metricBridge.textContent = (d.bridge_vault_locked / 1000000).toFixed(2) + 'M BCT';
+          if (metricTreasury && d.treasury_balance) metricTreasury.textContent = (d.treasury_balance / 1000000000).toFixed(2) + 'B BCT';
+        }
+
+        // 2. Fetch Burn Address Balance
+        const burnRes = await apiFetch('/balance/BCT0000000000000000000000000000000000000000');
+        if (burnRes && burnRes.data) {
+          const burnEl = document.getElementById('sysValBurnBal');
+          if (burnEl) burnEl.textContent = formatCrypto(burnRes.data.balance || 0) + ' BCT';
+        }
+
+        // 3. Fetch Local Validator Balance
+        const valRes = await apiFetch('/balance/BCT3fec00e39c728050c1f1cef4cbe78fcc85881572');
+        if (valRes && valRes.data) {
+          const valEl = document.getElementById('sysValValidatorBal');
+          if (valEl) valEl.textContent = formatCrypto(valRes.data.balance || 0) + ' BCT';
+        }
+      } catch (err) {
+        console.warn('refreshSystemWalletsData warning:', err);
+      }
+    }
+
+        // 6. SCREEN 1: MY WALLET & HISTORY (EXACT STITCH SCREEN A)
     // =========================================================================
     function toggleBalanceVisibility() {
       isBalanceHidden = !isBalanceHidden;
