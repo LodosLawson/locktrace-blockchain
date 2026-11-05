@@ -1917,6 +1917,19 @@ def api_bridge_claim_burn():
     else:
         safe_sender = event_data.get("sender") or safe_sender
 
+    # 0.5. Check if this EVM transaction has already been unlocked on-chain
+    for block in blockchain.chain:
+        for tx in block.transactions:
+            if tx.tx_type == "bridge_unlock" and tx.extra_data and str(tx.extra_data.get("evm_tx_hash", "")).lower() == evm_tx_hash:
+                with bridge_manager._get_connection() as conn:
+                    conn.execute("UPDATE bridge_transactions SET status = 'COMPLETED', updated_at = ? WHERE tx_hash_evm = ?", (time.time(), evm_tx_hash))
+                return api_response(True, data={
+                    "already_unlocked": True,
+                    "evm_tx_hash": evm_tx_hash,
+                    "recipient": bct_address,
+                    "message": "Bu EVM yakım işlemi daha önce başarıyla LockTrace üzerinde açılmış."
+                }, status=200)
+
     # 1. Register order in bridge_manager if not already registered
     safe_sender = evm_sender if (evm_sender.startswith("0x") and len(evm_sender) == 42) else "0x0000000000000000000000000000000000000000"
     order_res = bridge_manager.create_bridge_order(
@@ -1938,7 +1951,19 @@ def api_bridge_claim_burn():
     )
 
     if not ok:
-        return api_response(False, message=msg, status=400)
+        if "daha önce" in msg or "already" in msg:
+            if bridge_id:
+                bridge_manager.complete_bridge(bridge_id, tx_hash_evm=evm_tx_hash)
+            return api_response(True, data={
+                "already_unlocked": True,
+                "evm_tx_hash": evm_tx_hash,
+                "message": msg
+            }, status=200)
+        else:
+            if bridge_id:
+                with bridge_manager._get_connection() as conn:
+                    conn.execute("UPDATE bridge_transactions SET status = 'FAILED', error_message = ?, updated_at = ? WHERE bridge_id = ?", (msg, time.time(), bridge_id))
+            return api_response(False, message=msg, status=400)
 
     # 3. Mark bridge order as completed in bridge database
     if bridge_id:
