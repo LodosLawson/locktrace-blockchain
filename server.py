@@ -16,7 +16,7 @@ import logging
 import secrets
 import threading
 from collections import deque
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional
 
 from flask import Flask, request, jsonify, render_template, g, send_file, send_from_directory, Response
@@ -269,6 +269,11 @@ def after_request(response):
     response.headers["X-Powered-By"] = "LockTrace-Blockchain/1.4"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    if request.is_secure or request.headers.get("X-Forwarded-Proto") == "https":
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     origin = request.headers.get("Origin", "")
     allowed = [o.strip() for o in (Config.CORS_ORIGINS or []) if o.strip()]
     if origin and (not allowed or "*" in allowed or origin in allowed):
@@ -283,7 +288,7 @@ def after_request(response):
 def api_response(success: bool, data=None, message=None, status=200, **extra):
     body = {
         "success": success,
-        "timestamp": datetime.utcnow().isoformat() + "Z",
+        "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "request_id": getattr(g, "request_id", None),
     }
     if data is not None:

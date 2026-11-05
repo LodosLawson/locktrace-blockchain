@@ -115,6 +115,13 @@ def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool
         if clean_sig.startswith("0x") or clean_sig.startswith("0X"):
             clean_sig = clean_sig[2:]
         sig_bytes = binascii.unhexlify(clean_sig)
+        # SECP256k1 grup mertebesi ve sıfır/aşım kontrolü (0 < r < n, 0 < s < n)
+        if len(sig_bytes) == 64:
+            r_val = int.from_bytes(sig_bytes[:32], "big")
+            s_val = int.from_bytes(sig_bytes[32:64], "big")
+            SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+            if r_val <= 0 or r_val >= SECP256K1_N or s_val <= 0 or s_val >= SECP256K1_N:
+                return False
         msg_bytes = data.encode("utf-8")
 
         # Güvenli SHA-256 ECDSA doğrulaması
