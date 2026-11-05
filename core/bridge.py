@@ -37,7 +37,7 @@ def verify_evm_burn_receipt(
     """
     clean_hash = (evm_tx_hash or "").strip().lower()
     if not (clean_hash.startswith("0x") and len(clean_hash) == 66):
-        return False, "Geçersiz EVM işlem özeti (0x... 66 karakter hex gereklidir).", {}
+        return False, "Invalid EVM transaction hash (0x... 66 hex characters required).", {}
 
     target_contract = (wbct_contract or WBCT_OFFICIAL_CONTRACT).strip().lower()
     clean_recipient = (expected_recipient or "").strip()
@@ -60,21 +60,21 @@ def verify_evm_burn_receipt(
             res_data = json.loads(response.read().decode("utf-8"))
     except Exception as e:
         logger.warning(f"Base RPC connection failed while verifying burn tx {clean_hash}: {e}")
-        return False, f"Base Mainnet RPC ile bağlantı kurulamadı: {e}", {"network_error": True}
+        return False, f"Failed to connect to Base Mainnet RPC: {e}", {"network_error": True}
 
     receipt = res_data.get("result")
     if not receipt:
-        return False, "İşlem Base Mainnet üzerinde henüz onaylanmadı veya bulunamadı.", {}
+        return False, "Transaction not yet confirmed or found on Base Mainnet.", {}
 
     # 1. Check status == 0x1
     status = receipt.get("status")
     if str(status) not in ("0x1", "1"):
-        return False, "EVM işlemi başarısız olmuş veya geri alınmış (reverted).", {}
+        return False, "EVM transaction failed or reverted.", {}
 
     # 2. Check destination contract
     to_addr = str(receipt.get("to") or "").lower()
     if to_addr != target_contract:
-        return False, f"İşlem resmi wBCT kontratına ({target_contract}) gönderilmemiş.", {}
+        return False, f"Transaction was not sent to the official wBCT contract ({target_contract}).", {}
 
     # 3. Find BurnedToBridge event in logs
     logs = receipt.get("logs") or []
@@ -117,11 +117,10 @@ def verify_evm_burn_receipt(
 
     if not matched_event:
         return False, (
-            "İşlem makbuzunda belirtilen alıcı veya miktar ile eşleşen geçerli bir "
-            "wBCT BurnedToBridge olayı bulunamadı."
+            "Valid wBCT BurnedToBridge event matching recipient or amount was not found in transaction receipt."
         ), {}
 
-    return True, "Doğrulandı", matched_event
+    return True, "Verified", matched_event
 
 BRIDGE_VAULT_ADDRESS = "BCT_BRIDGE_VAULT_000000000000000000000000000000000"
 SUPPORTED_CHAINS = {

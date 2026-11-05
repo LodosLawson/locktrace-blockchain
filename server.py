@@ -182,7 +182,7 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
     """
     clean_expected = (expected_address or "").strip()
     if not is_valid_bct_address(clean_expected) or clean_expected.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
-        return False, 400, "Geçersiz cüzdan adresi formatı.", "", "", ""
+        return False, 400, "Invalid wallet address format.", "", "", ""
 
     mnemonic_phrase = str(data.get("mnemonic", "") or "").strip()
     private_key_hex = str(data.get("private_key", "") or "").strip()
@@ -198,11 +198,11 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
             elif private_key_hex and len(private_key_hex) == 64:
                 wallet = restore_wallet(private_key_hex)
             else:
-                return False, 400, "Geçersiz imza anahtarı (12 kelime kurtarma ifadesi veya 64 karakter özel anahtar gerekli).", "", "", ""
+                return False, 400, "Invalid signing key (12-word mnemonic phrase or 64-character private key required).", "", "", ""
 
             if wallet.address != clean_expected:
                 logger.warning(f"Auth mismatch: key {wallet.address[:10]}... attempted action as {clean_expected[:10]}...")
-                return False, 403, "İmza anahtarı belirtilen cüzdan adresiyle eşleşmiyor!", "", "", ""
+                return False, 403, "Signing key does not match the specified wallet address!", "", "", ""
 
             cand_primary = canonical_payload[0] if isinstance(canonical_payload, (list, tuple)) else canonical_payload
             nonce_ts = f"{int(time.time() * 1000)}:{secrets.token_hex(4)}"
@@ -210,23 +210,23 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
             sig = wallet.sign(signed_payload)
             return True, 200, "", sig, wallet.get_public_key_hex(), signed_payload
         except Exception:
-            return False, 400, "Cüzdan anahtarı doğrulanamadı.", "", "", ""
+            return False, 400, "Wallet key could not be verified.", "", "", ""
 
     # Path 2: Client-side ECDSA signature (Non-custodial mode)
     if client_sig:
         pub_hex = client_pub or blockchain.wallets.get(clean_expected, {}).get("public_key", "")
         if not pub_hex:
-            return False, 401, "İmza doğrulaması için public_key gereklidir.", "", "", ""
+            return False, 401, "public_key is required for signature verification.", "", "", ""
 
         if public_key_to_address(pub_hex) != clean_expected:
-            return False, 403, "Açık anahtar (public_key) cüzdan adresiyle uyuşmuyor!", "", "", ""
+            return False, 403, "Public key does not match wallet address!", "", "", ""
 
         client_nonce = data.get("nonce")
         expected_nonce = None
         if client_nonce is not None:
             expected_nonce = blockchain.get_account_nonce(clean_expected)
             if safe_int(client_nonce, default=-1) != expected_nonce:
-                return False, 409, f"Geçersiz işlem sırası (nonce). Beklenen: {expected_nonce}", "", "", ""
+                return False, 409, f"Invalid transaction nonce. Expected: {expected_nonce}", "", "", ""
 
         candidates = canonical_payload if isinstance(canonical_payload, (list, tuple)) else [canonical_payload]
         signed_payload = ""
@@ -235,7 +235,7 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
             if client_ts is not None:
                 ts_val = safe_float(client_ts)
                 if ts_val is None or abs(time.time() - ts_val) > 300:
-                    return False, 401, "İmza zaman damgası (timestamp) süresi dolmuş veya geçersiz.", "", "", ""
+                    return False, 401, "Signature timestamp expired or invalid.", "", "", ""
                 cand_signed = f"{cand}:{client_ts}:{expected_nonce}" if expected_nonce is not None else f"{cand}:{client_ts}"
             else:
                 cand_signed = f"{cand}:{expected_nonce}" if expected_nonce is not None else cand
@@ -245,14 +245,14 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
                 break
 
         if not verified_ok:
-            return False, 403, "Geçersiz ECDSA dijital imza!", "", "", ""
+            return False, 403, "Invalid ECDSA digital signature!", "", "", ""
 
         if not rate_limiter.register_signature_once(client_sig):
-            return False, 409, "Tekrarlanan (replay) imza reddedildi.", "", "", ""
+            return False, 409, "Replay signature rejected.", "", "", ""
 
         return True, 200, "", client_sig, pub_hex, signed_payload
 
-    return False, 401, "Bu işlem için cüzdan imzası (kimlik doğrulaması) zorunludur.", "", "", ""
+    return False, 401, "Wallet signature authentication is required for this action.", "", "", ""
 
 
 @app.before_request
@@ -311,7 +311,7 @@ def _inspect_local_frontend_integrity() -> dict:
     if not os.path.exists(index_path) or not os.path.exists(manifest_path):
         return {
             "verified": False,
-            "reason": "⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz. (integrity.json eksik)",
+            "reason": "⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked. (integrity.json missing)",
         }
 
     try:
@@ -330,7 +330,7 @@ def _inspect_local_frontend_integrity() -> dict:
         if not sig_ok:
             return {
                 "verified": False,
-                "reason": f"⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz. ({sig_msg})",
+                "reason": f"⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked. ({sig_msg})",
                 "actual_index_sha256": actual_index_sha,
             }
 
@@ -350,7 +350,7 @@ def _inspect_local_frontend_integrity() -> dict:
                 }
             return {
                 "verified": False,
-                "reason": "⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz.",
+                "reason": "⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked.",
                 "expected_index_sha256": expected_index_sha,
                 "actual_index_sha256": actual_index_sha,
                 "index_bytes": index_bytes,
@@ -359,7 +359,7 @@ def _inspect_local_frontend_integrity() -> dict:
         if expected_sw_sha and actual_sw_sha and actual_sw_sha != expected_sw_sha:
             return {
                 "verified": False,
-                "reason": "⛔ UYARI: Service Worker (sw.js) değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz.",
+                "reason": "⛔ WARNING: Service Worker (sw.js) has been modified or tampered with! Execution blocked.",
                 "expected_sw_sha256": expected_sw_sha,
                 "actual_sw_sha256": actual_sw_sha,
                 "index_bytes": index_bytes,
@@ -376,7 +376,7 @@ def _inspect_local_frontend_integrity() -> dict:
     except Exception as exc:
         return {
             "verified": False,
-            "reason": f"⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz. ({exc})",
+            "reason": f"⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked. ({exc})",
         }
 
 
@@ -422,13 +422,13 @@ def _serve_verified_frontend_response():
     is_dev = is_local_or_lan_request()
 
     if not check.get("verified") and not is_dev:
-        warn_html = f"""<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>Güvenlik Kilidi - LockTrace</title>
+        warn_html = f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Security Lock - LockTrace</title>
         <style>body{{background:#131315;color:#ffb4ab;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;}}
         .card{{max-width:620px;background:#1f1f21;border:1px solid #93000a;border-radius:16px;padding:32px;box-shadow:0 20px 50px rgba(0,0,0,0.6);}}
         code{{display:block;background:#0e0e10;color:#e5e1e4;padding:12px;border-radius:8px;margin-top:12px;word-break:break-all;font-size:12px;}}</style></head>
-        <body><div class="card"><h2>⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz.</h2>
-        <p style="color:#e5e1e4;line-height:1.6;">LockTrace SHA-256 Sağlama Toplamı ve ECDSA Sürüm İmzası doğrulaması başarısız oldu. Cüzdan güvenliğiniz için arayüz yüklenmesi engellendi.</p>
-        <code>Beklenen SHA-256: {check.get('expected_index_sha256', 'Bilinmiyor')}<br>Mevcut SHA-256: {check.get('actual_index_sha256', 'Geçersiz')}</code></div></body></html>"""
+        <body><div class="card"><h2>⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked.</h2>
+        <p style="color:#e5e1e4;line-height:1.6;">LockTrace SHA-256 Checksum and ECDSA Release Signature verification failed. Interface loading blocked for wallet security.</p>
+        <code>Expected SHA-256: {check.get('expected_index_sha256', 'Unknown')}<br>Actual SHA-256: {check.get('actual_index_sha256', 'Invalid')}</code></div></body></html>"""
         return Response(warn_html, status=403, mimetype="text/html")
 
     index_bytes = check.get("index_bytes")
@@ -454,24 +454,24 @@ def _serve_verified_frontend_response():
 @app.errorhandler(404)
 def handle_404(_err):
     if request.path.startswith("/api/"):
-        return api_response(False, message="API uç noktası bulunamadı.", status=404)
+        return api_response(False, message="API endpoint not found.", status=404)
     return _serve_verified_frontend_response()
 
 
 @app.errorhandler(405)
 def handle_405(_err):
-    return api_response(False, message="Bu uç nokta için HTTP metodu desteklenmiyor.", status=405)
+    return api_response(False, message="HTTP method not supported for this endpoint.", status=405)
 
 
 @app.errorhandler(413)
 def handle_413(_err):
-    return api_response(False, message="İstek boyutu çok büyük (Maksimum 1 MB).", status=413)
+    return api_response(False, message="Request payload too large (Maximum 1 MB).", status=413)
 
 
 @app.errorhandler(500)
 def handle_500(err):
     logger.error(f"Unhandled server error [{getattr(g, 'request_id', '-')}]: {err}")
-    return api_response(False, message="Sunucu tarafında beklenmeyen bir hata oluştu.", status=500)
+    return api_response(False, message="An unexpected server error occurred.", status=500)
 
 
 @app.route("/whitepaper.pdf", methods=["GET"])
@@ -562,7 +562,7 @@ def api_stats():
 def api_mnemonic_preview():
     """Generates a 12-word BIP-39 phrase in memory without minting a block or spending Treasury funds."""
     if not check_rate_limit("mnemonic_preview", limit=20, window_seconds=60):
-        return api_response(False, message="Çok fazla kelime üretme isteği gönderildi. Lütfen 1 dakika bekleyin.", status=429)
+        return api_response(False, message="Too many mnemonic generation requests. Please wait 1 minute.", status=429)
     phrase = generate_mnemonic()
     return api_response(True, data={"mnemonic": phrase})
 
@@ -570,7 +570,7 @@ def api_mnemonic_preview():
 @app.route("/api/v1/wallet/create", methods=["POST"])
 def api_create_wallet():
     if not check_rate_limit("wallet_create_min", limit=5, window_seconds=60) or not check_rate_limit("wallet_create_hr", limit=15, window_seconds=3600):
-        return api_response(False, message="Cüzdan oluşturma sınırına ulaştınız. Lütfen daha sonra tekrar deneyin.", status=429)
+        return api_response(False, message="Wallet creation limit reached. Please try again later.", status=429)
 
     data = request.get_json(silent=True) or {}
     client_address = str(data.get("address", "") or "").strip()
@@ -581,7 +581,7 @@ def api_create_wallet():
         # Path A: 100% Zero-Knowledge Client-Side Keygen (mnemonic & private_key never leave browser!)
         if client_address and client_pubkey and not provided_mnemonic:
             if public_key_to_address(client_pubkey) != client_address:
-                return api_response(False, message="Açık anahtar (public_key) ile cüzdan adresi uyuşmuyor.", status=400)
+                return api_response(False, message="Public key does not match wallet address.", status=400)
             success, message = blockchain.register_wallet(client_address, client_pubkey)
             if success:
                 logger.info(f"Non-Custodial Account Registered: {client_address} (ip={get_client_ip()})")
@@ -597,7 +597,7 @@ def api_create_wallet():
         if provided_mnemonic:
             cleaned = " ".join(provided_mnemonic.lower().split())
             if not validate_mnemonic(cleaned):
-                return api_response(False, message="Geçersiz 12 kelimelik BIP-39 kurtarma ifadesi.", status=400)
+                return api_response(False, message="Invalid 12-word BIP-39 recovery phrase.", status=400)
             wallet = Wallet(mnemonic=cleaned)
         else:
             wallet = Wallet()
@@ -618,14 +618,14 @@ def api_create_wallet():
         return api_response(False, message=message, status=400)
     except Exception as e:
         logger.error(f"Account creation exception: {e}")
-        return api_response(False, message="Cüzdan oluşturulurken bir hata oluştu.", status=500)
+        return api_response(False, message="An error occurred while creating wallet.", status=500)
 
 
 # ── Wallet Import ────────────────────────────────────────────
 @app.route("/api/v1/wallet/import", methods=["POST"])
 def api_import_wallet():
     if not check_rate_limit("wallet_import", limit=15, window_seconds=60):
-        return api_response(False, message="Çok fazla içe aktarma denemesi. Lütfen 1 dakika bekleyin.", status=429)
+        return api_response(False, message="Too many import attempts. Please wait 1 minute.", status=429)
 
     data = request.get_json(silent=True) or {}
     client_address = str(data.get("address", "") or "").strip()
@@ -637,11 +637,11 @@ def api_import_wallet():
         # Path A: 100% Zero-Knowledge Client-Side Import (secrets stay in browser!)
         if client_address and client_pubkey and not mnemonic_phrase and not private_key_hex:
             if public_key_to_address(client_pubkey) != client_address:
-                return api_response(False, message="Açık anahtar ile cüzdan adresi uyuşmuyor.", status=400)
+                return api_response(False, message="Public key does not match wallet address.", status=400)
             ok, msg = blockchain.register_wallet(client_address, client_pubkey)
             if not ok:
                 return api_response(False, message=msg, status=400)
-            return api_response(True, message="Cüzdan başarıyla doğrulandı ve bağlandı!", data={
+            return api_response(True, message="Wallet successfully verified and connected!", data={
                 "address": client_address,
                 "public_key": client_pubkey,
                 "balance": blockchain.get_balance(client_address),
@@ -652,22 +652,22 @@ def api_import_wallet():
         if mnemonic_phrase:
             words = mnemonic_phrase.lower().split()
             if len(words) != 12:
-                return api_response(False, message="Kurtarma ifadesi tam 12 kelimeden oluşmalıdır.", status=400)
+                return api_response(False, message="Recovery phrase must consist of exactly 12 words.", status=400)
             wallet = restore_wallet_from_mnemonic(" ".join(words))
         elif private_key_hex:
             clean_pk = private_key_hex.strip()
             if len(clean_pk) != 64 or not all(c in "0123456789abcdefABCDEF" for c in clean_pk):
-                return api_response(False, message="Özel anahtar 64 karakterlik hex formatında olmalıdır.", status=400)
+                return api_response(False, message="Private key must be in 64-character hex format.", status=400)
             wallet = restore_wallet(clean_pk)
         else:
-            return api_response(False, message="12 kelimelik kurtarma ifadesi veya özel anahtar girin.", status=400)
+            return api_response(False, message="Please enter a 12-word recovery phrase or private key.", status=400)
 
         ok, msg = blockchain.register_wallet(wallet.address, wallet.get_public_key_hex())
         if not ok:
             return api_response(False, message=msg, status=400)
         bal = blockchain.get_balance(wallet.address)
 
-        return api_response(True, message="Cüzdan başarıyla geri yüklendi!", data={
+        return api_response(True, message="Wallet successfully restored!", data={
             "address": wallet.address,
             "mnemonic": getattr(wallet, "mnemonic", ""),
             "public_key": wallet.get_public_key_hex(),
@@ -677,7 +677,7 @@ def api_import_wallet():
         })
     except Exception as e:
         logger.warning(f"Wallet restoration failed: {e}")
-        return api_response(False, message="Cüzdan geri yüklenemedi. Anahtarınızı kontrol edin.", status=400)
+        return api_response(False, message="Wallet could not be restored. Please check your key.", status=400)
 
 
 # ── Balance ──────────────────────────────────────────────────
@@ -701,7 +701,7 @@ def api_balance(address):
 @app.route("/api/v1/transaction", methods=["POST"])
 def api_transaction():
     if not check_rate_limit("tx_submit", limit=30, window_seconds=60):
-        return api_response(False, message="Çok sık transfer isteği gönderildi. Lütfen kısa süre bekleyin.", status=429)
+        return api_response(False, message="Too many transfer requests. Please wait a moment.", status=429)
 
     data = request.get_json(silent=True) or {}
     sender = str(data.get("sender", "") or "").strip()
@@ -723,10 +723,10 @@ def api_transaction():
 
     amount = safe_float(amount_raw)
     if amount is None or amount <= 0:
-        return api_response(False, message="Geçerli ve pozitif bir tutar girilmelidir.", status=400)
+        return api_response(False, message="A valid and positive amount must be entered.", status=400)
 
     if amount > Config.MAX_TRANSACTION:
-        return api_response(False, message=f"Tek seferde maksimum transfer sınırı {Config.MAX_TRANSACTION:,.0f} BCT'dir.", status=400)
+        return api_response(False, message=f"Maximum single transfer limit is {Config.MAX_TRANSACTION:,.0f} BCT'dir.", status=400)
 
     amount = round(amount, 8)
     amt_str_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
@@ -790,7 +790,7 @@ def api_explorer_search():
             },
         })
 
-    return api_response(False, message="Aranan kriterlere uygun blok, işlem veya cüzdan bulunamadı.", status=404)
+    return api_response(False, message="No block, transaction, or wallet found matching search criteria.", status=404)
 
 
 @app.route("/api/v1/explorer/block/<query>", methods=["GET"])
@@ -849,7 +849,7 @@ def api_explorer_merkle_proof(tx_hash):
     proof_data = blockchain.get_merkle_proof((tx_hash or "").strip()[:128])
     if proof_data:
         return api_response(True, data=proof_data)
-    return api_response(False, message="İşlem veya Merkle kanıtı bulunamadı.", status=404)
+    return api_response(False, message="Transaction or Merkle proof not found.", status=404)
 
 
 @app.route("/api/v1/explorer/holders", methods=["GET"])
@@ -975,7 +975,7 @@ def api_get_peers():
 def api_register_node():
     """Register or announce a community node into the decentralized network (with optional ECDSA ownership proof)."""
     if not check_rate_limit("node_register", limit=25, window_seconds=60):
-        return api_response(False, message="Çok sık düğüm kayıt isteği gönderildi.", status=429)
+        return api_response(False, message="Too many node registration requests.", status=429)
 
     data = request.get_json(silent=True) or {}
     node_id = str(data.get("node_id", "") or "").strip()
@@ -994,7 +994,7 @@ def api_register_node():
     hashrate_hs = safe_float(data.get("hashrate_hs", 0.0), default=0.0) or 0.0
 
     if miner_address and not is_valid_bct_address(miner_address):
-        return api_response(False, message="Geçersiz madenci cüzdan adresi formatı.", status=400)
+        return api_response(False, message="Invalid miner wallet address format.", status=400)
 
     if not node_id:
         node_id = f"node-{secrets.token_hex(4)}"
@@ -1079,10 +1079,10 @@ def api_attest_block():
     ts = safe_float(raw_ts)
 
     if ts is None:
-        return api_response(False, message="Geçerli timestamp gereklidir.", status=400)
+        return api_response(False, message="Valid timestamp is required.", status=400)
     ts_exact = str(raw_ts).strip()
     if sig and not rate_limiter.register_signature_once(sig):
-        return api_response(False, message="Tekrarlanan (replay) doğrulama imzası reddedildi.", status=409)
+        return api_response(False, message="Replay verification signature rejected.", status=409)
 
     ok, msg, res = blockchain.attest_block(
         node_id=node_id,
@@ -1132,7 +1132,7 @@ def api_mining_job():
 def api_mining_template():
     """Returns a deterministic v2 PoW block template (`getblocktemplate`) for external CPU/GPU miners."""
     if not check_rate_limit("mining_template", limit=60, window_seconds=60):
-        return api_response(False, message="Şablon istek sınırı aşıldı.", status=429)
+        return api_response(False, message="Mining template rate limit exceeded.", status=429)
 
     miner_address = str(request.args.get("miner_address", "") or "").strip()
     node_id = str(request.args.get("node_id", "") or "").strip()
@@ -1146,7 +1146,7 @@ def api_mining_template():
 def api_mining_submit():
     """Verifies and appends an externally mined Proof-of-Work block (`submitblock`) and distributes 70/30 rewards."""
     if not check_rate_limit("mining_submit", limit=30, window_seconds=60):
-        return api_response(False, message="Blok gönderim sınırı aşıldı.", status=429)
+        return api_response(False, message="Block submission rate limit exceeded.", status=429)
 
     data = request.get_json(silent=True) or {}
     block_data = data.get("block") or {}
@@ -1156,7 +1156,7 @@ def api_mining_submit():
     hashrate_hs = safe_float(data.get("hashrate_hs", 0.0), default=0.0) or 0.0
 
     if sig and not rate_limiter.register_signature_once(sig):
-        return api_response(False, message="Tekrarlanan (replay) blok imzası reddedildi.", status=409)
+        return api_response(False, message="Replay block signature rejected.", status=409)
 
     ok, msg, receipt = blockchain.submit_mined_block(
         block_data=block_data,
@@ -1186,9 +1186,9 @@ def api_mine_block():
     return api_response(
         False,
         message=(
-            "Sunucu taraflı senkron madencilik kaynak tüketimini (CPU DoS) önlemek amacıyla devre dışı bırakılmıştır. "
-            "Lütfen madencilik için '/api/v1/mining/template' ve '/api/v1/mining/submit' uç noktalarını "
-            "veya 'python node_runner.py' bağımsız madencisini kullanın."
+            "Server-side synchronous mining is disabled to prevent CPU DoS. "
+            "Please use '/api/v1/mining/template' and '/api/v1/mining/submit' endpoints "
+            "or 'python node_runner.py' standalone miner."
         ),
         status=403
     )
@@ -1211,7 +1211,7 @@ def api_space_get_post(post_id):
     post = blockchain.get_space_post((post_id or "")[:64])
     if post:
         return api_response(True, data=post)
-    return api_response(False, message="Gönderi bulunamadı", status=404)
+    return api_response(False, message="Post not found", status=404)
 
 
 @app.route("/api/v1/space/post", methods=["POST"])
@@ -1221,16 +1221,16 @@ def api_space_create_post():
     Cost: 0.10 BCT (80% returns to Treasury Vault, 20% validator fee).
     """
     if not check_rate_limit("space_post", limit=15, window_seconds=60):
-        return api_response(False, message="Çok hızlı paylaşım yapıyorsunuz. Lütfen kısa süre bekleyin.", status=429)
+        return api_response(False, message="Posting too fast. Please wait a moment.", status=429)
 
     data = request.get_json(silent=True) or {}
     author = str(data.get("author", "") or "").strip()
     content = str(data.get("content", "") or "").strip()
 
     if not author:
-        return api_response(False, message="Yazar cüzdan adresi gereklidir", status=400)
+        return api_response(False, message="Author wallet address is required", status=400)
     if not content:
-        return api_response(False, message="Düşünce metni boş olamaz", status=400)
+        return api_response(False, message="Post content cannot be empty", status=400)
 
     bns_name = str(data.get("bns_name", "") or "").strip()
     canonical = [f"{author}:{content}", f"{author}:{content}:{bns_name}"] if bns_name else f"{author}:{content}"
@@ -1262,7 +1262,7 @@ def api_space_like():
     Cost: 0.01 BCT (20% to tweet author, 70% to Treasury, 10% validator fee).
     """
     if not check_rate_limit("space_like", limit=30, window_seconds=60):
-        return api_response(False, message="Çok hızlı beğeni işlemi gönderildi. Lütfen kısa süre bekleyin.", status=429)
+        return api_response(False, message="Liking too fast. Please wait a moment.", status=429)
 
     data = request.get_json(silent=True) or {}
     liker = str(data.get("liker", "") or "").strip()
@@ -1299,7 +1299,7 @@ def api_space_comment():
     Cost: 0.02 BCT (20% to tweet author, 70% to Treasury, 10% validator fee).
     """
     if not check_rate_limit("space_comment", limit=20, window_seconds=60):
-        return api_response(False, message="Çok hızlı yorum gönderildi. Lütfen kısa süre bekleyin.", status=429)
+        return api_response(False, message="Commenting too fast. Please wait a moment.", status=429)
 
     data = request.get_json(silent=True) or {}
     commenter = str(data.get("commenter", "") or "").strip()
@@ -1652,7 +1652,7 @@ def api_trade_buy():
     session_token = str(data.get("session_token", "") or "").strip()[:128]
 
     if not buyer_address or not is_valid_bct_address(buyer_address):
-        return api_response(False, message="Geçerli bir alıcı BCT cüzdan adresi gereklidir.", status=400)
+        return api_response(False, message="Valid recipient BCT wallet address is required.", status=400)
 
     success, message, receipt = blockchain.execute_fiat_purchase(
         buyer_address=buyer_address,
@@ -1675,7 +1675,7 @@ def api_trade_sell():
     payout_info = str(data.get("payout_info", "") or "").strip()[:128]
 
     if not seller_address or not is_valid_bct_address(seller_address):
-        return api_response(False, message="Geçerli bir satıcı BCT cüzdan adresi gereklidir.", status=400)
+        return api_response(False, message="Valid seller BCT wallet address is required.", status=400)
 
     success, message, receipt = blockchain.execute_fiat_sale(
         seller_address=seller_address,
@@ -1742,7 +1742,7 @@ def api_thirdweb_claim_erc1155():
         return api_response(False, message="Rate limit exceeded", status=429)
 
     if not _require_admin_api_key():
-        return api_response(False, message="Yetkisiz erişim: Geçerli X-API-Key başlığı gereklidir.", status=401)
+        return api_response(False, message="Unauthorized: Valid X-API-Key header is required.", status=401)
 
     data = request.get_json(silent=True) or {}
     contract_address = str(data.get("contract_address", "") or "").strip()
@@ -1753,17 +1753,17 @@ def api_thirdweb_claim_erc1155():
     server_wallet = str(data.get("server_wallet", "") or "").strip() or None
 
     if not EVM_ADDRESS_RE.match(contract_address):
-        return api_response(False, message="Geçersiz EVM kontrat adresi (0x + 40 hex karakter olmalı).", status=400)
+        return api_response(False, message="Invalid EVM contract address (0x + 40 hex characters required).", status=400)
     if not EVM_ADDRESS_RE.match(to_address):
-        return api_response(False, message="Geçersiz hedef EVM cüzdan adresi (0x + 40 hex karakter olmalı).", status=400)
+        return api_response(False, message="Invalid target EVM wallet address (0x + 40 hex characters required).", status=400)
     if server_wallet and not EVM_ADDRESS_RE.match(server_wallet):
-        return api_response(False, message="Geçersiz server_wallet adresi.", status=400)
+        return api_response(False, message="Invalid server_wallet address.", status=400)
     if token_id < 0 or token_id > 10**18:
-        return api_response(False, message="Geçersiz token_id değeri.", status=400)
+        return api_response(False, message="Invalid token_id value.", status=400)
     if quantity < 1 or quantity > 1000:
-        return api_response(False, message="quantity 1 ile 1000 arasında olmalıdır.", status=400)
+        return api_response(False, message="quantity must be between 1 and 1000.", status=400)
     if not SAFE_CHAIN_RE.match(chain):
-        return api_response(False, message="Geçersiz chain parametresi.", status=400)
+        return api_response(False, message="Invalid chain parameter.", status=400)
 
     result = thirdweb_service.claim_erc1155(
         contract_address=contract_address,
@@ -1788,7 +1788,7 @@ def api_thirdweb_status(transaction_id: str):
         return api_response(False, message="Rate limit exceeded", status=429)
     clean_tx_id = (transaction_id or "").strip()
     if not SAFE_TX_ID_RE.match(clean_tx_id):
-        return api_response(False, message="Geçersiz transaction_id formatı.", status=400)
+        return api_response(False, message="Invalid transaction_id format.", status=400)
 
     result = thirdweb_service.get_transaction_status(clean_tx_id)
     if not result.get("success", False):
@@ -1802,7 +1802,7 @@ def api_thirdweb_wait_hash(transaction_id: str):
         return api_response(False, message="Rate limit exceeded", status=429)
     clean_tx_id = (transaction_id or "").strip()
     if not SAFE_TX_ID_RE.match(clean_tx_id):
-        return api_response(False, message="Geçersiz transaction_id formatı.", status=400)
+        return api_response(False, message="Invalid transaction_id format.", status=400)
 
     result = thirdweb_service.wait_for_transaction_hash(clean_tx_id)
     if not result.get("success", False):
@@ -1831,7 +1831,7 @@ def api_bridge_create_order():
     try:
         amount_bct = float(payload.get("amount", 0.0))
     except (ValueError, TypeError):
-        return api_response(False, message="Geçersiz transfer miktarı.", status=400)
+        return api_response(False, message="Invalid transfer amount.", status=400)
 
     result = bridge_manager.create_bridge_order(
         direction=direction,
@@ -1854,7 +1854,7 @@ def api_bridge_get_status(bridge_id: str):
     clean_id = (bridge_id or "").strip()
     st = bridge_manager.get_bridge_status(clean_id)
     if not st:
-        return api_response(False, message="Köprü işlemi bulunamadı.", status=404)
+        return api_response(False, message="Bridge transaction not found.", status=404)
     return api_response(True, data=st)
 
 
@@ -1871,11 +1871,11 @@ def api_bridge_confirm():
     bridge_id = str(payload.get("bridge_id", "")).strip()
     tx_hash = str(payload.get("tx_hash", "")).strip()
     if not bridge_id or not tx_hash:
-        return api_response(False, message="bridge_id ve tx_hash zorunludur.", status=400)
+        return api_response(False, message="bridge_id and tx_hash are required.", status=400)
 
     res = bridge_manager.confirm_l1_lock(bridge_id, tx_hash)
     if not res.get("success"):
-        return api_response(False, message=res.get("error", "Doğrulama başarısız"), status=400)
+        return api_response(False, message=res.get("error", "Verification failed"), status=400)
     return api_response(True, data=res)
 
 
@@ -1896,16 +1896,16 @@ def api_bridge_claim_burn():
     try:
         amount_bct = float(payload.get("amount", 0.0))
     except (ValueError, TypeError):
-        return api_response(False, message="Geçersiz transfer miktarı.", status=400)
+        return api_response(False, message="Invalid transfer amount.", status=400)
 
     if not evm_tx_hash or not evm_tx_hash.startswith("0x") or len(evm_tx_hash) != 66:
-        return api_response(False, message="Geçersiz Base EVM işlem hash'i (0x... 66 karakter).", status=400)
+        return api_response(False, message="Invalid Base EVM transaction hash (0x... 66 characters required).", status=400)
 
     if not (bct_address.startswith("BCT") and len(bct_address) == 43):
-        return api_response(False, message="Geçersiz LockTrace BCT hedef adresi.", status=400)
+        return api_response(False, message="Invalid LockTrace BCT recipient address.", status=400)
 
     if amount_bct < 1.0:
-        return api_response(False, message="Minimum köprü miktarı 1.00 BCT'dir.", status=400)
+        return api_response(False, message="Minimum bridge amount is 1.00 BCT.", status=400)
 
     # 0. Cryptographic On-Chain Verification on Base Mainnet
     verified, v_msg, event_data = verify_evm_burn_receipt(
@@ -1918,7 +1918,7 @@ def api_bridge_claim_burn():
         if event_data.get("network_error") and _require_admin_api_key():
             logger.warning(f"Bridge unlock granted via ADMIN_API_KEY override for {evm_tx_hash}")
         else:
-            return api_response(False, message=f"Base Mainnet üzerinde yakım doğrulanamadı: {v_msg}", status=400)
+            return api_response(False, message=f"Burn could not be verified on Base Mainnet: {v_msg}", status=400)
     else:
         safe_sender = event_data.get("sender") or safe_sender
 
@@ -1932,7 +1932,7 @@ def api_bridge_claim_burn():
                     "already_unlocked": True,
                     "evm_tx_hash": evm_tx_hash,
                     "recipient": bct_address,
-                    "message": "Bu EVM yakım işlemi daha önce başarıyla LockTrace üzerinde açılmış."
+                    "message": "This EVM burn transaction has already been unlocked on LockTrace."
                 }, status=200)
 
     # 1. Register order in bridge_manager if not already registered
