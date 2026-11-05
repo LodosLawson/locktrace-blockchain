@@ -225,7 +225,7 @@
         </div>
         <div class="flex flex-col">
           <span class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.8.5</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.8.6</span>
         </div>
       </div>
 
@@ -276,6 +276,25 @@
           <span class="ml-auto px-2 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-[10px] font-bold">Audit</span>
         </button>
       </nav>
+
+      <!-- Social Media & Official Community Links -->
+      <div class="px-2 pt-2 border-t border-outline-variant/20 flex flex-col gap-2">
+        <span class="text-[10px] font-mono uppercase text-on-surface-variant tracking-wider px-1">Community &amp; Socials</span>
+        <div class="grid grid-cols-4 gap-1.5">
+          <a href="https://x.com/LockTraceSpace" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-primary transition-all group" title="X (Twitter) @LockTraceSpace">
+            <span class="text-xs font-bold font-mono">𝕏</span>
+          </a>
+          <a href="https://www.instagram.com/locktracespace" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-rose-400 transition-all group" title="Instagram @locktracespace">
+            <span class="material-symbols-outlined text-[16px]">photo_camera</span>
+          </a>
+          <a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-emerald-400 transition-all group" title="GitHub Repository">
+            <span class="material-symbols-outlined text-[16px]">code</span>
+          </a>
+          <a href="mailto:locktracetoken+space@gmail.com" class="flex flex-col items-center justify-center p-2 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-secondary transition-all group" title="Official Email: locktracetoken+space@gmail.com">
+            <span class="material-symbols-outlined text-[16px]">mail</span>
+          </a>
+        </div>
+      </div>
     </div>
 
     <!-- Bottom Security & Engine Badge -->
@@ -672,17 +691,28 @@
           </div>
 
           <!-- Official Project & Compliance Footer -->
-          <footer class="w-full pt-4 pb-6 border-t border-outline-variant/15 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-on-surface-variant font-mono">
-            <div class="flex items-center gap-2">
-              <span class="w-2 h-2 rounded-full bg-emerald-400"></span>
-              <span>LockTrace Network &bull; Official Domain: <strong class="text-on-surface font-sans">locktrace.space</strong></span>
+          <footer class="w-full pt-6 pb-6 border-t border-outline-variant/15 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-on-surface-variant font-mono">
+            <div class="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
+              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> <strong>LockTrace Network</strong> &bull; <a href="https://locktrace.space" target="_blank" class="hover:underline text-on-surface">locktrace.space</a> &bull; <a href="https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" class="hover:underline text-secondary font-mono">wBCT: 0xA3C7...7254</a></span>
+              <span class="hidden sm:inline text-outline">&bull;</span>
+              <span>Official Email: <a href="mailto:locktracetoken@gmail.com" class="text-primary hover:underline font-bold">locktracetoken@gmail.com</a> / <a href="mailto:locktracetoken+space@gmail.com" class="hover:underline">locktracetoken+space@gmail.com</a></span>
             </div>
-            <div class="flex items-center gap-3">
-              <span>Official Email: <a href="mailto:contact@locktrace.space" class="text-primary hover:underline">contact@locktrace.space</a></span>
+            <div class="flex items-center gap-3 flex-wrap justify-center">
+              <a href="https://x.com/LockTraceSpace" target="_blank" rel="noopener" class="text-on-surface hover:text-primary transition-colors flex items-center gap-1 font-sans">
+                <span class="font-bold">𝕏</span> <span>@LockTraceSpace</span>
+              </a>
               <span>&bull;</span>
-              <a href="/docs/LockTrace_Whitepaper.pdf" target="_blank" class="text-secondary hover:underline">Whitepaper (PDF)</a>
+              <a href="https://www.instagram.com/locktracespace" target="_blank" rel="noopener" class="text-on-surface hover:text-rose-400 transition-colors flex items-center gap-1 font-sans">
+                <span>Instagram</span>
+              </a>
               <span>&bull;</span>
-              <button onclick="switchTab('guvenlik')" class="text-primary hover:underline cursor-pointer" type="button">Security &amp; Policy</button>
+              <a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener" class="text-on-surface hover:text-emerald-400 transition-colors flex items-center gap-1 font-sans">
+                <span>GitHub</span>
+              </a>
+              <span>&bull;</span>
+              <a href="/docs/LockTrace_Whitepaper.pdf" target="_blank" class="text-secondary hover:underline font-sans">Whitepaper (PDF)</a>
+              <span>&bull;</span>
+              <button onclick="switchTab('guvenlik')" class="text-primary hover:underline cursor-pointer font-sans" type="button">Security &amp; Policy</button>
             </div>
           </footer>
 
@@ -1459,13 +1489,12 @@
                   </div>
                 </div>
 
-                <!-- Handle / Anonymous Picker Pill & Quick Primary Switch -->
+                <!-- Handle / Address Picker Pill & Quick Primary Switch -->
                 <div class="flex items-center shrink-0 gap-1.5">
                   <div class="relative flex items-center">
                     <span class="material-symbols-outlined text-[13px] text-primary absolute left-2 pointer-events-none">badge</span>
-                    <select id="spaceAuthorHandleSelect" onchange="updateComposerIdentityPreview()" class="bg-surface-container-high/90 hover:bg-surface-container-highest text-on-surface border border-outline-variant/40 text-[11px] sm:text-xs rounded-full pl-6 pr-6 py-1.5 focus:outline-none focus:border-primary font-mono cursor-pointer transition-all appearance-none max-w-[145px] sm:max-w-[185px] truncate shadow-xs" title="Paylaşım kimliğini seçin">
+                    <select id="spaceAuthorHandleSelect" onchange="updateComposerIdentityPreview()" class="bg-surface-container-high/90 hover:bg-surface-container-highest text-on-surface border border-outline-variant/40 text-[11px] sm:text-xs rounded-full pl-6 pr-6 py-1.5 focus:outline-none focus:border-primary font-mono cursor-pointer transition-all appearance-none max-w-[145px] sm:max-w-[185px] truncate shadow-xs" title="Paylaşım kimliğinizi seçin">
                       <option value="address">💳 Cüzdanım</option>
-                      <option value="anonymous">🕵️ Anonim</option>
                     </select>
                     <span class="material-symbols-outlined text-[13px] text-on-surface-variant absolute right-1.5 pointer-events-none">expand_more</span>
                   </div>
@@ -1567,7 +1596,6 @@
                   <span class="text-[11px]">As:</span>
                   <select id="detailCommentHandleSelect" class="bg-surface-container-high text-on-surface border border-outline-variant/30 text-[11px] rounded-md px-1.5 py-0.5 focus:outline-none focus:border-primary font-mono cursor-pointer" title="Yorum kimliğinizi seçin">
                     <option value="address">💳 Cüzdanım</option>
-                    <option value="anonymous">🕵️ Anonim</option>
                   </select>
                 </div>
               </div>
@@ -1602,7 +1630,7 @@
           <!-- Header & Documentation Badge -->
           <div class="flex flex-col gap-1 mt-space-sm">
             <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE MASTER DOCS v1.8.5</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE MASTER DOCS v1.8.6</span>
               <span class="text-outline text-xs">•</span>
               <span class="text-on-surface-variant font-mono text-xs">Open Source &amp; Decentralized Protocol</span>
             </div>
@@ -1610,6 +1638,34 @@
             <p class="font-body-sm text-body-sm text-on-surface-variant max-w-2xl">
               Comprehensive architectural guide, on-chain creator royalties, P2P node setup, cryptographic security proofs, and REST/P2P API reference.
             </p>
+          </div>
+
+          <!-- Official Community & Technical Channels Card -->
+          <div class="p-4 sm:p-5 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm">
+            <div class="flex items-center gap-3">
+              <div class="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[22px]">hub</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-mono uppercase text-primary font-bold">Official Community &amp; Developer Channels</span>
+                <span class="text-xs text-on-surface-variant">Follow ecosystem announcements, submit proposals, or reach out to core developers.</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-2 flex-wrap">
+              <a href="https://x.com/LockTraceSpace" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold flex items-center gap-1 transition-all border border-outline-variant/30">
+                <span class="font-bold">𝕏</span> <span>@LockTraceSpace</span>
+              </a>
+              <a href="https://www.instagram.com/locktracespace" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold flex items-center gap-1 transition-all border border-outline-variant/30">
+                <span>Instagram</span>
+              </a>
+              <a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold flex items-center gap-1 transition-all border border-outline-variant/30">
+                <span>GitHub</span>
+              </a>
+              <a href="mailto:locktracetoken@gmail.com" class="px-3 py-1.5 rounded-full bg-primary/15 text-primary text-xs font-semibold flex items-center gap-1 hover:bg-primary/25 transition-all">
+                <span class="material-symbols-outlined text-[15px]">mail</span>
+                <span>locktracetoken@gmail.com</span>
+              </a>
+            </div>
           </div>
 
           <!-- Official Technical Whitepaper Card -->
@@ -1620,7 +1676,7 @@
               </div>
               <div class="flex flex-col">
                 <div class="flex items-center gap-2">
-                  <h2 class="font-headline-sm text-sm sm:text-base text-on-surface font-bold leading-tight">Official Technical Whitepaper (v1.8.5)</h2>
+                  <h2 class="font-headline-sm text-sm sm:text-base text-on-surface font-bold leading-tight">Official Technical Whitepaper (v1.8.6)</h2>
                   <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-mono text-[10px] font-bold">PDF</span>
                 </div>
                 <p class="text-xs text-on-surface-variant line-clamp-1">Dual 70/30 Hybrid PoW/Quorum Consensus, Tokenomics, Cryptography &amp; Space Protocol</p>
@@ -2322,7 +2378,7 @@
               </div>
               <div>
                 <h3 class="font-headline-sm text-base sm:text-lg font-bold text-on-surface">5. Responsible Disclosure &amp; Vulnerability Program</h3>
-                <span class="text-xs text-emerald-400 font-medium">security@locktrace.space &bull; Bug Bounty &bull; White-Hat Researchers</span>
+                <span class="text-xs text-emerald-400 font-medium">locktracetoken+space@gmail.com &bull; Bug Bounty &bull; White-Hat Researchers</span>
               </div>
             </div>
             <div class="text-xs sm:text-sm text-on-surface-variant leading-relaxed space-y-2.5">
@@ -2330,7 +2386,7 @@
                 LockTrace actively collaborates with independent security researchers, ethical hackers, and external auditors to maintain the highest security standards:
               </p>
               <ul class="list-disc pl-5 space-y-1.5 text-on-surface/90">
-                <li><strong>Reporting Channel:</strong> Please report any identified vulnerabilities directly to <a href="mailto:security@locktrace.space" class="text-primary hover:underline font-semibold">security@locktrace.space</a> or confidentially via <a href="https://github.com/LodosLawson/locktrace-blockchain/security" target="_blank" class="text-primary hover:underline font-semibold">GitHub Security Advisories</a>.</li>
+                <li><strong>Reporting Channel:</strong> Please report any identified vulnerabilities directly to <a href="mailto:locktracetoken+space@gmail.com" class="text-primary hover:underline font-semibold">locktracetoken+space@gmail.com</a> or confidentially via <a href="https://github.com/LodosLawson/locktrace-blockchain/security" target="_blank" class="text-primary hover:underline font-semibold">GitHub Security Advisories</a>.</li>
                 <li><strong>Coordinated Disclosure:</strong> We ask researchers to allow a minimum of <strong>48 hours</strong> for core developers to review, patch, and deploy fixes across validator nodes before any public disclosure.</li>
                 <li><strong>Bug Bounty Rewards:</strong> Valid, verified security vulnerabilities are eligible for BCT protocol bounty rewards commensurate with severity.</li>
               </ul>
@@ -4171,9 +4227,13 @@
     }
 
     async function apiFetch(path, options = {}) {
-      const opts = Object.assign({
-        headers: { 'Content-Type': 'application/json' }
-      }, options);
+      const defaultHeaders = {
+        'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
+      };
+      const opts = Object.assign({}, options, {
+        headers: Object.assign(defaultHeaders, options.headers || {})
+      });
       const candidates = getCandidateRpcOrigins();
       let lastErr = 'offline';
 
@@ -5846,8 +5906,17 @@
     async function refreshExplorerData() {
       const t0 = performance.now();
       try {
+        const statsPromise = apiFetch('/stats').then(res => {
+          const rtt = Math.max(4, Math.round(performance.now() - t0));
+          const pingLbl = document.getElementById('networkPingLabel');
+          const hdrLat = document.getElementById('headerLatencyBadge');
+          if (pingLbl) pingLbl.textContent = `Gecikme: ${rtt}ms`;
+          if (hdrLat) hdrLat.textContent = `${rtt}ms • Senkron`;
+          return res;
+        });
+
         const fetchPromises = [
-          apiFetch('/stats'),
+          statsPromise,
           apiFetch('/nodes')
         ];
         if (currentExplorerTxPage === 1) {
@@ -5867,13 +5936,6 @@
         const txsRes = currentExplorerTxPage === 1 ? results[pIdx++] : null;
         const blocksRes = currentExplorerBlockPage === 1 ? results[pIdx++] : null;
         const holdersRes = currentExplorerHoldersPage === 1 ? results[pIdx++] : null;
-
-        const rtt = Math.max(4, Math.round(performance.now() - t0));
-
-        const pingLbl = document.getElementById('networkPingLabel');
-        const hdrLat = document.getElementById('headerLatencyBadge');
-        if (pingLbl) pingLbl.textContent = `Gecikme: ${rtt}ms`;
-        if (hdrLat) hdrLat.textContent = `${rtt}ms • Senkron`;
 
         if (statsRes && statsRes.ok && statsRes.body.data) {
           const st = statsRes.body.data;
@@ -6862,20 +6924,32 @@
       inFlightLikes.add(postId);
       try {
         const canonical = `${currentAccount.address}:${postId}`;
-        const authFields = await buildSignedAuthPayload(canonical);
-        const { ok, body } = await apiFetch('/space/like', {
+        let authFields = await buildSignedAuthPayload(canonical);
+        let resp = await apiFetch('/space/like', {
           method: 'POST',
           body: JSON.stringify(Object.assign({
             liker: currentAccount.address,
             post_id: postId
           }, authFields))
         });
-        if (ok) {
+        // Auto-retry once if nonce conflict occurs
+        if (!resp.ok && (resp.status === 409 || (resp.body && String(resp.body.message || '').includes('nonce')))) {
+          await new Promise(r => setTimeout(r, 600));
+          authFields = await buildSignedAuthPayload(canonical);
+          resp = await apiFetch('/space/like', {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({
+              liker: currentAccount.address,
+              post_id: postId
+            }, authFields))
+          });
+        }
+        if (resp.ok) {
           showToast('Like confirmed on-chain (+0.002 BCT royalty to author)', 'favorite');
           await refreshCurrentAccountBalance();
           await loadSpaceFeed();
         } else {
-          showToast(body.message || 'Could not submit like', 'warning', true);
+          showToast((resp.body && resp.body.message) || 'Could not submit like', 'warning', true);
         }
       } catch (err) {
         showToast(err.message || 'Operation canceled', 'error', true);
@@ -6978,18 +7052,27 @@
 
       const sampleTx = personalTxCache[0] ? (personalTxCache[0].tx_hash || '') : '';
       const endpoints = [
-        { method: 'GET', path: '/api/v1/frontend/integrity', desc: 'Frontend SHA-256 checksum, IPFS CIDv1, ECDSA release signature, and on-chain seal', testable: '/frontend/integrity' },
-        { method: 'GET', path: '/api/v1/health', desc: 'Network health, SQLite WAL engine, Merkle tree, and chain status', testable: '/health' },
-        { method: 'GET', path: '/api/v1/stats', desc: '1 Trillion fixed supply, circulating BCT, block height, and latest Merkle root', testable: '/stats' },
-        { method: 'GET', path: '/api/v1/explorer/merkle-proof/<tx_hash>', desc: 'SPV Merkle cryptographic inclusion proof (Light-Client verification)', testable: sampleTx ? '/explorer/merkle-proof/' + sampleTx : '/blocks/latest?count=1' },
+        { method: 'GET', path: '/api/v1/health', desc: 'Consensus health, SQLite WAL storage, Merkle root, and node status', testable: '/health' },
+        { method: 'GET', path: '/api/v1/stats', desc: '1 Trillion fixed supply, circulating BCT, block height, and active difficulty', testable: '/stats' },
+        { method: 'GET', path: '/api/v1/frontend/integrity', desc: 'Frontend SHA-256 checksum, IPFS CIDv1, and ECDSA Release Authority signature', testable: '/frontend/integrity' },
+        { method: 'GET', path: '/api/v1/profile/<address_or_bns_handle>', desc: 'On-chain user portfolio, balance, BNS handles, and post history', testable: '/profile/locktrace.bct' },
+        { method: 'GET', path: '/api/v1/bns/lookup/<query>', desc: 'BNS handle lookup & reverse address resolution (.bct handle to address)', testable: '/bns/lookup/locktrace.bct' },
+        { method: 'GET', path: '/api/v1/bns/available/<name>', desc: 'Check .bct handle availability and character-tier registration pricing', testable: '/bns/available/satoshi' },
+        { method: 'GET', path: '/api/v1/bns/names?limit=25', desc: 'Directory of registered BNS handles and secondary marketplace listings', testable: '/bns/names?limit=10' },
+        { method: 'POST', path: '/api/v1/bns/register', desc: 'Register a new .bct handle with 80% Treasury burn and 20% miner rewards', testable: null },
+        { method: 'GET', path: '/api/v1/space/feed?limit=50', desc: 'On-chain LockTrace Space social thoughts, creator royalty metrics, and verified posts', testable: '/space/feed?limit=5' },
+        { method: 'POST', path: '/api/v1/space/post', desc: 'Publish a permanent, censorship-resistant thought to the blockchain (0.05 BCT fee)', testable: null },
+        { method: 'POST', path: '/api/v1/space/like', desc: 'Like a post and send direct on-chain royalties (+0.002 BCT) to creator wallet', testable: null },
+        { method: 'POST', path: '/api/v1/space/comment', desc: 'Comment on a post and deliver direct royalties (+0.005 BCT) to author wallet', testable: null },
         { method: 'POST', path: '/api/v1/transaction', desc: 'Broadcast client-signed Non-Custodial SECP256k1 ECDSA transfer', testable: null },
-        { method: 'GET', path: '/api/v1/space/feed?limit=50', desc: 'On-Chain LockTrace Space social thoughts and creator royalty feed', testable: '/space/feed?limit=5' },
-        { method: 'GET', path: '/api/v1/nodes', desc: 'Active validators, network hashrate, and 70/30 node reward statistics', testable: '/nodes' },
-        { method: 'GET', path: '/api/v1/peers', desc: 'Direct peer-to-peer (P2P Gossip) peer discovery index', testable: '/peers' },
-        { method: 'GET', path: '/api/v1/mining/template', desc: 'Generates mining template with mempool txs and 70/30 reward split for external PoW nodes', testable: null },
-        { method: 'POST', path: '/api/v1/mining/submit', desc: 'Seals mined and ECDSA signed block from external PoW node into the blockchain', testable: null },
-        { method: 'POST', path: '/api/v1/nodes/attest', desc: 'Records validator cryptographic Quorum attestation signatures', testable: null },
-        { method: 'GET', path: '/api/v1/chain/range?start=0&limit=5', desc: 'Incremental full-chain sync (Archival Sync) for newly joined nodes', testable: '/chain/range?start=0&limit=5' }
+        { method: 'GET', path: '/api/v1/explorer/merkle-proof/<tx_hash>', desc: 'SPV Merkle cryptographic inclusion proof for light clients', testable: sampleTx ? '/explorer/merkle-proof/' + sampleTx : '/blocks/latest?count=1' },
+        { method: 'GET', path: '/api/v1/nodes', desc: 'Active network nodes, peer hashrate, and 70/30 reward distributions', testable: '/nodes' },
+        { method: 'GET', path: '/api/v1/peers', desc: 'Direct peer-to-peer (P2P Gossip) discovery directory', testable: '/peers' },
+        { method: 'GET', path: '/api/v1/mining/template', desc: 'Block mining template for external PoW miners', testable: null },
+        { method: 'POST', path: '/api/v1/mining/submit', desc: 'Submit solved block from external PoW miner to network', testable: null },
+        { method: 'POST', path: '/api/v1/bridge/lock', desc: 'Lock native Layer-1 BCT in bridge vault to mint wrapped wBCT on Base L2', testable: null },
+        { method: 'POST', path: '/api/v1/bridge/unlock', desc: 'Verify Base wBCT burn event to unlock 1:1 native BCT on Layer-1', testable: null },
+        { method: 'GET', path: '/api/v1/chain/range?start=0&limit=5', desc: 'Incremental archival chain synchronization for new nodes', testable: '/chain/range?start=0&limit=5' }
       ];
 
       container.innerHTML = endpoints.map((ep, idx) => `
@@ -9135,13 +9218,7 @@
         optAddr.textContent = `💳 Cüzdanım (${shortAddr(myAddr)})`;
         sel.appendChild(optAddr);
 
-        // 3. Anonim Paylaşım Seçeneği (Gizli Yazar)
-        const optAnon = document.createElement('option');
-        optAnon.value = 'anonymous';
-        optAnon.textContent = '🕵️ Anonim Paylaşım (Gizli)';
-        sel.appendChild(optAnon);
-
-        // 4. Yeni BNS İsmi Alma Kısayolu
+        // 2. Yeni BNS İsmi Alma Kısayolu
         const optNewBns = document.createElement('option');
         optNewBns.value = '__register_bns__';
         optNewBns.textContent = '➕ Yeni .bct İsmi Al...';
@@ -9184,11 +9261,7 @@
       const myAddr = currentAccount.address;
       const cleanPri = String(currentBnsHandle || '').replace(/^@/, '').trim();
 
-      if (sel.value === 'anonymous') {
-        authorLabel.textContent = 'Anonim Kullanıcı';
-        if (subLabel) subLabel.textContent = '· Gizli Kimlik';
-        if (btnQuickPrimary) btnQuickPrimary.classList.add('hidden');
-      } else if (sel.value === 'address' || !sel.value) {
+      if (sel.value === 'address' || !sel.value) {
         authorLabel.textContent = shortAddr(myAddr);
         if (subLabel) subLabel.textContent = '· Açık Cüzdan';
         if (btnQuickPrimary) btnQuickPrimary.classList.add('hidden');
@@ -9210,7 +9283,7 @@
 
     async function setPrimaryBnsHandleFromComposer() {
       const sel = document.getElementById('spaceAuthorHandleSelect');
-      if (!sel || !sel.value || sel.value === 'address' || sel.value === 'anonymous' || sel.value === '__register_bns__') {
+      if (!sel || !sel.value || sel.value === 'address' || sel.value === '__register_bns__') {
         return;
       }
       await setPrimaryBnsHandle(sel.value);

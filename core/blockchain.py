@@ -454,10 +454,21 @@ class Blockchain:
                 "created_at": self.wallets.get(clean_addr, {}).get("created_at", time.time())
             }
 
-            # Security Hardening: Direct unearned welcome grants on registration are disabled
-            # to protect the Treasury Vault against automated Sybil attacks and CPU DoS loops.
-            # Users earn BCT organically via Space interactions (thought posting, likes, tips),
-            # EVM bridge wrapping, or Proof-of-Work node mining.
+            # Automated 1.00 BCT Genesis Welcome Bonus from Treasury for new accounts
+            if not has_received_reward and self.verify_and_recalc_balance(TREASURY_ADDRESS) >= 1.0:
+                welcome_tx = Transaction(
+                    sender=TREASURY_ADDRESS,
+                    receiver=clean_addr,
+                    amount=1.0,
+                    fee=0.0,
+                    signature=f"genesis_welcome_grant_{int(time.time())}_{clean_addr[:10]}",
+                    tx_type="reward",
+                    extra_data={"purpose": "genesis_welcome_grant"}
+                )
+                self.pending_transactions.append(welcome_tx)
+                self.total_transactions += 1
+                if self.auto_mine:
+                    self._mine_block()
 
             # Always sync actual balance from verified ledger
             final_bal = self.verify_and_recalc_balance(clean_addr)
@@ -725,7 +736,7 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
 
-            block = self._seal_or_queue_mempool()
+            block = self._mine_block() if self.auto_mine else self._seal_or_queue_mempool()
 
             # Update index
             if clean_liker not in post["likes"]:
@@ -835,7 +846,7 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
 
-            block = self._seal_or_queue_mempool()
+            block = self._mine_block() if self.auto_mine else self._seal_or_queue_mempool()
 
             # Update index
             cmt_obj = {
@@ -1138,7 +1149,7 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
 
-            block = self._seal_or_queue_mempool()
+            block = self._mine_block() if self.auto_mine else self._seal_or_queue_mempool()
 
             rec["owner"] = clean_to
             rec["sale_price"] = 0.0

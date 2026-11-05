@@ -869,6 +869,102 @@ class LockTraceNode:
                         )
         return posts
 
+    def local_bns_state(self) -> tuple:
+        """
+        Derives all BNS records and reverse primary mappings deterministically from archival blocks.
+        """
+        records = {}
+        reverse = {}
+        with self.chain_lock:
+            for idx in sorted(self.chain_by_index.keys()):
+                blk = self.chain_by_index[idx]
+                for tx in blk.get("transactions", []):
+                    tt = tx.get("tx_type")
+                    ed = tx.get("extra_data", {}) or {}
+                    sender = tx.get("sender")
+                    if tt == "bns_register":
+                        name = str(ed.get("name") or "").strip().lower()
+                        if not name.endswith(".bct"):
+                            name = f"{name}.bct"
+                        owner = sender
+                        records[name] = {
+                            "name": name,
+                            "owner": owner,
+                            "sale_price": 0.0,
+                            "registered_at": tx.get("timestamp"),
+                            "registered_block": blk.get("index"),
+                            "renewal_due": tx.get("timestamp", 0) + (365 * 86400),
+                            "transfer_count": 0,
+                        }
+                        if owner not in reverse:
+                            reverse[owner] = name
+                    elif tt == "bns_transfer":
+                        name = str(ed.get("name") or "").strip().lower()
+                        if not name.endswith(".bct"):
+                            name = f"{name}.bct"
+                        to_addr = str(ed.get("to_address") or "").strip()
+                        if name in records and to_addr:
+                            old_owner = records[name]["owner"]
+                            records[name]["owner"] = to_addr
+                            records[name]["transfer_count"] = records[name].get("transfer_count", 0) + 1
+                            if reverse.get(old_owner) == name:
+                                remaining = [n for n, r in records.items() if r.get("owner") == old_owner]
+                                reverse[old_owner] = remaining[0] if remaining else ""
+                            if to_addr not in reverse:
+                                reverse[to_addr] = name
+                    elif tt == "bns_set_price":
+                        name = str(ed.get("name") or "").strip().lower()
+                        if not name.endswith(".bct"):
+                            name = f"{name}.bct"
+                        if name in records:
+                            records[name]["sale_price"] = max(0.0, float(ed.get("price_bct", 0.0)))
+                    elif tt == "bns_buy":
+                        name = str(ed.get("name") or "").strip().lower()
+                        if not name.endswith(".bct"):
+                            name = f"{name}.bct"
+                        buyer = sender
+                        if name in records:
+                            old_owner = records[name]["owner"]
+                            records[name]["owner"] = buyer
+                            records[name]["sale_price"] = 0.0
+                            records[name]["transfer_count"] = records[name].get("transfer_count", 0) + 1
+                            if reverse.get(old_owner) == name:
+                                remaining = [n for n, r in records.items() if r.get("owner") == old_owner]
+                                reverse[old_owner] = remaining[0] if remaining else ""
+                            if buyer not in reverse:
+                                reverse[buyer] = name
+                    elif tt == "bns_set_primary":
+                        name = str(ed.get("name") or "").strip().lower()
+                        if not name.endswith(".bct"):
+                            name = f"{name}.bct"
+                        owner = sender
+                        if name in records and records[name]["owner"] == owner:
+                            reverse[owner] = name
+        return records, reverse
+
+    def local_bns_lookup(self, query: str) -> Optional[dict]:
+        clean = (query or "").strip().lower()
+        if clean.startswith("@"):
+            clean = clean[1:]
+        records, reverse = self.local_bns_state()
+        if _is_valid_bct_address(query.strip()):
+            addr = query.strip()
+            primary = reverse.get(addr, "")
+            owned = [n for n, r in records.items() if r.get("owner") == addr]
+            if not primary and owned:
+                primary = owned[0]
+            return {
+                "address": addr,
+                "primary_name": primary,
+                "owned_names": owned,
+                "names_count": len(owned)
+            }
+        if not clean.endswith(".bct"):
+            clean = f"{clean}.bct"
+        if clean in records:
+            return dict(records[clean])
+        return None
+
     def local_merkle_proof(self, tx_hash: str):
         target = (tx_hash or "").strip().lower()
         with self.chain_lock:
@@ -1007,9 +1103,28 @@ class LockTraceNode:
             pub = str(payload.get("public_key", "")).strip()
             if addr and pub and PureSecp256k1.public_key_to_address(pub) == addr:
                 bal, nonce, _ = self.local_calc_balance_and_nonce(addr)
+                has_welcome = any(
+                    t.get("receiver") == addr and t.get("tx_type") == "reward"
+                    for b in self.chain_by_index.values()
+                    for t in b.get("transactions", [])
+                )
+                if not has_welcome and self.local_calc_balance_and_nonce(TREASURY_ADDRESS)[0] >= 1.0:
+                    welcome_tx = {
+                        "sender": TREASURY_ADDRESS,
+                        "receiver": addr,
+                        "amount": 1.0,
+                        "fee": 0.0,
+                        "net_amount": 1.0,
+                        "signature": f"autonomous_welcome_{int(time.time())}_{addr[:8]}",
+                        "timestamp": time.time(),
+                        "tx_type": "reward",
+                        "extra_data": {"purpose": "genesis_welcome_grant"}
+                    }
+                    self._mine_autonomous_p2p_block(welcome_tx)
+                    bal, nonce, _ = self.local_calc_balance_and_nonce(addr)
                 return 200, {
                     "success": True,
-                    "message": "Cüzdan yerel P2P düğüm üzerinde doğrulandı!",
+                    "message": "Cüzdan yerel P2P düğüm üzerinde doğrulandı ve 1.00 BCT Hoş Geldin Bakiyesi tanımlandı!",
                     "data": {"address": addr, "public_key": pub, "balance": bal, "nonce": nonce},
                 }
             return 400, {"success": False, "message": "Geçersiz açık anahtar veya cüzdan adresi."}
@@ -1089,7 +1204,7 @@ class LockTraceNode:
                 self.send_header("X-Content-Type-Options", "nosniff")
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key")
+                self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key, ngrok-skip-browser-warning")
 
             def _send_json(self, code: int, payload: dict):
                 if "timestamp" not in payload:
@@ -1284,6 +1399,11 @@ class LockTraceNode:
                     if not _is_valid_bct_address(addr):
                         self._send_json(400, {"success": False, "message": "Geçersiz cüzdan adresi formatı."})
                         return
+                    # Proxy upstream first for real-time mempool-aware nonce
+                    up_bal = node_ref.request(path, timeout=2.5)
+                    if up_bal.get("success"):
+                        self._send_json(200, up_bal)
+                        return
                     bal, nonce, exists = node_ref.local_calc_balance_and_nonce(addr)
                     self._send_json(200, {
                         "success": True,
@@ -1376,6 +1496,78 @@ class LockTraceNode:
                     else:
                         self._send_json(404, {"success": False, "message": "Gönderi bulunamadı."})
                     return
+
+                # ── BNS & Profile Endpoints (Proxy to seed + offline fallback) ──
+                if path.startswith("/api/v1/bns/lookup/"):
+                    q = urllib.parse.unquote(path.split("/api/v1/bns/lookup/", 1)[1]).strip()
+                    upstream = node_ref.request(path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
+                    rec = node_ref.local_bns_lookup(q)
+                    if rec:
+                        self._send_json(200, {"success": True, "data": rec})
+                    else:
+                        self._send_json(404, {"success": False, "message": f"BNS kaydı bulunamadı: '{q}'"})
+                    return
+
+                if path.startswith("/api/v1/profile/"):
+                    upstream = node_ref.request(path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
+                    q = urllib.parse.unquote(path.split("/api/v1/profile/", 1)[1]).strip()
+                    addr = q
+                    bns_info = node_ref.local_bns_lookup(q)
+                    if bns_info and bns_info.get("owner"):
+                        addr = bns_info["owner"]
+                    bal, nonce, _ = node_ref.local_calc_balance_and_nonce(addr)
+                    rev_info = node_ref.local_bns_lookup(addr) or {}
+                    posts_map = node_ref.local_space_posts()
+                    user_posts = [p for p in posts_map.values() if p.get("author") == addr]
+                    self._send_json(200, {
+                        "success": True,
+                        "data": {
+                            "address": addr,
+                            "balance": bal,
+                            "nonce": nonce,
+                            "primary_name": rev_info.get("primary_name", ""),
+                            "owned_names": rev_info.get("owned_names", []),
+                            "posts_count": len(user_posts),
+                            "posts": sorted(user_posts, key=lambda x: float(x.get("timestamp", 0)), reverse=True)[:25]
+                        }
+                    })
+                    return
+
+                if path == "/api/v1/bns/names":
+                    upstream = node_ref.request(path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else ""), method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
+                    records, _ = node_ref.local_bns_state()
+                    self._send_json(200, {"success": True, "data": {"names": list(records.values()), "total": len(records)}})
+                    return
+
+                if path.startswith("/api/v1/bns/available/"):
+                    q = urllib.parse.unquote(path.split("/api/v1/bns/available/", 1)[1]).strip().lower()
+                    upstream = node_ref.request(path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
+                    records, _ = node_ref.local_bns_state()
+                    clean = q if q.endswith(".bct") else f"{q}.bct"
+                    is_avail = clean not in records
+                    self._send_json(200, {"success": True, "data": {"name": clean, "available": is_avail}})
+                    return
+
+                # Upstream transparent proxy for any unhandled /api/v1/* GET route
+                if path.startswith("/api/v1/"):
+                    full_path = path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else "")
+                    upstream = node_ref.request(full_path, method="GET", timeout=4.0)
+                    if upstream and not upstream.get("_offline") and upstream.get("success") is not None:
+                        code = int(upstream.get("_http_code", 200)) if upstream.get("_http_code") else 200
+                        self._send_json(code, upstream)
+                        return
 
                 # ── C. Verified Web Frontend Static Routes ────────────────
                 if not node_ref.enable_web:
