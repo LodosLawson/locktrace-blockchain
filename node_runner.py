@@ -1328,6 +1328,9 @@ class LockTraceNode:
             def _add_security_and_cors_headers(self):
                 self.send_header("X-Powered-By", f"LockTrace-Decentralized-Node/{VERSION}")
                 self.send_header("X-Content-Type-Options", "nosniff")
+                self.send_header("X-Frame-Options", "SAMEORIGIN")
+                self.send_header("X-XSS-Protection", "1; mode=block")
+                self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
                 self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key, ngrok-skip-browser-warning")
