@@ -34,6 +34,7 @@ def _to_units(val: float) -> int:
 
 TOTAL_SUPPLY = 1_000_000_000_000.0       # 1 Trillion BCT
 TREASURY_ADDRESS = "BCT_HAZINE_0000000000000000000000000000000000000000"
+BRIDGE_VAULT_ADDRESS = "BCT_BRIDGE_VAULT_000000000000000000000000000000000"
 FEE_PERCENT = 0.01                       # 1%
 MINER_FEE_SHARE = 0.50                   # 50% of the 1% fee allocated to block/validator reward pool
 TREASURY_FEE_SHARE = 0.50                # 50% returned to Treasury Vault
@@ -45,10 +46,10 @@ ACTIVE_MINER_TTL_SECONDS = 90.0          # Heartbeat window identifying live ext
 MINING_DIFFICULTY = 3                    # Base Proof of Work Difficulty
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
-RELEASE_AUTHORITY_ADDRESS = "BCT5014d104d8063cbe2d64faea57925e96295ac3b8"
+RELEASE_AUTHORITY_ADDRESS = "BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080"
 RELEASE_AUTHORITY_PUBKEY = (
-    "5c8eca3d56c054b5b95a353e245efb3e014d85a33e8cb7e395b8a249d97a61c"
-    "bdb35454f75f38d56c9fd34525411720208983d4ce27ed0fa34ddb09d2a08ff9c"
+    "5e3686d4e64119cc049dd966e57150a04db4160a335610c8740748ba618c0023"
+    "21a5882ed90bfd5597bc144a7c4926369aec9b89070d3d337819d6626c67a150"
 )
 
 
@@ -80,7 +81,7 @@ def is_valid_bct_address(addr: str) -> bool:
         return False
     clean = addr.strip()
     clean_upper = clean.upper()
-    if clean_upper == TREASURY_ADDRESS or clean_upper == "GENESIS_VAULT":
+    if clean_upper in (TREASURY_ADDRESS, "GENESIS_VAULT", BRIDGE_VAULT_ADDRESS):
         return True
     return clean_upper.startswith("BCT") and len(clean) == 43 and all(c in "0123456789abcdefABCDEF" for c in clean[3:])
 
@@ -280,6 +281,8 @@ class Blockchain:
         self.total_fees_collected = 0.0
         self.nodes: Dict[str, dict] = {}
         self.space_posts: Dict[str, dict] = {}
+        self.bns_records: Dict[str, dict] = {}
+        self.bns_reverse: Dict[str, str] = {}
         self._custom_data_dir = data_dir
         self._storage: Optional[SQLiteStorage] = None
         self._storage_dir_bound = ""
@@ -341,14 +344,17 @@ class Blockchain:
         """Calculate exact balance in 10^8 integer atomic units (immune to IEEE-754 float64 drift)."""
         clean_addr = address.strip()
         units = 0
-        fee_bearing_types = ("transfer", "space_post", "space_like", "space_comment")
+        fee_bearing_types = (
+            "transfer", "space_post", "space_like", "space_comment",
+            "bns_register", "bns_transfer", "bns_set_price", "bns_buy"
+        )
 
         for block in self.chain:
             for tx in block.transactions:
                 amt_u = _to_units(tx.amount)
                 fee_u = _to_units(tx.fee)
                 if tx.receiver == clean_addr:
-                    if tx.tx_type in ("transfer", "space_post"):
+                    if tx.tx_type in ("transfer", "space_post", "bns_register", "bns_transfer", "bns_buy"):
                         units += (amt_u - fee_u)
                     elif tx.tx_type in ("space_like", "space_comment"):
                         units += _to_units(tx.extra_data.get("treasury_cut", 0.0) if tx.extra_data else 0.0)
@@ -366,7 +372,7 @@ class Blockchain:
             amt_u = _to_units(tx.amount)
             fee_u = _to_units(tx.fee)
             if tx.receiver == clean_addr:
-                if tx.tx_type in ("transfer", "space_post"):
+                if tx.tx_type in ("transfer", "space_post", "bns_register", "bns_transfer", "bns_buy"):
                     units += (amt_u - fee_u)
                 elif tx.tx_type in ("space_like", "space_comment"):
                     units += _to_units(tx.extra_data.get("treasury_cut", 0.0) if tx.extra_data else 0.0)
@@ -448,20 +454,10 @@ class Blockchain:
                 "created_at": self.wallets.get(clean_addr, {}).get("created_at", time.time())
             }
 
-            if not has_received_reward:
-                treasury_bal = self.verify_and_recalc_balance(TREASURY_ADDRESS)
-                if treasury_bal >= 1.0:
-                    reward_tx = Transaction(
-                        sender=TREASURY_ADDRESS,
-                        receiver=clean_addr,
-                        amount=1.0,
-                        fee=0.0,
-                        signature="automated_welcome_grant_1bct",
-                        tx_type="reward"
-                    )
-                    self.pending_transactions.append(reward_tx)
-                    self.total_transactions += 1
-                    self._mine_block()
+            # Security Hardening: Direct unearned welcome grants on registration are disabled
+            # to protect the Treasury Vault against automated Sybil attacks and CPU DoS loops.
+            # Users earn BCT organically via Space interactions (thought posting, likes, tips),
+            # EVM bridge wrapping, or Proof-of-Work node mining.
 
             # Always sync actual balance from verified ledger
             final_bal = self.verify_and_recalc_balance(clean_addr)
@@ -554,7 +550,8 @@ class Blockchain:
             return True, f"Transfer confirmed! Sent: {net_amount} BCT, 1% Fee ({fee} BCT) returned to treasury vault.", tx_info
 
     def create_space_post(self, author: str, content: str, signature: str = "",
-                          public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+                          public_key: str = "", signed_payload: str = "",
+                          bns_name: str = "") -> Tuple[bool, str, Optional[dict]]:
         """
         Creates an immutable, on-chain thought/tweet in LockTrace Space.
         Cost: 0.10 BCT.
@@ -585,6 +582,22 @@ class Blockchain:
             if author_bal < post_cost:
                 return False, f"Yetersiz bakiye! Paylaşım ücreti {post_cost:.2f} BCT'dir. Mevcut bakiyeniz: {author_bal:.4f} BCT.", None
 
+            clean_bns = str(bns_name or "").strip().lower()
+            if clean_bns.startswith("@"):
+                clean_bns = clean_bns[1:]
+            assigned_bns = ""
+            if clean_bns in ("anonymous", "anon"):
+                assigned_bns = "anonymous"
+            elif clean_bns and clean_bns not in ("none", "false", "address", "public"):
+                if not clean_bns.endswith(".bct"):
+                    clean_bns = f"{clean_bns}.bct"
+                rec = self.bns_records.get(clean_bns)
+                if not rec or rec.get("owner") != clean_author:
+                    return False, f"You do not own the handle '@{clean_bns}'.", None
+                assigned_bns = clean_bns
+            else:
+                assigned_bns = self.bns_reverse.get(clean_author, "")
+
             post_id = f"post_{secrets.token_hex(8)}"
             fee = 0.02
             treasury_cut = 0.08
@@ -594,6 +607,8 @@ class Blockchain:
                 "post_id": post_id,
                 "content": clean_text,
                 "author": clean_author,
+                "bns_name": assigned_bns,
+                "is_anonymous": (assigned_bns == "anonymous"),
                 "treasury_cut": treasury_cut
             }
 
@@ -618,6 +633,8 @@ class Blockchain:
             self.space_posts[post_id] = {
                 "post_id": post_id,
                 "author": clean_author,
+                "author_bns": assigned_bns,
+                "is_anonymous": (assigned_bns == "anonymous"),
                 "content": clean_text,
                 "timestamp": tx.timestamp,
                 "tx_hash": tx.hash(),
@@ -733,7 +750,8 @@ class Blockchain:
             return True, f"Gönderi beğenildi! {author_cut} BCT yazarın cüzdanına aktarıldı.", res
 
     def comment_space_post(self, commenter: str, post_id: str, content: str,
-                           signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+                           signature: str = "", public_key: str = "", signed_payload: str = "",
+                           bns_name: str = "") -> Tuple[bool, str, Optional[dict]]:
         """
         Comments on an on-chain post.
         Cost: 0.02 BCT.
@@ -768,6 +786,22 @@ class Blockchain:
                 return False, f"Yetersiz bakiye! Yorum ücreti {comment_cost:.2f} BCT'dir. Mevcut bakiyeniz: {commenter_bal:.4f} BCT.", None
 
             post = self.space_posts[pid]
+            clean_bns = str(bns_name or "").strip().lower()
+            if clean_bns.startswith("@"):
+                clean_bns = clean_bns[1:]
+            assigned_bns = ""
+            if clean_bns in ("anonymous", "anon"):
+                assigned_bns = "anonymous"
+            elif clean_bns and clean_bns not in ("none", "false", "address", "public"):
+                if not clean_bns.endswith(".bct"):
+                    clean_bns = f"{clean_bns}.bct"
+                rec = self.bns_records.get(clean_bns)
+                if not rec or rec.get("owner") != clean_commenter:
+                    return False, f"You do not own the handle '@{clean_bns}'.", None
+                assigned_bns = clean_bns
+            else:
+                assigned_bns = self.bns_reverse.get(clean_commenter, "")
+
             author_address = post["author"]
             author_cut = 0.004
             treasury_cut = 0.014
@@ -781,6 +815,8 @@ class Blockchain:
                 "author": author_address,
                 "commenter": clean_commenter,
                 "content": clean_text,
+                "bns_name": assigned_bns,
+                "is_anonymous": (assigned_bns == "anonymous"),
                 "author_cut": author_cut,
                 "treasury_cut": treasury_cut
             }
@@ -805,6 +841,8 @@ class Blockchain:
             cmt_obj = {
                 "comment_id": comment_id,
                 "commenter": clean_commenter,
+                "commenter_bns": assigned_bns,
+                "is_anonymous": (assigned_bns == "anonymous"),
                 "content": clean_text,
                 "timestamp": tx.timestamp,
                 "tx_hash": tx.hash()
@@ -840,6 +878,803 @@ class Blockchain:
             self._load_state()
             return self.space_posts.get(post_id.strip())
 
+    # ── BNS (LockTrace Name Service — .bct Handles & Marketplace) ─────────────────
+    @staticmethod
+    def _normalize_bns_name(raw_name: str) -> str:
+        s = (raw_name or "").lower().strip()
+        if s.endswith(".bct"):
+            s = s[:-4]
+        s = re.sub(r"[^a-z0-9\-]", "", s).strip("-")
+        return f"{s}.bct" if s else ""
+
+    @staticmethod
+    def get_bns_pricing(name_or_label: str) -> dict:
+        """
+        BNS (.bct) Handle Pricing & Tokenomics:
+        - 3 characters: 100.0 BCT (Premium Tier)
+        - 4 characters: 50.0 BCT (Standard Tier)
+        - 5+ characters: 10.0 BCT (General Handle Tier)
+        Tokenomics:
+        - 20% returns to circulating supply via validator/miner reward pool.
+        - 80% is permanently locked into Treasury Vault (circulating deflation).
+        """
+        clean = (name_or_label or "").lower().strip()
+        if clean.endswith(".bct"):
+            clean = clean[:-4]
+        clean = re.sub(r"[^a-z0-9\-]", "", clean).strip("-")
+        length = len(clean)
+        if length < 3 or length > 24:
+            valid = False
+            tier = "Invalid Length (3-24 chars required)"
+            cost = 0.0
+        else:
+            valid = True
+            if length == 3:
+                cost = 100.0
+                tier = "Premium 3-Letter"
+            elif length == 4:
+                cost = 50.0
+                tier = "Standard 4-Letter"
+            else:
+                cost = 10.0
+                tier = "General Handle (5+ Chars)"
+
+        fee = round(cost * 0.20, 8)
+        treasury_cut = round(cost * 0.80, 8)
+        return {
+            "name": f"{clean}.bct" if clean else "",
+            "label": clean,
+            "length": length,
+            "valid": valid,
+            "cost": cost,
+            "fee": fee,
+            "treasury_cut": treasury_cut,
+            "tier": tier,
+        }
+
+    def bns_check_available(self, name_or_label: str) -> dict:
+        with self.lock:
+            self._load_state()
+            pricing = self.get_bns_pricing(name_or_label)
+            full_name = pricing["name"]
+            if not pricing["valid"]:
+                return {
+                    "available": False,
+                    "reason": "Name must be between 3 and 24 characters (lowercase letters, digits, hyphens).",
+                    "pricing": pricing
+                }
+            if full_name in self.bns_records:
+                rec = self.bns_records[full_name]
+                return {
+                    "available": False,
+                    "reason": f"'{full_name}' is already registered.",
+                    "owner": rec.get("owner", ""),
+                    "for_sale": rec.get("sale_price", 0.0) > 0,
+                    "sale_price": rec.get("sale_price", 0.0),
+                    "pricing": pricing
+                }
+            return {
+                "available": True,
+                "reason": f"'{full_name}' is available for registration!",
+                "pricing": pricing
+            }
+
+    def bns_lookup(self, query: str) -> Optional[dict]:
+        with self.lock:
+            self._load_state()
+            clean = (query or "").strip().lower()
+            if clean.startswith("@"):
+                clean = clean[1:]
+            if clean.endswith(".bct"):
+                rec = self.bns_records.get(clean)
+                if rec:
+                    return dict(rec)
+                norm = self._normalize_bns_name(clean)
+                return dict(self.bns_records.get(norm)) if norm in self.bns_records else None
+
+            if is_valid_bct_address(query.strip()):
+                addr = query.strip()
+                primary = self.bns_reverse.get(addr, "")
+                all_owned = [name for name, r in self.bns_records.items() if r.get("owner") == addr]
+                if not primary and all_owned:
+                    primary = all_owned[0]
+                    self.bns_reverse[addr] = primary
+                return {
+                    "address": addr,
+                    "primary_name": primary,
+                    "owned_names": all_owned,
+                    "names_count": len(all_owned)
+                }
+
+            norm = self._normalize_bns_name(clean)
+            if norm in self.bns_records:
+                return dict(self.bns_records[norm])
+            return None
+
+    def bns_register(self, name: str, owner: str, signature: str = "",
+                     public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        with self.lock:
+            self._load_state()
+            clean_owner = owner.strip()
+            if not is_valid_bct_address(clean_owner):
+                return False, f"Invalid owner address: '{clean_owner}'", None
+
+            pricing = self.get_bns_pricing(name)
+            if not pricing["valid"]:
+                return False, "Handle must be 3-24 characters long containing only lowercase letters, digits, or hyphens.", None
+
+            full_name = pricing["name"]
+            if full_name in self.bns_records:
+                return False, f"'{full_name}' is already registered by another address.", None
+
+            expected_payload = signed_payload or f"BNS_REGISTER:{full_name}:{clean_owner}:{pricing['cost']}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            bal = self.verify_and_recalc_balance(clean_owner)
+            cost = pricing["cost"]
+            if bal < cost:
+                return False, f"Insufficient balance! Registration cost for '{full_name}' is {cost:.2f} BCT. Current balance: {bal:.4f} BCT.", None
+
+            fee = pricing["fee"]
+            treasury_cut = pricing["treasury_cut"]
+
+            extra_data = {
+                "name": full_name,
+                "owner": clean_owner,
+                "cost": cost,
+                "fee": fee,
+                "treasury_cut": treasury_cut,
+                "action": "register"
+            }
+
+            tx = Transaction(
+                sender=clean_owner,
+                receiver=TREASURY_ADDRESS,
+                amount=cost,
+                fee=fee,
+                signature=signature,
+                tx_type="bns_register",
+                extra_data=extra_data
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + fee, 8)
+
+            block = self._seal_or_queue_mempool()
+
+            self.bns_records[full_name] = {
+                "name": full_name,
+                "owner": clean_owner,
+                "registered_at": tx.timestamp,
+                "updated_at": tx.timestamp,
+                "block_index": block.index if block else "Mempool",
+                "tx_hash": tx.hash(),
+                "status": "confirmed" if block else "mempool",
+                "sale_price": 0.0,
+                "cost": cost,
+                "history": [{
+                    "action": "registered",
+                    "by": clean_owner,
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "block": block.index if block else "Mempool"
+                }]
+            }
+            if clean_owner not in self.bns_reverse:
+                self.bns_reverse[clean_owner] = full_name
+
+            self.balances[clean_owner] = self.verify_and_recalc_balance(clean_owner)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            res = {
+                "name": full_name,
+                "owner": clean_owner,
+                "cost": cost,
+                "treasury_locked": treasury_cut,
+                "miner_reward_fee": fee,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+                "new_balance": self.balances[clean_owner]
+            }
+            return True, f"'{full_name}' successfully registered! 80% ({treasury_cut} BCT) locked into Treasury, 20% ({fee} BCT) returned to supply rewards.", res
+
+    def bns_transfer(self, name: str, current_owner: str, to_address: str,
+                     signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        with self.lock:
+            self._load_state()
+            clean_from = current_owner.strip()
+            clean_to = to_address.strip()
+            norm = self._normalize_bns_name(name)
+
+            if not is_valid_bct_address(clean_from) or not is_valid_bct_address(clean_to):
+                return False, "Invalid sender or recipient address.", None
+            if clean_from == clean_to:
+                return False, "Recipient address cannot be identical to sender address.", None
+            if norm not in self.bns_records:
+                return False, f"'{norm}' is not registered.", None
+
+            rec = self.bns_records[norm]
+            if rec.get("owner") != clean_from:
+                return False, f"You are not the owner of '{norm}'.", None
+
+            transfer_fee = 0.50
+            bal = self.verify_and_recalc_balance(clean_from)
+            if bal < transfer_fee:
+                return False, f"Insufficient balance for transfer fee ({transfer_fee} BCT).", None
+
+            expected_payload = signed_payload or f"BNS_TRANSFER:{norm}:{clean_from}:{clean_to}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_from, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            miner_fee = round(transfer_fee * 0.20, 8)
+            treasury_cut = round(transfer_fee * 0.80, 8)
+
+            extra_data = {
+                "name": norm,
+                "from_address": clean_from,
+                "to_address": clean_to,
+                "fee": miner_fee,
+                "treasury_cut": treasury_cut,
+                "action": "transfer"
+            }
+
+            tx = Transaction(
+                sender=clean_from,
+                receiver=clean_to,
+                amount=transfer_fee,
+                fee=miner_fee,
+                signature=signature,
+                tx_type="bns_transfer",
+                extra_data=extra_data
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
+
+            block = self._seal_or_queue_mempool()
+
+            rec["owner"] = clean_to
+            rec["sale_price"] = 0.0
+            rec["updated_at"] = tx.timestamp
+            rec["history"].append({
+                "action": "transferred",
+                "from": clean_from,
+                "to": clean_to,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block": block.index if block else "Mempool"
+            })
+
+            if self.bns_reverse.get(clean_from) == norm:
+                other = next((n for n, r in self.bns_records.items() if r.get("owner") == clean_from), "")
+                if other:
+                    self.bns_reverse[clean_from] = other
+                else:
+                    self.bns_reverse.pop(clean_from, None)
+            if clean_to not in self.bns_reverse:
+                self.bns_reverse[clean_to] = norm
+
+            self.balances[clean_from] = self.verify_and_recalc_balance(clean_from)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            res = {
+                "name": norm,
+                "previous_owner": clean_from,
+                "new_owner": clean_to,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool"
+            }
+            return True, f"'{norm}' successfully transferred to {clean_to[:10]}...!", res
+
+    def bns_set_price(self, name: str, owner: str, price_bct: float,
+                      signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        with self.lock:
+            self._load_state()
+            clean_owner = owner.strip()
+            norm = self._normalize_bns_name(name)
+            if norm not in self.bns_records:
+                return False, f"'{norm}' is not registered.", None
+
+            rec = self.bns_records[norm]
+            if rec.get("owner") != clean_owner:
+                return False, f"You are not the owner of '{norm}'.", None
+
+            price = max(0.0, round(float(price_bct), 4))
+            expected_payload = signed_payload or f"BNS_SET_PRICE:{norm}:{clean_owner}:{price}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            extra_data = {
+                "name": norm,
+                "owner": clean_owner,
+                "price": price,
+                "action": "set_price"
+            }
+
+            tx = Transaction(
+                sender=clean_owner,
+                receiver=TREASURY_ADDRESS,
+                amount=0.0,
+                fee=0.0,
+                signature=signature,
+                tx_type="bns_set_price",
+                extra_data=extra_data
+            )
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+
+            block = self._seal_or_queue_mempool()
+
+            rec["sale_price"] = price
+            rec["updated_at"] = tx.timestamp
+            rec["history"].append({
+                "action": "price_listed" if price > 0 else "unlisted",
+                "price": price,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block": block.index if block else "Mempool"
+            })
+            self._save_state()
+
+            msg = f"'{norm}' listed on marketplace for {price} BCT!" if price > 0 else f"'{norm}' unlisted from marketplace."
+            return True, msg, {"name": norm, "owner": clean_owner, "sale_price": price}
+
+    def bns_buy(self, name: str, buyer: str, signature: str = "",
+                public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        with self.lock:
+            self._load_state()
+            clean_buyer = buyer.strip()
+            norm = self._normalize_bns_name(name)
+            if norm not in self.bns_records:
+                return False, f"'{norm}' is not registered.", None
+
+            rec = self.bns_records[norm]
+            seller = rec.get("owner")
+            sale_price = rec.get("sale_price", 0.0)
+
+            if sale_price <= 0:
+                return False, f"'{norm}' is not currently listed for sale.", None
+            if clean_buyer == seller:
+                return False, "You already own this name.", None
+
+            buyer_bal = self.verify_and_recalc_balance(clean_buyer)
+            if buyer_bal < sale_price:
+                return False, f"Insufficient balance to purchase '{norm}'. Price: {sale_price} BCT, Balance: {buyer_bal} BCT.", None
+
+            expected_payload = signed_payload or f"BNS_BUY:{norm}:{clean_buyer}:{seller}:{sale_price}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_buyer, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            # Standard 1% network trade fee
+            fee = round(sale_price * 0.01, 8)
+            net_amount = round(sale_price - fee, 8)
+
+            extra_data = {
+                "name": norm,
+                "buyer": clean_buyer,
+                "seller": seller,
+                "price": sale_price,
+                "fee": fee,
+                "net_amount": net_amount,
+                "action": "buy"
+            }
+
+            tx = Transaction(
+                sender=clean_buyer,
+                receiver=seller,
+                amount=sale_price,
+                fee=fee,
+                signature=signature,
+                tx_type="bns_buy",
+                extra_data=extra_data
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + fee, 8)
+
+            block = self._seal_or_queue_mempool()
+
+            rec["owner"] = clean_buyer
+            rec["sale_price"] = 0.0
+            rec["updated_at"] = tx.timestamp
+            rec["history"].append({
+                "action": "purchased",
+                "buyer": clean_buyer,
+                "seller": seller,
+                "price": sale_price,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block": block.index if block else "Mempool"
+            })
+
+            if self.bns_reverse.get(seller) == norm:
+                other = next((n for n, r in self.bns_records.items() if r.get("owner") == seller), "")
+                if other:
+                    self.bns_reverse[seller] = other
+                else:
+                    self.bns_reverse.pop(seller, None)
+            if clean_buyer not in self.bns_reverse:
+                self.bns_reverse[clean_buyer] = norm
+
+            self.balances[clean_buyer] = self.verify_and_recalc_balance(clean_buyer)
+            self.balances[seller] = self.verify_and_recalc_balance(seller)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            res = {
+                "name": norm,
+                "buyer": clean_buyer,
+                "seller": seller,
+                "price": sale_price,
+                "seller_received": net_amount,
+                "fee": fee,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool"
+            }
+            return True, f"Congratulations! You purchased '{norm}' for {sale_price} BCT!", res
+
+    def bns_set_primary(self, name: str, owner: str,
+                        signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        with self.lock:
+            self._load_state()
+            clean_owner = owner.strip()
+            norm = self._normalize_bns_name(name)
+            if norm not in self.bns_records:
+                return False, f"'{norm}' is not registered.", None
+
+            rec = self.bns_records[norm]
+            if rec.get("owner") != clean_owner:
+                return False, f"You are not the owner of '{norm}'.", None
+
+            expected_payload = signed_payload or f"BNS_SET_PRIMARY:{norm}:{clean_owner}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            extra_data = {
+                "name": norm,
+                "owner": clean_owner,
+                "action": "set_primary"
+            }
+
+            tx = Transaction(
+                sender=clean_owner,
+                receiver=TREASURY_ADDRESS,
+                amount=0.0,
+                fee=0.0,
+                signature=signature,
+                tx_type="bns_set_primary",
+                extra_data=extra_data
+            )
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+
+            block = self._seal_or_queue_mempool()
+
+            rec["updated_at"] = tx.timestamp
+            rec["history"].append({
+                "action": "set_primary",
+                "owner": clean_owner,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block": block.index if block else "Mempool"
+            })
+            self.bns_reverse[clean_owner] = norm
+            self._save_state()
+
+            msg = f"'{norm}' is now your primary BNS handle!"
+            return True, msg, {"name": norm, "owner": clean_owner, "tx_hash": tx.hash()}
+
+    def get_all_bns_names(self, page: int = 1, limit: int = 50, for_sale_only: bool = False) -> dict:
+        with self.lock:
+            self._load_state()
+            items = list(self.bns_records.values())
+            if for_sale_only:
+                items = [it for it in items if it.get("sale_price", 0.0) > 0]
+            items.sort(key=lambda x: x.get("registered_at", 0), reverse=True)
+            total = len(items)
+            total_pages = max(1, (total + limit - 1) // limit)
+            page = max(1, min(page, total_pages))
+            start = (page - 1) * limit
+            end = start + limit
+            return {
+                "names": items[start:end],
+                "total": total,
+                "page": page,
+                "limit": limit,
+                "total_pages": total_pages,
+            }
+
+    def get_bns_analytics(self) -> dict:
+        """
+        Calculates ecosystem-wide BNS analytics:
+        Total volume, total burned (80% rule), floor prices, trade records, and timeline points.
+        """
+        with self.lock:
+            self._load_state()
+            items = list(self.bns_records.values())
+            total_registered = len(items)
+            total_listed = sum(1 for it in items if float(it.get("sale_price", 0.0)) > 0)
+            
+            total_reg_burn = 0.0
+            total_volume = 0.0
+            recent_trades = []
+            timeline_points = []
+            
+            for it in items:
+                name = it.get("name", "")
+                cost = float(it.get("cost", 0.0))
+                total_reg_burn += round(cost * 0.80, 8)
+                
+                # Examine history events
+                for h in it.get("history", []):
+                    action = h.get("action", "")
+                    ts = float(h.get("timestamp", 0.0))
+                    price = float(h.get("price", 0.0))
+                    
+                    if action == "registered":
+                        reg_cost = float(h.get("cost", cost))
+                        timeline_points.append({
+                            "timestamp": ts,
+                            "name": name,
+                            "action": "registered",
+                            "price": reg_cost,
+                            "by": h.get("by", it.get("owner", ""))
+                        })
+                    elif action == "purchased":
+                        total_volume += price
+                        trade_obj = {
+                            "name": name,
+                            "action": "purchased",
+                            "price": price,
+                            "buyer": h.get("buyer", ""),
+                            "seller": h.get("seller", ""),
+                            "timestamp": ts,
+                            "tx_hash": h.get("tx_hash", ""),
+                            "block": h.get("block", "")
+                        }
+                        recent_trades.append(trade_obj)
+                        timeline_points.append({
+                            "timestamp": ts,
+                            "name": name,
+                            "action": "purchased",
+                            "price": price,
+                            "buyer": h.get("buyer", ""),
+                            "seller": h.get("seller", "")
+                        })
+                    elif action == "price_listed" and price > 0:
+                        timeline_points.append({
+                            "timestamp": ts,
+                            "name": name,
+                            "action": "price_listed",
+                            "price": price
+                        })
+
+            recent_trades.sort(key=lambda x: x.get("timestamp", 0), reverse=True)
+            timeline_points.sort(key=lambda x: x.get("timestamp", 0))
+
+            return {
+                "total_registered": total_registered,
+                "total_listed": total_listed,
+                "total_volume_bct": round(total_volume, 4),
+                "total_burned_bct": round(total_reg_burn, 4),
+                "floor_tiers": {
+                    "tier_3char": 100.0,
+                    "tier_4char": 50.0,
+                    "tier_5char": 10.0
+                },
+                "recent_trades": recent_trades[:30],
+                "timeline_points": timeline_points[-100:]
+            }
+
+    def get_bns_history(self, name_query: str) -> Optional[dict]:
+        """
+        Retrieves detailed on-chain price, listing, and transfer history for a specific .bct name.
+        """
+        with self.lock:
+            self._load_state()
+            clean = str(name_query or "").strip().lower().lstrip("@")
+            norm = self._normalize_bns_name(clean)
+            if norm not in self.bns_records:
+                return None
+            
+            rec = dict(self.bns_records[norm])
+            history = rec.get("history", [])
+            
+            # Format datapoints for plotting
+            chart_points = []
+            for h in history:
+                action = h.get("action", "")
+                ts = float(h.get("timestamp", 0.0))
+                p = float(h.get("price", 0.0))
+                if action == "registered":
+                    p = float(h.get("cost", rec.get("cost", 0.0)))
+                chart_points.append({
+                    "timestamp": ts,
+                    "price": p,
+                    "action": action,
+                    "tx_hash": h.get("tx_hash", ""),
+                    "block": h.get("block", "")
+                })
+
+            return {
+                "name": norm,
+                "owner": rec.get("owner", ""),
+                "sale_price": rec.get("sale_price", 0.0),
+                "cost": rec.get("cost", 0.0),
+                "registered_at": rec.get("registered_at", 0),
+                "updated_at": rec.get("updated_at", 0),
+                "block_index": rec.get("block_index", "--"),
+                "tx_hash": rec.get("tx_hash", ""),
+                "history": history,
+                "chart_points": chart_points
+            }
+
+    def get_user_profile(self, address_or_handle: str) -> Optional[dict]:
+        """
+        Aggregates complete non-custodial user profile:
+        Balance, circulating percentage, tag, owned .bct handles, space social metrics,
+        authored posts, and transaction history.
+        """
+        with self.lock:
+            self._load_state()
+            raw = str(address_or_handle or "").strip()
+            if not raw:
+                return None
+
+            clean = raw.lower()
+            if clean.startswith("@"):
+                clean = clean[1:]
+
+            target_address = ""
+            primary_handle = ""
+
+            # 1. Resolve BNS handle or Address
+            bns_cand = clean if clean.endswith(".bct") else f"{clean}.bct"
+            if bns_cand in self.bns_records:
+                target_address = self.bns_records[bns_cand].get("owner", "")
+                primary_handle = self.bns_reverse.get(target_address, bns_cand)
+            elif is_valid_bct_address(raw):
+                target_address = raw
+                primary_handle = self.bns_reverse.get(target_address, "")
+            elif is_valid_bct_address(raw.upper()):
+                target_address = raw.upper()
+                primary_handle = self.bns_reverse.get(target_address, "")
+            else:
+                norm = self._normalize_bns_name(clean)
+                if norm in self.bns_records:
+                    target_address = self.bns_records[norm].get("owner", "")
+                    primary_handle = self.bns_reverse.get(target_address, norm)
+
+            if not target_address or not is_valid_bct_address(target_address):
+                return None
+
+            balance = self.verify_and_recalc_balance(target_address)
+
+            # 2. Tag classification
+            tag = "Community Member"
+            tag_type = "user"
+            if target_address == TREASURY_ADDRESS:
+                tag = "Genesis Treasury (Escrowed)"
+                tag_type = "treasury"
+            elif target_address == BRIDGE_VAULT_ADDRESS:
+                tag = "Bridge Vault (Base 1:1 Collateral)"
+                tag_type = "bridge_vault"
+            elif any(n.get("miner_address") == target_address for n in self.nodes.values()):
+                tag = "Validator / Mining Node"
+                tag_type = "validator"
+
+            # 3. Owned Handles
+            owned_handles = []
+            for name, r in self.bns_records.items():
+                if r.get("owner") == target_address:
+                    owned_handles.append({
+                        "name": name,
+                        "tier": r.get("tier", "standard"),
+                        "sale_price": float(r.get("sale_price", 0.0) or 0.0),
+                        "registered_at": r.get("registered_at", 0),
+                        "is_primary": (name == primary_handle)
+                    })
+            owned_handles.sort(key=lambda x: (not x["is_primary"], x["name"]))
+
+            # 4. Supply percentages
+            stats = self.get_stats()
+            circulating = float(stats.get("circulating_supply", 0.0))
+            holding_pct = round((balance / TOTAL_SUPPLY * 100), 4) if TOTAL_SUPPLY > 0 else 0.0
+            circ_pct = round((balance / circulating * 100), 4) if (circulating > 0 and target_address not in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS)) else 0.0
+
+            # 5. Space Creator & Social Metrics
+            user_posts = []
+            for p in self.space_posts.values():
+                if p.get("author") == target_address:
+                    user_posts.append(p)
+            user_posts.sort(key=lambda p: p.get("timestamp", 0), reverse=True)
+
+            total_likes_rec = sum(int(p.get("likes_count", 0) or len(p.get("likes", []))) for p in user_posts)
+            total_cmts_rec = sum(int(p.get("comments_count", 0) or len(p.get("comments", []))) for p in user_posts)
+            total_royalties = round(sum(float(p.get("author_earnings", 0.0) or 0.0) for p in user_posts), 6)
+
+            total_likes_given = sum(1 for p in self.space_posts.values() if target_address in p.get("likes", []))
+            total_cmts_given = sum(1 for p in self.space_posts.values() for c in p.get("comments", []) if c.get("commenter") == target_address)
+
+            # 6. Transactions
+            recent_txs = []
+            seen_hashes = set()
+            total_tx_count = 0
+
+            for tx in reversed(self.pending_transactions):
+                if tx.sender == target_address or tx.receiver == target_address:
+                    total_tx_count += 1
+                    th = tx.hash()
+                    if th not in seen_hashes and len(recent_txs) < 30:
+                        seen_hashes.add(th)
+                        recent_txs.append({
+                            "hash": th,
+                            "tx_type": tx.tx_type,
+                            "sender": tx.sender,
+                            "receiver": tx.receiver,
+                            "amount": tx.amount,
+                            "fee": tx.fee,
+                            "timestamp": tx.timestamp,
+                            "status": "mempool",
+                            "block_index": "Mempool",
+                            "extra_data": tx.extra_data
+                        })
+
+            for b in reversed(self.chain):
+                for tx in reversed(b.transactions):
+                    if tx.sender == target_address or tx.receiver == target_address:
+                        total_tx_count += 1
+                        th = tx.hash()
+                        if th not in seen_hashes and len(recent_txs) < 30:
+                            seen_hashes.add(th)
+                            recent_txs.append({
+                                "hash": th,
+                                "tx_type": tx.tx_type,
+                                "sender": tx.sender,
+                                "receiver": tx.receiver,
+                                "amount": tx.amount,
+                                "fee": tx.fee,
+                                "timestamp": tx.timestamp,
+                                "status": "confirmed",
+                                "block_index": b.index,
+                                "extra_data": tx.extra_data
+                            })
+
+            return {
+                "address": target_address,
+                "primary_handle": primary_handle,
+                "balance": balance,
+                "holding_percentage": holding_pct,
+                "circulating_percentage": circ_pct,
+                "tag": tag,
+                "tag_type": tag_type,
+                "total_tx_count": total_tx_count,
+                "owned_handles": owned_handles,
+                "social_stats": {
+                    "total_posts": len(user_posts),
+                    "total_likes_received": total_likes_rec,
+                    "total_comments_received": total_cmts_rec,
+                    "total_royalties_earned": total_royalties,
+                    "total_likes_given": total_likes_given,
+                    "total_comments_given": total_cmts_given
+                },
+                "recent_posts": user_posts[:20],
+                "recent_transactions": recent_txs
+            }
+
+
     def execute_fiat_purchase(self, buyer_address: str, fiat_amount: float,
                               currency: str = "USD", payment_ref: str = "",
                               bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
@@ -851,6 +1686,97 @@ class Blockchain:
                           bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
         """Disabled: Initial welcome grant cannot be dumped for free fiat."""
         return False, "Doğrudan nakit çıkışı durdurulmuştur. Dağıtılan cüzdan bakiyeleri LockTrace Space düşünce ağı üzerinde ve transferlerde kullanılabilir.", None
+
+    def execute_bridge_unlock(self, recipient_address: str, amount_bct: float,
+                              evm_tx_hash: str, evm_sender: str = "") -> Tuple[bool, str, Optional[dict]]:
+        """
+        Executes verified Layer-1 unlock after wBCT burn on Base Mainnet.
+        Transfers native BCT from BRIDGE_VAULT_ADDRESS (or TREASURY) to recipient_address.
+        Strictly idempotent: Prevents double-unlocking the same evm_tx_hash.
+        """
+        with self.lock:
+            self._load_state()
+            clean_recipient = (recipient_address or "").strip()
+            if not is_valid_bct_address(clean_recipient):
+                return False, f"Geçersiz alıcı BCT adresi: '{clean_recipient}'", None
+
+            clean_hash = (evm_tx_hash or "").strip().lower()
+            if not clean_hash:
+                return False, "EVM işlem hash'i zorunludur.", None
+
+            # Deduplication: Ensure this EVM tx hash hasn't already been unlocked
+            for block in self.chain:
+                for tx in block.transactions:
+                    if tx.tx_type == "bridge_unlock" and tx.extra_data and str(tx.extra_data.get("evm_tx_hash", "")).lower() == clean_hash:
+                        return False, "Bu EVM yakım işlemi daha önce işlenmiş (Tekrarlı işlem engellendi).", None
+            for tx in self.pending_transactions:
+                if tx.tx_type == "bridge_unlock" and tx.extra_data and str(tx.extra_data.get("evm_tx_hash", "")).lower() == clean_hash:
+                    return False, "Bu EVM yakım işlemi mempool'da işlenmeyi bekliyor.", None
+
+            try:
+                amount_bct = round(float(amount_bct), 8)
+            except (ValueError, TypeError):
+                return False, "Geçersiz transfer miktarı.", None
+
+            if amount_bct <= 0:
+                return False, "Miktar 0'dan büyük olmalıdır.", None
+
+            vault_bal = self.verify_and_recalc_balance(BRIDGE_VAULT_ADDRESS)
+            if vault_bal < amount_bct:
+                return False, f"Köprü kasasında yetersiz kilitli bakiye! Kasadaki kilitli rezerv: {vault_bal:,.4f} BCT. (Talep edilen: {amount_bct:,.4f} BCT)", None
+
+            sender_vault = BRIDGE_VAULT_ADDRESS
+            sender_bal = vault_bal
+
+            # Auto-register recipient wallet if not yet known
+            if clean_recipient not in self.wallets:
+                self.wallets[clean_recipient] = {
+                    "address": clean_recipient,
+                    "public_key": "",
+                    "created_at": time.time(),
+                    "device": "Web3 Cross-Chain Bridge Unlock"
+                }
+
+            extra_data = {
+                "evm_tx_hash": clean_hash,
+                "evm_sender": evm_sender,
+                "amount": amount_bct,
+                "direction": "EVM_TO_L1",
+                "timestamp": time.time()
+            }
+
+            unlock_tx = Transaction(
+                sender=sender_vault,
+                receiver=clean_recipient,
+                amount=amount_bct,
+                fee=0.0,
+                signature=f"BRIDGE_UNLOCK:{clean_hash}",
+                tx_type="bridge_unlock",
+                extra_data=extra_data
+            )
+
+            self.pending_transactions.append(unlock_tx)
+            self.total_transactions += 1
+
+            block = self._seal_or_queue_mempool()
+
+            self.balances[clean_recipient] = self.verify_and_recalc_balance(clean_recipient)
+            self.balances[sender_vault] = self.verify_and_recalc_balance(sender_vault)
+            self._save_state()
+
+            tx_info = {
+                "tx_hash": unlock_tx.hash(),
+                "sender": sender_vault,
+                "receiver": clean_recipient,
+                "amount": amount_bct,
+                "evm_tx_hash": clean_hash,
+                "status": "confirmed" if block else "mempool",
+                "block_index": block.index if block else None,
+                "new_balance": self.balances[clean_recipient]
+            }
+
+            return True, f"Tebrikler! {amount_bct} BCT başarıyla LockTrace Layer-1 cüzdanınıza aktarıldı.", tx_info
+
 
     def get_active_peer_miners(self, now: Optional[float] = None) -> List[dict]:
         """Returns external non-genesis peer nodes actively polling/heartbeating within ACTIVE_MINER_TTL_SECONDS."""
@@ -948,11 +1874,11 @@ class Blockchain:
         if not clean_miner or not is_valid_bct_address(clean_miner) or clean_miner == TREASURY_ADDRESS:
             return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
 
-        transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type == "transfer")
-        space_fees_u = sum(
-            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment")
+        transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy"))
+        space_and_bns_fees_u = sum(
+            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "bns_register", "bns_transfer")
         )
-        miner_fee_cut_u = (transfer_fees_u // 2) + space_fees_u
+        miner_fee_cut_u = (transfer_fees_u // 2) + space_and_bns_fees_u
 
         treasury_units = self.verify_and_recalc_units(TREASURY_ADDRESS)
         subsidy_target_u = _to_units(BLOCK_REWARD)
@@ -1135,6 +2061,7 @@ class Blockchain:
         self.pending_transactions = []
 
         self._apply_reward_accounting(clean_miner, breakdown)
+        self._load_in_memory_bns_index()
         self._load_in_memory_space_index()
         self._save_state()
         self._broadcast_block_to_peers(block.to_dict())
@@ -1327,6 +2254,7 @@ class Blockchain:
                     n_entry["hashrate_hs"] = round(min(float(reported_hashrate), 1e9), 2)
 
             self._apply_reward_accounting(clean_miner, breakdown)
+            self._load_in_memory_bns_index()
             self._load_in_memory_space_index()
             self._save_state()
             self._broadcast_block_to_peers(candidate_block.to_dict(), exclude_node_id=node_id)
@@ -1590,6 +2518,91 @@ class Blockchain:
             )
             return count
 
+    def get_holders(self, page: int = 1, limit: int = 10) -> dict:
+        """Returns ordered list of all accounts holding native BCT with balances, roles, and supply percentages."""
+        with self.lock:
+            self._load_state()
+            all_addrs = set(self.wallets.keys())
+            all_addrs.add(TREASURY_ADDRESS)
+            all_addrs.add(BRIDGE_VAULT_ADDRESS)
+
+            tx_counts = {}
+            for block in self.chain:
+                for tx in block.transactions:
+                    if tx.sender:
+                        all_addrs.add(tx.sender)
+                        tx_counts[tx.sender] = tx_counts.get(tx.sender, 0) + 1
+                    if tx.receiver:
+                        all_addrs.add(tx.receiver)
+                        tx_counts[tx.receiver] = tx_counts.get(tx.receiver, 0) + 1
+            for tx in self.pending_transactions:
+                if tx.sender:
+                    all_addrs.add(tx.sender)
+                    tx_counts[tx.sender] = tx_counts.get(tx.sender, 0) + 1
+                if tx.receiver:
+                    all_addrs.add(tx.receiver)
+                    tx_counts[tx.receiver] = tx_counts.get(tx.receiver, 0) + 1
+
+            holders = []
+            for addr in all_addrs:
+                clean_addr = addr.strip()
+                if not clean_addr:
+                    continue
+                bal = self.verify_and_recalc_balance(clean_addr)
+                if bal <= 0 and clean_addr not in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS) and tx_counts.get(clean_addr, 0) == 0:
+                    continue
+
+                tag = "User Wallet"
+                tag_type = "user"
+                if clean_addr == TREASURY_ADDRESS:
+                    tag = "Treasury Vault (Locked Reserve)"
+                    tag_type = "treasury"
+                elif clean_addr == BRIDGE_VAULT_ADDRESS:
+                    tag = "Bridge Vault (Base 1:1 wBCT)"
+                    tag_type = "bridge_vault"
+                elif any(n.get("miner_address") == clean_addr for n in self.nodes.values()):
+                    tag = "Validator / Mining Node"
+                    tag_type = "validator"
+
+                bns_handle = self.bns_reverse.get(clean_addr, "")
+
+                holders.append({
+                    "address": clean_addr,
+                    "bns_name": bns_handle,
+                    "balance": bal,
+                    "balance_formatted": f"{bal:,.4f}",
+                    "tag": tag,
+                    "tag_type": tag_type,
+                    "tx_count": tx_counts.get(clean_addr, 0),
+                    "is_contract": clean_addr in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS),
+                    "created_at": self.wallets.get(clean_addr, {}).get("created_at", 0)
+                })
+
+            holders.sort(key=lambda x: (x["balance"], x["tx_count"]), reverse=True)
+
+            total_holders = len(holders)
+            total_pages = max(1, (total_holders + limit - 1) // limit)
+            page = max(1, min(page, total_pages))
+            start_idx = (page - 1) * limit
+            end_idx = start_idx + limit
+            sliced_holders = holders[start_idx:end_idx]
+
+            for idx, h in enumerate(sliced_holders):
+                h["rank"] = start_idx + idx + 1
+                pct = (h["balance"] / TOTAL_SUPPLY) * 100.0 if TOTAL_SUPPLY > 0 else 0.0
+                h["percentage"] = round(pct, 6)
+                h["percentage_formatted"] = f"{pct:.4f}%" if pct >= 0.0001 else "<0.0001%"
+
+            return {
+                "holders": sliced_holders,
+                "total": total_holders,
+                "page": page,
+                "limit": limit,
+                "total_pages": total_pages,
+                "has_next": page < total_pages,
+                "has_prev": page > 1
+            }
+
     def get_merkle_proof(self, tx_hash: str) -> Optional[dict]:
         """Generate and cryptographically verify SPV Merkle inclusion proof for any confirmed transaction."""
         with self.lock:
@@ -1815,11 +2828,21 @@ class Blockchain:
             self._load_state()
             self._init_default_nodes()
             now = time.time()
+            # Prune disconnected community nodes that stopped sending heartbeats (> 60 seconds)
+            stale_keys = [
+                nid for nid, n in list(self.nodes.items())
+                if not n.get("is_genesis") and (now - n.get("last_seen", 0) > 60)
+            ]
+            if stale_keys:
+                for k in stale_keys:
+                    self.nodes.pop(k, None)
+                self._save_state()
+
             res = []
             for _n_id, n in self.nodes.items():
                 copy_n = dict(n)
                 copy_n.pop("owner_public_key", None)
-                if not copy_n.get("is_genesis") and (now - copy_n.get("last_seen", 0) > 900):
+                if not copy_n.get("is_genesis") and (now - copy_n.get("last_seen", 0) > 35):
                     copy_n["status"] = "offline"
                 else:
                     copy_n["status"] = "online"
@@ -1828,14 +2851,24 @@ class Blockchain:
             res.sort(key=lambda x: (not x.get("is_genesis", False), -x.get("last_seen", 0)))
             return res
 
+    def purge_all_community_nodes(self):
+        with self.lock:
+            self._load_state()
+            self.nodes = {nid: n for nid, n in self.nodes.items() if n.get("is_genesis")}
+            self._init_default_nodes()
+            self._save_state()
+
     def get_stats(self) -> dict:
         with self.lock:
             self._load_state()
             total_units = _to_units(TOTAL_SUPPLY)
             treasury_units = self.verify_and_recalc_units(TREASURY_ADDRESS)
-            circulating_units = max(0, total_units - treasury_units)
+            vault_units = self.verify_and_recalc_units(BRIDGE_VAULT_ADDRESS)
+            circulating_units = max(0, total_units - treasury_units - vault_units)
             treasury_dec = Decimal(treasury_units) / Decimal(ATOMIC_UNIT)
+            vault_dec = Decimal(vault_units) / Decimal(ATOMIC_UNIT)
             circulating_dec = Decimal(circulating_units) / Decimal(ATOMIC_UNIT)
+            total_unlocked_dec = circulating_dec + vault_dec
             active_miners = self.get_active_peer_miners()
             network_hashrate = round(sum(float(n.get("hashrate_hs", 0.0)) for n in active_miners), 2)
             eligible_vals = self.get_eligible_validators("", len(self.chain))
@@ -1844,8 +2877,12 @@ class Blockchain:
                 "total_supply_formatted": f"{TOTAL_SUPPLY:,.0f}",
                 "treasury_balance": float(treasury_dec),
                 "treasury_formatted": f"{treasury_dec:,.8f}",
+                "bridge_vault_locked": float(vault_dec),
+                "bridge_vault_formatted": f"{vault_dec:,.8f}",
                 "circulating_supply": float(circulating_dec),
                 "circulating_formatted": f"{circulating_dec:,.8f}",
+                "total_unlocked_supply": float(total_unlocked_dec),
+                "total_unlocked_formatted": f"{total_unlocked_dec:,.8f}",
                 "total_blocks": len(self.chain),
                 "total_wallets": len(self.wallets),
                 "total_transactions": self.total_transactions,
@@ -1862,6 +2899,123 @@ class Blockchain:
                 "latest_merkle_root": self.chain[-1].merkle_root if self.chain else "N/A",
             }
 
+    def _load_in_memory_bns_index(self):
+        """Reconstructs BNS (.bct handles) registry & marketplace deterministically from confirmed blocks + live mempool."""
+        self.bns_records = {}
+        self.bns_reverse = {}
+        all_sources = [(b.index, "confirmed", tx) for b in self.chain for tx in b.transactions] + [
+            ("Mempool", "mempool", tx) for tx in self.pending_transactions
+        ]
+        for b_idx, status_lbl, tx in all_sources:
+            if tx.tx_type == "bns_register" and tx.extra_data:
+                name = tx.extra_data.get("name")
+                if not name:
+                    continue
+                owner = tx.extra_data.get("owner", tx.sender)
+                tier = tx.extra_data.get("tier", "")
+                cost = float(tx.extra_data.get("cost", tx.amount))
+                self.bns_records[name] = {
+                    "name": name,
+                    "owner": owner,
+                    "registered_at": tx.timestamp,
+                    "updated_at": tx.timestamp,
+                    "tier": tier,
+                    "cost": cost,
+                    "sale_price": 0.0,
+                    "block_index": b_idx,
+                    "status": status_lbl,
+                    "history": [{
+                        "action": "registered",
+                        "owner": owner,
+                        "cost": cost,
+                        "timestamp": tx.timestamp,
+                        "tx_hash": tx.hash(),
+                        "block": b_idx
+                    }]
+                }
+                if owner not in self.bns_reverse:
+                    self.bns_reverse[owner] = name
+            elif tx.tx_type == "bns_transfer" and tx.extra_data:
+                name = tx.extra_data.get("name")
+                from_addr = tx.extra_data.get("from_address", tx.sender)
+                to_addr = tx.extra_data.get("to_address", tx.receiver)
+                if name and name in self.bns_records:
+                    rec = self.bns_records[name]
+                    rec["owner"] = to_addr
+                    rec["sale_price"] = 0.0
+                    rec["updated_at"] = tx.timestamp
+                    rec["history"].append({
+                        "action": "transferred",
+                        "from": from_addr,
+                        "to": to_addr,
+                        "timestamp": tx.timestamp,
+                        "tx_hash": tx.hash(),
+                        "block": b_idx
+                    })
+                    if self.bns_reverse.get(from_addr) == name:
+                        other = next((n for n, r in self.bns_records.items() if r.get("owner") == from_addr), "")
+                        if other:
+                            self.bns_reverse[from_addr] = other
+                        else:
+                            self.bns_reverse.pop(from_addr, None)
+                    if to_addr not in self.bns_reverse:
+                        self.bns_reverse[to_addr] = name
+            elif tx.tx_type == "bns_set_price" and tx.extra_data:
+                name = tx.extra_data.get("name")
+                price = float(tx.extra_data.get("price", 0.0))
+                if name and name in self.bns_records:
+                    self.bns_records[name]["sale_price"] = price
+                    self.bns_records[name]["updated_at"] = tx.timestamp
+                    self.bns_records[name]["history"].append({
+                        "action": "listed_for_sale" if price > 0 else "unlisted",
+                        "price": price,
+                        "timestamp": tx.timestamp,
+                        "tx_hash": tx.hash(),
+                        "block": b_idx
+                    })
+            elif tx.tx_type == "bns_buy" and tx.extra_data:
+                name = tx.extra_data.get("name")
+                buyer = tx.extra_data.get("buyer", tx.sender)
+                seller = tx.extra_data.get("seller", tx.receiver)
+                price = float(tx.extra_data.get("price", tx.amount))
+                if name and name in self.bns_records:
+                    rec = self.bns_records[name]
+                    rec["owner"] = buyer
+                    rec["sale_price"] = 0.0
+                    rec["updated_at"] = tx.timestamp
+                    rec["history"].append({
+                        "action": "purchased",
+                        "buyer": buyer,
+                        "seller": seller,
+                        "price": price,
+                        "timestamp": tx.timestamp,
+                        "tx_hash": tx.hash(),
+                        "block": b_idx
+                    })
+                    if self.bns_reverse.get(seller) == name:
+                        other = next((n for n, r in self.bns_records.items() if r.get("owner") == seller), "")
+                        if other:
+                            self.bns_reverse[seller] = other
+                        else:
+                            self.bns_reverse.pop(seller, None)
+                    if buyer not in self.bns_reverse:
+                        self.bns_reverse[buyer] = name
+            elif tx.tx_type == "bns_set_primary" and tx.extra_data:
+                name = tx.extra_data.get("name")
+                owner = tx.extra_data.get("owner", tx.sender)
+                if name and owner and name in self.bns_records:
+                    rec = self.bns_records[name]
+                    if rec.get("owner") == owner:
+                        rec["updated_at"] = tx.timestamp
+                        rec["history"].append({
+                            "action": "set_primary",
+                            "owner": owner,
+                            "timestamp": tx.timestamp,
+                            "tx_hash": tx.hash(),
+                            "block": b_idx
+                        })
+                        self.bns_reverse[owner] = name
+
     def _load_in_memory_space_index(self):
         """Reconstructs Space Posts, Likes & Comments deterministically from confirmed blocks + live mempool."""
         self.space_posts = {}
@@ -1872,9 +3026,21 @@ class Blockchain:
             if tx.tx_type == "space_post" and tx.extra_data:
                 pid = tx.extra_data.get("post_id")
                 if pid:
+                    if "bns_name" in tx.extra_data:
+                        raw_bns = str(tx.extra_data.get("bns_name") or "").strip().lower()
+                        if raw_bns in ("anonymous", "anon"):
+                            author_bns = "anonymous"
+                        elif raw_bns and self.bns_records.get(raw_bns, {}).get("owner") == tx.sender:
+                            author_bns = raw_bns
+                        else:
+                            author_bns = ""
+                    else:
+                        author_bns = self.bns_reverse.get(tx.sender, "")
                     self.space_posts[pid] = {
                         "post_id": pid,
                         "author": tx.sender,
+                        "author_bns": author_bns,
+                        "is_anonymous": (author_bns == "anonymous" or bool(tx.extra_data.get("is_anonymous"))),
                         "content": tx.extra_data.get("content", ""),
                         "timestamp": tx.timestamp,
                         "tx_hash": tx.hash(),
@@ -1898,9 +3064,21 @@ class Blockchain:
             elif tx.tx_type == "space_comment" and tx.extra_data:
                 pid = tx.extra_data.get("post_id")
                 if pid in self.space_posts:
+                    if "bns_name" in tx.extra_data:
+                        raw_bns = str(tx.extra_data.get("bns_name") or "").strip().lower()
+                        if raw_bns in ("anonymous", "anon"):
+                            cmt_bns = "anonymous"
+                        elif raw_bns and self.bns_records.get(raw_bns, {}).get("owner") == tx.sender:
+                            cmt_bns = raw_bns
+                        else:
+                            cmt_bns = ""
+                    else:
+                        cmt_bns = self.bns_reverse.get(tx.sender, "")
                     cmt = {
                         "comment_id": tx.extra_data.get("comment_id", f"cmt_{secrets.token_hex(4)}"),
                         "commenter": tx.sender,
+                        "commenter_bns": cmt_bns,
+                        "is_anonymous": (cmt_bns == "anonymous" or bool(tx.extra_data.get("is_anonymous"))),
                         "content": tx.extra_data.get("content", ""),
                         "timestamp": tx.timestamp,
                         "tx_hash": tx.hash(),
@@ -2038,6 +3216,7 @@ class Blockchain:
             self.chain = new_chain
             self.pending_transactions = new_pending
             self._loaded_revision = rev
+            self._load_in_memory_bns_index()
             self._load_in_memory_space_index()
 
             if sweep_overdue:

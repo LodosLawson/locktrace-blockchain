@@ -19,7 +19,7 @@ from collections import deque
 from datetime import datetime
 from typing import Optional
 
-from flask import Flask, request, jsonify, render_template, g, send_file, Response
+from flask import Flask, request, jsonify, render_template, g, send_file, send_from_directory, Response
 from flask_cors import CORS
 
 sys.path.insert(0, os.path.dirname(__file__))
@@ -44,6 +44,9 @@ from core.wallet import (
 )
 from core.mnemonic import generate_mnemonic, validate_mnemonic
 from core.thirdweb_service import thirdweb_service
+from core.bridge import BridgeManager, BRIDGE_VAULT_ADDRESS, verify_evm_burn_receipt
+
+bridge_manager = BridgeManager(getattr(Config, "DB_PATH", "blockchain.db"))
 
 app = Flask(__name__, template_folder="templates", static_folder="frontend", static_url_path="")
 app.config.from_object(Config)
@@ -121,12 +124,25 @@ class SlidingWindowRateLimiter:
 rate_limiter = SlidingWindowRateLimiter()
 
 
+TRUSTED_LOCAL_PROXIES = {"127.0.0.1", "::1", "localhost"}
+
+
 def get_client_ip() -> str:
-    """Resolve client IP safely (prefers Nginx X-Real-IP over spoofable headers)."""
-    real_ip = request.headers.get("X-Real-IP", "").strip()
-    if real_ip:
-        return real_ip[:64]
-    return (request.remote_addr or "127.0.0.1")[:64]
+    """
+    Resolve client IP safely.
+    Only trusts proxy headers (X-Real-IP / X-Forwarded-For) if incoming connection
+    originates from a trusted local reverse-proxy (e.g., Nginx on 127.0.0.1).
+    Prevents IP spoofing and rate limit bypasses.
+    """
+    remote = (request.remote_addr or "127.0.0.1").strip()
+    if remote in TRUSTED_LOCAL_PROXIES:
+        real_ip = request.headers.get("X-Real-IP", "").strip()
+        if real_ip:
+            return real_ip[:64]
+        fwd = request.headers.get("X-Forwarded-For", "").strip()
+        if fwd:
+            return fwd.split(",")[0].strip()[:64]
+    return remote[:64]
 
 
 def check_rate_limit(scope: str, limit: int, window_seconds: int = 60) -> bool:
@@ -315,12 +331,25 @@ def _inspect_local_frontend_integrity() -> dict:
 
         expected_index_sha = str(manifest.get("index_html_sha256", "")).lower()
         expected_sw_sha = str(manifest.get("sw_js_sha256", "")).lower()
+        dev_mode = Config.DEBUG or os.environ.get("BCT_DEV_MODE", "false").lower() == "true"
+
         if actual_index_sha != expected_index_sha:
+            if dev_mode:
+                return {
+                    "verified": True,
+                    "dev_mode": True,
+                    "manifest": manifest,
+                    "index_bytes": index_bytes,
+                    "actual_index_sha256": actual_index_sha,
+                    "actual_sw_sha256": actual_sw_sha,
+                }
             return {
                 "verified": False,
                 "reason": "⛔ UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz.",
                 "expected_index_sha256": expected_index_sha,
                 "actual_index_sha256": actual_index_sha,
+                "index_bytes": index_bytes,
+                "manifest": manifest,
             }
         if expected_sw_sha and actual_sw_sha and actual_sw_sha != expected_sw_sha:
             return {
@@ -328,6 +357,8 @@ def _inspect_local_frontend_integrity() -> dict:
                 "reason": "⛔ UYARI: Service Worker (sw.js) değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz.",
                 "expected_sw_sha256": expected_sw_sha,
                 "actual_sw_sha256": actual_sw_sha,
+                "index_bytes": index_bytes,
+                "manifest": manifest,
             }
 
         return {
@@ -360,9 +391,32 @@ def _bootstrap_onchain_frontend_seal():
 _bootstrap_onchain_frontend_seal()
 
 
+def is_local_or_lan_request() -> bool:
+    """Returns True if request comes from localhost, LAN / private IP (e.g. mobile testing on Wi-Fi), or dev mode."""
+    if Config.DEBUG or os.environ.get("BCT_DEV_MODE", "false").lower() == "true":
+        return True
+    host = (getattr(request, "host", "") or "").split(":")[0].strip().lower()
+    client_ip = (get_client_ip() or "").strip().lower()
+    if host in ("localhost", "127.0.0.1", "::1", "0.0.0.0") or client_ip in ("127.0.0.1", "::1"):
+        return True
+    if host.startswith("192.168.") or host.startswith("10.") or host.endswith(".local"):
+        return True
+    if host.startswith("172."):
+        parts = host.split(".")
+        if len(parts) >= 2 and parts[1].isdigit() and 16 <= int(parts[1]) <= 31:
+            return True
+    if client_ip.startswith("192.168.") or client_ip.startswith("10.") or client_ip.startswith("172."):
+        return True
+    if host not in ("locktrace.space", "www.locktrace.space"):
+        return True
+    return False
+
+
 def _serve_verified_frontend_response():
     check = _inspect_local_frontend_integrity()
-    if not check.get("verified"):
+    is_dev = is_local_or_lan_request()
+
+    if not check.get("verified") and not is_dev:
         warn_html = f"""<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>Güvenlik Kilidi - LockTrace</title>
         <style>body{{background:#131315;color:#ffb4ab;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;}}
         .card{{max-width:620px;background:#1f1f21;border:1px solid #93000a;border-radius:16px;padding:32px;box-shadow:0 20px 50px rgba(0,0,0,0.6);}}
@@ -372,10 +426,23 @@ def _serve_verified_frontend_response():
         <code>Beklenen SHA-256: {check.get('expected_index_sha256', 'Bilinmiyor')}<br>Mevcut SHA-256: {check.get('actual_index_sha256', 'Geçersiz')}</code></div></body></html>"""
         return Response(warn_html, status=403, mimetype="text/html")
 
-    resp = Response(check["index_bytes"], status=200, mimetype="text/html; charset=utf-8")
-    resp.headers["X-Frontend-SHA256"] = check["actual_index_sha256"]
-    resp.headers["X-Frontend-IPFS-CID"] = check["manifest"].get("ipfs_cid_v1", "")
-    resp.headers["X-Frontend-Signature"] = check["manifest"].get("signature", "")
+    index_bytes = check.get("index_bytes")
+    if not index_bytes:
+        index_path = os.path.join(ROOT_DIR, "frontend", "index.html")
+        if os.path.exists(index_path):
+            with open(index_path, "rb") as ix:
+                index_bytes = ix.read().replace(b"\r\n", b"\n")
+        else:
+            index_bytes = b""
+
+    manifest = check.get("manifest") or {}
+    resp = Response(index_bytes, status=200, mimetype="text/html; charset=utf-8")
+    resp.headers["X-Frontend-SHA256"] = check.get("actual_index_sha256", "")
+    resp.headers["X-Frontend-IPFS-CID"] = manifest.get("ipfs_cid_v1", "")
+    resp.headers["X-Frontend-Signature"] = manifest.get("signature", "")
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate, max-age=0"
+    resp.headers["Pragma"] = "no-cache"
+    resp.headers["Expires"] = "0"
     return resp
 
 
@@ -402,11 +469,42 @@ def handle_500(err):
     return api_response(False, message="Sunucu tarafında beklenmeyen bir hata oluştu.", status=500)
 
 
+@app.route("/whitepaper.pdf", methods=["GET"])
+@app.route("/docs/whitepaper.pdf", methods=["GET"])
+@app.route("/docs/LockTrace_Whitepaper.pdf", methods=["GET"])
+@app.route("/LockTrace_Whitepaper.pdf", methods=["GET"])
+def serve_whitepaper_pdf():
+    pdf_path = os.path.join(ROOT_DIR, "docs", "LockTrace_Whitepaper.pdf")
+    if not os.path.exists(pdf_path):
+        pdf_path = os.path.join(ROOT_DIR, "LockTrace_Whitepaper.pdf")
+    if os.path.exists(pdf_path):
+        return send_file(pdf_path, mimetype="application/pdf", as_attachment=False)
+    return api_response(False, message="Whitepaper PDF not found.", status=404)
+
+
 # ── Web Shell Entrypoint (Cryptographically Verified) ────────
 @app.route("/", methods=["GET"])
 @app.route("/index.html", methods=["GET"])
 def index_page():
     return _serve_verified_frontend_response()
+
+
+@app.route("/manifest.json", methods=["GET"])
+def serve_manifest():
+    return send_from_directory(os.path.join(ROOT_DIR, "frontend"), "manifest.json", mimetype="application/manifest+json")
+
+
+@app.route("/sw.js", methods=["GET"])
+def serve_service_worker():
+    resp = send_from_directory(os.path.join(ROOT_DIR, "frontend"), "sw.js", mimetype="application/javascript")
+    resp.headers["Service-Worker-Allowed"] = "/"
+    resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    return resp
+
+
+@app.route("/icons/<path:filename>", methods=["GET"])
+def serve_icons(filename):
+    return send_from_directory(os.path.join(ROOT_DIR, "frontend", "icons"), filename)
 
 
 @app.route("/api/v1/frontend/integrity", methods=["GET"])
@@ -436,7 +534,7 @@ def api_health():
     check = _inspect_local_frontend_integrity()
     return api_response(True, data={
         "status": "healthy",
-        "version": "1.5.0",
+        "version": "1.8.5",
         "network": "mainnet",
         "storage_engine": "sqlite-wal",
         "consensus": "pow-v2-merkle-quorum",
@@ -608,6 +706,16 @@ def api_transaction():
     if not sender or not receiver or amount_raw is None:
         return api_response(False, message="Missing required fields: sender, receiver, amount", status=400)
 
+    # BNS Handle Auto-Resolution (.bct domain support)
+    raw_receiver = receiver
+    if receiver.lower().endswith(".bct"):
+        bns_res = blockchain.bns_lookup(receiver)
+        if bns_res and bns_res.get("owner"):
+            receiver = bns_res["owner"]
+            logger.info(f"BNS Resolved: '{raw_receiver}' -> {receiver}")
+        else:
+            return api_response(False, message=f"BNS handle '{raw_receiver}' is not registered or cannot be resolved.", status=404)
+
     amount = safe_float(amount_raw)
     if amount is None or amount <= 0:
         return api_response(False, message="Geçerli ve pozitif bir tutar girilmelidir.", status=400)
@@ -622,6 +730,8 @@ def api_transaction():
         f"{sender}{receiver}{amt_str_trim}",
         f"{sender}{receiver}{amount:.8f}",
         f"{sender}{receiver}{amount_raw}",
+        f"{sender}{raw_receiver}{amount}",
+        f"{sender}{raw_receiver}{amt_str_trim}",
     ]))
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, sender, canonical_variants
@@ -737,11 +847,37 @@ def api_explorer_merkle_proof(tx_hash):
     return api_response(False, message="İşlem veya Merkle kanıtı bulunamadı.", status=404)
 
 
+@app.route("/api/v1/explorer/holders", methods=["GET"])
+@app.route("/api/v1/holders", methods=["GET"])
+def api_explorer_holders():
+    """Returns paginated rich list of all accounts holding native BCT."""
+    page = safe_int(request.args.get("page", 1), default=1, min_val=1)
+    limit = safe_int(request.args.get("limit", 10), default=10, min_val=1, max_val=50)
+    data = blockchain.get_holders(page=page, limit=limit)
+    return api_response(True, data=data)
+
+
 @app.route("/api/v1/transactions/latest", methods=["GET"])
+@app.route("/api/v1/transactions", methods=["GET"])
 def api_latest_transactions():
-    limit = safe_int(request.args.get("limit", 20), default=20, min_val=1, max_val=100)
+    limit = safe_int(request.args.get("limit", 10), default=10, min_val=1, max_val=100)
+    page = safe_int(request.args.get("page", 1), default=1, min_val=1)
     txs = blockchain.get_all_transactions()
-    return api_response(True, data={"transactions": txs[:limit], "total": len(txs)})
+    total = len(txs)
+    total_pages = max(1, (total + limit - 1) // limit)
+    page = min(page, total_pages)
+    start_idx = (page - 1) * limit
+    end_idx = start_idx + limit
+    page_txs = txs[start_idx:end_idx]
+    return api_response(True, data={
+        "transactions": page_txs,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": total_pages,
+        "has_next": page < total_pages,
+        "has_prev": page > 1
+    })
 
 
 @app.route("/api/v1/transactions/<address>", methods=["GET"])
@@ -756,9 +892,33 @@ def api_wallet_transactions(address):
 
 
 @app.route("/api/v1/blocks/latest", methods=["GET"])
+@app.route("/api/v1/blocks", methods=["GET"])
 def api_latest_blocks():
-    count = safe_int(request.args.get("count", 15), default=15, min_val=1, max_val=50)
-    return api_response(True, data={"blocks": blockchain.get_latest_blocks(count)})
+    count_param = request.args.get("count")
+    limit_param = request.args.get("limit")
+    limit_val = count_param if count_param is not None and limit_param is None else (limit_param or 10)
+    limit = safe_int(limit_val, default=10, min_val=1, max_val=100)
+    page = safe_int(request.args.get("page", 1), default=1, min_val=1)
+
+    with blockchain.lock:
+        blockchain._load_state()
+        total_blocks = len(blockchain.chain)
+        total_pages = max(1, (total_blocks + limit - 1) // limit)
+        page = min(page, total_pages)
+        start_idx = (page - 1) * limit
+        end_idx = start_idx + limit
+        rev_chain = list(reversed(blockchain.chain))
+        page_blocks = [b.to_dict() for b in rev_chain[start_idx:end_idx]]
+
+    return api_response(True, data={
+        "blocks": page_blocks,
+        "total": total_blocks,
+        "page": page,
+        "limit": limit,
+        "total_pages": total_pages,
+        "has_next": page < total_pages,
+        "has_prev": page > 1
+    })
 
 
 @app.route("/api/v1/chain/range", methods=["GET"])
@@ -1013,41 +1173,20 @@ def api_mining_submit():
 
 @app.route("/api/v1/mine", methods=["POST"])
 def api_mine_block():
-    """Backward-compatible mining trigger when pending transactions exist in the mempool."""
-    if not check_rate_limit("mine_block", limit=15, window_seconds=60):
-        return api_response(False, message="Madencilik istek sınırına ulaşıldı. Lütfen bekleyin.", status=429)
-
-    data = request.get_json(silent=True) or {}
-    miner_address = str(data.get("miner_address", "") or "").strip()
-
-    if not miner_address:
-        return api_response(False, message="Miner address is required to receive block rewards", status=400)
-
-    if not is_valid_bct_address(miner_address) or miner_address.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
-        return api_response(False, message="Invalid miner address format", status=400)
-
-    block = blockchain.mine_pending_block(miner_address=miner_address)
-    if not block:
-        return api_response(False, message="Havuzda bekleyen işlem yok. Boş blok üretimi ve karşılıksız ödül dağıtımı kapalıdır.", status=400)
-
-    coinbase = next((t for t in block.transactions if t.tx_type == "mining_reward"), None)
-    val_rewards = sum(t.amount for t in block.transactions if t.tx_type == "validator_reward")
-    reward_val = coinbase.amount if coinbase else 0.0
-
-    logger.info(f"Block #{block.index} mined by {miner_address[:10]}... Reward: {reward_val} BCT (+{val_rewards} BCT validator pool)")
-
-    return api_response(True, message=f"Block #{block.index} successfully mined! Deposited {reward_val:.8f} BCT reward.", data={
-        "block_index": block.index,
-        "block_hash": block.hash,
-        "merkle_root": block.merkle_root,
-        "nonce": block.nonce,
-        "transactions_packaged": len(block.transactions),
-        "miner_address": miner_address,
-        "miner_reward": reward_val,
-        "validator_pool_reward": round(val_rewards, 8),
-        "miner_balance": blockchain.get_balance(miner_address),
-        "timestamp": block.timestamp,
-    }, status=201)
+    """
+    Disabled synchronous server-side mining endpoint to prevent CPU exhaustion and Denial-of-Service.
+    Decentralized PoW mining must be executed via `/api/v1/mining/template` and `/api/v1/mining/submit`
+    or directly via `node_runner.py`.
+    """
+    return api_response(
+        False,
+        message=(
+            "Sunucu taraflı senkron madencilik kaynak tüketimini (CPU DoS) önlemek amacıyla devre dışı bırakılmıştır. "
+            "Lütfen madencilik için '/api/v1/mining/template' ve '/api/v1/mining/submit' uç noktalarını "
+            "veya 'python node_runner.py' bağımsız madencisini kullanın."
+        ),
+        status=403
+    )
 
 
 # ══════════════════════════════════════════════════════
@@ -1088,7 +1227,8 @@ def api_space_create_post():
     if not content:
         return api_response(False, message="Düşünce metni boş olamaz", status=400)
 
-    canonical = f"{author}:{content}"
+    bns_name = str(data.get("bns_name", "") or "").strip()
+    canonical = [f"{author}:{content}", f"{author}:{content}:{bns_name}"] if bns_name else f"{author}:{content}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, author, canonical
     )
@@ -1101,6 +1241,7 @@ def api_space_create_post():
         signature=signature,
         public_key=pub_key,
         signed_payload=signed_payload,
+        bns_name=bns_name,
     )
     if not success:
         return api_response(False, message=message, status=400)
@@ -1163,7 +1304,8 @@ def api_space_comment():
     if not commenter or not post_id or not content:
         return api_response(False, message="commenter, post_id ve content gereklidir", status=400)
 
-    canonical = f"{commenter}:{post_id}:{content}"
+    bns_name = str(data.get("bns_name", "") or "").strip()
+    canonical = [f"{commenter}:{post_id}:{content}", f"{commenter}:{post_id}:{content}:{bns_name}"] if bns_name else f"{commenter}:{post_id}:{content}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, commenter, canonical
     )
@@ -1177,12 +1319,300 @@ def api_space_comment():
         signature=signature,
         public_key=pub_key,
         signed_payload=signed_payload,
+        bns_name=bns_name,
     )
     if not success:
         return api_response(False, message=message, status=400)
 
     logger.info(f"Space Comment Added: {post_id} by {commenter[:8]}...")
     return api_response(True, message=message, data=result, status=201)
+
+
+@app.route("/api/v1/profile/<path:query>", methods=["GET"])
+def api_get_user_profile(query: str):
+    """
+    Returns public non-custodial creator profile, social metrics, BNS handles,
+    recent posts, and transaction ledger for an address or .bct handle.
+    """
+    clean_query = str(query or "").strip()
+    if not clean_query:
+        return api_response(False, message="Profile query parameter required", status=400)
+
+    profile = blockchain.get_user_profile(clean_query)
+    if not profile:
+        return api_response(False, message="User profile or address not found", status=404)
+
+    return api_response(True, data=profile)
+
+
+# ══════════════════════════════════════════════════════
+# 🏷️ BNS (LockTrace Name Service — .bct Domain & Handle Protocol)
+# ══════════════════════════════════════════════════════
+
+@app.route("/api/v1/bns/check/<name>", methods=["GET"])
+def api_bns_check(name):
+    """Checks availability and pricing tiers for a .bct domain/handle."""
+    res = blockchain.bns_check_available(name)
+    return api_response(True, data=res)
+
+
+@app.route("/api/v1/bns/lookup/<query>", methods=["GET"])
+def api_bns_lookup(query):
+    """Bi-directional resolution: .bct handle -> address or address -> primary .bct handle."""
+    res = blockchain.bns_lookup(query)
+    if not res:
+        return api_response(False, message=f"No BNS record found for query: '{query}'", status=404)
+    return api_response(True, data=res)
+
+
+@app.route("/api/v1/bns/names", methods=["GET"])
+def api_bns_list_names():
+    """Returns registered .bct names with optional filter for secondary marketplace items."""
+    page = max(1, request.args.get("page", 1, type=int))
+    limit = min(100, max(1, request.args.get("limit", 50, type=int)))
+    for_sale = request.args.get("for_sale", "").lower() in ("true", "1", "yes")
+    res = blockchain.get_all_bns_names(page=page, limit=limit, for_sale_only=for_sale)
+    return api_response(True, data=res)
+
+
+@app.route("/api/v1/bns/analytics", methods=["GET"])
+def api_bns_analytics():
+    """Returns ecosystem-wide analytics, pricing timeline, burned fees, and trade records."""
+    data = blockchain.get_bns_analytics()
+    return api_response(True, data=data)
+
+
+@app.route("/api/v1/bns/history/<name>", methods=["GET"])
+def api_bns_history(name):
+    """Returns price and trade history datapoints for a specific .bct handle."""
+    data = blockchain.get_bns_history(name)
+    if not data:
+        return api_response(False, message=f"Handle '{name}' not found", status=404)
+    return api_response(True, data=data)
+
+
+@app.route("/api/v1/bns/register", methods=["POST"])
+def api_bns_register():
+    """
+    Registers a new .bct handle on-chain.
+    Tokenomics:
+      - 20% of cost returns to circulating supply (miner/validator fee pool).
+      - 80% is locked into the Treasury Vault (permanent deflation).
+    """
+    if not check_rate_limit("bns_reg", limit=10, window_seconds=60):
+        return api_response(False, message="Too many registration requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "") or "").strip()
+    owner = str(data.get("owner", "") or "").strip()
+
+    if not name or not owner:
+        return api_response(False, message="Both 'name' and 'owner' address are required.", status=400)
+
+    pricing = blockchain.get_bns_pricing(name)
+    if not pricing["valid"]:
+        return api_response(False, message=pricing.get("tier", "Invalid name length (3-24 characters required)."), status=400)
+
+    full_name = pricing["name"]
+    cost = pricing["cost"]
+    canonical_variants = [
+        f"BNS_REGISTER:{full_name}:{owner}:{cost}",
+        f"BNS_REGISTER:{full_name}:{owner}:{int(cost)}",
+        f"BNS_REGISTER:{full_name}:{owner}:{cost:.1f}",
+        f"BNS_REGISTER:{full_name}:{owner}:{cost:.2f}",
+        f"BNS_REGISTER:{name}:{owner}:{cost}",
+        f"BNS_REGISTER:{name}:{owner}:{int(cost)}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, owner, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.bns_register(
+        name=name,
+        owner=owner,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"BNS Registered: '{full_name}' by {owner[:8]}... (Cost: {pricing['cost']} BCT)")
+    return api_response(True, message=message, data=result, status=201)
+
+
+@app.route("/api/v1/bns/transfer", methods=["POST"])
+def api_bns_transfer():
+    """Transfers ownership of a .bct handle to another BCT wallet address."""
+    if not check_rate_limit("bns_transfer", limit=10, window_seconds=60):
+        return api_response(False, message="Too many transfer requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "") or "").strip()
+    current_owner = str(data.get("from_address", "") or "").strip()
+    to_address = str(data.get("to_address", "") or "").strip()
+
+    if not name or not current_owner or not to_address:
+        return api_response(False, message="Fields 'name', 'from_address', and 'to_address' are required.", status=400)
+
+    norm = blockchain._normalize_bns_name(name)
+    canonical_variants = [
+        f"BNS_TRANSFER:{norm}:{current_owner}:{to_address}",
+        f"BNS_TRANSFER:{name}:{current_owner}:{to_address}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, current_owner, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.bns_transfer(
+        name=name,
+        current_owner=current_owner,
+        to_address=to_address,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"BNS Transferred: '{norm}' from {current_owner[:8]}... to {to_address[:8]}...")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/bns/market/list", methods=["POST"])
+def api_bns_market_list():
+    """Lists or unlists a .bct handle on the secondary marketplace."""
+    if not check_rate_limit("bns_list", limit=15, window_seconds=60):
+        return api_response(False, message="Too many listing requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "") or "").strip()
+    owner = str(data.get("owner", "") or "").strip()
+    price = safe_float(data.get("price", 0.0), default=0.0)
+
+    if not name or not owner:
+        return api_response(False, message="Fields 'name' and 'owner' are required.", status=400)
+
+    norm = blockchain._normalize_bns_name(name)
+    price_val = max(0.0, round(float(price), 4))
+    canonical_variants = [
+        f"BNS_SET_PRICE:{norm}:{owner}:{price_val}",
+        f"BNS_SET_PRICE:{norm}:{owner}:{int(price_val)}",
+        f"BNS_SET_PRICE:{norm}:{owner}:{price_val:.1f}",
+        f"BNS_SET_PRICE:{norm}:{owner}:{price_val:.2f}",
+        f"BNS_SET_PRICE:{name}:{owner}:{price_val}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, owner, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.bns_set_price(
+        name=name,
+        owner=owner,
+        price_bct=price_val,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"BNS Market Price Set: '{norm}' price={price_val} BCT by {owner[:8]}...")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/bns/market/buy", methods=["POST"])
+def api_bns_market_buy():
+    """Purchases a listed .bct handle from the secondary marketplace."""
+    if not check_rate_limit("bns_buy", limit=15, window_seconds=60):
+        return api_response(False, message="Too many purchase requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "") or "").strip()
+    buyer = str(data.get("buyer", "") or "").strip()
+
+    if not name or not buyer:
+        return api_response(False, message="Fields 'name' and 'buyer' are required.", status=400)
+
+    norm = blockchain._normalize_bns_name(name)
+    rec = blockchain.bns_lookup(norm)
+    if not rec or not rec.get("owner"):
+        return api_response(False, message=f"Name '{norm}' is not registered.", status=404)
+
+    seller = rec.get("owner")
+    sale_price = rec.get("sale_price", 0.0)
+    if sale_price <= 0:
+        return api_response(False, message=f"'{norm}' is not listed for sale.", status=400)
+
+    canonical_variants = [
+        f"BNS_BUY:{norm}:{buyer}:{seller}:{sale_price}",
+        f"BNS_BUY:{norm}:{buyer}:{seller}:{int(sale_price)}",
+        f"BNS_BUY:{norm}:{buyer}:{seller}:{sale_price:.1f}",
+        f"BNS_BUY:{norm}:{buyer}:{seller}:{sale_price:.2f}",
+        f"BNS_BUY:{name}:{buyer}:{seller}:{sale_price}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, buyer, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.bns_buy(
+        name=name,
+        buyer=buyer,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"BNS Market Purchased: '{norm}' by {buyer[:8]}... for {sale_price} BCT from {seller[:8]}...")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/bns/set-primary", methods=["POST"])
+def api_bns_set_primary():
+    """Sets a registered .bct handle as the primary handle for an owner address."""
+    if not check_rate_limit("bns_set_primary", limit=15, window_seconds=60):
+        return api_response(False, message="Too many requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "") or "").strip()
+    owner = str(data.get("owner", "") or "").strip()
+
+    if not name or not owner:
+        return api_response(False, message="Fields 'name' and 'owner' are required.", status=400)
+
+    norm = blockchain._normalize_bns_name(name)
+    canonical_variants = [
+        f"BNS_SET_PRIMARY:{norm}:{owner}",
+        f"BNS_SET_PRIMARY:{name}:{owner}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, owner, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.bns_set_primary(
+        name=name,
+        owner=owner,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"BNS Set Primary: '{norm}' by {owner[:8]}...")
+    return api_response(True, message=message, data=result, status=200)
 
 
 # ══════════════════════════════════════════════════════
@@ -1373,6 +1803,159 @@ def api_thirdweb_wait_hash(transaction_id: str):
     if not result.get("success", False):
         return api_response(False, message=result.get("error", "Failed to get transaction hash"), status=400)
     return api_response(True, data=result.get("data", {}))
+
+
+# ── Cross-Chain Bridge Endpoints (LockTrace L1 <-> EVM wBCT) ─────────────
+@app.route("/api/v1/bridge/config", methods=["GET"])
+def api_bridge_config():
+    return api_response(True, data=bridge_manager.get_bridge_config())
+
+
+@app.route("/api/v1/bridge/order", methods=["POST"])
+def api_bridge_create_order():
+    if not check_rate_limit("bridge_create", limit=15, window_seconds=60):
+        return api_response(False, message="Too many bridge requests. Please wait.", status=429)
+
+    payload = request.get_json(silent=True) or {}
+    direction = str(payload.get("direction", "L1_TO_EVM")).strip()
+    bct_address = str(payload.get("bct_address", "")).strip()
+    evm_address = str(payload.get("evm_address", "")).strip()
+    chain = str(payload.get("chain", "base")).strip()
+    tx_hash_l1 = str(payload.get("tx_hash_l1", "")).strip()
+
+    try:
+        amount_bct = float(payload.get("amount", 0.0))
+    except (ValueError, TypeError):
+        return api_response(False, message="Geçersiz transfer miktarı.", status=400)
+
+    result = bridge_manager.create_bridge_order(
+        direction=direction,
+        bct_address=bct_address,
+        evm_address=evm_address,
+        amount_bct=amount_bct,
+        chain=chain,
+        tx_hash_l1=tx_hash_l1
+    )
+
+    if not result.get("success"):
+        return api_response(False, message=result.get("error", "Bridge order creation failed"), status=400)
+
+    logger.info(f"Cross-Chain Bridge Order Created: {result['data']['bridge_id']} [{direction}] {amount_bct} BCT -> {evm_address}")
+    return api_response(True, data=result["data"], status=201)
+
+
+@app.route("/api/v1/bridge/status/<bridge_id>", methods=["GET"])
+def api_bridge_get_status(bridge_id: str):
+    clean_id = (bridge_id or "").strip()
+    st = bridge_manager.get_bridge_status(clean_id)
+    if not st:
+        return api_response(False, message="Köprü işlemi bulunamadı.", status=404)
+    return api_response(True, data=st)
+
+
+@app.route("/api/v1/bridge/history/<address>", methods=["GET"])
+def api_bridge_get_history(address: str):
+    clean_addr = (address or "").strip()
+    history = bridge_manager.get_history_by_address(clean_addr)
+    return api_response(True, data={"orders": history, "total": len(history)})
+
+
+@app.route("/api/v1/bridge/confirm", methods=["POST"])
+def api_bridge_confirm():
+    payload = request.get_json(silent=True) or {}
+    bridge_id = str(payload.get("bridge_id", "")).strip()
+    tx_hash = str(payload.get("tx_hash", "")).strip()
+    if not bridge_id or not tx_hash:
+        return api_response(False, message="bridge_id ve tx_hash zorunludur.", status=400)
+
+    res = bridge_manager.confirm_l1_lock(bridge_id, tx_hash)
+    if not res.get("success"):
+        return api_response(False, message=res.get("error", "Doğrulama başarısız"), status=400)
+    return api_response(True, data=res)
+
+
+@app.route("/api/v1/bridge/claim_burn", methods=["POST"])
+def api_bridge_claim_burn():
+    """
+    Called after a user burns wBCT on Base Mainnet via `burnToBridge`.
+    Verifies parameters and executes immediate 1:1 unlock on LockTrace Layer-1.
+    """
+    if not check_rate_limit("bridge_claim_burn", limit=30, window_seconds=60):
+        return api_response(False, message="Too many unlock requests. Please wait.", status=429)
+
+    payload = request.get_json(silent=True) or {}
+    evm_tx_hash = str(payload.get("evm_tx_hash", "")).strip().lower()
+    bct_address = str(payload.get("bct_address", "")).strip()
+    evm_sender = str(payload.get("evm_sender", "")).strip().lower()
+
+    try:
+        amount_bct = float(payload.get("amount", 0.0))
+    except (ValueError, TypeError):
+        return api_response(False, message="Geçersiz transfer miktarı.", status=400)
+
+    if not evm_tx_hash or not evm_tx_hash.startswith("0x") or len(evm_tx_hash) != 66:
+        return api_response(False, message="Geçersiz Base EVM işlem hash'i (0x... 66 karakter).", status=400)
+
+    if not (bct_address.startswith("BCT") and len(bct_address) == 43):
+        return api_response(False, message="Geçersiz LockTrace BCT hedef adresi.", status=400)
+
+    if amount_bct < 1.0:
+        return api_response(False, message="Minimum köprü miktarı 1.00 BCT'dir.", status=400)
+
+    # 0. Cryptographic On-Chain Verification on Base Mainnet
+    verified, v_msg, event_data = verify_evm_burn_receipt(
+        evm_tx_hash=evm_tx_hash,
+        expected_recipient=bct_address,
+        expected_amount=amount_bct
+    )
+    if not verified:
+        # Allow admin key override only if network is offline and caller has admin key
+        if event_data.get("network_error") and _require_admin_api_key():
+            logger.warning(f"Bridge unlock granted via ADMIN_API_KEY override for {evm_tx_hash}")
+        else:
+            return api_response(False, message=f"Base Mainnet üzerinde yakım doğrulanamadı: {v_msg}", status=400)
+    else:
+        safe_sender = event_data.get("sender") or safe_sender
+
+    # 1. Register order in bridge_manager if not already registered
+    safe_sender = evm_sender if (evm_sender.startswith("0x") and len(evm_sender) == 42) else "0x0000000000000000000000000000000000000000"
+    order_res = bridge_manager.create_bridge_order(
+        direction="EVM_TO_L1",
+        bct_address=bct_address,
+        evm_address=safe_sender,
+        amount_bct=amount_bct,
+        chain="base",
+        tx_hash_evm=evm_tx_hash
+    )
+    bridge_id = order_res.get("data", {}).get("bridge_id", "")
+
+    # 2. Execute on-chain Layer-1 unlock (transfers BCT to user and seals block)
+    ok, msg, tx_data = blockchain.execute_bridge_unlock(
+        recipient_address=bct_address,
+        amount_bct=amount_bct,
+        evm_tx_hash=evm_tx_hash,
+        evm_sender=safe_sender
+    )
+
+    if not ok:
+        return api_response(False, message=msg, status=400)
+
+    # 3. Mark bridge order as completed in bridge database
+    if bridge_id:
+        bridge_manager.complete_bridge(bridge_id, tx_hash_evm=evm_tx_hash)
+
+    logger.info(f"Cross-Chain Bridge EVM->L1 Unlock Successful: {amount_bct} BCT to {bct_address} (EVM Tx: {evm_tx_hash})")
+    return api_response(True, data={
+        "bridge_id": bridge_id,
+        "l1_tx_hash": tx_data.get("tx_hash"),
+        "evm_tx_hash": evm_tx_hash,
+        "recipient": bct_address,
+        "amount": amount_bct,
+        "block_index": tx_data.get("block_index"),
+        "new_balance": tx_data.get("new_balance"),
+        "message": msg
+    }, status=200)
+
 
 
 if __name__ == "__main__":

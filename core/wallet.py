@@ -105,7 +105,7 @@ def public_key_to_address(public_key_hex: str) -> str:
 
 
 def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool:
-    """SECP256k1 ECDSA imzasını doğrula (SHA-256 birincil, eski SHA-1 geriye dönük uyumlu)."""
+    """SECP256k1 ECDSA imzasını doğrula (Yalnızca güvenli SHA-256)."""
     try:
         pub_bytes = _normalize_uncompressed_pubkey_bytes(public_key_hex)
         if len(pub_bytes) != 64:
@@ -117,14 +117,7 @@ def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool
         sig_bytes = binascii.unhexlify(clean_sig)
         msg_bytes = data.encode("utf-8")
 
-        # 1) Modern SHA-256 ECDSA (Tarayıcı Non-Custodial & v1.3+ Sunucu İmzaları)
-        try:
-            if pub_key.verify(sig_bytes, msg_bytes, hashfunc=hashlib.sha256, sigdecode=sigdecode_string):
-                return True
-        except BadSignatureError:
-            pass
-
-        # 2) Geriye dönük uyumluluk: Eski ecdsa varsayılanı (SHA-1)
-        return pub_key.verify(sig_bytes, msg_bytes, sigdecode=sigdecode_string)
+        # Güvenli SHA-256 ECDSA doğrulaması
+        return pub_key.verify(sig_bytes, msg_bytes, hashfunc=hashlib.sha256, sigdecode=sigdecode_string)
     except (BadSignatureError, Exception):
         return False

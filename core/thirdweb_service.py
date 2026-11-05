@@ -117,3 +117,4 @@ class ThirdwebService:
 
 # Global singleton
 thirdweb_service = ThirdwebService()
+

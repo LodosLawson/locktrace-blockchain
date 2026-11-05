@@ -57,10 +57,10 @@ TREASURY_ADDRESS = "BCT_HAZINE_0000000000000000000000000000000000000000"
 BLOCK_REWARD = 0.05
 
 # Official Immutable LockTrace Frontend Release Signing Trust Anchor (SECP256k1 Public Key)
-RELEASE_AUTHORITY_ADDRESS = "BCT5014d104d8063cbe2d64faea57925e96295ac3b8"
+RELEASE_AUTHORITY_ADDRESS = "BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080"
 RELEASE_AUTHORITY_PUBKEY = (
-    "5c8eca3d56c054b5b95a353e245efb3e014d85a33e8cb7e395b8a249d97a61c"
-    "bdb35454f75f38d56c9fd34525411720208983d4ce27ed0fa34ddb09d2a08ff9c"
+    "5e3686d4e64119cc049dd966e57150a04db4160a335610c8740748ba618c0023"
+    "21a5882ed90bfd5597bc144a7c4926369aec9b89070d3d337819d6626c67a150"
 )
 
 TAMPER_WARNING_TEXT = '⛔ "UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz."'
@@ -365,7 +365,9 @@ class LockTraceNode:
         data_dir: str = "",
         enable_web: bool = True,
         open_browser: bool = False,
+        dev_mode: bool = False,
     ):
+        self.dev_mode = bool(dev_mode)
         self.home_dir = data_dir or os.path.join(os.path.expanduser("~"), ".locktrace")
         self.data_dir = os.path.join(self.home_dir, "node_data")
         os.makedirs(self.data_dir, exist_ok=True)
@@ -539,6 +541,17 @@ class LockTraceNode:
             if os.path.exists(sw_path):
                 with open(sw_path, "rb") as sf:
                     actual_sw_sha = hashlib.sha256(sf.read().replace(b"\r\n", b"\n")).hexdigest()
+
+            if getattr(self, "dev_mode", False):
+                self.frontend_verified = True
+                self.frontend_status_msg = "Geliştirici Modu (Dev Mode) Etkin - İmza Kontrolü Atlandı"
+                return {
+                    "verified": True,
+                    "dev_mode": True,
+                    "actual_index_sha256": actual_index_sha,
+                    "index_bytes": index_bytes,
+                    "manifest": {"version": "dev-mode", "index_html_sha256": actual_index_sha, "signature": "dev"}
+                }
 
             manifest = None
             if os.path.exists(manifest_path):
@@ -1525,6 +1538,20 @@ class LockTraceNode:
             return False
         with self.chain_lock:
             idx = int(blk["index"])
+            # Prevent malicious fork injection: Do not overwrite an existing block at the same index
+            if idx in self.chain_by_index:
+                if self.chain_by_index[idx].get("hash") == blk.get("hash"):
+                    return True
+                return False
+
+            # Ensure cryptographic chain continuity with predecessor
+            if idx > 0:
+                prev_idx = idx - 1
+                if prev_idx not in self.chain_by_index:
+                    return False  # Missing predecessor, full sync required
+                if str(blk.get("previous_hash", "")).lower() != str(self.chain_by_index[prev_idx].get("hash", "")).lower():
+                    return False
+
             self.chain_by_index[idx] = blk
             self.local_height = max(self.local_height, idx + 1)
             self.network_height = max(self.network_height, self.local_height)
@@ -1860,7 +1887,7 @@ if __name__ == "__main__":
     parser.add_argument("--seed", default=DEFAULT_SEED, help="Primary seed node endpoint")
     parser.add_argument("--location", default="", help="City / Country or cloud region")
     parser.add_argument("--wallet", default="", help="Optional payout BCT wallet address")
-    parser.add_argument("--private-key", default="", help="Optional 64-hex SECP256k1 private key for node signing")
+    parser.add_argument("--private-key", "--key", "-k", default="", help="Optional 64-hex SECP256k1 private key for node signing")
     parser.add_argument("--role", default="Community Validator Peer", help="Network role")
     parser.add_argument("--port", type=int, default=5050, help="HTTP Web & P2P listening port (default: 5050)")
     parser.add_argument("--host", default="", help="Bind IP (127.0.0.1 for local-only, 0.0.0.0 for server mode)")
@@ -1871,6 +1898,7 @@ if __name__ == "__main__":
     parser.add_argument("--verify-frontend", action="store_true", help="Verify local frontend SHA-256 & ECDSA signature and exit")
     parser.add_argument("--public-endpoint", default="", help="Public URL (http://ip:port) for inbound P2P gossip")
     parser.add_argument("--data-dir", default="", help="Custom node storage directory")
+    parser.add_argument("--dev", action="store_true", help="Development mode (bypasses frontend release signing check)")
     args = parser.parse_args()
 
     if args.local:
@@ -1895,6 +1923,7 @@ if __name__ == "__main__":
         data_dir=args.data_dir,
         enable_web=not args.no_web,
         open_browser=args.open,
+        dev_mode=args.dev,
     )
 
     if args.verify_frontend:
