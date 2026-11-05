@@ -55,7 +55,8 @@ class Config:
         "https://locktrace.space,https://www.locktrace.space,https://spectacular-brioche-aafb73.netlify.app,http://localhost:3000,http://localhost:5000,http://127.0.0.1:5000"
     ).split(",")
 
-    # ── Sunucu ────────────────────────────────────────
+    # ── Sunucu & Veritabanı ───────────────────────────
+    DB_PATH = os.environ.get("BCT_DB_PATH", "blockchain.db")
     HOST = os.environ.get("BCT_HOST", "0.0.0.0")
     PORT = int(os.environ.get("BCT_PORT", "5000"))
     DEBUG = os.environ.get("BCT_DEBUG", "false").lower() == "true"
