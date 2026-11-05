@@ -831,6 +831,7 @@ class LockTraceNode:
         }
 
     def local_space_posts(self) -> dict:
+        records, reverse = self.local_bns_state()
         posts = {}
         with self.chain_lock:
             for idx in sorted(self.chain_by_index.keys()):
@@ -838,11 +839,26 @@ class LockTraceNode:
                 for tx in blk.get("transactions", []):
                     tt = tx.get("tx_type")
                     ed = tx.get("extra_data") or {}
+                    sender = tx.get("sender", "")
                     if tt == "space_post" and ed.get("post_id"):
                         pid = ed["post_id"]
+                        author_bns = ""
+                        if "bns_name" in ed:
+                            raw_bns = str(ed.get("bns_name") or "").strip().lower()
+                            if raw_bns in ("anonymous", "anon"):
+                                author_bns = "anonymous"
+                            elif raw_bns:
+                                norm = raw_bns if raw_bns.endswith(".bct") else f"{raw_bns}.bct"
+                                if records.get(norm, {}).get("owner") == sender:
+                                    author_bns = norm
+                        if not author_bns:
+                            author_bns = reverse.get(sender, "")
+                        is_anon = (author_bns == "anonymous" or bool(ed.get("is_anonymous")))
                         posts[pid] = {
                             "post_id": pid,
-                            "author": tx.get("sender"),
+                            "author": sender,
+                            "author_bns": author_bns,
+                            "is_anonymous": is_anon,
                             "content": ed.get("content", ""),
                             "timestamp": tx.get("timestamp"),
                             "tx_hash": tx.get("tx_hash", ""),
@@ -856,7 +872,7 @@ class LockTraceNode:
                         }
                     elif tt == "space_like" and ed.get("post_id") in posts:
                         pid = ed["post_id"]
-                        liker = tx.get("sender")
+                        liker = sender
                         if liker not in posts[pid]["likes"]:
                             posts[pid]["likes"].append(liker)
                             posts[pid]["likes_count"] += 1
@@ -865,9 +881,23 @@ class LockTraceNode:
                             )
                     elif tt == "space_comment" and ed.get("post_id") in posts:
                         pid = ed["post_id"]
+                        cmt_bns = ""
+                        if "bns_name" in ed:
+                            raw_bns = str(ed.get("bns_name") or "").strip().lower()
+                            if raw_bns in ("anonymous", "anon"):
+                                cmt_bns = "anonymous"
+                            elif raw_bns:
+                                norm = raw_bns if raw_bns.endswith(".bct") else f"{raw_bns}.bct"
+                                if records.get(norm, {}).get("owner") == sender:
+                                    cmt_bns = norm
+                        if not cmt_bns:
+                            cmt_bns = reverse.get(sender, "")
+                        is_anon_cmt = (cmt_bns == "anonymous" or bool(ed.get("is_anonymous")))
                         posts[pid]["comments"].append({
                             "comment_id": ed.get("comment_id", ""),
-                            "commenter": tx.get("sender"),
+                            "commenter": sender,
+                            "commenter_bns": cmt_bns,
+                            "is_anonymous": is_anon_cmt,
                             "content": ed.get("content", ""),
                             "timestamp": tx.get("timestamp"),
                             "tx_hash": tx.get("tx_hash", ""),
@@ -875,9 +905,51 @@ class LockTraceNode:
                         })
                         posts[pid]["comments_count"] += 1
                         posts[pid]["author_earnings"] = round(
-                            posts[pid]["author_earnings"] + float(ed.get("author_cut", 0.005)), 8
+                            posts[pid]["author_earnings"] + float(ed.get("author_cut", 0.004)), 8
                         )
         return posts
+
+    def local_holders(self, page: int = 1, limit: int = 10) -> dict:
+        """Computes rich list of accounts holding BCT from archival chain."""
+        balances = {}
+        with self.chain_lock:
+            for blk in self.chain_by_index.values():
+                for tx in blk.get("transactions", []):
+                    s = tx.get("sender", "")
+                    r = tx.get("receiver", "")
+                    amt = float(tx.get("amount", 0.0))
+                    fee = float(tx.get("fee", 0.0))
+                    if s:
+                        balances[s] = balances.get(s, 0.0) - amt - fee
+                    if r:
+                        balances[r] = balances.get(r, 0.0) + amt
+
+        records, reverse = self.local_bns_state()
+        holders = []
+        for addr, bal in balances.items():
+            if addr.startswith("BCT") and addr not in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS) and bal > 0.000001:
+                holders.append({
+                    "address": addr,
+                    "balance": round(bal, 8),
+                    "primary_name": reverse.get(addr, ""),
+                })
+        holders.sort(key=lambda x: x["balance"], reverse=True)
+        total = len(holders)
+        total_pages = max(1, (total + limit - 1) // limit)
+        page = min(page, total_pages)
+        start = (page - 1) * limit
+        page_items = holders[start:start + limit]
+        for idx, item in enumerate(page_items, start=start + 1):
+            item["rank"] = idx
+        return {
+            "holders": page_items,
+            "total_holders": total,
+            "page": page,
+            "limit": limit,
+            "total_pages": total_pages,
+            "has_next": page < total_pages,
+            "has_prev": page > 1,
+        }
 
     def local_bns_state(self) -> tuple:
         """
@@ -1479,8 +1551,38 @@ class LockTraceNode:
                     return
 
                 if path == "/api/v1/transactions/latest":
-                    lim = max(1, min(50, int(qs.get("limit", ["10"])[0])))
-                    self._send_json(200, {"success": True, "data": {"transactions": node_ref.local_latest_transactions(lim)}})
+                    full_path = path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else "")
+                    upstream = node_ref.request(full_path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
+                    lim = max(1, min(100, int(qs.get("limit", ["10"])[0])))
+                    page = max(1, int(qs.get("page", ["1"])[0]))
+                    all_txs = []
+                    with node_ref.chain_lock:
+                        for idx in sorted(node_ref.chain_by_index.keys(), reverse=True):
+                            b = node_ref.chain_by_index[idx]
+                            for t in reversed(b.get("transactions", [])):
+                                t_copy = dict(t)
+                                t_copy["block_index"] = b.get("index")
+                                all_txs.append(t_copy)
+                    total = len(all_txs)
+                    total_pages = max(1, (total + lim - 1) // lim)
+                    page = min(page, total_pages)
+                    start = (page - 1) * lim
+                    page_txs = all_txs[start:start + lim]
+                    self._send_json(200, {
+                        "success": True,
+                        "data": {
+                            "transactions": page_txs,
+                            "total": total,
+                            "page": page,
+                            "limit": lim,
+                            "total_pages": total_pages,
+                            "has_next": page < total_pages,
+                            "has_prev": page > 1,
+                        }
+                    })
                     return
 
                 if path.startswith("/api/v1/transactions/"):
@@ -1489,8 +1591,33 @@ class LockTraceNode:
                     return
 
                 if path == "/api/v1/blocks/latest":
-                    cnt = max(1, min(50, int(qs.get("count", ["10"])[0])))
-                    self._send_json(200, {"success": True, "data": {"blocks": node_ref.local_latest_blocks(cnt)}})
+                    full_path = path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else "")
+                    upstream = node_ref.request(full_path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
+                    lim = max(1, min(100, int(qs.get("limit", qs.get("count", ["10"]))[0])))
+                    page = max(1, int(qs.get("page", ["1"])[0]))
+                    with node_ref.chain_lock:
+                        all_indices = sorted(node_ref.chain_by_index.keys(), reverse=True)
+                        total = len(all_indices)
+                        total_pages = max(1, (total + lim - 1) // lim)
+                        page = min(page, total_pages)
+                        start = (page - 1) * lim
+                        page_indices = all_indices[start:start + lim]
+                        page_blocks = [node_ref.chain_by_index[i] for i in page_indices]
+                    self._send_json(200, {
+                        "success": True,
+                        "data": {
+                            "blocks": page_blocks,
+                            "total": total,
+                            "page": page,
+                            "limit": lim,
+                            "total_pages": total_pages,
+                            "has_next": page < total_pages,
+                            "has_prev": page > 1,
+                        }
+                    })
                     return
 
                 if path.startswith("/api/v1/explorer/merkle-proof/"):
@@ -1521,6 +1648,11 @@ class LockTraceNode:
                     return
 
                 if path == "/api/v1/explorer/search":
+                    full_path = path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else "")
+                    upstream = node_ref.request(full_path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
                     q = (qs.get("q", [""])[0] or "").strip()
                     with node_ref.chain_lock:
                         if q.isdigit() and int(q) in node_ref.chain_by_index:
@@ -1548,7 +1680,23 @@ class LockTraceNode:
                     self._send_json(404, {"success": False, "message": "Kayıt bulunamadı."})
                     return
 
+                if path == "/api/v1/explorer/holders":
+                    full_path = path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else "")
+                    upstream = node_ref.request(full_path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
+                    lim = max(1, min(50, int(qs.get("limit", ["10"])[0])))
+                    page = max(1, int(qs.get("page", ["1"])[0]))
+                    self._send_json(200, {"success": True, "data": node_ref.local_holders(page, lim)})
+                    return
+
                 if path == "/api/v1/space/feed":
+                    full_path = path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else "")
+                    upstream = node_ref.request(full_path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
                     lim = max(1, min(100, int(qs.get("limit", ["50"])[0])))
                     posts_map = node_ref.local_space_posts()
                     ordered = sorted(posts_map.values(), key=lambda x: float(x.get("timestamp", 0)), reverse=True)[:lim]
@@ -1556,6 +1704,10 @@ class LockTraceNode:
                     return
 
                 if path.startswith("/api/v1/space/post/"):
+                    upstream = node_ref.request(path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
                     pid = urllib.parse.unquote(path.split("/api/v1/space/post/", 1)[1]).strip()
                     posts_map = node_ref.local_space_posts()
                     if pid in posts_map:
@@ -1807,7 +1959,8 @@ class LockTraceNode:
             if idx > 0:
                 prev_idx = idx - 1
                 if prev_idx not in self.chain_by_index:
-                    return False  # Missing predecessor, full sync required
+                    threading.Thread(target=self.sync_chain, daemon=True).start()
+                    return False  # Missing predecessor, full sync triggered
                 if str(blk.get("previous_hash", "")).lower() != str(self.chain_by_index[prev_idx].get("hash", "")).lower():
                     return False
 
@@ -1815,6 +1968,7 @@ class LockTraceNode:
             self.local_height = max(self.local_height, idx + 1)
             self.network_height = max(self.network_height, self.local_height)
         self._persist_local_chain()
+        self.gossip_block_to_peers(blk)
         threading.Thread(target=self.submit_latest_attestation, daemon=True).start()
         return True
 
