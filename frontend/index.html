@@ -6945,7 +6945,11 @@
           });
         }
         if (resp.ok) {
-          showToast('Like confirmed on-chain (+0.002 BCT royalty to author)', 'favorite');
+          const isBatched = (resp.body && resp.body.data && resp.body.data.status === 'mempool_batched');
+          const toastMsg = isBatched
+            ? 'Like registered! Sealing into block batch (~20s)...'
+            : 'Like confirmed on-chain (+0.002 BCT royalty to author)';
+          showToast(toastMsg, 'favorite');
           await refreshCurrentAccountBalance();
           await loadSpaceFeed();
         } else {
@@ -6993,9 +6997,14 @@
         });
         if (ok) {
           if (input) input.value = '';
-          showToast('Your comment has been sealed on-chain!', 'chat_bubble');
+          const isBatched = (body && body.data && body.data.status === 'mempool_batched');
+          const toastMsg = isBatched
+            ? 'Comment registered! Sealing into block batch (~50s)...'
+            : 'Your comment has been sealed on-chain!';
+          showToast(toastMsg, 'chat_bubble');
           await refreshCurrentAccountBalance();
           await loadSpaceFeed();
+          if (activeDetailPostId) await openSpacePostDetail(activeDetailPostId);
         } else {
           showToast(body.message || 'Could not submit comment', 'error', true);
         }
@@ -7062,8 +7071,8 @@
         { method: 'POST', path: '/api/v1/bns/register', desc: 'Register a new .bct handle with 80% Treasury burn and 20% miner rewards', testable: null },
         { method: 'GET', path: '/api/v1/space/feed?limit=50', desc: 'On-chain LockTrace Space social thoughts, creator royalty metrics, and verified posts', testable: '/space/feed?limit=5' },
         { method: 'POST', path: '/api/v1/space/post', desc: 'Publish a permanent, censorship-resistant thought to the blockchain (0.05 BCT fee)', testable: null },
-        { method: 'POST', path: '/api/v1/space/like', desc: 'Like a post and send direct on-chain royalties (+0.002 BCT) to creator wallet', testable: null },
-        { method: 'POST', path: '/api/v1/space/comment', desc: 'Comment on a post and deliver direct royalties (+0.005 BCT) to author wallet', testable: null },
+        { method: 'POST', path: '/api/v1/space/like', desc: 'Like a post with hybrid batching (20s window / 15 likes quota) delivering +0.002 BCT royalty to creator', testable: null },
+        { method: 'POST', path: '/api/v1/space/comment', desc: 'Comment on a post with hybrid batching (50s window / 10 comments quota) delivering +0.004 BCT royalty to author', testable: null },
         { method: 'POST', path: '/api/v1/transaction', desc: 'Broadcast client-signed Non-Custodial SECP256k1 ECDSA transfer', testable: null },
         { method: 'GET', path: '/api/v1/explorer/merkle-proof/<tx_hash>', desc: 'SPV Merkle cryptographic inclusion proof for light clients', testable: sampleTx ? '/explorer/merkle-proof/' + sampleTx : '/blocks/latest?count=1' },
         { method: 'GET', path: '/api/v1/nodes', desc: 'Active network nodes, peer hashrate, and 70/30 reward distributions', testable: '/nodes' },

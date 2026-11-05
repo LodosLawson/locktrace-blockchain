@@ -17,12 +17,15 @@ import time
 import os
 import threading
 import secrets
+import logging
 import urllib.parse
 import urllib.request
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Dict, Optional, Tuple
 from core.wallet import public_key_to_address, verify_signature
 from core.storage import SQLiteStorage
+
+logger = logging.getLogger("LockTrace")
 
 
 ATOMIC_UNIT = 100_000_000                 # 1 BCT = 10^8 atomic units (prevents IEEE-754 drift at 1T scale)
@@ -43,6 +46,17 @@ PROPOSER_REWARD_SHARE = 0.70             # 70% of reward pool to winning PoW blo
 VALIDATOR_POOL_SHARE = 0.30              # 30% of reward pool shared equally among active verified peer validators
 MEMPOOL_MINER_WINDOW_SECONDS = 15.0      # Priority window for external PoW miners before fallback sealing
 ACTIVE_MINER_TTL_SECONDS = 90.0          # Heartbeat window identifying live external PoW miners
+
+# Hybrid Batching Parameters for Micro/Social Transactions (Süre + Kota)
+LIKE_BATCH_WINDOW_SECONDS = 20.0       # Max wait time for likes batch (20 seconds)
+LIKE_BATCH_QUOTA = 15                  # Max count threshold for likes batch (15 likes)
+
+COMMENT_BATCH_WINDOW_SECONDS = 50.0    # Max wait time for comments batch (50 seconds)
+COMMENT_BATCH_QUOTA = 10               # Max count threshold for comments batch (10 comments)
+
+GENERAL_TX_BATCH_WINDOW_SECONDS = 20.0 # Standard transfer / micro tx window (20 seconds)
+GENERAL_TX_BATCH_QUOTA = 25            # General transaction block threshold
+
 MINING_DIFFICULTY = 3                    # Base Proof of Work Difficulty
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
@@ -287,11 +301,15 @@ class Blockchain:
         self._storage: Optional[SQLiteStorage] = None
         self._storage_dir_bound = ""
         self._loaded_revision = -1
+        self._stop_sequencer: Optional[threading.Event] = None
+        self._sequencer_thread: Optional[threading.Thread] = None
 
         with self.lock:
             if not self._load_state():
                 self._create_genesis_block()
             self._init_default_nodes()
+        if self.auto_mine:
+            self._start_batch_sequencer()
 
     def _get_active_data_dir(self) -> str:
         return self._custom_data_dir or DATA_DIR
@@ -637,8 +655,8 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + fee, 8)
 
-            # Seal immediately if no external miners are online; otherwise queue in shared mempool for PoW nodes
-            block = self._seal_or_queue_mempool()
+            # Seal immediately on-chain if auto_mine is enabled
+            block = self._mine_block() if self.auto_mine else self._seal_or_queue_mempool()
 
             # Record in fast index
             self.space_posts[post_id] = {
@@ -703,6 +721,17 @@ class Blockchain:
             if clean_liker in post.get("likes", []):
                 return False, "Bu gönderiyi zaten beğendiniz.", None
 
+            # Double-like protection in mempool
+            is_already_in_mempool = any(
+                t.tx_type == "space_like"
+                and t.sender == clean_liker
+                and t.extra_data
+                and t.extra_data.get("post_id") == pid
+                for t in self.pending_transactions
+            )
+            if is_already_in_mempool:
+                return False, "Bu gönderi için beğeniniz blok mühürleme havuzunda bekliyor.", None
+
             liker_bal = self.verify_and_recalc_balance(clean_liker)
             like_cost = 0.01
             if liker_bal < like_cost:
@@ -736,9 +765,7 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
 
-            block = self._mine_block() if self.auto_mine else self._seal_or_queue_mempool()
-
-            # Update index
+            # Update optimistic index immediately for real-time responsiveness
             if clean_liker not in post["likes"]:
                 post["likes"].append(clean_liker)
                 post["likes_count"] = len(post["likes"])
@@ -749,16 +776,27 @@ class Blockchain:
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
 
+            # Hybrid Batching Evaluation (Quota or Timeout Trigger)
+            block = None
+            if self.auto_mine:
+                ready, trigger_reason = self._check_batch_ready()
+                if ready:
+                    block = self._mine_block()
+
             res = {
                 "post_id": pid,
                 "tx_hash": tx.hash(),
                 "block_index": block.index if block else "Mempool",
-                "status": "confirmed" if block else "mempool",
+                "status": "confirmed" if block else "mempool_batched",
+                "batch_window_seconds": LIKE_BATCH_WINDOW_SECONDS,
+                "batch_quota": LIKE_BATCH_QUOTA,
                 "likes_count": post["likes_count"],
                 "author_earned": author_cut,
                 "liker_new_balance": self.balances[clean_liker]
             }
-            return True, f"Gönderi beğenildi! {author_cut} BCT yazarın cüzdanına aktarıldı.", res
+            msg = ("Gönderi beğenildi ve bloğa mühürlendi!" if block
+                   else f"Gönderi beğenildi! 20 saniyelik blok havuzuna alındı.")
+            return True, msg, res
 
     def comment_space_post(self, commenter: str, post_id: str, content: str,
                            signature: str = "", public_key: str = "", signed_payload: str = "",
@@ -842,11 +880,22 @@ class Blockchain:
                 extra_data=extra_data
             )
 
+            # Double-comment duplicate protection in mempool
+            is_dup_comment = any(
+                t.tx_type == "space_comment"
+                and t.sender == clean_commenter
+                and t.extra_data
+                and t.extra_data.get("post_id") == pid
+                and t.extra_data.get("content") == clean_text
+                and (time.time() - float(t.timestamp or 0)) < 30.0
+                for t in self.pending_transactions
+            )
+            if is_dup_comment:
+                return False, "Bu yorum zaten gönderildi ve blok mühürleme havuzunda bekliyor.", None
+
             self.pending_transactions.append(tx)
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
-
-            block = self._mine_block() if self.auto_mine else self._seal_or_queue_mempool()
 
             # Update index
             cmt_obj = {
@@ -867,15 +916,26 @@ class Blockchain:
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
 
+            # Hybrid Batching Evaluation (Quota or Timeout Trigger)
+            block = None
+            if self.auto_mine:
+                ready, trigger_reason = self._check_batch_ready()
+                if ready:
+                    block = self._mine_block()
+
             res = {
                 "post_id": pid,
                 "comment": cmt_obj,
                 "block_index": block.index if block else "Mempool",
-                "status": "confirmed" if block else "mempool",
+                "status": "confirmed" if block else "mempool_batched",
+                "batch_window_seconds": COMMENT_BATCH_WINDOW_SECONDS,
+                "batch_quota": COMMENT_BATCH_QUOTA,
                 "author_earned": author_cut,
                 "commenter_new_balance": self.balances[clean_commenter]
             }
-            return True, f"Yorumunuz blokzincire işlendi! {author_cut} BCT yazarın hesabına geçti.", res
+            msg = ("Yorumunuz paylaşıldı ve bloğa mühürlendi!" if block
+                   else "Yorumunuz paylaşıldı! 50 saniyelik blok havuzuna alındı.")
+            return True, msg, res
 
     def get_space_feed(self, limit: int = 50) -> list:
         with self.lock:
@@ -1851,13 +1911,91 @@ class Blockchain:
             return True
         return len(self.get_active_peer_miners()) > 0
 
+    def _check_batch_ready(self) -> Tuple[bool, str]:
+        """
+        Hybrid Batching Evaluation (Süre + Kota):
+        Evaluates whether pending transactions in mempool should be sealed into a new block:
+        - Likes: 20s window OR 15 likes quota
+        - Comments: 50s window OR 10 comments quota
+        - General Tx: 20s window OR 25 tx quota
+        Returns: (ready: bool, trigger_reason: str)
+        """
+        if not self.pending_transactions:
+            return False, ""
+
+        now = time.time()
+        like_count = 0
+        comment_count = 0
+        oldest_like_ts = None
+        oldest_comment_ts = None
+        oldest_any_ts = None
+
+        for tx in self.pending_transactions:
+            ts = float(tx.timestamp or now)
+            if oldest_any_ts is None or ts < oldest_any_ts:
+                oldest_any_ts = ts
+
+            if tx.tx_type == "space_like":
+                like_count += 1
+                if oldest_like_ts is None or ts < oldest_like_ts:
+                    oldest_like_ts = ts
+            elif tx.tx_type == "space_comment":
+                comment_count += 1
+                if oldest_comment_ts is None or ts < oldest_comment_ts:
+                    oldest_comment_ts = ts
+
+        # 1. Quota triggers (Instant block sealing when quota threshold reached)
+        if like_count >= LIKE_BATCH_QUOTA:
+            return True, f"like_quota_reached ({like_count}/{LIKE_BATCH_QUOTA})"
+        if comment_count >= COMMENT_BATCH_QUOTA:
+            return True, f"comment_quota_reached ({comment_count}/{COMMENT_BATCH_QUOTA})"
+        if len(self.pending_transactions) >= GENERAL_TX_BATCH_QUOTA:
+            return True, f"total_tx_quota_reached ({len(self.pending_transactions)}/{GENERAL_TX_BATCH_QUOTA})"
+
+        # 2. Time-window triggers (Timeout reached for oldest micro-action)
+        if oldest_like_ts is not None and (now - oldest_like_ts) >= LIKE_BATCH_WINDOW_SECONDS:
+            return True, f"like_window_timeout ({now - oldest_like_ts:.1f}s >= {LIKE_BATCH_WINDOW_SECONDS}s)"
+        if oldest_comment_ts is not None and (now - oldest_comment_ts) >= COMMENT_BATCH_WINDOW_SECONDS:
+            return True, f"comment_window_timeout ({now - oldest_comment_ts:.1f}s >= {COMMENT_BATCH_WINDOW_SECONDS}s)"
+        if oldest_any_ts is not None and (now - oldest_any_ts) >= GENERAL_TX_BATCH_WINDOW_SECONDS:
+            return True, f"general_tx_timeout ({now - oldest_any_ts:.1f}s >= {GENERAL_TX_BATCH_WINDOW_SECONDS}s)"
+
+        return False, ""
+
+    def _start_batch_sequencer(self):
+        """Starts an autonomous background timer loop that triggers block sealing when time windows elapse."""
+        if self._sequencer_thread and self._sequencer_thread.is_alive():
+            return
+        self._stop_sequencer = threading.Event()
+        self._sequencer_thread = threading.Thread(
+            target=self._run_batch_sequencer_loop,
+            daemon=True,
+            name="LockTrace-BatchSequencer"
+        )
+        self._sequencer_thread.start()
+
+    def _run_batch_sequencer_loop(self):
+        while self._stop_sequencer and not self._stop_sequencer.is_set():
+            try:
+                time.sleep(1.0)
+                with self.lock:
+                    if self.auto_mine and self.pending_transactions:
+                        ready, reason = self._check_batch_ready()
+                        if ready:
+                            blk = self._mine_block()
+                            if blk:
+                                logger.info(f"[BATCH SEQUENCER] Auto-sealed block #{blk.index} ({len(blk.transactions)} txs, trigger: {reason})")
+            except Exception as e:
+                logger.error(f"[BATCH SEQUENCER] loop exception: {e}")
+
     def _seal_or_queue_mempool(self) -> Optional[Block]:
-        """Seals immediately if 0 external peer miners are online; otherwise queues in shared SQLite mempool."""
+        """Seals immediately if batch ready; otherwise queues in shared mempool."""
         if not self.auto_mine:
             return None
-        if self._should_defer_to_peer_miners():
-            return None
-        return self._mine_block()
+        ready, _ = self._check_batch_ready()
+        if ready:
+            return self._mine_block()
+        return None
 
     def _sweep_overdue_mempool(self) -> Optional[Block]:
         """Safety-net sequencer: if pending mempool transactions wait longer than MEMPOOL_MINER_WINDOW_SECONDS, seal them."""

@@ -49,6 +49,22 @@ LockTrace Space embeds social interactions directly into the Layer-1 transaction
 - **Tip Royalty (`space_tip`):** Readers can tip creators directly in any custom amount of BCT with 0% intermediary commission.
 - **Creator Identity:** Verified via on-chain BNS `.bct` handles or verified public ECDSA wallet addresses.
 
+### ⚡ Hybrid Batching & Sequencer Architecture (Time + Quota)
+To maintain ultra-lean blockchain storage, eliminate micro-block bloat, and protect network validator bandwidth while delivering instantaneous Web3 social responsiveness, LockTrace implements an intelligent **Time + Quota Hybrid Batching Sequencer**:
+
+$$\text{Block Trigger} = (\Delta t \ge T_{\text{window}}) \quad \mathbf{OR} \quad (N_{\text{tx}} \ge Q_{\text{quota}})$$
+
+- **Likes Batching Window (`space_like`):**
+  - **Time Window ($T_{\text{window}}$):** Max **20 seconds**. All likes across the global network within 20s are pooled in mempool and sealed together into a single PoW block.
+  - **Quota Threshold ($Q_{\text{quota}}$):** **15 Likes**. If 15 likes arrive before 20s, the batch block seals **immediately**.
+- **Comments Batching Window (`space_comment`):**
+  - **Time Window ($T_{\text{window}}$):** Max **50 seconds**.
+  - **Quota Threshold ($Q_{\text{quota}}$):** **10 Comments**. If 10 comments accumulate, the batch block seals immediately.
+- **Security & Cryptographic Integrity:**
+  - **Mempool Double-Action Prevention:** Rejects duplicate likes or duplicate comments in real-time before block packaging.
+  - **Sequential Nonce Preservation:** Supports multiple actions from the same user within the same batch window with strictly incremented sequential nonces ($n, n+1, n+2$).
+  - **Optimistic Web3 UI Responsiveness:** Client feeds reflect social interactions and creator balances instantly while the cryptographic PoW block seals in the background.
+
 ---
 
 ## 🏷️ LockTrace Name Service (BNS - `.bct` Handles)
