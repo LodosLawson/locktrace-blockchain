@@ -1197,6 +1197,50 @@ class LockTraceNode:
             blk = self._mine_autonomous_p2p_block(tx)
             return 201, {"success": True, "message": "Gönderi yerel PoW bloğuna mühürlendi!", "data": {"post_id": pid, "block_index": blk["index"]}}
 
+        if path == "/api/v1/space/like":
+            liker = str(payload.get("liker", "")).strip()
+            pid = str(payload.get("post_id", "")).strip()
+            posts = self.local_space_posts()
+            if pid not in posts:
+                return 404, {"success": False, "message": "Gönderi bulunamadı."}
+            if liker in posts[pid].get("likes", []):
+                return 400, {"success": False, "message": "Bu gönderiyi zaten beğendiniz."}
+            tx = {
+                "sender": liker,
+                "receiver": TREASURY_ADDRESS,
+                "amount": 0.01,
+                "fee": 0.001,
+                "net_amount": 0.01,
+                "signature": payload.get("signature", ""),
+                "timestamp": time.time(),
+                "tx_type": "space_like",
+                "extra_data": {"post_id": pid, "author": posts[pid].get("author", ""), "liker": liker, "author_cut": 0.002, "treasury_cut": 0.007}
+            }
+            blk = self._mine_autonomous_p2p_block(tx)
+            return 200, {"success": True, "message": "Beğeni yerel PoW bloğuna mühürlendi!", "data": {"post_id": pid, "block_index": blk["index"], "status": "confirmed"}}
+
+        if path == "/api/v1/space/comment":
+            commenter = str(payload.get("commenter", "")).strip()
+            pid = str(payload.get("post_id", "")).strip()
+            content = str(payload.get("content", "")).strip()[:140]
+            posts = self.local_space_posts()
+            if pid not in posts:
+                return 404, {"success": False, "message": "Gönderi bulunamadı."}
+            cid = f"cmt_{secrets.token_hex(6)}"
+            tx = {
+                "sender": commenter,
+                "receiver": TREASURY_ADDRESS,
+                "amount": 0.02,
+                "fee": 0.002,
+                "net_amount": 0.02,
+                "signature": payload.get("signature", ""),
+                "timestamp": time.time(),
+                "tx_type": "space_comment",
+                "extra_data": {"post_id": pid, "comment_id": cid, "author": posts[pid].get("author", ""), "commenter": commenter, "content": content, "author_cut": 0.004, "treasury_cut": 0.014}
+            }
+            blk = self._mine_autonomous_p2p_block(tx)
+            return 200, {"success": True, "message": "Yorum yerel PoW bloğuna mühürlendi!", "data": {"post_id": pid, "block_index": blk["index"], "status": "confirmed"}}
+
         return 503, {"success": False, "message": "Bu işlem için P2P ağ senkronizasyonu bekleniyor."}
 
     # =================================================================
