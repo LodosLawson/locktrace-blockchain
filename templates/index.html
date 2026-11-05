@@ -3948,6 +3948,17 @@
     let spaceSearchQuery = '';
     let activeDetailPostId = null;
     let isSendingTransaction = false;
+
+    // BNS Global State & Caches (Declared early for global access across tabs)
+    let bnsMyHandlesCache = [];
+    let bnsMarketCache = [];
+    let bnsDirectoryCache = [];
+    let currentBnsHandle = '';
+    let currentBnsSubTab = 'my';
+    let pendingBnsRegisterName = '';
+    let pendingBnsRegisterCost = 0;
+    let pendingBnsSetPriceName = '';
+    let pendingBnsTransferName = '';
     let isPublishingSpacePost = false;
     let isSubmittingComment = false;
     const inFlightLikes = new Set();
@@ -7935,14 +7946,7 @@
     // =========================================================================
     // 16. BNS (LOCKTRACE NAME SERVICE — .bct PROTOCOL & MARKETPLACE CONTROLLER)
     // =========================================================================
-    let bnsMyHandlesCache = [];
-    let bnsMarketCache = [];
-    let bnsDirectoryCache = [];
-    let currentBnsSubTab = 'my';
-    let pendingBnsRegisterName = '';
-    let pendingBnsRegisterCost = 0;
-    let pendingBnsSetPriceName = '';
-    let pendingBnsTransferName = '';
+    // (BNS state variables declared at top of script)
     let pendingBnsBuyName = '';
     let pendingBnsBuyPrice = 0;
     let pendingBnsBuySeller = '';
