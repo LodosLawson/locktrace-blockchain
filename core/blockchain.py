@@ -70,7 +70,7 @@ RELEASE_AUTHORITY_PUBKEY = (
 def verify_frontend_manifest(manifest: dict) -> Tuple[bool, str]:
     """Cryptographically verify a signed frontend release manifest against RELEASE_AUTHORITY_PUBKEY."""
     if not isinstance(manifest, dict):
-        return False, "Geçersiz manifest formatı."
+        return False, "Invalid manifest format."
     ver = str(manifest.get("version", "")).strip()
     index_sha = str(manifest.get("index_html_sha256", "")).strip().lower()
     sw_sha = str(manifest.get("sw_js_sha256", "")).strip().lower()
@@ -79,14 +79,14 @@ def verify_frontend_manifest(manifest: dict) -> Tuple[bool, str]:
     sig = str(manifest.get("signature", "")).strip()
 
     if not ver or len(index_sha) != 64 or not ipfs_cid or not sig:
-        return False, "Eksik sürüm sağlama toplamı (SHA-256) veya imza alanı."
+        return False, "Missing release checksum (SHA-256) or signature."
     if pub != RELEASE_AUTHORITY_PUBKEY.lower() or public_key_to_address(pub) != RELEASE_AUTHORITY_ADDRESS:
-        return False, "Yetkisiz sürüm imzalayıcı açık anahtarı (Release Authority mismatch)!"
+        return False, "Unauthorized release signing authority (Release Authority mismatch)!"
 
     canonical_msg = f"LOCKTRACE_FRONTEND_RELEASE:{ver}:{index_sha}:{sw_sha}:{ipfs_cid}"
     if not verify_signature(RELEASE_AUTHORITY_PUBKEY, canonical_msg, sig):
-        return False, "ECDSA sürüm imzası geçersiz! Manifest manipüle edilmiş."
-    return True, "Doğrulandı"
+        return False, "Invalid ECDSA release signature! Manifest has been tampered with."
+    return True, "Verified"
 
 
 def is_valid_bct_address(addr: str) -> bool:
@@ -415,20 +415,20 @@ class Blockchain:
         """Cryptographically verify ECDSA signature and bind public key to actor_address."""
         clean_addr = (actor_address or "").strip()
         if clean_addr.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT", "GENESIS"):
-            return False, "Sistem hazine adresi doğrudan işlem göndericisi olamaz."
+            return False, "System treasury address cannot be a direct transaction sender."
         if not signature:
-            return False, "Kriptografik imza eksik (Unauthorized)."
+            return False, "Cryptographic signature missing (Unauthorized)."
 
         pub_hex = (public_key or "").strip() or self.wallets.get(clean_addr, {}).get("public_key", "")
         if not pub_hex:
-            return False, "Cüzdan açık anahtarı (public key) doğrulanamadı. Lütfen cüzdanınızı yeniden bağlayın."
+            return False, "Wallet public key could not be verified. Please reconnect your wallet."
 
         derived_addr = public_key_to_address(pub_hex)
         if derived_addr != clean_addr:
-            return False, "Açık anahtar (public key) ile gönderici adresi uyuşmuyor!"
+            return False, "Public key does not match sender wallet address!"
 
         if not verify_signature(pub_hex, payload, signature):
-            return False, "Geçersiz ECDSA dijital imza!"
+            return False, "Invalid ECDSA digital signature!"
 
         if clean_addr not in self.wallets:
             self.wallets[clean_addr] = {"public_key": pub_hex, "created_at": time.time()}
@@ -444,12 +444,12 @@ class Blockchain:
             clean_pub = (public_key or "").strip()
 
             if not is_valid_bct_address(clean_addr) or clean_addr.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
-                return False, "Geçersiz cüzdan adresi formatı."
+                return False, "Invalid wallet address format."
 
             if clean_pub:
                 derived = public_key_to_address(clean_pub)
                 if derived != clean_addr:
-                    return False, "Açık anahtar (public key) cüzdan adresiyle kriptografik olarak eşleşmiyor!"
+                    return False, "Public key does not match wallet address cryptographically!"
 
             current_bal = self.verify_and_recalc_balance(clean_addr)
 
@@ -597,9 +597,9 @@ class Blockchain:
 
             clean_text = content.strip()
             if len(clean_text) < 3:
-                return False, "Düşünce metni en az 3 karakter olmalıdır.", None
+                return False, "Post text must be at least 3 characters.", None
             if len(clean_text) > 280:
-                return False, "Düşünce metni maksimum 280 karakter olabilir.", None
+                return False, "Post text can be at most 280 characters.", None
 
             expected_payload = signed_payload or f"{clean_author}:{clean_text}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_author, expected_payload, signature, public_key)
@@ -609,7 +609,7 @@ class Blockchain:
             author_bal = self.verify_and_recalc_balance(clean_author)
             post_cost = 0.10
             if author_bal < post_cost:
-                return False, f"Yetersiz bakiye! Paylaşım ücreti {post_cost:.2f} BCT'dir. Mevcut bakiyeniz: {author_bal:.4f} BCT.", None
+                return False, f"Insufficient balance! Post fee is {post_cost:.2f} BCT. Current balance: {author_bal:.4f} BCT.", None
 
             clean_bns = str(bns_name or "").strip().lower()
             if clean_bns.startswith("@"):
@@ -690,7 +690,7 @@ class Blockchain:
                 "cost": post_cost,
                 "new_balance": self.balances[clean_author]
             }
-            return True, "Düşünceniz blokzincire başarıyla mühürlendi ve yayımlandı!", res
+            return True, "Your thought has been successfully sealed on-chain and published!", res
 
     def like_space_post(self, liker: str, post_id: str, signature: str = "",
                         public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
@@ -710,7 +710,7 @@ class Blockchain:
 
             pid = post_id.strip()
             if pid not in self.space_posts:
-                return False, "Beğenilmek istenen gönderi bulunamadı.", None
+                return False, "Target post not found.", None
 
             expected_payload = signed_payload or f"{clean_liker}:{pid}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_liker, expected_payload, signature, public_key)
@@ -719,7 +719,7 @@ class Blockchain:
 
             post = self.space_posts[pid]
             if clean_liker in post.get("likes", []):
-                return False, "Bu gönderiyi zaten beğendiniz.", None
+                return False, "You have already liked this post.", None
 
             # Double-like protection in mempool
             is_already_in_mempool = any(
@@ -730,12 +730,12 @@ class Blockchain:
                 for t in self.pending_transactions
             )
             if is_already_in_mempool:
-                return False, "Bu gönderi için beğeniniz blok mühürleme havuzunda bekliyor.", None
+                return False, "Your like for this post is already queued in the batch pool.", None
 
             liker_bal = self.verify_and_recalc_balance(clean_liker)
             like_cost = 0.01
             if liker_bal < like_cost:
-                return False, f"Yetersiz bakiye! Beğeni ücreti {like_cost:.2f} BCT'dir. Mevcut bakiyeniz: {liker_bal:.4f} BCT.", None
+                return False, f"Insufficient balance! Like fee is {like_cost:.2f} BCT. Current balance: {liker_bal:.4f} BCT.", None
 
             author_address = post["author"]
             author_cut = 0.002
@@ -794,8 +794,8 @@ class Blockchain:
                 "author_earned": author_cut,
                 "liker_new_balance": self.balances[clean_liker]
             }
-            msg = ("Gönderi beğenildi ve bloğa mühürlendi!" if block
-                   else f"Gönderi beğenildi! 20 saniyelik blok havuzuna alındı.")
+            msg = ("Post liked and sealed into block!" if block
+                   else f"Post liked! Queued in 20s batch pool.")
             return True, msg, res
 
     def comment_space_post(self, commenter: str, post_id: str, content: str,
@@ -818,11 +818,11 @@ class Blockchain:
 
             pid = post_id.strip()
             if pid not in self.space_posts:
-                return False, "Yorum yapılacak gönderi bulunamadı.", None
+                return False, "Target post for comment not found.", None
 
             clean_text = content.strip()
             if len(clean_text) < 1 or len(clean_text) > 140:
-                return False, "Yorum metni 1 ile 140 karakter arasında olmalıdır.", None
+                return False, "Comment text must be between 1 and 140 characters.", None
 
             expected_payload = signed_payload or f"{clean_commenter}:{pid}:{clean_text}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_commenter, expected_payload, signature, public_key)
@@ -832,7 +832,7 @@ class Blockchain:
             commenter_bal = self.verify_and_recalc_balance(clean_commenter)
             comment_cost = 0.02
             if commenter_bal < comment_cost:
-                return False, f"Yetersiz bakiye! Yorum ücreti {comment_cost:.2f} BCT'dir. Mevcut bakiyeniz: {commenter_bal:.4f} BCT.", None
+                return False, f"Insufficient balance! Comment fee is {comment_cost:.2f} BCT. Current balance: {commenter_bal:.4f} BCT.", None
 
             post = self.space_posts[pid]
             clean_bns = str(bns_name or "").strip().lower()
@@ -891,7 +891,7 @@ class Blockchain:
                 for t in self.pending_transactions
             )
             if is_dup_comment:
-                return False, "Bu yorum zaten gönderildi ve blok mühürleme havuzunda bekliyor.", None
+                return False, "This comment has already been submitted and is queued in the batch pool.", None
 
             self.pending_transactions.append(tx)
             self.total_transactions += 1
@@ -933,8 +933,8 @@ class Blockchain:
                 "author_earned": author_cut,
                 "commenter_new_balance": self.balances[clean_commenter]
             }
-            msg = ("Yorumunuz paylaşıldı ve bloğa mühürlendi!" if block
-                   else "Yorumunuz paylaşıldı! 50 saniyelik blok havuzuna alındı.")
+            msg = ("Comment published and sealed into block!" if block
+                   else "Comment published! Queued in 50s batch pool.")
             return True, msg, res
 
     def get_space_feed(self, limit: int = 50) -> list:
@@ -1750,13 +1750,13 @@ class Blockchain:
                               currency: str = "USD", payment_ref: str = "",
                               bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
         """Disabled: Prevents unverified mock coin acquisition."""
-        return False, "Doğrudan test amaçlı bedava token alımı durdurulmuştur. BCT tokenları LockTrace Space üzerinde düşünce paylaşarak, yorum/beğeni toplayarak veya düğüm (node) madenciliği ile kazanılabilir.", None
+        return False, "Free mock token acquisition is disabled. BCT tokens can be earned on LockTrace Space by sharing thoughts, comments/likes, or node mining.", None
 
     def execute_fiat_sale(self, seller_address: str, bct_amount: float,
                           payout_info: str = "", currency: str = "USD",
                           bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
         """Disabled: Initial welcome grant cannot be dumped for free fiat."""
-        return False, "Doğrudan nakit çıkışı durdurulmuştur. Dağıtılan cüzdan bakiyeleri LockTrace Space düşünce ağı üzerinde ve transferlerde kullanılabilir.", None
+        return False, "Direct fiat withdrawal is disabled. BCT balances can be used on the LockTrace Space thought network and for transfers.", None
 
     def execute_bridge_unlock(self, recipient_address: str, amount_bct: float,
                               evm_tx_hash: str, evm_sender: str = "") -> Tuple[bool, str, Optional[dict]]:
@@ -1769,32 +1769,32 @@ class Blockchain:
             self._load_state()
             clean_recipient = (recipient_address or "").strip()
             if not is_valid_bct_address(clean_recipient):
-                return False, f"Geçersiz alıcı BCT adresi: '{clean_recipient}'", None
+                return False, f"Invalid recipient BCT address: '{clean_recipient}'", None
 
             clean_hash = (evm_tx_hash or "").strip().lower()
             if not clean_hash:
-                return False, "EVM işlem hash'i zorunludur.", None
+                return False, "EVM transaction hash is required.", None
 
             # Deduplication: Ensure this EVM tx hash hasn't already been unlocked
             for block in self.chain:
                 for tx in block.transactions:
                     if tx.tx_type == "bridge_unlock" and tx.extra_data and str(tx.extra_data.get("evm_tx_hash", "")).lower() == clean_hash:
-                        return False, "Bu EVM yakım işlemi daha önce işlenmiş (Tekrarlı işlem engellendi).", None
+                        return False, "This EVM burn transaction has already been processed (Replay blocked).", None
             for tx in self.pending_transactions:
                 if tx.tx_type == "bridge_unlock" and tx.extra_data and str(tx.extra_data.get("evm_tx_hash", "")).lower() == clean_hash:
-                    return False, "Bu EVM yakım işlemi mempool'da işlenmeyi bekliyor.", None
+                    return False, "This EVM burn transaction is pending in mempool.", None
 
             try:
                 amount_bct = round(float(amount_bct), 8)
             except (ValueError, TypeError):
-                return False, "Geçersiz transfer miktarı.", None
+                return False, "Invalid transfer amount.", None
 
             if amount_bct <= 0:
-                return False, "Miktar 0'dan büyük olmalıdır.", None
+                return False, "Amount must be greater than 0.", None
 
             vault_bal = self.verify_and_recalc_balance(BRIDGE_VAULT_ADDRESS)
             if vault_bal < amount_bct:
-                return False, f"Köprü kasasında yetersiz kilitli bakiye! Kasadaki kilitli rezerv: {vault_bal:,.4f} BCT. (Talep edilen: {amount_bct:,.4f} BCT)", None
+                return False, f"Insufficient locked balance in bridge vault! Vault reserve: {vault_bal:,.4f} BCT. (Requested: {amount_bct:,.4f} BCT)", None
 
             sender_vault = BRIDGE_VAULT_ADDRESS
             sender_bal = vault_bal
@@ -1846,7 +1846,7 @@ class Blockchain:
                 "new_balance": self.balances[clean_recipient]
             }
 
-            return True, f"Tebrikler! {amount_bct} BCT başarıyla LockTrace Layer-1 cüzdanınıza aktarıldı.", tx_info
+            return True, f"Congratulations! {amount_bct} BCT successfully unlocked to your LockTrace Layer-1 wallet.", tx_info
 
 
     def get_active_peer_miners(self, now: Optional[float] = None) -> List[dict]:
@@ -1913,7 +1913,7 @@ class Blockchain:
 
     def _check_batch_ready(self) -> Tuple[bool, str]:
         """
-        Hybrid Batching Evaluation (Süre + Kota):
+        Hybrid Batching Evaluation (Time + Quota):
         Evaluates whether pending transactions in mempool should be sealed into a new block:
         - Likes: 20s window OR 15 likes quota
         - Comments: 50s window OR 10 comments quota
@@ -2225,7 +2225,7 @@ class Blockchain:
             self._load_state(sweep_overdue=False)
             clean_miner = (miner_address or "").strip()
             if not is_valid_bct_address(clean_miner) or clean_miner.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
-                return False, "Geçersiz madenci cüzdan adresi.", None
+                return False, "Invalid miner wallet address.", None
 
             if node_id and node_id in self.nodes and not self.nodes[node_id].get("is_genesis"):
                 self.nodes[node_id]["last_seen"] = time.time()
@@ -2235,7 +2235,7 @@ class Blockchain:
             prev_hash = self.chain[-1].hash if self.chain else "0" * 64
 
             if not self.pending_transactions:
-                return False, "Mempool boş — yeni işlem bekleniyor.", {
+                return False, "Mempool is empty — awaiting new transactions.", {
                     "empty": True,
                     "block_index": block_index,
                     "previous_hash": prev_hash,
@@ -2251,7 +2251,7 @@ class Blockchain:
             tx_dicts = [t.to_dict() for t in candidate_txs]
             merkle_root = compute_merkle_root([t["tx_hash"] for t in tx_dicts])
 
-            return True, "PoW blok şablonu hazır.", {
+            return True, "PoW block template ready.", {
                 "empty": False,
                 "version": 2,
                 "index": block_index,
@@ -2281,11 +2281,11 @@ class Blockchain:
         with self.lock:
             self._load_state(sweep_overdue=False)
             if not isinstance(block_data, dict):
-                return False, "Geçersiz blok verisi.", None
+                return False, "Invalid block data.", None
 
             clean_miner = str(block_data.get("miner", "") or "").strip()
             if not is_valid_bct_address(clean_miner) or clean_miner.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
-                return False, "Geçersiz madenci cüzdan adresi.", None
+                return False, "Invalid miner wallet address.", None
 
             submitted_idx = int(block_data.get("index", -1))
             submitted_hash = str(block_data.get("hash", "") or "").strip().lower()
@@ -2295,32 +2295,32 @@ class Blockchain:
             submitted_ver = int(block_data.get("version", 2))
 
             if submitted_ver < 2 or submitted_nonce < 0:
-                return False, "Yalnızca v2 Merkle PoW blok formatı kabul edilmektedir.", None
+                return False, "Only v2 Merkle PoW block format is accepted.", None
 
             # 1. Verify miner ECDSA ownership over the solved block header
             clean_pub = (public_key or "").strip() or self.wallets.get(clean_miner, {}).get("public_key", "")
             if not clean_pub or not signature:
-                return False, "Blok gönderimi için madenci ECDSA imzası (public_key + signature) zorunludur.", None
+                return False, "Miner ECDSA signature (public_key + signature) is required to submit a block.", None
             if public_key_to_address(clean_pub) != clean_miner:
-                return False, "Madenci açık anahtarı (public_key) madenci cüzdan adresiyle eşleşmiyor!", None
+                return False, "Miner public key does not match miner wallet address!", None
 
             header_auth_msg = f"SUBMIT_BLOCK:{submitted_idx}:{submitted_hash}:{submitted_nonce}:{clean_miner}"
             if not verify_signature(clean_pub, header_auth_msg, signature):
-                return False, "Geçersiz madenci blok ECDSA imzası!", None
+                return False, "Invalid miner block ECDSA signature!", None
 
             # 2. Check chain height & previous hash (detect race/stale block cleanly)
             expected_idx = len(self.chain)
             expected_prev = (self.chain[-1].hash if self.chain else "0" * 64).lower()
             if submitted_idx != expected_idx or submitted_prev != expected_prev:
-                return False, f"Zincir ilerledi (Stale Block). Beklenen blok: #{expected_idx}", {"stale": True, "network_height": expected_idx}
+                return False, f"Chain advanced (Stale Block). Expected block: #{expected_idx}", {"stale": True, "network_height": expected_idx}
 
             if abs(time.time() - submitted_ts) > 300:
-                return False, "Blok zaman damgası geçersiz (±300 sn sınırı aşıldı).", None
+                return False, "Block timestamp invalid (exceeded ±300s window).", None
 
             # 3. Validate transactions against live mempool + exact protocol reward math
             raw_txs = block_data.get("transactions", [])
             if not isinstance(raw_txs, list) or not raw_txs:
-                return False, "Boş blok kabul edilmez.", None
+                return False, "Empty block not accepted.", None
 
             mempool_by_hash = {tx.hash(): tx for tx in self.pending_transactions}
             matched_user_txs: List[Transaction] = []
@@ -2329,7 +2329,7 @@ class Blockchain:
 
             for t_dict in raw_txs:
                 if not isinstance(t_dict, dict):
-                    return False, "Bozuk işlem formatı.", None
+                    return False, "Malformed transaction format.", None
                 t_type = str(t_dict.get("tx_type", "transfer"))
                 tx_obj = Transaction(
                     sender=str(t_dict.get("sender", "")),
@@ -2346,26 +2346,26 @@ class Blockchain:
                     submitted_reward_hashes.append(h)
                 else:
                     if h not in mempool_by_hash or h in seen_user_hashes:
-                        return False, "Blokta mempool'da bulunmayan veya mükerrer işlem tespit edildi!", None
+                        return False, "Unrecognized or duplicate mempool transaction in block!", None
                     seen_user_hashes.add(h)
                     matched_user_txs.append(mempool_by_hash[h])
 
             if not matched_user_txs:
-                return False, "Blok en az 1 geçerli mempool işlemi içermelidir.", None
+                return False, "Block must contain at least 1 valid mempool transaction.", None
 
             expected_reward_txs, breakdown = self._build_reward_transactions(
                 matched_user_txs, clean_miner, expected_idx, fixed_timestamp=submitted_ts
             )
             expected_reward_hashes = [t.hash() for t in expected_reward_txs]
             if submitted_reward_hashes != expected_reward_hashes:
-                return False, "Blok ödül dağılımı protokol kurallarıyla uyuşmuyor!", None
+                return False, "Block reward distribution does not match protocol rules!", None
 
             # 4. Reconstruct candidate block and verify Merkle Root + SHA-256 Proof-of-Work
             final_txs = matched_user_txs + expected_reward_txs
             expected_merkle = compute_merkle_root([t.hash() for t in final_txs])
             submitted_merkle = str(block_data.get("merkle_root", "") or "").strip().lower()
             if submitted_merkle != expected_merkle:
-                return False, "Merkle Root doğrulaması başarısız!", None
+                return False, "Merkle Root verification failed!", None
 
             candidate_block = Block(
                 index=expected_idx,
@@ -2380,7 +2380,7 @@ class Blockchain:
             diff = self.get_current_difficulty()
             target_prefix = "0" * diff
             if candidate_block.hash != submitted_hash or not candidate_block.hash.startswith(target_prefix):
-                return False, f"Geçersiz Proof-of-Work hash! ({diff} sıfır hedefi sağlanmadı)", None
+                return False, f"Invalid Proof-of-Work hash! ({diff} leading zeroes required)", None
 
             # 5. Commit verified external PoW block to ledger & remove packaged mempool txs
             self.chain.append(candidate_block)
@@ -2408,7 +2408,7 @@ class Blockchain:
             self._save_state()
             self._broadcast_block_to_peers(candidate_block.to_dict(), exclude_node_id=node_id)
 
-            return True, f"Blok #{expected_idx} doğrulandı ve zincire eklendi!", {
+            return True, f"Block #{expected_idx} verified and added to chain!", {
                 "block_index": candidate_block.index,
                 "block_hash": candidate_block.hash,
                 "merkle_root": candidate_block.merkle_root,
@@ -2444,30 +2444,30 @@ class Blockchain:
             clean_hash = (block_hash or "").strip().lower()
 
             if not clean_id or not is_valid_bct_address(clean_miner) or clean_miner == TREASURY_ADDRESS:
-                return False, "Geçersiz düğüm kimliği veya cüzdan adresi.", None
+                return False, "Invalid node ID or wallet address.", None
             if not clean_pub or not signature:
-                return False, "Doğrulayıcı imzası eksik.", None
+                return False, "Validator signature missing.", None
             if public_key_to_address(clean_pub) != clean_miner:
-                return False, "Açık anahtar doğrulayıcı cüzdan adresiyle eşleşmiyor!", None
+                return False, "Public key does not match validator wallet address!", None
             ts_str = str(timestamp).strip()
             if abs(time.time() - float(ts_str)) > 300:
-                return False, "Attestation zaman damgası geçersiz.", None
+                return False, "Attestation timestamp expired or invalid.", None
             if block_index < 0 or block_index >= len(self.chain):
-                return False, f"Blok #{block_index} henüz mevcut değil.", None
+                return False, f"Block #{block_index} is not yet available.", None
 
             target_block = self.chain[block_index]
             if target_block.hash.lower() != clean_hash:
-                return False, "Blok özeti (hash) ana zincirle uyuşmuyor! (Fork/Bozuk veri)", None
+                return False, "Block hash mismatch against canonical chain! (Fork or corrupted data)", None
 
             msg = f"ATTEST:{clean_id}:{block_index}:{clean_hash}:{ts_str}"
             if not verify_signature(clean_pub, msg, signature):
-                return False, "Geçersiz doğrulayıcı ECDSA imzası!", None
+                return False, "Invalid validator ECDSA signature!", None
 
             existing = self.nodes.get(clean_id)
             if existing and existing.get("is_genesis"):
-                return False, "Genesis düğümü kimliği dışarıdan kullanılamaz.", None
+                return False, "Genesis node identity cannot be claimed externally.", None
             if existing and existing.get("owner_public_key") and existing["owner_public_key"] != clean_pub:
-                return False, "Bu node_id başka bir kriptografik anahtara kayıtlı!", None
+                return False, "This node_id is registered to another cryptographic key!", None
 
             storage = self._get_storage()
             inserted, total_att = storage.record_attestation(
@@ -2503,7 +2503,7 @@ class Blockchain:
             self.nodes[clean_id] = node_entry
             self._save_state()
 
-            return True, f"Blok #{block_index} doğrulama onayı (attestation) kaydedildi.", {
+            return True, f"Block #{block_index} validation attestation recorded.", {
                 "block_index": block_index,
                 "attestations_count": total_att,
                 "blocks_attested": node_entry.get("blocks_attested", 0),
@@ -2835,7 +2835,7 @@ class Blockchain:
                 and str(latest.get("index_html_sha256", "")).lower() == target_sha
                 and str(latest.get("sw_js_sha256", "")).lower() == target_sw
             ):
-                return True, "Bu frontend sürümü zaten blokzincire mühürlenmiş durumda.", latest
+                return True, "This frontend release is already sealed on the blockchain.", latest
 
             clean_manifest = {
                 "version": str(manifest.get("version", "")).strip(),
@@ -2867,7 +2867,7 @@ class Blockchain:
                 sealed["block_hash"] = block.hash
                 sealed["tx_hash"] = tx.hash()
                 sealed["sealed_timestamp"] = block.timestamp
-            return True, "Frontend SHA-256 sürüm özeti blokzincire başarıyla mühürlendi!", sealed
+            return True, "Frontend SHA-256 release digest successfully sealed on-chain!", sealed
 
     @staticmethod
     def _sanitize_node_field(val: str, max_len: int = 64) -> str:
@@ -2920,7 +2920,7 @@ class Blockchain:
 
             if existing and existing.get("owner_public_key"):
                 if not auth_ok or existing["owner_public_key"] != clean_pub:
-                    raise PermissionError("Bu node_id başka bir kriptografik ECDSA anahtarına kayıtlı!")
+                    raise PermissionError("This node_id is registered to another cryptographic ECDSA key!")
 
             if not existing and len(self.nodes) >= 200:
                 removable = sorted(

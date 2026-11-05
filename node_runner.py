@@ -64,7 +64,7 @@ RELEASE_AUTHORITY_PUBKEY = (
     "21a5882ed90bfd5597bc144a7c4926369aec9b89070d3d337819d6626c67a150"
 )
 
-TAMPER_WARNING_TEXT = '⛔ "UYARI: Bu frontend dosyası değiştirilmiş veya manipüle edilmiş! Çalıştırılamaz."'
+TAMPER_WARNING_TEXT = '⛔ "WARNING: This frontend file has been modified or tampered with! Execution blocked."'
 
 
 def _to_units(val: float) -> int:
@@ -327,7 +327,7 @@ def calculate_block_hash_dict(blk: dict) -> str:
 def verify_signed_frontend_manifest(manifest: dict) -> tuple:
     """Verify ECDSA SECP256k1 signature of `integrity.json` against RELEASE_AUTHORITY_PUBKEY."""
     if not isinstance(manifest, dict):
-        return False, "Geçersiz manifest yapısı"
+        return False, "Invalid manifest structure"
     ver = str(manifest.get("version", "")).strip()
     idx_sha = str(manifest.get("index_html_sha256", "")).strip().lower()
     sw_sha = str(manifest.get("sw_js_sha256", "")).strip().lower()
@@ -336,16 +336,16 @@ def verify_signed_frontend_manifest(manifest: dict) -> tuple:
     sig = str(manifest.get("signature", "")).strip()
 
     if not ver or len(idx_sha) != 64 or not cid or not sig:
-        return False, "Eksik SHA-256 sağlama toplamı veya sürüm imzası"
+        return False, "Missing SHA-256 checksum or release signature"
     if pub != RELEASE_AUTHORITY_PUBKEY.lower():
-        return False, "Yetkisiz sürüm imzalayıcı açık anahtarı (Release Authority mismatch)"
+        return False, "Release Authority public key mismatch"
     if PureSecp256k1.public_key_to_address(pub) != RELEASE_AUTHORITY_ADDRESS:
-        return False, "Yetkili adres doğrulaması başarısız"
+        return False, "Release Authority address verification failed"
 
     canonical = f"LOCKTRACE_FRONTEND_RELEASE:{ver}:{idx_sha}:{sw_sha}:{cid}"
     if not PureSecp256k1.verify_sha256(RELEASE_AUTHORITY_PUBKEY, canonical, sig):
-        return False, "ECDSA kriptografik sürüm imzası geçersiz!"
-    return True, "Doğrulandı"
+        return False, "Invalid ECDSA release signature!"
+    return True, "Verified"
 
 
 # =====================================================================
@@ -530,7 +530,7 @@ class LockTraceNode:
 
         if not os.path.exists(index_path):
             self.frontend_verified = False
-            self.frontend_status_msg = "Frontend dosyası (index.html) bulunamadı."
+            self.frontend_status_msg = "Frontend file (index.html) not found."
             return {"verified": False, "reason": self.frontend_status_msg}
 
         try:
@@ -545,7 +545,7 @@ class LockTraceNode:
 
             if getattr(self, "dev_mode", False):
                 self.frontend_verified = True
-                self.frontend_status_msg = "Geliştirici Modu (Dev Mode) Etkin - İmza Kontrolü Atlandı"
+                self.frontend_status_msg = "Developer Mode Active - Signature check bypassed"
                 return {
                     "verified": True,
                     "dev_mode": True,
@@ -566,7 +566,7 @@ class LockTraceNode:
                 self.frontend_status_msg = TAMPER_WARNING_TEXT
                 return {
                     "verified": False,
-                    "reason": f"{TAMPER_WARNING_TEXT} (integrity.json imzası silinmiş veya eksik!)",
+                    "reason": f"{TAMPER_WARNING_TEXT} (integrity.json missing or removed)",
                     "actual_index_sha256": actual_index_sha,
                 }
 
@@ -598,7 +598,7 @@ class LockTraceNode:
                 self.frontend_status_msg = TAMPER_WARNING_TEXT
                 return {
                     "verified": False,
-                    "reason": f"{TAMPER_WARNING_TEXT} (sw.js bütünlük hatası)",
+                    "reason": f"{TAMPER_WARNING_TEXT} (sw.js checksum mismatch)",
                     "expected_sw_sha256": expected_sw_sha,
                     "actual_sw_sha256": actual_sw_sha,
                 }
@@ -1071,33 +1071,33 @@ class LockTraceNode:
 
     def _verify_client_action_sig(self, data: dict, sender: str, canonical_variants: list) -> tuple:
         if not _is_valid_bct_address(sender) or sender.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
-            return False, "Geçersiz gönderici cüzdan adresi."
+            return False, "Invalid sender wallet address."
         sig = str(data.get("signature", "") or "").strip()
         pub = str(data.get("public_key", "") or "").strip()
         ts = data.get("timestamp")
         if not sig or not pub:
-            return False, "Non-custodial ECDSA imzası ve public_key zorunludur."
+            return False, "Non-custodial ECDSA signature and public_key are required."
         if PureSecp256k1.public_key_to_address(pub) != sender:
-            return False, "Açık anahtar cüzdan adresiyle eşleşmiyor!"
+            return False, "Public key does not match wallet address!"
         if sig in self.used_client_sigs and time.time() - self.used_client_sigs[sig] < 600:
-            return False, "Tekrarlanan (replay) imza reddedildi."
+            return False, "Replay signature rejected."
 
         _, expected_nonce, _ = self.local_calc_balance_and_nonce(sender)
         client_nonce = data.get("nonce")
         if client_nonce is not None and int(client_nonce) != expected_nonce:
-            return False, f"Geçersiz işlem sırası (nonce). Beklenen: {expected_nonce}"
+            return False, f"Invalid transaction nonce. Expected: {expected_nonce}"
 
         for cand in canonical_variants:
             if ts is not None:
                 if abs(time.time() - float(ts)) > 300:
-                    return False, "İmza zaman damgası (timestamp) süresi dolmuş."
+                    return False, "Signature timestamp expired."
                 msg = f"{cand}:{ts}:{expected_nonce}" if client_nonce is not None else f"{cand}:{ts}"
             else:
                 msg = f"{cand}:{expected_nonce}" if client_nonce is not None else cand
             if PureSecp256k1.verify_sha256(pub, msg, sig):
                 self.used_client_sigs[sig] = time.time()
                 return True, ""
-        return False, "Geçersiz ECDSA dijital imza!"
+        return False, "Invalid ECDSA digital signature!"
 
     def _mine_autonomous_p2p_block(self, user_tx: dict) -> dict:
         """
@@ -1206,17 +1206,17 @@ class LockTraceNode:
                     bal, nonce, _ = self.local_calc_balance_and_nonce(addr)
                 return 200, {
                     "success": True,
-                    "message": "Cüzdan yerel P2P düğüm üzerinde doğrulandı ve 1.00 BCT Hoş Geldin Bakiyesi tanımlandı!",
+                    "message": "Wallet verified on local P2P node and 1.00 BCT Welcome Bonus granted!",
                     "data": {"address": addr, "public_key": pub, "balance": bal, "nonce": nonce},
                 }
-            return 400, {"success": False, "message": "Geçersiz açık anahtar veya cüzdan adresi."}
+            return 400, {"success": False, "message": "Invalid public key or wallet address."}
 
         if path == "/api/v1/transaction":
             sender = str(payload.get("sender", "")).strip()
             receiver = str(payload.get("receiver", "")).strip()
             amount = round(float(payload.get("amount", 0.0)), 8)
             if amount <= 0 or sender == receiver or not _is_valid_bct_address(receiver):
-                return 400, {"success": False, "message": "Geçersiz alıcı adresi veya tutar."}
+                return 400, {"success": False, "message": "Invalid recipient address or amount."}
             amt_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
             variants = [f"{sender}{receiver}{amount}", f"{sender}{receiver}{amt_trim}", f"{sender}{receiver}{amount:.8f}"]
             ok, err = self._verify_client_action_sig(payload, sender, variants)
@@ -1224,7 +1224,7 @@ class LockTraceNode:
                 return 403, {"success": False, "message": err}
             bal, _, _ = self.local_calc_balance_and_nonce(sender)
             if bal < amount:
-                return 400, {"success": False, "message": f"Yetersiz bakiye ({bal:.4f} BCT)."}
+                return 400, {"success": False, "message": f"Insufficient balance ({bal:.4f} BCT)."}
             fee = round(amount * 0.01, 8)
             tx = {
                 "sender": sender,
@@ -1239,7 +1239,7 @@ class LockTraceNode:
             blk = self._mine_autonomous_p2p_block(tx)
             return 201, {
                 "success": True,
-                "message": f"İşlem yerel PoW Blok #{blk['index']} ile mühürlendi ve P2P ağa yayıldı!",
+                "message": f"Transaction sealed in local PoW Block #{blk['index']} and broadcast to P2P network!",
                 "data": {"tx_hash": tx["tx_hash"], "block_index": blk["index"], "fee": fee, "net_amount": tx["net_amount"]},
             }
 
@@ -1247,13 +1247,13 @@ class LockTraceNode:
             author = str(payload.get("author", "")).strip()
             content = str(payload.get("content", "")).strip()[:280]
             if not content:
-                return 400, {"success": False, "message": "Gönderi içeriği boş olamaz."}
+                return 400, {"success": False, "message": "Post content cannot be empty."}
             ok, err = self._verify_client_action_sig(payload, author, [f"{author}:{content}"])
             if not ok:
                 return 403, {"success": False, "message": err}
             bal, _, _ = self.local_calc_balance_and_nonce(author)
             if bal < 0.05:
-                return 400, {"success": False, "message": "Paylaşım için en az 0.05 BCT gereklidir."}
+                return 400, {"success": False, "message": "At least 0.05 BCT is required to post."}
             pid = f"post_{secrets.token_hex(6)}"
             tx = {
                 "sender": author,
@@ -1267,16 +1267,16 @@ class LockTraceNode:
                 "extra_data": {"post_id": pid, "content": content},
             }
             blk = self._mine_autonomous_p2p_block(tx)
-            return 201, {"success": True, "message": "Gönderi yerel PoW bloğuna mühürlendi!", "data": {"post_id": pid, "block_index": blk["index"]}}
+            return 201, {"success": True, "message": "Post sealed into local PoW block!", "data": {"post_id": pid, "block_index": blk["index"]}}
 
         if path == "/api/v1/space/like":
             liker = str(payload.get("liker", "")).strip()
             pid = str(payload.get("post_id", "")).strip()
             posts = self.local_space_posts()
             if pid not in posts:
-                return 404, {"success": False, "message": "Gönderi bulunamadı."}
+                return 404, {"success": False, "message": "Post not found."}
             if liker in posts[pid].get("likes", []):
-                return 400, {"success": False, "message": "Bu gönderiyi zaten beğendiniz."}
+                return 400, {"success": False, "message": "You have already liked this post."}
             tx = {
                 "sender": liker,
                 "receiver": TREASURY_ADDRESS,
@@ -1289,7 +1289,7 @@ class LockTraceNode:
                 "extra_data": {"post_id": pid, "author": posts[pid].get("author", ""), "liker": liker, "author_cut": 0.002, "treasury_cut": 0.007}
             }
             blk = self._mine_autonomous_p2p_block(tx)
-            return 200, {"success": True, "message": "Beğeni yerel PoW bloğuna mühürlendi!", "data": {"post_id": pid, "block_index": blk["index"], "status": "confirmed"}}
+            return 200, {"success": True, "message": "Like sealed into local PoW block!", "data": {"post_id": pid, "block_index": blk["index"], "status": "confirmed"}}
 
         if path == "/api/v1/space/comment":
             commenter = str(payload.get("commenter", "")).strip()
@@ -1297,7 +1297,7 @@ class LockTraceNode:
             content = str(payload.get("content", "")).strip()[:140]
             posts = self.local_space_posts()
             if pid not in posts:
-                return 404, {"success": False, "message": "Gönderi bulunamadı."}
+                return 404, {"success": False, "message": "Post not found."}
             cid = f"cmt_{secrets.token_hex(6)}"
             tx = {
                 "sender": commenter,
@@ -1311,9 +1311,9 @@ class LockTraceNode:
                 "extra_data": {"post_id": pid, "comment_id": cid, "author": posts[pid].get("author", ""), "commenter": commenter, "content": content, "author_cut": 0.004, "treasury_cut": 0.014}
             }
             blk = self._mine_autonomous_p2p_block(tx)
-            return 200, {"success": True, "message": "Yorum yerel PoW bloğuna mühürlendi!", "data": {"post_id": pid, "block_index": blk["index"], "status": "confirmed"}}
+            return 200, {"success": True, "message": "Comment sealed into local PoW block!", "data": {"post_id": pid, "block_index": blk["index"], "status": "confirmed"}}
 
-        return 503, {"success": False, "message": "Bu işlem için P2P ağ senkronizasyonu bekleniyor."}
+        return 503, {"success": False, "message": "Awaiting P2P network synchronization for this action."}
 
     # =================================================================
     # 4. BUILT-IN MULTI-THREADED P2P + VERIFIED WEB SERVER
@@ -1366,13 +1366,13 @@ class LockTraceNode:
                 check = node_ref.verify_frontend_integrity(allow_bootstrap=False)
                 if not check.get("verified"):
                     print(f"\n{TAMPER_WARNING_TEXT}\n")
-                    lock_html = f"""<!DOCTYPE html><html lang="tr"><head><meta charset="utf-8"><title>Güvenlik Kilidi - LockTrace Node</title>
+                    lock_html = f"""<!DOCTYPE html><html lang="en"><head><meta charset="utf-8"><title>Security Lock - LockTrace Node</title>
                     <style>body{{background:#131315;color:#ffb4ab;font-family:system-ui,sans-serif;display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0;padding:24px;}}
                     .card{{max-width:640px;background:#1f1f21;border:2px solid #93000a;border-radius:18px;padding:32px;box-shadow:0 20px 60px rgba(0,0,0,0.7);}}
                     code{{display:block;background:#0e0e10;color:#e5e1e4;padding:12px;border-radius:8px;margin-top:14px;word-break:break-all;font-size:12px;line-height:1.6;}}</style></head>
                     <body><div class="card"><h2>{TAMPER_WARNING_TEXT}</h2>
-                    <p style="color:#e5e1e4;line-height:1.6;">Düğümünüz yerel <strong>frontend/index.html</strong> dosyasının SHA-256 sağlama toplamını ve resmi ECDSA sürüm imzasını kontrol etti ve <strong>yetkisiz değişiklik tespit etti</strong>. Cüzdan anahtarlarınızın güvenliği için bu arayüzün çalıştırılması reddedildi.</p>
-                    <code>Beklenen SHA-256 : {check.get('expected_index_sha256', 'İmza Geçersiz / Eksik')}<br>Mevcut SHA-256   : {check.get('actual_index_sha256', 'Bilinmiyor')}<br>İmza Yetkilisi   : {RELEASE_AUTHORITY_ADDRESS}</code></div></body></html>""".encode("utf-8")
+                    <p style="color:#e5e1e4;line-height:1.6;">Your node verified the local <strong>frontend/index.html</strong> SHA-256 checksum and official ECDSA release signature, and <strong>detected unauthorized modifications</strong>. To protect your wallet private keys, running this interface was blocked.</p>
+                    <code>Expected SHA-256 : {check.get('expected_index_sha256', 'Signature Invalid / Missing')}<br>Actual SHA-256   : {check.get('actual_index_sha256', 'Unknown')}<br>Release Authority : {RELEASE_AUTHORITY_ADDRESS}</code></div></body></html>""".encode("utf-8")
                     self._send_bytes(403, lock_html, "text/html; charset=utf-8")
                     return
 
@@ -1491,13 +1491,13 @@ class LockTraceNode:
                         nodes_list = up_nodes.get("data", {}).get("nodes", [])
                         for n in nodes_list:
                             if n.get("node_id") == node_ref.node_id or n.get("endpoint") == node_ref._endpoint_url():
-                                if "(Bu Düğüm)" not in n.get("name", ""):
-                                    n["name"] = f"{n.get('name', 'Validator')} (Bu Düğüm)"
+                                if "(This Node)" not in n.get("name", ""):
+                                    n["name"] = f"{n.get('name', 'Validator')} (This Node)"
                         self._send_json(200, up_nodes)
                         return
                     self_entry = {
                         "node_id": node_ref.node_id,
-                        "name": f"{node_ref.name} (Bu Düğüm)",
+                        "name": f"{node_ref.name} (This Node)",
                         "endpoint": node_ref._endpoint_url(),
                         "role": node_ref.role,
                         "location": node_ref.location,
@@ -1539,7 +1539,7 @@ class LockTraceNode:
                 if path.startswith("/api/v1/balance/"):
                     addr = urllib.parse.unquote(path.split("/api/v1/balance/", 1)[1]).strip()
                     if not _is_valid_bct_address(addr):
-                        self._send_json(400, {"success": False, "message": "Geçersiz cüzdan adresi formatı."})
+                        self._send_json(400, {"success": False, "message": "Invalid wallet address format."})
                         return
                     # Proxy upstream first for real-time mempool-aware nonce
                     up_bal = node_ref.request(path, timeout=2.5)
@@ -1629,7 +1629,7 @@ class LockTraceNode:
                     if mp:
                         self._send_json(200, {"success": True, "data": mp})
                     else:
-                        self._send_json(404, {"success": False, "message": "İşlem Merkle kanıtı bulunamadı."})
+                        self._send_json(404, {"success": False, "message": "Transaction Merkle proof not found."})
                     return
 
                 if path.startswith("/api/v1/explorer/block/"):
@@ -1647,7 +1647,7 @@ class LockTraceNode:
                     if found:
                         self._send_json(200, {"success": True, "data": found})
                     else:
-                        self._send_json(404, {"success": False, "message": "Blok bulunamadı."})
+                        self._send_json(404, {"success": False, "message": "Block not found."})
                     return
 
                 if path == "/api/v1/explorer/search":
@@ -1680,7 +1680,7 @@ class LockTraceNode:
                             "data": {"type": "address", "result": {"address": q, "balance": bal, "transaction_count": len(hist), "transactions": hist}},
                         })
                         return
-                    self._send_json(404, {"success": False, "message": "Kayıt bulunamadı."})
+                    self._send_json(404, {"success": False, "message": "Record not found."})
                     return
 
                 if path == "/api/v1/explorer/holders":
@@ -1716,7 +1716,7 @@ class LockTraceNode:
                     if pid in posts_map:
                         self._send_json(200, {"success": True, "data": posts_map[pid]})
                     else:
-                        self._send_json(404, {"success": False, "message": "Gönderi bulunamadı."})
+                        self._send_json(404, {"success": False, "message": "Post not found."})
                     return
 
                 # ── BNS & Profile Endpoints (Proxy to seed + offline fallback) ──
@@ -1730,7 +1730,7 @@ class LockTraceNode:
                     if rec:
                         self._send_json(200, {"success": True, "data": rec})
                     else:
-                        self._send_json(404, {"success": False, "message": f"BNS kaydı bulunamadı: '{q}'"})
+                        self._send_json(404, {"success": False, "message": f"BNS record not found: '{q}'"})
                     return
 
                 if path.startswith("/api/v1/profile/"):
@@ -1831,7 +1831,7 @@ class LockTraceNode:
                     self._serve_verified_web_shell()
                     return
 
-                self._send_json(404, {"success": False, "message": "Uç nokta bulunamadı."})
+                self._send_json(404, {"success": False, "message": "Endpoint not found."})
 
             def do_POST(self):
                 parsed = urllib.parse.urlparse(self.path)
@@ -1998,7 +1998,7 @@ class LockTraceNode:
             "hashrate_hs": self.last_hashrate_hs,
         }
         res = self.request("/api/v1/nodes/register", data=payload, method="POST")
-        if not res.get("success") and "başka bir" in str(res.get("message", "")).lower():
+        if not res.get("success") and ("başka bir" in str(res.get("message", "")).lower() or "another" in str(res.get("message", "")).lower()):
             # Node ID collision with another key -> generate new unique node_id and re-sign
             self.node_id = f"node-{socket.gethostname().lower()[:10]}-{secrets.token_hex(4)}"
             self.node_id = "".join(c for c in self.node_id if c.isalnum() or c in "._-")[:48]
@@ -2346,17 +2346,17 @@ if __name__ == "__main__":
         res = daemon.verify_frontend_integrity(allow_bootstrap=False)
         if res.get("verified"):
             m = res["manifest"]
-            print("✅ [DOĞRULANDI] LockTrace Frontend SHA-256 Checksum & ECDSA Sürüm İmzası Geçerli!")
-            print(f"   Sürüm            : v{m.get('version')}")
+            print("✅ [VERIFIED] LockTrace Frontend SHA-256 Checksum & ECDSA Release Signature Valid!")
+            print(f"   Version          : v{m.get('version')}")
             print(f"   index.html SHA256: {res['actual_index_sha256']}")
             print(f"   IPFS CIDv1       : ipfs://{m.get('ipfs_cid_v1')}")
-            print(f"   İmza Yetkilisi   : {RELEASE_AUTHORITY_ADDRESS}")
+            print(f"   Signing Authority: {RELEASE_AUTHORITY_ADDRESS}")
             sys.exit(0)
         else:
             print(res.get("reason", TAMPER_WARNING_TEXT))
             if res.get("expected_index_sha256"):
-                print(f"   Beklenen SHA-256 : {res.get('expected_index_sha256')}")
-                print(f"   Mevcut SHA-256   : {res.get('actual_index_sha256')}")
+                print(f"   Expected SHA-256 : {res.get('expected_index_sha256')}")
+                print(f"   Actual SHA-256   : {res.get('actual_index_sha256')}")
             sys.exit(1)
 
     daemon.run()

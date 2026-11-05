@@ -1,7 +1,7 @@
 """
-BlockChainT - Cüzdan Yönetimi (BIP-39 Mnemonic Destekli)
+BlockChainT - Wallet Management (BIP-39 Mnemonic Supported)
 =========================================================
-ECDSA SECP256k1 anahtar çifti + BIP-39 12-kelimelik Mnemonic Kurtarma Sistemi.
+ECDSA SECP256k1 key pairs + BIP-39 12-word recovery phrase system.
 """
 
 import hashlib
@@ -12,7 +12,7 @@ from core.mnemonic import generate_mnemonic, mnemonic_to_private_key, validate_m
 
 
 class Wallet:
-    """ECDSA + BIP-39 Seed tabanlı blockchain cüzdanı."""
+    """ECDSA + BIP-39 Seed based blockchain wallet."""
 
     def __init__(self, mnemonic: str = None, private_key_hex: str = None):
         if mnemonic:
@@ -27,7 +27,7 @@ class Wallet:
                 binascii.unhexlify(private_key_hex), curve=SECP256k1
             )
         else:
-            # Yeni cüzdan: 12 kelimelik mnemonic üret ve anahtarı türet
+            # New wallet: generate 12-word mnemonic and derive key
             self.mnemonic = generate_mnemonic()
             pk_hex = mnemonic_to_private_key(self.mnemonic)
             self.private_key = SigningKey.from_string(
@@ -38,14 +38,14 @@ class Wallet:
         self.address = self._generate_address()
 
     def _generate_address(self) -> str:
-        """Public key'den benzersiz adres üret (çift SHA-256, ilk 40 karakter)."""
+        """Derive unique address from public key (double SHA-256, first 40 hex chars)."""
         pub_bytes = self.public_key.to_string()
         first_hash = hashlib.sha256(pub_bytes).hexdigest()
         second_hash = hashlib.sha256(first_hash.encode()).hexdigest()
         return f"BCT{second_hash[:40]}"
 
     def sign(self, data: str) -> str:
-        """Veriyi private key ile deterministik SHA-256 ECDSA (SECP256k1) olarak imzala."""
+        """Deterministically sign data with private key using SHA-256 ECDSA (SECP256k1)."""
         signature = self.private_key.sign_deterministic(
             data.encode("utf-8"),
             hashfunc=hashlib.sha256,
@@ -69,17 +69,17 @@ class Wallet:
 
 
 def restore_wallet(private_key_hex: str) -> Wallet:
-    """Private key'den cüzdan geri yükle."""
+    """Restore wallet from private key hex."""
     return Wallet(private_key_hex=private_key_hex)
 
 
 def restore_wallet_from_mnemonic(mnemonic: str) -> Wallet:
-    """12 kelimelik mnemonic kurtarma ifadesinden cüzdan geri yükle."""
+    """Restore wallet from 12-word mnemonic phrase."""
     return Wallet(mnemonic=mnemonic)
 
 
 def _normalize_uncompressed_pubkey_bytes(public_key_hex: str) -> bytes:
-    """64-bayt ham (x||y) veya 65-bayt (04||x||y) açık anahtarı 64 bayta normalize et."""
+    """Normalize 64-byte raw (x||y) or 65-byte (04||x||y) public key to 64 bytes."""
     clean = (public_key_hex or "").strip()
     if clean.startswith("0x") or clean.startswith("0X"):
         clean = clean[2:]
@@ -90,12 +90,12 @@ def _normalize_uncompressed_pubkey_bytes(public_key_hex: str) -> bytes:
 
 
 def public_key_to_address(public_key_hex: str) -> str:
-    """Public key hex dizgesinden deterministik BCT cüzdan adresi üret ve doğrula."""
+    """Generate and verify deterministic BCT wallet address from public key hex."""
     try:
         pub_bytes = _normalize_uncompressed_pubkey_bytes(public_key_hex)
         if len(pub_bytes) != 64:
             return ""
-        # SECP256k1 eğrisi üzerinde geçerli bir nokta olduğunu doğrula
+        # Verify valid point on SECP256k1 curve
         VerifyingKey.from_string(pub_bytes, curve=SECP256k1)
         first_hash = hashlib.sha256(pub_bytes).hexdigest()
         second_hash = hashlib.sha256(first_hash.encode()).hexdigest()
@@ -105,7 +105,7 @@ def public_key_to_address(public_key_hex: str) -> str:
 
 
 def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool:
-    """SECP256k1 ECDSA imzasını doğrula (Yalnızca güvenli SHA-256)."""
+    """Verify SECP256k1 ECDSA signature (SHA-256)."""
     try:
         pub_bytes = _normalize_uncompressed_pubkey_bytes(public_key_hex)
         if len(pub_bytes) != 64:
