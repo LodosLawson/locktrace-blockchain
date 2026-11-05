@@ -54,6 +54,7 @@ VERSION = "1.5.0"
 ATOMIC_UNIT = 100_000_000
 TOTAL_SUPPLY = 1_000_000_000_000.0
 TREASURY_ADDRESS = "BCT_HAZINE_0000000000000000000000000000000000000000"
+BRIDGE_VAULT_ADDRESS = "BCT_BRIDGE_VAULT_000000000000000000000000000000000"
 BLOCK_REWARD = 0.05
 
 # Official Immutable LockTrace Frontend Release Signing Trust Anchor (SECP256k1 Public Key)
@@ -75,7 +76,7 @@ def _is_valid_bct_address(addr: str) -> bool:
         return False
     clean = addr.strip()
     up = clean.upper()
-    if up in (TREASURY_ADDRESS, "GENESIS_VAULT"):
+    if up in (TREASURY_ADDRESS, "GENESIS_VAULT", BRIDGE_VAULT_ADDRESS):
         return True
     return up.startswith("BCT") and len(clean) == 43 and all(c in "0123456789abcdefABCDEF" for c in clean[3:])
 
@@ -710,7 +711,7 @@ class LockTraceNode:
         clean_addr = (address or "").strip()
         units = 0
         nonce = 0
-        exists = clean_addr == TREASURY_ADDRESS
+        exists = clean_addr in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS)
         fee_bearing = ("transfer", "space_post", "space_like", "space_comment")
 
         with self.chain_lock:
@@ -787,6 +788,7 @@ class LockTraceNode:
 
     def local_stats(self) -> dict:
         treasury_bal, _, _ = self.local_calc_balance_and_nonce(TREASURY_ADDRESS)
+        vault_bal, _, _ = self.local_calc_balance_and_nonce(BRIDGE_VAULT_ADDRESS)
         wallets_seen = set()
         tx_count = 0
         tip_hash = ""
@@ -801,17 +803,25 @@ class LockTraceNode:
                 for tx in blk.get("transactions", []):
                     tx_count += 1
                     for a in (tx.get("sender", ""), tx.get("receiver", "")):
-                        if a.startswith("BCT") and a != TREASURY_ADDRESS:
+                        if a.startswith("BCT") and a not in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS):
                             wallets_seen.add(a)
-        circulating = max(0.0, round(TOTAL_SUPPLY - treasury_bal, 8))
+        circulating = max(0.0, round(TOTAL_SUPPLY - treasury_bal - vault_bal, 8))
+        total_unlocked = round(circulating + vault_bal, 8)
         return {
             "total_blocks": self.local_height,
             "total_transactions": tx_count,
             "pending_transactions": 0,
             "total_wallets": len(wallets_seen),
             "total_supply": TOTAL_SUPPLY,
+            "total_supply_formatted": f"{TOTAL_SUPPLY:,.0f}",
             "treasury_balance": treasury_bal,
+            "treasury_formatted": f"{treasury_bal:,.8f}",
+            "bridge_vault_locked": vault_bal,
+            "bridge_vault_formatted": f"{vault_bal:,.8f}",
             "circulating_supply": circulating,
+            "circulating_formatted": f"{circulating:,.8f}",
+            "total_unlocked_supply": total_unlocked,
+            "total_unlocked_formatted": f"{total_unlocked:,.8f}",
             "difficulty": 3,
             "consensus": "pow-v2-merkle-quorum",
             "chain_valid": self.integrity_ok,
@@ -1345,6 +1355,10 @@ class LockTraceNode:
                     return
 
                 if path == "/api/v1/stats":
+                    up_stats = node_ref.request("/api/v1/stats", timeout=2.5)
+                    if up_stats.get("success"):
+                        self._send_json(200, up_stats)
+                        return
                     self._send_json(200, {"success": True, "data": node_ref.local_stats()})
                     return
 
@@ -1353,6 +1367,15 @@ class LockTraceNode:
                     return
 
                 if path == "/api/v1/nodes":
+                    up_nodes = node_ref.request("/api/v1/nodes", timeout=2.5)
+                    if up_nodes.get("success"):
+                        nodes_list = up_nodes.get("data", {}).get("nodes", [])
+                        for n in nodes_list:
+                            if n.get("node_id") == node_ref.node_id or n.get("endpoint") == node_ref._endpoint_url():
+                                if "(Bu Düğüm)" not in n.get("name", ""):
+                                    n["name"] = f"{n.get('name', 'Validator')} (Bu Düğüm)"
+                        self._send_json(200, up_nodes)
+                        return
                     self_entry = {
                         "node_id": node_ref.node_id,
                         "name": f"{node_ref.name} (Bu Düğüm)",
