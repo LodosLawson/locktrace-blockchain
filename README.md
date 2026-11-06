@@ -190,7 +190,7 @@ curl -s "https://locktrace.space/api/v1/health"
   "data": {
     "status": "healthy",
     "network": "mainnet",
-    "version": "1.8.6",
+    "version": "1.9.5",
     "chain_valid": true,
     "consensus": "pow-v2-merkle-quorum",
     "storage_engine": "sqlite-wal",
@@ -280,7 +280,7 @@ curl -s "https://locktrace.space/api/v1/nodes"
 2. **Deterministic State Resolution:** Account balances and BNS ownerships are dynamically derived through verified transaction graph evaluation across immutable blocks, eliminating mutable state tampering.
 3. **Replay & Double-Spend Protection:** Every transaction enforces sequential integer `nonce` validation and cryptographic SECP256k1 signature verification.
 4. **ACID Storage with SQLite WAL:** Ledger records are committed using SQLite Write-Ahead Logging (WAL) and memory state is guarded by a process-wide `RLock`, preventing race conditions.
-5. **Cryptographic Frontend Integrity Seal (v1.8.6):**
+5. **Cryptographic Frontend Integrity Seal (v1.9.5):**
    - Canonical SHA-256 Checksums and ECDSA SECP256k1 release signatures (`frontend/integrity.json`).
    - Every node independently validates `index.html` and `sw.js` against the on-chain release block before serving. Any unauthorized file tampering triggers an immediate `HTTP 403` lockout.
 6. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).

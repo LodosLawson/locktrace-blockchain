@@ -519,7 +519,7 @@ def api_frontend_integrity():
     manifest = check.get("manifest") or onchain or {}
     return api_response(True, data={
         "verified": bool(check.get("verified")),
-        "version": manifest.get("version", "1.5.0"),
+        "version": manifest.get("version", "1.9.5"),
         "released_at": manifest.get("released_at", ""),
         "authority_address": RELEASE_AUTHORITY_ADDRESS,
         "authority_public_key": RELEASE_AUTHORITY_PUBKEY,
@@ -539,7 +539,7 @@ def api_health():
     check = _inspect_local_frontend_integrity()
     return api_response(True, data={
         "status": "healthy",
-        "version": "1.8.5",
+        "version": "1.9.5",
         "network": "mainnet",
         "storage_engine": "sqlite-wal",
         "consensus": "pow-v2-merkle-quorum",
@@ -817,7 +817,7 @@ def api_explorer_block(query):
                 "name": "LockTrace Genesis Validator #1",
                 "location": "Stockholm, Sweden (Oracle Cloud)",
                 "role": "Core PoW Archival Validator",
-                "version": "1.2.1",
+                "version": "1.9.5",
                 "status": "online",
             }
         block["validator_node"] = node_meta
@@ -985,7 +985,7 @@ def api_register_node():
     location = str(data.get("location", "Decentralized") or "Decentralized").strip()
     miner_address = str(data.get("miner_address", "") or "").strip()
     block_height = safe_int(data.get("block_height", 0), default=0, min_val=0)
-    version = str(data.get("version", "1.4.0") or "1.4.0").strip()
+    version = str(data.get("version", "1.9.5") or "1.9.5").strip()
     pub_key = str(data.get("public_key", "") or "").strip()
     sig = str(data.get("signature", "") or "").strip()
     raw_ts = data.get("timestamp")
