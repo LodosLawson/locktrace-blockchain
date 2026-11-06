@@ -333,7 +333,7 @@ class Blockchain:
             "last_seen": time.time(),
             "created_at": 1793620000.0,
             "status": "online",
-            "version": "1.4.0",
+            "version": "1.9.5",
             "block_height": len(self.chain),
             "is_genesis": True
         }
@@ -2965,7 +2965,7 @@ class Blockchain:
         location: str = "Decentralized",
         block_height: int = 0,
         miner_address: str = "",
-        version: str = "1.4.0",
+        version: str = "1.9.5",
         public_key: str = "",
         signature: str = "",
         timestamp: Optional[float] = None,
@@ -3041,7 +3041,7 @@ class Blockchain:
                 "miner_address": clean_miner or node_info.get("miner_address", ""),
                 "last_seen": time.time(),
                 "status": "online",
-                "version": safe_version or node_info.get("version", "1.4.0"),
+                "version": safe_version or node_info.get("version", "1.9.5"),
                 "block_height": safe_height if safe_height > 0 else len(self.chain),
             })
             if auth_ok:
