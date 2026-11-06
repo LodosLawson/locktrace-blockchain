@@ -130,5 +130,24 @@ self.addEventListener('push', (event) => {
     renotify: true
   };
 
-  event.waitUntil(self.registration.showNotification(data.title, options));
+  const notifyPromise = self.registration.showNotification(data.title, options);
+  const broadcastPromise = self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+    for (const client of windowClients) {
+      client.postMessage({
+        type: 'LOCKTRACE_PUSH_EVENT',
+        payload: {
+          id: data.tag || ('push-' + Date.now()),
+          category: data.category || 'transfer',
+          title: data.title,
+          body: data.body,
+          icon: (data.category === 'transfer' ? 'payments' : (data.category === 'space' ? 'forum' : 'notifications')),
+          time: Number(data.timestamp ? (data.timestamp * 1000) : Date.now()),
+          read: false,
+          actionUrl: data.url || '#cuzdanim'
+        }
+      });
+    }
+  }).catch(() => {});
+
+  event.waitUntil(Promise.all([notifyPromise, broadcastPromise]));
 });
