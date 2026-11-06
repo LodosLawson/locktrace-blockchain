@@ -10089,7 +10089,7 @@
     }
 
     function initApp() {
-      initNotificationSystem();
+      initNotificationSystem(); registerDevicePushSubscription();
       loadRpcSettings();
       updateRpcBadgeUI();
       setupPwaHandlers();
@@ -10654,6 +10654,59 @@
       }
     }
 
+    function urlB64ToUint8Array(base64String) {
+      const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+      const base64 = (base64String + padding).replace(/\-/g, '+').replace(/_/g, '/');
+      const rawData = window.atob(base64);
+      const outputArray = new Uint8Array(rawData.length);
+      for (let i = 0; i < rawData.length; ++i) {
+        outputArray[i] = rawData.charCodeAt(i);
+      }
+      return outputArray;
+    }
+
+    async function registerDevicePushSubscription() {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
+      if (!currentAccount || !currentAccount.address || !currentAccount.private_key) return;
+      if (Notification.permission !== 'granted') return;
+
+      try {
+        const vapidRes = await apiFetch('/notifications/vapid-key');
+        if (!vapidRes.ok || !vapidRes.body || !vapidRes.body.data || !vapidRes.body.data.public_key) return;
+        const vapidKey = vapidRes.body.data.public_key;
+
+        const reg = await navigator.serviceWorker.ready;
+        let sub = await reg.pushManager.getSubscription();
+        if (!sub) {
+          sub = await reg.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlB64ToUint8Array(vapidKey)
+          });
+        }
+        if (!sub || !sub.endpoint) return;
+
+        const epBytes = utf8ToBytes(sub.endpoint);
+        const endpointHash = bytesToHex(sha256Bytes(epBytes));
+        const ts = Math.floor(Date.now() / 1000);
+        const authMsg = `LOCKTRACE_PUSH_SUB:${currentAccount.address}:${endpointHash}:${ts}`;
+        const sig = signEcdsaSha256(currentAccount.private_key, authMsg);
+
+        await apiFetch('/notifications/subscribe', {
+          method: 'POST',
+          body: JSON.stringify({
+            wallet_address: currentAccount.address,
+            public_key: currentAccount.public_key,
+            subscription: sub.toJSON(),
+            timestamp: ts,
+            signature: sig,
+            user_agent: navigator.userAgent
+          })
+        });
+      } catch (err) {
+        console.debug('Push registration sync notice:', err);
+      }
+    }
+
     async function requestNotificationPermissionAction() {
       if (!('Notification' in window)) {
         showToast('Notifications are not supported in this browser', 'info');
@@ -10664,12 +10717,15 @@
         updatePermissionBannerUI();
         if (perm === 'granted') {
           playNotificationChime();
-          showToast('🔔 Push notifications enabled successfully!', 'verified');
+          showToast('🔔 Permission granted! Registering background push...', 'verified');
+
+          await registerDevicePushSubscription();
+
           addNotification({
             id: 'perm-granted-' + Date.now(),
             category: 'system',
             title: '🎉 Push Notifications Active',
-            body: 'You will now receive instant alerts for incoming transfers, Space mentions, and block confirmations.',
+            body: 'You will now receive instant alerts on your lock screen even when LockTrace is closed.',
             icon: 'notifications_active',
             time: Date.now(),
             read: false,

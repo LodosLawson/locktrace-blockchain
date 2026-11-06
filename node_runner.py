@@ -1313,6 +1313,12 @@ class LockTraceNode:
             blk = self._mine_autonomous_p2p_block(tx)
             return 200, {"success": True, "message": "Comment sealed into local PoW block!", "data": {"post_id": pid, "block_index": blk["index"], "status": "confirmed"}}
 
+        if path in ("/api/v1/notifications/subscribe", "/api/v1/notifications/unsubscribe"):
+            up_res = self.request(path, method="POST", data=payload, timeout=5.0)
+            if up_res:
+                return (200 if up_res.get("success") else 400), up_res
+            return 502, {"success": False, "message": "Failed to forward push request to seed node."}
+
         return 503, {"success": False, "message": "Awaiting P2P network synchronization for this action."}
 
     # =================================================================
@@ -1429,6 +1435,14 @@ class LockTraceNode:
                     return
 
                 # ── B. Decentralized Web RPC (/api/v1/*) ──────────────────
+                if path == "/api/v1/notifications/vapid-key":
+                    up_vapid = node_ref.request("/api/v1/notifications/vapid-key", timeout=3.5)
+                    if up_vapid:
+                        self._send_json(200, up_vapid)
+                        return
+                    self._send_json(503, {"success": False, "message": "VAPID key unavailable from upstream node."})
+                    return
+
                 if path == "/api/v1/health":
                     check = node_ref.verify_frontend_integrity(allow_bootstrap=False)
                     self._send_json(200, {
