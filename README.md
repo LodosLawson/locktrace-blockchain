@@ -71,15 +71,15 @@ $$\text{Block Trigger} = (\Delta t \ge T_{\text{window}}) \quad \mathbf{OR} \qua
 
 LockTrace features a native on-chain domain and identity protocol that maps human-readable names (`@handle.bct`) to 43-character hex addresses (`BCT...`).
 
-### 💰 Tiered Pricing & 80/20 Deflationary Tokenomics
+### 💰 Tiered Pricing & 80/20 Protocol Treasury Pool Tokenomics
 - **3-Letter Handles (Premium Tier):** `100.0 BCT` (e.g. `btc.bct`, `eth.bct`, `ceo.bct`)
 - **4-Letter Handles (Standard Tier):** `50.0 BCT` (e.g. `alex.bct`, `moon.bct`, `lock.bct`)
 - **5+ Character Handles (General Tier):** `10.0 BCT` (e.g. `satoshi.bct`, `locktrace.bct`)
 
 **Tokenomics Breakdown:**
-- **🔥 80% Permanently Treasury-Locked:** 80% of paid registration fees are locked into the Treasury Vault, inducing continuous circulating supply deflation.
+- **🏦 80% Returns to Protocol Treasury Pool:** 80% of paid registration fees return directly into the Protocol Treasury Vault pool (Hazine havuzuna geri aktarım, yakım değil), replenishing the ecosystem reserves.
 - **⚡ 20% Returned to Active Participants:** 20% flows to active PoW miners (70%) and Quorum validators (30%) as transaction fee rewards.
-- **Peer-to-Peer Marketplace:** Handles can be transferred or listed for sale on the decentralized secondary marketplace in BCT coins.
+- **Peer-to-Peer Marketplace & Bidding System:** Handles can be transferred, listed for sale, or bid on via decentralized non-custodial offers in BCT coins.
 
 ---
 

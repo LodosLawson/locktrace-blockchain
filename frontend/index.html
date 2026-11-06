@@ -3136,17 +3136,17 @@
               </div>
             </div>
 
-            <!-- 80/20 Deflationary Tokenomics Callout -->
+            <!-- 80/20 Protocol Treasury Pool Tokenomics Callout -->
             <div class="p-3 rounded-xl bg-emerald-500/5 border border-emerald-500/20 flex items-start gap-2.5 text-xs text-on-surface-variant leading-relaxed">
-              <span class="material-symbols-outlined text-emerald-400 text-[18px] shrink-0 mt-0.5">local_fire_department</span>
+              <span class="material-symbols-outlined text-emerald-400 text-[18px] shrink-0 mt-0.5">account_balance</span>
               <div>
-                <strong class="text-emerald-400 font-semibold">80% Treasury Burn &amp; 20% Mining Reward Split:</strong>
-                When a <code class="text-on-surface font-mono">.bct</code> handle is registered, <strong class="text-white">80% of paid BCT</strong> is permanently locked into the Treasury Vault (reducing circulating supply), while the remaining <strong class="text-white">20%</strong> returns to active PoW miners and validator nodes.
+                <strong class="text-emerald-400 font-semibold">80% Treasury Pool &amp; 20% Mining Reward Split:</strong>
+                When a <code class="text-on-surface font-mono">.bct</code> handle is registered, <strong class="text-white">80% of paid BCT</strong> returns directly to the Protocol Treasury Vault pool (Hazine havuzuna geri aktarım, yakım değil), while the remaining <strong class="text-white">20%</strong> returns to active PoW miners and validator nodes.
               </div>
             </div>
           </div>
 
-          <!-- BNS Sub-Navigation (My Handles / Marketplace / Directory / Analytics & Charts) -->
+          <!-- BNS Sub-Navigation (My Handles / Marketplace / Directory / Analytics & Charts / Offers) -->
           <div class="flex items-center gap-1.5 p-1 rounded-xl bg-surface-container-low border border-outline-variant/15 mt-5 mb-4 overflow-x-auto no-scrollbar">
             <button class="bns-subtab flex-1 py-2 px-2.5 rounded-lg font-label-md text-label-md font-semibold transition-all bg-surface-container-high text-on-surface shadow-sm shrink-0 whitespace-nowrap" id="bnsSubTabMy" onclick="switchBnsSubTab('my')" type="button">
               <span class="flex items-center justify-center gap-1.5">
@@ -3172,6 +3172,13 @@
               <span class="flex items-center justify-center gap-1.5">
                 <span class="material-symbols-outlined text-[17px] text-primary">monitoring</span>
                 <span>Price &amp; History</span>
+              </span>
+            </button>
+            <button class="bns-subtab flex-1 py-2 px-2.5 rounded-lg font-label-md text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all shrink-0 whitespace-nowrap" id="bnsSubTabOffers" onclick="switchBnsSubTab('offers')" type="button">
+              <span class="flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined text-[17px] text-amber-400">gavel</span>
+                <span>Offers</span>
+                <span class="px-1.5 py-0.2 rounded-full bg-amber-500/15 text-amber-400 text-[10px] font-mono hidden" id="bnsOffersCountBadge">0</span>
               </span>
             </button>
           </div>
@@ -3231,11 +3238,11 @@
 
               <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between shadow-xs">
                 <span class="text-[11px] text-on-surface-variant font-medium flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[15px] text-amber-400">local_fire_department</span>
-                  BCT Burned (80%)
+                  <span class="material-symbols-outlined text-[15px] text-amber-400">account_balance</span>
+                  Treasury Pool (80%)
                 </span>
                 <span class="text-xl font-bold font-mono text-amber-400 mt-1.5" id="bnsStatBurned">-- BCT</span>
-                <span class="text-[10px] text-on-surface-variant font-mono mt-0.5">Deflationary Escrow</span>
+                <span class="text-[10px] text-on-surface-variant font-mono mt-0.5">Havuza Geri Dönüş</span>
               </div>
 
               <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between shadow-xs">
@@ -3345,6 +3352,45 @@
                       <tr><td colspan="5" class="py-4 text-center text-on-surface-variant font-sans text-xs">Loading activity tape...</td></tr>
                     </tbody>
                   </table>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- SECTION 5: OFFERS (RECEIVED & SENT) -->
+          <div id="bnsSectionOffers" class="space-y-4 hidden">
+            <!-- Received Offers Card -->
+            <div class="space-y-2.5">
+              <div class="flex items-center justify-between px-1">
+                <span class="text-xs text-on-surface-variant font-medium flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px] text-amber-400">inbox</span>
+                  Incoming Offers on Your Handles
+                </span>
+                <span class="text-xs text-amber-400 font-mono" id="bnsIncomingOffersBadge">0 Active</span>
+              </div>
+              <div id="bnsReceivedOffersList" class="space-y-2.5">
+                <div class="p-6 text-center bg-surface-container-low rounded-2xl border border-outline-variant/10 text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[28px] text-outline mb-1">gavel</span>
+                  <p class="font-medium text-on-surface text-sm">No incoming offers</p>
+                  <p class="text-xs text-on-surface-variant mt-0.5">When other users make offers on your .bct handles, they will appear here with Accept/Reject options.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- Sent Offers Card -->
+            <div class="space-y-2.5 pt-2">
+              <div class="flex items-center justify-between px-1">
+                <span class="text-xs text-on-surface-variant font-medium flex items-center gap-1.5">
+                  <span class="material-symbols-outlined text-[16px] text-primary">outbox</span>
+                  Offers You Have Placed
+                </span>
+                <span class="text-xs text-primary font-mono" id="bnsSentOffersBadge">0 Active</span>
+              </div>
+              <div id="bnsSentOffersList" class="space-y-2.5">
+                <div class="p-6 text-center bg-surface-container-low rounded-2xl border border-outline-variant/10 text-on-surface-variant">
+                  <span class="material-symbols-outlined text-[28px] text-outline mb-1">send</span>
+                  <p class="font-medium text-on-surface text-sm">No outgoing offers</p>
+                  <p class="text-xs text-on-surface-variant mt-0.5">You can place non-custodial offers on any registered handle from the search card or directory.</p>
                 </div>
               </div>
             </div>
@@ -3957,8 +4003,8 @@
             <span class="text-on-surface font-mono font-bold" id="bnsRegModalCost">10.00 BCT</span>
           </div>
           <div class="flex items-center justify-between text-xs text-on-surface-variant">
-            <span>&bull; 80% Treasury Locked (Burned):</span>
-            <span class="text-rose-400 font-mono" id="bnsRegModalBurn">8.00 BCT</span>
+            <span>&bull; 80% Treasury Pool (Havuza Dönüş):</span>
+            <span class="text-amber-400 font-mono" id="bnsRegModalBurn">8.00 BCT</span>
           </div>
           <div class="flex items-center justify-between text-xs text-on-surface-variant">
             <span>&bull; 20% Miner/Validator Reward:</span>
@@ -4100,6 +4146,59 @@
         <button class="w-full py-3 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-2 mt-2" id="btnConfirmBnsBuy" onclick="confirmBnsBuy()" type="button">
           <span class="material-symbols-outlined text-[18px]">shopping_bag</span>
           <span id="btnConfirmBnsBuyText">Sign &amp; Complete Purchase</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: BNS MAKE DOMAIN OFFER / BID                                        -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-4" id="bnsOfferModal" onclick="if(event.target===this) closeBnsOfferModal();">
+    <div class="w-full max-w-md rounded-2xl bg-surface-container p-5 md:p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/30">
+      <div class="flex items-center justify-between pb-3 border-b border-outline-variant/20">
+        <div class="flex items-center gap-2">
+          <div class="w-8 h-8 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400">
+            <span class="material-symbols-outlined text-[18px]">gavel</span>
+          </div>
+          <span class="font-headline-sm text-headline-sm text-on-surface font-semibold">Make Domain Offer</span>
+        </div>
+        <button class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface flex items-center justify-center transition-colors" onclick="closeBnsOfferModal()" type="button">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <div class="flex flex-col gap-3 text-xs sm:text-sm">
+        <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/15 flex items-center justify-between">
+          <span class="text-on-surface-variant">Handle:</span>
+          <span class="text-emerald-400 font-mono font-bold text-base" id="bnsOfferModalName">@handle.bct</span>
+        </div>
+
+        <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/15 flex items-center justify-between">
+          <span class="text-on-surface-variant">Current Owner:</span>
+          <span class="text-on-surface font-mono text-xs" id="bnsOfferModalOwner">BCT...</span>
+        </div>
+
+        <div class="space-y-1">
+          <label class="text-xs text-on-surface-variant font-medium" for="bnsOfferInputAmount">Offer Amount (BCT):</label>
+          <div class="relative">
+            <input autocomplete="off" class="w-full bg-surface-container-low rounded-xl px-3.5 py-2.5 text-on-surface font-mono placeholder:text-outline/50 focus:outline-none focus:ring-1 focus:ring-amber-400 border border-outline-variant/15 text-sm" id="bnsOfferInputAmount" placeholder="e.g. 25.00" type="number" min="0.01" step="0.1"/>
+            <span class="absolute right-3.5 top-1/2 -translate-y-1/2 text-amber-400 font-mono font-bold text-xs">BCT</span>
+          </div>
+          <div class="flex items-center justify-between text-[11px] text-on-surface-variant pt-0.5">
+            <span>Your Balance:</span>
+            <span class="font-mono text-primary font-bold" id="bnsOfferModalBalance">0.00 BCT</span>
+          </div>
+        </div>
+
+        <div class="p-3 rounded-xl bg-amber-500/5 border border-amber-500/20 text-[11px] text-on-surface-variant leading-relaxed">
+          <strong class="text-amber-400 font-semibold">Decentralized P2P Trade:</strong>
+          Funds remain in your wallet until the domain owner accepts your offer. A 1% protocol fee applies when accepted. You can cancel your offer at any time.
+        </div>
+
+        <button class="w-full py-3 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-2 mt-2" id="btnSubmitBnsOffer" onclick="submitBnsOffer()" type="button">
+          <span class="material-symbols-outlined text-[18px]">gavel</span>
+          <span id="btnSubmitBnsOfferText">Submit Non-Custodial Offer</span>
         </button>
       </div>
     </div>
@@ -9034,6 +9133,9 @@
     let pendingBnsBuyName = '';
     let pendingBnsBuyPrice = 0;
     let pendingBnsBuySeller = '';
+    let pendingBnsOfferName = '';
+    let pendingBnsOfferOwner = '';
+    let bnsOffersCache = { received_offers: [], sent_offers: [], received_active_count: 0, sent_active_count: 0 };
     let bnsAnalyticsCache = null;
     let currentBnsChartFilter = 'all';
     let bnsChartPointsCache = [];
@@ -9044,11 +9146,13 @@
       const marketBtn = document.getElementById('bnsSubTabMarket');
       const dirBtn = document.getElementById('bnsSubTabDirectory');
       const analyticsBtn = document.getElementById('bnsSubTabAnalytics');
+      const offersBtn = document.getElementById('bnsSubTabOffers');
 
       const secMy = document.getElementById('bnsSectionMy');
       const secMarket = document.getElementById('bnsSectionMarket');
       const secDir = document.getElementById('bnsSectionDirectory');
       const secAnalytics = document.getElementById('bnsSectionAnalytics');
+      const secOffers = document.getElementById('bnsSectionOffers');
 
       const activeClass = 'bns-subtab flex-1 py-2 px-2.5 rounded-lg font-label-md text-label-md font-semibold transition-all bg-surface-container-high text-on-surface shadow-sm shrink-0 whitespace-nowrap';
       const inactiveClass = 'bns-subtab flex-1 py-2 px-2.5 rounded-lg font-label-md text-label-md font-medium text-on-surface-variant hover:text-on-surface transition-all shrink-0 whitespace-nowrap';
@@ -9057,16 +9161,19 @@
       if (marketBtn) marketBtn.className = tab === 'market' ? activeClass : inactiveClass;
       if (dirBtn) dirBtn.className = tab === 'directory' ? activeClass : inactiveClass;
       if (analyticsBtn) analyticsBtn.className = tab === 'analytics' ? activeClass : inactiveClass;
+      if (offersBtn) offersBtn.className = tab === 'offers' ? activeClass : inactiveClass;
 
       if (secMy) secMy.classList.toggle('hidden', tab !== 'my');
       if (secMarket) secMarket.classList.toggle('hidden', tab !== 'market');
       if (secDir) secDir.classList.toggle('hidden', tab !== 'directory');
       if (secAnalytics) secAnalytics.classList.toggle('hidden', tab !== 'analytics');
+      if (secOffers) secOffers.classList.toggle('hidden', tab !== 'offers');
 
       if (tab === 'my') renderBnsMyHandles();
       else if (tab === 'market') renderBnsMarketplace();
       else if (tab === 'directory') renderBnsDirectory();
       else if (tab === 'analytics') loadBnsAnalytics();
+      else if (tab === 'offers') { loadBnsOffers(); renderBnsOffers(); }
     }
 
     async function loadBnsAnalytics() {
@@ -9492,7 +9599,7 @@
                   </div>
                   <div class="text-xs text-on-surface-variant mt-0.5">
                     Tier: <strong class="text-on-surface">${escapeHtml(p.tier)}</strong> • Cost: <strong class="text-primary font-mono">${p.cost} BCT</strong>
-                    (80% locked to Treasury, 20% to miner rewards)
+                    (80% to Treasury pool, 20% to miner rewards)
                   </div>
                 </div>
               </div>
@@ -9527,11 +9634,19 @@
                   </div>
                 </div>
               </div>
-              ${isForSale && !isMyOwn ? `
-                <button class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold hover:brightness-110 active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="openBnsBuyModal('${escapeHtml(p.name)}', ${salePrice}, '${escapeHtml(ownerAddr)}')" type="button">
-                  <span class="material-symbols-outlined text-[17px]">shopping_bag</span>
-                  <span>Buy for ${salePrice} BCT</span>
-                </button>
+              ${!isMyOwn ? `
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  ${isForSale ? `
+                    <button class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold hover:brightness-110 active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="openBnsBuyModal('${escapeHtml(p.name)}', ${salePrice}, '${escapeHtml(ownerAddr)}')" type="button">
+                      <span class="material-symbols-outlined text-[17px]">shopping_bag</span>
+                      <span>Buy for ${salePrice} BCT</span>
+                    </button>
+                  ` : ''}
+                  <button class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="openBnsOfferModal('${escapeHtml(p.name)}', '${escapeHtml(ownerAddr)}')" type="button">
+                    <span class="material-symbols-outlined text-[17px]">gavel</span>
+                    <span>Make Offer</span>
+                  </button>
+                </div>
               ` : ''}
             </div>`;
         }
@@ -9869,9 +9984,14 @@
 
         syncSpaceHandleSelectors(bnsMyHandlesCache, currentBnsHandle);
 
+        if (currentAccount && currentAccount.address) {
+          loadBnsOffers();
+        }
+
         if (currentBnsSubTab === 'my') renderBnsMyHandles();
         else if (currentBnsSubTab === 'market') renderBnsMarketplace();
         else if (currentBnsSubTab === 'directory') renderBnsDirectory();
+        else if (currentBnsSubTab === 'offers') renderBnsOffers();
       } catch (err) {
         console.error('Error loading BNS data:', err);
       }
@@ -10027,6 +10147,10 @@
                   <span>Edit</span>
                 </button>
               ` : `
+                <button class="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="openBnsOfferModal('${escapeHtml(rec.name)}', '${escapeHtml(rec.owner)}')" type="button">
+                  <span class="material-symbols-outlined text-[16px]">gavel</span>
+                  <span>Offer</span>
+                </button>
                 <button class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-1.5" onclick="openBnsBuyModal('${escapeHtml(rec.name)}', ${price}, '${escapeHtml(rec.owner)}')" type="button">
                   <span class="material-symbols-outlined text-[17px]">shopping_bag</span>
                   <span>Buy for ${price} BCT</span>
@@ -10051,6 +10175,7 @@
         return;
       }
 
+      const myAddr = currentAccount ? currentAccount.address : '';
       container.innerHTML = `
         <div class="rounded-xl border border-outline-variant/15 overflow-hidden bg-surface-container-low">
           <div class="overflow-x-auto">
@@ -10062,7 +10187,7 @@
                   <th class="py-3 px-3.5">Status</th>
                   <th class="py-3 px-3.5 text-right">Block</th>
                   <th class="py-3 px-3.5 text-right">Registered</th>
-                  <th class="py-3 px-3.5 text-center">Chart</th>
+                  <th class="py-3 px-3.5 text-center">Actions</th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-outline-variant/10 font-mono">
@@ -10082,10 +10207,18 @@
                       <td class="py-3 px-3.5 text-right text-on-surface-variant">#${escapeHtml(rec.block_index ?? '--')}</td>
                       <td class="py-3 px-3.5 text-right text-on-surface-variant font-sans">${escapeHtml(formatTimeAgo(rec.registered_at))}</td>
                       <td class="py-3 px-3.5 text-center">
-                        <button class="px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary text-[11px] font-semibold inline-flex items-center gap-1 active:scale-95 transition-all" onclick="inspectBnsHandleHistory('${escapeHtml(rec.name)}')" title="View Price Chart & History">
-                          <span class="material-symbols-outlined text-[14px]">show_chart</span>
-                          <span>Chart</span>
-                        </button>
+                        <div class="inline-flex items-center gap-1.5">
+                          <button class="px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary text-[11px] font-semibold inline-flex items-center gap-1 active:scale-95 transition-all" onclick="inspectBnsHandleHistory('${escapeHtml(rec.name)}')" title="View Price Chart & History">
+                            <span class="material-symbols-outlined text-[14px]">show_chart</span>
+                            <span>Chart</span>
+                          </button>
+                          ${myAddr && rec.owner !== myAddr ? `
+                            <button class="px-2.5 py-1 rounded-lg bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 text-[11px] font-semibold inline-flex items-center gap-1 active:scale-95 transition-all" onclick="openBnsOfferModal('${escapeHtml(rec.name)}', '${escapeHtml(rec.owner)}')" title="Make Domain Offer">
+                              <span class="material-symbols-outlined text-[13px]">gavel</span>
+                              <span>Offer</span>
+                            </button>
+                          ` : ''}
+                        </div>
                       </td>
                     </tr>
                   `;
@@ -10095,6 +10228,294 @@
           </div>
         </div>
       `;
+    }
+
+    function openBnsOfferModal(name, owner) {
+      if (!currentAccount || !currentAccount.address) {
+        showToast('Please create or unlock a wallet first', 'warning', true);
+        switchTab('yeni-cuzdan');
+        return;
+      }
+      const myAddr = currentAccount.address;
+      if (owner && owner === myAddr) {
+        showToast('You cannot make an offer on your own handle', 'warning', true);
+        return;
+      }
+      pendingBnsOfferName = name;
+      pendingBnsOfferOwner = owner || '';
+      const nameEl = document.getElementById('bnsOfferModalName');
+      const ownerEl = document.getElementById('bnsOfferModalOwner');
+      const balEl = document.getElementById('bnsOfferModalBalance');
+      const input = document.getElementById('bnsOfferInputAmount');
+      const modal = document.getElementById('bnsOfferModal');
+
+      if (nameEl) nameEl.textContent = '@' + name;
+      if (ownerEl) ownerEl.textContent = owner ? shortAddr(owner) : 'Registered Owner';
+      if (balEl) balEl.textContent = `${Number(currentAccount.balance || 0).toFixed(2)} BCT`;
+      if (input) input.value = '';
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        setTimeout(() => input && input.focus(), 100);
+      }
+    }
+
+    function closeBnsOfferModal() {
+      const modal = document.getElementById('bnsOfferModal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    async function submitBnsOffer() {
+      if (!currentAccount || !currentAccount.address) return;
+      const input = document.getElementById('bnsOfferInputAmount');
+      const amount = Number(input ? input.value : 0) || 0;
+
+      if (amount <= 0) {
+        showToast('Please enter a valid offer amount greater than zero', 'warning', true);
+        return;
+      }
+      if (amount > (Number(currentAccount.balance || 0))) {
+        showToast(`Insufficient balance! Your balance is ${Number(currentAccount.balance || 0).toFixed(2)} BCT`, 'warning', true);
+        return;
+      }
+
+      const btn = document.getElementById('btnSubmitBnsOffer');
+      const btnText = document.getElementById('btnSubmitBnsOfferText');
+      if (btn) btn.disabled = true;
+      if (btnText) btnText.textContent = 'Signing offer...';
+
+      try {
+        const canonical = `BNS_OFFER:${pendingBnsOfferName}:${currentAccount.address}:${amount}`;
+        const auth = await buildSignedAuthPayload(canonical);
+        const reqBody = Object.assign({
+          name: pendingBnsOfferName,
+          bidder: currentAccount.address,
+          amount: amount
+        }, auth);
+
+        const { ok, body } = await apiFetch('/bns/offer', {
+          method: 'POST',
+          body: JSON.stringify(reqBody)
+        });
+
+        if (!ok || !body.success) {
+          throw new Error(body.message || 'Failed to submit offer');
+        }
+
+        closeBnsOfferModal();
+        showToast(`🏷️ Offer of ${amount.toFixed(2)} BCT placed for @${pendingBnsOfferName}!`, 'verified');
+        await loadBnsOffers();
+        switchBnsSubTab('offers');
+      } catch (err) {
+        console.error('BNS Offer submission error:', err);
+        showToast(err.message || 'Offer submission failed', 'error', true);
+      } finally {
+        if (btn) btn.disabled = false;
+        if (btnText) btnText.textContent = 'Submit Non-Custodial Offer';
+      }
+    }
+
+    async function acceptBnsOffer(name, offerId, bidder, amount) {
+      if (!currentAccount || !currentAccount.address) return;
+      const netPay = (amount * 0.99).toFixed(2);
+      if (!confirm(`Accept offer of ${amount} BCT for @${name} from ${shortAddr(bidder)}?\n\nDomain ownership will be transferred to bidder, and ${netPay} BCT will be deposited into your wallet (1% network trade fee applied).`)) {
+        return;
+      }
+
+      showToast(`Accepting offer for @${name}...`, 'hourglass_empty', false);
+      try {
+        const canonical = `BNS_ACCEPT_OFFER:${name}:${currentAccount.address}:${offerId}:${bidder}:${amount}`;
+        const auth = await buildSignedAuthPayload(canonical);
+        const reqBody = Object.assign({
+          name: name,
+          owner: currentAccount.address,
+          offer_id: offerId
+        }, auth);
+
+        const { ok, body } = await apiFetch('/bns/offer/accept', {
+          method: 'POST',
+          body: JSON.stringify(reqBody)
+        });
+
+        if (!ok || !body.success) {
+          throw new Error(body.message || 'Failed to accept offer');
+        }
+
+        showToast(`🎉 Offer accepted! @${name} transferred and funds received!`, 'verified');
+        await refreshCurrentAccountBalance();
+        await loadBnsData();
+        await loadBnsOffers();
+      } catch (err) {
+        console.error('Accept offer error:', err);
+        showToast(err.message || 'Failed to accept offer', 'error', true);
+      }
+    }
+
+    async function cancelOrRejectBnsOffer(name, offerId, isOwner) {
+      if (!currentAccount || !currentAccount.address) return;
+      const actionLabel = isOwner ? 'Reject' : 'Cancel';
+      if (!confirm(`${actionLabel} offer on @${name}?`)) return;
+
+      showToast(`${actionLabel}ing offer...`, 'hourglass_empty', false);
+      try {
+        const canonical = `BNS_CANCEL_OFFER:${name}:${currentAccount.address}:${offerId}`;
+        const auth = await buildSignedAuthPayload(canonical);
+        const reqBody = Object.assign({
+          name: name,
+          actor: currentAccount.address,
+          offer_id: offerId
+        }, auth);
+
+        const { ok, body } = await apiFetch('/bns/offer/cancel', {
+          method: 'POST',
+          body: JSON.stringify(reqBody)
+        });
+
+        if (!ok || !body.success) {
+          throw new Error(body.message || `Failed to ${actionLabel.toLowerCase()} offer`);
+        }
+
+        showToast(`Offer ${isOwner ? 'rejected' : 'cancelled'} successfully.`, 'verified');
+        await loadBnsOffers();
+      } catch (err) {
+        console.error('Cancel/reject offer error:', err);
+        showToast(err.message || `Failed to ${actionLabel.toLowerCase()} offer`, 'error', true);
+      }
+    }
+
+    async function loadBnsOffers() {
+      if (!currentAccount || !currentAccount.address) return;
+      try {
+        const res = await apiFetch('/bns/my-offers/' + encodeURIComponent(currentAccount.address));
+        if (res.ok && res.body && res.body.data) {
+          bnsOffersCache = res.body.data;
+          renderBnsOffers();
+
+          const activeIncoming = Number(bnsOffersCache.received_active_count || 0);
+          const badgeTop = document.getElementById('bnsOffersCountBadge');
+          const badgeIncoming = document.getElementById('bnsIncomingOffersBadge');
+          const badgeSent = document.getElementById('bnsSentOffersBadge');
+
+          if (badgeTop) {
+            badgeTop.textContent = String(activeIncoming);
+            badgeTop.classList.toggle('hidden', activeIncoming === 0);
+          }
+          if (badgeIncoming) {
+            badgeIncoming.textContent = `${activeIncoming} Active`;
+          }
+          if (badgeSent) {
+            badgeSent.textContent = `${Number(bnsOffersCache.sent_active_count || 0)} Active`;
+          }
+        }
+      } catch (err) {
+        console.error('Error loading BNS offers:', err);
+      }
+    }
+
+    function renderBnsOffers() {
+      const recList = document.getElementById('bnsReceivedOffersList');
+      const sentList = document.getElementById('bnsSentOffersList');
+      if (!recList || !sentList) return;
+
+      const received = bnsOffersCache.received_offers || [];
+      const sent = bnsOffersCache.sent_offers || [];
+
+      if (!received.length) {
+        recList.innerHTML = `
+          <div class="p-6 text-center bg-surface-container-low rounded-2xl border border-outline-variant/10 text-on-surface-variant">
+            <span class="material-symbols-outlined text-[28px] text-outline mb-1">gavel</span>
+            <p class="font-medium text-on-surface text-sm">No incoming offers</p>
+            <p class="text-xs text-on-surface-variant mt-0.5">When other users make offers on your .bct handles, they will appear here with Accept/Reject options.</p>
+          </div>`;
+      } else {
+        recList.innerHTML = received.map((o) => {
+          const isActive = o.status === 'active';
+          const statusBadge = isActive
+            ? `<span class="px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-bold font-mono">Active Offer</span>`
+            : `<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[10px] font-mono capitalize">${escapeHtml(o.status)}</span>`;
+
+          return `
+            <div class="p-4 rounded-2xl bg-surface-container-low border ${isActive ? 'border-amber-400/30 ring-1 ring-amber-400/15' : 'border-outline-variant/15'} flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-amber-400/15 text-amber-300 flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-[20px]">gavel</span>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-base font-bold text-on-surface font-mono">@${escapeHtml(o.name)}</span>
+                    ${statusBadge}
+                  </div>
+                  <div class="text-xs text-on-surface-variant truncate mt-0.5">
+                    Bidder: <span class="font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(o.bidder)}')">${escapeHtml(shortAddr(o.bidder))}</span> • Offer: <strong class="text-amber-400 font-mono text-sm">${Number(o.amount).toFixed(2)} BCT</strong>
+                    <span class="text-outline text-[11px] block sm:inline sm:ml-1 font-sans">• ${escapeHtml(formatTimeAgo(o.timestamp))}</span>
+                  </div>
+                </div>
+              </div>
+
+              ${isActive ? `
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  <button class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-black font-label-md text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1" onclick="acceptBnsOffer('${escapeHtml(o.name)}', '${escapeHtml(o.offer_id)}', '${escapeHtml(o.bidder)}', ${o.amount})" type="button">
+                    <span class="material-symbols-outlined text-[16px]">check</span>
+                    <span>Accept (${Number(o.amount * 0.99).toFixed(2)} BCT)</span>
+                  </button>
+                  <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-error/20 hover:text-error text-on-surface-variant text-xs font-semibold transition-all flex items-center justify-center gap-1" onclick="cancelOrRejectBnsOffer('${escapeHtml(o.name)}', '${escapeHtml(o.offer_id)}', true)" type="button">
+                    <span class="material-symbols-outlined text-[16px]">close</span>
+                    <span>Reject</span>
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      }
+
+      if (!sent.length) {
+        sentList.innerHTML = `
+          <div class="p-6 text-center bg-surface-container-low rounded-2xl border border-outline-variant/10 text-on-surface-variant">
+            <span class="material-symbols-outlined text-[28px] text-outline mb-1">send</span>
+            <p class="font-medium text-on-surface text-sm">No outgoing offers</p>
+            <p class="text-xs text-on-surface-variant mt-0.5">You can place non-custodial offers on any registered handle from the search card or directory.</p>
+          </div>`;
+      } else {
+        sentList.innerHTML = sent.map((o) => {
+          const isActive = o.status === 'active';
+          const statusBadge = isActive
+            ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 text-[10px] font-bold font-mono">Active</span>`
+            : `<span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[10px] font-mono capitalize">${escapeHtml(o.status)}</span>`;
+
+          return `
+            <div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-surface-container-high text-primary flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined text-[20px]">send</span>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <span class="text-base font-bold text-on-surface font-mono">@${escapeHtml(o.name)}</span>
+                    ${statusBadge}
+                  </div>
+                  <div class="text-xs text-on-surface-variant truncate mt-0.5">
+                    Owner: <span class="font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(o.owner)}')">${escapeHtml(shortAddr(o.owner))}</span> • Your Bid: <strong class="text-primary font-mono text-sm">${Number(o.amount).toFixed(2)} BCT</strong>
+                    <span class="text-outline text-[11px] block sm:inline sm:ml-1 font-sans">• ${escapeHtml(formatTimeAgo(o.timestamp))}</span>
+                  </div>
+                </div>
+              </div>
+
+              ${isActive ? `
+                <div class="flex items-center gap-2 w-full sm:w-auto">
+                  <button class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-error/20 hover:text-error text-on-surface-variant text-xs font-semibold transition-all flex items-center justify-center gap-1" onclick="cancelOrRejectBnsOffer('${escapeHtml(o.name)}', '${escapeHtml(o.offer_id)}', false)" type="button">
+                    <span class="material-symbols-outlined text-[16px]">cancel</span>
+                    <span>Cancel Offer</span>
+                  </button>
+                </div>
+              ` : ''}
+            </div>
+          `;
+        }).join('');
+      }
     }
 
     function initApp() {

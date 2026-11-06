@@ -1,4 +1,4 @@
-const CACHE_NAME = 'locktrace-pwa-v30';
+const CACHE_NAME = 'locktrace-pwa-v31';
 
 const PRECACHE_ASSETS = [
   '/',
@@ -140,7 +140,7 @@ self.addEventListener('push', (event) => {
           category: data.category || 'transfer',
           title: data.title,
           body: data.body,
-          icon: (data.category === 'transfer' ? 'payments' : (data.category === 'space' ? 'forum' : 'notifications')),
+          icon: (data.category === 'transfer' ? 'payments' : (data.category === 'space' ? 'forum' : (data.category === 'bns_offer' ? 'gavel' : 'notifications'))),
           time: Number(data.timestamp ? (data.timestamp * 1000) : Date.now()),
           read: false,
           actionUrl: data.url || '#cuzdanim'

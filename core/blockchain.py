@@ -1107,7 +1107,7 @@ class Blockchain:
         - 5+ characters: 10.0 BCT (General Handle Tier)
         Tokenomics:
         - 20% returns to circulating supply via validator/miner reward pool.
-        - 80% is permanently locked into Treasury Vault (circulating deflation).
+        - 80% returns directly to the Protocol Treasury Vault pool (Hazine havuzuna geri aktarım).
         """
         clean = (name_or_label or "").lower().strip()
         if clean.endswith(".bct"):
@@ -1292,7 +1292,7 @@ class Blockchain:
                 "status": "confirmed" if block else "mempool",
                 "new_balance": self.balances[clean_owner]
             }
-            return True, f"'{full_name}' successfully registered! 80% ({treasury_cut} BCT) locked into Treasury, 20% ({fee} BCT) returned to supply rewards.", res
+            return True, f"'{full_name}' successfully registered! 80% ({treasury_cut} BCT) returned to Treasury pool (Havuza Dönüş), 20% ({fee} BCT) returned to supply rewards.", res
 
     def bns_transfer(self, name: str, current_owner: str, to_address: str,
                      signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
@@ -1586,6 +1586,327 @@ class Blockchain:
 
             msg = f"'{norm}' is now your primary BNS handle!"
             return True, msg, {"name": norm, "owner": clean_owner, "tx_hash": tx.hash()}
+
+    def bns_make_offer(self, name: str, bidder: str, amount_bct: float,
+                       signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        """
+        Creates an on-chain offer/bid for any registered .bct handle.
+        Bidder signs: BNS_OFFER:{name}:{bidder}:{amount}
+        Validates non-custodial signature, wallet address, and sufficient balance.
+        """
+        with self.lock:
+            self._load_state()
+            clean_bidder = bidder.strip()
+            if not is_valid_bct_address(clean_bidder):
+                return False, f"Invalid bidder address: '{clean_bidder}'", None
+
+            norm = self._normalize_bns_name(name)
+            if norm not in self.bns_records:
+                return False, f"'{norm}' is not registered on-chain.", None
+
+            rec = self.bns_records[norm]
+            owner = rec.get("owner", "")
+            if clean_bidder == owner:
+                return False, "You cannot make an offer on your own domain.", None
+
+            try:
+                amount = round(float(amount_bct), 4)
+            except Exception:
+                return False, "Invalid offer amount.", None
+
+            if amount <= 0:
+                return False, "Offer amount must be greater than zero.", None
+
+            expected_payload = signed_payload or f"BNS_OFFER:{norm}:{clean_bidder}:{amount}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_bidder, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            bal = self.verify_and_recalc_balance(clean_bidder)
+            if bal < amount:
+                return False, f"Insufficient balance! You offered {amount:.2f} BCT but your balance is {bal:.4f} BCT.", None
+
+            offer_id = f"bno_{secrets.token_hex(6)}"
+            extra_data = {
+                "name": norm,
+                "bidder": clean_bidder,
+                "owner": owner,
+                "amount": amount,
+                "offer_id": offer_id,
+                "action": "offer"
+            }
+
+            tx = Transaction(
+                sender=clean_bidder,
+                receiver=owner,
+                amount=0.0,
+                fee=0.0,
+                signature=signature,
+                tx_type="bns_offer",
+                extra_data=extra_data
+            )
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+
+            block = self._seal_or_queue_mempool()
+
+            if "offers" not in rec or not isinstance(rec["offers"], dict):
+                rec["offers"] = {}
+
+            offer_obj = {
+                "offer_id": offer_id,
+                "name": norm,
+                "bidder": clean_bidder,
+                "owner": owner,
+                "amount": amount,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "status": "active"
+            }
+            rec["offers"][offer_id] = offer_obj
+            rec["updated_at"] = tx.timestamp
+            rec["history"].append({
+                "action": "offer_placed",
+                "bidder": clean_bidder,
+                "amount": amount,
+                "offer_id": offer_id,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block": block.index if block else "Mempool"
+            })
+            self._save_state()
+
+            return True, f"Offer of {amount:.2f} BCT successfully placed for '@{norm}'!", offer_obj
+
+    def bns_accept_offer(self, name: str, owner: str, offer_id: str,
+                         signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        """
+        Domain owner accepts a specific active offer on their .bct handle.
+        Owner signs: BNS_ACCEPT_OFFER:{name}:{owner}:{offer_id}:{bidder}:{amount}
+        Transfers domain ownership to bidder, transfers funds to owner (1% protocol fee).
+        """
+        with self.lock:
+            self._load_state()
+            clean_owner = owner.strip()
+            norm = self._normalize_bns_name(name)
+            if norm not in self.bns_records:
+                return False, f"'{norm}' is not registered.", None
+
+            rec = self.bns_records[norm]
+            if rec.get("owner") != clean_owner:
+                return False, f"You are not the current owner of '@{norm}'.", None
+
+            offers = rec.get("offers", {})
+            if not isinstance(offers, dict) or offer_id not in offers:
+                return False, "Offer not found or no longer available.", None
+
+            target_offer = offers[offer_id]
+            if target_offer.get("status") != "active":
+                return False, f"Offer is {target_offer.get('status')} and cannot be accepted.", None
+
+            bidder = target_offer.get("bidder", "")
+            amount = float(target_offer.get("amount", 0.0))
+
+            expected_payload = signed_payload or f"BNS_ACCEPT_OFFER:{norm}:{clean_owner}:{offer_id}:{bidder}:{amount}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            # Verify bidder still has sufficient balance
+            bidder_bal = self.verify_and_recalc_balance(bidder)
+            if bidder_bal < amount:
+                target_offer["status"] = "expired"
+                self._save_state()
+                return False, f"Bidder no longer has sufficient funds ({bidder_bal:.4f} BCT available). Offer marked expired.", None
+
+            # Standard 1% network trade fee
+            fee = round(amount * 0.01, 8)
+            net_amount = round(amount - fee, 8)
+
+            extra_data = {
+                "name": norm,
+                "bidder": bidder,
+                "seller": clean_owner,
+                "amount": amount,
+                "fee": fee,
+                "net_amount": net_amount,
+                "offer_id": offer_id,
+                "action": "accept_offer"
+            }
+
+            tx = Transaction(
+                sender=bidder,
+                receiver=clean_owner,
+                amount=amount,
+                fee=fee,
+                signature=signature,
+                tx_type="bns_accept_offer",
+                extra_data=extra_data
+            )
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + fee, 8)
+
+            block = self._seal_or_queue_mempool()
+
+            # Transfer ownership
+            rec["owner"] = bidder
+            rec["sale_price"] = 0.0
+            rec["updated_at"] = tx.timestamp
+            target_offer["status"] = "accepted"
+            target_offer["accepted_at"] = tx.timestamp
+            target_offer["accept_tx_hash"] = tx.hash()
+
+            # Mark all other active offers on this domain as superseded
+            for o_id, off in offers.items():
+                if o_id != offer_id and off.get("status") == "active":
+                    off["status"] = "superseded"
+
+            rec["history"].append({
+                "action": "offer_accepted",
+                "buyer": bidder,
+                "seller": clean_owner,
+                "price": amount,
+                "offer_id": offer_id,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block": block.index if block else "Mempool"
+            })
+
+            # Update reverse lookups
+            if self.bns_reverse.get(clean_owner) == norm:
+                other = next((n for n, r in self.bns_records.items() if r.get("owner") == clean_owner), "")
+                if other:
+                    self.bns_reverse[clean_owner] = other
+                else:
+                    self.bns_reverse.pop(clean_owner, None)
+            if bidder not in self.bns_reverse:
+                self.bns_reverse[bidder] = norm
+
+            self.balances[bidder] = self.verify_and_recalc_balance(bidder)
+            self.balances[clean_owner] = self.verify_and_recalc_balance(clean_owner)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            receipt = {
+                "name": norm,
+                "buyer": bidder,
+                "seller": clean_owner,
+                "price": amount,
+                "seller_received": net_amount,
+                "fee": fee,
+                "offer_id": offer_id,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool"
+            }
+            return True, f"Offer accepted! '{norm}' transferred to {bidder[:10]}... (+{net_amount} BCT credited).", receipt
+
+    def bns_cancel_offer(self, name: str, actor: str, offer_id: str,
+                         signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        """
+        Cancels or rejects an active offer.
+        Can be executed by bidder (cancellation) or domain owner (rejection).
+        Caller signs: BNS_CANCEL_OFFER:{name}:{actor}:{offer_id}
+        """
+        with self.lock:
+            self._load_state()
+            clean_actor = actor.strip()
+            norm = self._normalize_bns_name(name)
+            if norm not in self.bns_records:
+                return False, f"'{norm}' is not registered.", None
+
+            rec = self.bns_records[norm]
+            offers = rec.get("offers", {})
+            if not isinstance(offers, dict) or offer_id not in offers:
+                return False, "Offer not found.", None
+
+            target_offer = offers[offer_id]
+            if target_offer.get("status") != "active":
+                return False, f"Offer is already {target_offer.get('status')}.", None
+
+            owner = rec.get("owner", "")
+            bidder = target_offer.get("bidder", "")
+
+            if clean_actor not in (bidder, owner):
+                return False, "Only the bidder or domain owner can cancel/reject this offer.", None
+
+            expected_payload = signed_payload or f"BNS_CANCEL_OFFER:{norm}:{clean_actor}:{offer_id}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_actor, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            new_status = "cancelled" if clean_actor == bidder else "rejected"
+            target_offer["status"] = new_status
+            target_offer["resolved_at"] = time.time()
+
+            extra_data = {
+                "name": norm,
+                "actor": clean_actor,
+                "offer_id": offer_id,
+                "status": new_status,
+                "action": "cancel_offer"
+            }
+
+            tx = Transaction(
+                sender=clean_actor,
+                receiver=TREASURY_ADDRESS,
+                amount=0.0,
+                fee=0.0,
+                signature=signature,
+                tx_type="bns_cancel_offer",
+                extra_data=extra_data
+            )
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+
+            self._seal_or_queue_mempool()
+            self._save_state()
+
+            label = "cancelled" if clean_actor == bidder else "rejected"
+            return True, f"Offer on '@{norm}' has been {label}.", target_offer
+
+    def bns_get_offers(self, name: str = "", address: str = "") -> dict:
+        """Retrieves offers filtered by domain name or wallet address (sent & received)."""
+        with self.lock:
+            self._load_state()
+            clean_name = self._normalize_bns_name(name) if name else ""
+            clean_addr = (address or "").strip()
+
+            if clean_name:
+                rec = self.bns_records.get(clean_name, {})
+                offers_dict = rec.get("offers", {})
+                offers_list = list(offers_dict.values()) if isinstance(offers_dict, dict) else []
+                offers_list.sort(key=lambda o: o.get("timestamp", 0), reverse=True)
+                return {
+                    "name": clean_name,
+                    "owner": rec.get("owner", ""),
+                    "offers": offers_list,
+                    "active_count": sum(1 for o in offers_list if o.get("status") == "active")
+                }
+
+            received = []
+            sent = []
+            for n, r in self.bns_records.items():
+                owner = r.get("owner", "")
+                offers_dict = r.get("offers", {})
+                if not isinstance(offers_dict, dict):
+                    continue
+                for o in offers_dict.values():
+                    if clean_addr and owner == clean_addr:
+                        received.append(o)
+                    if clean_addr and o.get("bidder") == clean_addr:
+                        sent.append(o)
+
+            received.sort(key=lambda o: o.get("timestamp", 0), reverse=True)
+            sent.sort(key=lambda o: o.get("timestamp", 0), reverse=True)
+
+            return {
+                "address": clean_addr,
+                "received_offers": received,
+                "sent_offers": sent,
+                "received_active_count": sum(1 for o in received if o.get("status") == "active"),
+                "sent_active_count": sum(1 for o in sent if o.get("status") == "active")
+            }
 
     def get_all_bns_names(self, page: int = 1, limit: int = 50, for_sale_only: bool = False) -> dict:
         with self.lock:
@@ -3211,6 +3532,7 @@ class Blockchain:
                     "tier": tier,
                     "cost": cost,
                     "sale_price": 0.0,
+                    "offers": {},
                     "block_index": b_idx,
                     "status": status_lbl,
                     "history": [{
@@ -3304,6 +3626,86 @@ class Blockchain:
                             "block": b_idx
                         })
                         self.bns_reverse[owner] = name
+            elif tx.tx_type == "bns_offer" and tx.extra_data:
+                name = tx.extra_data.get("name")
+                bidder = tx.extra_data.get("bidder", tx.sender)
+                owner = tx.extra_data.get("owner", tx.receiver)
+                offer_id = tx.extra_data.get("offer_id")
+                amount = float(tx.extra_data.get("amount", 0.0))
+                if name and offer_id and name in self.bns_records:
+                    rec = self.bns_records[name]
+                    if "offers" not in rec or not isinstance(rec["offers"], dict):
+                        rec["offers"] = {}
+                    if offer_id not in rec["offers"]:
+                        rec["offers"][offer_id] = {
+                            "offer_id": offer_id,
+                            "name": name,
+                            "bidder": bidder,
+                            "owner": owner,
+                            "amount": amount,
+                            "timestamp": tx.timestamp,
+                            "tx_hash": tx.hash(),
+                            "status": "active"
+                        }
+                    rec["history"].append({
+                        "action": "offer_placed",
+                        "bidder": bidder,
+                        "amount": amount,
+                        "offer_id": offer_id,
+                        "timestamp": tx.timestamp,
+                        "tx_hash": tx.hash(),
+                        "block": b_idx
+                    })
+            elif tx.tx_type == "bns_accept_offer" and tx.extra_data:
+                name = tx.extra_data.get("name")
+                offer_id = tx.extra_data.get("offer_id")
+                bidder = tx.extra_data.get("bidder", tx.sender)
+                seller = tx.extra_data.get("seller", tx.receiver)
+                amount = float(tx.extra_data.get("amount", tx.amount))
+                if name and name in self.bns_records:
+                    rec = self.bns_records[name]
+                    rec["owner"] = bidder
+                    rec["sale_price"] = 0.0
+                    rec["updated_at"] = tx.timestamp
+                    if "offers" in rec and isinstance(rec["offers"], dict) and offer_id in rec["offers"]:
+                        rec["offers"][offer_id]["status"] = "accepted"
+                        rec["offers"][offer_id]["resolved_at"] = tx.timestamp
+                    rec["history"].append({
+                        "action": "offer_accepted",
+                        "bidder": bidder,
+                        "seller": seller,
+                        "amount": amount,
+                        "offer_id": offer_id,
+                        "timestamp": tx.timestamp,
+                        "tx_hash": tx.hash(),
+                        "block": b_idx
+                    })
+                    if self.bns_reverse.get(seller) == name:
+                        other = next((n for n, r in self.bns_records.items() if r.get("owner") == seller), "")
+                        if other:
+                            self.bns_reverse[seller] = other
+                        else:
+                            self.bns_reverse.pop(seller, None)
+                    if bidder not in self.bns_reverse:
+                        self.bns_reverse[bidder] = name
+            elif tx.tx_type == "bns_cancel_offer" and tx.extra_data:
+                name = tx.extra_data.get("name")
+                offer_id = tx.extra_data.get("offer_id")
+                actor = tx.extra_data.get("actor", tx.sender)
+                status = tx.extra_data.get("status", "cancelled")
+                if name and name in self.bns_records:
+                    rec = self.bns_records[name]
+                    if "offers" in rec and isinstance(rec["offers"], dict) and offer_id in rec["offers"]:
+                        rec["offers"][offer_id]["status"] = status
+                        rec["offers"][offer_id]["resolved_at"] = tx.timestamp
+                    rec["history"].append({
+                        "action": f"offer_{status}",
+                        "actor": actor,
+                        "offer_id": offer_id,
+                        "timestamp": tx.timestamp,
+                        "tx_hash": tx.hash(),
+                        "block": b_idx
+                    })
 
     def _load_in_memory_space_index(self):
         """Reconstructs Space Posts, Likes & Comments deterministically from confirmed blocks + live mempool."""

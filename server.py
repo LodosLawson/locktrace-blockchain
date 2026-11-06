@@ -1566,7 +1566,7 @@ def api_bns_list_names():
 
 @app.route("/api/v1/bns/analytics", methods=["GET"])
 def api_bns_analytics():
-    """Returns ecosystem-wide analytics, pricing timeline, burned fees, and trade records."""
+    """Returns ecosystem-wide analytics, pricing timeline, treasury fees, and trade records."""
     data = blockchain.get_bns_analytics()
     return api_response(True, data=data)
 
@@ -1586,7 +1586,7 @@ def api_bns_register():
     Registers a new .bct handle on-chain.
     Tokenomics:
       - 20% of cost returns to circulating supply (miner/validator fee pool).
-      - 80% is locked into the Treasury Vault (permanent deflation).
+      - 80% returns directly to the Protocol Treasury Vault pool (Hazine havuzuna geri aktarım).
     """
     if not check_rate_limit("bns_reg", limit=10, window_seconds=60):
         return api_response(False, message="Too many registration requests. Please wait a moment.", status=429)
@@ -1802,6 +1802,215 @@ def api_bns_set_primary():
 
     logger.info(f"BNS Set Primary: '{norm}' by {owner[:8]}...")
     return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/bns/offer", methods=["POST"])
+def api_bns_offer():
+    """
+    Submits a non-custodial offer/bid for any registered .bct handle.
+    Signed by bidder: BNS_OFFER:{name}:{bidder}:{amount}
+    """
+    if not check_rate_limit("bns_offer", limit=15, window_seconds=60):
+        return api_response(False, message="Too many offer requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "") or "").strip()
+    bidder = str(data.get("bidder", "") or "").strip()
+    try:
+        amount = round(float(data.get("amount", 0.0) or 0.0), 4)
+    except Exception:
+        return api_response(False, message="Invalid offer amount.", status=400)
+
+    if not name or not bidder or amount <= 0:
+        return api_response(False, message="Fields 'name', 'bidder', and positive 'amount' are required.", status=400)
+
+    norm = blockchain._normalize_bns_name(name)
+    canonical_variants = [
+        f"BNS_OFFER:{norm}:{bidder}:{amount}",
+        f"BNS_OFFER:{norm}:{bidder}:{int(amount)}",
+        f"BNS_OFFER:{norm}:{bidder}:{amount:.1f}",
+        f"BNS_OFFER:{norm}:{bidder}:{amount:.2f}",
+        f"BNS_OFFER:{name}:{bidder}:{amount}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, bidder, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.bns_make_offer(
+        name=norm,
+        bidder=bidder,
+        amount_bct=amount,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    # Web push notification to domain owner
+    owner = (result or {}).get("owner", "")
+    if push_service and owner:
+        try:
+            push_service.send_push_to_wallet(
+                owner,
+                title=f"🏷️ @{norm} İçin Yeni Teklif!",
+                body=f"{bidder[:8]}... adresi @{norm} için {amount:.2f} BCT teklif sundu.",
+                url="/#bns",
+                category="bns_offer"
+            )
+        except Exception as _p_err:
+            logger.debug(f"Push dispatch error on bns offer: {_p_err}")
+
+    logger.info(f"BNS Offer: {bidder[:8]}... offered {amount} BCT for '@{norm}'")
+    return api_response(True, message=message, data=result, status=201)
+
+
+@app.route("/api/v1/bns/offer/accept", methods=["POST"])
+def api_bns_offer_accept():
+    """
+    Domain owner accepts an active offer.
+    Signed by domain owner: BNS_ACCEPT_OFFER:{name}:{owner}:{offer_id}:{bidder}:{amount}
+    """
+    if not check_rate_limit("bns_offer_accept", limit=15, window_seconds=60):
+        return api_response(False, message="Too many requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "") or "").strip()
+    owner = str(data.get("owner", "") or "").strip()
+    offer_id = str(data.get("offer_id", "") or "").strip()
+
+    if not name or not owner or not offer_id:
+        return api_response(False, message="Fields 'name', 'owner', and 'offer_id' are required.", status=400)
+
+    norm = blockchain._normalize_bns_name(name)
+    rec = blockchain.bns_records.get(norm, {})
+    offers = rec.get("offers", {}) if isinstance(rec, dict) else {}
+    target_offer = offers.get(offer_id, {}) if isinstance(offers, dict) else {}
+    bidder = target_offer.get("bidder", "")
+    offer_amount = target_offer.get("amount", 0.0)
+
+    canonical_variants = [
+        f"BNS_ACCEPT_OFFER:{norm}:{owner}:{offer_id}:{bidder}:{offer_amount}",
+        f"BNS_ACCEPT_OFFER:{norm}:{owner}:{offer_id}:{bidder}:{int(offer_amount)}",
+        f"BNS_ACCEPT_OFFER:{norm}:{owner}:{offer_id}:{bidder}:{offer_amount:.1f}",
+        f"BNS_ACCEPT_OFFER:{norm}:{owner}:{offer_id}:{bidder}:{offer_amount:.2f}",
+        f"BNS_ACCEPT_OFFER:{name}:{owner}:{offer_id}:{bidder}:{offer_amount}",
+        f"BNS_ACCEPT_OFFER:{norm}:{owner}:{offer_id}",
+        f"BNS_ACCEPT_OFFER:{name}:{owner}:{offer_id}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, owner, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.bns_accept_offer(
+        name=norm,
+        owner=owner,
+        offer_id=offer_id,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    # Web push notification to bidder whose offer was accepted
+    if push_service and bidder:
+        try:
+            push_service.send_push_to_wallet(
+                bidder,
+                title=f"🎉 @{norm} Teklifiniz Kabul Edildi!",
+                body=f"Tebrikler! @{norm} alan adı teklifiniz kabul edildi ve cüzdanınıza aktarıldı.",
+                url="/#bns",
+                category="bns_offer"
+            )
+        except Exception as _p_err:
+            logger.debug(f"Push dispatch error on bns accept: {_p_err}")
+
+    logger.info(f"BNS Offer Accepted: '{norm}' by owner {owner[:8]}... -> new owner {bidder[:8]}...")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/bns/offer/cancel", methods=["POST"])
+def api_bns_offer_cancel():
+    """
+    Cancels or rejects an active offer.
+    Callable by bidder (cancel) or owner (reject).
+    Signed by actor: BNS_CANCEL_OFFER:{name}:{actor}:{offer_id}
+    """
+    if not check_rate_limit("bns_offer_cancel", limit=20, window_seconds=60):
+        return api_response(False, message="Too many requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    name = str(data.get("name", "") or "").strip()
+    actor = str(data.get("actor", "") or "").strip()
+    offer_id = str(data.get("offer_id", "") or "").strip()
+
+    if not name or not actor or not offer_id:
+        return api_response(False, message="Fields 'name', 'actor', and 'offer_id' are required.", status=400)
+
+    norm = blockchain._normalize_bns_name(name)
+    rec = blockchain.bns_records.get(norm, {})
+    owner = rec.get("owner", "") if isinstance(rec, dict) else ""
+    offers = rec.get("offers", {}) if isinstance(rec, dict) else {}
+    target_offer = offers.get(offer_id, {}) if isinstance(offers, dict) else {}
+    bidder = target_offer.get("bidder", "")
+
+    canonical_variants = [
+        f"BNS_CANCEL_OFFER:{norm}:{actor}:{offer_id}",
+        f"BNS_CANCEL_OFFER:{name}:{actor}:{offer_id}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, actor, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.bns_cancel_offer(
+        name=norm,
+        actor=actor,
+        offer_id=offer_id,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    # If domain owner rejected the offer, notify bidder
+    if actor == owner and push_service and bidder:
+        try:
+            push_service.send_push_to_wallet(
+                bidder,
+                title=f"❌ @{norm} Teklifiniz Reddedildi",
+                body=f"Alan adı sahibi @{norm} için sunduğunuz teklifi reddetti.",
+                url="/#bns",
+                category="bns_offer"
+            )
+        except Exception as _p_err:
+            logger.debug(f"Push dispatch error on bns reject: {_p_err}")
+
+    logger.info(f"BNS Offer Cancelled/Rejected: '{norm}' offer {offer_id} by {actor[:8]}...")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/bns/offers/<name>", methods=["GET"])
+def api_bns_get_domain_offers(name):
+    """Returns all active and historical offers for a specific .bct domain name."""
+    norm = blockchain._normalize_bns_name(name)
+    data = blockchain.bns_get_offers(name=norm)
+    return api_response(True, data=data)
+
+
+@app.route("/api/v1/bns/my-offers/<address>", methods=["GET"])
+def api_bns_get_my_offers(address):
+    """Returns all received and sent offers for a specific wallet address."""
+    clean_addr = str(address or "").strip()
+    data = blockchain.bns_get_offers(address=clean_addr)
+    return api_response(True, data=data)
 
 
 # ══════════════════════════════════════════════════════
