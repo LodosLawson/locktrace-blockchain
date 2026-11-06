@@ -9212,9 +9212,15 @@
 
       tbody.innerHTML = trades.map((t) => {
         const isPurchase = t.action === 'purchased';
-        const actionBadge = isPurchase 
-          ? '<span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-bold">Sold</span>' 
-          : '<span class="px-2 py-0.5 rounded bg-amber-400/15 text-amber-300 text-[10px] font-bold">Listed</span>';
+        const isOfferAccepted = t.action === 'offer_accepted';
+        let actionBadge = '<span class="px-2 py-0.5 rounded bg-surface-container text-on-surface-variant text-[10px] font-bold capitalize">' + escapeHtml(t.action) + '</span>';
+        if (isPurchase) {
+          actionBadge = '<span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-bold">Sold (Market)</span>';
+        } else if (isOfferAccepted) {
+          actionBadge = '<span class="px-2 py-0.5 rounded bg-amber-400/15 text-amber-300 text-[10px] font-bold">Sold (Offer)</span>';
+        } else if (t.action === 'price_listed' || t.action === 'listed_for_sale') {
+          actionBadge = '<span class="px-2 py-0.5 rounded bg-sky-400/15 text-sky-300 text-[10px] font-bold">Listed</span>';
+        }
         
         return `
           <tr class="hover:bg-surface-container/30 transition-colors">
@@ -9258,7 +9264,7 @@
 
       let filtered = rawPoints.slice();
       if (currentBnsChartFilter === 'sales') {
-        filtered = filtered.filter(p => p.action === 'purchased');
+        filtered = filtered.filter(p => p.action === 'purchased' || p.action === 'offer_accepted');
       } else if (currentBnsChartFilter === 'reg') {
         filtered = filtered.filter(p => p.action === 'registered');
       }
@@ -9503,8 +9509,8 @@
                   if (ev.action === 'registered') {
                     title = 'Handle Registered';
                     badge = `<span class="text-emerald-400 font-bold">${formatBct(data.cost || 10, 2)} BCT</span>`;
-                    desc = `Initial fee paid by <span class="text-on-surface">${escapeHtml(shortAddr(ev.by || data.owner))}</span> · 80% escrowed to Treasury.`;
-                  } else if (ev.action === 'price_listed') {
+                    desc = `Initial fee paid by <span class="text-on-surface">${escapeHtml(shortAddr(ev.by || data.owner))}</span> · 80% to Treasury pool.`;
+                  } else if (ev.action === 'price_listed' || ev.action === 'listed_for_sale') {
                     title = 'Listed on Marketplace';
                     badge = `<span class="text-amber-400 font-bold">${formatBct(ev.price, 2)} BCT</span>`;
                     desc = `Asking price set on decentralized marketplace.`;
@@ -9516,6 +9522,24 @@
                     title = 'Secondary Market Sale';
                     badge = `<span class="text-sky-400 font-bold">${formatBct(ev.price, 2)} BCT</span>`;
                     desc = `Purchased by <span class="text-on-surface">${escapeHtml(shortAddr(ev.buyer))}</span> from <span class="text-on-surface">${escapeHtml(shortAddr(ev.seller))}</span>.`;
+                  } else if (ev.action === 'offer_accepted') {
+                    title = 'Domain Offer Accepted';
+                    const offerVal = ev.price || ev.amount || 0;
+                    badge = `<span class="text-emerald-400 font-bold">${formatBct(offerVal, 2)} BCT</span>`;
+                    desc = `Offer accepted! Sold to <span class="text-on-surface">${escapeHtml(shortAddr(ev.buyer || ev.bidder))}</span> by <span class="text-on-surface">${escapeHtml(shortAddr(ev.seller))}</span>.`;
+                  } else if (ev.action === 'offer_placed') {
+                    title = 'Domain Offer Placed';
+                    const offerVal = ev.price || ev.amount || 0;
+                    badge = `<span class="text-amber-400 font-bold">${formatBct(offerVal, 2)} BCT</span>`;
+                    desc = `Non-custodial offer submitted by <span class="text-on-surface">${escapeHtml(shortAddr(ev.bidder || ev.buyer))}</span>.`;
+                  } else if (ev.action === 'offer_cancelled') {
+                    title = 'Offer Cancelled';
+                    badge = `<span class="text-on-surface-variant">Cancelled</span>`;
+                    desc = `Offer was cancelled by bidder.`;
+                  } else if (ev.action === 'offer_rejected') {
+                    title = 'Offer Rejected';
+                    badge = `<span class="text-rose-400 font-bold">Rejected</span>`;
+                    desc = `Offer was rejected by domain owner.`;
                   } else if (ev.action === 'transferred') {
                     title = 'Ownership Transferred';
                     badge = `<span class="text-purple-400 font-bold">Transfer</span>`;
