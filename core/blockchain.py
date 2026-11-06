@@ -1765,8 +1765,10 @@ class Blockchain:
             rec["history"].append({
                 "action": "offer_accepted",
                 "buyer": bidder,
+                "bidder": bidder,
                 "seller": clean_owner,
                 "price": amount,
+                "amount": amount,
                 "offer_id": offer_id,
                 "timestamp": tx.timestamp,
                 "tx_hash": tx.hash(),
@@ -1953,7 +1955,7 @@ class Blockchain:
                 for h in it.get("history", []):
                     action = h.get("action", "")
                     ts = float(h.get("timestamp", 0.0))
-                    price = float(h.get("price", 0.0))
+                    price = float(h.get("price", h.get("amount", 0.0)))
                     
                     if action == "registered":
                         reg_cost = float(h.get("cost", cost))
@@ -1964,14 +1966,16 @@ class Blockchain:
                             "price": reg_cost,
                             "by": h.get("by", it.get("owner", ""))
                         })
-                    elif action == "purchased":
+                    elif action in ("purchased", "offer_accepted"):
                         total_volume += price
+                        buyer_addr = h.get("buyer", h.get("bidder", ""))
+                        seller_addr = h.get("seller", "")
                         trade_obj = {
                             "name": name,
-                            "action": "purchased",
+                            "action": action,
                             "price": price,
-                            "buyer": h.get("buyer", ""),
-                            "seller": h.get("seller", ""),
+                            "buyer": buyer_addr,
+                            "seller": seller_addr,
                             "timestamp": ts,
                             "tx_hash": h.get("tx_hash", ""),
                             "block": h.get("block", "")
@@ -1980,12 +1984,12 @@ class Blockchain:
                         timeline_points.append({
                             "timestamp": ts,
                             "name": name,
-                            "action": "purchased",
+                            "action": action,
                             "price": price,
-                            "buyer": h.get("buyer", ""),
-                            "seller": h.get("seller", "")
+                            "buyer": buyer_addr,
+                            "seller": seller_addr
                         })
-                    elif action == "price_listed" and price > 0:
+                    elif action in ("price_listed", "listed_for_sale") and price > 0:
                         timeline_points.append({
                             "timestamp": ts,
                             "name": name,
@@ -2029,7 +2033,7 @@ class Blockchain:
             for h in history:
                 action = h.get("action", "")
                 ts = float(h.get("timestamp", 0.0))
-                p = float(h.get("price", 0.0))
+                p = float(h.get("price", h.get("amount", 0.0)))
                 if action == "registered":
                     p = float(h.get("cost", rec.get("cost", 0.0)))
                 chart_points.append({
@@ -3650,7 +3654,9 @@ class Blockchain:
                     rec["history"].append({
                         "action": "offer_placed",
                         "bidder": bidder,
+                        "buyer": bidder,
                         "amount": amount,
+                        "price": amount,
                         "offer_id": offer_id,
                         "timestamp": tx.timestamp,
                         "tx_hash": tx.hash(),
@@ -3673,8 +3679,10 @@ class Blockchain:
                     rec["history"].append({
                         "action": "offer_accepted",
                         "bidder": bidder,
+                        "buyer": bidder,
                         "seller": seller,
                         "amount": amount,
+                        "price": amount,
                         "offer_id": offer_id,
                         "timestamp": tx.timestamp,
                         "tx_hash": tx.hash(),
