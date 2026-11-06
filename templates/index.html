@@ -225,7 +225,7 @@
         </div>
         <div class="flex flex-col">
           <span class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.9.4</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.9.5</span>
         </div>
       </div>
 
@@ -1952,14 +1952,19 @@
               <div class="flex items-center justify-between pt-2.5 border-t border-outline-variant/15 gap-2">
                 <!-- Left: Quick Tag Helpers & Fee -->
                 <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5">
-                  <button class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high/90 hover:bg-surface-container-highest text-emerald-400 active:scale-95 transition-all text-[11px] font-mono font-medium border border-outline-variant/30 shrink-0 cursor-pointer" onclick="insertSpaceTokenTag('$BCT')" title="Add $BCT Tag" type="button">
-                    <span class="material-symbols-outlined text-[13px]">attach_money</span>
+                  <button class="flex items-center gap-1 px-2 py-1 rounded-full bg-surface-container-high/90 hover:bg-surface-container-highest text-emerald-400 active:scale-95 transition-all text-[11px] font-mono font-medium border border-outline-variant/30 shrink-0 cursor-pointer" onclick="insertSpaceTokenTag('$BCT')" title="Add $BCT Tag" type="button">
                     <span>$BCT</span>
                   </button>
-                  <button class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high/90 hover:bg-surface-container-highest text-secondary active:scale-95 transition-all text-[11px] font-mono font-medium border border-outline-variant/30 shrink-0 cursor-pointer" onclick="insertSpaceTokenTag('#LockTrace')" title="Add #LockTrace Tag" type="button">
-                    <span class="material-symbols-outlined text-[13px]">tag</span>
-                    <span>On-Chain</span>
+                  <button class="flex items-center gap-1 px-2 py-1 rounded-full bg-surface-container-high/90 hover:bg-surface-container-highest text-secondary active:scale-95 transition-all text-[11px] font-mono font-medium border border-outline-variant/30 shrink-0 cursor-pointer" onclick="insertSpaceTokenTag('$ETH')" title="Add $ETH Tag" type="button">
+                    <span>$ETH</span>
                   </button>
+                  <button class="flex items-center gap-1 px-2 py-1 rounded-full bg-surface-container-high/90 hover:bg-surface-container-highest text-amber-400 active:scale-95 transition-all text-[11px] font-mono font-medium border border-outline-variant/30 shrink-0 cursor-pointer" onclick="insertSpaceTokenTag('$BTC')" title="Add $BTC Tag" type="button">
+                    <span>$BTC</span>
+                  </button>
+                  <button class="flex items-center gap-1 px-2 py-1 rounded-full bg-surface-container-high/90 hover:bg-surface-container-highest text-primary active:scale-95 transition-all text-[11px] font-mono font-medium border border-outline-variant/30 shrink-0 cursor-pointer" onclick="insertSpaceTokenTag('#LockTrace')" title="Add #LockTrace Tag" type="button">
+                    <span>#LockTrace</span>
+                  </button>
+                  <span id="composerActiveTopicPill" class="hidden"></span>
                   <span class="hidden xs:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10.5px] font-mono border border-primary/20 shrink-0">
                     <span>0.05 BCT</span>
                   </span>
@@ -1978,21 +1983,50 @@
             </div>
           </section>
 
-          <!-- Feed Filter Segmented Bar (Exact Stitch Screen E) -->
-          <section class="px-3 sm:px-4 md:px-0 mb-3.5">
-            <div class="flex items-center bg-surface-container-low p-1 rounded-full shadow-inner border border-outline-variant/20">
-              <button class="space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface bg-surface-container-high font-semibold transition-all text-center truncate" id="filterBtnAll" onclick="filterSpaceTab('all')" type="button">
-                Explore
+          <!-- Feed Filter Segmented Bar & Algorithms (Exact Stitch Screen E) -->
+          <section class="px-3 sm:px-4 md:px-0 mb-3">
+            <div class="flex items-center bg-surface-container-low p-1 rounded-full shadow-inner border border-outline-variant/20 gap-1">
+              <button class="space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface bg-surface-container-high font-semibold transition-all text-center flex items-center justify-center gap-1 truncate" id="filterBtnForYou" onclick="filterSpaceTab('foryou')" type="button" title="Algorithmic Discovery Feed">
+                <span class="material-symbols-outlined text-[15px] text-primary">auto_awesome</span>
+                <span>For You</span>
               </button>
-              <button class="space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-all text-center truncate" id="filterBtnMine" onclick="filterSpaceTab('mine')" type="button">
-                My Posts
+              <button class="space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-all text-center flex items-center justify-center gap-1 truncate" id="filterBtnLatest" onclick="filterSpaceTab('latest')" type="button" title="Newest Posts First">
+                <span class="material-symbols-outlined text-[15px]">schedule</span>
+                <span>Latest</span>
               </button>
-              <button class="space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-all text-center flex items-center justify-center gap-1 truncate" id="filterBtnTop" onclick="filterSpaceTab('top')" type="button">
+              <button class="space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-all text-center flex items-center justify-center gap-1 truncate" id="filterBtnTop" onclick="filterSpaceTab('top')" type="button" title="Top Engaged Posts">
+                <span class="material-symbols-outlined text-[15px] text-amber-400">local_fire_department</span>
                 <span>Trending</span>
-                <span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+              </button>
+              <button class="space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-all text-center flex items-center justify-center gap-1 truncate" id="filterBtnMine" onclick="filterSpaceTab('mine')" type="button" title="My Connected Wallet Posts">
+                <span class="material-symbols-outlined text-[15px]">person</span>
+                <span>My Posts</span>
               </button>
             </div>
           </section>
+
+          <!-- Active Topic / Entity Filter Banner (Dismissable) -->
+          <div id="spaceActiveFilterBar" class="hidden mx-3 sm:mx-4 md:mx-0 mb-3 p-2.5 px-3.5 rounded-xl bg-surface-container-low border border-primary/30 flex items-center justify-between gap-2 shadow-xs">
+            <div class="flex items-center gap-2 min-w-0">
+              <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
+              <span class="text-xs font-semibold text-on-surface truncate">Filtering Topic: <span id="spaceActiveFilterText" class="text-primary font-mono font-bold">#LockTrace</span></span>
+            </div>
+            <button onclick="clearSpaceFilter()" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-[11px] font-medium transition-colors cursor-pointer shrink-0" type="button" title="Clear Filter">
+              <span>Clear</span>
+              <span class="material-symbols-outlined text-[13px]">close</span>
+            </button>
+          </div>
+
+          <!-- Trending Topics & Cashtags Bar (Horizontal Carousel) -->
+          <div class="px-3 sm:px-4 md:px-0 mb-3.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="spaceTrendingTagsBar">
+            <span class="text-[11px] font-mono uppercase font-bold text-on-surface-variant/70 shrink-0 flex items-center gap-1 mr-1">
+              <span class="material-symbols-outlined text-[14px] text-amber-400">trending_up</span>
+              <span>Trending:</span>
+            </span>
+            <div class="flex items-center gap-1.5 shrink-0" id="spaceTrendingPills">
+              <!-- Populated dynamically by renderTrendingTagsBar() -->
+            </div>
+          </div>
 
           <!-- Feed Content Stream -->
           <div class="flex flex-col gap-3 px-3 sm:px-4 md:px-0" id="spaceFeedStream">
@@ -4648,7 +4682,7 @@
     let isTermsAccepted = false;
 
     let spacePostsCache = [];
-    let currentSpaceTab = 'all';
+    let currentSpaceTab = 'foryou';
     let spaceSearchQuery = '';
     let activeDetailPostId = null;
     let isSendingTransaction = false;
@@ -4723,11 +4757,31 @@
     }
 
     function formatSpaceBodyHtml(rawText) {
-      const safe = escapeHtml(rawText || '');
-      return safe
-        .replace(/(\$BCT\b)/gi, '<span class="text-primary font-medium">$1</span>')
-        .replace(/(#[a-zA-Z0-9_]+)/g, '<span class="text-secondary font-medium">$1</span>')
-        .replace(/\n/g, '<br/>');
+      let safe = escapeHtml(rawText || '');
+
+      // 1. External URLs (safe links)
+      safe = safe.replace(/(https?:\/\/[^\s<]+)/gi, (url) => {
+        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline inline-flex items-center gap-0.5 break-all" onclick="event.stopPropagation();">${url}</a>`;
+      });
+
+      // 2. Mentions: @handle.bct or @username or @BCT...
+      safe = safe.replace(/@([a-zA-Z0-9_\-\.]+)/g, (match, handle) => {
+        return `<span class="mention-tag inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('@${handle}')" title="Filter posts mentioning @${handle}">@${handle}</span>`;
+      });
+
+      // 3. Hashtags: #topic (supports Turkish & Unicode letters)
+      safe = safe.replace(/#([a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ\-]+)/g, (match, tag) => {
+        return `<span class="hashtag-tag inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-400 font-medium hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('#${tag}')" title="Filter topic #${tag}">#${tag}</span>`;
+      });
+
+      // 4. Cashtags: $BCT, $ETH, $BTC, etc.
+      safe = safe.replace(/\$([a-zA-Z0-9_]{2,10})\b/g, (match, sym) => {
+        const s = sym.toUpperCase();
+        return `<span class="cashtag-tag inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-secondary/10 text-secondary font-mono font-semibold hover:bg-secondary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('$${s}')" title="Filter symbol $${s}">$${s}</span>`;
+      });
+
+      // 5. Line breaks
+      return safe.replace(/\n/g, '<br/>');
     }
 
     function showToast(msg, icon = 'check_circle', isError = false) {
@@ -7111,19 +7165,88 @@
       renderSpacePosts();
     }
 
+    let spaceActiveEntityFilter = null; // e.g. '#LockTrace', '$BCT', '@lodos.bct'
+
     function filterSpaceTab(tabType) {
       currentSpaceTab = tabType;
-      const map = { all: 'filterBtnAll', mine: 'filterBtnMine', top: 'filterBtnTop' };
+      const map = { foryou: 'filterBtnForYou', latest: 'filterBtnLatest', top: 'filterBtnTop', mine: 'filterBtnMine' };
       Object.entries(map).forEach(([k, id]) => {
         const btn = document.getElementById(id);
         if (!btn) return;
         if (k === tabType) {
-          btn.className = 'space-filter-btn flex-1 py-1.5 px-3 rounded-full font-label-md text-label-md text-on-surface bg-surface-container-high font-semibold transition-all text-center flex items-center justify-center gap-1';
+          btn.className = 'space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface bg-surface-container-high font-semibold transition-all text-center flex items-center justify-center gap-1';
         } else {
-          btn.className = 'space-filter-btn flex-1 py-1.5 px-3 rounded-full font-label-md text-label-md text-on-surface-variant hover:text-on-surface transition-all text-center flex items-center justify-center gap-1';
+          btn.className = 'space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface-variant hover:text-on-surface transition-all text-center flex items-center justify-center gap-1';
         }
       });
       renderSpacePosts();
+    }
+
+    function filterSpaceByEntity(entity) {
+      spaceActiveEntityFilter = String(entity || '').trim();
+      const bar = document.getElementById('spaceActiveFilterBar');
+      const txt = document.getElementById('spaceActiveFilterText');
+      const compTopicPill = document.getElementById('composerActiveTopicPill');
+      if (bar && txt) {
+        txt.textContent = spaceActiveEntityFilter;
+        bar.classList.remove('hidden');
+        bar.classList.add('flex');
+      }
+      if (compTopicPill) {
+        if (spaceActiveEntityFilter.startsWith('#') || spaceActiveEntityFilter.startsWith('$')) {
+          compTopicPill.innerHTML = `<button type="button" onclick="insertSpaceTokenTag('${escapeHtml(spaceActiveEntityFilter)}')" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-mono font-bold animate-pulse" title="Add active topic to your post">+ Add ${escapeHtml(spaceActiveEntityFilter)}</button>`;
+          compTopicPill.classList.remove('hidden');
+        } else {
+          compTopicPill.classList.add('hidden');
+        }
+      }
+      renderSpacePosts();
+      showToast(`Filtering by ${spaceActiveEntityFilter}`);
+    }
+
+    function clearSpaceFilter() {
+      spaceActiveEntityFilter = null;
+      const bar = document.getElementById('spaceActiveFilterBar');
+      const compTopicPill = document.getElementById('composerActiveTopicPill');
+      if (bar) {
+        bar.classList.add('hidden');
+        bar.classList.remove('flex');
+      }
+      if (compTopicPill) {
+        compTopicPill.classList.add('hidden');
+      }
+      renderSpacePosts();
+      showToast('Topic filter cleared');
+    }
+
+    function renderTrendingTagsBar() {
+      const pillsWrap = document.getElementById('spaceTrendingPills');
+      if (!pillsWrap) return;
+
+      const counts = {};
+      spacePostsCache.forEach(p => {
+        const raw = String(p.content || '');
+        const hs = raw.match(/#([a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ\-]+)/g) || [];
+        const cs = raw.match(/\$([a-zA-Z0-9_]{2,10})\b/g) || [];
+        [...hs, ...cs].forEach(t => {
+          const norm = t.startsWith('$') ? t.toUpperCase() : t;
+          counts[norm] = (counts[norm] || 0) + 1;
+        });
+      });
+
+      ['#LockTrace', '$BCT', '#Mainnet', '$ETH', '#Web3'].forEach(defTag => {
+        if (!counts[defTag]) counts[defTag] = 1;
+      });
+
+      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      pillsWrap.innerHTML = sorted.map(([tag, cnt]) => {
+        const isCash = tag.startsWith('$');
+        const colorCls = isCash ? 'text-secondary bg-secondary/10 hover:bg-secondary/20 border-secondary/20' : 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20';
+        return `<button type="button" onclick="filterSpaceByEntity('${escapeHtml(tag)}')" class="flex items-center gap-1 px-2.5 py-1 rounded-full ${colorCls} border font-mono text-[11px] font-medium transition-all active:scale-95 shrink-0 cursor-pointer" title="Filter by ${escapeHtml(tag)}">
+          <span>${escapeHtml(tag)}</span>
+          ${cnt > 1 ? `<span class="opacity-70 text-[9.5px]">(${cnt})</span>` : ''}
+        </button>`;
+      }).join('');
     }
 
     function focusSpaceComposer() {
@@ -7176,9 +7299,10 @@
 
     async function loadSpaceFeed() {
       try {
-        const { ok, body } = await apiFetch('/space/feed?limit=50');
+        const { ok, body } = await apiFetch('/space/feed?limit=80');
         if (ok && body.data && Array.isArray(body.data.posts)) {
           spacePostsCache = body.data.posts;
+          renderTrendingTagsBar();
           renderSpacePosts();
           if (activeDetailPostId) {
             renderSpacePostDetailContent(activeDetailPostId);
@@ -7192,22 +7316,54 @@
       if (!stream) return;
 
       let list = spacePostsCache.slice();
+
+      // 1. Filter by Active Topic / Mention / Cashtag
+      if (spaceActiveEntityFilter) {
+        const q = spaceActiveEntityFilter.toLowerCase();
+        const rawQ = q.replace(/^[#$@]/, '');
+        list = list.filter(p => {
+          const content = String(p.content || '').toLowerCase();
+          const author = String(p.author || '').toLowerCase();
+          const bns = String(p.author_bns || '').toLowerCase();
+          return content.includes(q) || author.includes(rawQ) || bns.includes(rawQ);
+        });
+      }
+
+      // 2. Filter by Search Query
+      if (spaceSearchQuery) {
+        list = list.filter(p =>
+          String(p.content || '').toLowerCase().includes(spaceSearchQuery) ||
+          String(p.author || '').toLowerCase().includes(spaceSearchQuery) ||
+          String(p.author_bns || '').toLowerCase().includes(spaceSearchQuery)
+        );
+      }
+
+      // 3. Tab Sorting: For You (Gravity), Latest (Chronological), Top (Engagement), Mine
       if (currentSpaceTab === 'mine') {
         const myAddr = currentAccount ? currentAccount.address : '';
         list = myAddr ? list.filter(p => p.author === myAddr) : [];
       } else if (currentSpaceTab === 'top') {
         list.sort((a, b) => {
-          const scoreA = (Number(a.likes_count || 0) * 2) + (Number(a.comments_count || 0) * 3) + Number(a.author_earnings || 0) * 100;
-          const scoreB = (Number(b.likes_count || 0) * 2) + (Number(b.comments_count || 0) * 3) + Number(b.author_earnings || 0) * 100;
+          const scoreA = (Number(a.likes_count || (a.likes ? a.likes.length : 0)) * 2) + (Number(a.comments_count || (a.comments ? a.comments.length : 0)) * 3);
+          const scoreB = (Number(b.likes_count || (b.likes ? b.likes.length : 0)) * 2) + (Number(b.comments_count || (b.comments ? b.comments.length : 0)) * 3);
           return scoreB - scoreA || (Number(b.timestamp || 0) - Number(a.timestamp || 0));
         });
-      }
-
-      if (spaceSearchQuery) {
-        list = list.filter(p =>
-          String(p.content || '').toLowerCase().includes(spaceSearchQuery) ||
-          String(p.author || '').toLowerCase().includes(spaceSearchQuery)
-        );
+      } else if (currentSpaceTab === 'latest') {
+        list.sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
+      } else {
+        // 'foryou' - Time-Decay Gravity scoring with pseudo-random discovery jitter
+        const nowSec = Date.now() / 1000;
+        list.sort((a, b) => {
+          const ageA = Math.max(0.05, (nowSec - Number(a.timestamp || nowSec)) / 3600);
+          const ageB = Math.max(0.05, (nowSec - Number(b.timestamp || nowSec)) / 3600);
+          const engA = (Number(a.likes_count || (a.likes ? a.likes.length : 0)) * 2) + (Number(a.comments_count || (a.comments ? a.comments.length : 0)) * 3) + 1;
+          const engB = (Number(b.likes_count || (b.likes ? b.likes.length : 0)) * 2) + (Number(b.comments_count || (b.comments ? b.comments.length : 0)) * 3) + 1;
+          const seedA = (parseInt(String(a.post_id || '').slice(-4), 16) || 7) % 5;
+          const seedB = (parseInt(String(b.post_id || '').slice(-4), 16) || 7) % 5;
+          const scoreA = (engA / Math.pow(ageA + 1.5, 1.25)) + (seedA * 0.15);
+          const scoreB = (engB / Math.pow(ageB + 1.5, 1.25)) + (seedB * 0.15);
+          return scoreB - scoreA;
+        });
       }
 
       if (!list.length) {

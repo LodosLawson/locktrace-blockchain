@@ -1200,10 +1200,23 @@ def api_mine_block():
 
 @app.route("/api/v1/space/feed", methods=["GET"])
 def api_space_feed():
-    """Returns on-chain space thoughts feed with likes and comments."""
+    """Returns on-chain space thoughts feed with likes, comments, and algorithmic sorting."""
     limit = safe_int(request.args.get("limit", 50), default=50, min_val=1, max_val=100)
-    feed = blockchain.get_space_feed(limit)
-    return api_response(True, data={"posts": feed, "count": len(feed)})
+    feed_type = str(request.args.get("feed_type", "for_you") or "for_you").lower().strip()
+    if feed_type not in ("for_you", "latest", "trending"):
+        feed_type = "for_you"
+    tag = str(request.args.get("tag", "") or "").strip()
+    author = str(request.args.get("author", "") or "").strip()
+    feed = blockchain.get_space_feed(limit=limit, feed_type=feed_type, tag=tag, author=author)
+    return api_response(True, data={"posts": feed, "count": len(feed), "feed_type": feed_type, "filter_tag": tag})
+
+
+@app.route("/api/v1/space/trending_tags", methods=["GET"])
+def api_space_trending_tags():
+    """Returns top trending hashtags (#) and cashtags ($) across LockTrace Space."""
+    limit = safe_int(request.args.get("limit", 15), default=15, min_val=1, max_val=50)
+    data = blockchain.get_space_trending_tags(top_n=limit)
+    return api_response(True, data=data)
 
 
 @app.route("/api/v1/space/post/<post_id>", methods=["GET"])
