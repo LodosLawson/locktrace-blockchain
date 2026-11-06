@@ -937,12 +937,94 @@ class Blockchain:
                    else "Comment published! Queued in 50s batch pool.")
             return True, msg, res
 
-    def get_space_feed(self, limit: int = 50) -> list:
+    @staticmethod
+    def extract_space_entities(text: str) -> dict:
+        """Extracts mentions (@), hashtags (#), and cashtags ($) from space post content."""
+        raw = text or ""
+        hashtags = list(dict.fromkeys(re.findall(r"#([a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ\-]+)", raw)))
+        cashtags = list(dict.fromkeys(re.findall(r"\$([a-zA-Z0-9_]{2,10})\b", raw)))
+        mentions = list(dict.fromkeys(re.findall(r"@([a-zA-Z0-9_\-\.]+)", raw)))
+        return {
+            "hashtags": [f"#{h}" for h in hashtags],
+            "cashtags": [f"${c.upper()}" for c in cashtags],
+            "mentions": [f"@{m}" for m in mentions]
+        }
+
+    def get_space_feed(self, limit: int = 50, feed_type: str = "for_you", tag: str = "", author: str = "") -> list:
         with self.lock:
             self._load_state()
             feed = list(self.space_posts.values())
-            feed.sort(key=lambda p: p.get("timestamp", 0), reverse=True)
+
+            # Enrich posts with entity tags
+            for p in feed:
+                if "entities" not in p:
+                    p["entities"] = self.extract_space_entities(p.get("content", ""))
+
+            # Filter by tag (#topic, $symbol, or @user)
+            if tag:
+                clean_tag = tag.strip().lower()
+                clean_raw = clean_tag.lstrip("#$@")
+                feed = [
+                    p for p in feed
+                    if clean_tag in str(p.get("content", "")).lower()
+                    or any(clean_raw == h.lower().lstrip("#") for h in p.get("entities", {}).get("hashtags", []))
+                    or any(clean_raw == c.lower().lstrip("$") for c in p.get("entities", {}).get("cashtags", []))
+                    or any(clean_raw == m.lower().lstrip("@") for m in p.get("entities", {}).get("mentions", []))
+                ]
+
+            # Filter by author address or handle
+            if author:
+                clean_author = author.strip().lower()
+                feed = [
+                    p for p in feed
+                    if clean_author == str(p.get("author", "")).lower()
+                    or clean_author == str(p.get("author_bns", "")).lower()
+                ]
+
+            now_sec = time.time()
+            if feed_type == "for_you":
+                # Time-Decay Gravity scoring with discovery jitter
+                def _calc_for_you_score(p):
+                    age_h = max(0.05, (now_sec - float(p.get("timestamp", now_sec))) / 3600.0)
+                    likes = len(p.get("likes", [])) if isinstance(p.get("likes"), list) else int(p.get("likes_count", 0))
+                    comments = len(p.get("comments", [])) if isinstance(p.get("comments"), list) else int(p.get("comments_count", 0))
+                    eng = (likes * 2) + (comments * 3) + 1.0
+                    jitter = (int(hashlib.md5(str(p.get("post_id", "")).encode()).hexdigest()[:4], 16) % 5) * 0.15
+                    return (eng / ((age_h + 1.5) ** 1.25)) + jitter
+
+                feed.sort(key=_calc_for_you_score, reverse=True)
+            elif feed_type == "trending":
+                # Pure engagement
+                def _calc_trending_score(p):
+                    likes = len(p.get("likes", [])) if isinstance(p.get("likes"), list) else int(p.get("likes_count", 0))
+                    comments = len(p.get("comments", [])) if isinstance(p.get("comments"), list) else int(p.get("comments_count", 0))
+                    return ((likes * 2) + (comments * 3)), float(p.get("timestamp", 0))
+
+                feed.sort(key=_calc_trending_score, reverse=True)
+            else:
+                # Chronological latest
+                feed.sort(key=lambda p: float(p.get("timestamp", 0)), reverse=True)
+
             return feed[:limit]
+
+    def get_space_trending_tags(self, top_n: int = 15) -> dict:
+        """Calculates top trending hashtags (#) and cashtags ($) across space posts."""
+        with self.lock:
+            self._load_state()
+            tag_counts = {}
+            for p in self.space_posts.values():
+                content = p.get("content", "")
+                ents = self.extract_space_entities(content)
+                for h in ents.get("hashtags", []):
+                    tag_counts[h] = tag_counts.get(h, 0) + 1
+                for c in ents.get("cashtags", []):
+                    tag_counts[c] = tag_counts.get(c, 0) + 1
+
+            sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
+            return {
+                "tags": [{"tag": t[0], "count": t[1], "type": "cashtag" if t[0].startswith("$") else "hashtag"} for t in sorted_tags[:top_n]],
+                "total_tags_count": len(sorted_tags)
+            }
 
     def get_space_post(self, post_id: str) -> Optional[dict]:
         with self.lock:

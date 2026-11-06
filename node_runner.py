@@ -1706,6 +1706,24 @@ class LockTraceNode:
                     self._send_json(200, {"success": True, "data": {"posts": ordered}})
                     return
 
+                if path == "/api/v1/space/trending_tags":
+                    full_path = path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else "")
+                    upstream = node_ref.request(full_path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
+                    posts_map = node_ref.local_space_posts()
+                    tag_counts = {}
+                    for p in posts_map.values():
+                        raw = p.get("content", "")
+                        for h in re.findall(r"#([a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ\-]+)", raw):
+                            tag_counts[f"#{h}"] = tag_counts.get(f"#{h}", 0) + 1
+                        for c in re.findall(r"\$([a-zA-Z0-9_]{2,10})\b", raw):
+                            tag_counts[f"${c.upper()}"] = tag_counts.get(f"${c.upper()}", 0) + 1
+                    sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)[:15]
+                    self._send_json(200, {"success": True, "data": {"tags": [{"tag": t[0], "count": t[1], "type": "cashtag" if t[0].startswith("$") else "hashtag"} for t in sorted_tags]}})
+                    return
+
                 if path.startswith("/api/v1/space/post/"):
                     upstream = node_ref.request(path, method="GET", timeout=3.5)
                     if upstream and upstream.get("success"):
