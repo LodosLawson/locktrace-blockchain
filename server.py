@@ -602,6 +602,37 @@ def api_notifications_unsubscribe():
     return api_response(True, message="Unsubscribed successfully")
 
 
+@app.route("/api/v1/notifications/test-push", methods=["POST"])
+def api_notifications_test_push():
+    """
+    Sends a test Web Push notification to all registered devices of the caller's wallet via APNs/Google Push.
+    Verifies lock-screen delivery end-to-end without transferring actual funds.
+    """
+    if not push_service:
+        return api_response(False, message="Web Push service not available on this node", status=503)
+
+    if not check_rate_limit("push_test", limit=10, window_seconds=60):
+        return api_response(False, message="Rate limit exceeded for test push. Please wait.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    wallet_address = str(data.get("wallet_address", "") or "").strip()
+    if not wallet_address or not is_valid_bct_address(wallet_address):
+        return api_response(False, message="Valid BCT wallet address required.", status=400)
+
+    subs = push_service.get_subscriptions_for_wallet(wallet_address)
+    if not subs:
+        return api_response(False, message="No registered push devices found for this wallet. Please tap Enable in Notification Settings.", status=404)
+
+    push_service.send_push_to_wallet(
+        wallet_address,
+        title="🔔 LockTrace Web Push Testi",
+        body="Tebrikler! Apple APNs / Google Push üzerinden kilit ekranınıza başarıyla ulaştı. Kriptografik doğrulama aktif.",
+        url="/#cuzdanim",
+        category="system"
+    )
+    return api_response(True, message=f"Test push dispatched to {len(subs)} registered device(s).", data={"device_count": len(subs)})
+
+
 # ── Health & Stats ───────────────────────────────────────────
 @app.route("/api/v1/health", methods=["GET"])
 def api_health():
