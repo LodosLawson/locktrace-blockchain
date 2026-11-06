@@ -87,3 +87,48 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+
+// 5. Native Push & Instant Notification Handlers (Mobile PWA & Browser)
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const targetUrl = (event.notification.data && event.notification.data.url) ? event.notification.data.url : '/';
+
+  event.waitUntil(
+    clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
+      for (const client of windowClients) {
+        if (client.url.includes(self.location.origin) && 'focus' in client) {
+          if ('navigate' in client) {
+            client.navigate(targetUrl);
+          }
+          return client.focus();
+        }
+      }
+      if (clients.openWindow) {
+        return clients.openWindow(targetUrl);
+      }
+    })
+  );
+});
+
+self.addEventListener('push', (event) => {
+  let data = { title: 'LockTrace Mainnet', body: 'New blockchain event received.', url: '/' };
+  if (event.data) {
+    try {
+      data = Object.assign(data, event.data.json());
+    } catch (_e) {
+      data.body = event.data.text() || data.body;
+    }
+  }
+
+  const options = {
+    body: data.body,
+    icon: '/icons/icon-192.png',
+    badge: '/icons/icon-32.png',
+    tag: data.tag || 'locktrace-push-' + Date.now(),
+    vibrate: [150, 80, 150],
+    data: { url: data.url || '/' },
+    renotify: true
+  };
+
+  event.waitUntil(self.registration.showNotification(data.title, options));
+});
