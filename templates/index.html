@@ -5132,6 +5132,12 @@
       if (acc) {
         localStorage.setItem(STORAGE_KEY, JSON.stringify(acc));
         fetchAndSyncMyBnsHandles();
+        if (acc.address && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          const pk = acc.private_key || (sessionUnlockedKeys && sessionUnlockedKeys.private_key);
+          if (pk) {
+            registerDevicePushSubscription(pk, false);
+          }
+        }
       } else {
         localStorage.removeItem(STORAGE_KEY);
         bnsMyHandlesCache = [];
@@ -5366,6 +5372,9 @@
         closePinUnlockModal(true, secrets);
         syncWalletHeaderUI();
         updateVaultControlsUI();
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && secrets && secrets.private_key) {
+          registerDevicePushSubscription(secrets.private_key, false);
+        }
       } catch (_err) {
         showToast('Incorrect PIN code! Please try again.', 'error', true);
       }
@@ -10089,7 +10098,6 @@
     }
 
     function initApp() {
-      initNotificationSystem(); registerDevicePushSubscription();
       loadRpcSettings();
       updateRpcBadgeUI();
       setupPwaHandlers();
@@ -10098,6 +10106,11 @@
       updateVaultControlsUI();
       renderBalanceFigures(currentAccount ? currentAccount.balance : 0);
       fetchAndSyncMyBnsHandles();
+
+      initNotificationSystem();
+      if (currentAccount && currentAccount.address && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        registerDevicePushSubscription(null, false);
+      }
 
       loadTradeConfig();
       verifyFrontendIntegrityState();
@@ -10665,14 +10678,28 @@
       return outputArray;
     }
 
-    async function registerDevicePushSubscription() {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) return;
-      if (!currentAccount || !currentAccount.address || !currentAccount.private_key) return;
-      if (Notification.permission !== 'granted') return;
+    async function registerDevicePushSubscription(privKeyOverride = null, isUserInitiated = false) {
+      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
+        if (isUserInitiated) showToast('Push notifications not supported on this browser/platform', 'warning');
+        return;
+      }
+      if (!currentAccount || !currentAccount.address) return;
+      if (typeof Notification === 'undefined' || Notification.permission !== 'granted') return;
+
+      const privKey = privKeyOverride || currentAccount.private_key || (sessionUnlockedKeys && sessionUnlockedKeys.private_key);
+      if (!privKey) {
+        if (isUserInitiated) {
+          showToast('Please unlock your PIN vault to activate background alerts', 'warning');
+        }
+        return;
+      }
 
       try {
         const vapidRes = await apiFetch('/notifications/vapid-key');
-        if (!vapidRes.ok || !vapidRes.body || !vapidRes.body.data || !vapidRes.body.data.public_key) return;
+        if (!vapidRes.ok || !vapidRes.body || !vapidRes.body.data || !vapidRes.body.data.public_key) {
+          if (isUserInitiated) showToast('VAPID encryption key unavailable from node', 'error');
+          return;
+        }
         const vapidKey = vapidRes.body.data.public_key;
 
         const reg = await navigator.serviceWorker.ready;
@@ -10685,25 +10712,40 @@
         }
         if (!sub || !sub.endpoint) return;
 
-        const epBytes = utf8ToBytes(sub.endpoint);
-        const endpointHash = bytesToHex(sha256Bytes(epBytes));
+        const endpointHash = LockTraceCrypto.sha256Hex(sub.endpoint);
         const ts = Math.floor(Date.now() / 1000);
         const authMsg = `LOCKTRACE_PUSH_SUB:${currentAccount.address}:${endpointHash}:${ts}`;
-        const sig = signEcdsaSha256(currentAccount.private_key, authMsg);
+        const sig = LockTraceCrypto.signEcdsaSha256(privKey, authMsg);
+        const pubKey = currentAccount.public_key || LockTraceCrypto.derivePublicKeyHex(privKey);
 
-        await apiFetch('/notifications/subscribe', {
+        const subRes = await apiFetch('/notifications/subscribe', {
           method: 'POST',
           body: JSON.stringify({
             wallet_address: currentAccount.address,
-            public_key: currentAccount.public_key,
+            public_key: pubKey,
             subscription: sub.toJSON(),
             timestamp: ts,
             signature: sig,
             user_agent: navigator.userAgent
           })
         });
+
+        if (subRes.ok && subRes.body && subRes.body.success) {
+          console.info('Web Push subscription registered for:', currentAccount.address);
+          if (isUserInitiated) {
+            showToast('✅ Lock-screen push notifications registered with LockTrace network!', 'verified');
+          }
+        } else {
+          console.warn('Push registration response notice:', subRes.body);
+          if (isUserInitiated) {
+            showToast((subRes.body && subRes.body.message) || 'Node could not verify push subscription', 'error');
+          }
+        }
       } catch (err) {
-        console.debug('Push registration sync notice:', err);
+        console.error('Push registration error:', err);
+        if (isUserInitiated) {
+          showToast('Failed to register push: ' + (err.message || err), 'error');
+        }
       }
     }
 
@@ -10719,7 +10761,19 @@
           playNotificationChime();
           showToast('🔔 Permission granted! Registering background push...', 'verified');
 
-          await registerDevicePushSubscription();
+          let priv = null;
+          if (currentAccount) {
+            if (currentAccount.private_key) {
+              priv = currentAccount.private_key;
+            } else if (sessionUnlockedKeys && sessionUnlockedKeys.private_key) {
+              priv = sessionUnlockedKeys.private_key;
+            } else if (currentAccount.vaultEncrypted) {
+              const secrets = await ensureSigningUnlocked();
+              if (secrets && secrets.private_key) priv = secrets.private_key;
+            }
+          }
+
+          await registerDevicePushSubscription(priv, true);
 
           addNotification({
             id: 'perm-granted-' + Date.now(),
@@ -11141,7 +11195,7 @@
       }
     }
 
-    function triggerTestNotification() {
+    async function triggerTestNotification() {
       const samples = [
         {
           category: 'transfer',
@@ -11176,6 +11230,29 @@
         read: false,
         actionUrl: pick.actionUrl
       }, true);
+
+      // Also trigger a real server-side Web Push test via APNs / Google Push
+      if (currentAccount && currentAccount.address && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        try {
+          const testRes = await apiFetch('/notifications/test-push', {
+            method: 'POST',
+            body: JSON.stringify({ wallet_address: currentAccount.address })
+          });
+          if (testRes.ok && testRes.body && testRes.body.success) {
+            showToast('🚀 Server Web Push dispatched! Lock your screen to check Apple APNs delivery.', 'verified');
+          } else if (testRes.status === 404) {
+            showToast('Device not registered on server push yet. Registering now...', 'warning');
+            let priv = currentAccount.private_key || (sessionUnlockedKeys && sessionUnlockedKeys.private_key);
+            if (!priv && currentAccount.vaultEncrypted) {
+              const secrets = await ensureSigningUnlocked();
+              if (secrets) priv = secrets.private_key;
+            }
+            if (priv) {
+              await registerDevicePushSubscription(priv, true);
+            }
+          }
+        } catch (_te) {}
+      }
     }
 
     // =========================================================================

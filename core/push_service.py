@@ -316,3 +316,4 @@ class PushNotificationService:
                     logger.warning(f"Push delivery notice ({status_code}): {ex}")
             except Exception as e:
                 logger.debug(f"WebPush dispatch exception: {e}")
+

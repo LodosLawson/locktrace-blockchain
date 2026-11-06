@@ -1313,7 +1313,7 @@ class LockTraceNode:
             blk = self._mine_autonomous_p2p_block(tx)
             return 200, {"success": True, "message": "Comment sealed into local PoW block!", "data": {"post_id": pid, "block_index": blk["index"], "status": "confirmed"}}
 
-        if path in ("/api/v1/notifications/subscribe", "/api/v1/notifications/unsubscribe"):
+        if path in ("/api/v1/notifications/subscribe", "/api/v1/notifications/unsubscribe", "/api/v1/notifications/test-push"):
             up_res = self.request(path, method="POST", data=payload, timeout=5.0)
             if up_res:
                 return (200 if up_res.get("success") else 400), up_res
