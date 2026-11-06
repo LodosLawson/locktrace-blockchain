@@ -251,6 +251,11 @@
             <span class="font-medium">BNS Handles (.bct)</span>
             <span class="ml-auto px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[9px] font-bold">New</span>
           </button>
+          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" onclick="openNotificationModal()" type="button">
+            <span class="material-symbols-outlined text-[19px]">notifications</span>
+            <span class="font-medium">Notifications</span>
+            <span id="sidebarNotificationBadge" class="ml-auto hidden px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono text-[10px] font-bold">0</span>
+          </button>
         </div>
 
         <!-- 2. SOCIAL & SPACE -->
@@ -360,6 +365,11 @@
         <button id="btnPwaMobileHeader" class="hidden items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary" onclick="triggerPwaInstall()" title="Install App" type="button">
           <span class="material-symbols-outlined text-[16px]">download</span>
         </button>
+        <!-- Mobile Notification Bell -->
+        <button id="mobileNotificationBellBtn" class="relative w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center shrink-0 cursor-pointer text-on-surface active:scale-95 transition-all border border-outline-variant/20" onclick="openNotificationModal()" title="Notifications / Bildirimler" type="button">
+          <span class="material-symbols-outlined text-[18px] text-primary">notifications</span>
+          <span id="mobileNotificationBadge" class="hidden absolute -top-1 -right-1 min-w-[16px] h-[16px] px-0.5 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shadow-sm animate-pulse">0</span>
+        </button>
         <button class="flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 border border-outline-variant/20" onclick="handleHeaderAddressAction()" type="button">
           <span class="text-[11px] font-mono font-medium text-on-surface truncate max-w-[95px] xs:max-w-[130px]" id="mobileHeaderAddress">Open Wallet</span>
           <span class="material-symbols-outlined text-[14px] text-on-surface-variant shrink-0">content_copy</span>
@@ -405,6 +415,11 @@
       <button id="desktopVaultBadgeBtn" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-sm text-label-sm border border-outline-variant/30 transition-colors" onclick="handleVaultQuickToggle()" type="button">
         <span class="material-symbols-outlined text-[15px] text-primary" id="desktopVaultIcon">shield_lock</span>
         <span id="desktopVaultLabel">PIN Vault</span>
+      </button>
+      <!-- Desktop Notification Bell -->
+      <button id="desktopNotificationBellBtn" class="relative w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 flex items-center justify-center shrink-0 cursor-pointer text-on-surface transition-all active:scale-95" onclick="openNotificationModal()" title="Notifications / Bildirimler" type="button">
+        <span class="material-symbols-outlined text-[19px] text-primary">notifications</span>
+        <span id="desktopNotificationBadge" class="hidden absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-rose-500 text-white font-mono text-[10px] font-bold flex items-center justify-center shadow-md animate-pulse">0</span>
       </button>
       <button class="flex items-center gap-space-xs bg-surface-container px-3.5 py-1.5 rounded-full text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 border border-outline-variant/20" onclick="handleHeaderAddressAction()" type="button" title="Adresi Kopyala">
         <span class="font-label-md text-label-md text-on-surface font-mono" id="headerAddress">No Wallet Selected</span>
@@ -3395,6 +3410,22 @@
         <!-- 1. WALLET & ASSETS -->
         <div class="flex flex-col gap-1.5">
           <span class="text-[10.5px] font-mono uppercase font-bold text-on-surface-variant/80 tracking-wider px-1">Wallet &amp; Account</span>
+          <!-- Notifications Quick Access Banner in Mobile Menu -->
+          <button class="p-3 rounded-2xl bg-gradient-to-r from-primary/15 via-surface-container-low to-secondary/15 border border-primary/30 flex items-center justify-between gap-3 text-left transition-all active:scale-[0.98] shadow-sm mb-1" onclick="closeMobileMenuModal(); openNotificationModal();" type="button">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[19px]">notifications_active</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-on-surface">Notifications &amp; Alerts</span>
+                <span class="text-[10px] text-on-surface-variant">Real-time ledger &amp; Space updates</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span id="mobileMenuNotificationBadge" class="hidden px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono text-[10px] font-bold animate-pulse">0 New</span>
+              <span class="material-symbols-outlined text-[18px] text-primary">chevron_right</span>
+            </div>
+          </button>
           <div class="grid grid-cols-2 gap-2">
             <button class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('cuzdanim');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
@@ -4194,6 +4225,114 @@
           </div>
         </div>
       </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL / DRAWER: NOTIFICATION CENTER (PWA & BROWSER REAL-TIME ALERTS)      -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-[70] bg-background/80 backdrop-blur-md hidden items-end md:items-start md:justify-end p-0 md:p-6 transition-all opacity-0" id="notificationModal" onclick="if(event.target===this) closeNotificationModal();">
+    <div class="w-full md:max-w-md bg-surface-container rounded-t-3xl md:rounded-3xl border border-outline-variant/25 p-5 pb-safe flex flex-col gap-3.5 shadow-2xl max-h-[88vh] md:max-h-[82vh] overflow-hidden transform translate-y-full md:translate-y-0 md:scale-95 transition-all duration-200" id="notificationDrawerCard">
+      
+      <!-- Top Handle (Mobile) & Header -->
+      <div class="flex flex-col gap-2">
+        <div class="w-12 h-1.5 rounded-full bg-outline-variant/40 mx-auto md:hidden"></div>
+        <div class="flex items-center justify-between pt-1">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-[20px]">notifications_active</span>
+            </div>
+            <div class="flex flex-col">
+              <div class="flex items-center gap-2">
+                <h3 class="font-headline-sm text-base text-on-surface font-bold leading-tight">Notifications</h3>
+                <span id="notifPanelUnreadBadge" class="hidden px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-400 font-mono text-[10px] font-bold">0 New</span>
+              </div>
+              <p class="text-[11px] text-on-surface-variant">Real-time ledger events &amp; Space interactions</p>
+            </div>
+          </div>
+          <div class="flex items-center gap-1.5">
+            <button class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors text-xs font-mono" onclick="triggerTestNotification()" title="Send Test Notification" type="button">
+              <span class="material-symbols-outlined text-[16px]">bolt</span>
+            </button>
+            <button class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors" onclick="closeNotificationModal()" type="button">
+              <span class="material-symbols-outlined text-[18px]">close</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Instant Web/PWA Push Activation Banner -->
+      <div id="notifPermissionBanner" class="p-3 rounded-2xl bg-surface-container-low border border-primary/25 flex items-center justify-between gap-3 shadow-sm">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <span class="material-symbols-outlined text-primary text-[20px] shrink-0" id="notifPermissionIcon">cell_tower</span>
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-semibold text-on-surface truncate" id="notifPermissionTitle">Instant Push Alerts</span>
+            <span class="text-[10px] text-on-surface-variant truncate" id="notifPermissionDesc">Enable OS &amp; PWA notifications for incoming BCT</span>
+          </div>
+        </div>
+        <button id="btnTogglePushPermission" class="px-3 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-[11px] font-semibold shrink-0 hover:brightness-110 active:scale-95 transition-all shadow-sm" onclick="requestNotificationPermissionAction()" type="button">
+          Enable
+        </button>
+      </div>
+
+      <!-- Category Filter Pills -->
+      <div class="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="notifFilterBar">
+        <button class="notif-filter-chip px-3 py-1 rounded-full text-xs font-semibold bg-primary text-on-primary transition-all whitespace-nowrap active:scale-95" data-filter="all" onclick="filterNotifications('all', this)" type="button">
+          All (<span id="notifCountAll">0</span>)
+        </button>
+        <button class="notif-filter-chip px-3 py-1 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap active:scale-95" data-filter="transfer" onclick="filterNotifications('transfer', this)" type="button">
+          Transfers (<span id="notifCountTransfer">0</span>)
+        </button>
+        <button class="notif-filter-chip px-3 py-1 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap active:scale-95" data-filter="space" onclick="filterNotifications('space', this)" type="button">
+          Space (<span id="notifCountSpace">0</span>)
+        </button>
+        <button class="notif-filter-chip px-3 py-1 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap active:scale-95" data-filter="system" onclick="filterNotifications('system', this)" type="button">
+          System (<span id="notifCountSystem">0</span>)
+        </button>
+      </div>
+
+      <!-- Quick Actions (Mark Read, Sound, Clear) -->
+      <div class="flex items-center justify-between px-1 text-[11px] text-on-surface-variant border-b border-outline-variant/15 pb-2">
+        <div class="flex items-center gap-2">
+          <button class="hover:text-primary transition-colors flex items-center gap-1 cursor-pointer font-medium" onclick="markAllNotificationsRead()" type="button">
+            <span class="material-symbols-outlined text-[14px]">done_all</span>
+            <span>Mark read</span>
+          </button>
+          <span>•</span>
+          <button class="hover:text-rose-400 transition-colors flex items-center gap-1 cursor-pointer font-medium" onclick="clearAllNotifications()" type="button">
+            <span class="material-symbols-outlined text-[14px]">delete_sweep</span>
+            <span>Clear</span>
+          </button>
+        </div>
+        <button class="hover:text-primary transition-colors flex items-center gap-1 cursor-pointer font-mono text-[11px]" onclick="toggleNotificationSound()" id="btnNotifSoundToggle" type="button" title="Audio Chime Toggle">
+          <span class="material-symbols-outlined text-[14px] text-primary" id="notifSoundIcon">volume_up</span>
+          <span id="notifSoundLabel">Sound: ON</span>
+        </button>
+      </div>
+
+      <!-- Scrollable Notifications List -->
+      <div class="flex-1 overflow-y-auto no-scrollbar flex flex-col gap-2 min-h-[220px] max-h-[50vh] pr-0.5" id="notificationList">
+        <!-- Rendered dynamically -->
+      </div>
+    </div>
+  </div>
+
+  <!-- FLOATING INSTANT ALERT TOAST (Desktop top-right / Mobile top-center) -->
+  <div class="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[80] pointer-events-none transition-all duration-300 transform -translate-y-12 opacity-0 flex flex-col gap-2 max-w-[92vw] sm:max-w-sm" id="floatingAlertToast">
+    <div class="pointer-events-auto p-3.5 rounded-2xl bg-surface-container-highest/95 backdrop-blur-xl border border-primary/40 shadow-2xl flex items-start gap-3 cursor-pointer group hover:border-primary transition-all active:scale-[0.98]" onclick="handleFloatingToastClick()">
+      <div class="w-9 h-9 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0 shadow-sm" id="floatingToastIconWrap">
+        <span class="material-symbols-outlined text-[20px]" id="floatingToastIcon">notifications</span>
+      </div>
+      <div class="flex flex-col min-w-0 flex-1">
+        <div class="flex items-center justify-between gap-1">
+          <span class="text-xs font-bold text-on-surface truncate" id="floatingToastTitle">Alert Title</span>
+          <span class="text-[10px] text-outline font-mono shrink-0">Just now</span>
+        </div>
+        <p class="text-xs text-on-surface-variant line-clamp-2 mt-0.5" id="floatingToastBody">Alert message content...</p>
+      </div>
+      <button class="w-6 h-6 rounded-full text-on-surface-variant hover:text-on-surface flex items-center justify-center shrink-0 -mr-1 -mt-1" onclick="event.stopPropagation(); dismissFloatingToast();" type="button">
+        <span class="material-symbols-outlined text-[15px]">close</span>
+      </button>
     </div>
   </div>
 
@@ -9950,6 +10089,7 @@
     }
 
     function initApp() {
+      initNotificationSystem();
       loadRpcSettings();
       updateRpcBadgeUI();
       setupPwaHandlers();
@@ -9979,6 +10119,7 @@
           if (activeId === 'tab-cuzdanim') await refreshPersonalTransactions();
           else if (activeId === 'tab-ag-ve-explorer') await refreshExplorerData();
           else if (activeId === 'tab-space' && !activeDetailPostId) await loadSpaceFeed();
+          await checkRealtimeNotificationEvents();
         } catch (_e) {}
         finally {
           isPollActive = false;
@@ -10417,6 +10558,687 @@
       }
 
       switchProfileSubTab('posts');
+    }
+
+
+    // =========================================================================
+    // 16. ADVANCED NOTIFICATION CENTER & INSTANT REAL-TIME ALERTS CONTROLLER
+    // =========================================================================
+    const NOTIF_STORAGE_KEY = 'locktrace_notifications_v2';
+    const NOTIF_SOUND_KEY = 'locktrace_notif_sound_v2';
+    const NOTIF_SEEN_TXS_KEY = 'locktrace_seen_txs_v2';
+    const NOTIF_SEEN_SPACE_KEY = 'locktrace_seen_space_v2';
+
+    let notificationsCache = [];
+    let currentNotifFilter = 'all';
+    let isNotifSoundEnabled = true;
+    let floatingToastTimer = null;
+    let activeFloatingToastNotif = null;
+
+    function initNotificationSystem() {
+      try {
+        const stored = localStorage.getItem(NOTIF_STORAGE_KEY);
+        notificationsCache = stored ? JSON.parse(stored) : [];
+        if (!Array.isArray(notificationsCache)) notificationsCache = [];
+      } catch (_e) {
+        notificationsCache = [];
+      }
+
+      try {
+        const soundPref = localStorage.getItem(NOTIF_SOUND_KEY);
+        isNotifSoundEnabled = soundPref !== null ? JSON.parse(soundPref) : true;
+      } catch (_e) {
+        isNotifSoundEnabled = true;
+      }
+      updateNotificationSoundUI();
+      updateNotificationBadges();
+      updatePermissionBannerUI();
+
+      if (notificationsCache.length === 0) {
+        addNotification({
+          id: 'welcome-' + Date.now(),
+          category: 'system',
+          title: 'LockTrace Mainnet Online',
+          body: 'Decentralized P2P network, Web3 wallet & Space protocol active. Instant notifications enabled.',
+          icon: 'verified_user',
+          time: Date.now(),
+          read: false,
+          actionUrl: '#ana-sayfa'
+        }, false);
+      }
+    }
+
+    function updatePermissionBannerUI() {
+      const banner = document.getElementById('notifPermissionBanner');
+      const title = document.getElementById('notifPermissionTitle');
+      const desc = document.getElementById('notifPermissionDesc');
+      const btn = document.getElementById('btnTogglePushPermission');
+      const icon = document.getElementById('notifPermissionIcon');
+      if (!banner || !btn) return;
+
+      if (!('Notification' in window)) {
+        banner.classList.add('hidden');
+        return;
+      }
+
+      if (Notification.permission === 'granted') {
+        if (title) title.textContent = 'Push Alerts Active';
+        if (desc) desc.textContent = 'Instant OS & PWA notifications enabled for your wallet';
+        if (icon) {
+          icon.textContent = 'check_circle';
+          icon.className = 'material-symbols-outlined text-emerald-400 text-[20px] shrink-0';
+        }
+        btn.textContent = 'Active';
+        btn.className = 'px-3 py-1.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[11px] font-semibold shrink-0 border border-emerald-500/30 cursor-default';
+        btn.disabled = true;
+      } else if (Notification.permission === 'denied') {
+        if (title) title.textContent = 'Push Alerts Blocked';
+        if (desc) desc.textContent = 'Please allow notifications in your browser/PWA site settings';
+        if (icon) {
+          icon.textContent = 'notifications_off';
+          icon.className = 'material-symbols-outlined text-rose-400 text-[20px] shrink-0';
+        }
+        btn.textContent = 'Blocked';
+        btn.className = 'px-3 py-1.5 rounded-full bg-rose-500/15 text-rose-400 font-label-sm text-[11px] font-semibold shrink-0 border border-rose-500/30 cursor-default';
+        btn.disabled = true;
+      } else {
+        if (title) title.textContent = 'Instant Push Alerts';
+        if (desc) desc.textContent = 'Enable OS & PWA notifications for incoming BCT & mentions';
+        if (icon) {
+          icon.textContent = 'cell_tower';
+          icon.className = 'material-symbols-outlined text-primary text-[20px] shrink-0';
+        }
+        btn.textContent = 'Enable';
+        btn.className = 'px-3 py-1.5 rounded-full bg-primary text-on-primary font-label-sm text-[11px] font-semibold shrink-0 hover:brightness-110 active:scale-95 transition-all shadow-sm';
+        btn.disabled = false;
+      }
+    }
+
+    async function requestNotificationPermissionAction() {
+      if (!('Notification' in window)) {
+        showToast('Notifications are not supported in this browser', 'info');
+        return;
+      }
+      try {
+        const perm = await Notification.requestPermission();
+        updatePermissionBannerUI();
+        if (perm === 'granted') {
+          playNotificationChime();
+          showToast('🔔 Push notifications enabled successfully!', 'verified');
+          addNotification({
+            id: 'perm-granted-' + Date.now(),
+            category: 'system',
+            title: '🎉 Push Notifications Active',
+            body: 'You will now receive instant alerts for incoming transfers, Space mentions, and block confirmations.',
+            icon: 'notifications_active',
+            time: Date.now(),
+            read: false,
+            actionUrl: '#cuzdanim'
+          });
+        } else if (perm === 'denied') {
+          showToast('Notification permission was denied in browser settings', 'warning', true);
+        }
+      } catch (_e) {
+        showToast('Could not request notification permission', 'error', true);
+      }
+    }
+
+    function toggleNotificationPanel() {
+      const modal = document.getElementById('notificationModal');
+      if (!modal) return;
+      if (modal.classList.contains('hidden')) {
+        openNotificationModal();
+      } else {
+        closeNotificationModal();
+      }
+    }
+
+    function openNotificationModal() {
+      const modal = document.getElementById('notificationModal');
+      const card = document.getElementById('notificationDrawerCard');
+      if (!modal || !card) return;
+
+      updatePermissionBannerUI();
+      renderNotificationList();
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      void modal.offsetWidth;
+      modal.classList.remove('opacity-0');
+      modal.classList.add('opacity-100');
+
+      card.classList.remove('translate-y-full', 'md:scale-95');
+      card.classList.add('translate-y-0', 'md:scale-100');
+    }
+
+    function closeNotificationModal() {
+      const modal = document.getElementById('notificationModal');
+      const card = document.getElementById('notificationDrawerCard');
+      if (!modal || !card) return;
+
+      card.classList.remove('translate-y-0', 'md:scale-100');
+      card.classList.add('translate-y-full', 'md:scale-95');
+
+      modal.classList.remove('opacity-100');
+      modal.classList.add('opacity-0');
+
+      setTimeout(() => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }, 200);
+    }
+
+    function playNotificationChime() {
+      if (!isNotifSoundEnabled) return;
+      try {
+        const AudioContext = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContext) return;
+        const ctx = new AudioContext();
+        if (ctx.state === 'suspended') {
+          ctx.resume();
+        }
+        const now = ctx.currentTime;
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, now); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, now + 0.12); // A5
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      } catch (_e) {}
+    }
+
+    function triggerVibrationFeedback() {
+      try {
+        if ('vibrate' in navigator) {
+          navigator.vibrate([80, 40, 80]);
+        }
+      } catch (_e) {}
+    }
+
+    function addNotification(item, shouldAlert = true) {
+      if (!item || !item.title) return;
+      const notif = {
+        id: item.id || ('notif-' + Date.now() + '-' + Math.random().toString(36).substring(2, 7)),
+        category: item.category || 'system',
+        title: item.title,
+        body: item.body || '',
+        icon: item.icon || (item.category === 'transfer' ? 'arrow_downward' : (item.category === 'space' ? 'forum' : 'notifications')),
+        time: item.time || Date.now(),
+        read: Boolean(item.read),
+        actionUrl: item.actionUrl || '',
+        data: item.data || null
+      };
+
+      notificationsCache = notificationsCache.filter(n => n.id !== notif.id);
+      notificationsCache.unshift(notif);
+      if (notificationsCache.length > 80) {
+        notificationsCache = notificationsCache.slice(0, 80);
+      }
+
+      try {
+        localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notificationsCache));
+      } catch (_e) {}
+
+      updateNotificationBadges();
+
+      if (shouldAlert) {
+        playNotificationChime();
+        triggerVibrationFeedback();
+        showFloatingAlertToast(notif);
+
+        if ('Notification' in window && Notification.permission === 'granted') {
+          try {
+            if (navigator.serviceWorker && navigator.serviceWorker.controller) {
+              navigator.serviceWorker.ready.then(reg => {
+                reg.showNotification(notif.title, {
+                  body: notif.body,
+                  icon: '/icons/icon-192.png',
+                  badge: '/icons/icon-32.png',
+                  tag: notif.id,
+                  vibrate: [150, 80, 150],
+                  data: { url: notif.actionUrl || '/' }
+                });
+              });
+            } else {
+              new Notification(notif.title, {
+                body: notif.body,
+                icon: '/icons/icon-192.png'
+              });
+            }
+          } catch (_e) {}
+        }
+      }
+
+      const modal = document.getElementById('notificationModal');
+      if (modal && !modal.classList.contains('hidden')) {
+        renderNotificationList();
+      }
+    }
+
+    function updateNotificationBadges() {
+      const unreadCount = notificationsCache.filter(n => !n.read).length;
+
+      const desktopBadge = document.getElementById('desktopNotificationBadge');
+      const mobileBadge = document.getElementById('mobileNotificationBadge');
+      const sidebarBadge = document.getElementById('sidebarNotificationBadge');
+      const mobileMenuBadge = document.getElementById('mobileMenuNotificationBadge');
+      const panelUnreadBadge = document.getElementById('notifPanelUnreadBadge');
+
+      const countStr = unreadCount > 99 ? '99+' : String(unreadCount);
+
+      [desktopBadge, mobileBadge].forEach(b => {
+        if (!b) return;
+        if (unreadCount > 0) {
+          b.textContent = countStr;
+          b.classList.remove('hidden');
+        } else {
+          b.classList.add('hidden');
+        }
+      });
+
+      if (sidebarBadge) {
+        if (unreadCount > 0) {
+          sidebarBadge.textContent = countStr + ' New';
+          sidebarBadge.classList.remove('hidden');
+        } else {
+          sidebarBadge.classList.add('hidden');
+        }
+      }
+
+      if (mobileMenuBadge) {
+        if (unreadCount > 0) {
+          mobileMenuBadge.textContent = countStr + ' New';
+          mobileMenuBadge.classList.remove('hidden');
+        } else {
+          mobileMenuBadge.classList.add('hidden');
+        }
+      }
+
+      if (panelUnreadBadge) {
+        if (unreadCount > 0) {
+          panelUnreadBadge.textContent = countStr + ' New';
+          panelUnreadBadge.classList.remove('hidden');
+        } else {
+          panelUnreadBadge.classList.add('hidden');
+        }
+      }
+
+      if ('setAppBadge' in navigator) {
+        try {
+          if (unreadCount > 0) {
+            navigator.setAppBadge(unreadCount);
+          } else {
+            navigator.clearAppBadge();
+          }
+        } catch (_e) {}
+      }
+
+      const totalAll = notificationsCache.length;
+      const totalTransfer = notificationsCache.filter(n => n.category === 'transfer').length;
+      const totalSpace = notificationsCache.filter(n => n.category === 'space').length;
+      const totalSystem = notificationsCache.filter(n => n.category === 'system').length;
+
+      const elAll = document.getElementById('notifCountAll');
+      const elTransfer = document.getElementById('notifCountTransfer');
+      const elSpace = document.getElementById('notifCountSpace');
+      const elSystem = document.getElementById('notifCountSystem');
+
+      if (elAll) elAll.textContent = totalAll;
+      if (elTransfer) elTransfer.textContent = totalTransfer;
+      if (elSpace) elSpace.textContent = totalSpace;
+      if (elSystem) elSystem.textContent = totalSystem;
+    }
+
+    function renderNotificationList() {
+      const container = document.getElementById('notificationList');
+      if (!container) return;
+
+      const filtered = notificationsCache.filter(n => {
+        if (currentNotifFilter === 'all') return true;
+        return n.category === currentNotifFilter;
+      });
+
+      if (filtered.length === 0) {
+        container.innerHTML = `
+          <div class="py-12 flex flex-col items-center justify-center text-center gap-2.5 text-on-surface-variant">
+            <div class="w-12 h-12 rounded-2xl bg-surface-container-high flex items-center justify-center text-outline">
+              <span class="material-symbols-outlined text-[26px]">notifications_paused</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="text-xs font-semibold text-on-surface">No Notifications</span>
+              <span class="text-[11px] text-on-surface-variant max-w-[240px]">Incoming BCT transfers, Space mentions &amp; protocol alerts will appear here in real time.</span>
+            </div>
+            <button class="mt-2 px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface text-[11px] font-semibold active:scale-95 transition-all" onclick="triggerTestNotification()" type="button">
+              Send Test Alert
+            </button>
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = filtered.map(item => {
+        const isTransfer = item.category === 'transfer';
+        const isSpace = item.category === 'space';
+        const isSystem = item.category === 'system';
+
+        let iconBg = 'bg-primary/15 text-primary';
+        if (isTransfer) iconBg = 'bg-emerald-500/15 text-emerald-400';
+        else if (isSpace) iconBg = 'bg-purple-500/15 text-purple-400';
+        else if (isSystem) iconBg = 'bg-amber-500/15 text-amber-400';
+
+        return `
+          <div class="p-3 rounded-2xl ${item.read ? 'bg-surface-container-low/70' : 'bg-surface-container-high/90 border border-primary/20'} flex items-start justify-between gap-3 transition-all hover:bg-surface-container-high cursor-pointer group" onclick="handleNotificationItemClick('${escapeHtml(item.id)}')">
+            <div class="w-8 h-8 rounded-xl ${iconBg} flex items-center justify-center shrink-0 mt-0.5">
+              <span class="material-symbols-outlined text-[18px]">${escapeHtml(item.icon)}</span>
+            </div>
+            <div class="flex flex-col min-w-0 flex-1">
+              <div class="flex items-center gap-1.5">
+                <span class="text-xs font-bold ${item.read ? 'text-on-surface/90' : 'text-on-surface'} truncate">${escapeHtml(item.title)}</span>
+                ${!item.read ? '<span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0 animate-pulse"></span>' : ''}
+              </div>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed line-clamp-2 mt-0.5">${escapeHtml(item.body)}</p>
+              <div class="flex items-center gap-2 mt-1">
+                <span class="text-[10px] text-outline font-mono">${escapeHtml(formatTimeAgo(item.time))}</span>
+                ${item.actionUrl ? `<span class="text-[10px] text-primary font-semibold hover:underline">View Details →</span>` : ''}
+              </div>
+            </div>
+            <button class="w-6 h-6 rounded-full text-outline hover:text-rose-400 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onclick="deleteSingleNotification('${escapeHtml(item.id)}', event)" title="Delete" type="button">
+              <span class="material-symbols-outlined text-[15px]">close</span>
+            </button>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterNotifications(category, btn) {
+      currentNotifFilter = category;
+      document.querySelectorAll('#notifFilterBar .notif-filter-chip').forEach(b => {
+        const active = (b === btn);
+        b.className = active
+          ? 'notif-filter-chip px-3 py-1 rounded-full text-xs font-semibold bg-primary text-on-primary transition-all whitespace-nowrap active:scale-95'
+          : 'notif-filter-chip px-3 py-1 rounded-full text-xs font-semibold bg-surface-container-high text-on-surface-variant hover:text-on-surface transition-all whitespace-nowrap active:scale-95';
+      });
+      renderNotificationList();
+    }
+
+    function markAllNotificationsRead() {
+      notificationsCache.forEach(n => { n.read = true; });
+      try {
+        localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notificationsCache));
+      } catch (_e) {}
+      updateNotificationBadges();
+      renderNotificationList();
+      showToast('All notifications marked as read', 'done_all');
+    }
+
+    function clearAllNotifications() {
+      notificationsCache = [];
+      try {
+        localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notificationsCache));
+      } catch (_e) {}
+      updateNotificationBadges();
+      renderNotificationList();
+      showToast('Notification history cleared', 'delete_sweep');
+    }
+
+    function deleteSingleNotification(id, event) {
+      if (event) event.stopPropagation();
+      notificationsCache = notificationsCache.filter(n => n.id !== id);
+      try {
+        localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notificationsCache));
+      } catch (_e) {}
+      updateNotificationBadges();
+      renderNotificationList();
+    }
+
+    function handleNotificationItemClick(id) {
+      const item = notificationsCache.find(n => n.id === id);
+      if (!item) return;
+      item.read = true;
+      try {
+        localStorage.setItem(NOTIF_STORAGE_KEY, JSON.stringify(notificationsCache));
+      } catch (_e) {}
+      updateNotificationBadges();
+      renderNotificationList();
+
+      if (item.actionUrl) {
+        closeNotificationModal();
+        const tabName = item.actionUrl.replace(/^#/, '').trim();
+        if (tabName) {
+          switchTab(tabName);
+        }
+      }
+    }
+
+    function toggleNotificationSound() {
+      isNotifSoundEnabled = !isNotifSoundEnabled;
+      try {
+        localStorage.setItem(NOTIF_SOUND_KEY, JSON.stringify(isNotifSoundEnabled));
+      } catch (_e) {}
+      updateNotificationSoundUI();
+      if (isNotifSoundEnabled) {
+        playNotificationChime();
+        showToast('Notification audio chime enabled', 'volume_up');
+      } else {
+        showToast('Notification audio muted', 'volume_off');
+      }
+    }
+
+    function updateNotificationSoundUI() {
+      const lbl = document.getElementById('notifSoundLabel');
+      const icn = document.getElementById('notifSoundIcon');
+      if (lbl) lbl.textContent = isNotifSoundEnabled ? 'Sound: ON' : 'Sound: OFF';
+      if (icn) {
+        icn.textContent = isNotifSoundEnabled ? 'volume_up' : 'volume_off';
+        icn.className = isNotifSoundEnabled ? 'material-symbols-outlined text-[14px] text-primary' : 'material-symbols-outlined text-[14px] text-outline';
+      }
+    }
+
+    function showFloatingAlertToast(notif) {
+      const toast = document.getElementById('floatingAlertToast');
+      const title = document.getElementById('floatingToastTitle');
+      const body = document.getElementById('floatingToastBody');
+      const icon = document.getElementById('floatingToastIcon');
+      const iconWrap = document.getElementById('floatingToastIconWrap');
+      if (!toast || !title || !body || !icon) return;
+
+      activeFloatingToastNotif = notif;
+      title.textContent = notif.title;
+      body.textContent = notif.body;
+      icon.textContent = notif.icon || 'notifications';
+
+      if (iconWrap) {
+        if (notif.category === 'transfer') iconWrap.className = 'w-9 h-9 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center shrink-0 shadow-sm';
+        else if (notif.category === 'space') iconWrap.className = 'w-9 h-9 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center shrink-0 shadow-sm';
+        else iconWrap.className = 'w-9 h-9 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0 shadow-sm';
+      }
+
+      toast.classList.remove('-translate-y-12', 'opacity-0');
+      toast.classList.add('translate-y-0', 'opacity-100');
+
+      clearTimeout(floatingToastTimer);
+      floatingToastTimer = setTimeout(() => {
+        dismissFloatingToast();
+      }, 5500);
+    }
+
+    function dismissFloatingToast() {
+      const toast = document.getElementById('floatingAlertToast');
+      if (!toast) return;
+      toast.classList.remove('translate-y-0', 'opacity-100');
+      toast.classList.add('-translate-y-12', 'opacity-0');
+    }
+
+    function handleFloatingToastClick() {
+      if (activeFloatingToastNotif) {
+        dismissFloatingToast();
+        handleNotificationItemClick(activeFloatingToastNotif.id);
+      }
+    }
+
+    function triggerTestNotification() {
+      const samples = [
+        {
+          category: 'transfer',
+          title: '🎉 +25.00 BCT Received!',
+          body: 'Transfer from BCT885bc383... confirmed into your wallet in Block #453.',
+          icon: 'arrow_downward',
+          actionUrl: '#cuzdanim'
+        },
+        {
+          category: 'space',
+          title: '💬 Mentioned in Space',
+          body: '@satoshi mentioned your handle in a new discussion regarding $BCT tokenomics.',
+          icon: 'forum',
+          actionUrl: '#space'
+        },
+        {
+          category: 'system',
+          title: '⚡ Validator Quorum Reward',
+          body: 'Your node contributed to active block sealing (+0.015 BCT quorum reward).',
+          icon: 'verified_user',
+          actionUrl: '#cuzdanim'
+        }
+      ];
+      const pick = samples[Math.floor(Math.random() * samples.length)];
+      addNotification({
+        id: 'test-' + Date.now(),
+        category: pick.category,
+        title: pick.title,
+        body: pick.body,
+        icon: pick.icon,
+        time: Date.now(),
+        read: false,
+        actionUrl: pick.actionUrl
+      }, true);
+    }
+
+    // =========================================================================
+    // 17. AUTOMATED REAL-TIME LEDGER & SPACE EVENT DETECTOR
+    // =========================================================================
+    let seenTxHashesSet = null;
+    let seenSpacePostsSet = null;
+
+    function getSeenTxHashes() {
+      if (!seenTxHashesSet) {
+        try {
+          const raw = localStorage.getItem(NOTIF_SEEN_TXS_KEY);
+          seenTxHashesSet = new Set(raw ? JSON.parse(raw) : []);
+        } catch (_e) {
+          seenTxHashesSet = new Set();
+        }
+      }
+      return seenTxHashesSet;
+    }
+
+    function saveSeenTxHashes() {
+      if (!seenTxHashesSet) return;
+      try {
+        const arr = Array.from(seenTxHashesSet).slice(-200);
+        localStorage.setItem(NOTIF_SEEN_TXS_KEY, JSON.stringify(arr));
+      } catch (_e) {}
+    }
+
+    function getSeenSpacePosts() {
+      if (!seenSpacePostsSet) {
+        try {
+          const raw = localStorage.getItem(NOTIF_SEEN_SPACE_KEY);
+          seenSpacePostsSet = new Set(raw ? JSON.parse(raw) : []);
+        } catch (_e) {
+          seenSpacePostsSet = new Set();
+        }
+      }
+      return seenSpacePostsSet;
+    }
+
+    function saveSeenSpacePosts() {
+      if (!seenSpacePostsSet) return;
+      try {
+        const arr = Array.from(seenSpacePostsSet).slice(-150);
+        localStorage.setItem(NOTIF_SEEN_SPACE_KEY, JSON.stringify(arr));
+      } catch (_e) {}
+    }
+
+    async function checkRealtimeNotificationEvents() {
+      if (!currentAccount || !currentAccount.address) return;
+      const myAddr = currentAccount.address;
+      const seenTxs = getSeenTxHashes();
+
+      // 1. Check incoming transactions & rewards
+      try {
+        const res = await apiFetch('/transactions/' + encodeURIComponent(myAddr));
+        if (res.ok && res.body && res.body.data && Array.isArray(res.body.data.transactions)) {
+          const txs = res.body.data.transactions;
+          if (seenTxs.size === 0) {
+            txs.forEach(t => { if (t.hash) seenTxs.add(t.hash); });
+            saveSeenTxHashes();
+          } else {
+            txs.forEach(tx => {
+              if (!tx.hash || seenTxs.has(tx.hash)) return;
+              seenTxs.add(tx.hash);
+
+              const info = classifyPersonalTx(tx, myAddr);
+              if (info.isIncoming) {
+                addNotification({
+                  id: 'tx-' + tx.hash,
+                  category: 'transfer',
+                  title: `🎉 +${formatBct(info.displayAmount, 4)} BCT Alındı!`,
+                  body: `${info.title} (${shortAddr(info.counterparty)}) hesabınıza ulaştı.`,
+                  icon: info.icon || 'arrow_downward',
+                  time: Number(tx.timestamp || Date.now() / 1000) * 1000,
+                  read: false,
+                  actionUrl: '#cuzdanim'
+                }, true);
+              }
+            });
+            saveSeenTxHashes();
+          }
+        }
+      } catch (_e) {}
+
+      // 2. Check Space mentions and interactions
+      const seenPosts = getSeenSpacePosts();
+      try {
+        const spaceRes = await apiFetch('/space/feed?feed_type=latest&limit=25');
+        if (spaceRes.ok && spaceRes.body && spaceRes.body.data && Array.isArray(spaceRes.body.data.posts)) {
+          const posts = spaceRes.body.data.posts;
+          if (seenPosts.size === 0) {
+            posts.forEach(p => { if (p.id) seenPosts.add(p.id); });
+            saveSeenSpacePosts();
+          } else {
+            posts.forEach(post => {
+              if (!post.id || seenPosts.has(post.id)) return;
+              seenPosts.add(post.id);
+
+              if (post.author === myAddr) return;
+
+              const content = String(post.content || '');
+              const authorName = post.bns_name ? `@${post.bns_name}` : shortAddr(post.author);
+              const myHandle = currentBnsHandle ? `@${currentBnsHandle}`.toLowerCase() : null;
+
+              const isMentioned = content.toLowerCase().includes(myAddr.toLowerCase()) || (myHandle && content.toLowerCase().includes(myHandle));
+
+              if (isMentioned) {
+                addNotification({
+                  id: 'space-mention-' + post.id,
+                  category: 'space',
+                  title: '💬 Space'te Bahsedildiniz!',
+                  body: `${authorName} gönderisinde sizden bahsetti: "${content.slice(0, 60)}..."`,
+                  icon: 'forum',
+                  time: Number(post.timestamp || Date.now() / 1000) * 1000,
+                  read: false,
+                  actionUrl: '#space'
+                }, true);
+              }
+            });
+            saveSeenSpacePosts();
+          }
+        }
+      } catch (_e) {}
     }
 
     document.addEventListener('DOMContentLoaded', initApp);
