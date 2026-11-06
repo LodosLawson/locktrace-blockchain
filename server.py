@@ -66,6 +66,14 @@ logging.basicConfig(
 )
 logger = logging.getLogger("LockTrace")
 
+try:
+    from core.push_service import PushNotificationService
+    push_service = PushNotificationService(db_path=getattr(Config, "DB_PATH", "blockchain.db"))
+    logger.info("Web Push Notification Service attached to server.")
+except Exception as _pse:
+    logger.warning(f"Could not initialize PushNotificationService: {_pse}")
+    push_service = None
+
 blockchain = Blockchain(auto_mine=True)
 logger.info(f"LockTrace Initialized: {len(blockchain.chain)} blocks, {len(blockchain.wallets)} wallets")
 
@@ -533,6 +541,67 @@ def api_frontend_integrity():
     })
 
 
+# ── Web Push Notifications (Off-Site PWA & Mobile Alerts) ──────
+@app.route("/api/v1/notifications/vapid-key", methods=["GET"])
+def api_notifications_vapid_key():
+    """Returns the server VAPID public key for browser pushManager.subscribe()."""
+    if not push_service:
+        return api_response(False, message="Web Push service not available on this node", status=503)
+    pub = push_service.get_public_key()
+    if not pub:
+        return api_response(False, message="VAPID key not configured", status=503)
+    return api_response(True, data={"public_key": pub})
+
+
+@app.route("/api/v1/notifications/subscribe", methods=["POST"])
+def api_notifications_subscribe():
+    """
+    Cryptographically binds a device Web Push subscription to a BCT wallet address.
+    Requires SECP256k1 ECDSA signature proof of wallet ownership.
+    """
+    if not push_service:
+        return api_response(False, message="Web Push service not available on this node", status=503)
+
+    if not check_rate_limit("push_sub", limit=20, window_seconds=60):
+        return api_response(False, message="Too many subscription attempts. Please wait.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    wallet_address = str(data.get("wallet_address", "") or "").strip()
+    public_key = str(data.get("public_key", "") or "").strip()
+    subscription = data.get("subscription")
+    signature = str(data.get("signature", "") or "").strip()
+    timestamp = safe_float(data.get("timestamp")) or 0.0
+    user_agent = str(data.get("user_agent", "") or request.headers.get("User-Agent", ""))[:120]
+
+    if not wallet_address or not public_key or not subscription or not signature:
+        return api_response(False, message="Missing required fields: wallet_address, public_key, subscription, signature", status=400)
+
+    ok, msg = push_service.subscribe(
+        wallet_address=wallet_address,
+        public_key=public_key,
+        subscription=subscription,
+        timestamp=timestamp,
+        signature=signature,
+        user_agent=user_agent
+    )
+    if ok:
+        return api_response(True, message=msg, status=201)
+    return api_response(False, message=msg, status=401)
+
+
+@app.route("/api/v1/notifications/unsubscribe", methods=["POST"])
+def api_notifications_unsubscribe():
+    """Removes a push subscription by endpoint."""
+    if not push_service:
+        return api_response(False, message="Web Push service not available on this node", status=503)
+    data = request.get_json(silent=True) or {}
+    endpoint = str(data.get("endpoint", "") or "").strip()
+    if not endpoint:
+        return api_response(False, message="Endpoint is required", status=400)
+    push_service.unsubscribe(endpoint)
+    return api_response(True, message="Unsubscribed successfully")
+
+
 # ── Health & Stats ───────────────────────────────────────────
 @app.route("/api/v1/health", methods=["GET"])
 def api_health():
@@ -755,6 +824,17 @@ def api_transaction():
 
     if success:
         logger.info(f"Transaction Confirmed: {tx_info['tx_hash'][:16]} {sender[:8]}->{receiver[:8]} {amount} BCT")
+        if push_service and receiver:
+            try:
+                push_service.send_push_to_wallet(
+                    receiver,
+                    title=f"🎉 +{amount:.4f} BCT Alındı!",
+                    body=f"{sender[:8]}... adresinden transfer hesabınıza ulaştı.",
+                    url="/#cuzdanim",
+                    category="transfer"
+                )
+            except Exception as _p_err:
+                logger.debug(f"Push dispatch error: {_p_err}")
         return api_response(True, message=message, data=tx_info, status=201)
 
     logger.warning(f"Transaction Declined: {message}")
@@ -1265,6 +1345,29 @@ def api_space_create_post():
         return api_response(False, message=message, status=400)
 
     logger.info(f"Space Post Created: by {author[:8]}... (0.10 BCT)")
+    if push_service:
+        try:
+            entities = blockchain.extract_space_entities(content)
+            for m in entities.get("mentions", []):
+                target_m = m.lstrip("@").strip()
+                target_w = None
+                if is_valid_bct_address(target_m):
+                    target_w = target_m
+                elif target_m.lower().endswith(".bct"):
+                    b_lookup = blockchain.bns_lookup(target_m)
+                    if b_lookup and b_lookup.get("owner"):
+                        target_w = b_lookup["owner"]
+                if target_w and target_w != author:
+                    snippet = content[:60].replace('"', "'")
+                    push_service.send_push_to_wallet(
+                        target_w,
+                        title="💬 Space'te Bahsedildiniz!",
+                        body=f"@{bns_name or author[:8]} gönderisinde sizden bahsetti: {snippet}...",
+                        url="/#space",
+                        category="space"
+                    )
+        except Exception as _s_err:
+            logger.debug(f"Space mention push error: {_s_err}")
     return api_response(True, message=message, data=result, status=201)
 
 
