@@ -4318,7 +4318,7 @@
   </div>
 
   <!-- FLOATING INSTANT ALERT TOAST (Desktop top-right / Mobile top-center) -->
-  <div class="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[80] pointer-events-none transition-all duration-300 transform -translate-y-12 opacity-0 flex flex-col gap-2 max-w-[92vw] sm:max-w-sm" id="floatingAlertToast">
+  <div class="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[80] pointer-events-none transition-all duration-300 transform -translate-y-12 opacity-0 hidden flex flex-col gap-2 max-w-[92vw] sm:max-w-sm" id="floatingAlertToast">
     <div class="pointer-events-auto p-3.5 rounded-2xl bg-surface-container-highest/95 backdrop-blur-xl border border-primary/40 shadow-2xl flex items-start gap-3 cursor-pointer group hover:border-primary transition-all active:scale-[0.98]" onclick="handleFloatingToastClick()">
       <div class="w-9 h-9 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0 shadow-sm" id="floatingToastIconWrap">
         <span class="material-symbols-outlined text-[20px]" id="floatingToastIcon">notifications</span>
@@ -11057,7 +11057,7 @@
         else iconWrap.className = 'w-9 h-9 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0 shadow-sm';
       }
 
-      toast.classList.remove('-translate-y-12', 'opacity-0');
+      toast.classList.remove('hidden', '-translate-y-12', 'opacity-0');
       toast.classList.add('translate-y-0', 'opacity-100');
 
       clearTimeout(floatingToastTimer);
@@ -11071,6 +11071,11 @@
       if (!toast) return;
       toast.classList.remove('translate-y-0', 'opacity-100');
       toast.classList.add('-translate-y-12', 'opacity-0');
+      setTimeout(() => {
+        if (toast.classList.contains('opacity-0')) {
+          toast.classList.add('hidden');
+        }
+      }, 300);
     }
 
     function handleFloatingToastClick() {
@@ -11226,7 +11231,7 @@
                 addNotification({
                   id: 'space-mention-' + post.id,
                   category: 'space',
-                  title: '💬 Space'te Bahsedildiniz!',
+                  title: "💬 Space Etiketlendiniz!",
                   body: `${authorName} gönderisinde sizden bahsetti: "${content.slice(0, 60)}..."`,
                   icon: 'forum',
                   time: Number(post.timestamp || Date.now() / 1000) * 1000,
