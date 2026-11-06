@@ -10108,8 +10108,11 @@
       fetchAndSyncMyBnsHandles();
 
       initNotificationSystem();
-      if (currentAccount && currentAccount.address && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-        registerDevicePushSubscription(null, false);
+      if (currentAccount && currentAccount.address) {
+        checkRealtimeNotificationEvents();
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          registerDevicePushSubscription(null, false);
+        }
       }
 
       loadTradeConfig();
@@ -10606,6 +10609,14 @@
       updateNotificationSoundUI();
       updateNotificationBadges();
       updatePermissionBannerUI();
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.addEventListener('message', (event) => {
+          if (event.data && event.data.type === 'LOCKTRACE_PUSH_EVENT' && event.data.payload) {
+            addNotification(event.data.payload, false);
+          }
+        });
+      }
 
       if (notificationsCache.length === 0) {
         addNotification({
@@ -11301,6 +11312,30 @@
       } catch (_e) {}
     }
 
+    function isUserTaggedInText(text, myAddr, currentHandle, ownedHandlesList) {
+      if (!text) return false;
+      const lower = text.toLowerCase();
+      if (myAddr && lower.includes(myAddr.toLowerCase())) return true;
+
+      const namesToCheck = new Set();
+      if (currentHandle) namesToCheck.add(currentHandle.toLowerCase());
+      if (Array.isArray(ownedHandlesList)) {
+        ownedHandlesList.forEach(item => {
+          const n = (typeof item === 'string' ? item : (item && item.name)) || '';
+          if (n) namesToCheck.add(n.toLowerCase());
+        });
+      }
+
+      for (const name of namesToCheck) {
+        const bare = name.replace(/\.bct$/i, '');
+        // Tagged as #xxx.bct or @xxx.bct
+        if (lower.includes('#' + name) || lower.includes('@' + name)) return true;
+        // Tagged as bare handle #xxx or @xxx
+        if (bare && (lower.includes('#' + bare) || lower.includes('@' + bare))) return true;
+      }
+      return false;
+    }
+
     async function checkRealtimeNotificationEvents() {
       if (!currentAccount || !currentAccount.address) return;
       const myAddr = currentAccount.address;
@@ -11311,70 +11346,78 @@
         const res = await apiFetch('/transactions/' + encodeURIComponent(myAddr));
         if (res.ok && res.body && res.body.data && Array.isArray(res.body.data.transactions)) {
           const txs = res.body.data.transactions;
-          if (seenTxs.size === 0) {
-            txs.forEach(t => { if (t.hash) seenTxs.add(t.hash); });
-            saveSeenTxHashes();
-          } else {
-            txs.forEach(tx => {
-              if (!tx.hash || seenTxs.has(tx.hash)) return;
-              seenTxs.add(tx.hash);
+          txs.forEach(tx => {
+            const txHash = tx.tx_hash || tx.hash;
+            if (!txHash) return;
+            const notifId = 'tx-' + txHash;
+            const isAlreadyInCache = notificationsCache.some(n => n.id === notifId);
+            const isAlreadySeen = seenTxs.has(txHash);
 
-              const info = classifyPersonalTx(tx, myAddr);
-              if (info.isIncoming) {
+            const info = classifyPersonalTx(tx, myAddr);
+            if (info.isIncoming) {
+              const shouldAlert = !isAlreadySeen && (seenTxs.size > 0);
+              seenTxs.add(txHash);
+              if (!isAlreadyInCache) {
                 addNotification({
-                  id: 'tx-' + tx.hash,
+                  id: notifId,
                   category: 'transfer',
                   title: `🎉 +${formatBct(info.displayAmount, 4)} BCT Alındı!`,
                   body: `${info.title} (${shortAddr(info.counterparty)}) hesabınıza ulaştı.`,
                   icon: info.icon || 'arrow_downward',
                   time: Number(tx.timestamp || Date.now() / 1000) * 1000,
-                  read: false,
+                  read: isAlreadySeen,
                   actionUrl: '#cuzdanim'
-                }, true);
+                }, shouldAlert);
               }
-            });
-            saveSeenTxHashes();
-          }
+            } else {
+              seenTxs.add(txHash);
+            }
+          });
+          saveSeenTxHashes();
         }
       } catch (_e) {}
 
       // 2. Check Space mentions and interactions
       const seenPosts = getSeenSpacePosts();
       try {
-        const spaceRes = await apiFetch('/space/feed?feed_type=latest&limit=25');
+        const spaceRes = await apiFetch('/space/feed?feed_type=latest&limit=30');
         if (spaceRes.ok && spaceRes.body && spaceRes.body.data && Array.isArray(spaceRes.body.data.posts)) {
           const posts = spaceRes.body.data.posts;
-          if (seenPosts.size === 0) {
-            posts.forEach(p => { if (p.id) seenPosts.add(p.id); });
-            saveSeenSpacePosts();
-          } else {
-            posts.forEach(post => {
-              if (!post.id || seenPosts.has(post.id)) return;
+          posts.forEach(post => {
+            if (!post.id) return;
+            const notifId = 'space-mention-' + post.id;
+            const isAlreadyInCache = notificationsCache.some(n => n.id === notifId);
+            const isAlreadySeen = seenPosts.has(post.id);
+
+            if (post.author === myAddr) {
               seenPosts.add(post.id);
+              return;
+            }
 
-              if (post.author === myAddr) return;
+            const content = String(post.content || '');
+            const isMentioned = isUserTaggedInText(content, myAddr, currentBnsHandle, bnsMyHandlesCache);
 
-              const content = String(post.content || '');
-              const authorName = post.bns_name ? `@${post.bns_name}` : shortAddr(post.author);
-              const myHandle = currentBnsHandle ? `@${currentBnsHandle}`.toLowerCase() : null;
-
-              const isMentioned = content.toLowerCase().includes(myAddr.toLowerCase()) || (myHandle && content.toLowerCase().includes(myHandle));
-
-              if (isMentioned) {
+            if (isMentioned) {
+              const shouldAlert = !isAlreadySeen && (seenPosts.size > 0);
+              seenPosts.add(post.id);
+              if (!isAlreadyInCache) {
+                const authorName = post.bns_name ? `@${post.bns_name}` : shortAddr(post.author);
                 addNotification({
-                  id: 'space-mention-' + post.id,
+                  id: notifId,
                   category: 'space',
-                  title: "💬 Space Etiketlendiniz!",
+                  title: "💬 Space'te Etiketlendiniz!",
                   body: `${authorName} gönderisinde sizden bahsetti: "${content.slice(0, 60)}..."`,
                   icon: 'forum',
                   time: Number(post.timestamp || Date.now() / 1000) * 1000,
-                  read: false,
+                  read: isAlreadySeen,
                   actionUrl: '#space'
-                }, true);
+                }, shouldAlert);
               }
-            });
-            saveSeenSpacePosts();
-          }
+            } else {
+              seenPosts.add(post.id);
+            }
+          });
+          saveSeenSpacePosts();
         }
       } catch (_e) {}
     }

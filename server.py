@@ -1378,22 +1378,16 @@ def api_space_create_post():
     logger.info(f"Space Post Created: by {author[:8]}... (0.10 BCT)")
     if push_service:
         try:
-            entities = blockchain.extract_space_entities(content)
-            for m in entities.get("mentions", []):
-                target_m = m.lstrip("@").strip()
-                target_w = None
-                if is_valid_bct_address(target_m):
-                    target_w = target_m
-                elif target_m.lower().endswith(".bct"):
-                    b_lookup = blockchain.bns_lookup(target_m)
-                    if b_lookup and b_lookup.get("owner"):
-                        target_w = b_lookup["owner"]
+            tagged_users = blockchain.resolve_tagged_wallets(content)
+            for item in tagged_users:
+                target_w = item["wallet"]
                 if target_w and target_w != author:
-                    snippet = content[:60].replace('"', "'")
+                    snippet = content[:65].replace('"', "'")
+                    display_sender = f"@{bns_name}" if bns_name else f"{author[:8]}..."
                     push_service.send_push_to_wallet(
                         target_w,
-                        title="💬 Space'te Bahsedildiniz!",
-                        body=f"@{bns_name or author[:8]} gönderisinde sizden bahsetti: {snippet}...",
+                        title="💬 Space'te Etiketlendiniz!",
+                        body=f"{display_sender} sizden bahsetti: \"{snippet}...\"",
                         url="/#space",
                         category="space"
                     )
@@ -1436,6 +1430,19 @@ def api_space_like():
         return api_response(False, message=message, status=400)
 
     logger.info(f"Space Post Liked: {post_id} by {liker[:8]}...")
+    if push_service:
+        try:
+            parent_post = blockchain.space_posts.get(post_id)
+            if parent_post and parent_post.get("author") and parent_post["author"] != liker:
+                push_service.send_push_to_wallet(
+                    parent_post["author"],
+                    title="❤️ Gönderiniz Beğenildi!",
+                    body=f"{liker[:8]}... Space gönderinizi beğendi (+0.002 BCT telif).",
+                    url="/#space",
+                    category="space"
+                )
+        except Exception as _l_err:
+            logger.debug(f"Space like push error: {_l_err}")
     return api_response(True, message=message, data=result, status=200)
 
 
@@ -1477,6 +1484,36 @@ def api_space_comment():
         return api_response(False, message=message, status=400)
 
     logger.info(f"Space Comment Added: {post_id} by {commenter[:8]}...")
+    if push_service:
+        try:
+            parent_post = blockchain.space_posts.get(post_id)
+            snippet = content[:65].replace('"', "'")
+            display_commenter = f"@{bns_name}" if bns_name else f"{commenter[:8]}..."
+
+            # 1. Notify the original author of the post (if commenter != post author)
+            if parent_post and parent_post.get("author") and parent_post["author"] != commenter:
+                push_service.send_push_to_wallet(
+                    parent_post["author"],
+                    title="💬 Gönderinize Yorum Yapıldı!",
+                    body=f"{display_commenter}: \"{snippet}...\"",
+                    url="/#space",
+                    category="space"
+                )
+
+            # 2. Notify anyone tagged with # or @ in the comment
+            tagged_users = blockchain.resolve_tagged_wallets(content)
+            for item in tagged_users:
+                target_w = item["wallet"]
+                if target_w and target_w != commenter and (not parent_post or target_w != parent_post.get("author")):
+                    push_service.send_push_to_wallet(
+                        target_w,
+                        title="💬 Yorumda Etiketlendiniz!",
+                        body=f"{display_commenter} yorumda sizden bahsetti: \"{snippet}...\"",
+                        url="/#space",
+                        category="space"
+                    )
+        except Exception as _c_err:
+            logger.debug(f"Space comment push error: {_c_err}")
     return api_response(True, message=message, data=result, status=201)
 
 

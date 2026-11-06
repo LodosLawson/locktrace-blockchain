@@ -941,14 +941,72 @@ class Blockchain:
     def extract_space_entities(text: str) -> dict:
         """Extracts mentions (@), hashtags (#), and cashtags ($) from space post content."""
         raw = text or ""
-        hashtags = list(dict.fromkeys(re.findall(r"#([a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ\-]+)", raw)))
+        raw_hash = re.findall(r"#([a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ\-\.]+)", raw)
+        hashtags = list(dict.fromkeys([h.rstrip(".,!?:;").strip() for h in raw_hash if h.rstrip(".,!?:;").strip()]))
         cashtags = list(dict.fromkeys(re.findall(r"\$([a-zA-Z0-9_]{2,10})\b", raw)))
-        mentions = list(dict.fromkeys(re.findall(r"@([a-zA-Z0-9_\-\.]+)", raw)))
+        raw_ment = re.findall(r"@([a-zA-Z0-9_\-\.]+)", raw)
+        mentions = list(dict.fromkeys([m.rstrip(".,!?:;").strip() for m in raw_ment if m.rstrip(".,!?:;").strip()]))
         return {
             "hashtags": [f"#{h}" for h in hashtags],
             "cashtags": [f"${c.upper()}" for c in cashtags],
             "mentions": [f"@{m}" for m in mentions]
         }
+
+    def resolve_tagged_wallets(self, text: str) -> list:
+        """
+        Extracts all user/address tags (# or @ prefixed) and bare addresses from text.
+        Resolves BNS handles (.bct) and direct BCT addresses,
+        returning a list of unique dicts: [{'wallet': addr, 'tag': matched_tag, 'bns': handle_or_none}].
+        Supports:
+          - Direct addresses: #BCT123... or @BCT123... or bare BCT123...
+          - BNS domains: #satoshi.bct or @satoshi.bct
+          - Bare handles: #satoshi or @satoshi (resolves satoshi.bct if registered)
+        """
+        raw = text or ""
+        tokens = re.findall(r"[#@]([a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ\-\.]+)", raw)
+        bare_addrs = re.findall(r"\b(BCT[a-fA-F0-9]{40})\b", raw)
+
+        candidates = [t.rstrip(".,!?:;").strip() for t in tokens if t.strip()]
+        candidates.extend(bare_addrs)
+
+        results = []
+        seen_wallets = set()
+
+        for clean in candidates:
+            if not clean:
+                continue
+
+            target_wallet = None
+            bns_resolved = None
+
+            # Case A: Direct BCT address
+            if is_valid_bct_address(clean):
+                target_wallet = clean
+
+            # Case B: Explicit .bct domain
+            elif clean.lower().endswith(".bct"):
+                b_lookup = self.bns_lookup(clean)
+                if b_lookup and b_lookup.get("owner"):
+                    target_wallet = b_lookup["owner"]
+                    bns_resolved = clean.lower()
+
+            # Case C: Bare handle without .bct suffix (check if <handle>.bct is registered)
+            else:
+                candidate = f"{clean.lower()}.bct"
+                b_lookup = self.bns_lookup(candidate)
+                if b_lookup and b_lookup.get("owner"):
+                    target_wallet = b_lookup["owner"]
+                    bns_resolved = candidate
+
+            if target_wallet and target_wallet not in seen_wallets:
+                seen_wallets.add(target_wallet)
+                results.append({
+                    "wallet": target_wallet,
+                    "tag": clean,
+                    "bns": bns_resolved
+                })
+
+        return results
 
     def get_space_feed(self, limit: int = 50, feed_type: str = "for_you", tag: str = "", author: str = "") -> list:
         with self.lock:
