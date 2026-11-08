@@ -1834,6 +1834,10 @@ class LockTraceNode:
                             "nonce": nonce,
                             "primary_name": rev_info.get("primary_name", ""),
                             "owned_names": rev_info.get("owned_names", []),
+                            "followers": [],
+                            "following": [],
+                            "followers_count": 0,
+                            "following_count": 0,
                             "posts_count": len(user_posts),
                             "posts": sorted(user_posts, key=lambda x: float(x.get("timestamp", 0)), reverse=True)[:25]
                         }
