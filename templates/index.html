@@ -225,7 +225,7 @@
         </div>
         <div class="flex flex-col">
           <span class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.9.5</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v1.9.8</span>
         </div>
       </div>
 
@@ -555,7 +555,7 @@
                 </div>
                 <h3 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Intermediary-Free Creator Royalties</h3>
                 <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  Ad networks that monetize your data are eliminated. When someone likes your post, <strong>+0.002 BCT</strong> is instantly paid on-chain to your wallet, and thoughtful comments deliver <strong>+0.005 BCT</strong> in direct royalties.
+                  Ad networks that monetize your data are eliminated. When someone likes your post, <strong>+0.002 BCT</strong> is instantly paid on-chain to your wallet, and thoughtful comments deliver <strong>+0.004 BCT</strong> in direct royalties.
                 </p>
               </div>
 
@@ -1960,7 +1960,7 @@
 
               <!-- Main Textarea: Clean, Spacious, Comfortable Typing Area -->
               <div class="w-full">
-                <textarea class="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/50 text-[15px] sm:text-[16px] leading-relaxed resize-none focus:outline-none focus:ring-0 p-0 min-h-[85px] sm:min-h-[95px] font-normal" id="spacePostInput" maxlength="280" oninput="updateSpaceCharCount()" onpaste="setTimeout(updateSpaceCharCount, 20)" onkeydown="if((event.ctrlKey || event.metaKey) && event.key === 'Enter'){ event.preventDefault(); publishSpacePost(); }" placeholder="Seal your thought on-chain... (0.05 BCT)" rows="3"></textarea>
+                <textarea class="w-full bg-transparent text-on-surface placeholder:text-on-surface-variant/50 text-[15px] sm:text-[16px] leading-relaxed resize-none focus:outline-none focus:ring-0 p-0 min-h-[85px] sm:min-h-[95px] font-normal" id="spacePostInput" maxlength="280" oninput="updateSpaceCharCount()" onpaste="setTimeout(updateSpaceCharCount, 20)" onkeydown="if((event.ctrlKey || event.metaKey) && event.key === 'Enter'){ event.preventDefault(); publishSpacePost(); }" placeholder="Seal your thought on-chain... (0.10 BCT)" rows="3"></textarea>
               </div>
 
               <!-- Bottom Bar: Quick Token Pills & Dynamic Post Button (Anti-Wrap single flex row) -->
@@ -1981,7 +1981,7 @@
                   </button>
                   <span id="composerActiveTopicPill" class="hidden"></span>
                   <span class="hidden xs:inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10.5px] font-mono border border-primary/20 shrink-0">
-                    <span>0.05 BCT</span>
+                    <span>0.10 BCT</span>
                   </span>
                 </div>
 
@@ -2117,7 +2117,7 @@
           <!-- Header & Documentation Badge -->
           <div class="flex flex-col gap-1 mt-space-sm">
             <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE MASTER DOCS v1.9.5</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE MASTER DOCS v1.9.8</span>
               <span class="text-outline text-xs">•</span>
               <span class="text-on-surface-variant font-mono text-xs">Open Source &amp; Decentralized Protocol</span>
             </div>
@@ -2163,7 +2163,7 @@
               </div>
               <div class="flex flex-col">
                 <div class="flex items-center gap-2">
-                  <h2 class="font-headline-sm text-sm sm:text-base text-on-surface font-bold leading-tight">Official Technical Whitepaper (v1.9.5)</h2>
+                  <h2 class="font-headline-sm text-sm sm:text-base text-on-surface font-bold leading-tight">Official Technical Whitepaper (v1.9.8)</h2>
                   <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-mono text-[10px] font-bold">PDF</span>
                 </div>
                 <p class="text-xs text-on-surface-variant line-clamp-1">Dual 70/30 Hybrid PoW/Quorum Consensus, Tokenomics, Cryptography &amp; Space Protocol</p>
@@ -2243,7 +2243,7 @@
                 <div class="flex items-center gap-2">
                   <span class="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary font-mono text-[11px] font-semibold flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                    <span>v1.9.5 Active</span>
+                    <span>v1.9.8 Active</span>
                   </span>
                   <span class="px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/20 text-on-surface-variant font-mono text-[11px]">
                     4-Tier Stack
@@ -2397,10 +2397,10 @@
                 <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
                   <div class="flex items-center justify-between text-primary font-bold">
                     <span>A) PUBLISH POST (space_post)</span>
-                    <span>Fee: 0.05 BCT</span>
+                    <span>Fee: 0.10 BCT</span>
                   </div>
                   <p class="text-on-surface-variant font-sans">
-                    The author pays 0.05 BCT to seal the post into the blockchain. This fee enters the Treasury to prevent spam and enhance content quality.
+                    The author pays 0.10 BCT to seal the post into the blockchain (80% returns to the Treasury Pool, 20% rewards active PoW miners and validators).
                   </p>
                   <code class="text-on-surface bg-surface-container p-2 rounded break-all">Canonical Signature: {author_address}:{content}</code>
                 </div>
@@ -2408,10 +2408,10 @@
                 <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
                   <div class="flex items-center justify-between text-secondary font-bold">
                     <span>B) LIKE ROYALTY (space_like)</span>
-                    <span>Cost: 0.003 BCT (+0.002 BCT to Author)</span>
+                    <span>Cost: 0.01 BCT (+0.002 BCT to Author)</span>
                   </div>
                   <p class="text-on-surface-variant font-sans">
-                    Liking a post costs 0.003 BCT. Of this, <strong>+0.002 BCT is instantly paid on-chain to the author's wallet</strong>; 0.001 BCT goes to Treasury.
+                    Liking a post costs 0.01 BCT. Of this, <strong>+0.002 BCT (20%) is instantly paid on-chain to the author's wallet</strong>; 0.007 BCT (70%) returns to Treasury and 0.001 BCT (10%) rewards validators.
                   </p>
                   <code class="text-on-surface bg-surface-container p-2 rounded break-all">Canonical Signature: {liker_address}:{post_id}</code>
                 </div>
@@ -2419,10 +2419,10 @@
                 <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
                   <div class="flex items-center justify-between text-primary font-bold">
                     <span>C) COMMENT ROYALTY (space_comment)</span>
-                    <span>Cost: 0.02 BCT (+0.005 BCT to Author)</span>
+                    <span>Cost: 0.02 BCT (+0.004 BCT to Author)</span>
                   </div>
                   <p class="text-on-surface-variant font-sans">
-                    Posting an on-chain comment creates a 0.02 BCT transaction. <strong>+0.005 BCT is transferred to the original author's wallet</strong>; the remainder secures the network and Treasury.
+                    Posting an on-chain comment creates a 0.02 BCT transaction. <strong>+0.004 BCT (20%) is transferred to the original author's wallet</strong>; 0.014 BCT (70%) returns to Treasury and 0.002 BCT (10%) rewards validators.
                   </p>
                   <code class="text-on-surface bg-surface-container p-2 rounded break-all">Canonical Signature: {commenter_address}:{post_id}:{content}</code>
                 </div>
@@ -2898,7 +2898,7 @@
               </div>
               <div class="flex flex-col">
                 <div class="flex items-center gap-2">
-                  <h3 class="font-headline-sm text-sm sm:text-base font-semibold text-on-surface">Cryptographic Integrity Shield (v1.9.5)</h3>
+                  <h3 class="font-headline-sm text-sm sm:text-base font-semibold text-on-surface">Cryptographic Integrity Shield (v1.9.8)</h3>
                   <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">ACTIVE &bull; VERIFIED</span>
                 </div>
                 <p class="text-xs text-on-surface-variant mt-0.5">
@@ -3697,7 +3697,7 @@
           <span>Merkle Proof</span>
         </button>
         <button class="h-[44px] rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-label-md font-semibold transition-colors" onclick="closeTxModal()" type="button">
-          Kapat
+          Close
         </button>
       </div>
     </div>
@@ -5145,7 +5145,7 @@
       const modalRpc = document.getElementById('secModalCurrentRpc');
       if (modalRpc) modalRpc.textContent = active;
 
-      const netTxt = isLocal ? 'Yerel Node Aktif' : 'LockTrace Mainnet';
+      const netTxt = isLocal ? 'Local Node Active' : 'LockTrace Mainnet';
       const mobLbl = document.getElementById('mobileNetLabel');
       const dskLbl = document.getElementById('desktopNetLabel');
       if (mobLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) mobLbl.textContent = netTxt;
@@ -5769,13 +5769,13 @@
       let prefixLabel = isIncoming ? 'From' : 'To';
 
       if (isRoyalty) {
-        title = 'Space Telif Geliri';
+        title = 'Space Creator Royalty';
         icon = 'workspace_premium';
         iconColor = 'text-primary';
         amountNum = Number(tx.royalty_amount || 0.002);
         sign = '+';
         counterparty = tx.sender;
-        prefixLabel = 'Okuyucu';
+        prefixLabel = 'Reader';
       } else if (txType === 'welcome_bonus' || (tx.sender === 'BCT_TREASURY_VAULT' && isIncoming && amountNum === 1)) {
         title = 'Genesis Welcome Bonus';
         icon = 'redeem';
@@ -5796,7 +5796,7 @@
         icon = 'forum';
         iconColor = 'text-secondary';
         sign = '-';
-        prefixLabel = 'Protokol';
+        prefixLabel = 'Protocol';
         counterparty = 'LockTrace Space';
       } else if (txType === 'space_like') {
         title = 'Space Like Royalty';
@@ -5808,11 +5808,15 @@
         icon = 'chat_bubble';
         iconColor = 'text-secondary';
         sign = '-';
+      } else if (txType === 'bns_buy' || txType === 'bns_accept_offer') {
+        title = isIncoming ? 'BNS Handle Sold' : 'BNS Handle Purchased';
+        icon = 'badge';
+        iconColor = 'text-emerald-400';
       } else {
         title = isIncoming ? 'BCT Received' : 'BCT Sent';
       }
 
-      const totalOut = (isIncoming && txType === 'transfer')
+      const totalOut = (isIncoming && (txType === 'transfer' || txType === 'bns_buy' || txType === 'bns_accept_offer'))
         ? Math.max(0, Number((amountNum - Number(tx.fee || 0)).toFixed(8)))
         : amountNum;
 
@@ -6435,7 +6439,7 @@
           await refreshPersonalTransactions();
           switchTab('cuzdanim');
         } else {
-          showToast(body.message || 'Transfer reddedildi', 'error', true);
+          showToast(body.message || 'Transfer rejected', 'error', true);
         }
       } catch (err) {
         showToast(err.message || 'Signing or network error', 'error', true);
@@ -6527,7 +6531,7 @@
         btn.classList.add('bg-primary-container', 'text-on-primary-container');
         setTimeout(() => {
           icon.textContent = 'content_copy';
-          text.textContent = 'Kelimeleri Kopyala';
+          text.textContent = 'Copy Seed Words';
           btn.classList.remove('bg-primary-container', 'text-on-primary-container');
         }, 1800);
       }
@@ -8159,9 +8163,9 @@
         { method: 'GET', path: '/api/v1/bns/lookup/<query>', desc: 'BNS handle lookup & reverse address resolution (.bct handle to address)', testable: '/bns/lookup/locktrace.bct' },
         { method: 'GET', path: '/api/v1/bns/available/<name>', desc: 'Check .bct handle availability and character-tier registration pricing', testable: '/bns/available/satoshi' },
         { method: 'GET', path: '/api/v1/bns/names?limit=25', desc: 'Directory of registered BNS handles and secondary marketplace listings', testable: '/bns/names?limit=10' },
-        { method: 'POST', path: '/api/v1/bns/register', desc: 'Register a new .bct handle with 80% Treasury burn and 20% miner rewards', testable: null },
+        { method: 'POST', path: '/api/v1/bns/register', desc: 'Register a new .bct handle with 80% Treasury pool return (Havuza Dönüş) and 20% miner rewards', testable: null },
         { method: 'GET', path: '/api/v1/space/feed?limit=50', desc: 'On-chain LockTrace Space social thoughts, creator royalty metrics, and verified posts', testable: '/space/feed?limit=5' },
-        { method: 'POST', path: '/api/v1/space/post', desc: 'Publish a permanent, censorship-resistant thought to the blockchain (0.05 BCT fee)', testable: null },
+        { method: 'POST', path: '/api/v1/space/post', desc: 'Publish a permanent, censorship-resistant thought to the blockchain (0.10 BCT fee)', testable: null },
         { method: 'POST', path: '/api/v1/space/like', desc: 'Like a post with hybrid batching (20s window / 15 likes quota) delivering +0.002 BCT royalty to creator', testable: null },
         { method: 'POST', path: '/api/v1/space/comment', desc: 'Comment on a post with hybrid batching (50s window / 10 comments quota) delivering +0.004 BCT royalty to author', testable: null },
         { method: 'POST', path: '/api/v1/transaction', desc: 'Broadcast client-signed Non-Custodial SECP256k1 ECDSA transfer', testable: null },
@@ -8199,7 +8203,7 @@
         const { body } = await apiFetch(subPath);
         pre.textContent = JSON.stringify(body, null, 2);
       } catch (e) {
-        pre.textContent = 'Hata: ' + e.message;
+        pre.textContent = 'Error: ' + e.message;
       }
     }
 
@@ -8242,6 +8246,34 @@
         }
         if (!document.getElementById('ios-pwa-modal')?.classList.contains('hidden')) {
           closeIosPwaModal();
+          return;
+        }
+        if (!document.getElementById('notificationModal')?.classList.contains('hidden')) {
+          if (typeof closeNotificationModal === 'function') closeNotificationModal();
+          return;
+        }
+        if (!document.getElementById('userProfileModal')?.classList.contains('hidden')) {
+          if (typeof closeUserProfileModal === 'function') closeUserProfileModal();
+          return;
+        }
+        if (!document.getElementById('bnsOfferModal')?.classList.contains('hidden')) {
+          if (typeof closeBnsOfferModal === 'function') closeBnsOfferModal();
+          return;
+        }
+        if (!document.getElementById('bnsSetPriceModal')?.classList.contains('hidden')) {
+          if (typeof closeBnsSetPriceModal === 'function') closeBnsSetPriceModal();
+          return;
+        }
+        if (!document.getElementById('bnsTransferModal')?.classList.contains('hidden')) {
+          if (typeof closeBnsTransferModal === 'function') closeBnsTransferModal();
+          return;
+        }
+        if (!document.getElementById('bnsBuyModal')?.classList.contains('hidden')) {
+          if (typeof closeBnsBuyModal === 'function') closeBnsBuyModal();
+          return;
+        }
+        if (!document.getElementById('mobileMenuModal')?.classList.contains('hidden')) {
+          if (typeof closeMobileMenuModal === 'function') closeMobileMenuModal();
           return;
         }
         if (activeDetailPostId !== null) {
@@ -8360,7 +8392,7 @@
         rpcState.integrityStatus = {
           verified: allOk,
           sigValid,
-          version: info.version || '1.9.5',
+          version: info.version || '1.9.8',
           sha256: info.index_html_sha256 || '--',
           ipfsCid: info.ipfs_cid_v1 || '--',
           onchainBlock: info.onchain_anchor ? info.onchain_anchor.block_index : null
@@ -8539,7 +8571,7 @@
       const balanceConsistent = balances.length <= 1 || balances.every(b => Math.abs(b - balances[0]) < 0.000001);
 
       let lines = reports.map(r => {
-        const balTxt = r.balance !== null ? ` | Bakiye: ${r.balance.toFixed(4)} BCT` : '';
+        const balTxt = r.balance !== null ? ` | Balance: ${r.balance.toFixed(4)} BCT` : '';
         return `✓ ${r.origin} -> Block #${r.blocks}${balTxt}`;
       });
       if (balanceConsistent) {
