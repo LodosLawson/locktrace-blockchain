@@ -5149,6 +5149,10 @@
       });
     }
 
+    function formatCrypto(val, maxDec = 4) {
+      return formatBct(val, maxDec);
+    }
+
     function formatTimeAgo(ts) {
       const sec = Number(ts || 0);
       if (!sec) return 'Just now';
@@ -7289,21 +7293,24 @@
     }
 
     async function loadExplorerBaseTransactions() {
+      const list = document.getElementById('feedBaseTxsList');
       try {
-        const list = document.getElementById('feedBaseTxsList');
-        if (list && list.children.length === 0) {
-          list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Loading Base L2 transactions...</div>';
-        }
         const res = await apiFetch('/bridge/base-transactions?limit=30');
-        if (res && res.data && res.data.transactions) {
-          renderExplorerBaseTransactions(res.data.transactions);
-        } else if (res && res.body && res.body.data && res.body.data.transactions) {
-          renderExplorerBaseTransactions(res.body.data.transactions);
+        let txs = null;
+        if (res && res.body && res.body.data && Array.isArray(res.body.data.transactions)) {
+          txs = res.body.data.transactions;
+        } else if (res && res.data && Array.isArray(res.data.transactions)) {
+          txs = res.data.transactions;
+        }
+
+        if (txs) {
+          renderExplorerBaseTransactions(txs);
         } else {
-          if (list) list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">No Base transactions found.</div>';
+          if (list) list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Henüz onaylanmış Base L2 köprüleme işlemi bulunmuyor.</div>';
         }
       } catch (err) {
-        console.warn('Error loading Base transactions:', err);
+        console.error('Error loading Base transactions:', err);
+        if (list) list.innerHTML = `<div class="p-4 text-center font-body-sm text-rose-400 bg-surface-container-low rounded-xl">İşlemler yüklenemedi: ${escapeHtml(err.message || 'Hata')}</div>`;
       }
     }
 
@@ -7311,49 +7318,55 @@
       const list = document.getElementById('feedBaseTxsList');
       if (!list) return;
       if (!txs || !txs.length) {
-        list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">No Base L2 cross-chain transactions recorded yet.</div>';
+        list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Henüz onaylanmış Base L2 köprüleme işlemi bulunmuyor.</div>';
         return;
       }
 
-      list.innerHTML = txs.map(t => {
-        const isMint = t.direction === 'L1_TO_EVM';
-        const typeBadge = isMint
-          ? '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold font-mono flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Base wBCT Mint (Bridge In)</span>'
-          : '<span class="px-2.5 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 text-[11px] font-semibold font-mono flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Base wBCT Burn (Unlock to L1)</span>';
+      try {
+        list.innerHTML = txs.map(t => {
+          const isMint = t.direction === 'L1_TO_EVM';
+          const typeBadge = isMint
+            ? '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold font-mono flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Base wBCT Mint (Bridge In)</span>'
+            : '<span class="px-2.5 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 text-[11px] font-semibold font-mono flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Base wBCT Burn (Unlock to L1)</span>';
 
-        const statusColor = t.status === 'COMPLETED' ? 'text-emerald-400' : (t.status === 'LOCKED' ? 'text-secondary' : (t.status === 'FAILED' ? 'text-rose-400' : 'text-amber-400'));
-        const displayEvm = t.tx_hash_evm ? (t.tx_hash_evm.slice(0, 10) + '...' + t.tx_hash_evm.slice(-8)) : 'Pending L2 Broadcast';
-        const evmLink = t.basescan_tx_url
-          ? `<a href="${escapeHtml(t.basescan_tx_url)}" target="_blank" rel="noopener noreferrer" class="font-mono text-xs font-semibold text-secondary hover:underline flex items-center gap-1" title="View on BaseScan">${escapeHtml(displayEvm)}<span class="material-symbols-outlined text-[13px]">open_in_new</span></a>`
-          : `<span class="font-mono text-xs text-on-surface-variant">${escapeHtml(displayEvm)}</span>`;
+          const statusColor = t.status === 'COMPLETED' ? 'text-emerald-400' : (t.status === 'LOCKED' ? 'text-secondary' : (t.status === 'FAILED' ? 'text-rose-400' : 'text-amber-400'));
+          const displayEvm = t.tx_hash_evm ? (t.tx_hash_evm.slice(0, 10) + '...' + t.tx_hash_evm.slice(-8)) : 'Beklemede (L2)';
+          const evmLink = t.basescan_tx_url
+            ? `<a href="${escapeHtml(t.basescan_tx_url)}" target="_blank" rel="noopener noreferrer" class="font-mono text-xs font-semibold text-secondary hover:underline flex items-center gap-1" title="BaseScan üzerinde görüntüle">${escapeHtml(displayEvm)}<span class="material-symbols-outlined text-[13px]">open_in_new</span></a>`
+            : `<span class="font-mono text-xs text-on-surface-variant">${escapeHtml(displayEvm)}</span>`;
 
-        const bctDisplay = t.bct_address ? (t.bct_address.slice(0, 8) + '...' + t.bct_address.slice(-6)) : '--';
-        const evmRecipientDisplay = t.evm_address ? (t.evm_address.slice(0, 8) + '...' + t.evm_address.slice(-6)) : '--';
-        const timeAgo = t.created_at ? formatTimeAgo(t.created_at) : 'recently';
+          const bctDisplay = t.bct_address ? (t.bct_address.slice(0, 8) + '...' + t.bct_address.slice(-6)) : '--';
+          const evmRecipientDisplay = t.evm_address ? (t.evm_address.slice(0, 8) + '...' + t.evm_address.slice(-6)) : '--';
+          const timeAgo = t.created_at ? formatTimeAgo(t.created_at) : 'recently';
+          const amountStr = typeof formatBct === 'function' ? formatBct(t.amount, 4) : Number(t.amount || 0).toFixed(4);
 
-        return `
-          <div class="p-3 sm:p-3.5 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col gap-2 transition-all">
-            <div class="flex items-center justify-between gap-2 flex-wrap">
-              <div class="flex items-center gap-2 flex-wrap">
-                ${typeBadge}
-                ${evmLink}
+          return `
+            <div class="p-3 sm:p-3.5 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col gap-2 transition-all">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <div class="flex items-center gap-2 flex-wrap">
+                  ${typeBadge}
+                  ${evmLink}
+                </div>
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-sm font-bold text-on-surface">${amountStr} wBCT</span>
+                  <span class="text-[11px] font-mono uppercase font-semibold ${statusColor}">${escapeHtml(t.status)}</span>
+                </div>
               </div>
-              <div class="flex items-center gap-2">
-                <span class="font-mono text-sm font-bold text-on-surface">${formatCrypto(t.amount)} wBCT</span>
-                <span class="text-[11px] font-mono uppercase font-semibold ${statusColor}">${escapeHtml(t.status)}</span>
+              <div class="flex items-center justify-between gap-2 text-[11.5px] text-on-surface-variant flex-wrap pt-1 border-t border-outline-variant/10">
+                <div class="flex items-center gap-2 font-mono flex-wrap">
+                  <span>L1: <button type="button" onclick="openUserProfile('${escapeHtml(t.bct_address)}')" class="text-primary hover:underline font-semibold" title="${escapeHtml(t.bct_address)}">${escapeHtml(bctDisplay)}</button></span>
+                  <span>&bull;</span>
+                  <span>Base EVM: <a href="https://basescan.org/address/${escapeHtml(t.evm_address)}" target="_blank" rel="noopener noreferrer" class="text-secondary hover:underline" title="${escapeHtml(t.evm_address)}">${escapeHtml(evmRecipientDisplay)}</a></span>
+                </div>
+                <span class="text-[11px] font-sans text-on-surface-variant/80">${timeAgo}</span>
               </div>
             </div>
-            <div class="flex items-center justify-between gap-2 text-[11.5px] text-on-surface-variant flex-wrap pt-1 border-t border-outline-variant/10">
-              <div class="flex items-center gap-2 font-mono flex-wrap">
-                <span>L1: <button type="button" onclick="openUserProfile('${escapeHtml(t.bct_address)}')" class="text-primary hover:underline font-semibold" title="${escapeHtml(t.bct_address)}">${escapeHtml(bctDisplay)}</button></span>
-                <span>&bull;</span>
-                <span>Base EVM: <a href="https://basescan.org/address/${escapeHtml(t.evm_address)}" target="_blank" rel="noopener noreferrer" class="text-secondary hover:underline" title="${escapeHtml(t.evm_address)}">${escapeHtml(evmRecipientDisplay)}</a></span>
-              </div>
-              <span class="text-[11px] font-sans text-on-surface-variant/80">${timeAgo}</span>
-            </div>
-          </div>
-        `;
-      }).join('');
+          `;
+        }).join('');
+      } catch (e) {
+        console.error('renderExplorerBaseTransactions error:', e);
+        list.innerHTML = `<div class="p-4 text-center font-body-sm text-rose-400 bg-surface-container-low rounded-xl">İşlem kartları render edilirken hata oluştu: ${escapeHtml(e.message)}</div>`;
+      }
     }
 
     function renderExplorerHolders(holders) {
