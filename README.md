@@ -4,6 +4,7 @@
 [![Total Supply](https://img.shields.io/badge/Total%20Supply-1%20Trillion%20BCT-2563eb?style=for-the-badge)](https://locktrace.space)
 [![Base Mainnet wBCT](https://img.shields.io/badge/Base%20L2-wBCT%20Bridge-0052ff?style=for-the-badge&logo=coinbase)](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/LodosLawson/locktrace-blockchain)
+[![Telegram](https://img.shields.io/badge/Telegram-Channel-229ED9?style=for-the-badge&logo=telegram)](https://t.me/+zsaG1qkAHZllZGIy)
 [![X / Twitter](https://img.shields.io/badge/X-@LockTraceSpace-000000?style=for-the-badge&logo=x)](https://x.com/LockTraceSpace)
 [![Instagram](https://img.shields.io/badge/Instagram-@locktracespace-E4405F?style=for-the-badge&logo=instagram)](https://www.instagram.com/locktracespace)
 [![Official Email](https://img.shields.io/badge/Email-locktracetoken%2Bspace%40gmail.com-EA4335?style=for-the-badge&logo=gmail)](mailto:locktracetoken+space@gmail.com)
@@ -16,6 +17,7 @@ LockTrace is an independent, high-performance Layer-1 decentralized blockchain l
 
 - **Official Web Portal & Web3 DApp:** [https://locktrace.space](https://locktrace.space)
 - **Official Contact & Inquiries:** [`locktracetoken@gmail.com`](mailto:locktracetoken@gmail.com) / [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com)
+- **Telegram Channel:** [https://t.me/+zsaG1qkAHZllZGIy](https://t.me/+zsaG1qkAHZllZGIy)
 - **X (Twitter):** [@LockTraceSpace](https://x.com/LockTraceSpace)
 - **Instagram:** [@locktracespace](https://www.instagram.com/locktracespace)
 - **GitHub Repository:** [LodosLawson/locktrace-blockchain](https://github.com/LodosLawson/locktrace-blockchain)
