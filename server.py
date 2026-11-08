@@ -1531,6 +1531,69 @@ def api_space_comment():
     return api_response(True, message=message, data=result, status=201)
 
 
+@app.route("/api/v1/space/follow", methods=["POST"])
+def api_space_follow():
+    """
+    Follows an on-chain creator or address (Requires cryptographic wallet authentication).
+    Cost: 1.00 BCT (50% to creator, 30% to miner/validator fee pool, 20% to Treasury).
+    """
+    if not check_rate_limit("space_follow", limit=20, window_seconds=60):
+        return api_response(False, message="Following too fast. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    follower = str(data.get("follower", "") or "").strip()
+    target = str(data.get("target", "") or "").strip()
+
+    if not follower or not target:
+        return api_response(False, message="Fields 'follower' and 'target' are required.", status=400)
+
+    canonical = f"follow:{follower}:{target}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, follower, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.follow_creator(
+        follower=follower,
+        target=target,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Creator Followed: {target[:8]}... by {follower[:8]}... (1.00 BCT)")
+    if push_service:
+        try:
+            push_service.send_push_to_wallet(
+                target,
+                title="🌟 Yeni Bir Takipçiniz Var!",
+                body=f"{follower[:8]}... sizi takip etmeye başladı (+0.50 BCT kazanç).",
+                url="/#space",
+                category="space"
+            )
+        except Exception as _f_err:
+            logger.debug(f"Space follow push error: {_f_err}")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/space/suggested-voices", methods=["GET"])
+def api_space_suggested_voices():
+    """
+    Returns verified on-chain creator accounts for the Suggested Voices sidebar.
+    """
+    viewer = str(request.args.get("viewer", "") or "").strip()
+    try:
+        limit = min(max(int(request.args.get("limit", 5)), 1), 20)
+    except Exception:
+        limit = 5
+
+    voices = blockchain.get_suggested_voices(viewer_address=viewer, limit=limit)
+    return api_response(True, message="Suggested voices retrieved", data={"voices": voices})
+
+
 @app.route("/api/v1/profile/<path:query>", methods=["GET"])
 def api_get_user_profile(query: str):
     """
