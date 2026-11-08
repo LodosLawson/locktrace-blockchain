@@ -301,6 +301,7 @@ class Blockchain:
         self._storage: Optional[SQLiteStorage] = None
         self._storage_dir_bound = ""
         self._loaded_revision = -1
+        self._profile_cache: Dict[str, Tuple[int, float, dict]] = {}
         self._stop_sequencer: Optional[threading.Event] = None
         self._sequencer_thread: Optional[threading.Thread] = None
 
@@ -2125,15 +2126,22 @@ class Blockchain:
         authored posts, and transaction history.
         """
         with self.lock:
-            self._load_state()
             raw = str(address_or_handle or "").strip()
             if not raw:
                 return None
 
-            clean = raw.lower()
-            if clean.startswith("@"):
-                clean = clean[1:]
+            clean_cache_key = raw.lower()
+            if clean_cache_key.startswith("@"):
+                clean_cache_key = clean_cache_key[1:]
 
+            now = time.time()
+            cached = self._profile_cache.get(clean_cache_key)
+            if cached and cached[0] == self._loaded_revision and (now - cached[1] < 10.0):
+                return dict(cached[2])
+
+            self._load_state()
+
+            clean = clean_cache_key
             target_address = ""
             primary_handle = ""
 
@@ -2249,7 +2257,7 @@ class Blockchain:
                                 "extra_data": tx.extra_data
                             })
 
-            return {
+            profile_res = {
                 "address": target_address,
                 "primary_handle": primary_handle,
                 "balance": balance,
@@ -2270,6 +2278,11 @@ class Blockchain:
                 "recent_posts": user_posts[:20],
                 "recent_transactions": recent_txs
             }
+
+            if len(self._profile_cache) >= 20000:
+                self._profile_cache.clear()
+            self._profile_cache[clean_cache_key] = (self._loaded_revision, now, dict(profile_res))
+            return profile_res
 
 
     def execute_fiat_purchase(self, buyer_address: str, fiat_amount: float,
@@ -3174,24 +3187,44 @@ class Blockchain:
         with self.lock:
             self._load_state()
             clean_addr = address.strip()
-            txs = []
-            for block in self.chain:
-                for tx in block.transactions:
-                    is_author_royalty = (
-                        tx.tx_type in ("space_like", "space_comment")
-                        and bool(tx.extra_data)
-                        and tx.extra_data.get("author") == clean_addr
-                        and tx.sender != clean_addr
-                    )
-                    if tx.sender == clean_addr or tx.receiver == clean_addr or is_author_royalty:
-                        tx_dict = tx.to_dict()
-                        tx_dict["block_index"] = block.index
-                        tx_dict["block_hash"] = block.hash
-                        tx_dict["status"] = "confirmed"
-                        if is_author_royalty:
-                            tx_dict["is_author_royalty"] = True
-                            tx_dict["royalty_amount"] = tx.extra_data.get("author_cut", 0.0)
-                        txs.append(tx_dict)
+
+            # Fast indexed path: query SQLite index
+            storage = self._get_storage()
+            confirmed_txs = []
+            if storage:
+                try:
+                    confirmed_txs = storage.get_transactions_for_address(clean_addr, limit=200)
+                    for ctx in confirmed_txs:
+                        ctx["status"] = "confirmed"
+                        extra = ctx.get("extra_data") or {}
+                        if extra.get("author") == clean_addr and ctx.get("sender") != clean_addr:
+                            ctx["is_author_royalty"] = True
+                            ctx["royalty_amount"] = extra.get("author_cut", 0.0)
+                except Exception:
+                    confirmed_txs = []
+
+            if not confirmed_txs and self.chain:
+                # Fallback to chain iteration if index not yet populated
+                for block in reversed(self.chain):
+                    for tx in block.transactions:
+                        is_author_royalty = (
+                            tx.tx_type in ("space_like", "space_comment")
+                            and bool(tx.extra_data)
+                            and tx.extra_data.get("author") == clean_addr
+                            and tx.sender != clean_addr
+                        )
+                        if tx.sender == clean_addr or tx.receiver == clean_addr or is_author_royalty:
+                            tx_dict = tx.to_dict()
+                            tx_dict["block_index"] = block.index
+                            tx_dict["block_hash"] = block.hash
+                            tx_dict["status"] = "confirmed"
+                            if is_author_royalty:
+                                tx_dict["is_author_royalty"] = True
+                                tx_dict["royalty_amount"] = tx.extra_data.get("author_cut", 0.0)
+                            confirmed_txs.append(tx_dict)
+
+            # Mempool pending transactions
+            pending_txs = []
             for tx in self.pending_transactions:
                 is_author_royalty = (
                     tx.tx_type in ("space_like", "space_comment")
@@ -3207,8 +3240,9 @@ class Blockchain:
                     if is_author_royalty:
                         tx_dict["is_author_royalty"] = True
                         tx_dict["royalty_amount"] = tx.extra_data.get("author_cut", 0.0)
-                    txs.append(tx_dict)
-            return list(reversed(txs))
+                    pending_txs.append(tx_dict)
+
+            return pending_txs + confirmed_txs
 
     def get_account_nonce(self, address: str) -> int:
         """Compute exact sequential outgoing transaction nonce for an address from on-chain + pending history."""
