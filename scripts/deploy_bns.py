@@ -15,7 +15,7 @@ def run_ssh(cmd):
         VPS_HOST, cmd
     ]
     print(f"[*] Running SSH command: {cmd[:120]}...")
-    res = subprocess.run(full_cmd, capture_output=True, text=True, timeout=60)
+    res = subprocess.run(full_cmd, capture_output=True, text=True, timeout=120)
     print("STDOUT:", res.stdout)
     if res.stderr:
         print("STDERR:", res.stderr)
@@ -30,7 +30,7 @@ def run_scp(local_path, remote_path):
         local_path, f"{VPS_HOST}:{remote_path}"
     ]
     print(f"[*] Uploading: {local_path} -> {remote_path}")
-    res = subprocess.run(full_cmd, capture_output=True, text=True, timeout=60)
+    res = subprocess.run(full_cmd, capture_output=True, text=True, timeout=120)
     if res.returncode != 0:
         print("SCP Error:", res.stderr)
         return False
@@ -45,7 +45,7 @@ def run_download(remote_path, local_path):
         f"{VPS_HOST}:{remote_path}", local_path
     ]
     print(f"[*] Downloading: {remote_path} -> {local_path}")
-    res = subprocess.run(full_cmd, capture_output=True, text=True, timeout=60)
+    res = subprocess.run(full_cmd, capture_output=True, text=True, timeout=120)
     if res.returncode != 0:
         print("SCP Download Error:", res.stderr)
         return False

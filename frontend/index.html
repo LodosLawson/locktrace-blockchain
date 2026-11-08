@@ -2394,63 +2394,23 @@
             </div>
           </div>
 
-          <!-- Card 2: Suggested Voices -->
+          <!-- Card 2: Suggested Voices (Real On-Chain Verified Accounts) -->
           <div class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
             <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
               <div class="flex items-center gap-2">
                 <span class="material-symbols-outlined text-secondary text-[20px]">group_add</span>
                 <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Suggested Voices</h2>
               </div>
-              <button type="button" onclick="loadSpaceFeed(); showToast('Önerilen yazarlar yenilendi');" class="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer flex items-center gap-1">
+              <button type="button" onclick="loadSuggestedVoices(); showToast('Önerilen yazarlar yenilendi');" class="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer flex items-center gap-1" title="Önerilenleri Yenile">
                 <span class="material-symbols-outlined text-[13px]">sync</span>
                 <span>Yenile</span>
               </button>
             </div>
-            <div class="flex flex-col gap-2.5">
-              <!-- Voice 1 -->
-              <div class="flex items-center justify-between gap-2.5 p-1 rounded-xl hover:bg-surface-container transition-colors">
-                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080')" title="Profilini Gör">
-                  <div class="w-9 h-9 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-primary ring-1 ring-primary/30">
-                    V
-                  </div>
-                  <div class="flex flex-col min-w-0">
-                    <span class="font-mono font-bold text-xs text-on-surface hover:text-primary transition-colors truncate">vitalik.bct</span>
-                    <span class="text-[10.5px] text-on-surface-variant truncate">Ethereum Founder</span>
-                  </div>
-                </div>
-                <button type="button" onclick="toggleFollowVoice(this, 'vitalik.bct')" class="px-3 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer">
-                  Follow
-                </button>
-              </div>
-              <!-- Voice 2 -->
-              <div class="flex items-center justify-between gap-2.5 p-1 rounded-xl hover:bg-surface-container transition-colors">
-                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('BCT_HAZINE_0000000000000000000000000000000000000000')" title="Profilini Gör">
-                  <div class="w-9 h-9 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-amber-400 ring-1 ring-amber-400/30">
-                    S
-                  </div>
-                  <div class="flex flex-col min-w-0">
-                    <span class="font-mono font-bold text-xs text-on-surface hover:text-amber-400 transition-colors truncate">satoshi.bct</span>
-                    <span class="text-[10.5px] text-on-surface-variant truncate">Bitcoin Creator</span>
-                  </div>
-                </div>
-                <button type="button" onclick="toggleFollowVoice(this, 'satoshi.bct')" class="px-3 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer">
-                  Follow
-                </button>
-              </div>
-              <!-- Voice 3 -->
-              <div class="flex items-center justify-between gap-2.5 p-1 rounded-xl hover:bg-surface-container transition-colors">
-                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('BCT3fec00e39c728050c1f1cef4cbe78fcc85881572')" title="Profilini Gör">
-                  <div class="w-9 h-9 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-emerald-400 ring-1 ring-emerald-400/30">
-                    L
-                  </div>
-                  <div class="flex flex-col min-w-0">
-                    <span class="font-mono font-bold text-xs text-on-surface hover:text-emerald-400 transition-colors truncate">lodos.bct</span>
-                    <span class="text-[10.5px] text-on-surface-variant truncate">LockTrace Core Architect</span>
-                  </div>
-                </div>
-                <button type="button" onclick="toggleFollowVoice(this, 'lodos.bct')" class="px-3 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer">
-                  Follow
-                </button>
+            <!-- Dynamic Real On-Chain Accounts Container -->
+            <div id="suggestedVoicesContainer" class="flex flex-col gap-2.5 min-h-[120px]">
+              <div class="flex items-center justify-center p-4 text-xs text-on-surface-variant font-mono">
+                <span class="material-symbols-outlined text-sm animate-spin mr-1.5">sync</span>
+                On-Chain profiller yükleniyor...
               </div>
             </div>
           </div>
@@ -5526,10 +5486,10 @@
               <div class="flex flex-col">
                 <div class="flex items-center gap-2">
                   <span class="font-mono text-sm font-bold text-on-surface">$ETH</span>
-                  <span class="font-mono text-sm font-medium text-on-surface">$3,875.00</span>
+                  <span class="font-mono text-sm font-medium text-on-surface live-eth-price-display">${getLiveEthPriceFormatted()}</span>
                   <span class="inline-flex items-center gap-0.5 px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">
                     <span class="material-symbols-outlined text-[11px]">trending_up</span>
-                    +3.4%
+                    <span class="live-eth-change-display">${window.liveEthTelemetry ? window.liveEthTelemetry.change24h : '+2.4%'}</span>
                   </span>
                 </div>
                 <span class="text-[11px] text-on-surface-variant">L1 Settlement Telemetry &bull; Blob Space Target Met</span>
@@ -5643,19 +5603,196 @@
       return '';
     }
 
-    function toggleFollowVoice(btn, handle) {
+    // ── Live ETH Telemetry ────────────────────────────────────────────────────────
+    window.liveEthTelemetry = {
+      price: 3450.00,
+      change24h: '+2.4%',
+      gwei: 12,
+      lastUpdated: 0
+    };
+
+    function getLiveEthPriceFormatted() {
+      const p = (window.liveEthTelemetry && window.liveEthTelemetry.price) ? window.liveEthTelemetry.price : 3450.00;
+      return '$' + Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function fetchLiveEthTelemetry() {
+      try {
+        const ctrl = new AbortController();
+        const timeout = setTimeout(() => ctrl.abort(), 4000);
+        const res = await fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot', { signal: ctrl.signal });
+        clearTimeout(timeout);
+        if (res.ok) {
+          const d = await res.json();
+          const p = parseFloat(d && d.data && d.data.amount);
+          if (p && !isNaN(p)) {
+            window.liveEthTelemetry.price = p;
+            window.liveEthTelemetry.lastUpdated = Date.now();
+          }
+        }
+      } catch (_) {
+        try {
+          const ctrl2 = new AbortController();
+          const timeout2 = setTimeout(() => ctrl2.abort(), 3500);
+          const res2 = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true', { signal: ctrl2.signal });
+          clearTimeout(timeout2);
+          if (res2.ok) {
+            const d2 = await res2.json();
+            if (d2 && d2.ethereum && d2.ethereum.usd) {
+              window.liveEthTelemetry.price = d2.ethereum.usd;
+              const chg = d2.ethereum.usd_24h_change;
+              if (chg !== undefined) {
+                window.liveEthTelemetry.change24h = (chg >= 0 ? '+' : '') + chg.toFixed(1) + '%';
+              }
+            }
+          }
+        } catch (e2) {}
+      }
+
+      const formatted = getLiveEthPriceFormatted();
+      document.querySelectorAll('.live-eth-price-display').forEach(el => {
+        el.textContent = formatted;
+      });
+      document.querySelectorAll('.live-eth-change-display').forEach(el => {
+        el.textContent = window.liveEthTelemetry.change24h;
+      });
+    }
+
+    // ── Suggested Voices & On-Chain Paid Follow ──────────────────────────────────
+    async function loadSuggestedVoices() {
+      const container = document.getElementById('suggestedVoicesContainer');
+      if (!container) return;
+
+      const viewer = (typeof currentAccount !== 'undefined' && currentAccount && currentAccount.address) ? currentAccount.address : '';
+      try {
+        const resp = await apiFetch('/space/suggested-voices?viewer=' + encodeURIComponent(viewer) + '&limit=5');
+        if (resp && resp.ok && resp.body && resp.body.data && Array.isArray(resp.body.data.voices)) {
+          const voices = resp.body.data.voices;
+          if (voices.length === 0) {
+            container.innerHTML = `
+              <div class="p-3 text-center text-xs text-on-surface-variant font-mono">
+                Henüz aktif ses bulunmuyor. İlk cast'i siz paylaşın!
+              </div>
+            `;
+            return;
+          }
+
+          container.innerHTML = voices.map(v => {
+            const isFollowing = Boolean(v.is_following);
+            const avatarChar = (v.bns_name || v.address || 'B').replace('@', '')[0].toUpperCase();
+            const subTitle = v.bns_name 
+              ? `${v.address.slice(0, 6)}...${v.address.slice(-4)} • ${v.followers_count} Takipçi`
+              : `${v.posts_count > 0 ? v.posts_count + ' Cast' : 'BCT Hesabı'} • ${v.followers_count} Takipçi`;
+
+            return `
+              <div class="flex items-center justify-between gap-2.5 p-1.5 rounded-xl hover:bg-surface-container transition-colors group">
+                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('${escapeHtml(v.address)}')" title="On-Chain Profilini Gör">
+                  <div class="w-8 h-8 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-primary ring-1 ring-primary/30 group-hover:ring-primary">
+                    ${avatarChar}
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface group-hover:text-primary transition-colors truncate">
+                      ${escapeHtml(v.display_name)}
+                    </span>
+                    <span class="text-[10px] text-on-surface-variant truncate font-mono">
+                      ${escapeHtml(subTitle)}
+                    </span>
+                  </div>
+                </div>
+                ${isFollowing ? `
+                  <button type="button" class="px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold shrink-0 cursor-default">
+                    Following
+                  </button>
+                ` : `
+                  <button type="button" onclick="followVoiceOnChain(this, '${escapeHtml(v.address)}', '${escapeHtml(v.bns_name || '')}')" class="px-2.5 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-xs" title="1.00 BCT ile Takip Et">
+                    <span class="material-symbols-outlined text-[12px]">add</span>
+                    <span>1 BCT</span>
+                  </button>
+                `}
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('loadSuggestedVoices error:', err);
+      }
+    }
+
+    async function followVoiceOnChain(btn, targetAddress, bnsName) {
       if (!btn) return;
-      const isFollowing = btn.dataset.following === 'true';
-      if (isFollowing) {
-        btn.dataset.following = 'false';
-        btn.textContent = 'Follow';
-        btn.className = 'px-3 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer';
-        showToast(`Takipten çıkarıldı: @${handle}`);
-      } else {
-        btn.dataset.following = 'true';
-        btn.textContent = 'Following';
-        btn.className = 'px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold transition-all shrink-0 cursor-pointer';
-        showToast(`@${handle} takip ediliyor! On-chain bildirimler aktif.`);
+      if (!currentAccount || !currentAccount.address) {
+        showToast('Lütfen takip etmek için cüzdanınızı bağlayın', 'account_balance_wallet', true);
+        switchTab('yeni-cuzdan');
+        return;
+      }
+
+      if (currentAccount.address === targetAddress) {
+        showToast('Kendi cüzdanınızı takip edemezsiniz.', 'warning', true);
+        return;
+      }
+
+      const targetLabel = bnsName ? ('@' + bnsName) : (targetAddress.slice(0, 6) + '...' + targetAddress.slice(-4));
+      const confirmed = confirm(
+        `On-Chain Takip İşlemi:\n\n` +
+        `Hedef: ${targetLabel} (${targetAddress})\n` +
+        `İşlem Ücreti: 1.00 BCT\n\n` +
+        `Ekonomik Dağılım:\n` +
+        `• 0.50 BCT (%50): İçerik Üreticisine Doğrudan\n` +
+        `• 0.30 BCT (%30): Blok Madencileri & Doğrulayıcı Havuzuna\n` +
+        `• 0.20 BCT (%20): Hazine Rezervine (DAO Fonu)\n\n` +
+        `Cüzdanınız ile imzalamak ve blokzincire mühürlemek istiyor musunuz?`
+      );
+      if (!confirmed) return;
+
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[13px] animate-spin">sync</span><span>İmzalanıyor...</span>`;
+
+      try {
+        const canonical = `follow:${currentAccount.address}:${targetAddress}`;
+        let authFields = await buildSignedAuthPayload(canonical);
+
+        let resp = await apiFetch('/space/follow', {
+          method: 'POST',
+          body: JSON.stringify(Object.assign({
+            follower: currentAccount.address,
+            target: targetAddress
+          }, authFields))
+        });
+
+        if (!resp.ok && (resp.status === 409 || (resp.body && String(resp.body.message || '').includes('nonce')))) {
+          await new Promise(r => setTimeout(r, 600));
+          authFields = await buildSignedAuthPayload(canonical);
+          resp = await apiFetch('/space/follow', {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({
+              follower: currentAccount.address,
+              target: targetAddress
+            }, authFields))
+          });
+        }
+
+        if (resp && resp.ok) {
+          showToast(`${targetLabel} başarıyla takip edildi! 1.00 BCT blokzincire mühürlendi.`, 'check_circle');
+          btn.innerHTML = 'Following';
+          btn.className = 'px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold shrink-0 cursor-default';
+          btn.onclick = null;
+          setTimeout(() => {
+            loadSuggestedVoices();
+            if (typeof refreshWalletBalances === 'function') refreshWalletBalances();
+            if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+          }, 800);
+        } else {
+          const errMsg = (resp && resp.body && resp.body.message) ? resp.body.message : 'Takip işlemi gerçekleştirilemedi.';
+          showToast(errMsg, 'error', true);
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      } catch (err) {
+        console.error('followVoiceOnChain error:', err);
+        showToast('İşlem hatası: ' + err.message, 'error', true);
+        btn.disabled = false;
+        btn.innerHTML = origText;
       }
     }
 
@@ -8322,6 +8459,8 @@
 
     async function loadSpaceFeed() {
       try {
+        loadSuggestedVoices();
+        fetchLiveEthTelemetry();
         const { ok, body } = await apiFetch('/space/feed?limit=80');
         if (ok && body.data && Array.isArray(body.data.posts)) {
           spacePostsCache = body.data.posts;
@@ -9495,6 +9634,8 @@
     }
     setInterval(pollDexPriceLive, 20000);
     setTimeout(pollDexPriceLive, 1000);
+    setInterval(fetchLiveEthTelemetry, 45000);
+    setTimeout(fetchLiveEthTelemetry, 1500);
 
     let userMetaMaskAddress = null;
     let userWbctBalanceBase = 0;

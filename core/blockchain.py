@@ -303,6 +303,8 @@ class Blockchain:
         self.total_fees_collected = 0.0
         self.nodes: Dict[str, dict] = {}
         self.space_posts: Dict[str, dict] = {}
+        self.follows: Dict[str, List[str]] = {}
+        self.following: Dict[str, List[str]] = {}
         self.bns_records: Dict[str, dict] = {}
         self.bns_reverse: Dict[str, str] = {}
         self._custom_data_dir = data_dir
@@ -372,7 +374,7 @@ class Blockchain:
         clean_addr = address.strip()
         units = 0
         fee_bearing_types = (
-            "transfer", "space_post", "space_like", "space_comment",
+            "transfer", "space_post", "space_like", "space_comment", "space_follow",
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
             "bns_accept_offer"
         )
@@ -388,7 +390,7 @@ class Blockchain:
                         # Only credit receiver if receiver is TREASURY_ADDRESS (for legacy bns_transfer where receiver was recipient wallet, credit goes to Treasury below)
                         if clean_addr == TREASURY_ADDRESS:
                             units += (amt_u - fee_u)
-                    elif tx.tx_type in ("space_like", "space_comment"):
+                    elif tx.tx_type in ("space_like", "space_comment", "space_follow"):
                         units += _to_units(tx.extra_data.get("treasury_cut", 0.0) if tx.extra_data else 0.0)
                     else:
                         units += amt_u
@@ -400,6 +402,9 @@ class Blockchain:
                 if tx.tx_type in ("space_like", "space_comment") and tx.extra_data:
                     if clean_addr == tx.extra_data.get("author"):
                         units += _to_units(tx.extra_data.get("author_cut", 0.0))
+                if tx.tx_type == "space_follow" and tx.extra_data:
+                    if clean_addr == tx.extra_data.get("target"):
+                        units += _to_units(tx.extra_data.get("creator_cut", 0.0))
                 if clean_addr == TREASURY_ADDRESS and tx.tx_type in fee_bearing_types and fee_u > 0:
                     units += fee_u
 
@@ -412,7 +417,7 @@ class Blockchain:
                 elif tx.tx_type == "bns_transfer":
                     if clean_addr == TREASURY_ADDRESS:
                         units += (amt_u - fee_u)
-                elif tx.tx_type in ("space_like", "space_comment"):
+                elif tx.tx_type in ("space_like", "space_comment", "space_follow"):
                     units += _to_units(tx.extra_data.get("treasury_cut", 0.0) if tx.extra_data else 0.0)
                 else:
                     units += amt_u
@@ -423,6 +428,9 @@ class Blockchain:
             if tx.tx_type in ("space_like", "space_comment") and tx.extra_data:
                 if clean_addr == tx.extra_data.get("author"):
                     units += _to_units(tx.extra_data.get("author_cut", 0.0))
+            if tx.tx_type == "space_follow" and tx.extra_data:
+                if clean_addr == tx.extra_data.get("target"):
+                    units += _to_units(tx.extra_data.get("creator_cut", 0.0))
             if clean_addr == TREASURY_ADDRESS and tx.tx_type in fee_bearing_types and fee_u > 0:
                 units += fee_u
 
@@ -985,6 +993,114 @@ class Blockchain:
                    else "Comment published! Queued in 50s batch pool.")
             return True, msg, res
 
+    def follow_creator(self, follower: str, target: str, signature: str = "",
+                       public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        """
+        Follows an on-chain creator or address.
+        Cost: 1.00 BCT.
+        Tokenomics:
+        - 50% (0.50 BCT) sent directly to followed creator.
+        - 30% (0.30 BCT) to active miner / validator pool.
+        - 20% (0.20 BCT) returned to Treasury Vault reserve.
+        """
+        with self.lock:
+            self._load_state()
+            clean_follower = (follower or "").strip()
+            clean_target = (target or "").strip()
+
+            if not is_valid_bct_address(clean_follower):
+                return False, f"Invalid follower address: '{clean_follower}'", None
+            if not is_valid_bct_address(clean_target):
+                return False, f"Invalid target creator address: '{clean_target}'", None
+
+            if clean_follower == clean_target:
+                return False, "You cannot follow your own wallet address.", None
+
+            expected_payload = signed_payload or f"follow:{clean_follower}:{clean_target}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_follower, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            # Check if already followed in confirmed state
+            if clean_follower in self.follows.get(clean_target, []):
+                return False, "You are already following this creator on-chain.", None
+
+            # Double-follow protection in mempool
+            is_already_in_mempool = any(
+                t.tx_type == "space_follow"
+                and t.sender == clean_follower
+                and t.extra_data
+                and t.extra_data.get("target") == clean_target
+                for t in self.pending_transactions
+            )
+            if is_already_in_mempool:
+                return False, "Your follow transaction is already queued in the mempool.", None
+
+            follower_bal = self.verify_and_recalc_balance(clean_follower)
+            follow_cost = 1.00
+            if follower_bal < follow_cost:
+                return False, f"Insufficient balance! Follow fee is {follow_cost:.2f} BCT. Current balance: {follower_bal:.4f} BCT.", None
+
+            creator_cut = 0.50
+            miner_fee = 0.30
+            treasury_cut = 0.20
+
+            extra_data = {
+                "target": clean_target,
+                "follower": clean_follower,
+                "creator_cut": creator_cut,
+                "treasury_cut": treasury_cut,
+                "miner_fee": miner_fee
+            }
+
+            tx = Transaction(
+                sender=clean_follower,
+                receiver=TREASURY_ADDRESS,
+                amount=follow_cost,
+                fee=miner_fee,
+                signature=signature,
+                tx_type="space_follow",
+                extra_data=extra_data
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
+
+            # Update optimistic state immediately
+            if clean_target not in self.follows:
+                self.follows[clean_target] = []
+            if clean_follower not in self.follows[clean_target]:
+                self.follows[clean_target].append(clean_follower)
+
+            if clean_follower not in self.following:
+                self.following[clean_follower] = []
+            if clean_target not in self.following[clean_follower]:
+                self.following[clean_follower].append(clean_target)
+
+            self.balances[clean_follower] = self.verify_and_recalc_balance(clean_follower)
+            self.balances[clean_target] = self.verify_and_recalc_balance(clean_target)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            block = None
+            if self.auto_mine:
+                block = self._mine_block()
+
+            res = {
+                "target": clean_target,
+                "follower": clean_follower,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool_batched",
+                "followers_count": len(self.follows[clean_target]),
+                "creator_earned": creator_cut,
+                "follower_new_balance": self.balances[clean_follower]
+            }
+            msg = ("Creator followed and sealed on-chain!" if block
+                   else "Creator followed! Queued in mempool.")
+            return True, msg, res
+
     @staticmethod
     def extract_space_entities(text: str) -> dict:
         """Extracts mentions (@), hashtags (#), and cashtags ($) from space post content."""
@@ -1136,6 +1252,79 @@ class Blockchain:
         with self.lock:
             self._load_state()
             return self.space_posts.get(post_id.strip())
+
+    def get_suggested_voices(self, viewer_address: str = "", limit: int = 5) -> List[dict]:
+        """
+        Returns real on-chain active creators/voices for the Space Suggested Voices sidebar.
+        Prioritizes:
+        1. Real accounts that posted on Space
+        2. Real accounts with registered BNS handles
+        3. Real active holders
+        Excludes Treasury, burn addresses, and current viewer.
+        """
+        with self.lock:
+            self._load_state()
+            clean_viewer = (viewer_address or "").strip()
+            excluded_addrs = {
+                TREASURY_ADDRESS,
+                clean_viewer,
+                "BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d",
+                "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
+                "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
+                "BCT4ebea3d0f7132475e4e7c22573696eab6267a191",
+                "BCT0000000000000000000000000000000000000000"
+            }
+
+            candidates: Dict[str, dict] = {}
+            for p in self.space_posts.values():
+                auth = p.get("author")
+                if auth and auth not in excluded_addrs and is_valid_bct_address(auth):
+                    if auth not in candidates:
+                        candidates[auth] = {"posts": 0, "likes": 0}
+                    candidates[auth]["posts"] += 1
+                    candidates[auth]["likes"] += p.get("likes_count", 0)
+
+            for name, rec in self.bns_records.items():
+                owner = rec.get("owner")
+                if owner and owner not in excluded_addrs and is_valid_bct_address(owner):
+                    if owner not in candidates:
+                        candidates[owner] = {"posts": 0, "likes": 0}
+
+            if len(candidates) < limit:
+                for addr, bal in sorted(self.balances.items(), key=lambda x: x[1], reverse=True):
+                    if addr not in excluded_addrs and is_valid_bct_address(addr):
+                        if addr not in candidates:
+                            candidates[addr] = {"posts": 0, "likes": 0}
+                    if len(candidates) >= limit + 5:
+                        break
+
+            result = []
+            for addr, meta in candidates.items():
+                bns = self.bns_reverse.get(addr, "")
+                followers = self.follows.get(addr, [])
+                is_following = bool(clean_viewer and clean_viewer in followers)
+
+                if bns:
+                    bio = f"@{bns} • Core On-Chain Voice"
+                    display_name = f"@{bns}"
+                else:
+                    short_addr = f"{addr[:6]}...{addr[-4:]}"
+                    bio = f"BCT Creator • {meta['posts']} Casts" if meta['posts'] > 0 else "BCT On-Chain Account"
+                    display_name = short_addr
+
+                result.append({
+                    "address": addr,
+                    "bns_name": bns,
+                    "display_name": display_name,
+                    "bio": bio,
+                    "followers_count": len(followers),
+                    "is_following": is_following,
+                    "posts_count": meta["posts"],
+                    "score": len(followers) * 10 + meta["posts"] * 5 + meta["likes"] * 2
+                })
+
+            result.sort(key=lambda x: x["score"], reverse=True)
+            return result[:limit]
 
     # ── BNS (LockTrace Name Service — .bct Handles & Marketplace) ─────────────────
     @staticmethod
@@ -2610,7 +2799,7 @@ class Blockchain:
 
         transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(
-            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "bns_register", "bns_transfer")
+            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "space_follow", "bns_register", "bns_transfer")
         )
         miner_fee_cut_u = (transfer_fees_u // 2) + space_and_bns_fees_u
 
@@ -3886,8 +4075,10 @@ class Blockchain:
                     })
 
     def _load_in_memory_space_index(self):
-        """Reconstructs Space Posts, Likes & Comments deterministically from confirmed blocks + live mempool."""
+        """Reconstructs Space Posts, Likes, Comments & Follows deterministically from confirmed blocks + live mempool."""
         self.space_posts = {}
+        self.follows = {}
+        self.following = {}
         all_sources = [(b.index, "confirmed", tx) for b in self.chain for tx in b.transactions] + [
             ("Mempool", "mempool", tx) for tx in self.pending_transactions
         ]
@@ -3958,6 +4149,18 @@ class Blockchain:
                     self.space_posts[pid]["author_earnings"] = round(
                         self.space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.004), 8
                     )
+            elif tx.tx_type == "space_follow" and tx.extra_data:
+                target = tx.extra_data.get("target")
+                follower = tx.sender
+                if target and follower:
+                    if target not in self.follows:
+                        self.follows[target] = []
+                    if follower not in self.follows[target]:
+                        self.follows[target].append(follower)
+                    if follower not in self.following:
+                        self.following[follower] = []
+                    if target not in self.following[follower]:
+                        self.following[follower].append(target)
 
     def _save_state(self):
         try:
