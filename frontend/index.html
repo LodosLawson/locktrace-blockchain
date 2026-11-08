@@ -1333,6 +1333,35 @@
                   </div>
                 </div>
 
+                <!-- Fiili Yakım & Kayıp Test Cüzdanları Bilgi Kartları -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  <div class="bg-surface-container/60 p-3 rounded-xl border border-rose-500/25 bg-gradient-to-br from-rose-500/5 to-transparent flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-8 h-8 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[18px]">local_fire_department</span>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-[11px] font-semibold text-rose-300">Kayıp Anahtar Test Cüzdanları (Fiili Yakım)</span>
+                        <span class="text-[10px] text-rose-400/80">Geliştirici doğruladı: 4 Test Adresi (Private key kayıp)</span>
+                      </div>
+                    </div>
+                    <span class="font-body-md font-bold font-mono text-rose-300 shrink-0" id="metricLostKeyWallets">17,008.20 BCT</span>
+                  </div>
+
+                  <div class="bg-surface-container/60 p-3 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-3">
+                    <div class="flex items-center gap-2.5">
+                      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[18px]">lock_clock</span>
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="text-[11px] font-semibold text-on-surface">Toplam Fiili Dolaşım Dışı / Kilitli Arz</span>
+                        <span class="text-[10px] text-on-surface-variant">Hazine Rezervi + Kayıp Test Cüzdanları</span>
+                      </div>
+                    </div>
+                    <span class="font-body-md font-bold font-mono text-on-surface shrink-0" id="metricEffectiveBurn">-- BCT</span>
+                  </div>
+                </div>
+
                 <!-- Network Sub-Bar: Block, Consensus, Wallet Count & Total Released -->
                 <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-surface-container-low/80 rounded-xl border border-outline-variant/10 text-xs font-mono">
                   <div class="flex items-center gap-4 text-on-surface-variant">
@@ -1413,6 +1442,42 @@
               </div>
             </section>
           </div>
+
+          <!-- Base L2 wBCT Activity (BaseScan Explorer Integration) -->
+          <section class="mb-space-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-space-sm p-4 rounded-2xl bg-surface-container-low border border-secondary/25 bg-gradient-to-r from-secondary/5 via-transparent to-transparent">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary shrink-0 shadow-sm">
+                  <span class="material-symbols-outlined text-[22px]">swap_horiz</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h2 class="font-label-lg text-label-lg text-on-surface font-semibold">Base L2 wBCT İşlemleri (BaseScan Explorer)</h2>
+                    <span class="px-2 py-0.5 rounded-full bg-secondary/15 text-secondary text-[10px] font-mono font-bold">Base Mainnet (8453)</span>
+                    <span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[10px] font-mono font-semibold">1:1 Bridge Peg</span>
+                  </div>
+                  <p class="text-xs text-on-surface-variant mt-0.5">
+                    BaseScan'e gitmenize gerek kalmadan, akıllı sözleşme üzerindeki wBCT mint, burn ve köprü transferlerini canlı izleyin.
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 text-xs self-start sm:self-auto shrink-0">
+                <a href="https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-secondary flex items-center gap-1.5 border border-secondary/20 transition-all font-semibold active:scale-95">
+                  <span>BaseScan Sözleşme</span>
+                  <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                </a>
+                <button type="button" onclick="loadExplorerBaseTransactions(); showToast('BaseScan wBCT işlemleri yenilendi');" class="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center gap-1.5 border border-outline-variant/20 transition-all font-semibold active:scale-95">
+                  <span class="material-symbols-outlined text-[14px] text-primary">sync</span>
+                  <span>Yenile</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Feed List for Base Transactions -->
+            <div class="flex flex-col gap-2" id="feedBaseTxsList">
+              <div class="p-4 text-center font-body-sm text-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Loading Base L2 transactions...</div>
+            </div>
+          </section>
 
           <!-- Top Token Holders & Account Balances (Rich List) -->
           <section class="mb-space-lg">
@@ -1787,6 +1852,85 @@
                     <span>BaseScan</span>
                     <span class="material-symbols-outlined text-[13px]">open_in_new</span>
                   </a>
+                </div>
+              </div>
+
+              <!-- 7. Developer Verified Lost-Key Test Wallets (Effective Permanent Burn) -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-500/10 via-transparent to-transparent flex flex-col justify-between gap-3 lg:col-span-2">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between flex-wrap gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-300 text-[11px] font-mono font-bold flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[14px] text-rose-400">local_fire_department</span>
+                      Geliştirici Doğruladı: Kayıp Private Key (Özel Test Cüzdanları)
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[10.5px] font-mono font-bold">Fiili Yakım / Kalıcı Dolaşım Dışı</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Kayıp Anahtar Özel Test Cüzdanları (Fiili Yakım Havuzu)</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Geliştirici tarafından ağın erken test aşamasında oluşturulmuş ve private key'leri bilinmeyen / kayıp 4 özel test cüzdanıdır. Bu adreslerden hiçbir zaman transfer yapılamaz ve coinler zincirde sonsuza dek kilitlidir. BCT ekonomik protokolü bu bakiyeleri fiili yakım (permanent burn) kabul ederek resmi dolaşım arzından düşmüştür.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- 4 Test Wallets Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-semibold text-rose-300">Test Adresi #1</span>
+                      <span class="font-mono font-bold text-on-surface">10,001.0000 BCT</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-mono text-xs text-on-surface select-all truncate cursor-pointer hover:text-primary" onclick="openUserProfile('BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d')">BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d</span>
+                      <button type="button" onclick="copyToClipboard('BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0">
+                        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-semibold text-rose-300">Test Adresi #2</span>
+                      <span class="font-mono font-bold text-on-surface">5,001.8140 BCT</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-mono text-xs text-on-surface select-all truncate cursor-pointer hover:text-primary" onclick="openUserProfile('BCTf8c255f129a61b296f197a7e70902c043c3da0bf')">BCTf8c255f129a61b296f197a7e70902c043c3da0bf</span>
+                      <button type="button" onclick="copyToClipboard('BCTf8c255f129a61b296f197a7e70902c043c3da0bf'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0">
+                        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-semibold text-rose-300">Test Adresi #3</span>
+                      <span class="font-mono font-bold text-on-surface">1,004.3880 BCT</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-mono text-xs text-on-surface select-all truncate cursor-pointer hover:text-primary" onclick="openUserProfile('BCT7404325cf37316e3c6396ff1eef80c4ef381c27b')">BCT7404325cf37316e3c6396ff1eef80c4ef381c27b</span>
+                      <button type="button" onclick="copyToClipboard('BCT7404325cf37316e3c6396ff1eef80c4ef381c27b'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0">
+                        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-semibold text-rose-300">Test Adresi #4</span>
+                      <span class="font-mono font-bold text-on-surface">1,001.0000 BCT</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                      <span class="font-mono text-xs text-on-surface select-all truncate cursor-pointer hover:text-primary" onclick="openUserProfile('BCT4ebea3d0f7132475e4e7c22573696eab6267a191')">BCT4ebea3d0f7132475e4e7c22573696eab6267a191</span>
+                      <button type="button" onclick="copyToClipboard('BCT4ebea3d0f7132475e4e7c22573696eab6267a191'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0">
+                        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-rose-500/20 text-xs">
+                  <span class="text-rose-300/90 font-medium">Toplam Fiili Yakılmış Test Bakiyesi: <strong class="text-rose-200 font-mono text-sm" id="sysValLostKeyTotal">17,008.2020 BCT</strong></span>
+                  <span class="text-on-surface-variant text-[11px] font-mono">Doğrulandı: Geliştirici Tarafından İlan Edilmiş Fiili Kilit</span>
                 </div>
               </div>
 
@@ -4282,6 +4426,22 @@
           </div>
         </div>
 
+        <!-- Developer Verified Lost Key Test Wallet Banner -->
+        <div id="userProfileLostKeyBanner" class="hidden p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-300 shadow-sm shadow-rose-950/20">
+          <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-[20px]">local_fire_department</span>
+          </div>
+          <div class="flex flex-col text-xs leading-relaxed">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-bold text-rose-200">Geliştirici Doğruladı: Kayıp Private Key</span>
+              <span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-mono text-[10px] font-bold uppercase tracking-wider">Fiili Yakım / Kilitli</span>
+            </div>
+            <span class="text-rose-300/90 mt-1 font-sans">
+              Bu adres geliştirici tarafından erken test aşamasında oluşturulmuş özel bir test adresidir. Private key'i kayıptır ve üzerinde hiçbir zaman transfer yapılamaz. İçerisindeki bakiye protokol düzeyinde <strong>fiili yakım (permanent burn)</strong> statüsündedir ve dolaşım arzından kalıcı olarak düşülmüştür.
+            </span>
+          </div>
+        </div>
+
         <!-- 4-Stat Metrics Cards Grid -->
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
           <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
@@ -5681,10 +5841,12 @@
           const treasuryBal = document.getElementById('sysValTreasuryBal');
           const metricBridge = document.getElementById('sysMetricBridgeLocked');
           const metricTreasury = document.getElementById('sysMetricTreasuryEscrow');
+          const lostKeyBalEl = document.getElementById('sysValLostKeyTotal');
           if (bridgeVaultBal && d.bridge_vault_formatted) bridgeVaultBal.textContent = d.bridge_vault_formatted + ' BCT';
           if (treasuryBal && d.treasury_formatted) treasuryBal.textContent = d.treasury_formatted + ' BCT';
           if (metricBridge && d.bridge_vault_locked) metricBridge.textContent = (d.bridge_vault_locked / 1000000).toFixed(2) + 'M BCT';
           if (metricTreasury && d.treasury_balance) metricTreasury.textContent = (d.treasury_balance / 1000000000).toFixed(2) + 'B BCT';
+          if (lostKeyBalEl && d.lost_key_test_wallets_formatted) lostKeyBalEl.textContent = d.lost_key_test_wallets_formatted + ' BCT';
         }
 
         // 2. Fetch Burn Address Balance
@@ -6957,6 +7119,8 @@
           const mVault = document.getElementById('metricBridgeVault');
           const mTreasury = document.getElementById('metricTreasuryVault');
           const mReleased = document.getElementById('metricTotalReleased');
+          const mLostKey = document.getElementById('metricLostKeyWallets');
+          const mEffBurn = document.getElementById('metricEffectiveBurn');
           const mDiff = document.getElementById('metricDifficulty');
           const mWallets = document.getElementById('metricWallets');
           const consStatus = document.getElementById('statConsensusStatus');
@@ -6967,12 +7131,19 @@
           if (mCirc) mCirc.textContent = formatBct(st.circulating_supply || 0, 2) + ' BCT';
           if (mVault) mVault.textContent = formatBct(st.bridge_vault_locked || 0, 2) + ' BCT';
           if (mTreasury) mTreasury.textContent = formatBct(st.treasury_balance || 0, 2) + ' BCT';
+          if (mLostKey && st.lost_key_test_wallets_formatted) {
+            mLostKey.textContent = `${Number(st.lost_key_test_wallets_balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} BCT`;
+          }
+          if (mEffBurn && st.effective_burned_formatted) {
+            mEffBurn.textContent = `${Number(st.effective_burned_supply || 0).toLocaleString('en-US', {maximumFractionDigits: 2})} BCT`;
+          }
           const totalUnlocked = (Number(st.circulating_supply || 0) + Number(st.bridge_vault_locked || 0));
           if (mReleased) mReleased.textContent = formatBct(totalUnlocked, 2) + ' BCT';
           const memCount = Number(st.pending_transactions || 0);
           if (mDiff) mDiff.textContent = memCount > 0 ? `Difficulty ${st.difficulty || 3} • Pool: ${memCount}` : `PoW Difficulty ${st.difficulty || 3} (x1)`;
           if (mWallets) mWallets.textContent = String(st.total_wallets || 0);
           if (consStatus) consStatus.textContent = st.chain_valid !== false ? (memCount > 0 ? `Mempool: ${memCount} Tx` : 'Synced: 100%') : 'Verifying';
+          loadExplorerBaseTransactions();
         }
 
         if (nodesRes && nodesRes.ok && nodesRes.body.data) {
@@ -7117,6 +7288,74 @@
       if (btnNext) btnNext.disabled = currentExplorerHoldersPage >= totalExplorerHoldersPages;
     }
 
+    async function loadExplorerBaseTransactions() {
+      try {
+        const list = document.getElementById('feedBaseTxsList');
+        if (list && list.children.length === 0) {
+          list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Loading Base L2 transactions...</div>';
+        }
+        const res = await apiFetch('/bridge/base-transactions?limit=30');
+        if (res && res.data && res.data.transactions) {
+          renderExplorerBaseTransactions(res.data.transactions);
+        } else if (res && res.body && res.body.data && res.body.data.transactions) {
+          renderExplorerBaseTransactions(res.body.data.transactions);
+        } else {
+          if (list) list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">No Base transactions found.</div>';
+        }
+      } catch (err) {
+        console.warn('Error loading Base transactions:', err);
+      }
+    }
+
+    function renderExplorerBaseTransactions(txs) {
+      const list = document.getElementById('feedBaseTxsList');
+      if (!list) return;
+      if (!txs || !txs.length) {
+        list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">No Base L2 cross-chain transactions recorded yet.</div>';
+        return;
+      }
+
+      list.innerHTML = txs.map(t => {
+        const isMint = t.direction === 'L1_TO_EVM';
+        const typeBadge = isMint
+          ? '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold font-mono flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Base wBCT Mint (Bridge In)</span>'
+          : '<span class="px-2.5 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 text-[11px] font-semibold font-mono flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Base wBCT Burn (Unlock to L1)</span>';
+
+        const statusColor = t.status === 'COMPLETED' ? 'text-emerald-400' : (t.status === 'LOCKED' ? 'text-secondary' : (t.status === 'FAILED' ? 'text-rose-400' : 'text-amber-400'));
+        const displayEvm = t.tx_hash_evm ? (t.tx_hash_evm.slice(0, 10) + '...' + t.tx_hash_evm.slice(-8)) : 'Pending L2 Broadcast';
+        const evmLink = t.basescan_tx_url
+          ? `<a href="${escapeHtml(t.basescan_tx_url)}" target="_blank" rel="noopener noreferrer" class="font-mono text-xs font-semibold text-secondary hover:underline flex items-center gap-1" title="View on BaseScan">${escapeHtml(displayEvm)}<span class="material-symbols-outlined text-[13px]">open_in_new</span></a>`
+          : `<span class="font-mono text-xs text-on-surface-variant">${escapeHtml(displayEvm)}</span>`;
+
+        const bctDisplay = t.bct_address ? (t.bct_address.slice(0, 8) + '...' + t.bct_address.slice(-6)) : '--';
+        const evmRecipientDisplay = t.evm_address ? (t.evm_address.slice(0, 8) + '...' + t.evm_address.slice(-6)) : '--';
+        const timeAgo = t.created_at ? formatTimeAgo(t.created_at) : 'recently';
+
+        return `
+          <div class="p-3 sm:p-3.5 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col gap-2 transition-all">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
+              <div class="flex items-center gap-2 flex-wrap">
+                ${typeBadge}
+                ${evmLink}
+              </div>
+              <div class="flex items-center gap-2">
+                <span class="font-mono text-sm font-bold text-on-surface">${formatCrypto(t.amount)} wBCT</span>
+                <span class="text-[11px] font-mono uppercase font-semibold ${statusColor}">${escapeHtml(t.status)}</span>
+              </div>
+            </div>
+            <div class="flex items-center justify-between gap-2 text-[11.5px] text-on-surface-variant flex-wrap pt-1 border-t border-outline-variant/10">
+              <div class="flex items-center gap-2 font-mono flex-wrap">
+                <span>L1: <button type="button" onclick="openUserProfile('${escapeHtml(t.bct_address)}')" class="text-primary hover:underline font-semibold" title="${escapeHtml(t.bct_address)}">${escapeHtml(bctDisplay)}</button></span>
+                <span>&bull;</span>
+                <span>Base EVM: <a href="https://basescan.org/address/${escapeHtml(t.evm_address)}" target="_blank" rel="noopener noreferrer" class="text-secondary hover:underline" title="${escapeHtml(t.evm_address)}">${escapeHtml(evmRecipientDisplay)}</a></span>
+              </div>
+              <span class="text-[11px] font-sans text-on-surface-variant/80">${timeAgo}</span>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
     function renderExplorerHolders(holders) {
       const tbody = document.getElementById('holdersTableBody');
       if (!tbody) return;
@@ -7133,6 +7372,8 @@
           tagBadge = '<span class="bg-secondary/10 text-secondary border border-secondary/20 px-2 py-0.5 rounded text-[11px] font-semibold font-sans">Bridge Vault (Base 1:1)</span>';
         } else if (h.tag_type === 'validator') {
           tagBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[11px] font-medium font-sans">Validator Node</span>';
+        } else if (h.tag_type === 'lost_key_burn') {
+          tagBadge = '<span class="bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-semibold font-sans inline-flex items-center gap-1 cursor-help" title="Geliştirici doğruladı: Private key kayıp özel test adresidir (Dolaşım dışı / Kilitli)"><span class="material-symbols-outlined text-[13px] text-rose-400">local_fire_department</span>Kayıp Key (Fiili Yakım)</span>';
         }
 
         const isSpecial = h.address.startsWith('BCT_HAZINE') || h.address.startsWith('BCT_BRIDGE_VAULT');
@@ -10970,10 +11211,26 @@
 
       addrEl.textContent = data.address;
 
+      const lostKeyBanner = document.getElementById('userProfileLostKeyBanner');
+      const isLostKey = Boolean(data.is_lost_key_burn || data.tag_type === 'lost_key_burn');
+      if (lostKeyBanner) {
+        lostKeyBanner.classList.toggle('hidden', !isLostKey);
+      }
+
       let tagClass = 'bg-surface-container text-on-surface-variant';
-      if (data.tag_type === 'treasury') tagClass = 'bg-primary/10 text-primary border border-primary/20';
-      else if (data.tag_type === 'bridge_vault') tagClass = 'bg-secondary/10 text-secondary border border-secondary/20';
-      else if (data.tag_type === 'validator') tagClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+      if (data.tag_type === 'treasury') {
+        tagClass = 'bg-primary/10 text-primary border border-primary/20';
+        tagEl.title = 'Genesis Hazine Cüzdanı (Kilitli Rezerv)';
+      } else if (data.tag_type === 'bridge_vault') {
+        tagClass = 'bg-secondary/10 text-secondary border border-secondary/20';
+        tagEl.title = 'Bridge Vault (Base 1:1 wBCT Teminatı)';
+      } else if (data.tag_type === 'validator') {
+        tagClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+        tagEl.title = 'Doğrulayıcı Node';
+      } else if (isLostKey) {
+        tagClass = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm cursor-help';
+        tagEl.title = data.lost_key_note || 'Geliştirici doğruladı: Private key kayıp özel test adresidir (Dolaşım dışı / Kilitli)';
+      }
       tagEl.textContent = data.tag || 'Community Member';
       tagEl.className = `px-2.5 py-0.5 rounded-full text-[11px] font-semibold font-sans ${tagClass}`;
 

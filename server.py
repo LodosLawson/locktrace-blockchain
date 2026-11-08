@@ -2271,6 +2271,61 @@ def api_bridge_get_history(address: str):
     return api_response(True, data={"orders": history, "total": len(history)})
 
 
+@app.route("/api/v1/bridge/base-transactions", methods=["GET"])
+def api_bridge_base_transactions():
+    """
+    Returns verified Base L2 wBCT transactions and bridge activities so users
+    can inspect Base activity directly within LockTrace Explorer without navigating to BaseScan.
+    """
+    limit = min(int(request.args.get("limit", 50)), 200)
+    filter_addr = str(request.args.get("address", "")).strip().lower()
+
+    if filter_addr:
+        raw_txs = bridge_manager.get_history_by_address(filter_addr, limit=limit)
+    else:
+        raw_txs = bridge_manager.get_all_transactions(limit=limit)
+
+    contract_addr = getattr(bridge_manager, "wbct_contract", "0xA3C743113a41cFd0146917065d4578337Bb77254")
+    formatted_txs = []
+
+    for tx in raw_txs:
+        evm_hash = str(tx.get("tx_hash_evm") or "").strip()
+        if evm_hash and not evm_hash.startswith("0x") and len(evm_hash) == 64:
+            evm_hash = f"0x{evm_hash}"
+
+        direction = tx.get("direction", "L1_TO_EVM")
+        event_type = "Base wBCT Mint (Bridge In)" if direction == "L1_TO_EVM" else "Base wBCT Burn (Unlock to L1)"
+
+        formatted_txs.append({
+            "bridge_id": tx.get("bridge_id"),
+            "direction": direction,
+            "event_type": event_type,
+            "status": tx.get("status"),
+            "bct_address": tx.get("bct_address"),
+            "evm_address": tx.get("evm_address"),
+            "chain": tx.get("chain", "base"),
+            "amount": float(tx.get("amount_bct", 0.0)),
+            "fee": float(tx.get("fee_bct", 0.0) or 0.0),
+            "net_amount": float(tx.get("net_amount", 0.0) or 0.0),
+            "tx_hash_l1": tx.get("tx_hash_l1"),
+            "tx_hash_evm": evm_hash if evm_hash else None,
+            "basescan_tx_url": f"https://basescan.org/tx/{evm_hash}" if evm_hash and evm_hash.startswith("0x") else None,
+            "basescan_token_url": f"https://basescan.org/token/{contract_addr}",
+            "contract_address": contract_addr,
+            "created_at": tx.get("created_at"),
+            "updated_at": tx.get("updated_at")
+        })
+
+    return api_response(True, data={
+        "transactions": formatted_txs,
+        "total": len(formatted_txs),
+        "contract_address": contract_addr,
+        "chain_id": 8453,
+        "chain_name": "Base Mainnet",
+        "basescan_contract_url": f"https://basescan.org/token/{contract_addr}"
+    })
+
+
 @app.route("/api/v1/bridge/confirm", methods=["POST"])
 def api_bridge_confirm():
     payload = request.get_json(silent=True) or {}
