@@ -353,32 +353,41 @@
   <!-- ========================================================================= -->
   <header class="md:hidden fixed top-0 w-full z-50 bg-surface/90 backdrop-blur-md pt-safe shadow-[0_1px_8px_rgba(0,0,0,0.06)] border-b border-outline-variant/15" id="mobileTopHeader">
     <!-- Default Tab Mode Header -->
-    <div class="h-14 px-3 flex items-center justify-between gap-1.5" id="mobileHeaderDefault">
-      <div class="flex items-center gap-2 min-w-0">
-        <div class="w-7 h-7 rounded-full overflow-hidden border border-primary/30 shrink-0 cursor-pointer flex items-center justify-center bg-surface-container" onclick="switchTab('ana-sayfa')">
+    <div class="h-14 px-2 sm:px-3 flex items-center justify-between gap-1" id="mobileHeaderDefault">
+      <!-- Left: Logo & Network Badge -->
+      <div class="flex items-center gap-1.5 shrink-0 min-w-0">
+        <div class="w-7 h-7 rounded-full overflow-hidden border border-primary/30 shrink-0 cursor-pointer flex items-center justify-center bg-surface-container" onclick="switchTab('ana-sayfa')" title="LockTrace Home">
           <img src="icons/icon.svg" class="w-full h-full object-cover" alt="LockTrace"/>
         </div>
-        <button class="flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container px-2.5 py-1 rounded-full border border-outline-variant/30 transition-colors active:scale-95 shrink-0" onclick="openNetworkSecurityModal()" title="Network &amp; SHA-256 Verification" type="button">
+        <button class="flex items-center gap-1 bg-surface-container-low hover:bg-surface-container px-2 py-0.5 rounded-full border border-outline-variant/30 transition-colors active:scale-95 shrink-0" onclick="openNetworkSecurityModal()" title="Network &amp; SHA-256 Verification" type="button">
           <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="mobileNetDot"></span>
-          <span class="font-label-sm text-[11px] text-on-surface tracking-wide uppercase font-semibold truncate max-w-[105px]" id="mobileNetLabel">Mainnet</span>
-          <span class="material-symbols-outlined text-[13px] text-primary shrink-0">shield_lock</span>
+          <span class="font-label-sm text-[10.5px] sm:text-[11px] text-on-surface tracking-wide uppercase font-semibold shrink-0" id="mobileNetLabel">Mainnet</span>
+          <span class="material-symbols-outlined text-[12px] text-primary shrink-0 hidden xs:inline">shield_lock</span>
         </button>
       </div>
-      <div class="flex items-center gap-1.5 shrink-0">
-        <button id="btnPwaMobileHeader" class="hidden items-center justify-center w-7 h-7 rounded-full bg-primary/15 text-primary" onclick="triggerPwaInstall()" title="Install App" type="button">
-          <span class="material-symbols-outlined text-[16px]">download</span>
+
+      <!-- Right: Action Buttons (PWA, Bell, Wallet Address, Menu) -->
+      <div class="flex items-center gap-1 shrink-0 ml-auto">
+        <!-- PWA Install Button (Mobile Header) -->
+        <button id="btnPwaMobileHeader" class="hidden items-center justify-center w-7 h-7 rounded-full bg-primary/15 hover:bg-primary/25 text-primary shrink-0 transition-all active:scale-95 border border-primary/25" onclick="triggerPwaInstall()" title="Install LockTrace PWA" type="button">
+          <span class="material-symbols-outlined text-[15px]">download</span>
         </button>
+
         <!-- Mobile Notification Bell -->
-        <button id="mobileNotificationBellBtn" class="relative w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center shrink-0 cursor-pointer text-on-surface active:scale-95 transition-all border border-outline-variant/20" onclick="openNotificationModal()" title="Notifications / Bildirimler" type="button">
-          <span class="material-symbols-outlined text-[18px] text-primary">notifications</span>
-          <span id="mobileNotificationBadge" class="hidden absolute -top-1 -right-1 min-w-[16px] h-[16px] px-0.5 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center shadow-sm animate-pulse">0</span>
+        <button id="mobileNotificationBellBtn" class="relative w-7 h-7 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center shrink-0 cursor-pointer text-on-surface active:scale-95 transition-all border border-outline-variant/20" onclick="openNotificationModal()" title="Notifications / Bildirimler" type="button">
+          <span class="material-symbols-outlined text-[16px] text-primary">notifications</span>
+          <span id="mobileNotificationBadge" class="hidden absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-rose-500 text-white font-mono text-[8.5px] font-bold flex items-center justify-center shadow-sm animate-pulse">0</span>
         </button>
-        <button class="flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface hover:bg-surface-container-high transition-colors active:scale-95 border border-outline-variant/20" onclick="handleHeaderAddressAction()" type="button">
-          <span class="text-[11px] font-mono font-medium text-on-surface truncate max-w-[95px] xs:max-w-[130px]" id="mobileHeaderAddress">Open Wallet</span>
-          <span class="material-symbols-outlined text-[14px] text-on-surface-variant shrink-0">content_copy</span>
+
+        <!-- Account / Wallet Badge -->
+        <button class="flex items-center gap-1 bg-surface-container hover:bg-surface-container-high px-2 py-0.5 rounded-full text-on-surface transition-colors active:scale-95 border border-outline-variant/20 shrink-0 max-w-[95px] xs:max-w-[120px] sm:max-w-[145px]" onclick="handleHeaderAddressAction()" type="button" title="Wallet Account">
+          <span class="material-symbols-outlined text-[13px] text-primary shrink-0">account_balance_wallet</span>
+          <span class="text-[10px] sm:text-[11px] font-mono font-medium text-on-surface truncate" id="mobileHeaderAddress">Open Wallet</span>
         </button>
-        <button aria-label="Wallet Menu" class="w-7 h-7 rounded-full bg-surface-container-high hover:bg-surface-variant flex items-center justify-center shrink-0 cursor-pointer text-on-surface active:scale-95 transition-all border border-outline-variant/20" onclick="openMobileMenuModal()" title="Open Navigation Menu" type="button">
-          <span class="material-symbols-outlined text-[18px] text-primary">widgets</span>
+
+        <!-- Menu Drawer Toggle -->
+        <button aria-label="Navigation Menu" class="w-7 h-7 rounded-full bg-surface-container-high hover:bg-surface-variant flex items-center justify-center shrink-0 cursor-pointer text-on-surface active:scale-95 transition-all border border-outline-variant/20" onclick="openMobileMenuModal()" title="Open Navigation Menu" type="button">
+          <span class="material-symbols-outlined text-[16px] text-primary">widgets</span>
         </button>
       </div>
     </div>
@@ -732,34 +741,126 @@
             </button>
           </div>
 
-          <!-- Official Project & Compliance Footer -->
-          <footer class="w-full pt-6 pb-6 border-t border-outline-variant/15 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-on-surface-variant font-mono">
-            <div class="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
-              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> <strong>LockTrace Network</strong> &bull; <a href="https://locktrace.space" target="_blank" class="hover:underline text-on-surface">locktrace.space</a> &bull; <a href="https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" class="hover:underline text-secondary font-mono">wBCT: 0xA3C7...7254</a></span>
-              <span class="hidden sm:inline text-outline">&bull;</span>
-              <span>Official Email: <a href="mailto:locktracetoken@gmail.com" class="text-primary hover:underline font-bold">locktracetoken@gmail.com</a> / <a href="mailto:locktracetoken+space@gmail.com" class="hover:underline">locktracetoken+space@gmail.com</a></span>
+          <!-- Official Project & Web3 Ecosystem Footer (Full Responsive Structured Grid) -->
+          <footer class="w-full pt-10 pb-8 mt-6 border-t border-outline-variant/20 flex flex-col gap-8">
+            
+            <!-- Top Row: Protocol Identity & Quick Columns -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-xs">
+              
+              <!-- Col 1: Protocol Brand & Mission -->
+              <div class="flex flex-col gap-3 md:col-span-1">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold font-mono text-sm shadow-sm">
+                    LT
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">LockTrace Space</span>
+                    <span class="text-[10.5px] font-mono text-primary font-medium">Layer-1 Web3 Protocol</span>
+                  </div>
+                </div>
+                <p class="text-on-surface-variant text-[11.5px] leading-relaxed">
+                  Sansüre dayanıklı, %100 vesayetsiz (non-custodial) Layer-1 blokzinciri ve içerik üreticilerini on-chain teliflerle ödüllendiren sosyal protokol.
+                </p>
+                <!-- Network Badge -->
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/20 self-start text-[11px] font-mono text-on-surface">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Mainnet Online (PoW + Quorum)</span>
+                </div>
+              </div>
+
+              <!-- Col 2: Ekosistem & Protokoller -->
+              <div class="flex flex-col gap-2.5">
+                <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-primary">Ekosistem &amp; Servisler</span>
+                <ul class="space-y-1.5 text-on-surface-variant">
+                  <li><button type="button" onclick="switchTab('cuzdanim')" class="hover:text-primary transition-colors text-left">Web3 Cüzdan &amp; Bakiye</button></li>
+                  <li><button type="button" onclick="switchTab('space')" class="hover:text-primary transition-colors text-left">Space Sosyal Akış</button></li>
+                  <li><button type="button" onclick="switchTab('kopru')" class="hover:text-primary transition-colors text-left">Base Cross-Chain Köprü (wBCT)</button></li>
+                  <li><button type="button" onclick="switchTab('bns')" class="hover:text-primary transition-colors text-left">BNS (.bct Alan Adları)</button></li>
+                  <li><button type="button" onclick="switchTab('ag-ve-explorer')" class="hover:text-primary transition-colors text-left">Blokzincir Explorer &amp; Ağ</button></li>
+                  <li><button type="button" onclick="switchTab('system-wallets')" class="hover:text-primary transition-colors text-left">Resmi Sistem Cüzdanları</button></li>
+                </ul>
+              </div>
+
+              <!-- Col 3: Geliştirici & Güvenlik -->
+              <div class="flex flex-col gap-2.5">
+                <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-secondary">Geliştirici &amp; Güvenlik</span>
+                <ul class="space-y-1.5 text-on-surface-variant">
+                  <li><a href="/docs/LockTrace_Whitepaper.pdf" target="_blank" rel="noopener noreferrer" class="hover:text-secondary transition-colors flex items-center gap-1"><span>Whitepaper (PDF)</span><span class="material-symbols-outlined text-[13px]">open_in_new</span></a></li>
+                  <li><button type="button" onclick="switchTab('guvenlik')" class="hover:text-secondary transition-colors text-left">Güvenlik Politikası &amp; Bildirim</button></li>
+                  <li><button type="button" onclick="openNetworkSecurityModal()" class="hover:text-secondary transition-colors text-left flex items-center gap-1"><span>Kriptografik İntaktlık (SHA-256)</span><span class="material-symbols-outlined text-[13px] text-emerald-400">verified</span></button></li>
+                  <li><button type="button" onclick="switchTab('api-docs')" class="hover:text-secondary transition-colors text-left">REST API &amp; Tokenomics</button></li>
+                  <li><a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener noreferrer" class="hover:text-secondary transition-colors flex items-center gap-1"><span>GitHub Açık Kaynak Repo</span><span class="material-symbols-outlined text-[13px]">open_in_new</span></a></li>
+                </ul>
+              </div>
+
+              <!-- Col 4: Doğrulanmış Varlıklar & İletişim -->
+              <div class="flex flex-col gap-2.5">
+                <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-400">Doğrulanmış Sözleşmeler</span>
+                <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between text-[10px] font-mono text-on-surface-variant">
+                    <span>Base Mainnet wBCT:</span>
+                    <span class="text-emerald-400 font-bold">Sourcify Match</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-1 font-mono text-[11px] text-on-surface">
+                    <span class="truncate">0xA3C743...7254</span>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button type="button" onclick="copyToClipboard('0xA3C743113a41cFd0146917065d4578337Bb77254'); showToast('wBCT sözleşme adresi kopyalandı!')" class="p-1 hover:text-primary" title="Adresi Kopyala"><span class="material-symbols-outlined text-[14px]">content_copy</span></button>
+                      <a href="https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" rel="noopener noreferrer" class="p-1 hover:text-secondary" title="BaseScan"><span class="material-symbols-outlined text-[14px]">open_in_new</span></a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Resmi İletişim E-postaları -->
+                <div class="flex flex-col gap-1 text-[11px] text-on-surface-variant">
+                  <span class="font-mono text-[10px] uppercase text-outline">Resmi İletişim:</span>
+                  <a href="mailto:locktracetoken@gmail.com" class="text-primary hover:underline font-mono truncate">locktracetoken@gmail.com</a>
+                  <a href="mailto:locktracetoken+space@gmail.com" class="text-on-surface-variant hover:text-on-surface font-mono truncate">locktracetoken+space@gmail.com</a>
+                </div>
+              </div>
+
             </div>
-            <div class="flex items-center gap-3 flex-wrap justify-center">
-              <a href="https://x.com/LockTraceSpace" target="_blank" rel="noopener" class="text-on-surface hover:text-primary transition-colors flex items-center gap-1 font-sans">
-                <span class="font-bold">𝕏</span> <span>@LockTraceSpace</span>
-              </a>
-              <span>&bull;</span>
-              <a href="https://t.me/+zsaG1qkAHZllZGIy" target="_blank" rel="noopener" class="text-on-surface hover:text-sky-400 transition-colors flex items-center gap-1 font-sans">
-                <span class="material-symbols-outlined text-[15px] text-sky-400">send</span> <span>Telegram</span>
-              </a>
-              <span>&bull;</span>
-              <a href="https://www.instagram.com/locktracespace" target="_blank" rel="noopener" class="text-on-surface hover:text-rose-400 transition-colors flex items-center gap-1 font-sans">
-                <span>Instagram</span>
-              </a>
-              <span>&bull;</span>
-              <a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener" class="text-on-surface hover:text-emerald-400 transition-colors flex items-center gap-1 font-sans">
-                <span>GitHub</span>
-              </a>
-              <span>&bull;</span>
-              <a href="/docs/LockTrace_Whitepaper.pdf" target="_blank" class="text-secondary hover:underline font-sans">Whitepaper (PDF)</a>
-              <span>&bull;</span>
-              <button onclick="switchTab('guvenlik')" class="text-primary hover:underline cursor-pointer font-sans" type="button">Security &amp; Policy</button>
+
+            <!-- Middle Row: Social Media Pill Badges (X, Telegram, Instagram, GitHub, Uniswap, DexScreener) -->
+            <div class="pt-4 border-t border-outline-variant/15 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[11px] font-mono text-on-surface-variant uppercase mr-1">Topluluk:</span>
+                <a href="https://x.com/LockTraceSpace" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-primary transition-all flex items-center gap-1.5 text-xs font-semibold border border-outline-variant/15 shadow-xs">
+                  <span class="font-bold font-mono">𝕏</span>
+                  <span>@LockTraceSpace</span>
+                </a>
+                <a href="https://t.me/+zsaG1qkAHZllZGIy" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-sky-400 transition-all flex items-center gap-1.5 text-xs font-semibold border border-outline-variant/15 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px] text-sky-400">send</span>
+                  <span>Telegram</span>
+                </a>
+                <a href="https://www.instagram.com/locktracespace" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-rose-400 transition-all flex items-center gap-1.5 text-xs font-semibold border border-outline-variant/15 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px] text-rose-400">photo_camera</span>
+                  <span>Instagram</span>
+                </a>
+                <a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-emerald-400 transition-all flex items-center gap-1.5 text-xs font-semibold border border-outline-variant/15 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px] text-emerald-400">code</span>
+                  <span>GitHub</span>
+                </a>
+                <a href="https://dexscreener.com/base/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-emerald-400 transition-all flex items-center gap-1.5 text-xs font-semibold border border-emerald-500/20 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px]">monitoring</span>
+                  <span>DexScreener</span>
+                </a>
+                <a href="https://app.uniswap.org/#/swap?chain=base&outputCurrency=0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-secondary transition-all flex items-center gap-1.5 text-xs font-semibold border border-secondary/20 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px]">currency_exchange</span>
+                  <span>Uniswap Pool</span>
+                </a>
+              </div>
             </div>
+
+            <!-- Bottom Row: Copyright & Cryptographic Verification Footnote -->
+            <div class="pt-3 border-t border-outline-variant/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-on-surface-variant text-center sm:text-left">
+              <span>&copy; 2026 LockTrace Network. Non-Custodial, Open-Source &amp; Censorship-Resistant.</span>
+              <div class="flex items-center gap-2">
+                <span class="flex items-center gap-1 text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>ECDSA Signed Release</span>
+                <span class="opacity-40">&bull;</span>
+                <span class="text-primary cursor-pointer hover:underline" onclick="openNetworkSecurityModal()">IPFS CIDv1 Sealed</span>
+              </div>
+            </div>
+
           </footer>
 
         </div>
@@ -780,10 +881,15 @@
               <span class="text-3xl sm:text-4xl md:text-5xl text-on-surface tracking-tight font-bold truncate" id="cardBalance">0.00</span>
               <span class="font-headline-sm text-headline-sm text-primary font-semibold shrink-0">BCT</span>
             </div>
-            <div class="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-surface-container text-primary font-label-md text-label-md border border-outline-variant/15">
-              <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
-              <span class="font-semibold" id="walletStatusBadge">Mainnet Native Asset</span>
-              <span class="text-on-surface-variant ml-0.5 font-normal" id="walletSubStatusText">• Confirmed On-Chain</span>
+            <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-2 select-none">
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-primary text-[11px] sm:text-xs font-semibold border border-outline-variant/20 shadow-xs">
+                <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
+                <span id="walletStatusBadge">Mainnet Native Asset</span>
+              </div>
+              <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant text-[11px] sm:text-xs font-mono border border-outline-variant/15" id="walletSubStatusWrap">
+                <span class="material-symbols-outlined text-[13px] text-emerald-400">verified</span>
+                <span id="walletSubStatusText">Confirmed On-Chain</span>
+              </div>
             </div>
           </div>
 
@@ -847,11 +953,11 @@
             </div>
 
             <!-- Segmented Filter Pill Container (Exact Stitch) -->
-            <div class="flex items-center gap-space-xs p-1 bg-surface-container-low rounded-full mb-space-md border border-outline-variant/20" id="filter-bar">
-              <button class="filter-tab flex-1 py-1.5 px-3 rounded-full text-center font-label-md text-label-md transition-all bg-surface-container-high text-on-surface font-medium shadow-sm" data-filter="all" onclick="filterTransactions('all', this)" type="button">All</button>
-              <button class="filter-tab flex-1 py-1.5 px-3 rounded-full text-center font-label-md text-label-md transition-all text-on-surface-variant hover:text-on-surface" data-filter="in" onclick="filterTransactions('in', this)" type="button">Received</button>
-              <button class="filter-tab flex-1 py-1.5 px-3 rounded-full text-center font-label-md text-label-md transition-all text-on-surface-variant hover:text-on-surface" data-filter="out" onclick="filterTransactions('out', this)" type="button">Sent</button>
-              <button class="filter-tab flex-1 py-1.5 px-3 rounded-full text-center font-label-md text-label-md transition-all text-on-surface-variant hover:text-on-surface" data-filter="space" onclick="filterTransactions('space', this)" type="button">Space</button>
+            <div class="flex items-center gap-1 p-1 bg-surface-container-low rounded-full mb-space-md border border-outline-variant/20" id="filter-bar">
+              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-3 rounded-full text-center text-xs sm:text-label-md transition-all bg-surface-container-high text-on-surface font-medium shadow-sm truncate" data-filter="all" onclick="filterTransactions('all', this)" type="button">All</button>
+              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-3 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="in" onclick="filterTransactions('in', this)" type="button">Received</button>
+              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-3 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="out" onclick="filterTransactions('out', this)" type="button">Sent</button>
+              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-3 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="space" onclick="filterTransactions('space', this)" type="button">Space</button>
             </div>
 
             <!-- Transaction List -->
@@ -863,11 +969,11 @@
           </div>
 
           <!-- Bottom On-Chain Verification Footnote (Exact Stitch) -->
-          <div class="mt-space-xl flex items-center justify-center gap-1.5 py-3 px-4 rounded-xl bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20">
+          <div class="mt-space-xl flex flex-wrap items-center justify-center gap-1.5 py-3 px-3 sm:px-4 rounded-xl bg-surface-container-lowest text-on-surface-variant border border-outline-variant/20 text-center text-xs">
             <span class="material-symbols-outlined text-[16px] text-primary shrink-0">verified_user</span>
-            <span class="font-label-sm text-label-sm truncate">All transactions verified via ECDSA &amp; Merkle proofs</span>
-            <span class="text-[8px] opacity-40 shrink-0">•</span>
-            <button class="font-label-sm text-label-sm text-secondary hover:underline flex items-center gap-0.5 shrink-0" onclick="switchTab('ag-ve-explorer')" type="button">
+            <span class="text-xs sm:text-label-sm">All transactions verified via ECDSA &amp; Merkle proofs</span>
+            <span class="text-[8px] opacity-40 shrink-0 hidden xs:inline">•</span>
+            <button class="text-xs sm:text-label-sm text-secondary hover:underline flex items-center gap-0.5 shrink-0" onclick="switchTab('ag-ve-explorer')" type="button">
               <span>Explorer</span>
               <span class="material-symbols-outlined text-[12px]">open_in_new</span>
             </button>
@@ -981,30 +1087,30 @@
           </section>
 
           <!-- Network Fee Pill Bar (Exact Stitch) -->
-          <div class="flex items-center justify-between bg-surface-container-low/40 px-space-md py-2.5 rounded-xl mb-space-lg text-on-surface-variant border border-outline-variant/10">
-            <div class="flex items-center gap-2">
-              <span class="material-symbols-outlined text-[18px] text-primary">local_gas_station</span>
-              <span class="font-body-sm text-body-sm">Estimated Network Fee:</span>
-              <span class="font-label-md text-label-md text-on-surface font-medium font-mono" id="sendFeePreview">0.00 BCT (%1)</span>
+          <div class="flex flex-wrap items-center justify-between gap-2 bg-surface-container-low/40 px-3 sm:px-space-md py-2.5 rounded-xl mb-space-lg text-on-surface-variant border border-outline-variant/10 text-xs">
+            <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
+              <span class="material-symbols-outlined text-[17px] text-primary shrink-0">local_gas_station</span>
+              <span class="font-body-sm text-xs sm:text-body-sm">Estimated Network Fee:</span>
+              <span class="font-label-md text-xs sm:text-label-md text-on-surface font-medium font-mono" id="sendFeePreview">0.00 BCT (%1)</span>
             </div>
-            <div class="flex items-center gap-1">
-              <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-              <span class="font-label-sm text-label-sm text-on-surface-variant">Standard Speed</span>
+            <div class="flex items-center gap-1 shrink-0 text-[11px] sm:text-xs">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary shrink-0"></span>
+              <span class="font-label-sm text-[11px] sm:text-label-sm text-on-surface-variant">Standard Speed</span>
             </div>
           </div>
 
           <!-- Submit CTA & Trust Badges (Exact Stitch) -->
           <div class="flex flex-col gap-space-sm mt-auto">
-            <button class="w-full h-[52px] rounded-full bg-primary text-on-primary font-headline-sm text-headline-sm font-semibold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all hover:brightness-105 disabled:opacity-40 disabled:cursor-not-allowed" id="btnExecuteSend" onclick="executeSendTransaction()" type="button">
+            <button class="w-full h-[52px] rounded-full bg-primary text-on-primary font-headline-sm text-headline-sm font-semibold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all hover:brightness-105 disabled:opacity-40 disabled:cursor-not-allowed text-sm sm:text-base" id="btnExecuteSend" onclick="executeSendTransaction()" type="button">
               <span id="btnSendText">Sign &amp; Broadcast Transaction</span>
               <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
             </button>
-            <div class="flex items-center justify-center gap-space-md py-1 text-outline font-label-sm text-label-sm">
+            <div class="flex flex-wrap items-center justify-center gap-2 sm:gap-space-md py-1 text-outline font-label-sm text-[11px] sm:text-label-sm text-center">
               <div class="flex items-center gap-1">
                 <span class="material-symbols-outlined text-[14px] text-primary">verified_user</span>
                 <span>Client-Side ECDSA Signed</span>
               </div>
-              <span class="text-surface-variant">•</span>
+              <span class="text-surface-variant hidden xs:inline">•</span>
               <div class="flex items-center gap-1">
                 <span class="material-symbols-outlined text-[14px] text-primary">timer</span>
                 <span>Instant Block Confirmation</span>
@@ -1131,13 +1237,13 @@
 
             <!-- Segmented Switcher: 12 Words vs Private Key -->
             <div class="grid grid-cols-2 p-1 bg-surface-container rounded-xl mb-4 border border-outline-variant/15">
-              <button class="py-2 rounded-lg font-label-md text-label-md font-semibold transition-all flex items-center justify-center gap-1.5 bg-surface-container-high text-primary shadow-sm" id="btnImportTabWords" onclick="setImportTab('words')" type="button">
-                <span class="material-symbols-outlined text-[16px]">format_list_numbered</span>
-                <span>12 Seed Words</span>
+              <button class="py-2 px-1 rounded-lg text-xs sm:text-label-md font-semibold transition-all flex items-center justify-center gap-1 sm:gap-1.5 bg-surface-container-high text-primary shadow-sm truncate" id="btnImportTabWords" onclick="setImportTab('words')" type="button">
+                <span class="material-symbols-outlined text-[16px] shrink-0">format_list_numbered</span>
+                <span class="truncate">12 Seed Words</span>
               </button>
-              <button class="py-2 rounded-lg font-label-md text-label-md font-semibold transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface" id="btnImportTabKey" onclick="setImportTab('key')" type="button">
-                <span class="material-symbols-outlined text-[16px]">vpn_key</span>
-                <span>Private Key (Hex)</span>
+              <button class="py-2 px-1 rounded-lg text-xs sm:text-label-md font-semibold transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-on-surface-variant hover:text-on-surface truncate" id="btnImportTabKey" onclick="setImportTab('key')" type="button">
+                <span class="material-symbols-outlined text-[16px] shrink-0">vpn_key</span>
+                <span class="truncate">Private Key (Hex)</span>
               </button>
             </div>
 
@@ -1333,16 +1439,45 @@
                   </div>
                 </div>
 
+                <!-- Fiili Yakım & Kayıp Test Cüzdanları Bilgi Kartları (Mobile Responsive Layout) -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
+                  <div class="bg-surface-container/60 p-3 sm:p-3.5 rounded-2xl border border-rose-500/25 bg-gradient-to-br from-rose-500/5 to-transparent flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[18px]">local_fire_department</span>
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-xs font-semibold text-rose-300">Kayıp Anahtar Test Cüzdanları (Fiili Yakım)</span>
+                        <span class="text-[10.5px] text-rose-400/80">Geliştirici doğruladı: 4 Test Adresi</span>
+                      </div>
+                    </div>
+                    <div class="self-end xs:self-center px-2.5 py-1 rounded-xl bg-surface-container/80 border border-rose-500/20 font-bold font-mono text-xs sm:text-sm text-rose-300 shrink-0" id="metricLostKeyWallets">17,008.20 BCT</div>
+                  </div>
+
+                  <div class="bg-surface-container/60 p-3 sm:p-3.5 rounded-2xl border border-outline-variant/20 flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-xl bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[18px]">lock_clock</span>
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-xs font-semibold text-on-surface">Toplam Fiili Dolaşım Dışı / Kilitli Arz</span>
+                        <span class="text-[10.5px] text-on-surface-variant">Hazine Rezervi + Kayıp Test Cüzdanları</span>
+                      </div>
+                    </div>
+                    <div class="self-end xs:self-center px-2.5 py-1 rounded-xl bg-surface-container/80 border border-outline-variant/20 font-bold font-mono text-xs sm:text-sm text-on-surface shrink-0" id="metricEffectiveBurn">-- BCT</div>
+                  </div>
+                </div>
+
                 <!-- Network Sub-Bar: Block, Consensus, Wallet Count & Total Released -->
                 <div class="flex flex-wrap items-center justify-between gap-2 px-3 py-2 bg-surface-container-low/80 rounded-xl border border-outline-variant/10 text-xs font-mono">
-                  <div class="flex items-center gap-4 text-on-surface-variant">
+                  <div class="flex flex-wrap items-center gap-2 sm:gap-4 text-on-surface-variant text-[11px] sm:text-xs">
                     <span>Latest Block: <strong class="text-on-surface font-bold" id="metricBlocks">#--</strong></span>
-                    <span>&bull;</span>
+                    <span class="text-outline/40">&bull;</span>
                     <span>Consensus: <strong class="text-on-surface" id="metricDifficulty">PoW Difficulty 3 (1% Fee)</strong></span>
-                    <span>&bull;</span>
+                    <span class="text-outline/40">&bull;</span>
                     <span>Registered Wallets: <strong class="text-on-surface" id="metricWallets">--</strong></span>
                   </div>
-                  <div class="text-on-surface-variant text-[11px]">
+                  <div class="text-on-surface-variant text-[10.5px] sm:text-[11px]">
                     Cumulative Treasury Released: <strong class="text-primary font-bold" id="metricTotalReleased">-- BCT</strong>
                   </div>
                 </div>
@@ -1413,6 +1548,58 @@
               </div>
             </section>
           </div>
+
+          <!-- Base L2 wBCT Activity (BaseScan Explorer Integration) -->
+          <section class="mb-space-xl">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 mb-space-sm p-4 rounded-2xl bg-surface-container-low border border-secondary/25 bg-gradient-to-r from-secondary/5 via-transparent to-transparent">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-secondary/20 flex items-center justify-center text-secondary shrink-0 shadow-sm">
+                  <span class="material-symbols-outlined text-[22px]">swap_horiz</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h2 class="font-label-lg text-label-lg text-on-surface font-semibold">Base L2 wBCT İşlemleri (BaseScan Explorer)</h2>
+                    <span class="px-2 py-0.5 rounded-full bg-secondary/15 text-secondary text-[10px] font-mono font-bold">Base Mainnet (8453)</span>
+                    <span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-[10px] font-mono font-semibold">1:1 Bridge Peg</span>
+                  </div>
+                  <p class="text-xs text-on-surface-variant mt-0.5">
+                    BaseScan'e gitmenize gerek kalmadan, akıllı sözleşme üzerindeki wBCT mint, burn ve köprü transferlerini canlı izleyin.
+                  </p>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 text-xs self-start sm:self-auto shrink-0">
+                <a href="https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-secondary flex items-center gap-1.5 border border-secondary/20 transition-all font-semibold active:scale-95">
+                  <span>BaseScan Sözleşme</span>
+                  <span class="material-symbols-outlined text-[14px]">open_in_new</span>
+                </a>
+                <button type="button" onclick="loadExplorerBaseTransactions(); showToast('BaseScan wBCT işlemleri yenilendi');" class="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center gap-1.5 border border-outline-variant/20 transition-all font-semibold active:scale-95">
+                  <span class="material-symbols-outlined text-[14px] text-primary">sync</span>
+                  <span>Yenile</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Feed List for Base Transactions -->
+            <div class="flex flex-col gap-2" id="feedBaseTxsList">
+              <div class="p-4 text-center font-body-sm text-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Loading Base L2 transactions...</div>
+            </div>
+
+            <!-- Base Transactions Pagination Controls -->
+            <div id="baseTxsPaginationBar" class="hidden flex items-center justify-between pt-3 mt-2 border-t border-outline-variant/15 text-xs">
+              <button id="btnBaseTxsPrev" onclick="changeBaseTxsPage(-1)" class="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high active:scale-95 disabled:opacity-30 disabled:pointer-events-none font-semibold text-on-surface flex items-center gap-1 transition-all" disabled type="button">
+                <span class="material-symbols-outlined text-[15px]">arrow_back</span>
+                <span>Önceki</span>
+              </button>
+              <div class="text-center font-mono text-[11px] text-on-surface">
+                <span id="baseTxsPageLabel" class="font-semibold">Sayfa 1 / 1</span>
+                <span id="baseTxsCountLabel" class="text-on-surface-variant block text-[10px]">(0 İşlem)</span>
+              </div>
+              <button id="btnBaseTxsNext" onclick="changeBaseTxsPage(1)" class="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high active:scale-95 disabled:opacity-30 disabled:pointer-events-none font-semibold text-on-surface flex items-center gap-1 transition-all" disabled type="button">
+                <span>Sonraki</span>
+                <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+              </button>
+            </div>
+          </section>
 
           <!-- Top Token Holders & Account Balances (Rich List) -->
           <section class="mb-space-lg">
@@ -1740,9 +1927,12 @@
                   </div>
                 </div>
 
-                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
-                  <span class="font-mono text-xs text-on-surface select-all truncate">BCT0000000000000000000000000000000000000000</span>
-                  <button type="button" onclick="copyToClipboard('BCT0000000000000000000000000000000000000000'); showToast('L1 Burn address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2 min-w-0">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="sm:hidden font-mono text-xs text-on-surface font-semibold select-all truncate">BCT000000...0000</span>
+                    <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCT0000000000000000000000000000000000000000</span>
+                  </div>
+                  <button type="button" onclick="copyToClipboard('BCT0000000000000000000000000000000000000000'); showToast('L1 Burn adresi kopyalandı!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Copy Address">
                     <span class="material-symbols-outlined text-[16px]">content_copy</span>
                   </button>
                 </div>
@@ -1774,9 +1964,12 @@
                   </div>
                 </div>
 
-                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
-                  <span class="font-mono text-xs text-on-surface select-all truncate">0x000000000000000000000000000000000000dEaD</span>
-                  <button type="button" onclick="copyToClipboard('0x000000000000000000000000000000000000dEaD'); showToast('EVM dead address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2 min-w-0">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="sm:hidden font-mono text-xs text-on-surface font-semibold select-all truncate">0x000000...dEaD</span>
+                    <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">0x000000000000000000000000000000000000dEaD</span>
+                  </div>
+                  <button type="button" onclick="copyToClipboard('0x000000000000000000000000000000000000dEaD'); showToast('EVM dead adresi kopyalandı!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Copy Address">
                     <span class="material-symbols-outlined text-[16px]">content_copy</span>
                   </button>
                 </div>
@@ -1787,6 +1980,97 @@
                     <span>BaseScan</span>
                     <span class="material-symbols-outlined text-[13px]">open_in_new</span>
                   </a>
+                </div>
+              </div>
+
+              <!-- 7. Developer Verified Lost-Key Test Wallets (Effective Permanent Burn) -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-rose-500/30 bg-gradient-to-br from-rose-500/10 via-transparent to-transparent flex flex-col justify-between gap-3 lg:col-span-2">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between flex-wrap gap-2">
+                    <span class="px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-300 text-[11px] font-mono font-bold flex items-center gap-1.5">
+                      <span class="material-symbols-outlined text-[14px] text-rose-400">local_fire_department</span>
+                      Geliştirici Doğruladı: Kayıp Private Key (Özel Test Cüzdanları)
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-rose-500/20 text-rose-300 text-[10.5px] font-mono font-bold">Fiili Yakım / Kalıcı Dolaşım Dışı</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Kayıp Anahtar Özel Test Cüzdanları (Fiili Yakım Havuzu)</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Geliştirici tarafından ağın erken test aşamasında oluşturulmuş ve private key'leri bilinmeyen / kayıp 4 özel test cüzdanıdır. Bu adreslerden hiçbir zaman transfer yapılamaz ve coinler zincirde sonsuza dek kilitlidir. BCT ekonomik protokolü bu bakiyeleri fiili yakım (permanent burn) kabul ederek resmi dolaşım arzından düşmüştür.
+                    </p>
+                  </div>
+                </div>
+
+                <!-- 4 Test Wallets Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5 min-w-0">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-semibold text-rose-300">Test Adresi #1</span>
+                      <span class="font-mono font-bold text-on-surface">10,001.0000 BCT</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 min-w-0">
+                      <div class="flex items-center gap-1 min-w-0 cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d')">
+                        <span class="sm:hidden font-mono text-xs text-on-surface select-all truncate font-medium">BCTd9cd...d11d</span>
+                        <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d</span>
+                      </div>
+                      <button type="button" onclick="copyToClipboard('BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Adresi Kopyala">
+                        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5 min-w-0">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-semibold text-rose-300">Test Adresi #2</span>
+                      <span class="font-mono font-bold text-on-surface">5,001.8140 BCT</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 min-w-0">
+                      <div class="flex items-center gap-1 min-w-0 cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('BCTf8c255f129a61b296f197a7e70902c043c3da0bf')">
+                        <span class="sm:hidden font-mono text-xs text-on-surface select-all truncate font-medium">BCTf8c2...a0bf</span>
+                        <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCTf8c255f129a61b296f197a7e70902c043c3da0bf</span>
+                      </div>
+                      <button type="button" onclick="copyToClipboard('BCTf8c255f129a61b296f197a7e70902c043c3da0bf'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Adresi Kopyala">
+                        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5 min-w-0">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-semibold text-rose-300">Test Adresi #3</span>
+                      <span class="font-mono font-bold text-on-surface">1,004.3880 BCT</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 min-w-0">
+                      <div class="flex items-center gap-1 min-w-0 cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('BCT7404325cf37316e3c6396ff1eef80c4ef381c27b')">
+                        <span class="sm:hidden font-mono text-xs text-on-surface select-all truncate font-medium">BCT7404...27b</span>
+                        <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCT7404325cf37316e3c6396ff1eef80c4ef381c27b</span>
+                      </div>
+                      <button type="button" onclick="copyToClipboard('BCT7404325cf37316e3c6396ff1eef80c4ef381c27b'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Adresi Kopyala">
+                        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5 min-w-0">
+                    <div class="flex items-center justify-between text-xs">
+                      <span class="font-semibold text-rose-300">Test Adresi #4</span>
+                      <span class="font-mono font-bold text-on-surface">1,001.0000 BCT</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 min-w-0">
+                      <div class="flex items-center gap-1 min-w-0 cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('BCT4ebea3d0f7132475e4e7c22573696eab6267a191')">
+                        <span class="sm:hidden font-mono text-xs text-on-surface select-all truncate font-medium">BCT4ebe...a191</span>
+                        <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCT4ebea3d0f7132475e4e7c22573696eab6267a191</span>
+                      </div>
+                      <button type="button" onclick="copyToClipboard('BCT4ebea3d0f7132475e4e7c22573696eab6267a191'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Adresi Kopyala">
+                        <span class="material-symbols-outlined text-[15px]">content_copy</span>
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-rose-500/20 text-xs">
+                  <span class="text-rose-300/90 font-medium">Toplam Fiili Yakılmış Test Bakiyesi: <strong class="text-rose-200 font-mono text-sm" id="sysValLostKeyTotal">17,008.2020 BCT</strong></span>
+                  <span class="text-on-surface-variant text-[11px] font-mono">Doğrulandı: Geliştirici Tarafından İlan Edilmiş Fiili Kilit</span>
                 </div>
               </div>
 
@@ -1880,11 +2164,14 @@
       </div>
 
       <div id="tab-space" class="tab-content flex-col w-full items-center">
-        <!-- 5A: MAIN SPACE FEED VIEW (Exact Stitch Screen E) -->
-        <div id="spaceFeedMainView" class="flex flex-col w-full max-w-[600px] mx-auto pb-12">
+        <!-- 5A: MAIN SPACE FEED VIEW (Exact Stitch Screen E & Desktop 2-Column Grid) -->
+        <div id="spaceFeedMainView" class="flex flex-col lg:flex-row w-full max-w-[1080px] xl:max-w-[1140px] mx-auto pb-12 gap-6 justify-center px-2 sm:px-3 md:px-4">
+
+          <!-- Left Main Feed Column -->
+          <div class="flex-1 max-w-[640px] w-full flex flex-col min-w-0">
 
           <!-- Sub-Header Status & Search/Filter Icons -->
-          <div class="px-3 sm:px-4 md:px-0 pt-space-xs pb-space-sm flex items-center justify-between gap-space-sm">
+          <div class="px-1 sm:px-2 md:px-0 pt-space-xs pb-space-sm flex items-center justify-between gap-space-sm">
             <div class="flex items-center gap-space-xs bg-surface-container-low px-3 py-1.5 rounded-full shadow-sm border border-outline-variant/20">
               <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
               <span class="font-label-sm text-label-sm text-on-surface uppercase tracking-wider">LockTrace Space</span>
@@ -1901,7 +2188,7 @@
           </div>
 
           <!-- Expandable Search Input -->
-          <div class="hidden px-3 sm:px-4 md:px-0 mb-space-sm" id="spaceSearchBarWrap">
+          <div class="hidden px-1 sm:px-2 md:px-0 mb-space-sm" id="spaceSearchBarWrap">
             <div class="flex items-center bg-surface-container-low rounded-full px-3.5 py-2 border border-outline-variant/30 focus-within:border-primary">
               <span class="material-symbols-outlined text-[17px] text-outline mr-2">search</span>
               <input class="w-full bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none" id="spaceSearchInput" oninput="filterSpaceBySearch()" placeholder="Search thoughts or author addresses..." type="search"/>
@@ -1909,7 +2196,7 @@
           </div>
 
           <!-- Unconnected Wallet Prompt Banner -->
-          <div id="spaceWalletAlert" class="hidden mx-3 sm:mx-4 md:mx-0 mb-3.5 p-3.5 rounded-2xl bg-surface-container-low border border-primary/30 items-center justify-between gap-3 shadow-sm">
+          <div id="spaceWalletAlert" class="hidden mx-1 sm:mx-2 md:mx-0 mb-3.5 p-3.5 rounded-2xl bg-surface-container-low border border-primary/30 items-center justify-between gap-3 shadow-sm">
             <div class="flex items-center gap-2.5 min-w-0">
               <span class="material-symbols-outlined text-primary text-[22px] shrink-0">account_balance_wallet</span>
               <div class="flex flex-col min-w-0">
@@ -1921,7 +2208,7 @@
           </div>
 
                     <!-- Modern Mobile-First Streamlined Quick Compose Box -->
-          <section class="px-3 sm:px-4 md:px-0 mb-3.5 sm:mb-4" id="spaceComposeSection">
+          <section class="px-1 sm:px-2 md:px-0 mb-3.5 sm:mb-4" id="spaceComposeSection">
             <div class="bg-surface-container-low/95 sm:bg-surface-container/90 rounded-2xl p-4 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col gap-3 transition-all duration-200 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15">
               
               <!-- Top Row: Author Identity & Handle Selector -->
@@ -2006,7 +2293,7 @@
           </section>
 
           <!-- Feed Filter Segmented Bar & Algorithms (Exact Stitch Screen E) -->
-          <section class="px-3 sm:px-4 md:px-0 mb-3">
+          <section class="px-1 sm:px-2 md:px-0 mb-3">
             <div class="flex items-center bg-surface-container-low p-1 rounded-full shadow-inner border border-outline-variant/20 gap-1">
               <button class="space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface bg-surface-container-high font-semibold transition-all text-center flex items-center justify-center gap-1 truncate" id="filterBtnForYou" onclick="filterSpaceTab('foryou')" type="button" title="Algorithmic Discovery Feed">
                 <span class="material-symbols-outlined text-[15px] text-primary">auto_awesome</span>
@@ -2028,7 +2315,7 @@
           </section>
 
           <!-- Active Topic / Entity Filter Banner (Dismissable) -->
-          <div id="spaceActiveFilterBar" class="hidden mx-3 sm:mx-4 md:mx-0 mb-3 p-2.5 px-3.5 rounded-xl bg-surface-container-low border border-primary/30 flex items-center justify-between gap-2 shadow-xs">
+          <div id="spaceActiveFilterBar" class="hidden mx-1 sm:mx-2 md:mx-0 mb-3 p-2.5 px-3.5 rounded-xl bg-surface-container-low border border-primary/30 flex items-center justify-between gap-2 shadow-xs">
             <div class="flex items-center gap-2 min-w-0">
               <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
               <span class="text-xs font-semibold text-on-surface truncate">Filtering Topic: <span id="spaceActiveFilterText" class="text-primary font-mono font-bold">#LockTrace</span></span>
@@ -2040,7 +2327,7 @@
           </div>
 
           <!-- Trending Topics & Cashtags Bar (Horizontal Carousel) -->
-          <div class="px-3 sm:px-4 md:px-0 mb-3.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="spaceTrendingTagsBar">
+          <div class="px-1 sm:px-2 md:px-0 mb-3.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="spaceTrendingTagsBar">
             <span class="text-[11px] font-mono uppercase font-bold text-on-surface-variant/70 shrink-0 flex items-center gap-1 mr-1">
               <span class="material-symbols-outlined text-[14px] text-amber-400">trending_up</span>
               <span>Trending:</span>
@@ -2051,7 +2338,7 @@
           </div>
 
           <!-- Feed Content Stream -->
-          <div class="flex flex-col gap-3 px-3 sm:px-4 md:px-0" id="spaceFeedStream">
+          <div class="flex flex-col gap-3 px-1 sm:px-2 md:px-0" id="spaceFeedStream">
             <div class="text-center py-8 text-on-surface-variant font-body-sm text-body-sm flex flex-col items-center gap-2">
               <span class="material-symbols-outlined text-[26px] animate-spin text-primary">autorenew</span>
               <span>Loading on-chain thoughts...</span>
@@ -2060,14 +2347,152 @@
 
           <!-- Floating Action Compose Trigger Button (Exact Stitch FAB) -->
           <aside class="fixed bottom-20 md:bottom-8 right-5 md:right-8 z-40">
-            <button aria-label="Compose New Post" class="w-13 h-13 p-3.5 rounded-full bg-primary-container text-on-primary-container shadow-xl flex items-center justify-center active:scale-90 transition-transform focus:outline-none" id="fab-compose" onclick="focusSpaceComposer()" type="button">
+            <button aria-label="Compose New Post" class="w-13 h-13 p-3.5 rounded-full bg-primary-container text-on-primary-container shadow-xl flex items-center justify-center active:scale-90 transition-transform focus:outline-none cursor-pointer" id="fab-compose" onclick="focusSpaceComposer()" type="button">
               <span class="material-symbols-outlined text-[24px]">edit</span>
             </button>
           </aside>
-        </div>
+
+        </div> <!-- End Left Main Feed Column -->
+
+        <!-- Right Sidebar Column: Trending Topics, Suggested Voices & Network Vitals (Exact Stitch Desktop) -->
+        <aside class="hidden lg:flex flex-col w-[350px] xl:w-[380px] shrink-0 gap-4 min-w-0">
+          
+          <!-- Card 1: Trending Topics -->
+          <div class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">local_fire_department</span>
+                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Trending Topics</h2>
+              </div>
+              <button type="button" onclick="showToast('Showing top trending topics');" class="text-xs text-on-surface-variant hover:text-primary transition-colors cursor-pointer font-medium">View All</button>
+            </div>
+            <div class="flex flex-col gap-2">
+              <!-- Topic 1 -->
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#EIP4844')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">#EIP4844</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Proto-danksharding &amp; blobs</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">14.2k casts</span>
+              </a>
+              <!-- Topic 2 -->
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('$ETH')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">$ETH L2 Rollups</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Arbitrum, Optimism, Base</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">8.9k casts</span>
+              </a>
+              <!-- Topic 3 -->
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#Solana')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-purple-400 transition-colors truncate">Solana Breakpoint</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Firedancer updates</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-purple-500/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-purple-400 shrink-0 transition-colors">5.4k casts</span>
+              </a>
+              <!-- Topic 4 -->
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#ZeroKnowledge')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-emerald-400 transition-colors truncate">Zero-Knowledge MPC</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Non-custodial key recovery</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-emerald-500/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-emerald-400 shrink-0 transition-colors">3.1k casts</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Card 2: Suggested Voices (Real On-Chain Verified Accounts) -->
+          <div class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary text-[20px]">group_add</span>
+                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Suggested Voices</h2>
+              </div>
+              <button type="button" onclick="loadSuggestedVoices(); showToast('Suggested voices refreshed');" class="text-xs text-on-surface-variant hover:text-primary transition-colors cursor-pointer font-medium" title="Refresh">
+                Refresh
+              </button>
+            </div>
+            <!-- Dynamic Real On-Chain Accounts Container -->
+            <div id="suggestedVoicesContainer" class="flex flex-col gap-2.5 min-h-[120px]">
+              <div class="flex items-center justify-center p-4 text-xs text-on-surface-variant font-mono">
+                <span class="material-symbols-outlined text-sm animate-spin mr-1.5">sync</span>
+                Loading on-chain voices...
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Network Vitals -->
+          <div class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">speed</span>
+                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Network Vitals</h2>
+              </div>
+              <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            </div>
+            <!-- Gauges Grid -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <!-- Ethereum Gas Gauge -->
+              <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col justify-between border border-outline-variant/10">
+                <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                  <span class="text-[10.5px] font-mono uppercase">Ethereum Gas</span>
+                  <span class="material-symbols-outlined text-[15px] text-primary">local_gas_station</span>
+                </div>
+                <div>
+                  <span class="font-mono text-base font-bold text-on-surface" id="vitalEthGasVal">12</span>
+                  <span class="text-[10px] text-on-surface-variant ml-0.5 font-mono">Gwei</span>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-medium mt-1">Normal / Cheap</span>
+              </div>
+              <!-- Sentiment Gauge -->
+              <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col justify-between border border-outline-variant/10">
+                <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                  <span class="text-[10.5px] font-mono uppercase">Sentiment</span>
+                  <span class="material-symbols-outlined text-[15px] text-emerald-400">sentiment_satisfied</span>
+                </div>
+                <div>
+                  <span class="font-mono text-base font-bold text-emerald-400" id="spaceSentimentScore">72</span>
+                  <span class="text-[10px] text-on-surface-variant ml-0.5 font-mono">/ 100</span>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-medium mt-1">Greed / Bullish</span>
+              </div>
+            </div>
+            <!-- L2 Gas Consumption Share Bar -->
+            <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-[11px] text-on-surface-variant">L2 Gas Consumption Share</span>
+                <span class="text-[11px] font-mono text-emerald-400 font-semibold">68.4% of blobs</span>
+              </div>
+              <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden flex">
+                <div class="bg-sky-400 h-full transition-all duration-1000" style="width: 45%" title="Arbitrum: 31%"></div>
+                <div class="bg-blue-500 h-full transition-all duration-1000" style="width: 35%" title="Base: 24%"></div>
+                <div class="bg-rose-500 h-full transition-all duration-1000" style="width: 20%" title="Optimism: 13.4%"></div>
+              </div>
+              <div class="flex justify-between font-mono text-[9.5px] text-on-surface-variant pt-0.5">
+                <span class="text-sky-400">Arbitrum: 31%</span>
+                <span class="text-blue-400">Base: 24%</span>
+                <span class="text-rose-400">Optimism: 13.4%</span>
+              </div>
+            </div>
+            <!-- Mini Protocol Footnote -->
+            <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-[10px] font-mono text-on-surface-variant">
+              <span>Aether Space Protocol v1.4</span>
+              <div class="flex items-center gap-1.5">
+                <span class="hover:text-primary cursor-pointer" onclick="showToast('IPFS Node status: Connected', 'hub')">IPFS Node</span>
+                <span>•</span>
+                <span class="hover:text-primary cursor-pointer" onclick="switchTab('guvenlik')">Audit</span>
+                <span>•</span>
+                <span class="hover:text-primary cursor-pointer" onclick="switchTab('ag-ve-explorer')">RPC</span>
+              </div>
+            </div>
+          </div>
+
+        </aside>
+      </div>
 
         <!-- 5B: SPACE POST DETAILS & COMMENTS STACK VIEW (Exact Stitch Screen F) -->
-        <div id="spacePostDetailView" class="hidden flex-col w-full max-w-[600px] mx-auto px-3 sm:px-4 md:px-0 pb-28">
+        <div id="spacePostDetailView" class="hidden flex-col w-full max-w-[600px] mx-auto px-1 sm:px-2 md:px-0 pb-28">
           <!-- Desktop Back Bar (Mobile uses #mobileHeaderPostDetail) -->
           <div class="hidden md:flex items-center gap-2 mb-4">
             <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" onclick="closeSpacePostDetail()" type="button">
@@ -2082,7 +2507,7 @@
           </div>
 
           <!-- Sticky Bottom Comment Composer Bar (Exact Stitch Screen F) -->
-          <div class="fixed md:sticky bottom-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-xl px-margin md:px-3 py-3 pb-safe border-t border-outline-variant/20 shadow-[0_-4px_24px_rgba(0,0,0,0.4)] md:rounded-2xl md:mt-4">
+          <div class="fixed md:sticky bottom-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-xl px-2 sm:px-3 py-3 pb-safe border-t border-outline-variant/20 shadow-[0_-4px_24px_rgba(0,0,0,0.4)] md:rounded-2xl md:mt-4">
             <div class="max-w-[600px] mx-auto flex flex-col gap-1.5">
               <div class="flex items-center justify-between text-xs px-2 text-on-surface-variant">
                 <span class="flex items-center gap-1 font-mono text-[11px]"><span class="material-symbols-outlined text-[13px] text-primary">chat</span> On-Chain Comment</span>
@@ -2629,18 +3054,18 @@
             
             <!-- Direction Toggle Selector -->
             <div class="flex items-center p-1 rounded-2xl bg-surface-container-low border border-outline-variant/15">
-              <button id="bridgeDirL1ToEvm" class="flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center justify-center gap-1.5 bg-primary text-on-primary shadow-sm" onclick="setBridgeDirection('L1_TO_EVM')" type="button">
-                <span class="material-symbols-outlined text-[18px]">lock</span>
-                <span>Lock L1 &rarr; Mint wBCT</span>
+              <button id="bridgeDirL1ToEvm" class="flex-1 py-2 sm:py-2.5 px-1.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1 sm:gap-1.5 bg-primary text-on-primary shadow-sm" onclick="setBridgeDirection('L1_TO_EVM')" type="button">
+                <span class="material-symbols-outlined text-[16px] sm:text-[18px] shrink-0">lock</span>
+                <span class="truncate">Lock L1 &rarr; Mint wBCT</span>
               </button>
-              <button id="bridgeDirEvmToL1" class="flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface" onclick="setBridgeDirection('EVM_TO_L1')" type="button">
-                <span class="material-symbols-outlined text-[18px]">local_fire_department</span>
-                <span>Burn wBCT &rarr; Unlock L1</span>
+              <button id="bridgeDirEvmToL1" class="flex-1 py-2 sm:py-2.5 px-1.5 sm:px-3 rounded-xl text-xs sm:text-sm font-semibold transition-all flex items-center justify-center gap-1 sm:gap-1.5 text-on-surface-variant hover:text-on-surface" onclick="setBridgeDirection('EVM_TO_L1')" type="button">
+                <span class="material-symbols-outlined text-[16px] sm:text-[18px] shrink-0">local_fire_department</span>
+                <span class="truncate">Burn wBCT &rarr; Unlock L1</span>
               </button>
             </div>
 
             <!-- Route Summary & Target Chain -->
-            <div class="grid grid-cols-2 gap-3 p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 text-xs">
+            <div class="grid grid-cols-1 xs:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 text-xs">
               <div class="flex flex-col gap-0.5">
                 <span class="text-on-surface-variant font-medium text-[11px] uppercase tracking-wider">Source Network</span>
                 <div class="flex items-center gap-1.5 font-semibold text-on-surface" id="bridgeSourceNetText">
@@ -2739,8 +3164,8 @@
           <!-- Official Contract & Verified Status Card -->
           <div class="flex flex-col gap-3 p-4 sm:p-5 rounded-3xl bg-surface-container-low border border-primary/20 mt-4 shadow-sm">
             <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-              <div class="flex items-center gap-2.5">
-                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse"></span>
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
                 <span class="text-xs font-bold text-on-surface uppercase tracking-wider">Official wBCT Contract (Base Mainnet)</span>
                 <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[10px] font-semibold border border-emerald-500/20">Sourcify Exact Match</span>
               </div>
@@ -2907,7 +3332,7 @@
                 <span class="material-symbols-outlined text-[28px]">verified_user</span>
               </div>
               <div class="flex flex-col">
-                <div class="flex items-center gap-2">
+                <div class="flex flex-wrap items-center gap-2">
                   <h3 class="font-headline-sm text-sm sm:text-base font-semibold text-on-surface">Cryptographic Integrity Shield (v1.9.8)</h3>
                   <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">ACTIVE &bull; VERIFIED</span>
                 </div>
@@ -4240,17 +4665,21 @@
           </div>
 
           <!-- Quick Action Buttons -->
-          <div class="flex items-center gap-2 pb-1 shrink-0">
-            <button class="px-3.5 sm:px-4 py-2 rounded-full bg-primary text-on-primary font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm cursor-pointer" onclick="profileSendCrypto()" type="button">
-              <span class="material-symbols-outlined text-[15px]">send</span>
+          <div class="flex items-center gap-1.5 sm:gap-2 pb-1 shrink-0 flex-wrap justify-end">
+            <button id="btnProfileFollow" class="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/20 text-primary hover:bg-primary hover:text-on-primary border border-primary/40 font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer" onclick="profileFollowClicked()" type="button">
+              <span class="material-symbols-outlined text-[15px]">person_add</span>
+              <span id="btnProfileFollowText">Follow (1.00 BCT)</span>
+            </button>
+            <button class="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary text-on-primary font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 sm:gap-1.5 active:scale-95 transition-all shadow-sm cursor-pointer" onclick="profileSendCrypto()" type="button">
+              <span class="material-symbols-outlined text-[14px] sm:text-[15px]">send</span>
               <span>Send BCT</span>
             </button>
-            <button class="px-3 sm:px-3.5 py-2 rounded-full bg-primary/15 text-primary hover:bg-primary/25 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer" onclick="profileTipDirect()" type="button">
-              <span class="material-symbols-outlined text-[15px]">bolt</span>
+            <button class="px-2 sm:px-3.5 py-1.5 sm:py-2 rounded-full bg-primary/15 text-primary hover:bg-primary/25 font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 sm:gap-1.5 active:scale-95 transition-all cursor-pointer" onclick="profileTipDirect()" type="button">
+              <span class="material-symbols-outlined text-[14px] sm:text-[15px]">bolt</span>
               <span>Tip</span>
             </button>
-            <button class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-semibold text-xs flex items-center justify-center transition-all cursor-pointer" onclick="profileInspectExplorer()" type="button" title="Search in Explorer">
-              <span class="material-symbols-outlined text-[16px]">search</span>
+            <button class="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-semibold text-xs flex items-center justify-center transition-all cursor-pointer" onclick="profileInspectExplorer()" type="button" title="Search in Explorer">
+              <span class="material-symbols-outlined text-[15px] sm:text-[16px]">search</span>
             </button>
           </div>
         </div>
@@ -4271,9 +4700,12 @@
             <div class="flex flex-col min-w-0 pr-1">
               <span class="text-[10px] uppercase tracking-wider text-on-surface-variant font-semibold flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                <span>On-Chain Account Address (Click to Copy)</span>
+                <span>On-Chain Account Address</span>
               </span>
-              <span class="font-mono text-xs sm:text-sm text-primary font-bold break-all select-all mt-0.5 leading-relaxed" id="userProfileAddress">BCT...</span>
+              <div class="flex items-center gap-1.5 min-w-0 mt-0.5">
+                <span class="sm:hidden font-mono text-xs text-primary font-bold select-all truncate" id="userProfileAddressShort">BCT...</span>
+                <span class="hidden sm:inline font-mono text-xs sm:text-sm text-primary font-bold break-all select-all leading-relaxed" id="userProfileAddress">BCT...</span>
+              </div>
             </div>
             <button type="button" onclick="event.stopPropagation(); copyUserProfileAddress()" class="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high group-hover:bg-primary group-hover:text-on-primary text-primary font-label-sm text-xs font-semibold transition-all shrink-0 border border-outline-variant/15 cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">content_copy</span>
@@ -4282,15 +4714,41 @@
           </div>
         </div>
 
-        <!-- 4-Stat Metrics Cards Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+        <!-- Developer Verified Lost Key Test Wallet Banner -->
+        <div id="userProfileLostKeyBanner" class="hidden p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/30 flex items-start gap-3 text-rose-300 shadow-sm shadow-rose-950/20">
+          <div class="w-8 h-8 rounded-xl bg-rose-500/20 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-[20px]">local_fire_department</span>
+          </div>
+          <div class="flex flex-col text-xs leading-relaxed">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="font-bold text-rose-200">Geliştirici Doğruladı: Kayıp Private Key</span>
+              <span class="px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-mono text-[10px] font-bold uppercase tracking-wider">Fiili Yakım / Kilitli</span>
+            </div>
+            <span class="text-rose-300/90 mt-1 font-sans">
+              Bu adres geliştirici tarafından erken test aşamasında oluşturulmuş özel bir test adresidir. Private key'i kayıptır ve üzerinde hiçbir zaman transfer yapılamaz. İçerisindeki bakiye protokol düzeyinde <strong>fiili yakım (permanent burn)</strong> statüsündedir ve dolaşım arzından kalıcı olarak düşülmüştür.
+            </span>
+          </div>
+        </div>
+
+        <!-- 6-Stat Metrics Cards Grid (Including Followers & Following) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-2">
           <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
             <span class="text-xs text-on-surface-variant">Balance</span>
             <span class="font-bold font-mono text-base text-primary truncate mt-0.5" id="userProfileBalance">0.00 BCT</span>
             <span class="text-[10px] text-outline font-mono truncate" id="userProfilePct">0.00% supply</span>
           </div>
-          <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
-            <span class="text-xs text-on-surface-variant">Thoughts / Posts</span>
+          <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col cursor-pointer hover:border-emerald-500/40 transition-colors group" onclick="switchProfileSubTab('followers')" title="View Followers List">
+            <span class="text-xs text-on-surface-variant group-hover:text-emerald-400 transition-colors">Followers</span>
+            <span class="font-bold font-mono text-base text-emerald-400 mt-0.5" id="userProfileFollowersCount">0</span>
+            <span class="text-[10px] text-outline truncate">On-Chain Fans</span>
+          </div>
+          <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col cursor-pointer hover:border-secondary/40 transition-colors group" onclick="switchProfileSubTab('following')" title="View Following List">
+            <span class="text-xs text-on-surface-variant group-hover:text-secondary transition-colors">Following</span>
+            <span class="font-bold font-mono text-base text-secondary mt-0.5" id="userProfileFollowingCount">0</span>
+            <span class="text-[10px] text-outline truncate">Subscribed</span>
+          </div>
+          <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col cursor-pointer hover:border-primary/40 transition-colors group" onclick="switchProfileSubTab('posts')" title="View Thoughts">
+            <span class="text-xs text-on-surface-variant group-hover:text-primary transition-colors">Thoughts / Posts</span>
             <span class="font-bold font-mono text-base text-on-surface mt-0.5" id="userProfileTotalPosts">0</span>
             <span class="text-[10px] text-outline truncate">On-Chain</span>
           </div>
@@ -4302,22 +4760,30 @@
           <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
             <span class="text-xs text-on-surface-variant">Royalties Earned</span>
             <span class="font-bold font-mono text-base text-amber-300 truncate mt-0.5" id="userProfileRoyalties">0.00 BCT</span>
-            <span class="text-[10px] text-outline truncate">20% interaction cut</span>
+            <span class="text-[10px] text-outline truncate">Creator cut</span>
           </div>
         </div>
 
-        <!-- Sub Tabs (Posts, Handles, Transactions) -->
-        <div class="flex items-center gap-2 border-b border-outline-variant/20 pt-2">
-          <button class="profile-subtab-btn pb-2.5 px-3 text-xs font-semibold text-primary border-b-2 border-primary transition-all flex items-center gap-1.5" id="profileTabBtnPosts" onclick="switchProfileSubTab('posts')" type="button">
-            <span class="material-symbols-outlined text-[16px]">forum</span>
+        <!-- Sub Tabs (Posts, Followers, Following, Handles, Transactions) -->
+        <div class="flex items-center gap-1.5 sm:gap-2 border-b border-outline-variant/20 pt-2 overflow-x-auto no-scrollbar">
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-primary border-b-2 border-primary transition-all flex items-center gap-1 shrink-0" id="profileTabBtnPosts" onclick="switchProfileSubTab('posts')" type="button">
+            <span class="material-symbols-outlined text-[15px]">forum</span>
             <span>Thoughts (<span id="profileTabCountPosts">0</span>)</span>
           </button>
-          <button class="profile-subtab-btn pb-2.5 px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1.5" id="profileTabBtnHandles" onclick="switchProfileSubTab('handles')" type="button">
-            <span class="material-symbols-outlined text-[16px]">badge</span>
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 shrink-0" id="profileTabBtnFollowers" onclick="switchProfileSubTab('followers')" type="button">
+            <span class="material-symbols-outlined text-[15px]">group</span>
+            <span>Followers (<span id="profileTabCountFollowers">0</span>)</span>
+          </button>
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 shrink-0" id="profileTabBtnFollowing" onclick="switchProfileSubTab('following')" type="button">
+            <span class="material-symbols-outlined text-[15px]">person_check</span>
+            <span>Following (<span id="profileTabCountFollowing">0</span>)</span>
+          </button>
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 shrink-0" id="profileTabBtnHandles" onclick="switchProfileSubTab('handles')" type="button">
+            <span class="material-symbols-outlined text-[15px]">badge</span>
             <span>Handles (<span id="profileTabCountHandles">0</span>)</span>
           </button>
-          <button class="profile-subtab-btn pb-2.5 px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1.5" id="profileTabBtnTxs" onclick="switchProfileSubTab('txs')" type="button">
-            <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 shrink-0" id="profileTabBtnTxs" onclick="switchProfileSubTab('txs')" type="button">
+            <span class="material-symbols-outlined text-[15px]">receipt_long</span>
             <span>Ledger Activity (<span id="profileTabCountTxs">0</span>)</span>
           </button>
         </div>
@@ -4329,16 +4795,138 @@
             <!-- Populated dynamically -->
           </div>
 
-          <!-- 2. Handles Sub-view -->
+          <!-- 2. Followers Sub-view -->
+          <div id="profileSubViewFollowers" class="space-y-2 hidden">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- 3. Following Sub-view -->
+          <div id="profileSubViewFollowing" class="space-y-2 hidden">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- 4. Handles Sub-view -->
           <div id="profileSubViewHandles" class="space-y-2.5 hidden">
             <!-- Populated dynamically -->
           </div>
 
-          <!-- 3. Transactions Sub-view -->
+          <!-- 5. Transactions Sub-view -->
           <div id="profileSubViewTxs" class="space-y-2 hidden">
             <!-- Populated dynamically -->
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: METAMASK-STYLE NON-CUSTODIAL SIGNATURE CONFIRMATION (ENGLISH)       -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4 select-none" id="web3TxConfirmModal" onclick="if(event.target===this) closeWeb3TxModal();">
+    <div class="w-full max-w-[420px] rounded-3xl bg-[#181a1f] border border-[#2b2f38] text-white shadow-2xl flex flex-col overflow-hidden transition-all scale-95 opacity-0 duration-200" id="web3TxConfirmCard">
+      <!-- Modal Top Navigation Bar -->
+      <div class="px-4 sm:px-5 py-3.5 bg-[#1e2026] border-b border-[#2b2f38] flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-primary to-emerald-400 flex items-center justify-center shadow-sm">
+            <span class="material-symbols-outlined text-[18px] text-black font-bold">token</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-bold text-xs text-neutral-100 tracking-tight flex items-center gap-1">
+              <span>LockTrace Web3 Wallet</span>
+            </span>
+            <span class="text-[10px] text-neutral-400 font-mono">Signature Request</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#121316] border border-[#323640] text-[10.5px] font-mono text-emerald-400 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Mainnet (PoW)</span>
+        </div>
+      </div>
+
+      <!-- Origin & Security Banner -->
+      <div class="px-4 sm:px-5 py-2 bg-[#121316]/70 border-b border-[#2b2f38]/60 flex items-center justify-between text-[11px] text-neutral-400">
+        <span class="flex items-center gap-1">
+          <span class="material-symbols-outlined text-[13px] text-emerald-400">lock</span>
+          <span class="font-mono text-neutral-300">locktrace.space</span>
+        </span>
+        <span class="text-[10px] text-neutral-400 font-mono">ECDSA secp256k1</span>
+      </div>
+
+      <!-- Body / Transaction Payload -->
+      <div class="p-4 sm:p-5 flex flex-col gap-3.5">
+        <!-- Target Creator Card -->
+        <div class="p-3.5 rounded-2xl bg-[#121316] border border-[#2b2f38] flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/30 to-secondary/20 flex items-center justify-center font-bold font-mono text-primary text-base ring-1 ring-primary/40 shrink-0 select-none" id="web3TxTargetAvatar">
+            L
+          </div>
+          <div class="flex flex-col min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase font-mono text-neutral-400 font-bold tracking-wider">Follow Target</span>
+              <span class="px-1.5 py-0.2 rounded text-[9.5px] font-mono bg-primary/15 text-primary font-bold">On-Chain</span>
+            </div>
+            <span class="font-mono font-bold text-sm text-neutral-100 truncate mt-0.5" id="web3TxTargetName">@creator.bct</span>
+            <span class="font-mono text-[10.5px] text-neutral-400 truncate select-all" id="web3TxTargetAddress">BCT...</span>
+          </div>
+        </div>
+
+        <!-- Transaction Cost & Breakdown -->
+        <div class="flex flex-col gap-2 p-3.5 rounded-2xl bg-[#121316] border border-[#2b2f38]">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-neutral-300 font-medium">Follow Fee Total</span>
+            <div class="flex flex-col items-end">
+              <span class="font-mono text-base font-extrabold text-primary">1.00 BCT</span>
+              <span class="text-[10px] text-neutral-400 font-mono">~$0.0000046 USD</span>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="h-px bg-[#2b2f38]/60 my-1"></div>
+
+          <!-- Tokenomic Split Rows (English) -->
+          <div class="space-y-1.5 text-[11px] font-mono">
+            <div class="flex items-center justify-between text-neutral-300">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>Creator Payout (50%)</span>
+              </span>
+              <span class="text-emerald-400 font-semibold">+0.50 BCT</span>
+            </div>
+            <div class="flex items-center justify-between text-neutral-300">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span>Miner / Validator Pool (30%)</span>
+              </span>
+              <span class="text-amber-400 font-semibold">+0.30 BCT</span>
+            </div>
+            <div class="flex items-center justify-between text-neutral-300">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                <span>Treasury Vault (20%)</span>
+              </span>
+              <span class="text-sky-400 font-semibold">+0.20 BCT</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Non-Custodial Assurance -->
+        <div class="flex items-start gap-2 p-2.5 rounded-xl bg-primary/5 border border-primary/15 text-[10.5px] text-neutral-400 leading-relaxed">
+          <span class="material-symbols-outlined text-[15px] text-primary shrink-0 mt-0.5">verified_user</span>
+          <span>Non-custodial ECDSA signature. Your private key never leaves your local device.</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons Footer -->
+      <div class="p-4 bg-[#1e2026] border-t border-[#2b2f38] grid grid-cols-2 gap-3">
+        <button type="button" onclick="rejectWeb3Tx()" class="py-2.5 px-4 rounded-xl bg-[#2a2d36] hover:bg-[#343844] text-neutral-200 font-semibold text-xs transition-all active:scale-95 cursor-pointer">
+          Reject
+        </button>
+        <button type="button" id="btnConfirmWeb3Tx" onclick="executeWeb3Tx()" class="py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary to-emerald-400 hover:from-primary/90 hover:to-emerald-400/90 text-neutral-950 font-bold text-xs transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-[15px]">done_all</span>
+          <span>Confirm &amp; Sign</span>
+        </button>
+      </div>
+    </div>
+  </div>
       </div>
     </div>
   </div>
@@ -4989,6 +5577,10 @@
       });
     }
 
+    function formatCrypto(val, maxDec = 4) {
+      return formatBct(val, maxDec);
+    }
+
     function formatTimeAgo(ts) {
       const sec = Number(ts || 0);
       if (!sec) return 'Just now';
@@ -5036,6 +5628,448 @@
 
       // 5. Line breaks
       return safe.replace(/\n/g, '<br/>');
+    }
+
+    function generateSpacePostEmbedHtml(rawContent) {
+      if (!rawContent) return '';
+      const text = String(rawContent).toLowerCase();
+
+      // Helper to generate dynamic sparkline SVG
+      const makeSparklineSvg = (colorHex) => `
+        <svg class="w-full h-full overflow-visible" fill="none" viewBox="0 0 100 30">
+          <path d="M0 24 Q 25 20, 40 12 T 70 7 T 100 2" fill="none" stroke="${colorHex}" stroke-linecap="round" stroke-width="2.2"></path>
+          <path d="M0 24 Q 25 20, 40 12 T 70 7 T 100 2 L 100 30 L 0 30 Z" fill="${colorHex}" fill-opacity="0.12"></path>
+        </svg>
+      `;
+
+      // Helper to render asset card
+      const makeAssetCard = (sym, name, priceFormatted, change, metricTitle, metricVal, colorClass, bgClass, strokeHex, iconName) => {
+        const cleanSym = sym.replace('$', '').toLowerCase();
+        return `
+          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-outline-variant/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs select-none" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl ${bgClass} ${colorClass} flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">${iconName || 'trending_up'}</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-sm font-bold text-on-surface">${sym}</span>
+                  <span class="font-mono text-sm font-medium text-on-surface market-price-${cleanSym}">${priceFormatted}</span>
+                  <span class="inline-flex items-center gap-0.5 px-2 py-0.2 rounded-full ${bgClass} ${colorClass} font-mono text-[10px] font-bold">
+                    <span class="material-symbols-outlined text-[11px]">trending_up</span>
+                    <span class="market-change-${cleanSym}">${change}</span>
+                  </span>
+                </div>
+                <span class="text-[11px] text-on-surface-variant">${name}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 self-end sm:self-auto shrink-0">
+              <div class="flex flex-col items-end">
+                <span class="text-[10px] text-on-surface-variant font-mono">${metricTitle}</span>
+                <span class="font-mono text-xs ${colorClass} font-bold">${metricVal}</span>
+              </div>
+              <div class="w-20 h-6 flex items-center">
+                ${makeSparklineSvg(strokeHex)}
+              </div>
+            </div>
+          </div>
+        `;
+      };
+
+      // 1. $BTC / Bitcoin
+      if (text.includes('$btc') || text.includes('bitcoin') || text.includes('satoshi')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.BTC) || { price: 92450.00, change: '+3.8%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$BTC', 'Bitcoin • L1 Digital Gold Store of Value', priceStr, m.change, 'L1 Hashrate', '710 EH/s', 'text-amber-400', 'bg-amber-400/15', '#f59e0b', 'currency_bitcoin');
+      }
+
+      // 2. $ETH / Ethereum
+      if (text.includes('$eth') || text.includes('ethereum') || text.includes('blob') || text.includes('gwei')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.ETH) || { price: 3450.00, change: '+2.4%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$ETH', 'Ethereum • L1 Blob Settlement Telemetry', priceStr, m.change, 'L1 Base Fee', '~12 Gwei', 'text-primary', 'bg-primary/15', '#22c55e', 'query_stats');
+      }
+
+      // 3. $SOL / Solana
+      if (text.includes('$sol') || text.includes('solana')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.SOL) || { price: 214.80, change: '+5.2%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$SOL', 'Solana • Proof-of-History High Throughput L1', priceStr, m.change, 'Throughput', '2,840 TPS', 'text-purple-400', 'bg-purple-500/15', '#c084fc', 'electric_bolt');
+      }
+
+      // 4. $BCT / wBCT On-Chain Telemetry Card
+      if (text.includes('$bct') || text.includes('wbct') || text.includes('uniswap') || text.includes('locktrace') || text.includes('tokenomics')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.BCT) || { price: 0.0000000046, change: '+4.2%' };
+        return makeAssetCard('$BCT', 'LockTrace Native L1 • Base Uniswap v3 1:1 Peg Backed', '$0.0000000046', m.change, 'Transfer Fee', '0.0001 BCT', 'text-emerald-400', 'bg-emerald-500/15', '#34d399', 'currency_exchange');
+      }
+
+      // 5. Stocks: $AAPL / Apple
+      if (text.includes('$aapl') || text.includes('apple') || text.includes('iphone')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.AAPL) || { price: 227.60, change: '+1.4%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$AAPL', 'Apple Inc. • NASDAQ Equity Telemetry', priceStr, m.change, 'Market Cap', '$3.45T', 'text-sky-400', 'bg-sky-500/15', '#38bdf8', 'bar_chart');
+      }
+
+      // 6. Stocks: $TSLA / Tesla
+      if (text.includes('$tsla') || text.includes('tesla')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.TSLA) || { price: 322.40, change: '+4.8%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$TSLA', 'Tesla Inc. • NASDAQ EV & Autonomous AI', priceStr, m.change, 'Market Cap', '$1.03T', 'text-rose-400', 'bg-rose-500/15', '#fb7185', 'directions_car');
+      }
+
+      // 7. Stocks: $NVDA / NVIDIA
+      if (text.includes('$nvda') || text.includes('nvidia')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.NVDA) || { price: 147.80, change: '+3.9%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$NVDA', 'NVIDIA Corp. • NASDAQ AI Semiconductor', priceStr, m.change, 'Market Cap', '$3.62T', 'text-emerald-400', 'bg-emerald-500/15', '#4ade80', 'memory');
+      }
+
+      // 8. General Cashtags: $[A-Z]{2,6} (e.g. $MSFT, $GOOG, $AMZN, etc.)
+      const cashtagMatch = text.match(/\$([a-z]{2,6})\b/);
+      if (cashtagMatch) {
+        const sym = cashtagMatch[1].toUpperCase();
+        const priceStr = '$' + (100 + (sym.charCodeAt(0) * 2.5)).toFixed(2);
+        return makeAssetCard(`$${sym}`, `${sym} • Global Financial Telemetry`, priceStr, '+2.1%', '24h Vol', '$1.2B', 'text-primary', 'bg-primary/15', '#22c55e', 'monitoring');
+      }
+
+      // 9. Vault & Solvency Proof Embed (Exact Stitch Screen E)
+      if (text.includes('vault') || text.includes('cold storage') || text.includes('solvency') || text.includes('multisig') || text.includes('reserve')) {
+        return `
+          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-emerald-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">shield</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-mono text-xs sm:text-sm font-bold text-on-surface">Secured Vault Balance</span>
+                  <span class="px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">Zk-Proof Verified</span>
+                </div>
+                <span class="text-[11px] text-on-surface-variant">LockTrace Cold Reserve &bull; Multi-sig 3-of-5 Ledger Guard</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[11px] font-semibold self-end sm:self-auto border border-emerald-500/20">
+              <span class="material-symbols-outlined text-[13px]">verified</span>
+              <span>100% Solvency Proof</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // 10. Instant Settlement & Transaction Telemetry
+      if (text.includes('usdc') || text.includes('settlement') || text.includes('finality') || text.includes('micro-transaction')) {
+        return `
+          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-outline-variant/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-mono text-sm font-bold text-on-surface">1,250 USDC</span>
+                  <span class="px-2 py-0.2 rounded-full bg-primary/10 text-primary font-mono text-[10px] font-bold">Instant Settlement</span>
+                </div>
+                <div class="flex items-center gap-2 font-mono text-[10.5px] text-on-surface-variant">
+                  <span>Tx #4920</span>
+                  <span>&bull;</span>
+                  <span>Finality: 412ms</span>
+                  <span>&bull;</span>
+                  <span>Fee: $0.000102</span>
+                </div>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-surface-container font-mono text-[10.5px] text-secondary border border-secondary/20 self-end sm:self-auto font-semibold">
+              Base L2
+            </span>
+          </div>
+        `;
+      }
+
+      return '';
+    }
+
+    // ── Live Multi-Asset Market Telemetry (BTC, ETH, SOL, AAPL, etc.) ─────────────
+    window.liveMarketPrices = {
+      BTC: { price: 92450.00, change: '+3.8%' },
+      ETH: { price: 3450.00, change: '+2.4%' },
+      SOL: { price: 214.80, change: '+5.2%' },
+      BCT: { price: 0.0000000046, change: '+4.2%' },
+      AAPL: { price: 227.60, change: '+1.4%' },
+      TSLA: { price: 322.40, change: '+4.8%' },
+      NVDA: { price: 147.80, change: '+3.9%' }
+    };
+    window.liveEthTelemetry = window.liveMarketPrices.ETH;
+
+    function getLiveEthPriceFormatted() {
+      const p = (window.liveMarketPrices && window.liveMarketPrices.ETH && window.liveMarketPrices.ETH.price) ? window.liveMarketPrices.ETH.price : 3450.00;
+      return '$' + Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    }
+
+    async function fetchLiveMarketTelemetry() {
+      // 1. Fetch ETH
+      try {
+        const ctrl = new AbortController();
+        const t = setTimeout(() => ctrl.abort(), 3500);
+        const res = await fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot', { signal: ctrl.signal });
+        clearTimeout(t);
+        if (res.ok) {
+          const d = await res.json();
+          const p = parseFloat(d && d.data && d.data.amount);
+          if (p && !isNaN(p)) window.liveMarketPrices.ETH.price = p;
+        }
+      } catch (_) {}
+
+      // 2. Fetch BTC
+      try {
+        const ctrlB = new AbortController();
+        const tB = setTimeout(() => ctrlB.abort(), 3500);
+        const resB = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot', { signal: ctrlB.signal });
+        clearTimeout(tB);
+        if (resB.ok) {
+          const dB = await res.json ? await resB.json() : null;
+          const pB = parseFloat(dB && dB.data && dB.data.amount);
+          if (pB && !isNaN(pB)) window.liveMarketPrices.BTC.price = pB;
+        }
+      } catch (_) {}
+
+      // 3. Fetch SOL
+      try {
+        const ctrlS = new AbortController();
+        const tS = setTimeout(() => ctrlS.abort(), 3500);
+        const resS = await fetch('https://api.coinbase.com/v2/prices/SOL-USD/spot', { signal: ctrlS.signal });
+        clearTimeout(tS);
+        if (resS.ok) {
+          const dS = await resS.json ? await resS.json() : null;
+          const pS = parseFloat(dS && dS.data && dS.data.amount);
+          if (pS && !isNaN(pS)) window.liveMarketPrices.SOL.price = pS;
+        }
+      } catch (_) {}
+
+      // 4. Update rendered price DOM spans
+      ['btc', 'eth', 'sol', 'aapl', 'tsla', 'nvda'].forEach(sym => {
+        const upper = sym.toUpperCase();
+        const m = window.liveMarketPrices[upper];
+        if (m) {
+          const formatted = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          document.querySelectorAll('.market-price-' + sym).forEach(el => { el.textContent = formatted; });
+          document.querySelectorAll('.market-change-' + sym).forEach(el => { el.textContent = m.change; });
+        }
+      });
+      // Backward compatibility for existing live-eth-price-display
+      const ethFormatted = getLiveEthPriceFormatted();
+      document.querySelectorAll('.live-eth-price-display').forEach(el => { el.textContent = ethFormatted; });
+      document.querySelectorAll('.live-eth-change-display').forEach(el => { el.textContent = window.liveMarketPrices.ETH.change; });
+    }
+
+    function fetchLiveEthTelemetry() {
+      fetchLiveMarketTelemetry();
+    }
+
+    // ── MetaMask-Style Non-Custodial Signature Confirmation Modal ────────────────
+    let web3ModalResolver = null;
+
+    function promptWeb3FollowModal({ targetAddress, targetName, avatarChar }) {
+      return new Promise((resolve) => {
+        web3ModalResolver = resolve;
+        const modal = document.getElementById('web3TxConfirmModal');
+        const card = document.getElementById('web3TxConfirmCard');
+        if (!modal || !card) {
+          resolve(true); // Fallback if modal DOM element not found
+          return;
+        }
+
+        const nameEl = document.getElementById('web3TxTargetName');
+        const addrEl = document.getElementById('web3TxTargetAddress');
+        const avEl = document.getElementById('web3TxTargetAvatar');
+
+        if (nameEl) nameEl.textContent = targetName || (targetAddress.slice(0, 6) + '...' + targetAddress.slice(-4));
+        if (addrEl) addrEl.textContent = targetAddress;
+        if (avEl) avEl.textContent = (avatarChar || targetName || 'L').replace('@', '')[0].toUpperCase();
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        requestAnimationFrame(() => {
+          card.classList.remove('scale-95', 'opacity-0');
+          card.classList.add('scale-100', 'opacity-100');
+        });
+      });
+    }
+
+    function closeWeb3TxModal() {
+      const modal = document.getElementById('web3TxConfirmModal');
+      const card = document.getElementById('web3TxConfirmCard');
+      if (!modal || !card) return;
+      card.classList.remove('scale-100', 'opacity-100');
+      card.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }, 150);
+      if (web3ModalResolver) {
+        web3ModalResolver(false);
+        web3ModalResolver = null;
+      }
+    }
+
+    function rejectWeb3Tx() {
+      closeWeb3TxModal();
+    }
+
+    function executeWeb3Tx() {
+      const modal = document.getElementById('web3TxConfirmModal');
+      const card = document.getElementById('web3TxConfirmCard');
+      if (card) {
+        card.classList.remove('scale-100', 'opacity-100');
+        card.classList.add('scale-95', 'opacity-0');
+      }
+      setTimeout(() => {
+        if (modal) {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
+      }, 150);
+      if (web3ModalResolver) {
+        web3ModalResolver(true);
+        web3ModalResolver = null;
+      }
+    }
+
+    // ── Suggested Voices & On-Chain Paid Follow ──────────────────────────────────
+    async function loadSuggestedVoices() {
+      const container = document.getElementById('suggestedVoicesContainer');
+      if (!container) return;
+
+      const viewer = (typeof currentAccount !== 'undefined' && currentAccount && currentAccount.address) ? currentAccount.address : '';
+      try {
+        const resp = await apiFetch('/space/suggested-voices?viewer=' + encodeURIComponent(viewer) + '&limit=5');
+        if (resp && resp.ok && resp.body && resp.body.data && Array.isArray(resp.body.data.voices)) {
+          const voices = resp.body.data.voices;
+          if (voices.length === 0) {
+            container.innerHTML = `
+              <div class="p-3 text-center text-xs text-on-surface-variant font-mono">
+                Henüz aktif ses bulunmuyor. İlk cast'i siz paylaşın!
+              </div>
+            `;
+            return;
+          }
+
+          container.innerHTML = voices.map(v => {
+            const isFollowing = Boolean(v.is_following);
+            const avatarChar = (v.bns_name || v.address || 'B').replace('@', '')[0].toUpperCase();
+            const subTitle = v.bns_name 
+              ? `${v.address.slice(0, 6)}...${v.address.slice(-4)} • ${v.followers_count} Takipçi`
+              : `${v.posts_count > 0 ? v.posts_count + ' Cast' : 'BCT Hesabı'} • ${v.followers_count} Takipçi`;
+
+            return `
+              <div class="flex items-center justify-between gap-2.5 p-1.5 rounded-xl hover:bg-surface-container transition-colors group">
+                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('${escapeHtml(v.address)}')" title="On-Chain Profilini Gör">
+                  <div class="w-8 h-8 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-primary ring-1 ring-primary/30 group-hover:ring-primary">
+                    ${avatarChar}
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface group-hover:text-primary transition-colors truncate">
+                      ${escapeHtml(v.display_name)}
+                    </span>
+                    <span class="text-[10px] text-on-surface-variant truncate font-mono">
+                      ${escapeHtml(subTitle)}
+                    </span>
+                  </div>
+                </div>
+                ${isFollowing ? `
+                  <button type="button" class="px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold shrink-0 cursor-default">
+                    Following
+                  </button>
+                ` : `
+                  <button type="button" onclick="followVoiceOnChain(this, '${escapeHtml(v.address)}', '${escapeHtml(v.bns_name || '')}')" class="px-2.5 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-xs" title="1.00 BCT ile Takip Et">
+                    <span class="material-symbols-outlined text-[12px]">add</span>
+                    <span>1 BCT</span>
+                  </button>
+                `}
+              </div>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('loadSuggestedVoices error:', err);
+      }
+    }
+
+    async function followVoiceOnChain(btn, targetAddress, bnsName) {
+      if (!btn) return;
+      if (!currentAccount || !currentAccount.address) {
+        showToast('Please connect your wallet to follow creators', 'account_balance_wallet', true);
+        switchTab('yeni-cuzdan');
+        return;
+      }
+
+      if (currentAccount.address.toLowerCase() === targetAddress.toLowerCase()) {
+        showToast('You cannot follow your own wallet address.', 'warning', true);
+        return;
+      }
+
+      const targetLabel = bnsName ? ('@' + bnsName) : (targetAddress.slice(0, 6) + '...' + targetAddress.slice(-4));
+      
+      // Open Beautiful MetaMask-Style Signature Modal (in English)
+      const confirmed = await promptWeb3FollowModal({
+        targetAddress: targetAddress,
+        targetName: targetLabel,
+        avatarChar: (bnsName || targetAddress || 'B').replace('@', '')[0].toUpperCase()
+      });
+      if (!confirmed) return;
+
+      const origText = btn.innerHTML;
+      btn.disabled = true;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[13px] animate-spin">sync</span><span>Signing...</span>`;
+
+      try {
+        const canonical = `follow:${currentAccount.address}:${targetAddress}`;
+        let authFields = await buildSignedAuthPayload(canonical);
+
+        let resp = await apiFetch('/space/follow', {
+          method: 'POST',
+          body: JSON.stringify(Object.assign({
+            follower: currentAccount.address,
+            target: targetAddress
+          }, authFields))
+        });
+
+        if (!resp.ok && (resp.status === 409 || (resp.body && String(resp.body.message || '').includes('nonce')))) {
+          await new Promise(r => setTimeout(r, 600));
+          authFields = await buildSignedAuthPayload(canonical);
+          resp = await apiFetch('/space/follow', {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({
+              follower: currentAccount.address,
+              target: targetAddress
+            }, authFields))
+          });
+        }
+
+        if (resp && resp.ok) {
+          showToast(`Successfully followed ${targetLabel}! 1.00 BCT sealed on-chain.`, 'check_circle');
+          btn.innerHTML = '<span class="material-symbols-outlined text-[14px]">done</span><span>Following</span>';
+          btn.className = 'px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold shrink-0 cursor-default';
+          btn.onclick = null;
+          setTimeout(() => {
+            loadSuggestedVoices();
+            if (typeof refreshWalletBalances === 'function') refreshWalletBalances();
+            if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+            if (currentProfileData && currentProfileData.address && currentProfileData.address.toLowerCase() === targetAddress.toLowerCase()) {
+              openUserProfile(targetAddress);
+            }
+          }, 800);
+        } else {
+          const errMsg = (resp && resp.body && resp.body.message) ? resp.body.message : 'Follow transaction rejected.';
+          showToast(errMsg, 'error', true);
+          btn.disabled = false;
+          btn.innerHTML = origText;
+        }
+      } catch (err) {
+        console.error('followVoiceOnChain error:', err);
+        showToast('Transaction error: ' + err.message, 'error', true);
+        btn.disabled = false;
+        btn.innerHTML = origText;
+      }
     }
 
     function showToast(msg, icon = 'check_circle', isError = false) {
@@ -5164,7 +6198,7 @@
       const netTxt = isLocal ? 'Local Node Active' : 'LockTrace Mainnet';
       const mobLbl = document.getElementById('mobileNetLabel');
       const dskLbl = document.getElementById('desktopNetLabel');
-      if (mobLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) mobLbl.textContent = netTxt;
+      if (mobLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) mobLbl.textContent = isLocal ? 'Local' : 'Mainnet';
       if (dskLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) dskLbl.textContent = netTxt;
     }
 
@@ -5675,30 +6709,39 @@
       try {
         // 1. Fetch stats for Vaults & Metrics
         const statsRes = await apiFetch('/stats');
-        if (statsRes && statsRes.data) {
-          const d = statsRes.data;
+        const statsData = statsRes && statsRes.body && statsRes.body.data ? statsRes.body.data : (statsRes && statsRes.data ? statsRes.data : null);
+        if (statsData) {
+          const d = statsData;
           const bridgeVaultBal = document.getElementById('sysValBridgeVaultBal');
           const treasuryBal = document.getElementById('sysValTreasuryBal');
           const metricBridge = document.getElementById('sysMetricBridgeLocked');
           const metricTreasury = document.getElementById('sysMetricTreasuryEscrow');
+          const lostKeyBalEl = document.getElementById('sysValLostKeyTotal');
+          const burnEl = document.getElementById('sysValBurnBal');
           if (bridgeVaultBal && d.bridge_vault_formatted) bridgeVaultBal.textContent = d.bridge_vault_formatted + ' BCT';
           if (treasuryBal && d.treasury_formatted) treasuryBal.textContent = d.treasury_formatted + ' BCT';
           if (metricBridge && d.bridge_vault_locked) metricBridge.textContent = (d.bridge_vault_locked / 1000000).toFixed(2) + 'M BCT';
           if (metricTreasury && d.treasury_balance) metricTreasury.textContent = (d.treasury_balance / 1000000000).toFixed(2) + 'B BCT';
+          if (lostKeyBalEl && d.lost_key_test_wallets_formatted) lostKeyBalEl.textContent = d.lost_key_test_wallets_formatted + ' BCT';
+          if (burnEl && d.burn_address_formatted) burnEl.textContent = d.burn_address_formatted + ' BCT';
         }
 
-        // 2. Fetch Burn Address Balance
+        // 2. Fetch Burn Address Balance directly
         const burnRes = await apiFetch('/balance/BCT0000000000000000000000000000000000000000');
-        if (burnRes && burnRes.data) {
+        const burnData = burnRes && burnRes.body && burnRes.body.data ? burnRes.body.data : (burnRes && burnRes.data ? burnRes.data : null);
+        if (burnData) {
           const burnEl = document.getElementById('sysValBurnBal');
-          if (burnEl) burnEl.textContent = formatCrypto(burnRes.data.balance || 0) + ' BCT';
+          const bal = Number(burnData.balance || 0);
+          if (burnEl) burnEl.textContent = formatBct(bal, 6) + ' BCT';
         }
 
-        // 3. Fetch Local Validator Balance
+        // 3. Fetch Local Validator Balance directly
         const valRes = await apiFetch('/balance/BCT3fec00e39c728050c1f1cef4cbe78fcc85881572');
-        if (valRes && valRes.data) {
+        const valData = valRes && valRes.body && valRes.body.data ? valRes.body.data : (valRes && valRes.data ? valRes.data : null);
+        if (valData) {
           const valEl = document.getElementById('sysValValidatorBal');
-          if (valEl) valEl.textContent = formatCrypto(valRes.data.balance || 0) + ' BCT';
+          const valBal = Number(valData.balance || 0);
+          if (valEl) valEl.textContent = formatBct(valBal, 4) + ' BCT';
         }
       } catch (err) {
         console.warn('refreshSystemWalletsData warning:', err);
@@ -5733,9 +6776,9 @@
       if (subText) {
         if (currentAccount && currentAccount.address) {
           const n = typeof currentAccount.nonce === 'number' ? currentAccount.nonce : 0;
-          subText.textContent = `• Nonce #${n} • Confirmed On-Chain`;
+          subText.textContent = `Nonce #${n} • Confirmed`;
         } else {
-          subText.textContent = '• Create or import wallet to start';
+          subText.textContent = 'Non-Custodial L1';
         }
       }
 
@@ -6957,6 +8000,8 @@
           const mVault = document.getElementById('metricBridgeVault');
           const mTreasury = document.getElementById('metricTreasuryVault');
           const mReleased = document.getElementById('metricTotalReleased');
+          const mLostKey = document.getElementById('metricLostKeyWallets');
+          const mEffBurn = document.getElementById('metricEffectiveBurn');
           const mDiff = document.getElementById('metricDifficulty');
           const mWallets = document.getElementById('metricWallets');
           const consStatus = document.getElementById('statConsensusStatus');
@@ -6967,12 +8012,19 @@
           if (mCirc) mCirc.textContent = formatBct(st.circulating_supply || 0, 2) + ' BCT';
           if (mVault) mVault.textContent = formatBct(st.bridge_vault_locked || 0, 2) + ' BCT';
           if (mTreasury) mTreasury.textContent = formatBct(st.treasury_balance || 0, 2) + ' BCT';
+          if (mLostKey && st.lost_key_test_wallets_formatted) {
+            mLostKey.textContent = `${Number(st.lost_key_test_wallets_balance || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 4})} BCT`;
+          }
+          if (mEffBurn && st.effective_burned_formatted) {
+            mEffBurn.textContent = `${Number(st.effective_burned_supply || 0).toLocaleString('en-US', {maximumFractionDigits: 2})} BCT`;
+          }
           const totalUnlocked = (Number(st.circulating_supply || 0) + Number(st.bridge_vault_locked || 0));
           if (mReleased) mReleased.textContent = formatBct(totalUnlocked, 2) + ' BCT';
           const memCount = Number(st.pending_transactions || 0);
           if (mDiff) mDiff.textContent = memCount > 0 ? `Difficulty ${st.difficulty || 3} • Pool: ${memCount}` : `PoW Difficulty ${st.difficulty || 3} (x1)`;
           if (mWallets) mWallets.textContent = String(st.total_wallets || 0);
           if (consStatus) consStatus.textContent = st.chain_valid !== false ? (memCount > 0 ? `Mempool: ${memCount} Tx` : 'Synced: 100%') : 'Verifying';
+          loadExplorerBaseTransactions();
         }
 
         if (nodesRes && nodesRes.ok && nodesRes.body.data) {
@@ -7117,6 +8169,128 @@
       if (btnNext) btnNext.disabled = currentExplorerHoldersPage >= totalExplorerHoldersPages;
     }
 
+    let allExplorerBaseTxs = [];
+    let currentExplorerBaseTxsPage = 1;
+    const explorerBaseTxsPageSize = 5;
+
+    async function loadExplorerBaseTransactions() {
+      const list = document.getElementById('feedBaseTxsList');
+      try {
+        const res = await apiFetch('/bridge/base-transactions?limit=50');
+        let txs = null;
+        if (res && res.body && res.body.data && Array.isArray(res.body.data.transactions)) {
+          txs = res.body.data.transactions;
+        } else if (res && res.data && Array.isArray(res.data.transactions)) {
+          txs = res.data.transactions;
+        }
+
+        if (txs) {
+          allExplorerBaseTxs = txs;
+          currentExplorerBaseTxsPage = 1;
+          renderExplorerBaseTransactions();
+        } else {
+          allExplorerBaseTxs = [];
+          if (list) list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Henüz onaylanmış Base L2 köprüleme işlemi bulunmuyor.</div>';
+          updateBaseTxsPaginationUI();
+        }
+      } catch (err) {
+        console.error('Error loading Base transactions:', err);
+        if (list) list.innerHTML = `<div class="p-4 text-center font-body-sm text-rose-400 bg-surface-container-low rounded-xl">İşlemler yüklenemedi: ${escapeHtml(err.message || 'Hata')}</div>`;
+      }
+    }
+
+    function changeBaseTxsPage(delta) {
+      const totalPages = Math.ceil(allExplorerBaseTxs.length / explorerBaseTxsPageSize) || 1;
+      const targetPage = currentExplorerBaseTxsPage + delta;
+      if (targetPage < 1 || targetPage > totalPages) return;
+      currentExplorerBaseTxsPage = targetPage;
+      renderExplorerBaseTransactions();
+    }
+
+    function updateBaseTxsPaginationUI() {
+      const pBar = document.getElementById('baseTxsPaginationBar');
+      const lblPage = document.getElementById('baseTxsPageLabel');
+      const lblCount = document.getElementById('baseTxsCountLabel');
+      const btnPrev = document.getElementById('btnBaseTxsPrev');
+      const btnNext = document.getElementById('btnBaseTxsNext');
+
+      if (!allExplorerBaseTxs.length) {
+        if (pBar) pBar.classList.add('hidden');
+        return;
+      }
+      if (pBar) pBar.classList.remove('hidden');
+
+      const totalPages = Math.ceil(allExplorerBaseTxs.length / explorerBaseTxsPageSize) || 1;
+      if (lblPage) lblPage.textContent = `Sayfa ${currentExplorerBaseTxsPage} / ${totalPages}`;
+      if (lblCount) lblCount.textContent = `(Toplam ${allExplorerBaseTxs.length} L2 İşlemi)`;
+      if (btnPrev) btnPrev.disabled = currentExplorerBaseTxsPage <= 1;
+      if (btnNext) btnNext.disabled = currentExplorerBaseTxsPage >= totalPages;
+    }
+
+    function renderExplorerBaseTransactions() {
+      const list = document.getElementById('feedBaseTxsList');
+      if (!list) return;
+      if (!allExplorerBaseTxs || !allExplorerBaseTxs.length) {
+        list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Henüz onaylanmış Base L2 köprüleme işlemi bulunmuyor.</div>';
+        updateBaseTxsPaginationUI();
+        return;
+      }
+
+      const totalPages = Math.ceil(allExplorerBaseTxs.length / explorerBaseTxsPageSize) || 1;
+      if (currentExplorerBaseTxsPage > totalPages) currentExplorerBaseTxsPage = totalPages;
+      if (currentExplorerBaseTxsPage < 1) currentExplorerBaseTxsPage = 1;
+
+      const start = (currentExplorerBaseTxsPage - 1) * explorerBaseTxsPageSize;
+      const pageTxs = allExplorerBaseTxs.slice(start, start + explorerBaseTxsPageSize);
+
+      try {
+        list.innerHTML = pageTxs.map(t => {
+          const isMint = t.direction === 'L1_TO_EVM';
+          const typeBadge = isMint
+            ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10.5px] font-semibold font-mono flex items-center gap-1 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Base Mint</span>'
+            : '<span class="px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 text-[10.5px] font-semibold font-mono flex items-center gap-1 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Base Burn</span>';
+
+          const statusColor = t.status === 'COMPLETED' ? 'text-emerald-400' : (t.status === 'LOCKED' ? 'text-secondary' : (t.status === 'FAILED' ? 'text-rose-400' : 'text-amber-400'));
+          const displayEvm = t.tx_hash_evm ? (t.tx_hash_evm.slice(0, 8) + '...' + t.tx_hash_evm.slice(-6)) : 'Beklemede (L2)';
+          const evmLink = t.basescan_tx_url
+            ? `<a href="${escapeHtml(t.basescan_tx_url)}" target="_blank" rel="noopener noreferrer" class="font-mono text-xs font-semibold text-secondary hover:underline flex items-center gap-0.5" title="BaseScan üzerinde görüntüle">${escapeHtml(displayEvm)}<span class="material-symbols-outlined text-[12px]">open_in_new</span></a>`
+            : `<span class="font-mono text-xs text-on-surface-variant">${escapeHtml(displayEvm)}</span>`;
+
+          const bctDisplay = t.bct_address ? (t.bct_address.slice(0, 8) + '...' + t.bct_address.slice(-6)) : '--';
+          const evmRecipientDisplay = t.evm_address ? (t.evm_address.slice(0, 8) + '...' + t.evm_address.slice(-6)) : '--';
+          const timeAgo = t.created_at ? formatTimeAgo(t.created_at) : 'recently';
+          const amountStr = typeof formatBct === 'function' ? formatBct(t.amount, 4) : Number(t.amount || 0).toFixed(4);
+
+          return `
+            <div class="p-2.5 sm:p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col gap-1.5 transition-all">
+              <div class="flex items-center justify-between gap-2 flex-wrap">
+                <div class="flex items-center gap-2 flex-wrap">
+                  ${typeBadge}
+                  ${evmLink}
+                </div>
+                <div class="flex items-center gap-2 ml-auto">
+                  <span class="font-mono text-xs sm:text-sm font-bold text-on-surface">${amountStr} wBCT</span>
+                  <span class="text-[10px] font-mono uppercase font-semibold px-1.5 py-0.5 rounded bg-surface-container ${statusColor}">${escapeHtml(t.status)}</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2 text-[11px] text-on-surface-variant flex-wrap pt-1 border-t border-outline-variant/10">
+                <div class="flex items-center gap-1.5 font-mono flex-wrap">
+                  <span>L1: <button type="button" onclick="openUserProfile('${escapeHtml(t.bct_address)}')" class="text-primary hover:underline font-semibold" title="${escapeHtml(t.bct_address)}">${escapeHtml(bctDisplay)}</button></span>
+                  <span>&bull;</span>
+                  <span>Base EVM: <a href="https://basescan.org/address/${escapeHtml(t.evm_address)}" target="_blank" rel="noopener noreferrer" class="text-secondary hover:underline" title="${escapeHtml(t.evm_address)}">${escapeHtml(evmRecipientDisplay)}</a></span>
+                </div>
+                <span class="text-[10.5px] font-sans text-on-surface-variant/80 ml-auto">${timeAgo}</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+        updateBaseTxsPaginationUI();
+      } catch (e) {
+        console.error('renderExplorerBaseTransactions error:', e);
+        list.innerHTML = `<div class="p-4 text-center font-body-sm text-rose-400 bg-surface-container-low rounded-xl">İşlem kartları render edilirken hata oluştu: ${escapeHtml(e.message)}</div>`;
+      }
+    }
+
     function renderExplorerHolders(holders) {
       const tbody = document.getElementById('holdersTableBody');
       if (!tbody) return;
@@ -7133,6 +8307,8 @@
           tagBadge = '<span class="bg-secondary/10 text-secondary border border-secondary/20 px-2 py-0.5 rounded text-[11px] font-semibold font-sans">Bridge Vault (Base 1:1)</span>';
         } else if (h.tag_type === 'validator') {
           tagBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[11px] font-medium font-sans">Validator Node</span>';
+        } else if (h.tag_type === 'lost_key_burn') {
+          tagBadge = '<span class="bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-semibold font-sans inline-flex items-center gap-1 cursor-help" title="Geliştirici doğruladı: Private key kayıp özel test adresidir (Dolaşım dışı / Kilitli)"><span class="material-symbols-outlined text-[13px] text-rose-400">local_fire_department</span>Kayıp Key (Fiili Yakım)</span>';
         }
 
         const isSpecial = h.address.startsWith('BCT_HAZINE') || h.address.startsWith('BCT_BRIDGE_VAULT');
@@ -7566,6 +8742,8 @@
 
     async function loadSpaceFeed() {
       try {
+        loadSuggestedVoices();
+        fetchLiveEthTelemetry();
         const { ok, body } = await apiFetch('/space/feed?limit=80');
         if (ok && body.data && Array.isArray(body.data.posts)) {
           spacePostsCache = body.data.posts;
@@ -7702,6 +8880,9 @@
             <div class="text-[14.5px] sm:text-[15.5px] text-on-surface leading-relaxed break-words font-normal cursor-pointer select-text py-0.5" onclick="openSpacePostDetail('${pid}')">
               ${formatSpaceBodyHtml(post.content)}
             </div>
+
+            <!-- Optional Telemetry / Vault Embed (Stitch Inspired) -->
+            ${generateSpacePostEmbedHtml(post.content)}
 
             <!-- On-Chain Badges Row -->
             <div class="flex flex-wrap items-center gap-2 pt-0.5 cursor-pointer" onclick="openSpacePostDetail('${pid}')">
@@ -7864,6 +9045,8 @@
             <p class="font-body-lg text-body-lg text-on-surface leading-relaxed break-words">
               ${formatSpaceBodyHtml(post.content)}
             </p>
+
+            ${generateSpacePostEmbedHtml(post.content)}
 
             <!-- Embedded On-Chain Tokenomics Card (Stitch Screen F) -->
             <div class="bg-surface-container-low rounded-xl p-3.5 flex items-center justify-between border border-outline-variant/10">
@@ -8734,6 +9917,8 @@
     }
     setInterval(pollDexPriceLive, 20000);
     setTimeout(pollDexPriceLive, 1000);
+    setInterval(fetchLiveEthTelemetry, 45000);
+    setTimeout(fetchLiveEthTelemetry, 1500);
 
     let userMetaMaskAddress = null;
     let userWbctBalanceBase = 0;
@@ -10612,6 +11797,7 @@
       loadTradeConfig();
       verifyFrontendIntegrityState();
       refreshExplorerData();
+      refreshSystemWalletsData();
 
       const hashTab = (window.location.hash || '').replace(/^#/, '').trim();
       const initialTab = hashTab || (currentAccount && currentAccount.address ? 'cuzdanim' : 'ana-sayfa');
@@ -10628,6 +11814,7 @@
           const activeId = activeEl ? activeEl.id : '';
           if (activeId === 'tab-cuzdanim') await refreshPersonalTransactions();
           else if (activeId === 'tab-ag-ve-explorer') await refreshExplorerData();
+          else if (activeId === 'tab-system-wallets') await refreshSystemWalletsData();
           else if (activeId === 'tab-space' && !activeDetailPostId) await loadSpaceFeed();
           await checkRealtimeNotificationEvents();
         } catch (_e) {}
@@ -10819,9 +12006,11 @@
       // Initial loading state
       const handleEl = document.getElementById('userProfileHandle');
       const addrEl = document.getElementById('userProfileAddress');
+      const addrShortEl = document.getElementById('userProfileAddressShort');
       const tagEl = document.getElementById('userProfileTagBadge');
       if (handleEl) handleEl.textContent = raw.startsWith('@') ? raw : (raw.endsWith('.bct') ? '@' + raw : shortAddr(raw));
       if (addrEl) addrEl.textContent = raw;
+      if (addrShortEl) addrShortEl.textContent = shortAddr(raw);
       if (tagEl) {
         tagEl.textContent = 'Loading profile...';
         tagEl.className = 'px-2 py-0.5 rounded-full text-[11px] font-semibold bg-surface-container text-on-surface-variant font-sans';
@@ -10912,17 +12101,21 @@
     function switchProfileSubTab(tab) {
       currentProfileSubTab = tab;
       const btnPosts = document.getElementById('profileTabBtnPosts');
+      const btnFollowers = document.getElementById('profileTabBtnFollowers');
+      const btnFollowing = document.getElementById('profileTabBtnFollowing');
       const btnHandles = document.getElementById('profileTabBtnHandles');
       const btnTxs = document.getElementById('profileTabBtnTxs');
 
       const viewPosts = document.getElementById('profileSubViewPosts');
+      const viewFollowers = document.getElementById('profileSubViewFollowers');
+      const viewFollowing = document.getElementById('profileSubViewFollowing');
       const viewHandles = document.getElementById('profileSubViewHandles');
       const viewTxs = document.getElementById('profileSubViewTxs');
 
       const activeClasses = ['text-primary', 'border-b-2', 'border-primary'];
       const inactiveClasses = ['text-on-surface-variant'];
 
-      [btnPosts, btnHandles, btnTxs].forEach(b => {
+      [btnPosts, btnFollowers, btnFollowing, btnHandles, btnTxs].forEach(b => {
         if (b) {
           b.classList.remove(...activeClasses);
           b.classList.add(...inactiveClasses);
@@ -10930,12 +12123,20 @@
       });
 
       if (viewPosts) viewPosts.classList.add('hidden');
+      if (viewFollowers) viewFollowers.classList.add('hidden');
+      if (viewFollowing) viewFollowing.classList.add('hidden');
       if (viewHandles) viewHandles.classList.add('hidden');
       if (viewTxs) viewTxs.classList.add('hidden');
 
       if (tab === 'posts') {
         if (btnPosts) { btnPosts.classList.add(...activeClasses); btnPosts.classList.remove(...inactiveClasses); }
         if (viewPosts) viewPosts.classList.remove('hidden');
+      } else if (tab === 'followers') {
+        if (btnFollowers) { btnFollowers.classList.add(...activeClasses); btnFollowers.classList.remove(...inactiveClasses); }
+        if (viewFollowers) viewFollowers.classList.remove('hidden');
+      } else if (tab === 'following') {
+        if (btnFollowing) { btnFollowing.classList.add(...activeClasses); btnFollowing.classList.remove(...inactiveClasses); }
+        if (viewFollowing) viewFollowing.classList.remove('hidden');
       } else if (tab === 'handles') {
         if (btnHandles) { btnHandles.classList.add(...activeClasses); btnHandles.classList.remove(...inactiveClasses); }
         if (viewHandles) viewHandles.classList.remove('hidden');
@@ -10945,9 +12146,19 @@
       }
     }
 
+    async function profileFollowClicked() {
+      if (!currentProfileData || !currentProfileData.address) return;
+      const btn = document.getElementById('btnProfileFollow');
+      await followVoiceOnChain(btn, currentProfileData.address, currentProfileData.primary_handle);
+      if (currentProfileData && currentProfileData.address) {
+        openUserProfile(currentProfileData.address);
+      }
+    }
+
     function renderUserProfileData(data) {
       const handleEl = document.getElementById('userProfileHandle');
       const addrEl = document.getElementById('userProfileAddress');
+      const addrShortEl = document.getElementById('userProfileAddressShort');
       const tagEl = document.getElementById('userProfileTagBadge');
       const balEl = document.getElementById('userProfileBalance');
       const pctEl = document.getElementById('userProfilePct');
@@ -10969,11 +12180,28 @@
       }
 
       addrEl.textContent = data.address;
+      if (addrShortEl) addrShortEl.textContent = shortAddr(data.address);
+
+      const lostKeyBanner = document.getElementById('userProfileLostKeyBanner');
+      const isLostKey = Boolean(data.is_lost_key_burn || data.tag_type === 'lost_key_burn');
+      if (lostKeyBanner) {
+        lostKeyBanner.classList.toggle('hidden', !isLostKey);
+      }
 
       let tagClass = 'bg-surface-container text-on-surface-variant';
-      if (data.tag_type === 'treasury') tagClass = 'bg-primary/10 text-primary border border-primary/20';
-      else if (data.tag_type === 'bridge_vault') tagClass = 'bg-secondary/10 text-secondary border border-secondary/20';
-      else if (data.tag_type === 'validator') tagClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+      if (data.tag_type === 'treasury') {
+        tagClass = 'bg-primary/10 text-primary border border-primary/20';
+        tagEl.title = 'Genesis Hazine Cüzdanı (Kilitli Rezerv)';
+      } else if (data.tag_type === 'bridge_vault') {
+        tagClass = 'bg-secondary/10 text-secondary border border-secondary/20';
+        tagEl.title = 'Bridge Vault (Base 1:1 wBCT Teminatı)';
+      } else if (data.tag_type === 'validator') {
+        tagClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
+        tagEl.title = 'Doğrulayıcı Node';
+      } else if (isLostKey) {
+        tagClass = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm cursor-help';
+        tagEl.title = data.lost_key_note || 'Geliştirici doğruladı: Private key kayıp özel test adresidir (Dolaşım dışı / Kilitli)';
+      }
       tagEl.textContent = data.tag || 'Community Member';
       tagEl.className = `px-2.5 py-0.5 rounded-full text-[11px] font-semibold font-sans ${tagClass}`;
 
@@ -10990,10 +12218,46 @@
       const posts = Array.isArray(data.recent_posts) ? data.recent_posts : [];
       const handles = Array.isArray(data.owned_handles) ? data.owned_handles : [];
       const txs = Array.isArray(data.recent_transactions) ? data.recent_transactions : [];
+      const followers = Array.isArray(data.followers) ? data.followers : [];
+      const following = Array.isArray(data.following) ? data.following : [];
+      const followersCount = Number(data.followers_count || followers.length || 0);
+      const followingCount = Number(data.following_count || following.length || 0);
+
+      // Followers & Following Stats and Tabs Counts
+      const elFwCount = document.getElementById('userProfileFollowersCount');
+      const elFgCount = document.getElementById('userProfileFollowingCount');
+      const tabFwCount = document.getElementById('profileTabCountFollowers');
+      const tabFgCount = document.getElementById('profileTabCountFollowing');
+
+      if (elFwCount) elFwCount.textContent = String(followersCount);
+      if (elFgCount) elFgCount.textContent = String(followingCount);
+      if (tabFwCount) tabFwCount.textContent = String(followersCount);
+      if (tabFgCount) tabFgCount.textContent = String(followingCount);
 
       if (countPosts) countPosts.textContent = String(posts.length);
       if (countHandles) countHandles.textContent = String(handles.length);
       if (countTxs) countTxs.textContent = String(txs.length);
+
+      // Follow / Following Button on Profile View
+      const btnProfileFollow = document.getElementById('btnProfileFollow');
+      if (btnProfileFollow) {
+        const isSelf = Boolean(currentAccount && currentAccount.address && currentAccount.address.toLowerCase() === data.address.toLowerCase());
+        const isAlreadyFollowing = Boolean(currentAccount && currentAccount.address && followers.some(f => f.address && f.address.toLowerCase() === currentAccount.address.toLowerCase()));
+
+        if (isSelf) {
+          btnProfileFollow.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-surface-container-high text-on-surface-variant font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-sm cursor-default';
+          btnProfileFollow.innerHTML = '<span class="material-symbols-outlined text-[15px]">person</span><span>Your Account</span>';
+          btnProfileFollow.onclick = null;
+        } else if (isAlreadyFollowing) {
+          btnProfileFollow.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/20 text-primary border border-primary/40 font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-sm cursor-default';
+          btnProfileFollow.innerHTML = '<span class="material-symbols-outlined text-[15px]">done</span><span>Following</span>';
+          btnProfileFollow.onclick = null;
+        } else {
+          btnProfileFollow.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary hover:bg-primary/90 text-on-primary font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer';
+          btnProfileFollow.innerHTML = '<span class="material-symbols-outlined text-[15px]">person_add</span><span>Follow (1.00 BCT)</span>';
+          btnProfileFollow.onclick = profileFollowClicked;
+        }
+      }
 
       // 1. Posts Tab View
       const viewPosts = document.getElementById('profileSubViewPosts');
@@ -11019,7 +12283,67 @@
         }).join('');
       }
 
-      // 2. Handles Tab View
+      // 2. Followers Tab View
+      const viewFollowers = document.getElementById('profileSubViewFollowers');
+      if (viewFollowers) {
+        if (!followers.length) {
+          viewFollowers.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">No on-chain followers yet. Be the first to follow this creator!</div>';
+        } else {
+          viewFollowers.innerHTML = followers.map(f => {
+            const avatarChar = (f.bns_name || f.address || 'B').replace('@', '')[0].toUpperCase();
+            const label = f.bns_name ? `@${f.bns_name}` : shortAddr(f.address);
+            return `
+              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition flex items-center justify-between cursor-pointer" onclick="closeUserProfile(); openUserProfile('${escapeHtml(f.address)}')">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-xs text-emerald-400 ring-1 ring-emerald-400/30 shrink-0">
+                    ${avatarChar}
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface hover:text-emerald-400 truncate">${escapeHtml(label)}</span>
+                    <span class="font-mono text-[10.5px] text-on-surface-variant truncate">${escapeHtml(f.address)}</span>
+                  </div>
+                </div>
+                <button type="button" class="px-2.5 py-1 rounded-full bg-surface-container text-xs text-primary font-semibold flex items-center gap-1 shrink-0">
+                  <span>Profile</span>
+                  <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </button>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // 3. Following Tab View
+      const viewFollowing = document.getElementById('profileSubViewFollowing');
+      if (viewFollowing) {
+        if (!following.length) {
+          viewFollowing.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">This account is not following any creators yet.</div>';
+        } else {
+          viewFollowing.innerHTML = following.map(f => {
+            const avatarChar = (f.bns_name || f.address || 'B').replace('@', '')[0].toUpperCase();
+            const label = f.bns_name ? `@${f.bns_name}` : shortAddr(f.address);
+            return `
+              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition flex items-center justify-between cursor-pointer" onclick="closeUserProfile(); openUserProfile('${escapeHtml(f.address)}')">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-xs text-secondary ring-1 ring-secondary/30 shrink-0">
+                    ${avatarChar}
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface hover:text-secondary truncate">${escapeHtml(label)}</span>
+                    <span class="font-mono text-[10.5px] text-on-surface-variant truncate">${escapeHtml(f.address)}</span>
+                  </div>
+                </div>
+                <button type="button" class="px-2.5 py-1 rounded-full bg-surface-container text-xs text-secondary font-semibold flex items-center gap-1 shrink-0">
+                  <span>Profile</span>
+                  <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </button>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // 4. Handles Tab View
       const viewHandles = document.getElementById('profileSubViewHandles');
       if (!handles.length) {
         viewHandles.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">No .bct handles owned by this account.</div>';
@@ -11041,7 +12365,7 @@
         }).join('');
       }
 
-      // 3. Transactions Tab View
+      // 5. Transactions Tab View
       const viewTxs = document.getElementById('profileSubViewTxs');
       if (!txs.length) {
         viewTxs.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">No on-chain transactions found for this account.</div>';
