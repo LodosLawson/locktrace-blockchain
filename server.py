@@ -239,11 +239,15 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
         candidates = canonical_payload if isinstance(canonical_payload, (list, tuple)) else [canonical_payload]
         signed_payload = ""
         verified_ok = False
+        if client_ts is not None:
+            ts_val = safe_float(client_ts)
+            if ts_val is None or abs(time.time() - ts_val) > 300:
+                return False, 401, "Signature timestamp expired or invalid.", "", "", ""
+        elif expected_nonce is None:
+            return False, 401, "Signature timestamp is required to prevent replay attacks.", "", "", ""
+
         for cand in candidates:
             if client_ts is not None:
-                ts_val = safe_float(client_ts)
-                if ts_val is None or abs(time.time() - ts_val) > 300:
-                    return False, 401, "Signature timestamp expired or invalid.", "", "", ""
                 cand_signed = f"{cand}:{client_ts}:{expected_nonce}" if expected_nonce is not None else f"{cand}:{client_ts}"
             else:
                 cand_signed = f"{cand}:{expected_nonce}" if expected_nonce is not None else cand
@@ -527,7 +531,7 @@ def api_frontend_integrity():
     manifest = check.get("manifest") or onchain or {}
     return api_response(True, data={
         "verified": bool(check.get("verified")),
-        "version": manifest.get("version", "1.9.5"),
+        "version": manifest.get("version", "1.9.8"),
         "released_at": manifest.get("released_at", ""),
         "authority_address": RELEASE_AUTHORITY_ADDRESS,
         "authority_public_key": RELEASE_AUTHORITY_PUBKEY,
@@ -594,6 +598,8 @@ def api_notifications_unsubscribe():
     """Removes a push subscription by endpoint."""
     if not push_service:
         return api_response(False, message="Web Push service not available on this node", status=503)
+    if not check_rate_limit("push_unsub", limit=10, window_seconds=60):
+        return api_response(False, message="Too many unsubscribe attempts. Please wait.", status=429)
     data = request.get_json(silent=True) or {}
     endpoint = str(data.get("endpoint", "") or "").strip()
     if not endpoint:
@@ -611,13 +617,16 @@ def api_notifications_test_push():
     if not push_service:
         return api_response(False, message="Web Push service not available on this node", status=503)
 
-    if not check_rate_limit("push_test", limit=10, window_seconds=60):
+    if not check_rate_limit("push_test", limit=5, window_seconds=60):
         return api_response(False, message="Rate limit exceeded for test push. Please wait.", status=429)
 
     data = request.get_json(silent=True) or {}
     wallet_address = str(data.get("wallet_address", "") or "").strip()
     if not wallet_address or not is_valid_bct_address(wallet_address):
         return api_response(False, message="Valid BCT wallet address required.", status=400)
+
+    if not rate_limiter.allow(f"push_test_wallet:{wallet_address}", limit=2, window_seconds=60):
+        return api_response(False, message="Rate limit exceeded for this wallet. Please wait 1 minute.", status=429)
 
     subs = push_service.get_subscriptions_for_wallet(wallet_address)
     if not subs:
@@ -639,7 +648,7 @@ def api_health():
     check = _inspect_local_frontend_integrity()
     return api_response(True, data={
         "status": "healthy",
-        "version": "1.9.5",
+        "version": "1.9.8",
         "network": "mainnet",
         "storage_engine": "sqlite-wal",
         "consensus": "pow-v2-merkle-quorum",
@@ -669,7 +678,7 @@ def api_mnemonic_preview():
 
 @app.route("/api/v1/wallet/create", methods=["POST"])
 def api_create_wallet():
-    if not check_rate_limit("wallet_create_min", limit=5, window_seconds=60) or not check_rate_limit("wallet_create_hr", limit=15, window_seconds=3600):
+    if not check_rate_limit("wallet_create_min", limit=3, window_seconds=60) or not check_rate_limit("wallet_create_hr", limit=10, window_seconds=3600):
         return api_response(False, message="Wallet creation limit reached. Please try again later.", status=429)
 
     data = request.get_json(silent=True) or {}
@@ -738,7 +747,8 @@ def api_import_wallet():
         if client_address and client_pubkey and not mnemonic_phrase and not private_key_hex:
             if public_key_to_address(client_pubkey) != client_address:
                 return api_response(False, message="Public key does not match wallet address.", status=400)
-            ok, msg = blockchain.register_wallet(client_address, client_pubkey)
+            allow_bonus = check_rate_limit("wallet_create_min", limit=3, window_seconds=60) and check_rate_limit("wallet_create_hr", limit=10, window_seconds=3600)
+            ok, msg = blockchain.register_wallet(client_address, client_pubkey, grant_welcome_bonus=allow_bonus)
             if not ok:
                 return api_response(False, message=msg, status=400)
             return api_response(True, message="Wallet successfully verified and connected!", data={
@@ -762,7 +772,8 @@ def api_import_wallet():
         else:
             return api_response(False, message="Please enter a 12-word recovery phrase or private key.", status=400)
 
-        ok, msg = blockchain.register_wallet(wallet.address, wallet.get_public_key_hex())
+        allow_bonus = check_rate_limit("wallet_create_min", limit=3, window_seconds=60) and check_rate_limit("wallet_create_hr", limit=10, window_seconds=3600)
+        ok, msg = blockchain.register_wallet(wallet.address, wallet.get_public_key_hex(), grant_welcome_bonus=allow_bonus)
         if not ok:
             return api_response(False, message=msg, status=400)
         bal = blockchain.get_balance(wallet.address)
@@ -826,7 +837,7 @@ def api_transaction():
         return api_response(False, message="A valid and positive amount must be entered.", status=400)
 
     if amount > Config.MAX_TRANSACTION:
-        return api_response(False, message=f"Maximum single transfer limit is {Config.MAX_TRANSACTION:,.0f} BCT'dir.", status=400)
+        return api_response(False, message=f"Maximum single transfer limit is {Config.MAX_TRANSACTION:,.0f} BCT.", status=400)
 
     amount = round(amount, 8)
     amt_str_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
@@ -928,7 +939,7 @@ def api_explorer_block(query):
                 "name": "LockTrace Genesis Validator #1",
                 "location": "Stockholm, Sweden (Oracle Cloud)",
                 "role": "Core PoW Archival Validator",
-                "version": "1.9.5",
+                "version": "1.9.8",
                 "status": "online",
             }
         block["validator_node"] = node_meta
@@ -1096,7 +1107,7 @@ def api_register_node():
     location = str(data.get("location", "Decentralized") or "Decentralized").strip()
     miner_address = str(data.get("miner_address", "") or "").strip()
     block_height = safe_int(data.get("block_height", 0), default=0, min_val=0)
-    version = str(data.get("version", "1.9.5") or "1.9.5").strip()
+    version = str(data.get("version", "1.9.8") or "1.9.8").strip()
     pub_key = str(data.get("public_key", "") or "").strip()
     sig = str(data.get("signature", "") or "").strip()
     raw_ts = data.get("timestamp")
@@ -1124,6 +1135,7 @@ def api_register_node():
             signature=sig,
             timestamp=ts_exact,
             hashrate_hs=hashrate_hs,
+            client_ip=get_client_ip(),
         )
     except PermissionError as pe:
         return api_response(False, message=str(pe), status=403)
@@ -1162,6 +1174,7 @@ def api_ping_node():
             signature=sig,
             timestamp=ts_exact,
             hashrate_hs=hashrate_hs,
+            client_ip=get_client_ip(),
         )
     except PermissionError as pe:
         return api_response(False, message=str(pe), status=403)
@@ -1203,6 +1216,7 @@ def api_attest_block():
         public_key=pub_key,
         signature=sig,
         timestamp=ts_exact,
+        client_ip=get_client_ip(),
     )
     if not ok:
         return api_response(False, message=msg, status=400)
@@ -1410,7 +1424,7 @@ def api_space_like():
     post_id = str(data.get("post_id", "") or "").strip()
 
     if not liker or not post_id:
-        return api_response(False, message="liker adresi ve post_id gereklidir", status=400)
+        return api_response(False, message="Fields 'liker' and 'post_id' are required.", status=400)
 
     canonical = f"{liker}:{post_id}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
@@ -1461,7 +1475,7 @@ def api_space_comment():
     content = str(data.get("content", "") or "").strip()
 
     if not commenter or not post_id or not content:
-        return api_response(False, message="commenter, post_id ve content gereklidir", status=400)
+        return api_response(False, message="Fields 'commenter', 'post_id', and 'content' are required.", status=400)
 
     bns_name = str(data.get("bns_name", "") or "").strip()
     canonical = [f"{commenter}:{post_id}:{content}", f"{commenter}:{post_id}:{content}:{bns_name}"] if bns_name else f"{commenter}:{post_id}:{content}"
@@ -1816,12 +1830,12 @@ def api_bns_offer():
     data = request.get_json(silent=True) or {}
     name = str(data.get("name", "") or "").strip()
     bidder = str(data.get("bidder", "") or "").strip()
-    try:
-        amount = round(float(data.get("amount", 0.0) or 0.0), 4)
-    except Exception:
-        return api_response(False, message="Invalid offer amount.", status=400)
+    raw_amt = safe_float(data.get("amount"))
+    if raw_amt is None or raw_amt < 0.1:
+        return api_response(False, message="Fields 'name', 'bidder', and 'amount' (>= 0.10 BCT) are required.", status=400)
+    amount = round(raw_amt, 4)
 
-    if not name or not bidder or amount <= 0:
+    if not name or not bidder:
         return api_response(False, message="Fields 'name', 'bidder', and positive 'amount' are required.", status=400)
 
     norm = blockchain._normalize_bns_name(name)
@@ -2221,9 +2235,8 @@ def api_bridge_create_order():
     chain = str(payload.get("chain", "base")).strip()
     tx_hash_l1 = str(payload.get("tx_hash_l1", "")).strip()
 
-    try:
-        amount_bct = float(payload.get("amount", 0.0))
-    except (ValueError, TypeError):
+    amount_bct = safe_float(payload.get("amount"))
+    if amount_bct is None or amount_bct <= 0:
         return api_response(False, message="Invalid transfer amount.", status=400)
 
     result = bridge_manager.create_bridge_order(
@@ -2286,9 +2299,8 @@ def api_bridge_claim_burn():
     bct_address = str(payload.get("bct_address", "")).strip()
     evm_sender = str(payload.get("evm_sender", "")).strip().lower()
 
-    try:
-        amount_bct = float(payload.get("amount", 0.0))
-    except (ValueError, TypeError):
+    amount_bct = safe_float(payload.get("amount"))
+    if amount_bct is None or amount_bct <= 0:
         return api_response(False, message="Invalid transfer amount.", status=400)
 
     if not evm_tx_hash or not evm_tx_hash.startswith("0x") or len(evm_tx_hash) != 66:

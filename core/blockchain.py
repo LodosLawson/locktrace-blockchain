@@ -333,7 +333,7 @@ class Blockchain:
             "last_seen": time.time(),
             "created_at": 1793620000.0,
             "status": "online",
-            "version": "1.9.5",
+            "version": "1.9.8",
             "block_height": len(self.chain),
             "is_genesis": True
         }
@@ -364,7 +364,8 @@ class Blockchain:
         units = 0
         fee_bearing_types = (
             "transfer", "space_post", "space_like", "space_comment",
-            "bns_register", "bns_transfer", "bns_set_price", "bns_buy"
+            "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
+            "bns_accept_offer"
         )
 
         for block in self.chain:
@@ -372,12 +373,19 @@ class Blockchain:
                 amt_u = _to_units(tx.amount)
                 fee_u = _to_units(tx.fee)
                 if tx.receiver == clean_addr:
-                    if tx.tx_type in ("transfer", "space_post", "bns_register", "bns_transfer", "bns_buy"):
+                    if tx.tx_type in ("transfer", "space_post", "bns_register", "bns_buy", "bns_accept_offer"):
                         units += (amt_u - fee_u)
+                    elif tx.tx_type == "bns_transfer":
+                        # Only credit receiver if receiver is TREASURY_ADDRESS (for legacy bns_transfer where receiver was recipient wallet, credit goes to Treasury below)
+                        if clean_addr == TREASURY_ADDRESS:
+                            units += (amt_u - fee_u)
                     elif tx.tx_type in ("space_like", "space_comment"):
                         units += _to_units(tx.extra_data.get("treasury_cut", 0.0) if tx.extra_data else 0.0)
                     else:
                         units += amt_u
+                elif clean_addr == TREASURY_ADDRESS and tx.tx_type == "bns_transfer":
+                    # Ensure 80% treasury_cut of bns_transfer is always credited to TREASURY_ADDRESS
+                    units += (amt_u - fee_u)
                 if tx.sender == clean_addr:
                     units -= amt_u
                 if tx.tx_type in ("space_like", "space_comment") and tx.extra_data:
@@ -390,12 +398,17 @@ class Blockchain:
             amt_u = _to_units(tx.amount)
             fee_u = _to_units(tx.fee)
             if tx.receiver == clean_addr:
-                if tx.tx_type in ("transfer", "space_post", "bns_register", "bns_transfer", "bns_buy"):
+                if tx.tx_type in ("transfer", "space_post", "bns_register", "bns_buy", "bns_accept_offer"):
                     units += (amt_u - fee_u)
+                elif tx.tx_type == "bns_transfer":
+                    if clean_addr == TREASURY_ADDRESS:
+                        units += (amt_u - fee_u)
                 elif tx.tx_type in ("space_like", "space_comment"):
                     units += _to_units(tx.extra_data.get("treasury_cut", 0.0) if tx.extra_data else 0.0)
                 else:
                     units += amt_u
+            elif clean_addr == TREASURY_ADDRESS and tx.tx_type == "bns_transfer":
+                units += (amt_u - fee_u)
             if tx.sender == clean_addr:
                 units -= amt_u
             if tx.tx_type in ("space_like", "space_comment") and tx.extra_data:
@@ -430,6 +443,16 @@ class Blockchain:
         if not verify_signature(pub_hex, payload, signature):
             return False, "Invalid ECDSA digital signature!"
 
+        # On-chain & mempool signature replay protection
+        clean_sig = signature.strip()
+        for ptx in self.pending_transactions:
+            if ptx.signature == clean_sig:
+                return False, "Replay transaction signature rejected (already in mempool)!"
+        for blk in self.chain[-100:]:
+            for btx in blk.transactions:
+                if btx.signature == clean_sig:
+                    return False, "Replay transaction signature rejected (already confirmed on-chain)!"
+
         if clean_addr not in self.wallets:
             self.wallets[clean_addr] = {"public_key": pub_hex, "created_at": time.time()}
         elif not self.wallets[clean_addr].get("public_key"):
@@ -437,7 +460,7 @@ class Blockchain:
 
         return True, "OK"
 
-    def register_wallet(self, address: str, public_key: str) -> Tuple[bool, str]:
+    def register_wallet(self, address: str, public_key: str, grant_welcome_bonus: bool = True) -> Tuple[bool, str]:
         with self.lock:
             self._load_state()
             clean_addr = address.strip()
@@ -472,8 +495,24 @@ class Blockchain:
                 "created_at": self.wallets.get(clean_addr, {}).get("created_at", time.time())
             }
 
+            # Sybil Protection: Global hourly cap on 1.00 BCT Genesis Welcome Bonus (max 25 grants/hour network-wide)
+            now_ts = time.time()
+            recent_grants_1h = sum(
+                1 for block in self.chain[-120:]
+                for tx in block.transactions
+                if tx.tx_type == "reward" and (now_ts - float(tx.timestamp or 0)) <= 3600.0
+            ) + sum(
+                1 for tx in self.pending_transactions
+                if tx.tx_type == "reward" and (now_ts - float(tx.timestamp or 0)) <= 3600.0
+            )
+
             # Automated 1.00 BCT Genesis Welcome Bonus from Treasury for new accounts
-            if not has_received_reward and self.verify_and_recalc_balance(TREASURY_ADDRESS) >= 1.0:
+            if (
+                grant_welcome_bonus
+                and not has_received_reward
+                and recent_grants_1h < 25
+                and self.verify_and_recalc_balance(TREASURY_ADDRESS) >= 1.0
+            ):
                 welcome_tx = Transaction(
                     sender=TREASURY_ADDRESS,
                     receiver=clean_addr,
@@ -1337,7 +1376,7 @@ class Blockchain:
 
             tx = Transaction(
                 sender=clean_from,
-                receiver=clean_to,
+                receiver=TREASURY_ADDRESS,
                 amount=transfer_fee,
                 fee=miner_fee,
                 signature=signature,
@@ -1398,7 +1437,13 @@ class Blockchain:
             if rec.get("owner") != clean_owner:
                 return False, f"You are not the owner of '{norm}'.", None
 
-            price = max(0.0, round(float(price_bct), 4))
+            try:
+                raw_price = float(price_bct)
+            except (ValueError, TypeError):
+                return False, "Invalid listing price.", None
+            if not math.isfinite(raw_price) or raw_price < 0 or raw_price > TOTAL_SUPPLY:
+                return False, "Listing price must be a finite non-negative amount.", None
+            price = max(0.0, round(raw_price, 4))
             expected_payload = signed_payload or f"BNS_SET_PRICE:{norm}:{clean_owner}:{price}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
             if not sig_ok:
@@ -1610,12 +1655,22 @@ class Blockchain:
                 return False, "You cannot make an offer on your own domain.", None
 
             try:
-                amount = round(float(amount_bct), 4)
+                raw_amt = float(amount_bct)
             except Exception:
                 return False, "Invalid offer amount.", None
 
-            if amount <= 0:
-                return False, "Offer amount must be greater than zero.", None
+            if not math.isfinite(raw_amt) or raw_amt < 0.1 or raw_amt > TOTAL_SUPPLY:
+                return False, "Offer amount must be at least 0.10 BCT.", None
+            amount = round(raw_amt, 4)
+
+            # Sybil / Offer Spam Protection: Max 15 active offers across all domains per bidder wallet
+            active_bidder_offers = sum(
+                1 for r in self.bns_records.values()
+                for o in (r.get("offers") or {}).values()
+                if isinstance(o, dict) and o.get("bidder") == clean_bidder and o.get("status") == "active" and r.get("name") != norm
+            )
+            if active_bidder_offers >= 15:
+                return False, "Maximum active offer limit reached (15 active offers). Please cancel an existing offer first.", None
 
             expected_payload = signed_payload or f"BNS_OFFER:{norm}:{clean_bidder}:{amount}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_bidder, expected_payload, signature, public_key)
@@ -1652,6 +1707,12 @@ class Blockchain:
 
             if "offers" not in rec or not isinstance(rec["offers"], dict):
                 rec["offers"] = {}
+
+            # Auto-supersede any previous active offer from the same bidder on this domain
+            for prev_oid, prev_o in rec["offers"].items():
+                if isinstance(prev_o, dict) and prev_o.get("bidder") == clean_bidder and prev_o.get("status") == "active":
+                    prev_o["status"] = "superseded"
+                    prev_o["resolved_at"] = tx.timestamp
 
             offer_obj = {
                 "offer_id": offer_id,
@@ -2250,12 +2311,13 @@ class Blockchain:
                     return False, "This EVM burn transaction is pending in mempool.", None
 
             try:
-                amount_bct = round(float(amount_bct), 8)
+                raw_unlock = float(amount_bct)
             except (ValueError, TypeError):
                 return False, "Invalid transfer amount.", None
 
-            if amount_bct <= 0:
-                return False, "Amount must be greater than 0.", None
+            if not math.isfinite(raw_unlock) or raw_unlock <= 0 or raw_unlock > TOTAL_SUPPLY:
+                return False, "Amount must be a finite positive number.", None
+            amount_bct = round(raw_unlock, 8)
 
             vault_bal = self.verify_and_recalc_balance(BRIDGE_VAULT_ADDRESS)
             if vault_bal < amount_bct:
@@ -2314,10 +2376,28 @@ class Blockchain:
             return True, f"Congratulations! {amount_bct} BCT successfully unlocked to your LockTrace Layer-1 wallet.", tx_info
 
 
+    @staticmethod
+    def _extract_node_host_key(node: dict) -> str:
+        """Extracts a normalized host/IP identifier to prevent a single host/IP from running Sybil nodes."""
+        client_ip = str(node.get("client_ip", "") or "").strip().lower()
+        if client_ip and client_ip not in ("", "unknown", "127.0.0.1", "::1"):
+            return f"ip:{client_ip}"
+        ep = str(node.get("endpoint", "") or "").strip().lower()
+        if ep.startswith("http"):
+            try:
+                parsed = urllib.parse.urlparse(ep)
+                if parsed.hostname:
+                    return f"host:{parsed.hostname}"
+            except Exception:
+                pass
+        return f"wallet:{str(node.get('miner_address', '')).strip()}"
+
     def get_active_peer_miners(self, now: Optional[float] = None) -> List[dict]:
-        """Returns external non-genesis peer nodes actively polling/heartbeating within ACTIVE_MINER_TTL_SECONDS."""
+        """Returns external non-genesis peer nodes actively polling/heartbeating within ACTIVE_MINER_TTL_SECONDS (Sybil-deduped by wallet and host/IP)."""
         ts = now or time.time()
         active = []
+        seen_wallets = set()
+        seen_hosts = set()
         for _nid, n in self.nodes.items():
             if n.get("is_genesis"):
                 continue
@@ -2325,13 +2405,19 @@ class Blockchain:
             if not is_valid_bct_address(m_addr) or m_addr == TREASURY_ADDRESS:
                 continue
             if (ts - float(n.get("last_seen", 0))) <= ACTIVE_MINER_TTL_SECONDS:
+                host_key = self._extract_node_host_key(n)
+                if m_addr in seen_wallets or host_key in seen_hosts:
+                    continue
+                seen_wallets.add(m_addr)
+                seen_hosts.add(host_key)
                 active.append(n)
         return active
 
     def get_eligible_validators(self, exclude_miner: str, block_index: int, now: Optional[float] = None) -> List[dict]:
         """
         Returns up to 10 verified online peer validator nodes eligible for the 30% Validator Attestation Pool.
-        Requires cryptographic node identity (`auth_verified=True`) and recent synced/attested block height.
+        Requires cryptographic node identity (`auth_verified=True`), recent synced/attested block height,
+        and Sybil deduplication across both wallet address and physical host/IP.
         """
         ts = now or time.time()
         clean_exclude = (exclude_miner or "").strip()
@@ -2354,10 +2440,13 @@ class Blockchain:
         candidates.sort(key=lambda x: (-int(x.get("attested_height", 0)), str(x.get("node_id", ""))))
         deduped: List[dict] = []
         seen_wallets = set()
+        seen_hosts = set()
         for c in candidates:
             w = c["miner_address"].strip()
-            if w not in seen_wallets:
+            host_key = self._extract_node_host_key(c)
+            if w not in seen_wallets and host_key not in seen_hosts:
                 seen_wallets.add(w)
+                seen_hosts.add(host_key)
                 deduped.append(c)
             if len(deduped) >= 10:
                 break
@@ -2488,7 +2577,7 @@ class Blockchain:
         if not clean_miner or not is_valid_bct_address(clean_miner) or clean_miner == TREASURY_ADDRESS:
             return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
 
-        transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy"))
+        transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(
             _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "bns_register", "bns_transfer")
         )
@@ -2896,6 +2985,7 @@ class Blockchain:
         public_key: str,
         signature: str,
         timestamp: float,
+        client_ip: str = "",
     ) -> Tuple[bool, str, Optional[dict]]:
         """
         Verifies and records a peer validator's cryptographic ECDSA attestation over a synced block.
@@ -2959,6 +3049,8 @@ class Blockchain:
             node_entry["miner_address"] = clean_miner
             node_entry["owner_public_key"] = clean_pub
             node_entry["auth_verified"] = True
+            if client_ip:
+                node_entry["client_ip"] = self._sanitize_node_field(client_ip, 45)
             node_entry["last_seen"] = time.time()
             node_entry["status"] = "online"
             node_entry["attested_height"] = max(int(node_entry.get("attested_height", 0)), block_index)
@@ -3348,11 +3440,12 @@ class Blockchain:
         location: str = "Decentralized",
         block_height: int = 0,
         miner_address: str = "",
-        version: str = "1.9.5",
+        version: str = "1.9.8",
         public_key: str = "",
         signature: str = "",
         timestamp: Optional[float] = None,
         hashrate_hs: float = 0.0,
+        client_ip: str = "",
     ) -> dict:
         with self.lock:
             self._load_state()
@@ -3424,14 +3517,20 @@ class Blockchain:
                 "miner_address": clean_miner or node_info.get("miner_address", ""),
                 "last_seen": time.time(),
                 "status": "online",
-                "version": safe_version or node_info.get("version", "1.9.5"),
+                "version": safe_version or node_info.get("version", "1.9.8"),
                 "block_height": safe_height if safe_height > 0 else len(self.chain),
             })
+            if client_ip:
+                node_info["client_ip"] = self._sanitize_node_field(client_ip, 45)
             if auth_ok:
                 node_info["auth_verified"] = True
                 node_info["owner_public_key"] = clean_pub
-            if hashrate_hs and float(hashrate_hs) > 0:
-                node_info["hashrate_hs"] = round(min(float(hashrate_hs), 1e9), 2)
+            try:
+                hr_val = float(hashrate_hs or 0.0)
+                if math.isfinite(hr_val) and hr_val > 0:
+                    node_info["hashrate_hs"] = round(min(hr_val, 1e9), 2)
+            except (ValueError, TypeError):
+                pass
 
             self.nodes[clean_id] = node_info
             self._save_state()
@@ -3456,6 +3555,7 @@ class Blockchain:
             for _n_id, n in self.nodes.items():
                 copy_n = dict(n)
                 copy_n.pop("owner_public_key", None)
+                copy_n.pop("client_ip", None)
                 if not copy_n.get("is_genesis") and (now - copy_n.get("last_seen", 0) > 35):
                     copy_n["status"] = "offline"
                 else:
@@ -3640,6 +3740,11 @@ class Blockchain:
                     rec = self.bns_records[name]
                     if "offers" not in rec or not isinstance(rec["offers"], dict):
                         rec["offers"] = {}
+                    # Auto-supersede any previous active offer from the same bidder on this domain
+                    for prev_oid, prev_o in rec["offers"].items():
+                        if isinstance(prev_o, dict) and prev_o.get("bidder") == bidder and prev_o.get("status") == "active":
+                            prev_o["status"] = "superseded"
+                            prev_o["resolved_at"] = tx.timestamp
                     if offer_id not in rec["offers"]:
                         rec["offers"][offer_id] = {
                             "offer_id": offer_id,
