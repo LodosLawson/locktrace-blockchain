@@ -4220,7 +4220,7 @@
   <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4" id="userProfileModal" onclick="if(event.target===this) closeUserProfile();">
     <div class="w-full max-w-2xl max-h-[92dvh] overflow-y-auto rounded-3xl bg-surface-container flex flex-col shadow-2xl border border-outline-variant/30 transition-all scale-95 opacity-0" id="userProfileModalCard">
       <!-- Header Banner with Gradient -->
-      <div class="h-28 sm:h-32 bg-gradient-to-r from-primary/25 via-surface-container-high to-secondary/25 relative rounded-t-3xl p-4 sm:p-5 flex justify-between items-start">
+      <div class="h-28 sm:h-32 bg-gradient-to-r from-primary/25 via-surface-container-high to-secondary/25 relative rounded-t-3xl p-4 sm:p-5 flex justify-end items-center gap-2">
         <span class="px-2.5 py-1 rounded-full bg-surface-container/90 backdrop-blur-md text-[11px] font-mono text-on-surface flex items-center gap-1.5 border border-outline-variant/20 shadow-sm">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>LockTrace Identity</span>
@@ -4232,36 +4232,36 @@
 
       <!-- Profile Avatar & Identity Section -->
       <div class="px-5 sm:px-6 pb-6 pt-0 flex flex-col gap-4">
-        <!-- Top Row: Avatar + Handle / Badge + Quick Action Buttons -->
-        <div class="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-3 -mt-12 sm:-mt-14">
-          <!-- Avatar + Name/Badge Row -->
-          <div class="flex items-center sm:items-end gap-3.5 min-w-0">
-            <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-surface-container-highest border-4 border-surface-container flex items-center justify-center shadow-xl text-primary shrink-0 relative overflow-hidden" id="userProfileAvatarBox">
-              <span class="material-symbols-outlined text-[44px] sm:text-[48px]" id="userProfileAvatarIcon">person</span>
-            </div>
-            <div class="flex flex-col min-w-0 pb-1">
-              <div class="flex items-center gap-2 flex-wrap">
-                <span class="text-xl sm:text-2xl font-bold text-on-surface font-mono truncate max-w-[220px] xs:max-w-[300px]" id="userProfileHandle">@anonymous</span>
-              </div>
-              <div class="mt-1">
-                <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold font-sans bg-surface-container text-on-surface-variant border border-outline-variant/20" id="userProfileTagBadge">Community Member</span>
-              </div>
-            </div>
+        <!-- Top Row: Avatar Protruding Out + Quick Action Buttons -->
+        <div class="flex items-end justify-between gap-3 -mt-12 sm:-mt-14">
+          <!-- Avatar protruding half into the banner -->
+          <div class="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-surface-container-highest border-4 border-surface-container flex items-center justify-center shadow-2xl text-primary shrink-0 relative overflow-hidden z-10" id="userProfileAvatarBox">
+            <span class="material-symbols-outlined text-[44px] sm:text-[48px]" id="userProfileAvatarIcon">person</span>
           </div>
 
           <!-- Quick Action Buttons -->
-          <div class="flex items-center gap-2 w-full sm:w-auto pt-1 sm:pt-0 shrink-0">
-            <button class="flex-1 sm:flex-none px-4 py-2 rounded-full bg-primary text-on-primary font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm cursor-pointer" onclick="profileSendCrypto()" type="button">
+          <div class="flex items-center gap-2 pb-1 shrink-0">
+            <button class="px-3.5 sm:px-4 py-2 rounded-full bg-primary text-on-primary font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all shadow-sm cursor-pointer" onclick="profileSendCrypto()" type="button">
               <span class="material-symbols-outlined text-[15px]">send</span>
               <span>Send BCT</span>
             </button>
-            <button class="flex-1 sm:flex-none px-4 py-2 rounded-full bg-primary/15 text-primary hover:bg-primary/25 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer" onclick="profileTipDirect()" type="button">
+            <button class="px-3 sm:px-3.5 py-2 rounded-full bg-primary/15 text-primary hover:bg-primary/25 font-semibold text-xs flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer" onclick="profileTipDirect()" type="button">
               <span class="material-symbols-outlined text-[15px]">bolt</span>
               <span>Tip</span>
             </button>
-            <button class="px-3 py-2 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-semibold text-xs flex items-center justify-center gap-1 transition-all cursor-pointer" onclick="profileInspectExplorer()" type="button" title="Search in Explorer">
-              <span class="material-symbols-outlined text-[15px]">search</span>
+            <button class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-semibold text-xs flex items-center justify-center transition-all cursor-pointer" onclick="profileInspectExplorer()" type="button" title="Search in Explorer">
+              <span class="material-symbols-outlined text-[16px]">search</span>
             </button>
+          </div>
+        </div>
+
+        <!-- Identity Row: Handle and Badge (Full Width, below banner, never truncated) -->
+        <div class="flex flex-col gap-1 -mt-1">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xl sm:text-2xl font-bold font-mono text-emerald-400 break-all select-all tracking-tight leading-tight" id="userProfileHandle">@anonymous</span>
+          </div>
+          <div class="flex items-center gap-2 flex-wrap mt-0.5">
+            <span class="inline-block px-2.5 py-0.5 rounded-full text-[11px] font-semibold font-sans bg-surface-container text-on-surface-variant border border-outline-variant/20" id="userProfileTagBadge">Community Member</span>
           </div>
         </div>
 
@@ -10962,10 +10962,10 @@
 
       if (data.primary_handle) {
         handleEl.textContent = `@${data.primary_handle}`;
-        handleEl.className = 'text-xl sm:text-2xl font-bold text-emerald-400 font-mono truncate max-w-[220px] xs:max-w-[300px]';
+        handleEl.className = 'text-xl sm:text-2xl font-bold text-emerald-400 font-mono break-all select-all tracking-tight leading-tight';
       } else {
         handleEl.textContent = shortAddr(data.address);
-        handleEl.className = 'text-xl sm:text-2xl font-bold text-on-surface font-mono truncate max-w-[220px] xs:max-w-[300px]';
+        handleEl.className = 'text-xl sm:text-2xl font-bold text-on-surface font-mono break-all select-all tracking-tight leading-tight';
       }
 
       addrEl.textContent = data.address;
