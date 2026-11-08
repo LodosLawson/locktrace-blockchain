@@ -1081,6 +1081,8 @@ class Blockchain:
             self.balances[clean_follower] = self.verify_and_recalc_balance(clean_follower)
             self.balances[clean_target] = self.verify_and_recalc_balance(clean_target)
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._loaded_revision += 1
+            self._profile_cache.clear()
             self._save_state()
 
             block = None
@@ -2462,6 +2464,27 @@ class Blockchain:
                                 "extra_data": tx.extra_data
                             })
 
+            followers_addrs = list(self.follows.get(target_address, []))
+            following_addrs = list(self.following.get(target_address, []))
+
+            followers_list = []
+            for a in followers_addrs:
+                bns = self.bns_reverse.get(a, "")
+                followers_list.append({
+                    "address": a,
+                    "bns_name": bns,
+                    "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}"
+                })
+
+            following_list = []
+            for a in following_addrs:
+                bns = self.bns_reverse.get(a, "")
+                following_list.append({
+                    "address": a,
+                    "bns_name": bns,
+                    "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}"
+                })
+
             profile_res = {
                 "address": target_address,
                 "primary_handle": primary_handle,
@@ -2474,13 +2497,19 @@ class Blockchain:
                 "lost_key_note": lost_key_note,
                 "total_tx_count": total_tx_count,
                 "owned_handles": owned_handles,
+                "followers": followers_list,
+                "following": following_list,
+                "followers_count": len(followers_addrs),
+                "following_count": len(following_addrs),
                 "social_stats": {
                     "total_posts": len(user_posts),
                     "total_likes_received": total_likes_rec,
                     "total_comments_received": total_cmts_rec,
                     "total_royalties_earned": total_royalties,
                     "total_likes_given": total_likes_given,
-                    "total_comments_given": total_cmts_given
+                    "total_comments_given": total_cmts_given,
+                    "followers_count": len(followers_addrs),
+                    "following_count": len(following_addrs)
                 },
                 "recent_posts": user_posts[:20],
                 "recent_transactions": recent_txs

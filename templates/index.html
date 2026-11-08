@@ -4653,7 +4653,11 @@
           </div>
 
           <!-- Quick Action Buttons -->
-          <div class="flex items-center gap-1.5 sm:gap-2 pb-1 shrink-0">
+          <div class="flex items-center gap-1.5 sm:gap-2 pb-1 shrink-0 flex-wrap justify-end">
+            <button id="btnProfileFollow" class="px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/20 text-primary hover:bg-primary hover:text-on-primary border border-primary/40 font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer" onclick="profileFollowClicked()" type="button">
+              <span class="material-symbols-outlined text-[15px]">person_add</span>
+              <span id="btnProfileFollowText">Follow (1.00 BCT)</span>
+            </button>
             <button class="px-2.5 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary text-on-primary font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 sm:gap-1.5 active:scale-95 transition-all shadow-sm cursor-pointer" onclick="profileSendCrypto()" type="button">
               <span class="material-symbols-outlined text-[14px] sm:text-[15px]">send</span>
               <span>Send BCT</span>
@@ -4711,15 +4715,25 @@
           </div>
         </div>
 
-        <!-- 4-Stat Metrics Cards Grid -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 pt-2">
+        <!-- 6-Stat Metrics Cards Grid (Including Followers & Following) -->
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-2.5 pt-2">
           <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
             <span class="text-xs text-on-surface-variant">Balance</span>
             <span class="font-bold font-mono text-base text-primary truncate mt-0.5" id="userProfileBalance">0.00 BCT</span>
             <span class="text-[10px] text-outline font-mono truncate" id="userProfilePct">0.00% supply</span>
           </div>
-          <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
-            <span class="text-xs text-on-surface-variant">Thoughts / Posts</span>
+          <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col cursor-pointer hover:border-emerald-500/40 transition-colors group" onclick="switchProfileSubTab('followers')" title="View Followers List">
+            <span class="text-xs text-on-surface-variant group-hover:text-emerald-400 transition-colors">Followers</span>
+            <span class="font-bold font-mono text-base text-emerald-400 mt-0.5" id="userProfileFollowersCount">0</span>
+            <span class="text-[10px] text-outline truncate">On-Chain Fans</span>
+          </div>
+          <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col cursor-pointer hover:border-secondary/40 transition-colors group" onclick="switchProfileSubTab('following')" title="View Following List">
+            <span class="text-xs text-on-surface-variant group-hover:text-secondary transition-colors">Following</span>
+            <span class="font-bold font-mono text-base text-secondary mt-0.5" id="userProfileFollowingCount">0</span>
+            <span class="text-[10px] text-outline truncate">Subscribed</span>
+          </div>
+          <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col cursor-pointer hover:border-primary/40 transition-colors group" onclick="switchProfileSubTab('posts')" title="View Thoughts">
+            <span class="text-xs text-on-surface-variant group-hover:text-primary transition-colors">Thoughts / Posts</span>
             <span class="font-bold font-mono text-base text-on-surface mt-0.5" id="userProfileTotalPosts">0</span>
             <span class="text-[10px] text-outline truncate">On-Chain</span>
           </div>
@@ -4731,22 +4745,30 @@
           <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
             <span class="text-xs text-on-surface-variant">Royalties Earned</span>
             <span class="font-bold font-mono text-base text-amber-300 truncate mt-0.5" id="userProfileRoyalties">0.00 BCT</span>
-            <span class="text-[10px] text-outline truncate">20% interaction cut</span>
+            <span class="text-[10px] text-outline truncate">Creator cut</span>
           </div>
         </div>
 
-        <!-- Sub Tabs (Posts, Handles, Transactions) -->
-        <div class="flex items-center gap-2 border-b border-outline-variant/20 pt-2">
-          <button class="profile-subtab-btn pb-2.5 px-3 text-xs font-semibold text-primary border-b-2 border-primary transition-all flex items-center gap-1.5" id="profileTabBtnPosts" onclick="switchProfileSubTab('posts')" type="button">
-            <span class="material-symbols-outlined text-[16px]">forum</span>
+        <!-- Sub Tabs (Posts, Followers, Following, Handles, Transactions) -->
+        <div class="flex items-center gap-1.5 sm:gap-2 border-b border-outline-variant/20 pt-2 overflow-x-auto no-scrollbar">
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-primary border-b-2 border-primary transition-all flex items-center gap-1 shrink-0" id="profileTabBtnPosts" onclick="switchProfileSubTab('posts')" type="button">
+            <span class="material-symbols-outlined text-[15px]">forum</span>
             <span>Thoughts (<span id="profileTabCountPosts">0</span>)</span>
           </button>
-          <button class="profile-subtab-btn pb-2.5 px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1.5" id="profileTabBtnHandles" onclick="switchProfileSubTab('handles')" type="button">
-            <span class="material-symbols-outlined text-[16px]">badge</span>
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 shrink-0" id="profileTabBtnFollowers" onclick="switchProfileSubTab('followers')" type="button">
+            <span class="material-symbols-outlined text-[15px]">group</span>
+            <span>Followers (<span id="profileTabCountFollowers">0</span>)</span>
+          </button>
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 shrink-0" id="profileTabBtnFollowing" onclick="switchProfileSubTab('following')" type="button">
+            <span class="material-symbols-outlined text-[15px]">person_check</span>
+            <span>Following (<span id="profileTabCountFollowing">0</span>)</span>
+          </button>
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 shrink-0" id="profileTabBtnHandles" onclick="switchProfileSubTab('handles')" type="button">
+            <span class="material-symbols-outlined text-[15px]">badge</span>
             <span>Handles (<span id="profileTabCountHandles">0</span>)</span>
           </button>
-          <button class="profile-subtab-btn pb-2.5 px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1.5" id="profileTabBtnTxs" onclick="switchProfileSubTab('txs')" type="button">
-            <span class="material-symbols-outlined text-[16px]">receipt_long</span>
+          <button class="profile-subtab-btn pb-2.5 px-2.5 sm:px-3 text-xs font-semibold text-on-surface-variant hover:text-on-surface transition-all flex items-center gap-1 shrink-0" id="profileTabBtnTxs" onclick="switchProfileSubTab('txs')" type="button">
+            <span class="material-symbols-outlined text-[15px]">receipt_long</span>
             <span>Ledger Activity (<span id="profileTabCountTxs">0</span>)</span>
           </button>
         </div>
@@ -4758,16 +4780,138 @@
             <!-- Populated dynamically -->
           </div>
 
-          <!-- 2. Handles Sub-view -->
+          <!-- 2. Followers Sub-view -->
+          <div id="profileSubViewFollowers" class="space-y-2 hidden">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- 3. Following Sub-view -->
+          <div id="profileSubViewFollowing" class="space-y-2 hidden">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- 4. Handles Sub-view -->
           <div id="profileSubViewHandles" class="space-y-2.5 hidden">
             <!-- Populated dynamically -->
           </div>
 
-          <!-- 3. Transactions Sub-view -->
+          <!-- 5. Transactions Sub-view -->
           <div id="profileSubViewTxs" class="space-y-2 hidden">
             <!-- Populated dynamically -->
           </div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: METAMASK-STYLE NON-CUSTODIAL SIGNATURE CONFIRMATION (ENGLISH)       -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4 select-none" id="web3TxConfirmModal" onclick="if(event.target===this) closeWeb3TxModal();">
+    <div class="w-full max-w-[420px] rounded-3xl bg-[#181a1f] border border-[#2b2f38] text-white shadow-2xl flex flex-col overflow-hidden transition-all scale-95 opacity-0 duration-200" id="web3TxConfirmCard">
+      <!-- Modal Top Navigation Bar -->
+      <div class="px-4 sm:px-5 py-3.5 bg-[#1e2026] border-b border-[#2b2f38] flex items-center justify-between">
+        <div class="flex items-center gap-2.5">
+          <div class="w-8 h-8 rounded-xl bg-gradient-to-tr from-amber-500 via-primary to-emerald-400 flex items-center justify-center shadow-sm">
+            <span class="material-symbols-outlined text-[18px] text-black font-bold">token</span>
+          </div>
+          <div class="flex flex-col">
+            <span class="font-bold text-xs text-neutral-100 tracking-tight flex items-center gap-1">
+              <span>LockTrace Web3 Wallet</span>
+            </span>
+            <span class="text-[10px] text-neutral-400 font-mono">Signature Request</span>
+          </div>
+        </div>
+        <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#121316] border border-[#323640] text-[10.5px] font-mono text-emerald-400 font-medium">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Mainnet (PoW)</span>
+        </div>
+      </div>
+
+      <!-- Origin & Security Banner -->
+      <div class="px-4 sm:px-5 py-2 bg-[#121316]/70 border-b border-[#2b2f38]/60 flex items-center justify-between text-[11px] text-neutral-400">
+        <span class="flex items-center gap-1">
+          <span class="material-symbols-outlined text-[13px] text-emerald-400">lock</span>
+          <span class="font-mono text-neutral-300">locktrace.space</span>
+        </span>
+        <span class="text-[10px] text-neutral-400 font-mono">ECDSA secp256k1</span>
+      </div>
+
+      <!-- Body / Transaction Payload -->
+      <div class="p-4 sm:p-5 flex flex-col gap-3.5">
+        <!-- Target Creator Card -->
+        <div class="p-3.5 rounded-2xl bg-[#121316] border border-[#2b2f38] flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-primary/30 to-secondary/20 flex items-center justify-center font-bold font-mono text-primary text-base ring-1 ring-primary/40 shrink-0 select-none" id="web3TxTargetAvatar">
+            L
+          </div>
+          <div class="flex flex-col min-w-0 flex-1">
+            <div class="flex items-center justify-between">
+              <span class="text-[10px] uppercase font-mono text-neutral-400 font-bold tracking-wider">Follow Target</span>
+              <span class="px-1.5 py-0.2 rounded text-[9.5px] font-mono bg-primary/15 text-primary font-bold">On-Chain</span>
+            </div>
+            <span class="font-mono font-bold text-sm text-neutral-100 truncate mt-0.5" id="web3TxTargetName">@creator.bct</span>
+            <span class="font-mono text-[10.5px] text-neutral-400 truncate select-all" id="web3TxTargetAddress">BCT...</span>
+          </div>
+        </div>
+
+        <!-- Transaction Cost & Breakdown -->
+        <div class="flex flex-col gap-2 p-3.5 rounded-2xl bg-[#121316] border border-[#2b2f38]">
+          <div class="flex items-center justify-between">
+            <span class="text-xs text-neutral-300 font-medium">Follow Fee Total</span>
+            <div class="flex flex-col items-end">
+              <span class="font-mono text-base font-extrabold text-primary">1.00 BCT</span>
+              <span class="text-[10px] text-neutral-400 font-mono">~$0.0000046 USD</span>
+            </div>
+          </div>
+
+          <!-- Divider -->
+          <div class="h-px bg-[#2b2f38]/60 my-1"></div>
+
+          <!-- Tokenomic Split Rows (English) -->
+          <div class="space-y-1.5 text-[11px] font-mono">
+            <div class="flex items-center justify-between text-neutral-300">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>
+                <span>Creator Payout (50%)</span>
+              </span>
+              <span class="text-emerald-400 font-semibold">+0.50 BCT</span>
+            </div>
+            <div class="flex items-center justify-between text-neutral-300">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span>
+                <span>Miner / Validator Pool (30%)</span>
+              </span>
+              <span class="text-amber-400 font-semibold">+0.30 BCT</span>
+            </div>
+            <div class="flex items-center justify-between text-neutral-300">
+              <span class="flex items-center gap-1.5">
+                <span class="w-1.5 h-1.5 rounded-full bg-sky-400"></span>
+                <span>Treasury Vault (20%)</span>
+              </span>
+              <span class="text-sky-400 font-semibold">+0.20 BCT</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- Non-Custodial Assurance -->
+        <div class="flex items-start gap-2 p-2.5 rounded-xl bg-primary/5 border border-primary/15 text-[10.5px] text-neutral-400 leading-relaxed">
+          <span class="material-symbols-outlined text-[15px] text-primary shrink-0 mt-0.5">verified_user</span>
+          <span>Non-custodial ECDSA signature. Your private key never leaves your local device.</span>
+        </div>
+      </div>
+
+      <!-- Action Buttons Footer -->
+      <div class="p-4 bg-[#1e2026] border-t border-[#2b2f38] grid grid-cols-2 gap-3">
+        <button type="button" onclick="rejectWeb3Tx()" class="py-2.5 px-4 rounded-xl bg-[#2a2d36] hover:bg-[#343844] text-neutral-200 font-semibold text-xs transition-all active:scale-95 cursor-pointer">
+          Reject
+        </button>
+        <button type="button" id="btnConfirmWeb3Tx" onclick="executeWeb3Tx()" class="py-2.5 px-4 rounded-xl bg-gradient-to-r from-primary to-emerald-400 hover:from-primary/90 hover:to-emerald-400/90 text-neutral-950 font-bold text-xs transition-all active:scale-95 shadow-md flex items-center justify-center gap-1.5 cursor-pointer">
+          <span class="material-symbols-outlined text-[15px]">done_all</span>
+          <span>Confirm &amp; Sign</span>
+        </button>
+      </div>
+    </div>
+  </div>
       </div>
     </div>
   </div>
@@ -5475,79 +5619,105 @@
       if (!rawContent) return '';
       const text = String(rawContent).toLowerCase();
 
-      // 1. $ETH Telemetry Card (Exact Stitch Screen E Telemetry Widget)
+      // Helper to generate dynamic sparkline SVG
+      const makeSparklineSvg = (colorHex) => `
+        <svg class="w-full h-full overflow-visible" fill="none" viewBox="0 0 100 30">
+          <path d="M0 24 Q 25 20, 40 12 T 70 7 T 100 2" fill="none" stroke="${colorHex}" stroke-linecap="round" stroke-width="2.2"></path>
+          <path d="M0 24 Q 25 20, 40 12 T 70 7 T 100 2 L 100 30 L 0 30 Z" fill="${colorHex}" fill-opacity="0.12"></path>
+        </svg>
+      `;
+
+      // Helper to render asset card
+      const makeAssetCard = (sym, name, priceFormatted, change, metricTitle, metricVal, colorClass, bgClass, strokeHex, iconName) => {
+        const cleanSym = sym.replace('$', '').toLowerCase();
+        return `
+          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-outline-variant/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs select-none" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl ${bgClass} ${colorClass} flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">${iconName || 'trending_up'}</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-sm font-bold text-on-surface">${sym}</span>
+                  <span class="font-mono text-sm font-medium text-on-surface market-price-${cleanSym}">${priceFormatted}</span>
+                  <span class="inline-flex items-center gap-0.5 px-2 py-0.2 rounded-full ${bgClass} ${colorClass} font-mono text-[10px] font-bold">
+                    <span class="material-symbols-outlined text-[11px]">trending_up</span>
+                    <span class="market-change-${cleanSym}">${change}</span>
+                  </span>
+                </div>
+                <span class="text-[11px] text-on-surface-variant">${name}</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 self-end sm:self-auto shrink-0">
+              <div class="flex flex-col items-end">
+                <span class="text-[10px] text-on-surface-variant font-mono">${metricTitle}</span>
+                <span class="font-mono text-xs ${colorClass} font-bold">${metricVal}</span>
+              </div>
+              <div class="w-20 h-6 flex items-center">
+                ${makeSparklineSvg(strokeHex)}
+              </div>
+            </div>
+          </div>
+        `;
+      };
+
+      // 1. $BTC / Bitcoin
+      if (text.includes('$btc') || text.includes('bitcoin') || text.includes('satoshi')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.BTC) || { price: 92450.00, change: '+3.8%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$BTC', 'Bitcoin • L1 Digital Gold Store of Value', priceStr, m.change, 'L1 Hashrate', '710 EH/s', 'text-amber-400', 'bg-amber-400/15', '#f59e0b', 'currency_bitcoin');
+      }
+
+      // 2. $ETH / Ethereum
       if (text.includes('$eth') || text.includes('ethereum') || text.includes('blob') || text.includes('gwei')) {
-        return `
-          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-outline-variant/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined text-[20px]">query_stats</span>
-              </div>
-              <div class="flex flex-col">
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-sm font-bold text-on-surface">$ETH</span>
-                  <span class="font-mono text-sm font-medium text-on-surface live-eth-price-display">${getLiveEthPriceFormatted()}</span>
-                  <span class="inline-flex items-center gap-0.5 px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">
-                    <span class="material-symbols-outlined text-[11px]">trending_up</span>
-                    <span class="live-eth-change-display">${window.liveEthTelemetry ? window.liveEthTelemetry.change24h : '+2.4%'}</span>
-                  </span>
-                </div>
-                <span class="text-[11px] text-on-surface-variant">L1 Settlement Telemetry &bull; Blob Space Target Met</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-3 self-end sm:self-auto shrink-0">
-              <div class="flex flex-col items-end">
-                <span class="text-[10px] text-on-surface-variant font-mono">L1 Base Fee</span>
-                <span class="font-mono text-xs text-primary font-bold">~12 Gwei</span>
-              </div>
-              <div class="w-20 h-6 flex items-center">
-                <svg class="w-full h-full overflow-visible" fill="none" viewBox="0 0 100 30">
-                  <path class="text-primary" d="M0 24 Q 25 22, 40 14 T 70 8 T 100 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"></path>
-                  <path class="text-primary/10" d="M0 24 Q 25 22, 40 14 T 70 8 T 100 2 L 100 30 L 0 30 Z" fill="currentColor"></path>
-                </svg>
-              </div>
-            </div>
-          </div>
-        `;
+        const m = (window.liveMarketPrices && window.liveMarketPrices.ETH) || { price: 3450.00, change: '+2.4%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$ETH', 'Ethereum • L1 Blob Settlement Telemetry', priceStr, m.change, 'L1 Base Fee', '~12 Gwei', 'text-primary', 'bg-primary/15', '#22c55e', 'query_stats');
       }
 
-      // 2. $BCT / wBCT On-Chain Telemetry Card
+      // 3. $SOL / Solana
+      if (text.includes('$sol') || text.includes('solana')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.SOL) || { price: 214.80, change: '+5.2%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$SOL', 'Solana • Proof-of-History High Throughput L1', priceStr, m.change, 'Throughput', '2,840 TPS', 'text-purple-400', 'bg-purple-500/15', '#c084fc', 'electric_bolt');
+      }
+
+      // 4. $BCT / wBCT On-Chain Telemetry Card
       if (text.includes('$bct') || text.includes('wbct') || text.includes('uniswap') || text.includes('locktrace') || text.includes('tokenomics')) {
-        return `
-          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-secondary/25 bg-gradient-to-r from-secondary/5 via-transparent to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
-            <div class="flex items-center gap-3">
-              <div class="w-9 h-9 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined text-[20px]">currency_exchange</span>
-              </div>
-              <div class="flex flex-col">
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-sm font-bold text-on-surface">$BCT</span>
-                  <span class="font-mono text-sm font-medium text-emerald-400">$0.0000000046</span>
-                  <span class="inline-flex items-center gap-0.5 px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">
-                    <span class="material-symbols-outlined text-[11px]">trending_up</span>
-                    +4.2%
-                  </span>
-                </div>
-                <span class="text-[11px] text-on-surface-variant">L1 Settlement Telemetry &bull; Base Uniswap v3 1:1 Peg Backed</span>
-              </div>
-            </div>
-            <div class="flex items-center gap-3 self-end sm:self-auto shrink-0">
-              <div class="flex flex-col items-end">
-                <span class="text-[10px] text-on-surface-variant font-mono">L1 Transfer Fee</span>
-                <span class="font-mono text-xs text-secondary font-bold">0.0001 BCT</span>
-              </div>
-              <div class="w-20 h-6 flex items-center">
-                <svg class="w-full h-full overflow-visible" fill="none" viewBox="0 0 100 30">
-                  <path class="text-secondary" d="M0 26 Q 20 20, 45 15 T 75 6 T 100 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"></path>
-                  <path class="text-secondary/10" d="M0 26 Q 20 20, 45 15 T 75 6 T 100 2 L 100 30 L 0 30 Z" fill="currentColor"></path>
-                </svg>
-              </div>
-            </div>
-          </div>
-        `;
+        const m = (window.liveMarketPrices && window.liveMarketPrices.BCT) || { price: 0.0000000046, change: '+4.2%' };
+        return makeAssetCard('$BCT', 'LockTrace Native L1 • Base Uniswap v3 1:1 Peg Backed', '$0.0000000046', m.change, 'Transfer Fee', '0.0001 BCT', 'text-emerald-400', 'bg-emerald-500/15', '#34d399', 'currency_exchange');
       }
 
-      // 3. Vault & Solvency Proof Embed (Exact Stitch Screen E)
+      // 5. Stocks: $AAPL / Apple
+      if (text.includes('$aapl') || text.includes('apple') || text.includes('iphone')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.AAPL) || { price: 227.60, change: '+1.4%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$AAPL', 'Apple Inc. • NASDAQ Equity Telemetry', priceStr, m.change, 'Market Cap', '$3.45T', 'text-sky-400', 'bg-sky-500/15', '#38bdf8', 'bar_chart');
+      }
+
+      // 6. Stocks: $TSLA / Tesla
+      if (text.includes('$tsla') || text.includes('tesla')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.TSLA) || { price: 322.40, change: '+4.8%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$TSLA', 'Tesla Inc. • NASDAQ EV & Autonomous AI', priceStr, m.change, 'Market Cap', '$1.03T', 'text-rose-400', 'bg-rose-500/15', '#fb7185', 'directions_car');
+      }
+
+      // 7. Stocks: $NVDA / NVIDIA
+      if (text.includes('$nvda') || text.includes('nvidia')) {
+        const m = (window.liveMarketPrices && window.liveMarketPrices.NVDA) || { price: 147.80, change: '+3.9%' };
+        const priceStr = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+        return makeAssetCard('$NVDA', 'NVIDIA Corp. • NASDAQ AI Semiconductor', priceStr, m.change, 'Market Cap', '$3.62T', 'text-emerald-400', 'bg-emerald-500/15', '#4ade80', 'memory');
+      }
+
+      // 8. General Cashtags: $[A-Z]{2,6} (e.g. $MSFT, $GOOG, $AMZN, etc.)
+      const cashtagMatch = text.match(/\$([a-z]{2,6})\b/);
+      if (cashtagMatch) {
+        const sym = cashtagMatch[1].toUpperCase();
+        const priceStr = '$' + (100 + (sym.charCodeAt(0) * 2.5)).toFixed(2);
+        return makeAssetCard(`$${sym}`, `${sym} • Global Financial Telemetry`, priceStr, '+2.1%', '24h Vol', '$1.2B', 'text-primary', 'bg-primary/15', '#22c55e', 'monitoring');
+      }
+
+      // 9. Vault & Solvency Proof Embed (Exact Stitch Screen E)
       if (text.includes('vault') || text.includes('cold storage') || text.includes('solvency') || text.includes('multisig') || text.includes('reserve')) {
         return `
           <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-emerald-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
@@ -5571,7 +5741,7 @@
         `;
       }
 
-      // 4. Instant Settlement & Transaction Telemetry (Exact Stitch Screen E)
+      // 10. Instant Settlement & Transaction Telemetry
       if (text.includes('usdc') || text.includes('settlement') || text.includes('finality') || text.includes('micro-transaction')) {
         return `
           <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-outline-variant/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
@@ -5603,59 +5773,150 @@
       return '';
     }
 
-    // ── Live ETH Telemetry ────────────────────────────────────────────────────────
-    window.liveEthTelemetry = {
-      price: 3450.00,
-      change24h: '+2.4%',
-      gwei: 12,
-      lastUpdated: 0
+    // ── Live Multi-Asset Market Telemetry (BTC, ETH, SOL, AAPL, etc.) ─────────────
+    window.liveMarketPrices = {
+      BTC: { price: 92450.00, change: '+3.8%' },
+      ETH: { price: 3450.00, change: '+2.4%' },
+      SOL: { price: 214.80, change: '+5.2%' },
+      BCT: { price: 0.0000000046, change: '+4.2%' },
+      AAPL: { price: 227.60, change: '+1.4%' },
+      TSLA: { price: 322.40, change: '+4.8%' },
+      NVDA: { price: 147.80, change: '+3.9%' }
     };
+    window.liveEthTelemetry = window.liveMarketPrices.ETH;
 
     function getLiveEthPriceFormatted() {
-      const p = (window.liveEthTelemetry && window.liveEthTelemetry.price) ? window.liveEthTelemetry.price : 3450.00;
+      const p = (window.liveMarketPrices && window.liveMarketPrices.ETH && window.liveMarketPrices.ETH.price) ? window.liveMarketPrices.ETH.price : 3450.00;
       return '$' + Number(p).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
     }
 
-    async function fetchLiveEthTelemetry() {
+    async function fetchLiveMarketTelemetry() {
+      // 1. Fetch ETH
       try {
         const ctrl = new AbortController();
-        const timeout = setTimeout(() => ctrl.abort(), 4000);
+        const t = setTimeout(() => ctrl.abort(), 3500);
         const res = await fetch('https://api.coinbase.com/v2/prices/ETH-USD/spot', { signal: ctrl.signal });
-        clearTimeout(timeout);
+        clearTimeout(t);
         if (res.ok) {
           const d = await res.json();
           const p = parseFloat(d && d.data && d.data.amount);
-          if (p && !isNaN(p)) {
-            window.liveEthTelemetry.price = p;
-            window.liveEthTelemetry.lastUpdated = Date.now();
-          }
+          if (p && !isNaN(p)) window.liveMarketPrices.ETH.price = p;
         }
-      } catch (_) {
-        try {
-          const ctrl2 = new AbortController();
-          const timeout2 = setTimeout(() => ctrl2.abort(), 3500);
-          const res2 = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd&include_24hr_change=true', { signal: ctrl2.signal });
-          clearTimeout(timeout2);
-          if (res2.ok) {
-            const d2 = await res2.json();
-            if (d2 && d2.ethereum && d2.ethereum.usd) {
-              window.liveEthTelemetry.price = d2.ethereum.usd;
-              const chg = d2.ethereum.usd_24h_change;
-              if (chg !== undefined) {
-                window.liveEthTelemetry.change24h = (chg >= 0 ? '+' : '') + chg.toFixed(1) + '%';
-              }
-            }
-          }
-        } catch (e2) {}
-      }
+      } catch (_) {}
 
-      const formatted = getLiveEthPriceFormatted();
-      document.querySelectorAll('.live-eth-price-display').forEach(el => {
-        el.textContent = formatted;
+      // 2. Fetch BTC
+      try {
+        const ctrlB = new AbortController();
+        const tB = setTimeout(() => ctrlB.abort(), 3500);
+        const resB = await fetch('https://api.coinbase.com/v2/prices/BTC-USD/spot', { signal: ctrlB.signal });
+        clearTimeout(tB);
+        if (resB.ok) {
+          const dB = await res.json ? await resB.json() : null;
+          const pB = parseFloat(dB && dB.data && dB.data.amount);
+          if (pB && !isNaN(pB)) window.liveMarketPrices.BTC.price = pB;
+        }
+      } catch (_) {}
+
+      // 3. Fetch SOL
+      try {
+        const ctrlS = new AbortController();
+        const tS = setTimeout(() => ctrlS.abort(), 3500);
+        const resS = await fetch('https://api.coinbase.com/v2/prices/SOL-USD/spot', { signal: ctrlS.signal });
+        clearTimeout(tS);
+        if (resS.ok) {
+          const dS = await resS.json ? await resS.json() : null;
+          const pS = parseFloat(dS && dS.data && dS.data.amount);
+          if (pS && !isNaN(pS)) window.liveMarketPrices.SOL.price = pS;
+        }
+      } catch (_) {}
+
+      // 4. Update rendered price DOM spans
+      ['btc', 'eth', 'sol', 'aapl', 'tsla', 'nvda'].forEach(sym => {
+        const upper = sym.toUpperCase();
+        const m = window.liveMarketPrices[upper];
+        if (m) {
+          const formatted = '$' + Number(m.price).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+          document.querySelectorAll('.market-price-' + sym).forEach(el => { el.textContent = formatted; });
+          document.querySelectorAll('.market-change-' + sym).forEach(el => { el.textContent = m.change; });
+        }
       });
-      document.querySelectorAll('.live-eth-change-display').forEach(el => {
-        el.textContent = window.liveEthTelemetry.change24h;
+      // Backward compatibility for existing live-eth-price-display
+      const ethFormatted = getLiveEthPriceFormatted();
+      document.querySelectorAll('.live-eth-price-display').forEach(el => { el.textContent = ethFormatted; });
+      document.querySelectorAll('.live-eth-change-display').forEach(el => { el.textContent = window.liveMarketPrices.ETH.change; });
+    }
+
+    function fetchLiveEthTelemetry() {
+      fetchLiveMarketTelemetry();
+    }
+
+    // ── MetaMask-Style Non-Custodial Signature Confirmation Modal ────────────────
+    let web3ModalResolver = null;
+
+    function promptWeb3FollowModal({ targetAddress, targetName, avatarChar }) {
+      return new Promise((resolve) => {
+        web3ModalResolver = resolve;
+        const modal = document.getElementById('web3TxConfirmModal');
+        const card = document.getElementById('web3TxConfirmCard');
+        if (!modal || !card) {
+          resolve(true); // Fallback if modal DOM element not found
+          return;
+        }
+
+        const nameEl = document.getElementById('web3TxTargetName');
+        const addrEl = document.getElementById('web3TxTargetAddress');
+        const avEl = document.getElementById('web3TxTargetAvatar');
+
+        if (nameEl) nameEl.textContent = targetName || (targetAddress.slice(0, 6) + '...' + targetAddress.slice(-4));
+        if (addrEl) addrEl.textContent = targetAddress;
+        if (avEl) avEl.textContent = (avatarChar || targetName || 'L').replace('@', '')[0].toUpperCase();
+
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        requestAnimationFrame(() => {
+          card.classList.remove('scale-95', 'opacity-0');
+          card.classList.add('scale-100', 'opacity-100');
+        });
       });
+    }
+
+    function closeWeb3TxModal() {
+      const modal = document.getElementById('web3TxConfirmModal');
+      const card = document.getElementById('web3TxConfirmCard');
+      if (!modal || !card) return;
+      card.classList.remove('scale-100', 'opacity-100');
+      card.classList.add('scale-95', 'opacity-0');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }, 150);
+      if (web3ModalResolver) {
+        web3ModalResolver(false);
+        web3ModalResolver = null;
+      }
+    }
+
+    function rejectWeb3Tx() {
+      closeWeb3TxModal();
+    }
+
+    function executeWeb3Tx() {
+      const modal = document.getElementById('web3TxConfirmModal');
+      const card = document.getElementById('web3TxConfirmCard');
+      if (card) {
+        card.classList.remove('scale-100', 'opacity-100');
+        card.classList.add('scale-95', 'opacity-0');
+      }
+      setTimeout(() => {
+        if (modal) {
+          modal.classList.add('hidden');
+          modal.classList.remove('flex');
+        }
+      }, 150);
+      if (web3ModalResolver) {
+        web3ModalResolver(true);
+        web3ModalResolver = null;
+      }
     }
 
     // ── Suggested Voices & On-Chain Paid Follow ──────────────────────────────────
@@ -5721,32 +5982,29 @@
     async function followVoiceOnChain(btn, targetAddress, bnsName) {
       if (!btn) return;
       if (!currentAccount || !currentAccount.address) {
-        showToast('Lütfen takip etmek için cüzdanınızı bağlayın', 'account_balance_wallet', true);
+        showToast('Please connect your wallet to follow creators', 'account_balance_wallet', true);
         switchTab('yeni-cuzdan');
         return;
       }
 
-      if (currentAccount.address === targetAddress) {
-        showToast('Kendi cüzdanınızı takip edemezsiniz.', 'warning', true);
+      if (currentAccount.address.toLowerCase() === targetAddress.toLowerCase()) {
+        showToast('You cannot follow your own wallet address.', 'warning', true);
         return;
       }
 
       const targetLabel = bnsName ? ('@' + bnsName) : (targetAddress.slice(0, 6) + '...' + targetAddress.slice(-4));
-      const confirmed = confirm(
-        `On-Chain Takip İşlemi:\n\n` +
-        `Hedef: ${targetLabel} (${targetAddress})\n` +
-        `İşlem Ücreti: 1.00 BCT\n\n` +
-        `Ekonomik Dağılım:\n` +
-        `• 0.50 BCT (%50): İçerik Üreticisine Doğrudan\n` +
-        `• 0.30 BCT (%30): Blok Madencileri & Doğrulayıcı Havuzuna\n` +
-        `• 0.20 BCT (%20): Hazine Rezervine (DAO Fonu)\n\n` +
-        `Cüzdanınız ile imzalamak ve blokzincire mühürlemek istiyor musunuz?`
-      );
+      
+      // Open Beautiful MetaMask-Style Signature Modal (in English)
+      const confirmed = await promptWeb3FollowModal({
+        targetAddress: targetAddress,
+        targetName: targetLabel,
+        avatarChar: (bnsName || targetAddress || 'B').replace('@', '')[0].toUpperCase()
+      });
       if (!confirmed) return;
 
       const origText = btn.innerHTML;
       btn.disabled = true;
-      btn.innerHTML = `<span class="material-symbols-outlined text-[13px] animate-spin">sync</span><span>İmzalanıyor...</span>`;
+      btn.innerHTML = `<span class="material-symbols-outlined text-[13px] animate-spin">sync</span><span>Signing...</span>`;
 
       try {
         const canonical = `follow:${currentAccount.address}:${targetAddress}`;
@@ -5773,24 +6031,27 @@
         }
 
         if (resp && resp.ok) {
-          showToast(`${targetLabel} başarıyla takip edildi! 1.00 BCT blokzincire mühürlendi.`, 'check_circle');
-          btn.innerHTML = 'Following';
+          showToast(`Successfully followed ${targetLabel}! 1.00 BCT sealed on-chain.`, 'check_circle');
+          btn.innerHTML = '<span class="material-symbols-outlined text-[14px]">done</span><span>Following</span>';
           btn.className = 'px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold shrink-0 cursor-default';
           btn.onclick = null;
           setTimeout(() => {
             loadSuggestedVoices();
             if (typeof refreshWalletBalances === 'function') refreshWalletBalances();
             if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+            if (currentProfileData && currentProfileData.address && currentProfileData.address.toLowerCase() === targetAddress.toLowerCase()) {
+              openUserProfile(targetAddress);
+            }
           }, 800);
         } else {
-          const errMsg = (resp && resp.body && resp.body.message) ? resp.body.message : 'Takip işlemi gerçekleştirilemedi.';
+          const errMsg = (resp && resp.body && resp.body.message) ? resp.body.message : 'Follow transaction rejected.';
           showToast(errMsg, 'error', true);
           btn.disabled = false;
           btn.innerHTML = origText;
         }
       } catch (err) {
         console.error('followVoiceOnChain error:', err);
-        showToast('İşlem hatası: ' + err.message, 'error', true);
+        showToast('Transaction error: ' + err.message, 'error', true);
         btn.disabled = false;
         btn.innerHTML = origText;
       }
@@ -11814,17 +12075,21 @@
     function switchProfileSubTab(tab) {
       currentProfileSubTab = tab;
       const btnPosts = document.getElementById('profileTabBtnPosts');
+      const btnFollowers = document.getElementById('profileTabBtnFollowers');
+      const btnFollowing = document.getElementById('profileTabBtnFollowing');
       const btnHandles = document.getElementById('profileTabBtnHandles');
       const btnTxs = document.getElementById('profileTabBtnTxs');
 
       const viewPosts = document.getElementById('profileSubViewPosts');
+      const viewFollowers = document.getElementById('profileSubViewFollowers');
+      const viewFollowing = document.getElementById('profileSubViewFollowing');
       const viewHandles = document.getElementById('profileSubViewHandles');
       const viewTxs = document.getElementById('profileSubViewTxs');
 
       const activeClasses = ['text-primary', 'border-b-2', 'border-primary'];
       const inactiveClasses = ['text-on-surface-variant'];
 
-      [btnPosts, btnHandles, btnTxs].forEach(b => {
+      [btnPosts, btnFollowers, btnFollowing, btnHandles, btnTxs].forEach(b => {
         if (b) {
           b.classList.remove(...activeClasses);
           b.classList.add(...inactiveClasses);
@@ -11832,18 +12097,35 @@
       });
 
       if (viewPosts) viewPosts.classList.add('hidden');
+      if (viewFollowers) viewFollowers.classList.add('hidden');
+      if (viewFollowing) viewFollowing.classList.add('hidden');
       if (viewHandles) viewHandles.classList.add('hidden');
       if (viewTxs) viewTxs.classList.add('hidden');
 
       if (tab === 'posts') {
         if (btnPosts) { btnPosts.classList.add(...activeClasses); btnPosts.classList.remove(...inactiveClasses); }
         if (viewPosts) viewPosts.classList.remove('hidden');
+      } else if (tab === 'followers') {
+        if (btnFollowers) { btnFollowers.classList.add(...activeClasses); btnFollowers.classList.remove(...inactiveClasses); }
+        if (viewFollowers) viewFollowers.classList.remove('hidden');
+      } else if (tab === 'following') {
+        if (btnFollowing) { btnFollowing.classList.add(...activeClasses); btnFollowing.classList.remove(...inactiveClasses); }
+        if (viewFollowing) viewFollowing.classList.remove('hidden');
       } else if (tab === 'handles') {
         if (btnHandles) { btnHandles.classList.add(...activeClasses); btnHandles.classList.remove(...inactiveClasses); }
         if (viewHandles) viewHandles.classList.remove('hidden');
       } else if (tab === 'txs') {
         if (btnTxs) { btnTxs.classList.add(...activeClasses); btnTxs.classList.remove(...inactiveClasses); }
         if (viewTxs) viewTxs.classList.remove('hidden');
+      }
+    }
+
+    async function profileFollowClicked() {
+      if (!currentProfileData || !currentProfileData.address) return;
+      const btn = document.getElementById('btnProfileFollow');
+      await followVoiceOnChain(btn, currentProfileData.address, currentProfileData.primary_handle);
+      if (currentProfileData && currentProfileData.address) {
+        openUserProfile(currentProfileData.address);
       }
     }
 
@@ -11908,10 +12190,46 @@
       const posts = Array.isArray(data.recent_posts) ? data.recent_posts : [];
       const handles = Array.isArray(data.owned_handles) ? data.owned_handles : [];
       const txs = Array.isArray(data.recent_transactions) ? data.recent_transactions : [];
+      const followers = Array.isArray(data.followers) ? data.followers : [];
+      const following = Array.isArray(data.following) ? data.following : [];
+      const followersCount = Number(data.followers_count || followers.length || 0);
+      const followingCount = Number(data.following_count || following.length || 0);
+
+      // Followers & Following Stats and Tabs Counts
+      const elFwCount = document.getElementById('userProfileFollowersCount');
+      const elFgCount = document.getElementById('userProfileFollowingCount');
+      const tabFwCount = document.getElementById('profileTabCountFollowers');
+      const tabFgCount = document.getElementById('profileTabCountFollowing');
+
+      if (elFwCount) elFwCount.textContent = String(followersCount);
+      if (elFgCount) elFgCount.textContent = String(followingCount);
+      if (tabFwCount) tabFwCount.textContent = String(followersCount);
+      if (tabFgCount) tabFgCount.textContent = String(followingCount);
 
       if (countPosts) countPosts.textContent = String(posts.length);
       if (countHandles) countHandles.textContent = String(handles.length);
       if (countTxs) countTxs.textContent = String(txs.length);
+
+      // Follow / Following Button on Profile View
+      const btnProfileFollow = document.getElementById('btnProfileFollow');
+      if (btnProfileFollow) {
+        const isSelf = Boolean(currentAccount && currentAccount.address && currentAccount.address.toLowerCase() === data.address.toLowerCase());
+        const isAlreadyFollowing = Boolean(currentAccount && currentAccount.address && followers.some(f => f.address && f.address.toLowerCase() === currentAccount.address.toLowerCase()));
+
+        if (isSelf) {
+          btnProfileFollow.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-surface-container-high text-on-surface-variant font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-sm cursor-default';
+          btnProfileFollow.innerHTML = '<span class="material-symbols-outlined text-[15px]">person</span><span>Your Account</span>';
+          btnProfileFollow.onclick = null;
+        } else if (isAlreadyFollowing) {
+          btnProfileFollow.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/20 text-primary border border-primary/40 font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-sm cursor-default';
+          btnProfileFollow.innerHTML = '<span class="material-symbols-outlined text-[15px]">done</span><span>Following</span>';
+          btnProfileFollow.onclick = null;
+        } else {
+          btnProfileFollow.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary hover:bg-primary/90 text-on-primary font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer';
+          btnProfileFollow.innerHTML = '<span class="material-symbols-outlined text-[15px]">person_add</span><span>Follow (1.00 BCT)</span>';
+          btnProfileFollow.onclick = profileFollowClicked;
+        }
+      }
 
       // 1. Posts Tab View
       const viewPosts = document.getElementById('profileSubViewPosts');
@@ -11937,7 +12255,67 @@
         }).join('');
       }
 
-      // 2. Handles Tab View
+      // 2. Followers Tab View
+      const viewFollowers = document.getElementById('profileSubViewFollowers');
+      if (viewFollowers) {
+        if (!followers.length) {
+          viewFollowers.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">No on-chain followers yet. Be the first to follow this creator!</div>';
+        } else {
+          viewFollowers.innerHTML = followers.map(f => {
+            const avatarChar = (f.bns_name || f.address || 'B').replace('@', '')[0].toUpperCase();
+            const label = f.bns_name ? `@${f.bns_name}` : shortAddr(f.address);
+            return `
+              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition flex items-center justify-between cursor-pointer" onclick="closeUserProfile(); openUserProfile('${escapeHtml(f.address)}')">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-xs text-emerald-400 ring-1 ring-emerald-400/30 shrink-0">
+                    ${avatarChar}
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface hover:text-emerald-400 truncate">${escapeHtml(label)}</span>
+                    <span class="font-mono text-[10.5px] text-on-surface-variant truncate">${escapeHtml(f.address)}</span>
+                  </div>
+                </div>
+                <button type="button" class="px-2.5 py-1 rounded-full bg-surface-container text-xs text-primary font-semibold flex items-center gap-1 shrink-0">
+                  <span>Profile</span>
+                  <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </button>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // 3. Following Tab View
+      const viewFollowing = document.getElementById('profileSubViewFollowing');
+      if (viewFollowing) {
+        if (!following.length) {
+          viewFollowing.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">This account is not following any creators yet.</div>';
+        } else {
+          viewFollowing.innerHTML = following.map(f => {
+            const avatarChar = (f.bns_name || f.address || 'B').replace('@', '')[0].toUpperCase();
+            const label = f.bns_name ? `@${f.bns_name}` : shortAddr(f.address);
+            return `
+              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition flex items-center justify-between cursor-pointer" onclick="closeUserProfile(); openUserProfile('${escapeHtml(f.address)}')">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-xs text-secondary ring-1 ring-secondary/30 shrink-0">
+                    ${avatarChar}
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface hover:text-secondary truncate">${escapeHtml(label)}</span>
+                    <span class="font-mono text-[10.5px] text-on-surface-variant truncate">${escapeHtml(f.address)}</span>
+                  </div>
+                </div>
+                <button type="button" class="px-2.5 py-1 rounded-full bg-surface-container text-xs text-secondary font-semibold flex items-center gap-1 shrink-0">
+                  <span>Profile</span>
+                  <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+                </button>
+              </div>
+            `;
+          }).join('');
+        }
+      }
+
+      // 4. Handles Tab View
       const viewHandles = document.getElementById('profileSubViewHandles');
       if (!handles.length) {
         viewHandles.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">No .bct handles owned by this account.</div>';
@@ -11959,7 +12337,7 @@
         }).join('');
       }
 
-      // 3. Transactions Tab View
+      // 5. Transactions Tab View
       const viewTxs = document.getElementById('profileSubViewTxs');
       if (!txs.length) {
         viewTxs.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">No on-chain transactions found for this account.</div>';
