@@ -741,34 +741,126 @@
             </button>
           </div>
 
-          <!-- Official Project & Compliance Footer -->
-          <footer class="w-full pt-6 pb-6 border-t border-outline-variant/15 flex flex-col md:flex-row items-center justify-between gap-4 text-xs text-on-surface-variant font-mono">
-            <div class="flex flex-col sm:flex-row items-center gap-2 text-center sm:text-left">
-              <span class="flex items-center gap-1.5"><span class="w-2 h-2 rounded-full bg-emerald-400"></span> <strong>LockTrace Network</strong> &bull; <a href="https://locktrace.space" target="_blank" class="hover:underline text-on-surface">locktrace.space</a> &bull; <a href="https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" class="hover:underline text-secondary font-mono">wBCT: 0xA3C7...7254</a></span>
-              <span class="hidden sm:inline text-outline">&bull;</span>
-              <span>Official Email: <a href="mailto:locktracetoken@gmail.com" class="text-primary hover:underline font-bold">locktracetoken@gmail.com</a> / <a href="mailto:locktracetoken+space@gmail.com" class="hover:underline">locktracetoken+space@gmail.com</a></span>
+          <!-- Official Project & Web3 Ecosystem Footer (Full Responsive Structured Grid) -->
+          <footer class="w-full pt-10 pb-8 mt-6 border-t border-outline-variant/20 flex flex-col gap-8">
+            
+            <!-- Top Row: Protocol Identity & Quick Columns -->
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 text-xs">
+              
+              <!-- Col 1: Protocol Brand & Mission -->
+              <div class="flex flex-col gap-3 md:col-span-1">
+                <div class="flex items-center gap-2.5">
+                  <div class="w-9 h-9 rounded-2xl bg-primary/20 text-primary flex items-center justify-center font-bold font-mono text-sm shadow-sm">
+                    LT
+                  </div>
+                  <div class="flex flex-col">
+                    <span class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">LockTrace Space</span>
+                    <span class="text-[10.5px] font-mono text-primary font-medium">Layer-1 Web3 Protocol</span>
+                  </div>
+                </div>
+                <p class="text-on-surface-variant text-[11.5px] leading-relaxed">
+                  Sansüre dayanıklı, %100 vesayetsiz (non-custodial) Layer-1 blokzinciri ve içerik üreticilerini on-chain teliflerle ödüllendiren sosyal protokol.
+                </p>
+                <!-- Network Badge -->
+                <div class="inline-flex items-center gap-2 px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/20 self-start text-[11px] font-mono text-on-surface">
+                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Mainnet Online (PoW + Quorum)</span>
+                </div>
+              </div>
+
+              <!-- Col 2: Ekosistem & Protokoller -->
+              <div class="flex flex-col gap-2.5">
+                <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-primary">Ekosistem &amp; Servisler</span>
+                <ul class="space-y-1.5 text-on-surface-variant">
+                  <li><button type="button" onclick="switchTab('cuzdanim')" class="hover:text-primary transition-colors text-left">Web3 Cüzdan &amp; Bakiye</button></li>
+                  <li><button type="button" onclick="switchTab('space')" class="hover:text-primary transition-colors text-left">Space Sosyal Akış</button></li>
+                  <li><button type="button" onclick="switchTab('kopru')" class="hover:text-primary transition-colors text-left">Base Cross-Chain Köprü (wBCT)</button></li>
+                  <li><button type="button" onclick="switchTab('bns')" class="hover:text-primary transition-colors text-left">BNS (.bct Alan Adları)</button></li>
+                  <li><button type="button" onclick="switchTab('ag-ve-explorer')" class="hover:text-primary transition-colors text-left">Blokzincir Explorer &amp; Ağ</button></li>
+                  <li><button type="button" onclick="switchTab('system-wallets')" class="hover:text-primary transition-colors text-left">Resmi Sistem Cüzdanları</button></li>
+                </ul>
+              </div>
+
+              <!-- Col 3: Geliştirici & Güvenlik -->
+              <div class="flex flex-col gap-2.5">
+                <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-secondary">Geliştirici &amp; Güvenlik</span>
+                <ul class="space-y-1.5 text-on-surface-variant">
+                  <li><a href="/docs/LockTrace_Whitepaper.pdf" target="_blank" rel="noopener noreferrer" class="hover:text-secondary transition-colors flex items-center gap-1"><span>Whitepaper (PDF)</span><span class="material-symbols-outlined text-[13px]">open_in_new</span></a></li>
+                  <li><button type="button" onclick="switchTab('guvenlik')" class="hover:text-secondary transition-colors text-left">Güvenlik Politikası &amp; Bildirim</button></li>
+                  <li><button type="button" onclick="openNetworkSecurityModal()" class="hover:text-secondary transition-colors text-left flex items-center gap-1"><span>Kriptografik İntaktlık (SHA-256)</span><span class="material-symbols-outlined text-[13px] text-emerald-400">verified</span></button></li>
+                  <li><button type="button" onclick="switchTab('api-docs')" class="hover:text-secondary transition-colors text-left">REST API &amp; Tokenomics</button></li>
+                  <li><a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener noreferrer" class="hover:text-secondary transition-colors flex items-center gap-1"><span>GitHub Açık Kaynak Repo</span><span class="material-symbols-outlined text-[13px]">open_in_new</span></a></li>
+                </ul>
+              </div>
+
+              <!-- Col 4: Doğrulanmış Varlıklar & İletişim -->
+              <div class="flex flex-col gap-2.5">
+                <span class="font-mono text-[11px] font-bold uppercase tracking-wider text-emerald-400">Doğrulanmış Sözleşmeler</span>
+                <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between text-[10px] font-mono text-on-surface-variant">
+                    <span>Base Mainnet wBCT:</span>
+                    <span class="text-emerald-400 font-bold">Sourcify Match</span>
+                  </div>
+                  <div class="flex items-center justify-between gap-1 font-mono text-[11px] text-on-surface">
+                    <span class="truncate">0xA3C743...7254</span>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button type="button" onclick="copyToClipboard('0xA3C743113a41cFd0146917065d4578337Bb77254'); showToast('wBCT sözleşme adresi kopyalandı!')" class="p-1 hover:text-primary" title="Adresi Kopyala"><span class="material-symbols-outlined text-[14px]">content_copy</span></button>
+                      <a href="https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" rel="noopener noreferrer" class="p-1 hover:text-secondary" title="BaseScan"><span class="material-symbols-outlined text-[14px]">open_in_new</span></a>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Resmi İletişim E-postaları -->
+                <div class="flex flex-col gap-1 text-[11px] text-on-surface-variant">
+                  <span class="font-mono text-[10px] uppercase text-outline">Resmi İletişim:</span>
+                  <a href="mailto:locktracetoken@gmail.com" class="text-primary hover:underline font-mono truncate">locktracetoken@gmail.com</a>
+                  <a href="mailto:locktracetoken+space@gmail.com" class="text-on-surface-variant hover:text-on-surface font-mono truncate">locktracetoken+space@gmail.com</a>
+                </div>
+              </div>
+
             </div>
-            <div class="flex items-center gap-3 flex-wrap justify-center">
-              <a href="https://x.com/LockTraceSpace" target="_blank" rel="noopener" class="text-on-surface hover:text-primary transition-colors flex items-center gap-1 font-sans">
-                <span class="font-bold">𝕏</span> <span>@LockTraceSpace</span>
-              </a>
-              <span>&bull;</span>
-              <a href="https://t.me/+zsaG1qkAHZllZGIy" target="_blank" rel="noopener" class="text-on-surface hover:text-sky-400 transition-colors flex items-center gap-1 font-sans">
-                <span class="material-symbols-outlined text-[15px] text-sky-400">send</span> <span>Telegram</span>
-              </a>
-              <span>&bull;</span>
-              <a href="https://www.instagram.com/locktracespace" target="_blank" rel="noopener" class="text-on-surface hover:text-rose-400 transition-colors flex items-center gap-1 font-sans">
-                <span>Instagram</span>
-              </a>
-              <span>&bull;</span>
-              <a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener" class="text-on-surface hover:text-emerald-400 transition-colors flex items-center gap-1 font-sans">
-                <span>GitHub</span>
-              </a>
-              <span>&bull;</span>
-              <a href="/docs/LockTrace_Whitepaper.pdf" target="_blank" class="text-secondary hover:underline font-sans">Whitepaper (PDF)</a>
-              <span>&bull;</span>
-              <button onclick="switchTab('guvenlik')" class="text-primary hover:underline cursor-pointer font-sans" type="button">Security &amp; Policy</button>
+
+            <!-- Middle Row: Social Media Pill Badges (X, Telegram, Instagram, GitHub, Uniswap, DexScreener) -->
+            <div class="pt-4 border-t border-outline-variant/15 flex flex-wrap items-center justify-between gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <span class="text-[11px] font-mono text-on-surface-variant uppercase mr-1">Topluluk:</span>
+                <a href="https://x.com/LockTraceSpace" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-primary transition-all flex items-center gap-1.5 text-xs font-semibold border border-outline-variant/15 shadow-xs">
+                  <span class="font-bold font-mono">𝕏</span>
+                  <span>@LockTraceSpace</span>
+                </a>
+                <a href="https://t.me/+zsaG1qkAHZllZGIy" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-sky-400 transition-all flex items-center gap-1.5 text-xs font-semibold border border-outline-variant/15 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px] text-sky-400">send</span>
+                  <span>Telegram</span>
+                </a>
+                <a href="https://www.instagram.com/locktracespace" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-rose-400 transition-all flex items-center gap-1.5 text-xs font-semibold border border-outline-variant/15 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px] text-rose-400">photo_camera</span>
+                  <span>Instagram</span>
+                </a>
+                <a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-emerald-400 transition-all flex items-center gap-1.5 text-xs font-semibold border border-outline-variant/15 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px] text-emerald-400">code</span>
+                  <span>GitHub</span>
+                </a>
+                <a href="https://dexscreener.com/base/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-emerald-400 transition-all flex items-center gap-1.5 text-xs font-semibold border border-emerald-500/20 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px]">monitoring</span>
+                  <span>DexScreener</span>
+                </a>
+                <a href="https://app.uniswap.org/#/swap?chain=base&outputCurrency=0xA3C743113a41cFd0146917065d4578337Bb77254" target="_blank" rel="noopener noreferrer" class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-secondary transition-all flex items-center gap-1.5 text-xs font-semibold border border-secondary/20 shadow-xs">
+                  <span class="material-symbols-outlined text-[15px]">currency_exchange</span>
+                  <span>Uniswap Pool</span>
+                </a>
+              </div>
             </div>
+
+            <!-- Bottom Row: Copyright & Cryptographic Verification Footnote -->
+            <div class="pt-3 border-t border-outline-variant/10 flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] font-mono text-on-surface-variant text-center sm:text-left">
+              <span>&copy; 2026 LockTrace Network. Non-Custodial, Open-Source &amp; Censorship-Resistant.</span>
+              <div class="flex items-center gap-2">
+                <span class="flex items-center gap-1 text-emerald-400"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>ECDSA Signed Release</span>
+                <span class="opacity-40">&bull;</span>
+                <span class="text-primary cursor-pointer hover:underline" onclick="openNetworkSecurityModal()">IPFS CIDv1 Sealed</span>
+              </div>
+            </div>
+
           </footer>
 
         </div>
@@ -789,10 +881,15 @@
               <span class="text-3xl sm:text-4xl md:text-5xl text-on-surface tracking-tight font-bold truncate" id="cardBalance">0.00</span>
               <span class="font-headline-sm text-headline-sm text-primary font-semibold shrink-0">BCT</span>
             </div>
-            <div class="inline-flex items-center justify-center flex-wrap gap-1 mt-2 px-2.5 sm:px-3 py-1 rounded-full bg-surface-container text-primary text-[11px] sm:text-label-md border border-outline-variant/15 text-center">
-              <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
-              <span class="font-semibold" id="walletStatusBadge">Mainnet Native Asset</span>
-              <span class="text-on-surface-variant ml-0.5 font-normal" id="walletSubStatusText">• Confirmed On-Chain</span>
+            <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-2 select-none">
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-primary text-[11px] sm:text-xs font-semibold border border-outline-variant/20 shadow-xs">
+                <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
+                <span id="walletStatusBadge">Mainnet Native Asset</span>
+              </div>
+              <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant text-[11px] sm:text-xs font-mono border border-outline-variant/15" id="walletSubStatusWrap">
+                <span class="material-symbols-outlined text-[13px] text-emerald-400">verified</span>
+                <span id="walletSubStatusText">Confirmed On-Chain</span>
+              </div>
             </div>
           </div>
 
@@ -1342,32 +1439,32 @@
                   </div>
                 </div>
 
-                <!-- Fiili Yakım & Kayıp Test Cüzdanları Bilgi Kartları -->
+                <!-- Fiili Yakım & Kayıp Test Cüzdanları Bilgi Kartları (Mobile Responsive Layout) -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 pt-1">
-                  <div class="bg-surface-container/60 p-3 rounded-xl border border-rose-500/25 bg-gradient-to-br from-rose-500/5 to-transparent flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2.5">
-                      <div class="w-8 h-8 rounded-lg bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
+                  <div class="bg-surface-container/60 p-3 sm:p-3.5 rounded-2xl border border-rose-500/25 bg-gradient-to-br from-rose-500/5 to-transparent flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0">
                         <span class="material-symbols-outlined text-[18px]">local_fire_department</span>
                       </div>
-                      <div class="flex flex-col">
-                        <span class="text-[11px] font-semibold text-rose-300">Kayıp Anahtar Test Cüzdanları (Fiili Yakım)</span>
-                        <span class="text-[10px] text-rose-400/80">Geliştirici doğruladı: 4 Test Adresi (Private key kayıp)</span>
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-xs font-semibold text-rose-300">Kayıp Anahtar Test Cüzdanları (Fiili Yakım)</span>
+                        <span class="text-[10.5px] text-rose-400/80">Geliştirici doğruladı: 4 Test Adresi</span>
                       </div>
                     </div>
-                    <span class="font-body-md font-bold font-mono text-rose-300 shrink-0" id="metricLostKeyWallets">17,008.20 BCT</span>
+                    <div class="self-end xs:self-center px-2.5 py-1 rounded-xl bg-surface-container/80 border border-rose-500/20 font-bold font-mono text-xs sm:text-sm text-rose-300 shrink-0" id="metricLostKeyWallets">17,008.20 BCT</div>
                   </div>
 
-                  <div class="bg-surface-container/60 p-3 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-3">
-                    <div class="flex items-center gap-2.5">
-                      <div class="w-8 h-8 rounded-lg bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0">
+                  <div class="bg-surface-container/60 p-3 sm:p-3.5 rounded-2xl border border-outline-variant/20 flex flex-col xs:flex-row xs:items-center justify-between gap-2.5">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-xl bg-surface-container-high text-on-surface-variant flex items-center justify-center shrink-0">
                         <span class="material-symbols-outlined text-[18px]">lock_clock</span>
                       </div>
-                      <div class="flex flex-col">
-                        <span class="text-[11px] font-semibold text-on-surface">Toplam Fiili Dolaşım Dışı / Kilitli Arz</span>
-                        <span class="text-[10px] text-on-surface-variant">Hazine Rezervi + Kayıp Test Cüzdanları</span>
+                      <div class="flex flex-col min-w-0">
+                        <span class="text-xs font-semibold text-on-surface">Toplam Fiili Dolaşım Dışı / Kilitli Arz</span>
+                        <span class="text-[10.5px] text-on-surface-variant">Hazine Rezervi + Kayıp Test Cüzdanları</span>
                       </div>
                     </div>
-                    <span class="font-body-md font-bold font-mono text-on-surface shrink-0" id="metricEffectiveBurn">-- BCT</span>
+                    <div class="self-end xs:self-center px-2.5 py-1 rounded-xl bg-surface-container/80 border border-outline-variant/20 font-bold font-mono text-xs sm:text-sm text-on-surface shrink-0" id="metricEffectiveBurn">-- BCT</div>
                   </div>
                 </div>
 
@@ -1485,6 +1582,22 @@
             <!-- Feed List for Base Transactions -->
             <div class="flex flex-col gap-2" id="feedBaseTxsList">
               <div class="p-4 text-center font-body-sm text-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Loading Base L2 transactions...</div>
+            </div>
+
+            <!-- Base Transactions Pagination Controls -->
+            <div id="baseTxsPaginationBar" class="hidden flex items-center justify-between pt-3 mt-2 border-t border-outline-variant/15 text-xs">
+              <button id="btnBaseTxsPrev" onclick="changeBaseTxsPage(-1)" class="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high active:scale-95 disabled:opacity-30 disabled:pointer-events-none font-semibold text-on-surface flex items-center gap-1 transition-all" disabled type="button">
+                <span class="material-symbols-outlined text-[15px]">arrow_back</span>
+                <span>Önceki</span>
+              </button>
+              <div class="text-center font-mono text-[11px] text-on-surface">
+                <span id="baseTxsPageLabel" class="font-semibold">Sayfa 1 / 1</span>
+                <span id="baseTxsCountLabel" class="text-on-surface-variant block text-[10px]">(0 İşlem)</span>
+              </div>
+              <button id="btnBaseTxsNext" onclick="changeBaseTxsPage(1)" class="px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high active:scale-95 disabled:opacity-30 disabled:pointer-events-none font-semibold text-on-surface flex items-center gap-1 transition-all" disabled type="button">
+                <span>Sonraki</span>
+                <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+              </button>
             </div>
           </section>
 
@@ -5908,9 +6021,9 @@
       if (subText) {
         if (currentAccount && currentAccount.address) {
           const n = typeof currentAccount.nonce === 'number' ? currentAccount.nonce : 0;
-          subText.textContent = `• Nonce #${n} • Confirmed On-Chain`;
+          subText.textContent = `Nonce #${n} • Confirmed`;
         } else {
-          subText.textContent = '• Create or import wallet to start';
+          subText.textContent = 'Non-Custodial L1';
         }
       }
 
@@ -7301,10 +7414,14 @@
       if (btnNext) btnNext.disabled = currentExplorerHoldersPage >= totalExplorerHoldersPages;
     }
 
+    let allExplorerBaseTxs = [];
+    let currentExplorerBaseTxsPage = 1;
+    const explorerBaseTxsPageSize = 5;
+
     async function loadExplorerBaseTransactions() {
       const list = document.getElementById('feedBaseTxsList');
       try {
-        const res = await apiFetch('/bridge/base-transactions?limit=30');
+        const res = await apiFetch('/bridge/base-transactions?limit=50');
         let txs = null;
         if (res && res.body && res.body.data && Array.isArray(res.body.data.transactions)) {
           txs = res.body.data.transactions;
@@ -7313,9 +7430,13 @@
         }
 
         if (txs) {
-          renderExplorerBaseTransactions(txs);
+          allExplorerBaseTxs = txs;
+          currentExplorerBaseTxsPage = 1;
+          renderExplorerBaseTransactions();
         } else {
+          allExplorerBaseTxs = [];
           if (list) list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Henüz onaylanmış Base L2 köprüleme işlemi bulunmuyor.</div>';
+          updateBaseTxsPaginationUI();
         }
       } catch (err) {
         console.error('Error loading Base transactions:', err);
@@ -7323,25 +7444,61 @@
       }
     }
 
-    function renderExplorerBaseTransactions(txs) {
+    function changeBaseTxsPage(delta) {
+      const totalPages = Math.ceil(allExplorerBaseTxs.length / explorerBaseTxsPageSize) || 1;
+      const targetPage = currentExplorerBaseTxsPage + delta;
+      if (targetPage < 1 || targetPage > totalPages) return;
+      currentExplorerBaseTxsPage = targetPage;
+      renderExplorerBaseTransactions();
+    }
+
+    function updateBaseTxsPaginationUI() {
+      const pBar = document.getElementById('baseTxsPaginationBar');
+      const lblPage = document.getElementById('baseTxsPageLabel');
+      const lblCount = document.getElementById('baseTxsCountLabel');
+      const btnPrev = document.getElementById('btnBaseTxsPrev');
+      const btnNext = document.getElementById('btnBaseTxsNext');
+
+      if (!allExplorerBaseTxs.length) {
+        if (pBar) pBar.classList.add('hidden');
+        return;
+      }
+      if (pBar) pBar.classList.remove('hidden');
+
+      const totalPages = Math.ceil(allExplorerBaseTxs.length / explorerBaseTxsPageSize) || 1;
+      if (lblPage) lblPage.textContent = `Sayfa ${currentExplorerBaseTxsPage} / ${totalPages}`;
+      if (lblCount) lblCount.textContent = `(Toplam ${allExplorerBaseTxs.length} L2 İşlemi)`;
+      if (btnPrev) btnPrev.disabled = currentExplorerBaseTxsPage <= 1;
+      if (btnNext) btnNext.disabled = currentExplorerBaseTxsPage >= totalPages;
+    }
+
+    function renderExplorerBaseTransactions() {
       const list = document.getElementById('feedBaseTxsList');
       if (!list) return;
-      if (!txs || !txs.length) {
+      if (!allExplorerBaseTxs || !allExplorerBaseTxs.length) {
         list.innerHTML = '<div class="p-4 text-center font-body-sm text-on-surface-variant bg-surface-container-low rounded-xl">Henüz onaylanmış Base L2 köprüleme işlemi bulunmuyor.</div>';
+        updateBaseTxsPaginationUI();
         return;
       }
 
+      const totalPages = Math.ceil(allExplorerBaseTxs.length / explorerBaseTxsPageSize) || 1;
+      if (currentExplorerBaseTxsPage > totalPages) currentExplorerBaseTxsPage = totalPages;
+      if (currentExplorerBaseTxsPage < 1) currentExplorerBaseTxsPage = 1;
+
+      const start = (currentExplorerBaseTxsPage - 1) * explorerBaseTxsPageSize;
+      const pageTxs = allExplorerBaseTxs.slice(start, start + explorerBaseTxsPageSize);
+
       try {
-        list.innerHTML = txs.map(t => {
+        list.innerHTML = pageTxs.map(t => {
           const isMint = t.direction === 'L1_TO_EVM';
           const typeBadge = isMint
-            ? '<span class="px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[11px] font-semibold font-mono flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Base wBCT Mint (Bridge In)</span>'
-            : '<span class="px-2.5 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 text-[11px] font-semibold font-mono flex items-center gap-1.5 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Base wBCT Burn (Unlock to L1)</span>';
+            ? '<span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10.5px] font-semibold font-mono flex items-center gap-1 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-emerald-400"></span>Base Mint</span>'
+            : '<span class="px-2 py-0.5 rounded-full bg-secondary/15 text-secondary border border-secondary/30 text-[10.5px] font-semibold font-mono flex items-center gap-1 shrink-0"><span class="w-1.5 h-1.5 rounded-full bg-secondary"></span>Base Burn</span>';
 
           const statusColor = t.status === 'COMPLETED' ? 'text-emerald-400' : (t.status === 'LOCKED' ? 'text-secondary' : (t.status === 'FAILED' ? 'text-rose-400' : 'text-amber-400'));
-          const displayEvm = t.tx_hash_evm ? (t.tx_hash_evm.slice(0, 10) + '...' + t.tx_hash_evm.slice(-8)) : 'Beklemede (L2)';
+          const displayEvm = t.tx_hash_evm ? (t.tx_hash_evm.slice(0, 8) + '...' + t.tx_hash_evm.slice(-6)) : 'Beklemede (L2)';
           const evmLink = t.basescan_tx_url
-            ? `<a href="${escapeHtml(t.basescan_tx_url)}" target="_blank" rel="noopener noreferrer" class="font-mono text-xs font-semibold text-secondary hover:underline flex items-center gap-1" title="BaseScan üzerinde görüntüle">${escapeHtml(displayEvm)}<span class="material-symbols-outlined text-[13px]">open_in_new</span></a>`
+            ? `<a href="${escapeHtml(t.basescan_tx_url)}" target="_blank" rel="noopener noreferrer" class="font-mono text-xs font-semibold text-secondary hover:underline flex items-center gap-0.5" title="BaseScan üzerinde görüntüle">${escapeHtml(displayEvm)}<span class="material-symbols-outlined text-[12px]">open_in_new</span></a>`
             : `<span class="font-mono text-xs text-on-surface-variant">${escapeHtml(displayEvm)}</span>`;
 
           const bctDisplay = t.bct_address ? (t.bct_address.slice(0, 8) + '...' + t.bct_address.slice(-6)) : '--';
@@ -7350,28 +7507,29 @@
           const amountStr = typeof formatBct === 'function' ? formatBct(t.amount, 4) : Number(t.amount || 0).toFixed(4);
 
           return `
-            <div class="p-3 sm:p-3.5 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col gap-2 transition-all">
+            <div class="p-2.5 sm:p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col gap-1.5 transition-all">
               <div class="flex items-center justify-between gap-2 flex-wrap">
                 <div class="flex items-center gap-2 flex-wrap">
                   ${typeBadge}
                   ${evmLink}
                 </div>
-                <div class="flex items-center gap-2">
-                  <span class="font-mono text-sm font-bold text-on-surface">${amountStr} wBCT</span>
-                  <span class="text-[11px] font-mono uppercase font-semibold ${statusColor}">${escapeHtml(t.status)}</span>
+                <div class="flex items-center gap-2 ml-auto">
+                  <span class="font-mono text-xs sm:text-sm font-bold text-on-surface">${amountStr} wBCT</span>
+                  <span class="text-[10px] font-mono uppercase font-semibold px-1.5 py-0.5 rounded bg-surface-container ${statusColor}">${escapeHtml(t.status)}</span>
                 </div>
               </div>
-              <div class="flex items-center justify-between gap-2 text-[11.5px] text-on-surface-variant flex-wrap pt-1 border-t border-outline-variant/10">
-                <div class="flex items-center gap-2 font-mono flex-wrap">
+              <div class="flex items-center justify-between gap-2 text-[11px] text-on-surface-variant flex-wrap pt-1 border-t border-outline-variant/10">
+                <div class="flex items-center gap-1.5 font-mono flex-wrap">
                   <span>L1: <button type="button" onclick="openUserProfile('${escapeHtml(t.bct_address)}')" class="text-primary hover:underline font-semibold" title="${escapeHtml(t.bct_address)}">${escapeHtml(bctDisplay)}</button></span>
                   <span>&bull;</span>
                   <span>Base EVM: <a href="https://basescan.org/address/${escapeHtml(t.evm_address)}" target="_blank" rel="noopener noreferrer" class="text-secondary hover:underline" title="${escapeHtml(t.evm_address)}">${escapeHtml(evmRecipientDisplay)}</a></span>
                 </div>
-                <span class="text-[11px] font-sans text-on-surface-variant/80">${timeAgo}</span>
+                <span class="text-[10.5px] font-sans text-on-surface-variant/80 ml-auto">${timeAgo}</span>
               </div>
             </div>
           `;
         }).join('');
+        updateBaseTxsPaginationUI();
       } catch (e) {
         console.error('renderExplorerBaseTransactions error:', e);
         list.innerHTML = `<div class="p-4 text-center font-body-sm text-rose-400 bg-surface-container-low rounded-xl">İşlem kartları render edilirken hata oluştu: ${escapeHtml(e.message)}</div>`;
