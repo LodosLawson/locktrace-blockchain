@@ -76,7 +76,9 @@ def main():
         ("scripts/sign_frontend.py", "/tmp/pwa_deploy/scripts/sign_frontend.py"),
         ("scripts/sync_to_notion.py", "/tmp/pwa_deploy/scripts/sync_to_notion.py"),
         ("scripts/deploy_bns.py", "/tmp/pwa_deploy/scripts/deploy_bns.py"),
+        ("scripts/create_notion_map.py", "/tmp/pwa_deploy/scripts/create_notion_map.py"),
         ("docs/LOCKTRACE_NOTION_WORKSPACE.md", "/tmp/pwa_deploy/docs/LOCKTRACE_NOTION_WORKSPACE.md"),
+        ("docs/LOCKTRACE_ARCHITECTURE_MAP.md", "/tmp/pwa_deploy/docs/LOCKTRACE_ARCHITECTURE_MAP.md"),
         ("package.json", "/tmp/pwa_deploy/package.json"),
     ]
 
@@ -98,8 +100,10 @@ sudo cp /tmp/pwa_deploy/frontend/sw.js /opt/blockchaint/frontend/sw.js
 sudo cp /tmp/pwa_deploy/templates/index.html /opt/blockchaint/templates/index.html
 sudo cp /tmp/pwa_deploy/scripts/sign_frontend.py /opt/blockchaint/scripts/sign_frontend.py
 sudo cp /tmp/pwa_deploy/scripts/sync_to_notion.py /opt/blockchaint/scripts/sync_to_notion.py
+sudo cp /tmp/pwa_deploy/scripts/create_notion_map.py /opt/blockchaint/scripts/create_notion_map.py
 sudo cp /tmp/pwa_deploy/scripts/deploy_bns.py /opt/blockchaint/scripts/deploy_bns.py
 sudo cp /tmp/pwa_deploy/docs/LOCKTRACE_NOTION_WORKSPACE.md /opt/blockchaint/docs/LOCKTRACE_NOTION_WORKSPACE.md
+sudo cp /tmp/pwa_deploy/docs/LOCKTRACE_ARCHITECTURE_MAP.md /opt/blockchaint/docs/LOCKTRACE_ARCHITECTURE_MAP.md
 sudo cp /tmp/pwa_deploy/package.json /opt/blockchaint/package.json
 
 # 1. Sign Frontend with official Release Key
