@@ -77,6 +77,7 @@ def main():
         ("scripts/sync_to_notion.py", "/tmp/pwa_deploy/scripts/sync_to_notion.py"),
         ("scripts/deploy_bns.py", "/tmp/pwa_deploy/scripts/deploy_bns.py"),
         ("scripts/create_notion_map.py", "/tmp/pwa_deploy/scripts/create_notion_map.py"),
+        ("scripts/benchmark_simulation.py", "/tmp/pwa_deploy/scripts/benchmark_simulation.py"),
         ("docs/LOCKTRACE_NOTION_WORKSPACE.md", "/tmp/pwa_deploy/docs/LOCKTRACE_NOTION_WORKSPACE.md"),
         ("docs/LOCKTRACE_ARCHITECTURE_MAP.md", "/tmp/pwa_deploy/docs/LOCKTRACE_ARCHITECTURE_MAP.md"),
         ("package.json", "/tmp/pwa_deploy/package.json"),
@@ -101,6 +102,7 @@ sudo cp /tmp/pwa_deploy/templates/index.html /opt/blockchaint/templates/index.ht
 sudo cp /tmp/pwa_deploy/scripts/sign_frontend.py /opt/blockchaint/scripts/sign_frontend.py
 sudo cp /tmp/pwa_deploy/scripts/sync_to_notion.py /opt/blockchaint/scripts/sync_to_notion.py
 sudo cp /tmp/pwa_deploy/scripts/create_notion_map.py /opt/blockchaint/scripts/create_notion_map.py
+sudo cp /tmp/pwa_deploy/scripts/benchmark_simulation.py /opt/blockchaint/scripts/benchmark_simulation.py
 sudo cp /tmp/pwa_deploy/scripts/deploy_bns.py /opt/blockchaint/scripts/deploy_bns.py
 sudo cp /tmp/pwa_deploy/docs/LOCKTRACE_NOTION_WORKSPACE.md /opt/blockchaint/docs/LOCKTRACE_NOTION_WORKSPACE.md
 sudo cp /tmp/pwa_deploy/docs/LOCKTRACE_ARCHITECTURE_MAP.md /opt/blockchaint/docs/LOCKTRACE_ARCHITECTURE_MAP.md
@@ -129,7 +131,7 @@ sudo systemctl reload nginx
 cd /opt/blockchaint
 sudo cp /opt/blockchaint/frontend/integrity.json /opt/blockchaint/templates/integrity.json
 git add core frontend templates scripts docs server.py node_runner.py README.md package.json
-git commit -m "docs: add master notion workspace documentation and sync_to_notion automation" || true
+git commit -m "perf: add dedicated tx_lookup index table and revision-based profile cache" || true
 git push origin master
 """
     if not run_ssh(remote_cmds):

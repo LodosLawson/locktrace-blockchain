@@ -87,6 +87,55 @@ class SQLiteStorage:
                     PRIMARY KEY (block_index, node_id)
                 );
             """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS tx_lookup (
+                    tx_hash TEXT PRIMARY KEY,
+                    block_index INTEGER NOT NULL,
+                    sender TEXT NOT NULL,
+                    recipient TEXT NOT NULL,
+                    amount REAL NOT NULL,
+                    fee REAL NOT NULL,
+                    tx_type TEXT NOT NULL,
+                    timestamp REAL NOT NULL,
+                    extra_json TEXT NOT NULL DEFAULT '{}'
+                );
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_tx_lookup_sender ON tx_lookup(sender);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_tx_lookup_recipient ON tx_lookup(recipient);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_tx_lookup_block ON tx_lookup(block_index);")
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_tx_lookup_timestamp ON tx_lookup(timestamp);")
+
+            # One-time automated backfill from historical blocks if tx_lookup is empty
+            cur_tx_cnt = conn.execute("SELECT COUNT(*) AS cnt FROM tx_lookup;").fetchone()
+            if int(cur_tx_cnt["cnt"]) == 0:
+                b_cur = conn.execute("SELECT block_index, timestamp, transactions_json FROM blocks ORDER BY block_index ASC;")
+                for b_row in b_cur.fetchall():
+                    b_idx = int(b_row["block_index"])
+                    b_time = float(b_row["timestamp"])
+                    try:
+                        tx_list = json.loads(b_row["transactions_json"])
+                        for tx in tx_list:
+                            tx_h = str(tx.get("tx_hash") or tx.get("hash") or "")
+                            if not tx_h:
+                                continue
+                            sender = str(tx.get("sender") or "")
+                            recip = str(tx.get("recipient") or tx.get("receiver") or "")
+                            amt = float(tx.get("amount") or 0.0)
+                            fee = float(tx.get("fee") or 0.0)
+                            ttype = str(tx.get("tx_type") or tx.get("type") or "transfer")
+                            tstamp = float(tx.get("timestamp") or b_time)
+                            extra = json.dumps(tx.get("extra_data") or tx.get("data") or {}, ensure_ascii=False)
+                            conn.execute(
+                                """
+                                INSERT OR IGNORE INTO tx_lookup (
+                                    tx_hash, block_index, sender, recipient, amount, fee, tx_type, timestamp, extra_json
+                                ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                                """,
+                                (tx_h, b_idx, sender, recip, amt, fee, ttype, tstamp, extra),
+                            )
+                    except Exception:
+                        pass
+
             cur = conn.execute("SELECT value FROM meta WHERE key = 'state_revision';")
             if cur.fetchone() is None:
                 conn.execute("INSERT INTO meta (key, value) VALUES ('state_revision', '0');")
@@ -324,6 +373,26 @@ class SQLiteStorage:
                             json.dumps(b["transactions"], ensure_ascii=False),
                         ),
                     )
+                    # Index transactions in tx_lookup
+                    for tx in b.get("transactions", []):
+                        tx_h = str(tx.get("tx_hash") or tx.get("hash") or "")
+                        if not tx_h:
+                            continue
+                        sender = str(tx.get("sender") or "")
+                        recip = str(tx.get("recipient") or tx.get("receiver") or "")
+                        amt = float(tx.get("amount") or 0.0)
+                        fee = float(tx.get("fee") or 0.0)
+                        ttype = str(tx.get("tx_type") or tx.get("type") or "transfer")
+                        tstamp = float(tx.get("timestamp") or b["timestamp"])
+                        extra = json.dumps(tx.get("extra_data") or tx.get("data") or {}, ensure_ascii=False)
+                        conn.execute(
+                            """
+                            INSERT OR IGNORE INTO tx_lookup (
+                                tx_hash, block_index, sender, recipient, amount, fee, tx_type, timestamp, extra_json
+                            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                            """,
+                            (tx_h, int(b["index"]), sender, recip, amt, fee, ttype, tstamp, extra),
+                        )
 
             # Synchronize shared multi-worker mempool
             if pending_dicts is not None:
@@ -426,5 +495,76 @@ class SQLiteStorage:
                 (int(block_index),),
             ).fetchall()
             return [dict(r) for r in rows]
+        finally:
+            conn.close()
+
+    def get_transactions_for_address(self, address: str, limit: int = 100) -> List[dict]:
+        """High-speed indexed retrieval of wallet transaction history O(log N)."""
+        conn = self._connect()
+        try:
+            cur = conn.execute(
+                """
+                SELECT tx_hash, block_index, sender, recipient, amount, fee, tx_type, timestamp, extra_json
+                FROM tx_lookup
+                WHERE sender = ? OR recipient = ? OR extra_json LIKE ?
+                ORDER BY block_index DESC, timestamp DESC
+                LIMIT ?;
+                """,
+                (address, address, f'%"author": "{address}"%', limit),
+            )
+            rows = cur.fetchall()
+            results = []
+            for r in rows:
+                try:
+                    extra = json.loads(r["extra_json"])
+                except Exception:
+                    extra = {}
+                results.append({
+                    "tx_hash": r["tx_hash"],
+                    "block_index": r["block_index"],
+                    "sender": r["sender"],
+                    "recipient": r["recipient"],
+                    "amount": r["amount"],
+                    "fee": r["fee"],
+                    "type": r["tx_type"],
+                    "tx_type": r["tx_type"],
+                    "timestamp": r["timestamp"],
+                    "extra_data": extra,
+                })
+            return results
+        finally:
+            conn.close()
+
+    def get_transaction_by_hash(self, tx_hash: str) -> Optional[dict]:
+        """Instant O(1) indexed lookup of any transaction by tx_hash."""
+        conn = self._connect()
+        try:
+            cur = conn.execute(
+                """
+                SELECT tx_hash, block_index, sender, recipient, amount, fee, tx_type, timestamp, extra_json
+                FROM tx_lookup
+                WHERE tx_hash = ?;
+                """,
+                (tx_hash,),
+            )
+            r = cur.fetchone()
+            if not r:
+                return None
+            try:
+                extra = json.loads(r["extra_json"])
+            except Exception:
+                extra = {}
+            return {
+                "tx_hash": r["tx_hash"],
+                "block_index": r["block_index"],
+                "sender": r["sender"],
+                "recipient": r["recipient"],
+                "amount": r["amount"],
+                "fee": r["fee"],
+                "type": r["tx_type"],
+                "tx_type": r["tx_type"],
+                "timestamp": r["timestamp"],
+                "extra_data": extra,
+            }
         finally:
             conn.close()
