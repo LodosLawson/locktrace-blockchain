@@ -2146,8 +2146,11 @@
       </div>
 
       <div id="tab-space" class="tab-content flex-col w-full items-center">
-        <!-- 5A: MAIN SPACE FEED VIEW (Exact Stitch Screen E) -->
-        <div id="spaceFeedMainView" class="flex flex-col w-full max-w-[600px] mx-auto pb-12">
+        <!-- 5A: MAIN SPACE FEED VIEW (Exact Stitch Screen E & Desktop 2-Column Grid) -->
+        <div id="spaceFeedMainView" class="flex flex-col lg:flex-row w-full max-w-[1080px] xl:max-w-[1140px] mx-auto pb-12 gap-6 justify-center px-margin md:px-4">
+
+          <!-- Left Main Feed Column -->
+          <div class="flex-1 max-w-[640px] w-full flex flex-col min-w-0">
 
           <!-- Sub-Header Status & Search/Filter Icons -->
           <div class="px-3 sm:px-4 md:px-0 pt-space-xs pb-space-sm flex items-center justify-between gap-space-sm">
@@ -2326,11 +2329,195 @@
 
           <!-- Floating Action Compose Trigger Button (Exact Stitch FAB) -->
           <aside class="fixed bottom-20 md:bottom-8 right-5 md:right-8 z-40">
-            <button aria-label="Compose New Post" class="w-13 h-13 p-3.5 rounded-full bg-primary-container text-on-primary-container shadow-xl flex items-center justify-center active:scale-90 transition-transform focus:outline-none" id="fab-compose" onclick="focusSpaceComposer()" type="button">
+            <button aria-label="Compose New Post" class="w-13 h-13 p-3.5 rounded-full bg-primary-container text-on-primary-container shadow-xl flex items-center justify-center active:scale-90 transition-transform focus:outline-none cursor-pointer" id="fab-compose" onclick="focusSpaceComposer()" type="button">
               <span class="material-symbols-outlined text-[24px]">edit</span>
             </button>
           </aside>
-        </div>
+
+        </div> <!-- End Left Main Feed Column -->
+
+        <!-- Right Sidebar Column: Trending Topics, Suggested Voices & Network Vitals (Exact Stitch Desktop) -->
+        <aside class="hidden lg:flex flex-col w-[350px] xl:w-[380px] shrink-0 gap-4 min-w-0">
+          
+          <!-- Card 1: Trending Topics -->
+          <div class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">local_fire_department</span>
+                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Trending Topics</h2>
+              </div>
+              <span class="text-[10px] font-mono uppercase text-emerald-400 font-semibold flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live
+              </span>
+            </div>
+            <div class="flex flex-col gap-2">
+              <!-- Topic 1 -->
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#LockTrace')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">#LockTrace</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Decentralized L1 Space &amp; Royalties</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">14.2k casts</span>
+              </a>
+              <!-- Topic 2 -->
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('$BCT')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">$BCT Tokenomics</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">1 Trillion Capped &bull; 70% PoW</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">8.9k casts</span>
+              </a>
+              <!-- Topic 3 -->
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('$wBCT')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-secondary transition-colors truncate">$wBCT L2 Bridge</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Base Mainnet &bull; Uniswap v3 Pool</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-secondary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-secondary shrink-0 transition-colors">5.4k casts</span>
+              </a>
+              <!-- Topic 4 -->
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#BNS')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-emerald-400 transition-colors truncate">#BNS Domains</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Decentralized .bct Handles</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-emerald-500/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-emerald-400 shrink-0 transition-colors">3.1k casts</span>
+              </a>
+              <!-- Topic 5 -->
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('$ETH')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">Zero-Knowledge MPC</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Non-custodial key recovery</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">1.8k casts</span>
+              </a>
+            </div>
+          </div>
+
+          <!-- Card 2: Suggested Voices -->
+          <div class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-secondary text-[20px]">group_add</span>
+                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Suggested Voices</h2>
+              </div>
+              <button type="button" onclick="loadSpaceFeed(); showToast('Önerilen yazarlar yenilendi');" class="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer flex items-center gap-1">
+                <span class="material-symbols-outlined text-[13px]">sync</span>
+                <span>Yenile</span>
+              </button>
+            </div>
+            <div class="flex flex-col gap-2.5">
+              <!-- Voice 1 -->
+              <div class="flex items-center justify-between gap-2.5 p-1 rounded-xl hover:bg-surface-container transition-colors">
+                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080')" title="Profilini Gör">
+                  <div class="w-9 h-9 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-primary ring-1 ring-primary/30">
+                    V
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface hover:text-primary transition-colors truncate">vitalik.bct</span>
+                    <span class="text-[10.5px] text-on-surface-variant truncate">Ethereum Founder</span>
+                  </div>
+                </div>
+                <button type="button" onclick="toggleFollowVoice(this, 'vitalik.bct')" class="px-3 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer">
+                  Follow
+                </button>
+              </div>
+              <!-- Voice 2 -->
+              <div class="flex items-center justify-between gap-2.5 p-1 rounded-xl hover:bg-surface-container transition-colors">
+                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('BCT_HAZINE_0000000000000000000000000000000000000000')" title="Profilini Gör">
+                  <div class="w-9 h-9 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-amber-400 ring-1 ring-amber-400/30">
+                    S
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface hover:text-amber-400 transition-colors truncate">satoshi.bct</span>
+                    <span class="text-[10.5px] text-on-surface-variant truncate">Bitcoin Creator</span>
+                  </div>
+                </div>
+                <button type="button" onclick="toggleFollowVoice(this, 'satoshi.bct')" class="px-3 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer">
+                  Follow
+                </button>
+              </div>
+              <!-- Voice 3 -->
+              <div class="flex items-center justify-between gap-2.5 p-1 rounded-xl hover:bg-surface-container transition-colors">
+                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('BCT3fec00e39c728050c1f1cef4cbe78fcc85881572')" title="Profilini Gör">
+                  <div class="w-9 h-9 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-emerald-400 ring-1 ring-emerald-400/30">
+                    L
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface hover:text-emerald-400 transition-colors truncate">lodos.bct</span>
+                    <span class="text-[10.5px] text-on-surface-variant truncate">LockTrace Core Architect</span>
+                  </div>
+                </div>
+                <button type="button" onclick="toggleFollowVoice(this, 'lodos.bct')" class="px-3 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer">
+                  Follow
+                </button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Card 3: Network Vitals -->
+          <div class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
+            <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">speed</span>
+                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Network Vitals</h2>
+              </div>
+              <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+            </div>
+            <!-- Gauges Grid -->
+            <div class="grid grid-cols-2 gap-2.5">
+              <!-- Fee Gauge -->
+              <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col justify-between border border-outline-variant/10">
+                <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                  <span class="text-[10.5px] font-mono uppercase">L1 Tx Fee</span>
+                  <span class="material-symbols-outlined text-[15px] text-primary">local_gas_station</span>
+                </div>
+                <div>
+                  <span class="font-mono text-base font-bold text-on-surface">0.0001</span>
+                  <span class="text-[10px] text-on-surface-variant ml-0.5 font-mono">BCT</span>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-medium mt-1">Instant / Cheap</span>
+              </div>
+              <!-- Sentiment Gauge -->
+              <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col justify-between border border-outline-variant/10">
+                <div class="flex items-center justify-between text-on-surface-variant mb-1">
+                  <span class="text-[10.5px] font-mono uppercase">Sentiment</span>
+                  <span class="material-symbols-outlined text-[15px] text-emerald-400">sentiment_satisfied</span>
+                </div>
+                <div>
+                  <span class="font-mono text-base font-bold text-emerald-400" id="spaceSentimentScore">84</span>
+                  <span class="text-[10px] text-on-surface-variant ml-0.5 font-mono">/ 100</span>
+                </div>
+                <span class="text-[10px] text-emerald-400 font-medium mt-1">Greed / Bullish</span>
+              </div>
+            </div>
+            <!-- L1 Consensus / Hashrate Bar -->
+            <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
+              <div class="flex justify-between items-center text-xs">
+                <span class="text-[11px] text-on-surface-variant">L1 Consensus Hashrate</span>
+                <span class="text-[11px] font-mono text-primary font-semibold">PoW Difficulty 3</span>
+              </div>
+              <div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden flex">
+                <div class="bg-primary h-full rounded-full transition-all duration-1000" style="width: 70%"></div>
+                <div class="bg-secondary h-full rounded-full transition-all duration-1000" style="width: 30%"></div>
+              </div>
+              <div class="flex justify-between font-mono text-[10px] text-on-surface-variant pt-0.5">
+                <span>70% Miner PoW</span>
+                <span>30% Quorum BFT</span>
+              </div>
+            </div>
+            <!-- Mini Protocol Footnote -->
+            <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-[10px] font-mono text-on-surface-variant">
+              <span>Space Protocol v1.9.8</span>
+              <span class="flex items-center gap-1 text-primary">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+                <span>P2P Telemetry Synced</span>
+              </span>
+            </div>
+          </div>
+
+        </aside>
+      </div>
 
         <!-- 5B: SPACE POST DETAILS & COMMENTS STACK VIEW (Exact Stitch Screen F) -->
         <div id="spacePostDetailView" class="hidden flex-col w-full max-w-[600px] mx-auto px-3 sm:px-4 md:px-0 pb-28">
@@ -5324,6 +5511,154 @@
       return safe.replace(/\n/g, '<br/>');
     }
 
+    function generateSpacePostEmbedHtml(rawContent) {
+      if (!rawContent) return '';
+      const text = String(rawContent).toLowerCase();
+
+      // 1. $ETH Telemetry Card (Exact Stitch Screen E Telemetry Widget)
+      if (text.includes('$eth') || text.includes('ethereum') || text.includes('blob') || text.includes('gwei')) {
+        return `
+          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-outline-variant/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">query_stats</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-sm font-bold text-on-surface">$ETH</span>
+                  <span class="font-mono text-sm font-medium text-on-surface">$3,875.00</span>
+                  <span class="inline-flex items-center gap-0.5 px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">
+                    <span class="material-symbols-outlined text-[11px]">trending_up</span>
+                    +3.4%
+                  </span>
+                </div>
+                <span class="text-[11px] text-on-surface-variant">L1 Settlement Telemetry &bull; Blob Space Target Met</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 self-end sm:self-auto shrink-0">
+              <div class="flex flex-col items-end">
+                <span class="text-[10px] text-on-surface-variant font-mono">L1 Base Fee</span>
+                <span class="font-mono text-xs text-primary font-bold">~12 Gwei</span>
+              </div>
+              <div class="w-20 h-6 flex items-center">
+                <svg class="w-full h-full overflow-visible" fill="none" viewBox="0 0 100 30">
+                  <path class="text-primary" d="M0 24 Q 25 22, 40 14 T 70 8 T 100 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"></path>
+                  <path class="text-primary/10" d="M0 24 Q 25 22, 40 14 T 70 8 T 100 2 L 100 30 L 0 30 Z" fill="currentColor"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 2. $BCT / wBCT On-Chain Telemetry Card
+      if (text.includes('$bct') || text.includes('wbct') || text.includes('uniswap') || text.includes('locktrace') || text.includes('tokenomics')) {
+        return `
+          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-secondary/25 bg-gradient-to-r from-secondary/5 via-transparent to-transparent flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">currency_exchange</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2">
+                  <span class="font-mono text-sm font-bold text-on-surface">$BCT</span>
+                  <span class="font-mono text-sm font-medium text-emerald-400">$0.0000000046</span>
+                  <span class="inline-flex items-center gap-0.5 px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">
+                    <span class="material-symbols-outlined text-[11px]">trending_up</span>
+                    +4.2%
+                  </span>
+                </div>
+                <span class="text-[11px] text-on-surface-variant">L1 Settlement Telemetry &bull; Base Uniswap v3 1:1 Peg Backed</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-3 self-end sm:self-auto shrink-0">
+              <div class="flex flex-col items-end">
+                <span class="text-[10px] text-on-surface-variant font-mono">L1 Transfer Fee</span>
+                <span class="font-mono text-xs text-secondary font-bold">0.0001 BCT</span>
+              </div>
+              <div class="w-20 h-6 flex items-center">
+                <svg class="w-full h-full overflow-visible" fill="none" viewBox="0 0 100 30">
+                  <path class="text-secondary" d="M0 26 Q 20 20, 45 15 T 75 6 T 100 2" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="2.2"></path>
+                  <path class="text-secondary/10" d="M0 26 Q 20 20, 45 15 T 75 6 T 100 2 L 100 30 L 0 30 Z" fill="currentColor"></path>
+                </svg>
+              </div>
+            </div>
+          </div>
+        `;
+      }
+
+      // 3. Vault & Solvency Proof Embed (Exact Stitch Screen E)
+      if (text.includes('vault') || text.includes('cold storage') || text.includes('solvency') || text.includes('multisig') || text.includes('reserve')) {
+        return `
+          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-emerald-500/25 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">shield</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-mono text-xs sm:text-sm font-bold text-on-surface">Secured Vault Balance</span>
+                  <span class="px-2 py-0.2 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">Zk-Proof Verified</span>
+                </div>
+                <span class="text-[11px] text-on-surface-variant">LockTrace Cold Reserve &bull; Multi-sig 3-of-5 Ledger Guard</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[11px] font-semibold self-end sm:self-auto border border-emerald-500/20">
+              <span class="material-symbols-outlined text-[13px]">verified</span>
+              <span>100% Solvency Proof</span>
+            </div>
+          </div>
+        `;
+      }
+
+      // 4. Instant Settlement & Transaction Telemetry (Exact Stitch Screen E)
+      if (text.includes('usdc') || text.includes('settlement') || text.includes('finality') || text.includes('micro-transaction')) {
+        return `
+          <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-2 border border-outline-variant/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs" onclick="event.stopPropagation()">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">swap_horiz</span>
+              </div>
+              <div class="flex flex-col">
+                <div class="flex items-center gap-2 flex-wrap">
+                  <span class="font-mono text-sm font-bold text-on-surface">1,250 USDC</span>
+                  <span class="px-2 py-0.2 rounded-full bg-primary/10 text-primary font-mono text-[10px] font-bold">Instant Settlement</span>
+                </div>
+                <div class="flex items-center gap-2 font-mono text-[10.5px] text-on-surface-variant">
+                  <span>Tx #4920</span>
+                  <span>&bull;</span>
+                  <span>Finality: 412ms</span>
+                  <span>&bull;</span>
+                  <span>Fee: $0.000102</span>
+                </div>
+              </div>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-surface-container font-mono text-[10.5px] text-secondary border border-secondary/20 self-end sm:self-auto font-semibold">
+              Base L2
+            </span>
+          </div>
+        `;
+      }
+
+      return '';
+    }
+
+    function toggleFollowVoice(btn, handle) {
+      if (!btn) return;
+      const isFollowing = btn.dataset.following === 'true';
+      if (isFollowing) {
+        btn.dataset.following = 'false';
+        btn.textContent = 'Follow';
+        btn.className = 'px-3 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer';
+        showToast(`Takipten çıkarıldı: @${handle}`);
+      } else {
+        btn.dataset.following = 'true';
+        btn.textContent = 'Following';
+        btn.className = 'px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold transition-all shrink-0 cursor-pointer';
+        showToast(`@${handle} takip ediliyor! On-chain bildirimler aktif.`);
+      }
+    }
+
     function showToast(msg, icon = 'check_circle', isError = false) {
       const toast = document.getElementById('toast');
       const toastText = document.getElementById('toastText');
@@ -8124,6 +8459,9 @@
               ${formatSpaceBodyHtml(post.content)}
             </div>
 
+            <!-- Optional Telemetry / Vault Embed (Stitch Inspired) -->
+            ${generateSpacePostEmbedHtml(post.content)}
+
             <!-- On-Chain Badges Row -->
             <div class="flex flex-wrap items-center gap-2 pt-0.5 cursor-pointer" onclick="openSpacePostDetail('${pid}')">
               <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-surface-container-high/80 border border-outline-variant/15 text-[11px] text-primary font-medium">
@@ -8285,6 +8623,8 @@
             <p class="font-body-lg text-body-lg text-on-surface leading-relaxed break-words">
               ${formatSpaceBodyHtml(post.content)}
             </p>
+
+            ${generateSpacePostEmbedHtml(post.content)}
 
             <!-- Embedded On-Chain Tokenomics Card (Stitch Screen F) -->
             <div class="bg-surface-container-low rounded-xl p-3.5 flex items-center justify-between border border-outline-variant/10">
