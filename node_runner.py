@@ -1313,6 +1313,27 @@ class LockTraceNode:
             blk = self._mine_autonomous_p2p_block(tx)
             return 200, {"success": True, "message": "Comment sealed into local PoW block!", "data": {"post_id": pid, "block_index": blk["index"], "status": "confirmed"}}
 
+        if path == "/api/v1/space/follow":
+            follower = str(payload.get("follower", "")).strip()
+            target = str(payload.get("target", "")).strip()
+            if not follower or not target:
+                return 400, {"success": False, "message": "Fields 'follower' and 'target' are required."}
+            if follower == target:
+                return 400, {"success": False, "message": "You cannot follow your own wallet address."}
+            tx = {
+                "sender": follower,
+                "receiver": TREASURY_ADDRESS,
+                "amount": 1.00,
+                "fee": 0.30,
+                "net_amount": 1.00,
+                "signature": payload.get("signature", ""),
+                "timestamp": time.time(),
+                "tx_type": "space_follow",
+                "extra_data": {"target": target, "follower": follower, "creator_cut": 0.50, "treasury_cut": 0.20, "miner_fee": 0.30}
+            }
+            blk = self._mine_autonomous_p2p_block(tx)
+            return 200, {"success": True, "message": "Follow sealed into local PoW block!", "data": {"target": target, "block_index": blk["index"], "status": "confirmed"}}
+
         if path in ("/api/v1/notifications/subscribe", "/api/v1/notifications/unsubscribe", "/api/v1/notifications/test-push"):
             up_res = self.request(path, method="POST", data=payload, timeout=5.0)
             if up_res:
@@ -1738,6 +1759,32 @@ class LockTraceNode:
                     self._send_json(200, {"success": True, "data": {"tags": [{"tag": t[0], "count": t[1], "type": "cashtag" if t[0].startswith("$") else "hashtag"} for t in sorted_tags]}})
                     return
 
+                if path == "/api/v1/space/suggested-voices":
+                    full_path = path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else "")
+                    upstream = node_ref.request(full_path, method="GET", timeout=3.5)
+                    if upstream and upstream.get("success"):
+                        self._send_json(200, upstream)
+                        return
+                    lim = max(1, min(20, int(qs.get("limit", ["5"])[0])))
+                    posts_map = node_ref.local_space_posts()
+                    authors = {p.get("author") for p in posts_map.values() if p.get("author")}
+                    bns_map = node_ref.local_bns_records()
+                    voices = []
+                    for a in authors:
+                        if a and a != TREASURY_ADDRESS:
+                            bns = next((k for k, v in bns_map.items() if v.get("owner") == a), "")
+                            voices.append({
+                                "address": a,
+                                "bns_name": bns,
+                                "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}",
+                                "bio": f"@{bns} • Core Voice" if bns else "BCT Active Creator",
+                                "followers_count": 0,
+                                "is_following": False,
+                                "posts_count": sum(1 for p in posts_map.values() if p.get("author") == a)
+                            })
+                    self._send_json(200, {"success": True, "data": {"voices": voices[:lim]}})
+                    return
+
                 if path.startswith("/api/v1/space/post/"):
                     upstream = node_ref.request(path, method="GET", timeout=3.5)
                     if upstream and upstream.get("success"):
@@ -1787,6 +1834,10 @@ class LockTraceNode:
                             "nonce": nonce,
                             "primary_name": rev_info.get("primary_name", ""),
                             "owned_names": rev_info.get("owned_names", []),
+                            "followers": [],
+                            "following": [],
+                            "followers_count": 0,
+                            "following_count": 0,
                             "posts_count": len(user_posts),
                             "posts": sorted(user_posts, key=lambda x: float(x.get("timestamp", 0)), reverse=True)[:25]
                         }

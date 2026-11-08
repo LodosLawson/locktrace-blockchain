@@ -367,3 +367,13 @@ class BridgeManager:
             """, (clean, clean, limit)).fetchall()
             return [dict(r) for r in rows]
 
+    def get_all_transactions(self, limit: int = 100) -> List[Dict[str, Any]]:
+        """Retrieves recent cross-chain bridge and Base L2 wBCT operations."""
+        with self._get_connection() as conn:
+            rows = conn.execute("""
+                SELECT * FROM bridge_transactions
+                ORDER BY created_at DESC
+                LIMIT ?
+            """, (limit,)).fetchall()
+            return [dict(r) for r in rows]
+
