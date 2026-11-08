@@ -1927,9 +1927,12 @@
                   </div>
                 </div>
 
-                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
-                  <span class="font-mono text-xs text-on-surface select-all truncate">BCT0000000000000000000000000000000000000000</span>
-                  <button type="button" onclick="copyToClipboard('BCT0000000000000000000000000000000000000000'); showToast('L1 Burn address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2 min-w-0">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="sm:hidden font-mono text-xs text-on-surface font-semibold select-all truncate">BCT000000...0000</span>
+                    <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCT0000000000000000000000000000000000000000</span>
+                  </div>
+                  <button type="button" onclick="copyToClipboard('BCT0000000000000000000000000000000000000000'); showToast('L1 Burn adresi kopyalandı!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Copy Address">
                     <span class="material-symbols-outlined text-[16px]">content_copy</span>
                   </button>
                 </div>
@@ -1961,9 +1964,12 @@
                   </div>
                 </div>
 
-                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
-                  <span class="font-mono text-xs text-on-surface select-all truncate">0x000000000000000000000000000000000000dEaD</span>
-                  <button type="button" onclick="copyToClipboard('0x000000000000000000000000000000000000dEaD'); showToast('EVM dead address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2 min-w-0">
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="sm:hidden font-mono text-xs text-on-surface font-semibold select-all truncate">0x000000...dEaD</span>
+                    <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">0x000000000000000000000000000000000000dEaD</span>
+                  </div>
+                  <button type="button" onclick="copyToClipboard('0x000000000000000000000000000000000000dEaD'); showToast('EVM dead adresi kopyalandı!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Copy Address">
                     <span class="material-symbols-outlined text-[16px]">content_copy</span>
                   </button>
                 </div>
@@ -1997,53 +2003,65 @@
 
                 <!-- 4 Test Wallets Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5">
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5 min-w-0">
                     <div class="flex items-center justify-between text-xs">
                       <span class="font-semibold text-rose-300">Test Adresi #1</span>
                       <span class="font-mono font-bold text-on-surface">10,001.0000 BCT</span>
                     </div>
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="font-mono text-xs text-on-surface select-all truncate cursor-pointer hover:text-primary" onclick="openUserProfile('BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d')">BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d</span>
-                      <button type="button" onclick="copyToClipboard('BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0">
+                    <div class="flex items-center justify-between gap-2 min-w-0">
+                      <div class="flex items-center gap-1 min-w-0 cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d')">
+                        <span class="sm:hidden font-mono text-xs text-on-surface select-all truncate font-medium">BCTd9cd...d11d</span>
+                        <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d</span>
+                      </div>
+                      <button type="button" onclick="copyToClipboard('BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Adresi Kopyala">
                         <span class="material-symbols-outlined text-[15px]">content_copy</span>
                       </button>
                     </div>
                   </div>
 
-                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5">
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5 min-w-0">
                     <div class="flex items-center justify-between text-xs">
                       <span class="font-semibold text-rose-300">Test Adresi #2</span>
                       <span class="font-mono font-bold text-on-surface">5,001.8140 BCT</span>
                     </div>
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="font-mono text-xs text-on-surface select-all truncate cursor-pointer hover:text-primary" onclick="openUserProfile('BCTf8c255f129a61b296f197a7e70902c043c3da0bf')">BCTf8c255f129a61b296f197a7e70902c043c3da0bf</span>
-                      <button type="button" onclick="copyToClipboard('BCTf8c255f129a61b296f197a7e70902c043c3da0bf'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0">
+                    <div class="flex items-center justify-between gap-2 min-w-0">
+                      <div class="flex items-center gap-1 min-w-0 cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('BCTf8c255f129a61b296f197a7e70902c043c3da0bf')">
+                        <span class="sm:hidden font-mono text-xs text-on-surface select-all truncate font-medium">BCTf8c2...a0bf</span>
+                        <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCTf8c255f129a61b296f197a7e70902c043c3da0bf</span>
+                      </div>
+                      <button type="button" onclick="copyToClipboard('BCTf8c255f129a61b296f197a7e70902c043c3da0bf'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Adresi Kopyala">
                         <span class="material-symbols-outlined text-[15px]">content_copy</span>
                       </button>
                     </div>
                   </div>
 
-                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5">
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5 min-w-0">
                     <div class="flex items-center justify-between text-xs">
                       <span class="font-semibold text-rose-300">Test Adresi #3</span>
                       <span class="font-mono font-bold text-on-surface">1,004.3880 BCT</span>
                     </div>
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="font-mono text-xs text-on-surface select-all truncate cursor-pointer hover:text-primary" onclick="openUserProfile('BCT7404325cf37316e3c6396ff1eef80c4ef381c27b')">BCT7404325cf37316e3c6396ff1eef80c4ef381c27b</span>
-                      <button type="button" onclick="copyToClipboard('BCT7404325cf37316e3c6396ff1eef80c4ef381c27b'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0">
+                    <div class="flex items-center justify-between gap-2 min-w-0">
+                      <div class="flex items-center gap-1 min-w-0 cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('BCT7404325cf37316e3c6396ff1eef80c4ef381c27b')">
+                        <span class="sm:hidden font-mono text-xs text-on-surface select-all truncate font-medium">BCT7404...27b</span>
+                        <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCT7404325cf37316e3c6396ff1eef80c4ef381c27b</span>
+                      </div>
+                      <button type="button" onclick="copyToClipboard('BCT7404325cf37316e3c6396ff1eef80c4ef381c27b'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Adresi Kopyala">
                         <span class="material-symbols-outlined text-[15px]">content_copy</span>
                       </button>
                     </div>
                   </div>
 
-                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5">
+                  <div class="bg-surface-container/70 p-3 rounded-xl border border-rose-500/20 flex flex-col justify-between gap-1.5 min-w-0">
                     <div class="flex items-center justify-between text-xs">
                       <span class="font-semibold text-rose-300">Test Adresi #4</span>
                       <span class="font-mono font-bold text-on-surface">1,001.0000 BCT</span>
                     </div>
-                    <div class="flex items-center justify-between gap-2">
-                      <span class="font-mono text-xs text-on-surface select-all truncate cursor-pointer hover:text-primary" onclick="openUserProfile('BCT4ebea3d0f7132475e4e7c22573696eab6267a191')">BCT4ebea3d0f7132475e4e7c22573696eab6267a191</span>
-                      <button type="button" onclick="copyToClipboard('BCT4ebea3d0f7132475e4e7c22573696eab6267a191'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0">
+                    <div class="flex items-center justify-between gap-2 min-w-0">
+                      <div class="flex items-center gap-1 min-w-0 cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('BCT4ebea3d0f7132475e4e7c22573696eab6267a191')">
+                        <span class="sm:hidden font-mono text-xs text-on-surface select-all truncate font-medium">BCT4ebe...a191</span>
+                        <span class="hidden sm:inline font-mono text-xs text-on-surface select-all truncate">BCT4ebea3d0f7132475e4e7c22573696eab6267a191</span>
+                      </div>
+                      <button type="button" onclick="copyToClipboard('BCT4ebea3d0f7132475e4e7c22573696eab6267a191'); showToast('Adres kopyalandı!')" class="p-1 rounded hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0 cursor-pointer" title="Adresi Kopyala">
                         <span class="material-symbols-outlined text-[15px]">content_copy</span>
                       </button>
                     </div>
@@ -2147,13 +2165,13 @@
 
       <div id="tab-space" class="tab-content flex-col w-full items-center">
         <!-- 5A: MAIN SPACE FEED VIEW (Exact Stitch Screen E & Desktop 2-Column Grid) -->
-        <div id="spaceFeedMainView" class="flex flex-col lg:flex-row w-full max-w-[1080px] xl:max-w-[1140px] mx-auto pb-12 gap-6 justify-center px-margin md:px-4">
+        <div id="spaceFeedMainView" class="flex flex-col lg:flex-row w-full max-w-[1080px] xl:max-w-[1140px] mx-auto pb-12 gap-6 justify-center px-2 sm:px-3 md:px-4">
 
           <!-- Left Main Feed Column -->
           <div class="flex-1 max-w-[640px] w-full flex flex-col min-w-0">
 
           <!-- Sub-Header Status & Search/Filter Icons -->
-          <div class="px-3 sm:px-4 md:px-0 pt-space-xs pb-space-sm flex items-center justify-between gap-space-sm">
+          <div class="px-1 sm:px-2 md:px-0 pt-space-xs pb-space-sm flex items-center justify-between gap-space-sm">
             <div class="flex items-center gap-space-xs bg-surface-container-low px-3 py-1.5 rounded-full shadow-sm border border-outline-variant/20">
               <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
               <span class="font-label-sm text-label-sm text-on-surface uppercase tracking-wider">LockTrace Space</span>
@@ -2170,7 +2188,7 @@
           </div>
 
           <!-- Expandable Search Input -->
-          <div class="hidden px-3 sm:px-4 md:px-0 mb-space-sm" id="spaceSearchBarWrap">
+          <div class="hidden px-1 sm:px-2 md:px-0 mb-space-sm" id="spaceSearchBarWrap">
             <div class="flex items-center bg-surface-container-low rounded-full px-3.5 py-2 border border-outline-variant/30 focus-within:border-primary">
               <span class="material-symbols-outlined text-[17px] text-outline mr-2">search</span>
               <input class="w-full bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none" id="spaceSearchInput" oninput="filterSpaceBySearch()" placeholder="Search thoughts or author addresses..." type="search"/>
@@ -2178,7 +2196,7 @@
           </div>
 
           <!-- Unconnected Wallet Prompt Banner -->
-          <div id="spaceWalletAlert" class="hidden mx-3 sm:mx-4 md:mx-0 mb-3.5 p-3.5 rounded-2xl bg-surface-container-low border border-primary/30 items-center justify-between gap-3 shadow-sm">
+          <div id="spaceWalletAlert" class="hidden mx-1 sm:mx-2 md:mx-0 mb-3.5 p-3.5 rounded-2xl bg-surface-container-low border border-primary/30 items-center justify-between gap-3 shadow-sm">
             <div class="flex items-center gap-2.5 min-w-0">
               <span class="material-symbols-outlined text-primary text-[22px] shrink-0">account_balance_wallet</span>
               <div class="flex flex-col min-w-0">
@@ -2190,7 +2208,7 @@
           </div>
 
                     <!-- Modern Mobile-First Streamlined Quick Compose Box -->
-          <section class="px-3 sm:px-4 md:px-0 mb-3.5 sm:mb-4" id="spaceComposeSection">
+          <section class="px-1 sm:px-2 md:px-0 mb-3.5 sm:mb-4" id="spaceComposeSection">
             <div class="bg-surface-container-low/95 sm:bg-surface-container/90 rounded-2xl p-4 sm:p-5 shadow-sm border border-outline-variant/30 flex flex-col gap-3 transition-all duration-200 focus-within:border-primary/60 focus-within:ring-2 focus-within:ring-primary/15">
               
               <!-- Top Row: Author Identity & Handle Selector -->
@@ -2275,7 +2293,7 @@
           </section>
 
           <!-- Feed Filter Segmented Bar & Algorithms (Exact Stitch Screen E) -->
-          <section class="px-3 sm:px-4 md:px-0 mb-3">
+          <section class="px-1 sm:px-2 md:px-0 mb-3">
             <div class="flex items-center bg-surface-container-low p-1 rounded-full shadow-inner border border-outline-variant/20 gap-1">
               <button class="space-filter-btn flex-1 py-1.5 px-2 rounded-full font-label-md text-xs sm:text-sm text-on-surface bg-surface-container-high font-semibold transition-all text-center flex items-center justify-center gap-1 truncate" id="filterBtnForYou" onclick="filterSpaceTab('foryou')" type="button" title="Algorithmic Discovery Feed">
                 <span class="material-symbols-outlined text-[15px] text-primary">auto_awesome</span>
@@ -2297,7 +2315,7 @@
           </section>
 
           <!-- Active Topic / Entity Filter Banner (Dismissable) -->
-          <div id="spaceActiveFilterBar" class="hidden mx-3 sm:mx-4 md:mx-0 mb-3 p-2.5 px-3.5 rounded-xl bg-surface-container-low border border-primary/30 flex items-center justify-between gap-2 shadow-xs">
+          <div id="spaceActiveFilterBar" class="hidden mx-1 sm:mx-2 md:mx-0 mb-3 p-2.5 px-3.5 rounded-xl bg-surface-container-low border border-primary/30 flex items-center justify-between gap-2 shadow-xs">
             <div class="flex items-center gap-2 min-w-0">
               <span class="w-2 h-2 rounded-full bg-primary animate-ping"></span>
               <span class="text-xs font-semibold text-on-surface truncate">Filtering Topic: <span id="spaceActiveFilterText" class="text-primary font-mono font-bold">#LockTrace</span></span>
@@ -2309,7 +2327,7 @@
           </div>
 
           <!-- Trending Topics & Cashtags Bar (Horizontal Carousel) -->
-          <div class="px-3 sm:px-4 md:px-0 mb-3.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="spaceTrendingTagsBar">
+          <div class="px-1 sm:px-2 md:px-0 mb-3.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5" id="spaceTrendingTagsBar">
             <span class="text-[11px] font-mono uppercase font-bold text-on-surface-variant/70 shrink-0 flex items-center gap-1 mr-1">
               <span class="material-symbols-outlined text-[14px] text-amber-400">trending_up</span>
               <span>Trending:</span>
@@ -2320,7 +2338,7 @@
           </div>
 
           <!-- Feed Content Stream -->
-          <div class="flex flex-col gap-3 px-3 sm:px-4 md:px-0" id="spaceFeedStream">
+          <div class="flex flex-col gap-3 px-1 sm:px-2 md:px-0" id="spaceFeedStream">
             <div class="text-center py-8 text-on-surface-variant font-body-sm text-body-sm flex flex-col items-center gap-2">
               <span class="material-symbols-outlined text-[26px] animate-spin text-primary">autorenew</span>
               <span>Loading on-chain thoughts...</span>
@@ -2346,50 +2364,40 @@
                 <span class="material-symbols-outlined text-primary text-[20px]">local_fire_department</span>
                 <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Trending Topics</h2>
               </div>
-              <span class="text-[10px] font-mono uppercase text-emerald-400 font-semibold flex items-center gap-1">
-                <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> Live
-              </span>
+              <button type="button" onclick="showToast('Showing top trending topics');" class="text-xs text-on-surface-variant hover:text-primary transition-colors cursor-pointer font-medium">View All</button>
             </div>
             <div class="flex flex-col gap-2">
               <!-- Topic 1 -->
-              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#LockTrace')">
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#EIP4844')">
                 <div class="flex flex-col min-w-0">
-                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">#LockTrace</span>
-                  <span class="text-[11px] text-on-surface-variant truncate">Decentralized L1 Space &amp; Royalties</span>
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">#EIP4844</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Proto-danksharding &amp; blobs</span>
                 </div>
                 <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">14.2k casts</span>
               </a>
               <!-- Topic 2 -->
-              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('$BCT')">
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('$ETH')">
                 <div class="flex flex-col min-w-0">
-                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">$BCT Tokenomics</span>
-                  <span class="text-[11px] text-on-surface-variant truncate">1 Trillion Capped &bull; 70% PoW</span>
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">$ETH L2 Rollups</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Arbitrum, Optimism, Base</span>
                 </div>
                 <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">8.9k casts</span>
               </a>
               <!-- Topic 3 -->
-              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('$wBCT')">
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#Solana')">
                 <div class="flex flex-col min-w-0">
-                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-secondary transition-colors truncate">$wBCT L2 Bridge</span>
-                  <span class="text-[11px] text-on-surface-variant truncate">Base Mainnet &bull; Uniswap v3 Pool</span>
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-purple-400 transition-colors truncate">Solana Breakpoint</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">Firedancer updates</span>
                 </div>
-                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-secondary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-secondary shrink-0 transition-colors">5.4k casts</span>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-purple-500/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-purple-400 shrink-0 transition-colors">5.4k casts</span>
               </a>
               <!-- Topic 4 -->
-              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#BNS')">
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('#ZeroKnowledge')">
                 <div class="flex flex-col min-w-0">
-                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-emerald-400 transition-colors truncate">#BNS Domains</span>
-                  <span class="text-[11px] text-on-surface-variant truncate">Decentralized .bct Handles</span>
-                </div>
-                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-emerald-500/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-emerald-400 shrink-0 transition-colors">3.1k casts</span>
-              </a>
-              <!-- Topic 5 -->
-              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer" onclick="filterSpaceByEntity('$ETH')">
-                <div class="flex flex-col min-w-0">
-                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">Zero-Knowledge MPC</span>
+                  <span class="font-mono font-semibold text-xs text-on-surface group-hover:text-emerald-400 transition-colors truncate">Zero-Knowledge MPC</span>
                   <span class="text-[11px] text-on-surface-variant truncate">Non-custodial key recovery</span>
                 </div>
-                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">1.8k casts</span>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-emerald-500/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-emerald-400 shrink-0 transition-colors">3.1k casts</span>
               </a>
             </div>
           </div>
@@ -2401,16 +2409,15 @@
                 <span class="material-symbols-outlined text-secondary text-[20px]">group_add</span>
                 <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Suggested Voices</h2>
               </div>
-              <button type="button" onclick="loadSuggestedVoices(); showToast('Önerilen yazarlar yenilendi');" class="text-[11px] text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer flex items-center gap-1" title="Önerilenleri Yenile">
-                <span class="material-symbols-outlined text-[13px]">sync</span>
-                <span>Yenile</span>
+              <button type="button" onclick="loadSuggestedVoices(); showToast('Suggested voices refreshed');" class="text-xs text-on-surface-variant hover:text-primary transition-colors cursor-pointer font-medium" title="Refresh">
+                Refresh
               </button>
             </div>
             <!-- Dynamic Real On-Chain Accounts Container -->
             <div id="suggestedVoicesContainer" class="flex flex-col gap-2.5 min-h-[120px]">
               <div class="flex items-center justify-center p-4 text-xs text-on-surface-variant font-mono">
                 <span class="material-symbols-outlined text-sm animate-spin mr-1.5">sync</span>
-                On-Chain profiller yükleniyor...
+                Loading on-chain voices...
               </div>
             </div>
           </div>
@@ -2426,17 +2433,17 @@
             </div>
             <!-- Gauges Grid -->
             <div class="grid grid-cols-2 gap-2.5">
-              <!-- Fee Gauge -->
+              <!-- Ethereum Gas Gauge -->
               <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col justify-between border border-outline-variant/10">
                 <div class="flex items-center justify-between text-on-surface-variant mb-1">
-                  <span class="text-[10.5px] font-mono uppercase">L1 Tx Fee</span>
+                  <span class="text-[10.5px] font-mono uppercase">Ethereum Gas</span>
                   <span class="material-symbols-outlined text-[15px] text-primary">local_gas_station</span>
                 </div>
                 <div>
-                  <span class="font-mono text-base font-bold text-on-surface">0.0001</span>
-                  <span class="text-[10px] text-on-surface-variant ml-0.5 font-mono">BCT</span>
+                  <span class="font-mono text-base font-bold text-on-surface" id="vitalEthGasVal">12</span>
+                  <span class="text-[10px] text-on-surface-variant ml-0.5 font-mono">Gwei</span>
                 </div>
-                <span class="text-[10px] text-emerald-400 font-medium mt-1">Instant / Cheap</span>
+                <span class="text-[10px] text-emerald-400 font-medium mt-1">Normal / Cheap</span>
               </div>
               <!-- Sentiment Gauge -->
               <div class="p-3 rounded-xl bg-surface-container-lowest flex flex-col justify-between border border-outline-variant/10">
@@ -2445,34 +2452,39 @@
                   <span class="material-symbols-outlined text-[15px] text-emerald-400">sentiment_satisfied</span>
                 </div>
                 <div>
-                  <span class="font-mono text-base font-bold text-emerald-400" id="spaceSentimentScore">84</span>
+                  <span class="font-mono text-base font-bold text-emerald-400" id="spaceSentimentScore">72</span>
                   <span class="text-[10px] text-on-surface-variant ml-0.5 font-mono">/ 100</span>
                 </div>
                 <span class="text-[10px] text-emerald-400 font-medium mt-1">Greed / Bullish</span>
               </div>
             </div>
-            <!-- L1 Consensus / Hashrate Bar -->
+            <!-- L2 Gas Consumption Share Bar -->
             <div class="flex flex-col gap-1.5 p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
               <div class="flex justify-between items-center text-xs">
-                <span class="text-[11px] text-on-surface-variant">L1 Consensus Hashrate</span>
-                <span class="text-[11px] font-mono text-primary font-semibold">PoW Difficulty 3</span>
+                <span class="text-[11px] text-on-surface-variant">L2 Gas Consumption Share</span>
+                <span class="text-[11px] font-mono text-emerald-400 font-semibold">68.4% of blobs</span>
               </div>
-              <div class="w-full bg-surface-container h-1.5 rounded-full overflow-hidden flex">
-                <div class="bg-primary h-full rounded-full transition-all duration-1000" style="width: 70%"></div>
-                <div class="bg-secondary h-full rounded-full transition-all duration-1000" style="width: 30%"></div>
+              <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden flex">
+                <div class="bg-sky-400 h-full transition-all duration-1000" style="width: 45%" title="Arbitrum: 31%"></div>
+                <div class="bg-blue-500 h-full transition-all duration-1000" style="width: 35%" title="Base: 24%"></div>
+                <div class="bg-rose-500 h-full transition-all duration-1000" style="width: 20%" title="Optimism: 13.4%"></div>
               </div>
-              <div class="flex justify-between font-mono text-[10px] text-on-surface-variant pt-0.5">
-                <span>70% Miner PoW</span>
-                <span>30% Quorum BFT</span>
+              <div class="flex justify-between font-mono text-[9.5px] text-on-surface-variant pt-0.5">
+                <span class="text-sky-400">Arbitrum: 31%</span>
+                <span class="text-blue-400">Base: 24%</span>
+                <span class="text-rose-400">Optimism: 13.4%</span>
               </div>
             </div>
             <!-- Mini Protocol Footnote -->
             <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-[10px] font-mono text-on-surface-variant">
-              <span>Space Protocol v1.9.8</span>
-              <span class="flex items-center gap-1 text-primary">
-                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
-                <span>P2P Telemetry Synced</span>
-              </span>
+              <span>Aether Space Protocol v1.4</span>
+              <div class="flex items-center gap-1.5">
+                <span class="hover:text-primary cursor-pointer" onclick="showToast('IPFS Node status: Connected', 'hub')">IPFS Node</span>
+                <span>•</span>
+                <span class="hover:text-primary cursor-pointer" onclick="switchTab('guvenlik')">Audit</span>
+                <span>•</span>
+                <span class="hover:text-primary cursor-pointer" onclick="switchTab('ag-ve-explorer')">RPC</span>
+              </div>
             </div>
           </div>
 
@@ -2480,7 +2492,7 @@
       </div>
 
         <!-- 5B: SPACE POST DETAILS & COMMENTS STACK VIEW (Exact Stitch Screen F) -->
-        <div id="spacePostDetailView" class="hidden flex-col w-full max-w-[600px] mx-auto px-3 sm:px-4 md:px-0 pb-28">
+        <div id="spacePostDetailView" class="hidden flex-col w-full max-w-[600px] mx-auto px-1 sm:px-2 md:px-0 pb-28">
           <!-- Desktop Back Bar (Mobile uses #mobileHeaderPostDetail) -->
           <div class="hidden md:flex items-center gap-2 mb-4">
             <button class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors" onclick="closeSpacePostDetail()" type="button">
@@ -2495,7 +2507,7 @@
           </div>
 
           <!-- Sticky Bottom Comment Composer Bar (Exact Stitch Screen F) -->
-          <div class="fixed md:sticky bottom-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-xl px-margin md:px-3 py-3 pb-safe border-t border-outline-variant/20 shadow-[0_-4px_24px_rgba(0,0,0,0.4)] md:rounded-2xl md:mt-4">
+          <div class="fixed md:sticky bottom-0 left-0 right-0 z-50 bg-surface/95 backdrop-blur-xl px-2 sm:px-3 py-3 pb-safe border-t border-outline-variant/20 shadow-[0_-4px_24px_rgba(0,0,0,0.4)] md:rounded-2xl md:mt-4">
             <div class="max-w-[600px] mx-auto flex flex-col gap-1.5">
               <div class="flex items-center justify-between text-xs px-2 text-on-surface-variant">
                 <span class="flex items-center gap-1 font-mono text-[11px]"><span class="material-symbols-outlined text-[13px] text-primary">chat</span> On-Chain Comment</span>
@@ -4688,9 +4700,12 @@
             <div class="flex flex-col min-w-0 pr-1">
               <span class="text-[10px] uppercase tracking-wider text-on-surface-variant font-semibold flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                <span>On-Chain Account Address (Click to Copy)</span>
+                <span>On-Chain Account Address</span>
               </span>
-              <span class="font-mono text-xs sm:text-sm text-primary font-bold break-all select-all mt-0.5 leading-relaxed" id="userProfileAddress">BCT...</span>
+              <div class="flex items-center gap-1.5 min-w-0 mt-0.5">
+                <span class="sm:hidden font-mono text-xs text-primary font-bold select-all truncate" id="userProfileAddressShort">BCT...</span>
+                <span class="hidden sm:inline font-mono text-xs sm:text-sm text-primary font-bold break-all select-all leading-relaxed" id="userProfileAddress">BCT...</span>
+              </div>
             </div>
             <button type="button" onclick="event.stopPropagation(); copyUserProfileAddress()" class="self-start sm:self-auto flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container-high group-hover:bg-primary group-hover:text-on-primary text-primary font-label-sm text-xs font-semibold transition-all shrink-0 border border-outline-variant/15 cursor-pointer">
               <span class="material-symbols-outlined text-[16px]">content_copy</span>
@@ -6694,32 +6709,39 @@
       try {
         // 1. Fetch stats for Vaults & Metrics
         const statsRes = await apiFetch('/stats');
-        if (statsRes && statsRes.data) {
-          const d = statsRes.data;
+        const statsData = statsRes && statsRes.body && statsRes.body.data ? statsRes.body.data : (statsRes && statsRes.data ? statsRes.data : null);
+        if (statsData) {
+          const d = statsData;
           const bridgeVaultBal = document.getElementById('sysValBridgeVaultBal');
           const treasuryBal = document.getElementById('sysValTreasuryBal');
           const metricBridge = document.getElementById('sysMetricBridgeLocked');
           const metricTreasury = document.getElementById('sysMetricTreasuryEscrow');
           const lostKeyBalEl = document.getElementById('sysValLostKeyTotal');
+          const burnEl = document.getElementById('sysValBurnBal');
           if (bridgeVaultBal && d.bridge_vault_formatted) bridgeVaultBal.textContent = d.bridge_vault_formatted + ' BCT';
           if (treasuryBal && d.treasury_formatted) treasuryBal.textContent = d.treasury_formatted + ' BCT';
           if (metricBridge && d.bridge_vault_locked) metricBridge.textContent = (d.bridge_vault_locked / 1000000).toFixed(2) + 'M BCT';
           if (metricTreasury && d.treasury_balance) metricTreasury.textContent = (d.treasury_balance / 1000000000).toFixed(2) + 'B BCT';
           if (lostKeyBalEl && d.lost_key_test_wallets_formatted) lostKeyBalEl.textContent = d.lost_key_test_wallets_formatted + ' BCT';
+          if (burnEl && d.burn_address_formatted) burnEl.textContent = d.burn_address_formatted + ' BCT';
         }
 
-        // 2. Fetch Burn Address Balance
+        // 2. Fetch Burn Address Balance directly
         const burnRes = await apiFetch('/balance/BCT0000000000000000000000000000000000000000');
-        if (burnRes && burnRes.data) {
+        const burnData = burnRes && burnRes.body && burnRes.body.data ? burnRes.body.data : (burnRes && burnRes.data ? burnRes.data : null);
+        if (burnData) {
           const burnEl = document.getElementById('sysValBurnBal');
-          if (burnEl) burnEl.textContent = formatCrypto(burnRes.data.balance || 0) + ' BCT';
+          const bal = Number(burnData.balance || 0);
+          if (burnEl) burnEl.textContent = formatBct(bal, 6) + ' BCT';
         }
 
-        // 3. Fetch Local Validator Balance
+        // 3. Fetch Local Validator Balance directly
         const valRes = await apiFetch('/balance/BCT3fec00e39c728050c1f1cef4cbe78fcc85881572');
-        if (valRes && valRes.data) {
+        const valData = valRes && valRes.body && valRes.body.data ? valRes.body.data : (valRes && valRes.data ? valRes.data : null);
+        if (valData) {
           const valEl = document.getElementById('sysValValidatorBal');
-          if (valEl) valEl.textContent = formatCrypto(valRes.data.balance || 0) + ' BCT';
+          const valBal = Number(valData.balance || 0);
+          if (valEl) valEl.textContent = formatBct(valBal, 4) + ' BCT';
         }
       } catch (err) {
         console.warn('refreshSystemWalletsData warning:', err);
@@ -11775,6 +11797,7 @@
       loadTradeConfig();
       verifyFrontendIntegrityState();
       refreshExplorerData();
+      refreshSystemWalletsData();
 
       const hashTab = (window.location.hash || '').replace(/^#/, '').trim();
       const initialTab = hashTab || (currentAccount && currentAccount.address ? 'cuzdanim' : 'ana-sayfa');
@@ -11791,6 +11814,7 @@
           const activeId = activeEl ? activeEl.id : '';
           if (activeId === 'tab-cuzdanim') await refreshPersonalTransactions();
           else if (activeId === 'tab-ag-ve-explorer') await refreshExplorerData();
+          else if (activeId === 'tab-system-wallets') await refreshSystemWalletsData();
           else if (activeId === 'tab-space' && !activeDetailPostId) await loadSpaceFeed();
           await checkRealtimeNotificationEvents();
         } catch (_e) {}
@@ -11982,9 +12006,11 @@
       // Initial loading state
       const handleEl = document.getElementById('userProfileHandle');
       const addrEl = document.getElementById('userProfileAddress');
+      const addrShortEl = document.getElementById('userProfileAddressShort');
       const tagEl = document.getElementById('userProfileTagBadge');
       if (handleEl) handleEl.textContent = raw.startsWith('@') ? raw : (raw.endsWith('.bct') ? '@' + raw : shortAddr(raw));
       if (addrEl) addrEl.textContent = raw;
+      if (addrShortEl) addrShortEl.textContent = shortAddr(raw);
       if (tagEl) {
         tagEl.textContent = 'Loading profile...';
         tagEl.className = 'px-2 py-0.5 rounded-full text-[11px] font-semibold bg-surface-container text-on-surface-variant font-sans';
@@ -12132,6 +12158,7 @@
     function renderUserProfileData(data) {
       const handleEl = document.getElementById('userProfileHandle');
       const addrEl = document.getElementById('userProfileAddress');
+      const addrShortEl = document.getElementById('userProfileAddressShort');
       const tagEl = document.getElementById('userProfileTagBadge');
       const balEl = document.getElementById('userProfileBalance');
       const pctEl = document.getElementById('userProfilePct');
@@ -12153,6 +12180,7 @@
       }
 
       addrEl.textContent = data.address;
+      if (addrShortEl) addrShortEl.textContent = shortAddr(data.address);
 
       const lostKeyBanner = document.getElementById('userProfileLostKeyBanner');
       const isLostKey = Boolean(data.is_lost_key_burn || data.tag_type === 'lost_key_burn');
