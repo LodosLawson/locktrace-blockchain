@@ -40,6 +40,7 @@ TREASURY_ADDRESS = "BCT_HAZINE_0000000000000000000000000000000000000000"
 BRIDGE_VAULT_ADDRESS = "BCT_BRIDGE_VAULT_000000000000000000000000000000000"
 
 # Developer Verified Lost-Key Test Wallets (Non-spendable / Permanently Locked / Effective Burn)
+BURN_ADDRESS = "BCT0000000000000000000000000000000000000000"
 LOST_KEY_TEST_WALLETS = {
     "BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d",
     "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
@@ -2377,6 +2378,11 @@ class Blockchain:
                 tag_type = "lost_key_burn"
                 is_lost_key_burn = True
                 lost_key_note = "Geliştirici doğruladı: Private key kayıp özel test adresidir (Dolaşım dışı / Fiili Yakım / Kilitli)"
+            elif target_address == BURN_ADDRESS:
+                tag = "Protokol Yakım Adresi (Kalıcı / Private Key Bulunmaz)"
+                tag_type = "burn"
+                is_lost_key_burn = True
+                lost_key_note = "Kalıcı matematiksel sıfır adresidir. Buraya gönderilen coinler geri alınamaz ve dolaşımdan kalıcı olarak silinir."
             elif target_address == TREASURY_ADDRESS:
                 tag = "Genesis Treasury (Escrowed)"
                 tag_type = "treasury"
@@ -3533,6 +3539,9 @@ class Blockchain:
                 if any(clean_addr.lower() == a.lower() for a in LOST_KEY_TEST_WALLETS):
                     tag = "Geliştirici Doğruladı: Private Key Kayıp (Özel Test Adresi)"
                     tag_type = "lost_key_burn"
+                elif clean_addr == BURN_ADDRESS:
+                    tag = "Deflationary Burn Address (Provably Unspendable)"
+                    tag_type = "burn"
                 elif clean_addr == TREASURY_ADDRESS:
                     tag = "Treasury Vault (Locked Reserve)"
                     tag_type = "treasury"
@@ -3852,12 +3861,14 @@ class Blockchain:
             treasury_units = self.verify_and_recalc_units(TREASURY_ADDRESS)
             vault_units = self.verify_and_recalc_units(BRIDGE_VAULT_ADDRESS)
             lost_key_units = sum(self.verify_and_recalc_units(addr) for addr in LOST_KEY_TEST_WALLETS)
-            # Dead/lost test wallet coins are subtracted from circulation as effective permanent burn
-            circulating_units = max(0, total_units - treasury_units - vault_units - lost_key_units)
+            burn_units = self.verify_and_recalc_units(BURN_ADDRESS)
+            # Dead/lost test wallet coins and burn address balance are subtracted from circulation as effective permanent burn
+            circulating_units = max(0, total_units - treasury_units - vault_units - lost_key_units - burn_units)
             treasury_dec = Decimal(treasury_units) / Decimal(ATOMIC_UNIT)
             vault_dec = Decimal(vault_units) / Decimal(ATOMIC_UNIT)
             lost_key_dec = Decimal(lost_key_units) / Decimal(ATOMIC_UNIT)
-            effective_burned_units = treasury_units + lost_key_units
+            burn_dec = Decimal(burn_units) / Decimal(ATOMIC_UNIT)
+            effective_burned_units = treasury_units + lost_key_units + burn_units
             effective_burned_dec = Decimal(effective_burned_units) / Decimal(ATOMIC_UNIT)
             circulating_dec = Decimal(circulating_units) / Decimal(ATOMIC_UNIT)
             total_unlocked_dec = circulating_dec + vault_dec
@@ -3871,6 +3882,8 @@ class Blockchain:
                 "treasury_formatted": f"{treasury_dec:,.8f}",
                 "bridge_vault_locked": float(vault_dec),
                 "bridge_vault_formatted": f"{vault_dec:,.8f}",
+                "burn_address_balance": float(burn_dec),
+                "burn_address_formatted": f"{burn_dec:,.6f}",
                 "lost_key_test_wallets_count": len(LOST_KEY_TEST_WALLETS),
                 "lost_key_test_wallets_balance": float(lost_key_dec),
                 "lost_key_test_wallets_formatted": f"{lost_key_dec:,.8f}",
