@@ -1,9 +1,8 @@
-const CACHE_NAME = 'locktrace-pwa-v42';
+const CACHE_NAME = 'locktrace-pwa-v50';
 
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
-  '/integrity.json',
   '/manifest.json',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
@@ -44,8 +43,8 @@ self.addEventListener('fetch', (event) => {
 
   const url = new URL(event.request.url);
 
-  // 1. Never intercept or cache API or P2P RPC requests
-  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/p2p/')) {
+  // 1. Never intercept or cache API or P2P RPC requests, nor integrity metadata
+  if (url.pathname.startsWith('/api/') || url.pathname.startsWith('/p2p/') || url.pathname.includes('integrity.json')) {
     return;
   }
 

@@ -1,377 +1,321 @@
-# LockTrace (BCT) Technical Whitepaper
-**A Hybrid Proof-of-Work and Quorum-Attested Blockchain for Censorship-Resistant Social Networking and Self-Sovereign Decentralized Finance**
+# LockTrace (BCT) Technical Whitepaper — v2.0.0
+**A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 1.6 — November 2026*  
-*LockTrace Core Development Team & Decentralized Community*  
-*Website:* [https://www.locktrace.space](https://www.locktrace.space)  
-*Genesis Block Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`
+*Version 2.0.0 — November 2026*  
+*LockTrace Core Architecture Team & Decentralized Validator Community*  
+*Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
+*Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
+*Treasury Vault:* `BCT_HAZINE_0000000000000000000000000000000000000000`  
+*Bridge Proof-of-Reserve Vault:* `BCT_BRIDGE_VAULT_000000000000000000000000000000000`  
 *Base Mainnet wBCT ERC-20:* `0xA3C743113a41cFd0146917065d4578337Bb77254`
 
 ---
 
 ## Abstract
-Modern digital communication and financial transactions remain heavily monopolized by centralized corporate architectures. Users are systematically subject to arbitrary platform censorship, surveillance capitalism, account freezes, and opaque algorithmic manipulation. LockTrace (ticker symbol: **BCT**) introduces a lightweight, robust, and mathematically provable Layer-1 decentralized blockchain protocol specifically designed to synthesize censorship-resistant on-chain social networking with high-throughput, non-custodial decentralized finance.
 
-LockTrace operates under an innovative **Dual Hybrid Consensus Mechanism**: a **70% Proof-of-Work (PoW)** proposer lottery paired with a **30% Decentralized Validator Quorum (PoA/BFT)** attestation pool. This dual architecture achieves deterministic block immutability, sub-second transaction gossip, and mathematical immunity to 51% selfish-mining reorg attacks. Furthermore, LockTrace introduces **LockTrace Space**, an on-chain social layer wherein all micro-blogging entities (posts, likes, and comments) are native blockchain transactions that pay direct, programmatic cryptographic royalties to content creators without intermediary fees. 
+Modern digital communication, identity naming, and financial settlement remain heavily monopolized by centralized platforms that impose unilateral censorship, algorithmic rent-seeking, custodial insolvency risks, and severe latency bottlenecks. Conversely, legacy Layer-1 blockchains suffer from either prohibitive gas fees, sequential execution bottlenecks that freeze user interfaces during block production, or plutocratic validator cartels.
 
-The protocol incorporates zero-knowledge client-side encryption, standard BIP-39 mnemonic phrase derivations, SECP256k1 elliptic curve signatures, and on-chain release authority integrity seals backed by IPFS CIDv1 anchors. This document outlines the formal cryptographic foundations, economic tokenomics, network topology, threat model, and reference implementation of LockTrace.
+**LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
----
-
-## 1. Introduction & Motivation
-
-### 1.1 The Failure of Centralized Social & Financial Infrastructure
-Centralized social platforms (Web2) function through structural misalignments between users and service operators:
-1. **Unilateral Censorship & De-platforming:** Centralized entities reserve the arbitrary authority to delete content, ban user accounts, and throttle distribution based on political pressure or commercial interests.
-2. **Surveillance Capitalism & Data Monopolization:** User activities, private interactions, and demographic data are harvested, aggregated, and monetized without user compensation or granular consent.
-3. **Intermediary Rent-Seeking:** In legacy digital platforms, content creators generate billions of dollars in advertising revenue but receive a negligible fraction, subject to predatory revenue splits and retroactive demonetization.
-4. **Custodial Financial Vulnerabilities:** Centralized custodial wallet systems expose users to insolvency, regulatory seizure, counterparty risk, and single points of architectural failure.
-
-### 1.2 The LockTrace Paradigm
-LockTrace solves these foundational dilemmas by deploying an uncompromised decentralized state machine:
-- **Immutable Content Ownership:** Posts, articles, likes, and comments are stored directly within Proof-of-Work blocks as cryptographic transactions (`space_post`, `space_like`, `space_comment`), rendering deletion or modification physically impossible once sealed by consensus.
-- **Direct Creator Royalties:** The economic model autonomously compensates creators through protocol-level royalties for audience engagement (likes and comments) paid directly peer-to-peer on-chain.
-- **100% Client-Side Non-Custodial Security:** All private keys, mnemonic seed phrases, and cryptographic signatures are derived and executed strictly inside the client's local execution environment via WebCrypto and pure SECP256k1 primitives. Private keys are never transmitted over network boundaries.
-- **Commodity-Hardware Node Decentralization:** Rather than requiring specialized industrial hardware or massive capital stakes, the LockTrace node runner (`node_runner.py`) enables any standard home computer or laptop to participate in block validation, transaction propagation, and PoW mining.
+In **Version 2.0.0**, LockTrace introduces the **Hybrid Armored Parallel & 3-Phase Atomic Compare-And-Swap (CAS) Engine** paired with an **$O(1)$ Incremental Delta SQLite Write-Ahead Logging (WAL) Persistence Layer**:
+1. **Non-Blocking Sub-5ms Transaction Ingestion:** User HTTP/RPC requests are completely decoupled from Proof-of-Work (PoW) hashing and P2P network broadcasting. Transactions validate ECDSA signatures, replay nonces, and $10^8$ integer atomic balances in $< 5\text{ ms}$, queuing into a shared WAL mempool while signaling an autonomous background batch sequencer (`_sequencer_wakeup`).
+2. **3-Phase Atomic Compare-And-Swap (CAS) Block Production (Zero-Fork Guarantee):** Candidate blocks are assembled under a microsecond snapshot lock (Phase 1), mined via SHA-256 Proof-of-Work completely outside the ledger lock (Phase 2), and committed via strict Compare-And-Swap tip verification (Phase 3). If an external P2P miner advances the canonical chain during local PoW computation, the CAS Fork Guard deterministically aborts the stale candidate—mathematically eliminating local chain splits and preserving all concurrent mempool arrivals.
+3. **$O(1)$ Delta Persistence & Incremental In-Memory Indexing:** Rather than re-serializing historical blocks or rescanning the chain from Genesis, LockTrace v2.0.0 persists only newly sealed delta blocks (`b.index > max_db_idx`) and modified wallet nonces (`dirty_wallets`), while maintaining incremental confirmed-chain balance and social/BNS state overlays.
+4. **Dual 70% PoW Proposer / 30% Active Validator Quorum Consensus:** Block rewards and fee pools are split deterministically between the PoW block producer (70%) and cryptographically attested peer validators (30%), enforced with IPv4 `/24` and IPv6 `/48` Sybil subnet deduplication.
+5. **Cryptographic Frontend Release Integrity Shield:** Every official web client release (`index.html`, `sw.js`) is hashed via SHA-256, anchored to an IPFS CIDv1 content identifier, signed by the Release Authority (`SECP256k1`), and sealed directly on-chain (`frontend_release`).
 
 ---
 
-## 2. System Architecture & Network Topology
+## Table of Contents
+
+1. [Introduction & Architectural Motivation](#1-introduction--architectural-motivation)
+2. [v2.0.0 High-Concurrency Engine: 3-Phase Atomic CAS & O(1) Delta WAL](#2-v200-high-concurrency-engine-3-phase-atomic-cas--o1-delta-wal)
+3. [Cryptographic Primitives & 10^8 Atomic Unit Accounting](#3-cryptographic-primitives--108-atomic-unit-accounting)
+4. [Dual Hybrid Consensus: 70% PoW Proposer + 30% Validator Quorum](#4-dual-hybrid-consensus-70-pow-proposer--30-validator-quorum)
+5. [Hybrid Time-and-Quota Batch Sequencer](#5-hybrid-time-and-quota-batch-sequencer)
+6. [LockTrace Space: Native On-Chain SocialFi & Creator Royalties](#6-locktrace-space-native-on-chain-socialfi--creator-royalties)
+7. [BCT Naming System (BNS): Sovereign `.bct` Identity & Marketplace](#7-bct-naming-system-bns-sovereign-bct-identity--marketplace)
+8. [Tokenomics, Deflationary Mechanics & Supply Invariants](#8-tokenomics-deflationary-mechanics--supply-invariants)
+9. [Cross-Chain Interoperability: 1:1 Base Mainnet wBCT Bridge](#9-cross-chain-interoperability-11-base-mainnet-wbct-bridge)
+10. [On-Chain Frontend Integrity Shield & Tamper Detection](#10-on-chain-frontend-integrity-shield--tamper-detection)
+11. [Multi-Layered Cyber Defense: Anti-DDoS, Replay & Sybil `/24` Hardening](#11-multi-layered-cyber-defense-anti-ddos-replay--sybil-24-hardening)
+12. [Decentralized Node Runner (`node_runner.py`) & P2P Topology](#12-decentralized-node-runner-node_runnerpy--p2p-topology)
+13. [Comprehensive Threat Model & Formal Verification Matrix](#13-comprehensive-threat-model--formal-verification-matrix)
+14. [Roadmap & Protocol Evolution](#14-roadmap--protocol-evolution)
+
+---
+
+## 1. Introduction & Architectural Motivation
+
+### 1.1 Structural Failures of Legacy Web2 and Web3 Systems
+Contemporary digital networks fail users across four critical dimensions:
+- **Unilateral Platform Censorship:** Centralized social networks arbitrarily de-platform creators, shadow-ban discourse, and alter social graphs without cryptographic accountability.
+- **Predatory Intermediary Economics:** Creators generate the entirety of user engagement on Web2 social networks yet receive zero direct protocol royalties from likes, comments, or reposts.
+- **L1 Execution Stalls & UI Freezing:** Traditional single-threaded blockchain nodes lock ledger state during block assembly and persistence, causing severe request queueing, HTTP timeouts, and UI freezes when thousands of users transact simultaneously.
+- **Unverified Client Supply-Chain Attacks:** Most Web3 decentralized applications (DApps) serve unverified JavaScript from centralized CDNs; a single DNS hijack or compromised CDN cache allows attackers to drain non-custodial wallets silently.
+
+### 1.2 The LockTrace v2.0.0 Solution
+LockTrace v2.0.0 resolves these challenges through an end-to-end verifiable stack:
+- **Protocol-Level SocialFi & Naming:** Posts, quote-reposts, likes, comments, follows, and `.bct` domain operations are first-class Layer-1 transactions—eliminating smart-contract reentrancy bugs while executing instant on-chain royalty splits.
+- **Lock-Free Asynchronous PoW & O(1) Delta Storage:** High-frequency user actions never wait on PoW mining or full-chain disk writes, enabling thousands of concurrent users to interact with sub-5ms responsiveness.
+- **Zero-Knowledge Browser Custody + On-Chain Code Verification:** Private keys never leave the client's WebCrypto sandbox, and the client verifies its own SHA-256 + ECDSA release signature against the blockchain before unlocking wallet operations.
+
+---
+
+## 2. v2.0.0 High-Concurrency Engine: 3-Phase Atomic CAS & O(1) Delta WAL
+
+A foundational breakthrough in LockTrace v2.0.0 is the elimination of `O(N)` full-chain serialization and synchronous lock contention under heavy multi-user load.
 
 ```
-+-------------------------------------------------------------------------------+
-|                             CLIENT-SIDE ENVIRONMENT                           |
-|  +------------------------+  +--------------------------+  +----------------+ |
-|  | BIP-39 12-Word Mnemonic|  | SECP256k1 Signature Gen  |  | Local AES-GCM  | |
-|  | Derivation (PBKDF2)    |  | & Address Derivation     |  | Pin Vault      | |
-|  +------------------------+  +--------------------------+  +----------------+ |
-+---------------------------------------+---------------------------------------+
-                                        | Zero-Knowledge Signed Payloads
-                                        v
-+-------------------------------------------------------------------------------+
-|                       DECENTRALIZED P2P GOSSIP NETWORK                        |
-|                                                                               |
-|       +-------------------+       P2P Sync        +-------------------+       |
-|       |   Validator Node  |<====================>|    Mining Node    |       |
-|       |  (30% Quorum BFT) |                       |  (70% PoW Proposer|       |
-|       +-------------------+                       +-------------------+       |
-|                 ^                                           ^                 |
-|                 |                                           |                 |
-|                 +-------------------+   +-------------------+                 |
-|                                     |   |                                     |
-|                                     v   v                                     |
-|                        +---------------------------+                          |
-|                        |  LockTrace Blockchain     |                          |
-|                        |  Ledger & Merkle SPV Tree |                          |
-|                        +---------------------------+                          |
-+-------------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------+
+|               LOCKTRACE v2.0.0 NON-BLOCKING TRANSACTION & CAS PIPELINE            |
++-----------------------------------------------------------------------------------+
+|  [Concurrent Users (1,000+)]                                                      |
+|       |                                                                           |
+|       |  POST /api/v1/transaction | /space/post | /space/like | /bns/register     |
+|       v                                                                           |
+|  +-----------------------------------------------------------------------------+  |
+|  | 1. FAST INGESTION GATEWAY (< 5 ms)                                          |  |
+|  |  - SlidingWindowRateLimiter (Bounded 25k IP buckets / 50k Sig Replay Cache) |  |
+|  |  - SECP256k1 Signature Verification & Per-Wallet Mempool Quota (Max 25 tx)  |  |
+|  |  - O(1) Incremental Balance Check + O(1) Delta SQLite WAL Mempool Insert    |  |
+|  |  - Signals _sequencer_wakeup.set() -> Returns Instant HTTP 201 Response     |  |
+|  +-----------------------------------------------------------------------------+  |
+|       |                                                                           |
+|       v  (Asynchronous Event Wakeup)                                              |
+|  +-----------------------------------------------------------------------------+  |
+|  | 2. 3-PHASE ATOMIC COMPARE-AND-SWAP (CAS) SEQUENCER & MINER                  |  |
+|  |  - PHASE 1 (Under Lock, < 0.5 ms): Snapshot tip (expected_idx, prev_hash)   |  |
+|  |            & candidate tx hashes (packaged_user_hashes).                    |  |
+|  |  - PHASE 2 (LOCK-FREE PoW): Compute SHA-256 Merkle Root & Nonce OUTSIDE     |  |
+|  |            self.lock (Zero blocking of concurrent reads or new writes!).    |  |
+|  |  - PHASE 3 (Atomic CAS Commit): Re-verify chain tip == expected_idx/prev.   |  |
+|  |            If external peer sealed block first -> Abort cleanly (Zero Fork).|  |
+|  |            Otherwise -> Append block, remove ONLY packaged_user_hashes,     |  |
+|  |            persist O(1) block delta to SQLite WAL, gossip asynchronously.   |  |
+|  +-----------------------------------------------------------------------------+  |
++-----------------------------------------------------------------------------------+
 ```
 
-### 2.1 Node Hierarchy and Peer Discovery
-LockTrace nodes communicate across a decentralized peer-to-peer (P2P) network using HTTP REST and WebSockets gossip protocols. Node discovery employs:
-1. **Seed Discovery:** Initial bootstrap nodes resolve well-known public mainnet seeds (e.g., `https://www.locktrace.space`).
-2. **Gossip Exchange:** Nodes continuously advertise known peer lists via `/nodes` endpoints, maintaining a dynamic local routing table of verified live peers.
-3. **Heartbeat Attestation:** Active nodes transmit periodic cryptographic heartbeats, reporting software integrity, block height, local hashrate, and active mempool state.
+### 2.1 Why Legacy Blockchain Nodes Freeze Under Load
+In naive implementations, reaching a batch threshold inside a user's HTTP request triggers synchronous Proof-of-Work mining while holding the global ledger mutex, followed by serializing the entire blockchain (`[b.to_dict() for b in chain]`) to disk. At 10,000+ blocks and 1,000+ concurrent users, this creates $O(N)$ disk I/O amplification and multi-second request stalls.
 
-### 2.2 Transaction Envelope & State Serialization
-Every LockTrace transaction is encoded as a deterministic JSON object hashed via double SHA-256:
+### 2.2 3-Phase Atomic Compare-And-Swap (CAS) Block Sealing
+LockTrace v2.0.0 separates transaction admission from block sealing via a strict 3-phase protocol:
+1. **Phase 1 — Canonical Snapshot:** Under `self.lock`, the sequencer captures:
+   $$\text{Snapshot} = \left(h_{\text{expected}} = |\mathcal{C}|,\; H_{\text{prev}} = \mathcal{C}[-1].\text{hash},\; \mathcal{P} = \{\text{tx.hash}() \mid \text{tx} \in \text{Mempool}\}\right)$$
+   along with deterministic 70/30 reward transactions.
+2. **Phase 2 — Lock-Free Proof-of-Work:** Guarded by `self._mining_lock` (preventing redundant local PoW threads) but **outside `self.lock`**, the worker searches for a nonce satisfying $\text{SHA256}(\text{Header}) < \text{Target}(D)$. During this entire window, HTTP workers process reads and new transactions with zero lock wait.
+3. **Phase 3 — Atomic CAS Commit & Fork Guard:** Upon solving the puzzle, the worker re-acquires `self.lock`, synchronizes with SQLite WAL, and evaluates the Compare-And-Swap invariant:
+   $$\text{CommitAllowed} \iff \left(|\mathcal{C}| == h_{\text{expected}}\right) \land \left(\mathcal{C}[-1].\text{hash} == H_{\text{prev}}\right) \land \left(\mathcal{P} \subseteq \text{Mempool}_{\text{live}}\right)$$
+   - **Zero Chain Split (Fork Immunity):** If an external PoW miner (`submit_mined_block`) or P2P peer advanced the chain while Phase 2 was hashing, the CAS condition evaluates to `False` and the local candidate is deterministically discarded (`[CAS FORK GUARD]`).
+   - **Zero Transaction Loss:** Upon commit, the mempool is pruned strictly via set difference:
+     $$\text{Mempool}_{\text{next}} = \{\text{tx} \in \text{Mempool}_{\text{live}} \mid \text{tx.hash}() \notin \mathcal{P}\}$$
+     preserving 100% of transactions that arrived while PoW was in progress.
 
-$$\text{TxHash} = \text{SHA256}(\text{SHA256}(\text{CanonicalPayload}))$$
-
-The transaction structure contains:
-- `sender`: The 43-character Base58/Hex address formatted as `BCT<hex_hash>`.
-- `recipient`: The destination address or protocol contract address.
-- `amount`: Float value with 8 decimal places of precision ($10^{-8}\text{ BCT}$).
-- `fee`: Protocol validation fee.
-- `nonce`: Sequential 64-bit integer tracking account lifecycle to strictly prevent replay attacks.
-- `timestamp`: Unix epoch timestamp with microsecond resolution.
-- `public_key`: 128-character uncompressed SECP256k1 public key ($X \parallel Y$).
-- `signature`: 128-character hex-encoded DER/compact ECDSA signature ($R \parallel S$).
-- `type`: Transaction category identifier (`transfer`, `space_post`, `space_like`, `space_comment`, `system_reward`).
-- `metadata`: Schema-validated payload containing post body, reference hashes, or protocol directives.
+### 2.3 $O(1)$ Delta SQLite WAL Persistence & Multi-Worker Sync
+- **Delta Block Writes:** `SQLiteStorage.get_max_block_index()` queries the highest persisted `block_index` in `O(1)` time. Only blocks with `index > max_db_idx` are serialized and inserted into the `blocks` and `tx_lookup` tables.
+- **Dirty Wallet Upserts:** The engine tracks `_saved_wallet_nonces` as `(public_key, nonce)` tuples per address, writing only mutated accounts (`dirty_wallets`) per transaction rather than rewriting the entire wallet registry.
+- **$O(\Delta)$ Cross-Worker Synchronization (`load_delta_state`):** When Gunicorn worker processes detect a bumped `state_revision`, they verify their local tip hash against `SELECT hash FROM blocks WHERE block_index = ?` and fetch only `WHERE block_index > ?`, reducing multi-process synchronization overhead from $O(|\mathcal{C}|)$ to $O(\Delta)$.
 
 ---
 
-## 3. Cryptographic Primitives
+## 3. Cryptographic Primitives & $10^8$ Atomic Unit Accounting
 
-LockTrace relies exclusively on well-established, mathematically verified cryptographic primitives, rejecting untested novel curves or proprietary hashes.
+### 3.1 SECP256k1 Elliptic Curve Digital Signatures
+All account identities, transactions, node heartbeats, block submissions, and frontend releases are authenticated via the Koblitz curve `secp256k1`:
+$$y^2 \equiv x^3 + 7 \pmod p, \quad p = 2^{256} - 2^{32} - 977$$
+- **Deterministic Signing (RFC 6979):** Signatures use HMAC-SHA256 deterministic $k$-nonce generation, eliminating random number generator (CSPRNG) entropy failures.
+- **Address Derivation:** Given an uncompressed 64-byte public key $Q = X \parallel Y$:
+  $$\text{Address} = \text{"BCT"} \parallel \text{SHA256}\left(\text{SHA256}(Q)_{\text{hex}}\right)[0..39]$$
+  yielding a 43-character collision-resistant address (e.g., `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`).
 
-### 3.1 SECP256k1 Elliptic Curve Digital Signature Algorithm (ECDSA)
-LockTrace implements the Koblitz curve defined by equation:
+### 3.2 BIP-39 12-Word Deterministic Key Derivation
+Wallets are generated client-side from 128 bits of WebCrypto entropy mapped to 12 BIP-39 English mnemonic words (2,048-word dictionary with 4-bit SHA-256 checksum), stretched via PBKDF2-HMAC-SHA512 (2,048 iterations).
 
-$$y^2 = x^3 + 7 \pmod p$$
+### 3.3 $10^8$ Integer Atomic Unit Ledger (Zero IEEE-754 Drift)
+At a maximum supply of $1,000,000,000,000\text{ BCT}$ with 8 decimal places of precision, standard 64-bit IEEE-754 floating-point arithmetic (`float64`, 53-bit significand $\approx 9 \times 10^{15}$) suffers from rounding drift when adding micro-royalties ($0.002\text{ BCT}$) to trillion-scale treasury balances ($10^{12} \times 10^8 = 10^{20}$ atomic units).
 
-where the field order $p = 2^{256} - 2^{32} - 977$.
-- **Private Key ($d$):** A 256-bit integer selected uniformly at random such that $1 \le d \le n-1$.
-- **Public Key ($Q$):** The point multiplication $Q = d \times G$, where $G$ is the standard base generator point.
-- **Signature Generation:** Given a message hash $z = \text{SHA256}(m)$, a per-signature random nonce $k$ produces:
-  $$r = (k \times G)_x \pmod n$$
-  $$s = k^{-1}(z + r \cdot d) \pmod n$$
+LockTrace executes all ledger accounting in arbitrary-precision Python `int` atomic units:
+$$1\text{ BCT} = 100,000,000\text{ Atomic Units } (10^8)$$
+$$\text{Units}(v) = \text{RoundHalfUp}(\text{Decimal}(v) \times 10^8)$$
+Moreover, `_ensure_ledger_index()` caches the confirmed-chain unit balance map (`_confirmed_units_map`) and advances it incrementally per block, applying active mempool transactions as an in-memory overlay in $O(|\text{Mempool}|)$ time.
 
-### 3.2 Address Generation Pipeline
-Addresses in LockTrace are generated through a rigorous multi-stage hashing pipeline:
-1. Obtain the uncompressed public key $Q = (X, Y)$ (64 bytes).
-2. Compute the first cryptographic digest: $H_1 = \text{SHA256}(Q)$.
-3. Compute the secondary cryptographic digest: $H_2 = \text{RIPEMD160}(H_1)$.
-4. Extract the primary 20-byte payload.
-5. Prefix with the protocol identifier `BCT`:
-   $$\text{Address} = \text{"BCT"} \parallel \text{Hex}(H_2)$$
-This produces a distinctive, human-verifiable 43-character identifier (e.g., `BCT3fec00e39c728050c1f1cef4cbe78fcc85881572`).
-
-### 3.3 BIP-39 Deterministic Wallet Derivation
-User accounts can be generated and restored using 12 English recovery words from the standard BIP-39 dictionary (2048 words). Entropy generation employs cryptographically secure pseudorandom numbers:
-$$\text{Entropy} \in \{0, 1\}^{128}$$
-A 4-bit checksum is calculated via $\text{SHA256}(\text{Entropy})[0..3]$, yielding 132 bits partitioned into twelve 11-bit word indices. The private key is deterministically derived using PBKDF2:
-$$\text{Seed} = \text{PBKDF2}(\text{HMAC-SHA512}, \text{Phrase}, \text{"mnemonic"}, 2048, 64)$$
-The first 32 bytes constitute the SECP256k1 private key scalar.
-
-### 3.4 Merkle Trees and Simplified Payment Verification (SPV)
-Every block aggregates its transaction set into a binary Merkle tree. For transaction leaves $L_1, L_2, \dots, L_n$:
-$$\text{Parent}(H_a, H_b) = \text{SHA256}(\text{SHA256}(H_a \parallel H_b))$$
-Clients can verify transaction inclusion against the block's `merkle_root` with logarithmic proof size $O(\log_2 n)$ using pure client-side SPV verification without downloading the archival ledger.
+### 3.4 Binary Merkle Trees & Light-Client SPV Proofs (Block v2)
+Every v2 block header commits to the binary SHA-256 Merkle root of its ordered transaction hashes:
+$$\text{MerkleParent}(L, R) = \text{SHA256}(\text{ASCII}(L) \parallel \text{ASCII}(R))$$
+Any browser or light client can verify transaction inclusion via `/api/v1/explorer/merkle-proof/<tx_hash>` in $O(\log_2 N)$ steps without downloading full block bodies.
 
 ---
 
-## 4. Dual Hybrid Consensus: 70% PoW + 30% Quorum Attestation
+## 4. Dual Hybrid Consensus: 70% PoW Proposer + 30% Validator Quorum
 
-A pure Proof-of-Work network is vulnerable to 51% hashrate spikes and selfish mining attacks, especially in early network phases. Conversely, pure Proof-of-Stake or Proof-of-Authority systems tend toward plutocracy and validator cartels. LockTrace implements an engineered hybrid: **70% PoW Proposer Lottery + 30% Quorum BFT Attestation Pool**.
+LockTrace combines permissionless Proof-of-Work block production with cryptographic peer validator attestations.
+
+### 4.1 Block Header v2 Specification & Proof-of-Work
+A v2 block header is serialized deterministically as:
+$$\text{HeaderPayload} = \text{JSON}\left(\{\text{index}, \text{merkle\_root}, \text{miner}, \text{nonce}, \text{previous\_hash}, \text{timestamp}, \text{version}: 2\}\right)$$
+A block is valid only if:
+$$\text{SHA256}(\text{HeaderPayload})\text{ starts with } \underbrace{\text{"000...0"}}_{D\text{ zeroes}}$$
+where base difficulty $D = 3$ (scaling adaptively to $D + 1$ when $\ge 8$ external peer miners are concurrently active).
+
+### 4.2 Deterministic 70% / 30% Reward Pool Split
+Each block distributes a reward pool consisting of the base treasury subsidy ($0.05\text{ BCT}$) plus the miner share of transaction fees:
+$$\text{TotalPool}_u = \text{Subsidy}_u + \left\lfloor\frac{\text{TransferFees}_u}{2}\right\rfloor + \text{SocialAndBnsFees}_u$$
+- **Case A (Active Verified Peer Validators Online):**
+  - **30% Validator Quorum Pool:** $\text{ValPool}_u = \lfloor 0.30 \times \text{TotalPool}_u \rfloor$, divided equally among up to 10 eligible, Sybil-deduplicated peer validators (`validator_reward`).
+  - **70% Proposer Share:** $\text{Proposer}_u = \text{TotalPool}_u - \text{ActualValTotal}_u$, paid to the miner who solved the PoW puzzle (`mining_reward`).
+- **Case B (No External Eligible Validators Online):**
+  - 100% of $\text{TotalPool}_u$ is awarded to the PoW block producer.
+
+### 4.3 Zero-Trust External Mining (`getblocktemplate` / `submitblock`)
+External nodes running `node_runner.py` request candidate templates via `/api/v1/mining/template`, compute SHA-256 PoW locally, sign the solved header (`SUBMIT_BLOCK:{index}:{hash}:{nonce}:{miner}`), and submit via `/api/v1/mining/submit`. The core verifier independently reconstructs the mempool transaction set, re-verifies the exact 70/30 reward transactions, checks the Merkle root, and validates the PoW hash before committing.
+
+---
+
+## 5. Hybrid Time-and-Quota Batch Sequencer
+
+To prevent empty-block bloat while maintaining rapid finality for both financial transfers and high-frequency social micro-actions, LockTrace employs a dual-trigger **Time + Quota Hybrid Batch Sequencer** (`_check_batch_ready`):
+
+| Transaction Class | Quota Trigger (Instant Seal) | Time-Window Trigger (Max Wait) | Fallback Safety Window |
+|:------------------|:-----------------------------|:-------------------------------|:-----------------------|
+| **Space Likes (`space_like`)** | $\ge 15$ likes in mempool | $20.0\text{ seconds}$ | $15.0\text{ seconds}$ |
+| **Space Comments (`space_comment`)** | $\ge 10$ comments in mempool | $50.0\text{ seconds}$ | $15.0\text{ seconds}$ |
+| **General Transfers / Posts / BNS** | $\ge 25$ total txs in mempool | $20.0\text{ seconds}$ | $15.0\text{ seconds}$ |
+
+When any quota or time window is reached, `_seal_or_queue_mempool()` triggers `_sequencer_wakeup.set()`, waking the background `LockTrace-BatchSequencer` thread to seal all pending mempool transactions into a single Merkle PoW block.
+
+---
+
+## 6. LockTrace Space: Native On-Chain SocialFi & Creator Royalties
+
+LockTrace Space embeds a complete decentralized social network directly into Layer-1 transaction primitives.
+
+### 6.1 Social Transaction Economics & Direct Creator Payouts
+
+| Transaction Type | User Cost | Creator / Target Royalty | Treasury Return (Deflationary) | Miner & Validator Fee |
+|:-----------------|:----------|:-------------------------|:-------------------------------|:----------------------|
+| **Publish Post (`space_post`)** | $0.10\text{ BCT}$ | — (Earns future royalties) | $0.08\text{ BCT}$ (80%) | $0.02\text{ BCT}$ (20%) |
+| **Quote / Repost (`space_post`)** | $0.10\text{ BCT}$ | Embedded `@handle (BCT...)` attribution card | $0.08\text{ BCT}$ (80%) | $0.02\text{ BCT}$ (20%) |
+| **Like Post (`space_like`)** | $0.01\text{ BCT}$ | **$+0.002\text{ BCT}$ (20% to Author)** | $0.007\text{ BCT}$ (70%) | $0.001\text{ BCT}$ (10%) |
+| **Comment (`space_comment`)** | $0.02\text{ BCT}$ | **$+0.004\text{ BCT}$ (20% to Author)** | $0.014\text{ BCT}$ (70%) | $0.002\text{ BCT}$ (10%) |
+| **Follow User (`space_follow`)** | $0.02\text{ BCT}$ | **$+0.004\text{ BCT}$ (20% to Target)** | $0.014\text{ BCT}$ (70%) | $0.002\text{ BCT}$ (10%) |
+
+### 6.2 Native Quote-Repost Attribution & Identity Modes
+- **Cryptographic Attribution:** When a user quotes/reposts a thought (`🔁 Alıntı: @handle (BCT...)`), the original author's BNS handle and wallet address are permanently embedded in the on-chain payload and rendered as an interactive profile-linked quote card.
+- **Sovereign Identity Selection:** Users can publish under their verified `.bct` handle, their raw `BCT` address, or in cryptographic `anonymous` mode while still receiving on-chain author royalties.
+
+---
+
+## 7. BCT Naming System (BNS): Sovereign `.bct` Identity & Marketplace
+
+LockTrace includes a native, zero-smart-contract domain registry and secondary peer-to-peer marketplace for `.bct` handles:
+
+### 7.1 Tiered Registration Pricing (100% Permanent Ownership, Zero Renewal Fees)
+- **3 Characters (Ultra-Rare, e.g., `ali.bct`):** $25.00\text{ BCT}$
+- **4 Characters (Rare, e.g., `meta.bct`):** $10.00\text{ BCT}$
+- **5+ Characters (Standard, e.g., `satoshi.bct`):** $2.00\text{ BCT}$
+
+### 7.2 Native Marketplace & Bidding Operations
+All BNS lifecycle operations are atomic Layer-1 transactions:
+- `bns_register`: Mints a `.bct` handle (80% returns to Treasury Vault, 20% to Miner/Validator Fee Pool).
+- `bns_set_primary`: Binds a user's primary reverse-resolution handle across Explorer, Wallet, and Space feeds.
+- `bns_set_price` & `bns_buy`: Lists a domain for fixed-price instant settlement with a 1% protocol fee.
+- `bns_offer`, `bns_accept_offer`, `bns_cancel_offer`: Full on-chain peer-to-peer bid book with automatic superseding of prior active offers from the same bidder.
+
+---
+
+## 8. Tokenomics, Deflationary Mechanics & Supply Invariants
 
 ```
-+-------------------------------------------------------------------------------+
-|                       HYBRID BLOCK PRODUCTION PIPELINE                        |
-+-------------------------------------------------------------------------------+
-|  1. PoW Miners compute SHA-256 v2 puzzle against Mempool & PrevBlockHash      |
-|     Target: Hash(BlockHeader) < 2^(256 - Difficulty)                          |
-|                                                                               |
-|  2. Winning Miner proposes candidate Block -> Broadcasts to P2P network       |
-|                                                                               |
-|  3. Decentralized Validators cross-validate transactions, nonces, & state     |
-|     If valid, nodes sign Cryptographic Attestation Vote                       |
-|                                                                               |
-|  4. BFT Quorum reached (> 66% active peers confirm block)                     |
-|                                                                               |
-|  5. Final Block Sealed into Chain:                                            |
-|     + 70% Block Subsidy & Fees -> Proposer Miner Address                      |
-|     + 30% Block Subsidy Pool  -> Distributed among Quorum Validators          |
-+-------------------------------------------------------------------------------+
++-----------------------------------------------------------------------------------+
+|                    LOCKTRACE (BCT) MACROECONOMIC SUPPLY LEDGER                    |
++-----------------------------------------------------------------------------------+
+|  Maximum Fixed Supply          : 1,000,000,000,000.00000000 BCT (1 Trillion)      |
+|  Atomic Precision              : 10^8 units per BCT (Zero float64 drift)          |
+|  New Wallet Welcome Grant      : 1.00 BCT (Capped at max 25 grants/hour global)   |
+|  Standard Wire Transfer Fee    : 1.00% (50% Treasury Return / 50% Miner+Quorum)   |
+|  Base Block Subsidy            : 0.05 BCT (70% PoW Proposer / 30% Quorum Pool)    |
+|  Provable Burn Address         : BCT0000000000000000000000000000000000000000      |
++-----------------------------------------------------------------------------------+
 ```
 
-### 4.1 Proof-of-Work (70% Proposer Share)
-Miners package valid mempool transactions into a candidate block header:
-$$\text{Header} = \text{Index} \parallel \text{PrevHash} \parallel \text{MerkleRoot} \parallel \text{Timestamp} \parallel \text{Difficulty} \parallel \text{Nonce}$$
-The mining algorithm requires finding a scalar `Nonce` such that:
-$$\text{SHA256}(\text{SHA256}(\text{Header})) < \text{Target}(D)$$
-where $\text{Target}(D) = 2^{256 - D \times 4}$.
-
-Dynamic difficulty retargeting adjusts difficulty $D$ every 10 blocks to maintain an average block production interval of $T_{\text{target}} \approx 15 \text{ seconds}$:
-$$\Delta T = T_{\text{last}} - T_{\text{start}}$$
-- If $\Delta T < 0.65 \times (10 \times T_{\text{target}})$, then $D \leftarrow D + 1$.
-- If $\Delta T > 1.35 \times (10 \times T_{\text{target}})$, then $D \leftarrow \max(1, D - 1)$.
-
-The winning miner earns **70% of the block creation subsidy** plus 70% of transaction fees.
-
-### 4.2 Quorum BFT Attestation (30% Validator Pool)
-When a candidate block is propagated across the P2P network:
-1. Connected peer validator nodes independently verify:
-   - Previous block hash linkage.
-   - Proof-of-Work mathematical target fulfillment.
-   - Transaction signature validity ($S \times Q \equiv Z$).
-   - Account balance sufficiency and strictly sequential nonces.
-2. Verified nodes record an **Attestation Event**.
-3. Once a Byzantine Quorum of verified peers confirms the block, the block achieves deterministic finality.
-4. **30% of the block subsidy** is proportionally distributed to active, verified attestation nodes.
-
-### 4.3 51% Attack Immunity
-In the LockTrace architecture, an attacker possessing $> 50\%$ of physical mining hashrate cannot unilaterally re-write chain history. A reorg block produced in secret will be rejected by the active validator quorum because it lacks decentralized multi-peer attestations. This decouples block proposal (PoW) from block finality (Quorum Attestation).
+### 8.1 Closed-Loop Circular Treasury Economy
+Unlike inflationary networks that mint unbounded new tokens, LockTrace's entire $1,000,000,000,000\text{ BCT}$ supply is created in Block #0 (`GENESIS_VAULT` $\to$ `TREASURY_ADDRESS`).
+- **Inflows to Treasury (Deflationary Contraction):** 50% of all 1% wire transfer fees, 80% of Space post & BNS registration fees, and 70% of Space like/comment/follow fees flow back into `TREASURY_ADDRESS`, removing BCT from circulating supply.
+- **Outflows from Treasury:** Only verified new wallet grants ($1.00\text{ BCT}$, strictly rate-limited to $\le 25\text{ grants/hour}$ globally) and PoW/Validator block subsidies ($0.05\text{ BCT/block}$) leave the Treasury.
+- **Circulating Supply Invariant:**
+  $$\text{CirculatingSupply} = \text{TotalSupply} - \text{TreasuryBalance} - \text{BridgeVaultLocked} - \text{BurnedAndLostKeys}$$
 
 ---
 
-## 5. LockTrace Space: The On-Chain Social Protocol
+## 9. Cross-Chain Interoperability: 1:1 Base Mainnet wBCT Bridge
 
-LockTrace Space transforms social media from an advertising-driven corporate silo into a decentralized on-chain protocol.
-
-### 5.1 On-Chain Social Transaction Schemas
-Social actions are native blockchain transactions validated and stored inside standard blocks:
-
-| Type | Action | Description | Network Fee | Creator Reward |
-|:-----|:-------|:------------|:------------|:---------------|
-| `space_post` | Publish Thought | Plaintext or markdown micro-blog content permanently sealed on-chain | Dynamic Fee | Eligible for Royalties |
-| `space_like` | Like Post | Cryptographically attested appreciation of a post hash | 0.001 BCT | +0.002 BCT to Author |
-| `space_comment` | Comment | Threaded reply referenced by `parent_post_id` | 0.001 BCT | +0.005 BCT to Author |
-
-### 5.2 Anti-Spam Economics & Creator Royalties
-Legacy social networks suffer from bot syndicates and Sybil swarms because account creation and posting are financially free. In LockTrace Space:
-1. Publishing a post or comment requires a valid signature and a nominal on-chain network fee, imposing an asymptotic economic barrier against bot manipulation.
-2. Interacting with content (liking or commenting) triggers an autonomous on-chain transfer of protocol royalties directly into the post author's wallet:
-   $$\text{AuthorPayout} = \text{BaseReward} + \text{EngagementRoyalty}$$
-3. Content creators maintain 100% ownership of their follower graph and content history, cryptographically anchored to their `BCT` public key address.
+LockTrace connects natively to the Ethereum Layer-2 ecosystem via a 1:1 collateralized bridge on **Base Mainnet (Chain ID 8453)**:
+- **Official WrappedBCT (`wBCT`) Contract:** `0xA3C743113a41cFd0146917065d4578337Bb77254` (Verified Solidity 0.8.20).
+- **L1 $\to$ Base (Lock & Mint):** Users lock native BCT into `BCT_BRIDGE_VAULT_000000000000000000000000000000000`. The automated relayer daemon (`bridge_relayer.py`) verifies the L1 finality and invokes `mintFromBridge(to, amount, locktraceTxHash)` on Base Mainnet with idempotent replay protection.
+- **Base $\to$ L1 (Burn & Unlock):** Users invoke `burnToBridge(amount, locktraceRecipient)` on Base. The L1 engine verifies the EVM burn receipt (`verify_evm_burn_receipt`), enforces strict deduplication on `evm_tx_hash`, and releases native BCT from `BCT_BRIDGE_VAULT` to the recipient's L1 wallet.
 
 ---
 
-## 6. Tokenomics & Monetary Policy
+## 10. On-Chain Frontend Integrity Shield & Tamper Detection
 
-```
-+-------------------------------------------------------------------------------+
-|                        BCT MONETARY EMISSION & SUPPLY                         |
-+-------------------------------------------------------------------------------+
-|  Hard Cap (Maximum Supply)     : 1,000,000,000,000 BCT (1 Trillion BCT)       |
-|  Genesis Distribution Allocation: 100,000,000 BCT                              |
-|  Block Subsidy Proposer Split  : 70% of Base Subsidy                          |
-|  Block Subsidy Validator Split : 30% of Base Subsidy                          |
-|  Transfer Transaction Fee      : 1.0% (Deflationary Validation Pool)          |
-|  Creator Social Royalties      : 20% Dynamic On-Chain Royalty Rate            |
-|  Onboarding Welcome Faucet     : 1.00 BCT / verified cryptographic address    |
-+-------------------------------------------------------------------------------+
-```
-
-### 6.1 Hard Supply Cap & Allocation
-The maximum supply of BCT is mathematically capped at **1,000,000,000,000 BCT** (One Trillion Tokens).
-- **Genesis Allocation (100,000,000 BCT):**
-  - Initial Mainnet Liquidity & Seed Pool.
-  - Ecosystem Development & Developer Tooling Grants.
-  - Public Faucet Fund for onboarding new users (+1.00 BCT welcome bonus).
-- **Mining & Validation Emissions (999,900,000,000 BCT):**
-  - Released progressively through the dual consensus mechanism across decades of continuous block production.
-
-### 6.2 1% Transfer Fee Mechanism
-Standard peer-to-peer transfers incur a 1% network protocol fee:
-$$\text{NetReceived} = \text{Amount} \times 0.99$$
-$$\text{ProtocolFee} = \text{Amount} \times 0.01$$
-The protocol fee is deposited into the block validator and miner compensation pool, establishing continuous economic incentives for nodes even as block subsidies decline over time.
-
-### 6.3 Cross-Chain Interoperability & Wrapped BCT (wBCT)
-To unlock global liquidity across the Ethereum and Layer-2 DeFi ecosystems, LockTrace features a production-grade, 1:1 bidirectional cross-chain bridge connecting LockTrace Layer-1 to **Base Mainnet** (Coinbase L2, Chain ID 8453).
-
-```
-+-------------------------------------------------------------------------------+
-|               LOCKTRACE 1:1 BIDIRECTIONAL CROSS-CHAIN BRIDGE                  |
-+-------------------------------------------------------------------------------+
-|  LockTrace L1 Mainnet                                    Base Mainnet (EVM)   |
-|                                                                               |
-|  [User BCT Wallet]                                   [User MetaMask / EVM]    |
-|         |                                                      ^              |
-|   1. Lock BCT                                            2. Mint wBCT         |
-|         v                                                      |              |
-|  [BCT_BRIDGE_VAULT] ====== Verified Event Relay ======> [WrappedBCT Contract] |
-|   (100% Backed)                                         (0xA3C743...7254)     |
-|         ^                                                      |              |
-|   4. Unlock BCT                                          3. Burn wBCT         |
-|         |                                                      v              |
-|  [User BCT Wallet] <====== Verified Burn Proof ======= [burnToBridge() Event] |
-+-------------------------------------------------------------------------------+
-```
-
-1. **Wrapped BCT (wBCT) Smart Contract:**
-   - Deployed on Base Mainnet at official address: `0xA3C743113a41cFd0146917065d4578337Bb77254`.
-   - Verified on Sourcify and BaseScan with full open-source Solidity 0.8.20 code.
-   - Idempotent minting via `mintFromBridge(to, amount, locktraceTxHash)` protected by authorized relayers and replay-proof transaction deduplication (`processedL1Transactions`).
-   - Self-service token burning via `burnToBridge(amount, locktraceRecipient)`.
-
-2. **Auditable Proof-of-Reserve Vault:**
-   - Native BCT collateral is securely held in the protocol vault: `BCT_BRIDGE_VAULT_000000000000000000000000000000000`.
-   - **Strict Mathematical Solvency:** The protocol enforces an immutable invariant:
-     $$\text{VaultBalance}_{\text{L1}} \ge \text{TotalSupply}_{\text{wBCT}}$$
-   - Unlock transactions are strictly bounded by the vault's on-chain balance. Under no circumstances can uncollateralized or synthetic BCT be released.
-
-3. **Automated 24/7 Bridge Relayer:**
-   - High-performance asynchronous daemon (`bridge_relayer.py`) runs 24/7 on dedicated network infrastructure.
-   - Monitors SQLite WAL bridge records and RPC events with EIP-1559 dynamic base/priority gas pricing on Base Mainnet.
-   - Guarantees sub-minute end-to-end cross-chain fulfillment.
-
-4. **Decentralized Liquidity & Analytics:**
-   - Active Uniswap v4 deep liquidity pool paired with USDC (`0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe`).
-   - Real-time market analytics indexed on DexScreener and GeckoTerminal with live interactive charting embedded natively inside the LockTrace Web Shell.
+To defend against DNS hijacking, rogue reverse proxies, CDN cache poisoning, and Man-in-the-Middle (MitM) script injection:
+1. **Release Signing & On-Chain Sealing:** Every release computes canonical SHA-256 digests of `frontend/index.html` and `frontend/sw.js` plus an IPFS CIDv1 content hash, signed by `RELEASE_AUTHORITY_PUBKEY` (`BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`) over:
+   $$\text{Payload} = \text{"LOCKTRACE\_FRONTEND\_RELEASE:"} \parallel \text{Version} \parallel \text{SHA256}_{\text{index}} \parallel \text{SHA256}_{\text{sw}} \parallel \text{CIDv1}$$
+   and seals the manifest on-chain in a `frontend_release` block transaction.
+2. **Stat-Memoized Server Gate (`_inspect_local_frontend_integrity`):** Before serving `/`, the node verifies the local file hashes and ECDSA signature (memoized in $O(1)$ memory via `st_mtime_ns` and `st_size`). Any unauthorized byte modification on disk immediately triggers an `HTTP 403 Security Lock`.
+3. **Persistent Client-Side Security Discrepancy Indicator:** The browser independently cross-checks `/api/v1/frontend/integrity` against the Release Authority public key. If any discrepancy occurs (such as stale PWA cache, proxy tampering, or node desynchronization), a persistent **WARNING** badge appears next to the **Mainnet** header indicator. Clicking it opens a detailed security diagnostic modal explaining the exact vulnerability vector (MitM, cache mismatch, or fork) with a one-click **Purge Cache & Resync** recovery action.
 
 ---
 
-## 7. Client Security & On-Chain Release Authority
+## 11. Multi-Layered Cyber Defense: Anti-DDoS, Replay & Sybil `/24` Hardening
 
-### 7.1 Zero-Knowledge Client Philosophy
-LockTrace rejects the server-side custodial model. The web application, mobile interface, and client libraries operate under a strict zero-knowledge paradigm:
-- Private keys and 12-word seed phrases are stored exclusively in client memory or inside an **AES-GCM-256 encrypted vault** within browser `localStorage`.
-- Local vaults are protected by user-defined PIN codes hashed using PBKDF2 with unique cryptographic salts.
-- Outbound network requests convey only pre-signed raw transactions (`signed_payload`) and public keys; plaintext secrets never transit the network.
-
-### 7.2 On-Chain Release Authority & Anti-Tamper Guard
-To protect users against supply-chain attacks, DNS spoofing, and malicious hosting manipulation, LockTrace implements an end-to-end cryptographic release guard:
-1. Every official frontend release (`index.html`, `sw.js`) is hashed via SHA-256.
-2. The hashes, IPFS CIDv1 identifier, and release version are signed by the official **Release Authority** using ECDSA:
-   $$\text{Sig} = \text{ECDSA\_Sign}(d_{\text{auth}}, \text{"LOCKTRACE\_FRONTEND\_RELEASE:"} \parallel \text{Version} \parallel \text{Hash}_{\text{index}} \parallel \text{Hash}_{\text{sw}} \parallel \text{CID})$$
-3. The resulting `integrity.json` manifest is embedded on-chain via a sealed blockchain transaction (`seal_frontend_release`).
-4. Upon startup, client browsers autonomously verify the SHA-256 hash of the loaded files against both the local signature and the on-chain consensus state. If any byte has been modified, the frontend halts immediately with a tamper warning.
+LockTrace v2.0.0 incorporates five interlocking security shields against network and application-layer attacks:
+1. **Per-Wallet & Global Mempool Quotas (`MAX_PENDING_TX_PER_WALLET = 25`):** A single wallet address can hold at most 25 unconfirmed transactions in the mempool at once (with a global ceiling of `MAX_GLOBAL_MEMPOOL_SIZE = 5000`). Botnets attempting mempool exhaustion are rejected at the signature gateway before touching disk or consensus state.
+2. **Bounded Sliding-Window Rate Limiter:** `SlidingWindowRateLimiter` enforces strict per-IP and per-scope request windows while bounding internal memory tables (`MAX_BUCKETS = 25,000`, `MAX_SIG_CACHE = 50,000`) to guarantee zero RAM exhaustion under spoofed-IP DDoS floods.
+3. **Full-History + Mempool Signature Replay Immunity:** `_used_signatures_set` indexes every ECDSA signature ever committed from Block #0 through the live mempool in $O(1)$ hash-set lookup time, rendering transaction replay mathematically impossible.
+4. **IPv4 `/24` & IPv6 `/48` Sybil Subnet Deduplication (`_extract_node_host_key`):** Active peer miners and validator quorum candidates are deduplicated across both wallet addresses and normalized network subnets (`subnet24:A.B.C.0/24` for IPv4, `subnet48` for IPv6). An attacker provisioning 100 cloud VMs within the same `/24` datacenter subnet receives the consensus weight and validator reward share of at most **1 node**.
+5. **SSRF-Hardened P2P Gossip (`_is_safe_peer_endpoint`):** Outbound block gossip resolves DNS records and blocks loopback, link-local, multicast, and private RFC-1918 IP ranges in production, preventing Server-Side Request Forgery (SSRF) via malicious node endpoint registrations.
 
 ---
 
-## 8. Node Runner & Deployment Specifications
+## 12. Decentralized Node Runner (`node_runner.py`) & P2P Topology
 
-The LockTrace reference node runner (`node_runner.py`) is written in pure, dependency-minimized Python 3.
-
-### 8.1 Execution Modes
-- **Full Validator & PoW Miner (Default):**
-  ```bash
-  python node_runner.py --wallet <YOUR_BCT_ADDRESS> --private-key <YOUR_HEX_KEY>
-  ```
-  Connects to the P2P network, synchronizes archival blocks, participates in the 30% Quorum Attestation pool, and executes CPU PoW mining.
-- **Local Private Node (`--local`):**
-  Binds the local Web3 wallet interface strictly to `127.0.0.1:5050` for isolated desktop operations.
-- **LAN / Server Node (`--server`):**
-  Binds to `0.0.0.0:5050`, exposing public RPC endpoints for mobile devices and remote wallets on the same network.
-
-### 8.2 Public REST & RPC Endpoints
-Every LockTrace node exposes a standard JSON API:
-- `GET /api/v1/stats`: Network difficulty, block height, total supply, active mempool transactions.
-- `GET /api/v1/balance/<address>`: Confirmed balance and account nonce.
-- `GET /api/v1/blocks/latest`: Recent verified blocks and Merkle roots.
-- `POST /api/v1/transaction/create`: Submits signed transaction payloads.
-- `GET /api/v1/space/feed`: Retrieves verified on-chain social posts and interactions.
-- `GET /api/v1/frontend/integrity`: Real-time cryptographic release verification data.
+`node_runner.py` is a self-contained, zero-dependency Python 3 validator, PoW miner, and verified web wallet server:
+- **Local Sovereign Mode (`python node_runner.py --local --open`):** Verifies frontend SHA-256 integrity, syncs the full archival chain from Genesis, and serves the non-custodial Web Wallet at `http://127.0.0.1:5050`—ensuring users can always access their funds and Space feed even if `locktrace.space` is unreachable.
+- **Public Server / Validator Mode (`python node_runner.py --server --port 5050 --wallet BCT...`):** Exposes P2P gossip endpoints, submits cryptographic block attestations (`/api/v1/nodes/attest`) to earn the **30% Validator Quorum Pool**, and mines v2 Merkle PoW blocks to earn the **70% Proposer Reward**.
 
 ---
 
-## 9. Security Analysis & Threat Model
+## 13. Comprehensive Threat Model & Formal Verification Matrix
 
-| Vector | Attack Description | LockTrace Mitigation |
-|:-------|:-------------------|:---------------------|
-| **51% Mining Hashrate Takeover** | Attacker accumulates majority CPU hashrate to rewrite blocks | Block immutability requires >66% Validator Quorum attestation. Secret PoW forks without quorum are automatically dropped. |
-| **Transaction Replay Attack** | Malicious actor rebroadcasts a previously valid transfer | Strictly sequential monotonic nonces (`account.nonce == tx.nonce + 1`). Duplicate nonces fail instantly. |
-| **Social Feed Spam Swarm** | Sybil bot armies flooding feed with automated comments | All posts, likes, and comments require on-chain gas fees and SECP256k1 signatures, imposing escalating financial cost. |
-| **Tampered Hosting / DNS Hijack** | Compromised web server serving malicious wallet JavaScript | Browser SHA-256 self-inspection + On-chain ECDSA Release Authority anchoring locks execution upon mismatch. |
-| **Cryptographic Collision** | Collision attacks against wallet addresses or hashes | Dual hashing pipeline: SECP256k1 combined with double SHA-256 and RIPEMD-160 guarantees $2^{128}$ collision resistance. |
-
----
-
-## 10. Roadmap & Future Work
-
-1. **Phase 1 (Mainnet Foundation — Completed):**
-   - Genesis block deployment and stable 70/30 dual hybrid consensus (PoW + Quorum BFT).
-   - LockTrace Space on-chain social protocol with programmatic creator royalties.
-   - Zero-knowledge browser wallet and AES-GCM encrypted client vaults.
-   - On-chain Release Authority integrity sealing anchored to IPFS CIDv1.
-
-2. **Phase 2 (Cross-Chain DeFi & Global Liquidity — Completed in v1.6):**
-   - Wrapped BCT (wBCT) ERC-20 contract live on Base Mainnet (`0xA3C743113a41cFd0146917065d4578337Bb77254`).
-   - Automated 24/7 Bridge Relayer daemon with EIP-1559 dynamic gas optimization.
-   - 100% Auditable Proof-of-Reserve Vault (`BCT_BRIDGE_VAULT`) with strict solvency bounds.
-   - Uniswap v4 deep liquidity pool and live DexScreener/GeckoTerminal charting embedded in Web Shell.
-
-3. **Phase 3 (Mobile Client & Scaling — In Progress):**
-   - Standalone offline-first PWA with home-screen shortcut installation.
-   - Dynamic block size scaling based on mempool congestion.
-   - Zero-Knowledge zk-SNARK private transactions for optional shielded transfers.
-   - Native cross-chain atomic swaps (BTC/ETH/Solana).
+| Attack / Failure Vector | Threat Mechanism | LockTrace v2.0.0 Defense Mechanism | Complexity / Bound |
+|:------------------------|:-----------------|:-----------------------------------|:-------------------|
+| **Concurrent PoW & P2P Race (Chain Split)** | Local sequencer mines block while external miner submits same height | **3-Phase Atomic CAS Fork Guard** verifies `(len(chain) == expected_idx and tip_hash == expected_prev)` under lock before commit | **0% Fork Probability** |
+| **High-Concurrency HTTP Freeze** | 1,000+ users trigger batch threshold simultaneously | Non-blocking `_sequencer_wakeup` + lock-free Phase 2 PoW hashing outside `self.lock` | **$< 5\text{ ms}$ Ingestion** |
+| **Disk I/O Amplification Crash** | Rewriting all historical blocks on every transaction | **$O(1)$ Delta SQLite WAL** (`b.index > max_db_idx`) + `dirty_wallets` tracking + async JSON backup | **$O(1)$ Disk Write** |
+| **Empty-Wallet Search DoS** | Querying random empty addresses to force full-chain scans | Indexed SQLite `tx_lookup` query without empty-result chain fallback + $O(\text{limit})$ reverse pagination | **$O(\log N)$ Lookup** |
+| **Mempool Spam / Botnet Flood** | Single wallet or botnet flooding 10,000 pending txs | `MAX_PENDING_TX_PER_WALLET = 25`, `MAX_GLOBAL_MEMPOOL_SIZE = 5000`, bounded `SlidingWindowRateLimiter` | **$O(1)$ Rejection** |
+| **Datacenter Sybil Node Attack** | Spawning 50 validator nodes in same cloud subnet to drain 30% quorum pool | `_extract_node_host_key` normalizes IPv4 to `/24` (`subnet24:`) and IPv6 to `/48` + wallet deduplication | **Max 1 Vote / Subnet** |
+| **Welcome Faucet Sybil Drain** | Automated wallet creation to farm 1.00 BCT bonus | Per-IP rate limits (3/min, 10/hr) + Global on-chain rolling cap of $\le 25\text{ grants/hour}$ | **Max 25 BCT / Hour** |
+| **Frontend Tampering / CDN Hijack** | Modified `index.html` or `sw.js` served to steal keys | On-chain `frontend_release` SHA-256 + ECDSA Release Authority check + Persistent UI Security Warning Badge | **HTTP 403 + UI Alert** |
 
 ---
 
-## 11. Conclusion
+## 14. Roadmap & Protocol Evolution
 
-LockTrace represents a fundamental advancement in sovereign digital infrastructure. By unifying a 70/30 Hybrid Proof-of-Work and Quorum Consensus with an on-chain, creator-first social economy, LockTrace delivers true mathematical freedom: censorship resistance without centralized gatekeepers, uncompromised self-custody, and accessible decentralization for all global participants.
+- **v1.0 – v1.6 (Completed):** Mainnet Genesis, 70/30 PoW + Validator Quorum consensus, LockTrace Space SocialFi royalties, `.bct` BNS registry & marketplace, Base Mainnet `wBCT` 1:1 cross-chain bridge, Uniswap v4 liquidity pool.
+- **v1.9 (Completed):** On-chain SHA-256 + IPFS CIDv1 Frontend Release Integrity Shield, Quote-Repost attribution cards, Explorer BNS/wallet full-history indexing, Persistent Mainnet Security Discrepancy Alert System.
+- **v2.0.0 (Current Production Release):** 3-Phase Atomic CAS Non-Blocking Block Producer, $O(1)$ Incremental Delta SQLite WAL Engine, $O(\Delta)$ Multi-Worker Sync, Anti-DDoS Per-Wallet Mempool Quotas, IPv4 `/24` Sybil Subnet Hardening, and Stat-Memoized Integrity Gate.
+- **v2.5+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---
 
 ### References
 1. Nakamoto, S. (2008). *Bitcoin: A Peer-to-Peer Electronic Cash System.*
-2. Koblitz, N. (1987). *Elliptic curve cryptosystems.* Mathematics of Computation.
-3. Palatinus, M., et al. (2013). *BIP 0039: Mnemonic code for generating deterministic keys.* Bitcoin Improvement Proposals.
-4. Castro, M., & Liskov, B. (2002). *Practical Byzantine Fault Tolerance and Proactive Recovery.* ACM Transactions on Computer Systems.
-5. Merkle, R. C. (1987). *A Digital Signature Based on a Conventional Encryption Function.* Advances in Cryptology — CRYPTO '87.
-
+2. Koblitz, N. (1987). *Elliptic Curve Cryptosystems.* Mathematics of Computation, 48(177), 203–209.
+3. Pornin, T. (2013). *RFC 6979: Deterministic Usage of the Digital Signature Algorithm (DSA) and ECDSA.* IETF.
+4. Palatinus, M., et al. (2013). *BIP-0039: Mnemonic Code for Generating Deterministic Keys.*
+5. Castro, M., & Liskov, B. (2002). *Practical Byzantine Fault Tolerance and Proactive Recovery.* ACM TOCS.
+6. Merkle, R. C. (1987). *A Digital Signature Based on a Conventional Encryption Function.* CRYPTO '87.
