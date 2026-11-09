@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v1.9.5)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.0.0)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner, AND cryptographically
 verified decentralized Web Wallet (Locally or as a Public/LAN Server) on Linux, macOS,
@@ -49,7 +49,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "1.9.5"
+VERSION = "2.0.0"
 
 ATOMIC_UNIT = 100_000_000
 TOTAL_SUPPLY = 1_000_000_000_000.0
@@ -1998,9 +1998,40 @@ class LockTraceNode:
             return False
 
         txs = blk.get("transactions", [])
-        tx_hashes = [t.get("tx_hash", "") for t in txs if t.get("tx_hash")]
-        if tx_hashes and blk.get("merkle_root"):
-            if compute_merkle_root(tx_hashes) != str(blk["merkle_root"]).lower():
+        if not isinstance(txs, list) or not txs:
+            return False
+
+        reward_total_u = 0
+        fee_total_u = 0
+        computed_tx_hashes = []
+        for t in txs:
+            if not isinstance(t, dict):
+                return False
+            th = str(t.get("tx_hash", "")).strip().lower()
+            if th and calculate_tx_hash_dict(t) != th:
+                return False
+            computed_tx_hashes.append(th or calculate_tx_hash_dict(t))
+
+            ttype = str(t.get("tx_type", "transfer"))
+            amt_u = _to_units(float(t.get("amount", 0.0)))
+            fee_u = _to_units(float(t.get("fee", 0.0)))
+            if amt_u < 0 or fee_u < 0:
+                return False
+            if b_idx > 0 and ttype == "genesis":
+                return False
+            if ttype in ("mining_reward", "validator_reward"):
+                if str(t.get("sender", "")) != TREASURY_ADDRESS:
+                    return False
+                reward_total_u += amt_u
+            else:
+                fee_total_u += fee_u
+
+        max_allowed_reward_u = _to_units(BLOCK_REWARD) + fee_total_u + 100
+        if b_idx > 0 and reward_total_u > max_allowed_reward_u:
+            return False
+
+        if computed_tx_hashes and blk.get("merkle_root"):
+            if compute_merkle_root(computed_tx_hashes) != str(blk["merkle_root"]).lower():
                 return False
 
         with self.chain_lock:

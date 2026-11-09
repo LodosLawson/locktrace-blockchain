@@ -319,16 +319,31 @@ class BridgeManager:
 
     def confirm_l1_lock(self, bridge_id: str, tx_hash_l1: str) -> Dict[str, Any]:
         """Marks Layer-1 lock as confirmed after on-chain block inclusion."""
+        clean_hash = (tx_hash_l1 or "").strip().lower()
+        if not clean_hash:
+            return {"success": False, "error": "Valid Layer-1 transaction hash is required"}
+
         with self._get_connection() as conn:
             row = conn.execute("SELECT * FROM bridge_transactions WHERE bridge_id = ?", (bridge_id,)).fetchone()
             if not row:
                 return {"success": False, "error": "Bridge transaction not found"}
+            if row["direction"] != "L1_TO_EVM":
+                return {"success": False, "error": "Invalid bridge direction for L1 lock confirmation"}
+            if row["status"] in ("COMPLETED", "FAILED"):
+                return {"success": False, "error": f"Bridge order is already {row['status']}"}
+
+            dup = conn.execute(
+                "SELECT bridge_id FROM bridge_transactions WHERE lower(tx_hash_l1) = ? AND bridge_id != ? LIMIT 1",
+                (clean_hash, bridge_id)
+            ).fetchone()
+            if dup:
+                return {"success": False, "error": "This Layer-1 transaction hash is already bound to another bridge order"}
 
             conn.execute("""
                 UPDATE bridge_transactions
                 SET status = 'LOCKED', tx_hash_l1 = ?, updated_at = ?
                 WHERE bridge_id = ?
-            """, (tx_hash_l1, time.time(), bridge_id))
+            """, (clean_hash, time.time(), bridge_id))
 
         return {"success": True, "bridge_id": bridge_id, "status": "LOCKED"}
 

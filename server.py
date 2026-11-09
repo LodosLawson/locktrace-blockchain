@@ -17,7 +17,7 @@ import secrets
 import threading
 from collections import deque
 from datetime import datetime, timezone
-from typing import Optional
+from typing import Optional, Tuple
 
 from flask import Flask, request, jsonify, render_template, g, send_file, send_from_directory, Response
 from flask_cors import CORS
@@ -84,27 +84,38 @@ SAFE_TX_ID_RE = re.compile(r"^[a-zA-Z0-9_-]{4,128}$")
 
 # ── Thread-Safe Sliding Window Rate Limiter & Replay Cache ───
 class SlidingWindowRateLimiter:
+    MAX_BUCKETS = 25000
+    MAX_SIG_CACHE = 50000
+
     def __init__(self):
         self._lock = threading.Lock()
         self._buckets = {}
         self._used_signatures = {}
         self._last_cleanup = time.time()
 
-    def _cleanup_if_needed(self, now: float):
-        if now - self._last_cleanup < 120:
+    def _cleanup_if_needed(self, now: float, force: bool = False):
+        if not force and (now - self._last_cleanup < 120):
             return
         self._last_cleanup = now
         stale_keys = [k for k, dq in self._buckets.items() if not dq or (now - dq[-1] > 3600)]
         for k in stale_keys:
             self._buckets.pop(k, None)
+        if len(self._buckets) > self.MAX_BUCKETS:
+            excess = len(self._buckets) - self.MAX_BUCKETS
+            for k in list(self._buckets.keys())[:excess]:
+                self._buckets.pop(k, None)
         expired_sigs = [s for s, exp in self._used_signatures.items() if now > exp]
         for s in expired_sigs:
             self._used_signatures.pop(s, None)
+        if len(self._used_signatures) > self.MAX_SIG_CACHE:
+            excess_s = len(self._used_signatures) - self.MAX_SIG_CACHE
+            for s in list(self._used_signatures.keys())[:excess_s]:
+                self._used_signatures.pop(s, None)
 
     def allow(self, key: str, limit: int, window_seconds: int) -> bool:
         now = time.time()
         with self._lock:
-            self._cleanup_if_needed(now)
+            self._cleanup_if_needed(now, force=(len(self._buckets) > self.MAX_BUCKETS))
             dq = self._buckets.get(key)
             if dq is None:
                 dq = deque()
@@ -121,7 +132,7 @@ class SlidingWindowRateLimiter:
         """Returns True if signature has not been seen inside replay window."""
         now = time.time()
         with self._lock:
-            self._cleanup_if_needed(now)
+            self._cleanup_if_needed(now, force=(len(self._used_signatures) > self.MAX_SIG_CACHE))
             exp = self._used_signatures.get(sig_hex)
             if exp and now <= exp:
                 return False
@@ -278,7 +289,7 @@ def after_request(response):
     duration = time.time() - getattr(g, "start_time", time.time())
     response.headers["X-Request-ID"] = getattr(g, "request_id", "unknown")
     response.headers["X-Response-Time"] = f"{duration:.4f}s"
-    response.headers["X-Powered-By"] = "LockTrace-Blockchain/1.4"
+    response.headers["X-Powered-By"] = "LockTrace-Blockchain/2.0.0"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
@@ -312,10 +323,17 @@ def api_response(success: bool, data=None, message=None, status=200, **extra):
 
 
 ROOT_DIR = os.path.dirname(os.path.abspath(__file__))
+_FRONTEND_INTEGRITY_CACHE: Tuple[Optional[tuple], Optional[dict]] = (None, None)
+_FRONTEND_INTEGRITY_LOCK = threading.Lock()
 
 
 def _inspect_local_frontend_integrity() -> dict:
-    """Verify local frontend/index.html & sw.js SHA-256 checksums + ECDSA Release Authority signature."""
+    """
+    Verify local frontend/index.html & sw.js SHA-256 checksums + ECDSA Release Authority signature.
+    Uses stat-based (mtime_ns, size) memoization to eliminate redundant 750KB disk reads & ECDSA math
+    under high concurrency while detecting any file modification on disk in O(1) time.
+    """
+    global _FRONTEND_INTEGRITY_CACHE
     index_path = os.path.join(ROOT_DIR, "frontend", "index.html")
     sw_path = os.path.join(ROOT_DIR, "frontend", "sw.js")
     manifest_path = os.path.join(ROOT_DIR, "frontend", "integrity.json")
@@ -327,6 +345,22 @@ def _inspect_local_frontend_integrity() -> dict:
         }
 
     try:
+        ix_stat = os.stat(index_path)
+        mf_stat = os.stat(manifest_path)
+        sw_stat = os.stat(sw_path) if os.path.exists(sw_path) else None
+        stat_key = (
+            ix_stat.st_mtime_ns,
+            ix_stat.st_size,
+            mf_stat.st_mtime_ns,
+            mf_stat.st_size,
+            sw_stat.st_mtime_ns if sw_stat else 0,
+            sw_stat.st_size if sw_stat else 0,
+            bool(Config.DEBUG or os.environ.get("BCT_DEV_MODE", "false").lower() == "true"),
+        )
+        cached_key, cached_res = _FRONTEND_INTEGRITY_CACHE
+        if cached_key == stat_key and cached_res is not None:
+            return cached_res
+
         with open(manifest_path, "r", encoding="utf-8") as mf:
             manifest = json.load(mf)
         with open(index_path, "rb") as ix:
@@ -334,17 +368,20 @@ def _inspect_local_frontend_integrity() -> dict:
         actual_index_sha = hashlib.sha256(index_bytes).hexdigest()
 
         actual_sw_sha = ""
-        if os.path.exists(sw_path):
+        if sw_stat is not None:
             with open(sw_path, "rb") as sf:
                 actual_sw_sha = hashlib.sha256(sf.read().replace(b"\r\n", b"\n")).hexdigest()
 
         sig_ok, sig_msg = verify_frontend_manifest(manifest)
         if not sig_ok:
-            return {
+            res = {
                 "verified": False,
                 "reason": f"⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked. ({sig_msg})",
                 "actual_index_sha256": actual_index_sha,
             }
+            with _FRONTEND_INTEGRITY_LOCK:
+                _FRONTEND_INTEGRITY_CACHE = (stat_key, res)
+            return res
 
         expected_index_sha = str(manifest.get("index_html_sha256", "")).lower()
         expected_sw_sha = str(manifest.get("sw_js_sha256", "")).lower()
@@ -352,7 +389,7 @@ def _inspect_local_frontend_integrity() -> dict:
 
         if actual_index_sha != expected_index_sha:
             if dev_mode:
-                return {
+                res = {
                     "verified": True,
                     "dev_mode": True,
                     "manifest": manifest,
@@ -360,16 +397,21 @@ def _inspect_local_frontend_integrity() -> dict:
                     "actual_index_sha256": actual_index_sha,
                     "actual_sw_sha256": actual_sw_sha,
                 }
-            return {
-                "verified": False,
-                "reason": "⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked.",
-                "expected_index_sha256": expected_index_sha,
-                "actual_index_sha256": actual_index_sha,
-                "index_bytes": index_bytes,
-                "manifest": manifest,
-            }
+            else:
+                res = {
+                    "verified": False,
+                    "reason": "⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked.",
+                    "expected_index_sha256": expected_index_sha,
+                    "actual_index_sha256": actual_index_sha,
+                    "index_bytes": index_bytes,
+                    "manifest": manifest,
+                }
+            with _FRONTEND_INTEGRITY_LOCK:
+                _FRONTEND_INTEGRITY_CACHE = (stat_key, res)
+            return res
+
         if expected_sw_sha and actual_sw_sha and actual_sw_sha != expected_sw_sha:
-            return {
+            res = {
                 "verified": False,
                 "reason": "⛔ WARNING: Service Worker (sw.js) has been modified or tampered with! Execution blocked.",
                 "expected_sw_sha256": expected_sw_sha,
@@ -377,14 +419,20 @@ def _inspect_local_frontend_integrity() -> dict:
                 "index_bytes": index_bytes,
                 "manifest": manifest,
             }
+            with _FRONTEND_INTEGRITY_LOCK:
+                _FRONTEND_INTEGRITY_CACHE = (stat_key, res)
+            return res
 
-        return {
+        res = {
             "verified": True,
             "manifest": manifest,
             "index_bytes": index_bytes,
             "actual_index_sha256": actual_index_sha,
             "actual_sw_sha256": actual_sw_sha,
         }
+        with _FRONTEND_INTEGRITY_LOCK:
+            _FRONTEND_INTEGRITY_CACHE = (stat_key, res)
+        return res
     except Exception as exc:
         return {
             "verified": False,
@@ -409,23 +457,18 @@ _bootstrap_onchain_frontend_seal()
 
 
 def is_local_or_lan_request() -> bool:
-    """Returns True if request comes from localhost, LAN / private IP (e.g. mobile testing on Wi-Fi), or dev mode."""
+    """Returns True ONLY if request originates from loopback/LAN or explicit BCT_DEV_MODE."""
     if Config.DEBUG or os.environ.get("BCT_DEV_MODE", "false").lower() == "true":
         return True
-    host = (getattr(request, "host", "") or "").split(":")[0].strip().lower()
     client_ip = (get_client_ip() or "").strip().lower()
-    if host in ("localhost", "127.0.0.1", "::1", "0.0.0.0") or client_ip in ("127.0.0.1", "::1"):
+    if client_ip in ("127.0.0.1", "::1", "localhost"):
         return True
-    if host.startswith("192.168.") or host.startswith("10.") or host.endswith(".local"):
+    if client_ip.startswith("192.168.") or client_ip.startswith("10."):
         return True
-    if host.startswith("172."):
-        parts = host.split(".")
+    if client_ip.startswith("172."):
+        parts = client_ip.split(".")
         if len(parts) >= 2 and parts[1].isdigit() and 16 <= int(parts[1]) <= 31:
             return True
-    if client_ip.startswith("192.168.") or client_ip.startswith("10.") or client_ip.startswith("172."):
-        return True
-    if host not in ("locktrace.space", "www.locktrace.space"):
-        return True
     return False
 
 
@@ -531,7 +574,7 @@ def api_frontend_integrity():
     manifest = check.get("manifest") or onchain or {}
     return api_response(True, data={
         "verified": bool(check.get("verified")),
-        "version": manifest.get("version", "1.9.8"),
+        "version": manifest.get("version", "2.0.0"),
         "released_at": manifest.get("released_at", ""),
         "authority_address": RELEASE_AUTHORITY_ADDRESS,
         "authority_public_key": RELEASE_AUTHORITY_PUBKEY,
@@ -648,7 +691,7 @@ def api_health():
     check = _inspect_local_frontend_integrity()
     return api_response(True, data={
         "status": "healthy",
-        "version": "1.9.8",
+        "version": "2.0.0",
         "network": "mainnet",
         "storage_engine": "sqlite-wal",
         "consensus": "pow-v2-merkle-quorum",
@@ -887,6 +930,8 @@ def api_transaction():
 @app.route("/api/v1/explorer/search", methods=["GET"])
 def api_explorer_search():
     """Universal search across Blocks, Transactions, and Addresses."""
+    if not check_rate_limit("explorer_search", limit=45, window_seconds=60):
+        return api_response(False, message="Too many search requests. Please wait.", status=429)
     q = request.args.get("q", "").strip()[:128]
     if not q:
         return api_response(False, message="Search query cannot be empty", status=400)
@@ -899,6 +944,25 @@ def api_explorer_search():
     if tx:
         return api_response(True, data={"type": "transaction", "result": tx})
 
+    # BNS handle resolution in explorer search (e.g. @satoshi, satoshi.bct)
+    clean_handle = q.lstrip("@").lower()
+    bns_cand = clean_handle if clean_handle.endswith(".bct") else f"{clean_handle}.bct"
+    if bns_cand in blockchain.bns_records:
+        resolved_addr = blockchain.bns_records[bns_cand].get("owner", "")
+        if resolved_addr and is_valid_bct_address(resolved_addr):
+            bal = blockchain.get_balance(resolved_addr)
+            history = blockchain.get_wallet_transactions(resolved_addr)
+            return api_response(True, data={
+                "type": "address",
+                "result": {
+                    "address": resolved_addr,
+                    "handle": bns_cand,
+                    "balance": bal,
+                    "transaction_count": len(history),
+                    "transactions": history,
+                },
+            })
+
     if is_valid_bct_address(q):
         bal = blockchain.get_balance(q)
         history = blockchain.get_wallet_transactions(q)
@@ -908,7 +972,7 @@ def api_explorer_search():
                 "address": q,
                 "balance": bal,
                 "transaction_count": len(history),
-                "transactions": history[:50],
+                "transactions": history,
             },
         })
 
@@ -939,7 +1003,7 @@ def api_explorer_block(query):
                 "name": "LockTrace Genesis Validator #1",
                 "location": "Stockholm, Sweden (Oracle Cloud)",
                 "role": "Core PoW Archival Validator",
-                "version": "1.9.8",
+                "version": "2.0.0",
                 "status": "online",
             }
         block["validator_node"] = node_meta
@@ -978,6 +1042,8 @@ def api_explorer_merkle_proof(tx_hash):
 @app.route("/api/v1/holders", methods=["GET"])
 def api_explorer_holders():
     """Returns paginated rich list of all accounts holding native BCT."""
+    if not check_rate_limit("explorer_holders", limit=45, window_seconds=60):
+        return api_response(False, message="Too many requests. Please wait.", status=429)
     page = safe_int(request.args.get("page", 1), default=1, min_val=1)
     limit = safe_int(request.args.get("limit", 10), default=10, min_val=1, max_val=50)
     data = blockchain.get_holders(page=page, limit=limit)
@@ -989,13 +1055,9 @@ def api_explorer_holders():
 def api_latest_transactions():
     limit = safe_int(request.args.get("limit", 10), default=10, min_val=1, max_val=100)
     page = safe_int(request.args.get("page", 1), default=1, min_val=1)
-    txs = blockchain.get_all_transactions()
-    total = len(txs)
+    page_txs, total = blockchain.get_paginated_transactions(page=page, limit=limit)
     total_pages = max(1, (total + limit - 1) // limit)
     page = min(page, total_pages)
-    start_idx = (page - 1) * limit
-    end_idx = start_idx + limit
-    page_txs = txs[start_idx:end_idx]
     return api_response(True, data={
         "transactions": page_txs,
         "total": total,
@@ -1034,8 +1096,10 @@ def api_latest_blocks():
         page = min(page, total_pages)
         start_idx = (page - 1) * limit
         end_idx = start_idx + limit
-        rev_chain = list(reversed(blockchain.chain))
-        page_blocks = [b.to_dict() for b in rev_chain[start_idx:end_idx]]
+        # Slice backwards in O(limit) without copying the full chain
+        slice_end = max(0, total_blocks - start_idx)
+        slice_start = max(0, total_blocks - end_idx)
+        page_blocks = [b.to_dict() for b in reversed(blockchain.chain[slice_start:slice_end])]
 
     return api_response(True, data={
         "blocks": page_blocks,
@@ -1107,7 +1171,7 @@ def api_register_node():
     location = str(data.get("location", "Decentralized") or "Decentralized").strip()
     miner_address = str(data.get("miner_address", "") or "").strip()
     block_height = safe_int(data.get("block_height", 0), default=0, min_val=0)
-    version = str(data.get("version", "1.9.8") or "1.9.8").strip()
+    version = str(data.get("version", "2.0.0") or "2.0.0").strip()
     pub_key = str(data.get("public_key", "") or "").strip()
     sig = str(data.get("signature", "") or "").strip()
     raw_ts = data.get("timestamp")
@@ -2115,6 +2179,8 @@ def api_trade_config():
 
 @app.route("/api/v1/trade/buy", methods=["POST"])
 def api_trade_buy():
+    if not check_rate_limit("trade_buy", limit=15, window_seconds=60):
+        return api_response(False, message="Too many requests. Please wait.", status=429)
     data = request.get_json(silent=True) or {}
     buyer_address = str(data.get("buyer_address", "") or "").strip()
     fiat_amount = safe_float(data.get("fiat_amount", 0.0), default=0.0)
@@ -2138,6 +2204,8 @@ def api_trade_buy():
 
 @app.route("/api/v1/trade/sell", methods=["POST"])
 def api_trade_sell():
+    if not check_rate_limit("trade_sell", limit=15, window_seconds=60):
+        return api_response(False, message="Too many requests. Please wait.", status=429)
     data = request.get_json(silent=True) or {}
     seller_address = str(data.get("seller_address", "") or "").strip()
     bct_amount = safe_float(data.get("bct_amount", 0.0), default=0.0)
@@ -2286,21 +2354,58 @@ def api_bridge_config():
     return api_response(True, data=bridge_manager.get_bridge_config())
 
 
+def _verify_l1_bridge_lock_tx(tx_hash_l1: str, expected_sender: str, expected_amount: float) -> Tuple[bool, str]:
+    """
+    Cryptographically verifies that a LockTrace Layer-1 transaction genuinely transferred
+    `expected_amount` BCT from `expected_sender` to `BRIDGE_VAULT_ADDRESS`.
+    Prevents forged L1_TO_EVM bridge confirmations.
+    """
+    clean_hash = (tx_hash_l1 or "").strip().lower()
+    if not clean_hash or len(clean_hash) != 64:
+        return False, "Invalid Layer-1 transaction hash format (64 hex chars required)."
+
+    tx_obj = blockchain.get_tx_by_hash(clean_hash)
+    if not tx_obj:
+        return False, "Layer-1 lock transaction not found on LockTrace blockchain or mempool."
+
+    if str(tx_obj.get("tx_type", "")) != "transfer":
+        return False, "Referenced Layer-1 transaction is not a standard BCT transfer."
+
+    receiver = str(tx_obj.get("receiver") or tx_obj.get("recipient") or "").strip()
+    if receiver != BRIDGE_VAULT_ADDRESS:
+        return False, f"Transaction recipient must be the official Bridge Vault ({BRIDGE_VAULT_ADDRESS})."
+
+    sender = str(tx_obj.get("sender") or "").strip()
+    if expected_sender and sender.lower() != expected_sender.strip().lower():
+        return False, "Transaction sender does not match the bridge order BCT wallet address."
+
+    actual_amount = float(tx_obj.get("amount") or 0.0)
+    if abs(actual_amount - float(expected_amount)) > 0.0001:
+        return False, f"Locked amount mismatch: expected {expected_amount:.4f} BCT, found {actual_amount:.4f} BCT."
+
+    return True, "Verified"
+
+
 @app.route("/api/v1/bridge/order", methods=["POST"])
 def api_bridge_create_order():
     if not check_rate_limit("bridge_create", limit=15, window_seconds=60):
         return api_response(False, message="Too many bridge requests. Please wait.", status=429)
 
     payload = request.get_json(silent=True) or {}
-    direction = str(payload.get("direction", "L1_TO_EVM")).strip()
+    direction = str(payload.get("direction", "L1_TO_EVM")).strip().upper()
     bct_address = str(payload.get("bct_address", "")).strip()
     evm_address = str(payload.get("evm_address", "")).strip()
     chain = str(payload.get("chain", "base")).strip()
-    tx_hash_l1 = str(payload.get("tx_hash_l1", "")).strip()
+    tx_hash_l1 = str(payload.get("tx_hash_l1", "")).strip().lower()
 
     amount_bct = safe_float(payload.get("amount"))
     if amount_bct is None or amount_bct <= 0:
         return api_response(False, message="Invalid transfer amount.", status=400)
+
+    if direction == "L1_TO_EVM" and tx_hash_l1:
+        ok_lock, lock_err = _verify_l1_bridge_lock_tx(tx_hash_l1, bct_address, amount_bct)
+        if not ok_lock:
+            return api_response(False, message=lock_err, status=400)
 
     result = bridge_manager.create_bridge_order(
         direction=direction,
@@ -2391,11 +2496,26 @@ def api_bridge_base_transactions():
 
 @app.route("/api/v1/bridge/confirm", methods=["POST"])
 def api_bridge_confirm():
+    if not check_rate_limit("bridge_confirm", limit=20, window_seconds=60):
+        return api_response(False, message="Too many bridge confirmation requests. Please wait.", status=429)
+
     payload = request.get_json(silent=True) or {}
     bridge_id = str(payload.get("bridge_id", "")).strip()
-    tx_hash = str(payload.get("tx_hash", "")).strip()
+    tx_hash = str(payload.get("tx_hash", "")).strip().lower()
     if not bridge_id or not tx_hash:
         return api_response(False, message="bridge_id and tx_hash are required.", status=400)
+
+    order = bridge_manager.get_bridge_status(bridge_id)
+    if not order:
+        return api_response(False, message="Bridge transaction not found.", status=404)
+
+    ok_lock, lock_err = _verify_l1_bridge_lock_tx(
+        tx_hash_l1=tx_hash,
+        expected_sender=str(order.get("bct_address", "")),
+        expected_amount=float(order.get("amount_bct", 0.0)),
+    )
+    if not ok_lock:
+        return api_response(False, message=lock_err, status=400)
 
     res = bridge_manager.confirm_l1_lock(bridge_id, tx_hash)
     if not res.get("success"):
@@ -2416,6 +2536,7 @@ def api_bridge_claim_burn():
     evm_tx_hash = str(payload.get("evm_tx_hash", "")).strip().lower()
     bct_address = str(payload.get("bct_address", "")).strip()
     evm_sender = str(payload.get("evm_sender", "")).strip().lower()
+    safe_sender = evm_sender if (evm_sender.startswith("0x") and len(evm_sender) == 42) else "0x0000000000000000000000000000000000000000"
 
     amount_bct = safe_float(payload.get("amount"))
     if amount_bct is None or amount_bct <= 0:
@@ -2443,7 +2564,9 @@ def api_bridge_claim_burn():
         else:
             return api_response(False, message=f"Burn could not be verified on Base Mainnet: {v_msg}", status=400)
     else:
-        safe_sender = event_data.get("sender") or safe_sender
+        verified_sender = str(event_data.get("sender") or "").strip().lower()
+        if verified_sender.startswith("0x") and len(verified_sender) == 42:
+            safe_sender = verified_sender
 
     # 0.5. Check if this EVM transaction has already been unlocked on-chain
     for block in blockchain.chain:
@@ -2459,7 +2582,6 @@ def api_bridge_claim_burn():
                 }, status=200)
 
     # 1. Register order in bridge_manager if not already registered
-    safe_sender = evm_sender if (evm_sender.startswith("0x") and len(evm_sender) == 42) else "0x0000000000000000000000000000000000000000"
     order_res = bridge_manager.create_bridge_order(
         direction="EVM_TO_L1",
         bct_address=bct_address,

@@ -1,5 +1,5 @@
 """
-BlockChainT - High-Performance ACID SQLite WAL Persistence Engine (v1.9.5)
+BlockChainT - High-Performance ACID SQLite WAL Persistence Engine (v2.0.0)
 ==========================================================================
 Provides multi-worker safe SQLite WAL storage for blocks, shared mempool,
 wallets, decentralized P2P nodes, and cryptographic validator block attestations.
@@ -163,6 +163,17 @@ class SQLiteStorage:
             cur = conn.execute("SELECT COUNT(*) AS cnt FROM blocks;")
             row = cur.fetchone()
             return int(row["cnt"]) if row else 0
+        finally:
+            conn.close()
+
+    def get_max_block_index(self) -> int:
+        conn = self._connect()
+        try:
+            cur = conn.execute("SELECT COALESCE(MAX(block_index), -1) AS max_idx FROM blocks;")
+            row = cur.fetchone()
+            return int(row["max_idx"]) if row else -1
+        except Exception:
+            return -1
         finally:
             conn.close()
 
@@ -338,10 +349,100 @@ class SQLiteStorage:
         finally:
             conn.close()
 
+    def load_delta_state(self, since_block_index: int, expected_tip_hash: str) -> Optional[Tuple[int, dict]]:
+        """
+        O(Δ) incremental state loader for multi-worker concurrency.
+        Verifies canonical tip hash at since_block_index to prevent fork desynchronization;
+        returns None if full reload is required.
+        """
+        if since_block_index < 0 or not expected_tip_hash:
+            return None
+        conn = self._connect()
+        try:
+            anchor = conn.execute(
+                "SELECT hash FROM blocks WHERE block_index = ?;",
+                (int(since_block_index),),
+            ).fetchone()
+            if not anchor or str(anchor["hash"]) != str(expected_tip_hash):
+                return None
+
+            cur = conn.execute(
+                "SELECT block_index, hash, previous_hash, merkle_root, timestamp, nonce, miner, version, transactions_json "
+                "FROM blocks WHERE block_index > ? ORDER BY block_index ASC;",
+                (int(since_block_index),),
+            )
+            new_block_rows = cur.fetchall()
+
+            meta_rows = conn.execute("SELECT key, value FROM meta;").fetchall()
+            meta = {r["key"]: r["value"] for r in meta_rows}
+            revision = int(meta.get("state_revision", "1"))
+
+            wallet_rows = conn.execute("SELECT address, public_key, created_at, nonce FROM wallets;").fetchall()
+            wallets: Dict[str, dict] = {
+                r["address"]: {
+                    "public_key": r["public_key"],
+                    "created_at": r["created_at"],
+                    "nonce": r["nonce"],
+                }
+                for r in wallet_rows
+            }
+
+            node_rows = conn.execute("SELECT node_id, data_json FROM nodes;").fetchall()
+            nodes: Dict[str, dict] = {}
+            for r in node_rows:
+                try:
+                    nodes[r["node_id"]] = json.loads(r["data_json"])
+                except Exception:
+                    pass
+
+            mempool_rows = conn.execute("SELECT tx_json FROM mempool ORDER BY seq ASC;").fetchall()
+            pending_txs: List[dict] = []
+            for r in mempool_rows:
+                try:
+                    pending_txs.append(json.loads(r["tx_json"]))
+                except Exception:
+                    pass
+
+            att_rows = conn.execute(
+                "SELECT block_index, COUNT(*) AS cnt FROM block_attestations GROUP BY block_index;"
+            ).fetchall()
+            attestation_counts: Dict[int, int] = {int(r["block_index"]): int(r["cnt"]) for r in att_rows}
+
+            new_chain_dicts: List[dict] = []
+            for r in new_block_rows:
+                b_idx = int(r["block_index"])
+                new_chain_dicts.append({
+                    "index": b_idx,
+                    "hash": r["hash"],
+                    "previous_hash": r["previous_hash"],
+                    "merkle_root": r["merkle_root"],
+                    "timestamp": r["timestamp"],
+                    "nonce": r["nonce"],
+                    "miner": r["miner"],
+                    "version": r["version"],
+                    "attestations_count": attestation_counts.get(b_idx, 0),
+                    "transactions": json.loads(r["transactions_json"]),
+                })
+
+            return revision, {
+                "new_blocks": new_chain_dicts,
+                "pending_transactions": pending_txs,
+                "attestation_counts": attestation_counts,
+                "wallets": wallets,
+                "nodes": nodes,
+                "total_transactions": int(meta.get("total_transactions", "0")),
+                "total_fees_collected": float(meta.get("total_fees_collected", "0.0")),
+            }
+        except Exception:
+            return None
+        finally:
+            conn.close()
+
     def save_state(self, blocks_dicts: List[dict], wallets: Dict[str, dict],
                    nodes: Dict[str, dict], total_transactions: int,
                    total_fees_collected: float,
-                   pending_dicts: Optional[List[dict]] = None) -> int:
+                   pending_dicts: Optional[List[dict]] = None,
+                   dirty_wallets: Optional[Dict[str, dict]] = None) -> int:
         """
         Persists new blocks incrementally, synchronizes shared mempool,
         and upserts wallets/nodes inside a single ACID WAL transaction.
@@ -404,7 +505,10 @@ class SQLiteStorage:
                         (tx_h, json.dumps(p_tx, ensure_ascii=False), float(p_tx.get("timestamp", time.time()))),
                     )
 
-            for addr, w_info in wallets.items():
+            wallets_to_upsert = dirty_wallets if dirty_wallets is not None else wallets
+            for addr, w_info in wallets_to_upsert.items():
+                if not isinstance(w_info, dict):
+                    continue
                 conn.execute(
                     """
                     INSERT OR REPLACE INTO wallets (address, public_key, created_at, nonce)
@@ -447,6 +551,52 @@ class SQLiteStorage:
         except Exception:
             conn.execute("ROLLBACK;")
             raise
+        finally:
+            conn.close()
+
+    def save_nodes_only(self, nodes: Dict[str, dict]):
+        """Fast O(1) persistence for P2P node heartbeats without rewriting blocks or incrementing full chain revision."""
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE;")
+            existing_ids = {r["node_id"] for r in conn.execute("SELECT node_id FROM nodes;").fetchall()}
+            removed_ids = existing_ids - set(nodes.keys())
+            for rid in removed_ids:
+                conn.execute("DELETE FROM nodes WHERE node_id = ?;", (rid,))
+
+            for nid, n_info in nodes.items():
+                conn.execute(
+                    """
+                    INSERT OR REPLACE INTO nodes (node_id, data_json, last_seen)
+                    VALUES (?, ?, ?);
+                    """,
+                    (
+                        str(nid),
+                        json.dumps(n_info, ensure_ascii=False),
+                        float(n_info.get("last_seen", time.time())),
+                    ),
+                )
+            conn.execute("COMMIT;")
+        except Exception:
+            conn.execute("ROLLBACK;")
+            raise
+        finally:
+            conn.close()
+
+    def load_nodes_only(self) -> Dict[str, dict]:
+        """Reads the latest P2P node telemetry table directly from SQLite WAL."""
+        conn = self._connect()
+        try:
+            node_rows = conn.execute("SELECT node_id, data_json FROM nodes;").fetchall()
+            nodes: Dict[str, dict] = {}
+            for r in node_rows:
+                try:
+                    nodes[r["node_id"]] = json.loads(r["data_json"])
+                except Exception:
+                    pass
+            return nodes
+        except Exception:
+            return {}
         finally:
             conn.close()
 

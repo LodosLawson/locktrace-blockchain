@@ -33,3 +33,5 @@ package-lock.json
 Thumbs.db
 
 backups/
+
+scratch/
