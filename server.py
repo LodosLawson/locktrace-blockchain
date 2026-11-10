@@ -1296,7 +1296,8 @@ def api_register_node():
             client_ip=get_client_ip(),
         )
     except PermissionError as pe:
-        return api_response(False, message=str(pe), status=403)
+        logger.warning(f"Node registration rejected: {pe}")
+        return api_response(False, message="Node authentication failed: Node ID is registered to another cryptographic key.", status=403)
     logger.info(f"Node Registered / Heartbeat: {node_info['name']} [{node_info['node_id']}] (verified={node_info.get('auth_verified')})")
     return api_response(True, message="Node registered successfully in LockTrace network", data=node_info, status=201)
 
@@ -1335,7 +1336,8 @@ def api_ping_node():
             client_ip=get_client_ip(),
         )
     except PermissionError as pe:
-        return api_response(False, message=str(pe), status=403)
+        logger.warning(f"Node ping rejected: {pe}")
+        return api_response(False, message="Node authentication failed: Node ID is registered to another cryptographic key.", status=403)
     return api_response(True, message="Pong", data={
         "node_id": node_id[:64],
         "status": "online",

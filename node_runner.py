@@ -1386,10 +1386,14 @@ class LockTraceNode:
 
             def _safe_header(self, val: str) -> str:
                 # HTTP Response Splitting Guard (CWE-113): Strip CR/LF and control characters
-                return re.sub(r"[\r\n\x00-\x1f\x7f-\x9f]+", "", str(val or "")).strip()
+                clean = str(val or "").replace("\r", "").replace("\n", "")
+                return re.sub(r"[\x00-\x1f\x7f-\x9f]+", "", clean).strip()
 
             def _send_clean_header(self, name: str, value: str):
-                self.send_header(self._safe_header(name), self._safe_header(value))
+                clean_name = str(name or "").replace("\r", "").replace("\n", "").strip()
+                clean_value = str(value or "").replace("\r", "").replace("\n", "").strip()
+                if clean_name and clean_value:
+                    self.send_header(clean_name, clean_value)
 
             def _add_security_and_cors_headers(self):
                 self._send_clean_header("X-Powered-By", f"LockTrace-Decentralized-Node/{VERSION}")
@@ -1397,14 +1401,26 @@ class LockTraceNode:
                 self._send_clean_header("X-Frame-Options", "SAMEORIGIN")
                 self._send_clean_header("X-XSS-Protection", "1; mode=block")
                 self._send_clean_header("Referrer-Policy", "strict-origin-when-cross-origin")
-                # LT-02 Fix: Restrict CORS to trusted origins; reject arbitrary third-party websites (evil.com)
-                origin = self._safe_header(self.headers.get("Origin", ""))
-                if origin:
-                    is_local = bool(re.match(r"^https?://(127\.0\.0\.1|localhost)(:\d+)?$", origin, re.I))
-                    if is_local or origin in ("https://locktrace.space", "https://www.locktrace.space"):
-                        self._send_clean_header("Access-Control-Allow-Origin", origin)
-                        self._send_clean_header("Access-Control-Allow-Credentials", "true")
-                        self._send_clean_header("Vary", "Origin")
+                # HTTP Response Splitting Guard (CWE-113): Use exact constant strings from whitelist
+                raw_origin = (self.headers.get("Origin", "") or "").strip().lower()
+                ALLOWED_ORIGIN_MAP = {
+                    "https://locktrace.space": "https://locktrace.space",
+                    "https://www.locktrace.space": "https://www.locktrace.space",
+                    "https://spectacular-brioche-aafb73.netlify.app": "https://spectacular-brioche-aafb73.netlify.app",
+                    "http://127.0.0.1:5000": "http://127.0.0.1:5000",
+                    "http://localhost:5000": "http://localhost:5000",
+                    "http://127.0.0.1:3000": "http://127.0.0.1:3000",
+                    "http://localhost:3000": "http://localhost:3000",
+                    "http://127.0.0.1:5050": "http://127.0.0.1:5050",
+                    "http://localhost:5050": "http://localhost:5050",
+                    "http://127.0.0.1": "http://127.0.0.1",
+                    "http://localhost": "http://localhost",
+                }
+                matched_origin = ALLOWED_ORIGIN_MAP.get(raw_origin)
+                if matched_origin:
+                    self._send_clean_header("Access-Control-Allow-Origin", matched_origin)
+                    self._send_clean_header("Access-Control-Allow-Credentials", "true")
+                    self._send_clean_header("Vary", "Origin")
                 elif getattr(node_ref, "server_mode", False):
                     self._send_clean_header("Access-Control-Allow-Origin", "*")
                 self._send_clean_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
@@ -1961,15 +1977,22 @@ class LockTraceNode:
                         if not check.get("verified"):
                             self._send_bytes(403, b"// Blocked by LockTrace SHA-256 Guard", "application/javascript")
                             return
-                    ctype, _ = mimetypes.guess_type(candidate_file)
-                    if candidate_file.endswith(".js"):
-                        ctype = "application/javascript; charset=utf-8"
-                    elif candidate_file.endswith(".json"):
-                        ctype = "application/json; charset=utf-8"
-                    elif candidate_file.endswith(".svg"):
-                        ctype = "image/svg+xml"
+                    STATIC_MIME_MAP = {
+                        ".js": "application/javascript; charset=utf-8",
+                        ".json": "application/json; charset=utf-8",
+                        ".svg": "image/svg+xml",
+                        ".png": "image/png",
+                        ".jpg": "image/jpeg",
+                        ".jpeg": "image/jpeg",
+                        ".ico": "image/x-icon",
+                        ".html": "text/html; charset=utf-8",
+                        ".css": "text/css; charset=utf-8",
+                        ".txt": "text/plain; charset=utf-8",
+                    }
+                    ext = os.path.splitext(candidate_file)[1].lower()
+                    ctype = STATIC_MIME_MAP.get(ext, "application/octet-stream")
                     with open(candidate_file, "rb") as sf:
-                        self._send_bytes(200, sf.read(), ctype or "application/octet-stream")
+                        self._send_bytes(200, sf.read(), ctype)
                     return
 
                 # SPA Fallback -> Verified Web Shell
