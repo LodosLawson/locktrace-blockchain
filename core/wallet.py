@@ -7,7 +7,12 @@ Engineered with OpenSSL/cryptography (immune to Minerva timing side-channels) wi
 
 import hashlib
 import binascii
+import warnings
 from typing import Optional
+
+# Suppress host python deprecation warnings from underlying C-bindings
+warnings.filterwarnings("ignore", message=".*Python 3.8.*")
+
 from core.mnemonic import generate_mnemonic, mnemonic_to_private_key, validate_mnemonic
 
 SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
