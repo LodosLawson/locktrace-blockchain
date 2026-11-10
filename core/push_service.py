@@ -210,7 +210,7 @@ class PushNotificationService:
                 return True, "Push notifications subscribed successfully."
             except Exception as e:
                 logger.error(f"Failed to save push subscription: {e}")
-                return False, f"Database error: {str(e)}"
+                return False, "Database error occurred while saving push subscription."
 
     def unsubscribe(self, endpoint: str) -> bool:
         """Removes a push subscription by endpoint."""

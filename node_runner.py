@@ -627,7 +627,8 @@ class LockTraceNode:
         except Exception as exc:
             self.frontend_verified = False
             self.frontend_status_msg = TAMPER_WARNING_TEXT
-            return {"verified": False, "reason": f"{TAMPER_WARNING_TEXT} ({exc})"}
+            logger.warning(f"Frontend integrity check failed: {exc}")
+            return {"verified": False, "reason": TAMPER_WARNING_TEXT}
 
     def _load_or_create_node_id(self) -> str:
         id_file = os.path.join(self.home_dir, "node_identity.json")
@@ -709,10 +710,12 @@ class LockTraceNode:
                     with urllib.request.urlopen(alt_req, timeout=timeout) as resp:
                         return json.loads(resp.read().decode("utf-8"))
                 except Exception as e:
-                    return {"success": False, "message": str(e), "_offline": True}
+                    logger.debug(f"Fallback seed request failed: {e}")
+                    return {"success": False, "message": "Connection to fallback seed failed", "_offline": True}
             return {"success": False, "message": "Connection failed", "_offline": True}
         except Exception as e:
-            return {"success": False, "message": str(e), "_offline": True}
+            logger.debug(f"P2P request failed: {e}")
+            return {"success": False, "message": "Network request failed", "_offline": True}
 
     # =================================================================
     # 3. LOCAL ARCHIVAL LEDGER QUERIES & AUTONOMOUS SURVIVAL MINING

@@ -141,7 +141,7 @@ class BridgeRelayer:
             }
         except Exception as e:
             logger.error(f"Failed to fetch relayer status: {e}")
-            return {"error": str(e), "relayer_address": self.account.address}
+            return {"error": "Failed to fetch relayer status", "relayer_address": self.account.address}
 
     def process_pending_locks(self) -> int:
         """Finds all verified L1 locked orders that haven't been minted on EVM yet."""
