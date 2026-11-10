@@ -1,21 +1,32 @@
-# Security Policy
+# Security Policy — LockTrace Blockchain (BCT)
 
 ## Supported Versions
 
-Use this section to tell people about which versions of your project are
-currently being supported with security updates.
+The following versions of LockTrace are actively supported with security patches and consensus updates:
 
-| Version | Supported          |
-| ------- | ------------------ |
-| 5.1.x   | :white_check_mark: |
-| 5.0.x   | :x:                |
-| 4.0.x   | :white_check_mark: |
-| < 4.0   | :x:                |
+| Version | Supported          | Status |
+| ------- | ------------------ | ------ |
+| 2.4.x   | :white_check_mark: | **Current Active Mainnet Release** (Comprehensive Audit Hardened) |
+| 2.3.x   | :white_check_mark: | Legacy Consensus Supported |
+| < 2.3.0 | :x:                | Deprecated (Upgrade Mandatory) |
 
 ## Reporting a Vulnerability
 
-Use this section to tell people how to report a vulnerability.
+The LockTrace team takes the security of the decentralized Layer-1 blockchain, cross-chain bridge, and non-custodial wallet infrastructure seriously.
 
-Tell them where to go, how often they can expect to get an update on a
-reported vulnerability, what to expect if the vulnerability is accepted or
-declined, etc.
+If you believe you have discovered a vulnerability, architectural exploit, or consensus discrepancy:
+
+1. **Do NOT open a public GitHub issue.**
+2. Send an encrypted email or detailed report directly to:
+   - **Primary Security Contact:** [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com)
+   - **GitHub Security Advisories:** [Submit a Private Advisory](https://github.com/LodosLawson/locktrace-blockchain/security/advisories/new)
+
+### What to Include
+* Detailed description of the vulnerability and attack vector (e.g. Consensus, Bridge, Cryptography, P2P, Web UI).
+* Step-by-step reproduction instructions or test case scenario.
+* Potential impact and proposed remediation, if available.
+
+### Response Timeline
+* **Initial Acknowledgement:** Within 24 hours.
+* **Triage & Assessment:** Within 48 hours.
+* **Remediation & Patch Deployment:** Critical vulnerabilities are hotfixed and deployed to mainnet nodes via emergency consensus updates.
