@@ -210,11 +210,14 @@ class BridgeRelayer:
                 depth = tip_b - l1_b_idx
                 check_conn.close()
 
-                if att_c < 1 and depth < 2:
-                    logger.info(f"Bridge {bridge_id}: Block #{l1_b_idx} awaiting validator finality (attestations: {att_c}, depth: {depth}).")
+                # LT-02 Hardening: Strict L1 confirmation depth & validator finality guard
+                is_finalized = (att_c >= 2 and depth >= 4) or depth >= 8
+                if not is_finalized:
+                    logger.info(f"Bridge {bridge_id}: Block #{l1_b_idx} awaiting full L1 finality (attestations: {att_c}/2, depth: {depth}/8). Deferring mint.")
                     continue
             except Exception as _f_err:
-                logger.debug(f"Could not verify L1 finality for {bridge_id}: {_f_err}")
+                logger.warning(f"Could not verify L1 finality for {bridge_id}: {_f_err}. Deferring mint.")
+                continue
 
             # Validate destination
             if not Web3.is_address(evm_dest) or evm_dest.lower() == WBCT_CONTRACT.lower():

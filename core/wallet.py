@@ -45,13 +45,22 @@ class Wallet:
         return f"BCT{second_hash[:40]}"
 
     def sign(self, data: str) -> str:
-        """Deterministically sign data with private key using SHA-256 ECDSA (SECP256k1)."""
-        signature = self.private_key.sign_deterministic(
+        """Deterministically sign data with private key using SHA-256 ECDSA (SECP256k1) with canonical Low-S."""
+        sig_bytes = self.private_key.sign_deterministic(
             data.encode("utf-8"),
             hashfunc=hashlib.sha256,
             sigencode=sigencode_string,
         )
-        return binascii.hexlify(signature).decode()
+        # BIP-62 / BIP-146 / EIP-2 Low-S enforcement: s <= N // 2
+        if len(sig_bytes) == 64:
+            r = int.from_bytes(sig_bytes[:32], "big")
+            s = int.from_bytes(sig_bytes[32:64], "big")
+            SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+            half_n = SECP256K1_N // 2
+            if s > half_n:
+                s = SECP256K1_N - s
+                sig_bytes = r.to_bytes(32, "big") + s.to_bytes(32, "big")
+        return binascii.hexlify(sig_bytes).decode()
 
     def get_public_key_hex(self) -> str:
         return binascii.hexlify(self.public_key.to_string()).decode()
@@ -105,7 +114,7 @@ def public_key_to_address(public_key_hex: str) -> str:
 
 
 def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool:
-    """Verify SECP256k1 ECDSA signature (SHA-256)."""
+    """Verify SECP256k1 ECDSA signature (SHA-256) with strict Low-S malleability protection (BIP-62/146/EIP-2)."""
     try:
         pub_bytes = _normalize_uncompressed_pubkey_bytes(public_key_hex)
         if len(pub_bytes) != 64:
@@ -115,13 +124,17 @@ def verify_signature(public_key_hex: str, data: str, signature_hex: str) -> bool
         if clean_sig.startswith("0x") or clean_sig.startswith("0X"):
             clean_sig = clean_sig[2:]
         sig_bytes = binascii.unhexlify(clean_sig)
-        # SECP256k1 grup mertebesi ve sıfır/aşım kontrolü (0 < r < n, 0 < s < n)
+        # SECP256k1 grup mertebesi ve kesin Low-S kontrolü (0 < r < n, 0 < s <= n/2) - Malleability Guard
         if len(sig_bytes) == 64:
             r_val = int.from_bytes(sig_bytes[:32], "big")
             s_val = int.from_bytes(sig_bytes[32:64], "big")
             SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
-            if r_val <= 0 or r_val >= SECP256K1_N or s_val <= 0 or s_val >= SECP256K1_N:
+            half_n = SECP256K1_N // 2
+            if r_val <= 0 or r_val >= SECP256K1_N or s_val <= 0 or s_val > half_n:
+                # Reject malleable signatures where s > N/2
                 return False
+        else:
+            return False
         msg_bytes = data.encode("utf-8")
 
         # Güvenli SHA-256 ECDSA doğrulaması

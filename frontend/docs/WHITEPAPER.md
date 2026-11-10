@@ -1,7 +1,7 @@
-# LockTrace (BCT) Technical Whitepaper — v2.3.0
+# LockTrace (BCT) Technical Whitepaper — v2.4.0
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.3.0 — November 2026*  
+*Version 2.4.0 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
@@ -19,13 +19,14 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.3.0**, LockTrace hardens the network with the **v2.3.0 Comprehensive Security & Consensus Suite**:
-1. **Strict Staking Vault Isolation (LT-01):** Eliminates Sybil stake spoofing by strictly requiring collateral locked in `BCT_STAKE_VAULT_...` for 30% consensus reward participation and block attestation finality.
-2. **Local Daemon Isolation & DNS Rebinding Immunity (LT-02):** Secures local node runners (`node_runner.py`) with strict `Host` header enforcement and origin-restricted CORS.
-3. **Structured Canonical Signatures & Mandatory Nonce Enforcement (LT-03):** Prevents signature replay attacks through deterministic payload templates (`TX:mainnet:<sender>:<receiver>:<amount>:<nonce>`) and non-optional sequential nonces.
-4. **DOM Injection Neutralization & Content Security Policy (LT-04):** Implements `sanitizeJsAttr` attribute sanitization and strict browser CSP headers to prevent XSS and seed phrase exfiltration.
-5. **P2P Header-First Pre-PoW Verification (LT-05):** Shields nodes from memory exhaustion (OOM DoS) via 512KB payload capping and pre-PoW header checks.
-6. **TOCTOU-Free Atomic In-Memory Serving (LT-06):** Serves `index.html` and `sw.js` directly from verified byte buffers, preventing Time-of-Check to Time-of-Use tampering.
+In **Version 2.4.0**, LockTrace hardens the network with the **v2.4.0 Comprehensive Security & Consensus Suite**:
+1. **Consensus Quorum Proof-of-Attestation & Fake Uptime Immunity (LT-01):** Eliminates Sybil stake spoofing and idle heartbeat emission exploitation by strictly requiring both collateral locked in `BCT_STAKE_VAULT_...` (minimum 1,000.0 BCT) and real-time cryptographic ECDSA block attestations within the last 3 blocks for 30% validator pool reward participation.
+2. **Cross-Chain Bridge Reorg & Concurrency Guard (LT-02):** Enforces 8-to-10 block L1 confirmation depth prior to Base EVM minting, strict *fail-closed* 12-block Base confirmation depth verification, SQLite unique index constraints on EVM burn hashes, and in-flight mutex locks preventing double-spend race conditions.
+3. **Local Daemon Isolation, DNS Rebinding & Cross-Origin RPC Defense (LT-03):** Secures local node runners (`node_runner.py`) with strict `Host` header validation and `Origin`/`Sec-Fetch-Site` filtering that rejects unauthorized cross-origin execution from malicious websites.
+4. **BIP-62/146 Low-S Signature Malleability Immunity & Deterministic Canonical Signatures (LT-04):** Strictly enforces canonical ECDSA Low-S ($s \le \lfloor N/2 \rfloor$) in SECP256k1 signature validation, rejecting all malleable signatures, and mandates deterministic canonical payload templates (`TX:mainnet:<sender>:<receiver>:<amount>:<nonce>`) with strictly sequential nonces.
+5. **DOM Injection Neutralization & Attribute XSS Guard (LT-05):** Implements rigorous URL attribute validation, entity de-nesting in `formatSpaceBodyHtml`, and strict Content-Security-Policy (CSP) headers protecting BIP-39 recovery phrases and wallet private keys against on-chain stored XSS.
+6. **P2P Header-First Pre-PoW, Median-Time-Past (MTP) & Drift Defense (LT-06):** Shields nodes from memory exhaustion (OOM DoS) via 512KB payload capping and upfront PoW difficulty checks; enforces timestamp monotonicity, strict +120s future drift caps, and Bitcoin-standard BIP-113 Median-Time-Past (MTP) past 11 blocks.
+7. **Zero-Disk TOCTOU-Free Atomic In-Memory Serving (LT-07):** Serves `index.html`, `sw.js`, and `manifest.json` directly from cryptographically verified in-memory byte buffers, eliminating Time-of-Check to Time-of-Use tampering risks.
 
 ---
 

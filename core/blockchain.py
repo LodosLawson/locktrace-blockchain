@@ -3126,7 +3126,8 @@ class Blockchain:
             m_addr = str(n.get("miner_address", "") or "").strip()
             if not is_valid_bct_address(m_addr) or m_addr in (TREASURY_ADDRESS, clean_exclude):
                 continue
-            if (ts - float(n.get("last_seen", 0))) > 300.0:
+            # Fake Uptime Guard (LT-01 Hardening): Active heartbeat within 180s
+            if (ts - float(n.get("last_seen", 0))) > 180.0:
                 continue
             if not n.get("auth_verified", False):
                 continue
@@ -3137,8 +3138,11 @@ class Blockchain:
             # Equivocation Defense: Exclude slashed malicious validators
             if m_addr in self.slashed_validators:
                 continue
+            # Proof-of-Attestation & Archival Verification (LT-01): Must have actively attested within the last 3 blocks
             attested_h = int(n.get("attested_height", -1))
-            if attested_h < max(0, block_index - 5):
+            if attested_h < max(0, block_index - 3):
+                continue
+            if int(n.get("blocks_attested", 0)) < 1 and block_index > 0:
                 continue
             candidates.append(n)
 
@@ -3647,6 +3651,12 @@ class Blockchain:
             if submitted_ver < 2 or submitted_nonce < 0:
                 return False, "Only v2 Merkle PoW block format is accepted.", None
 
+            # 0. Header-First Pre-PoW Check (LT-06 OOM & CPU DoS Guard)
+            diff = self.get_current_difficulty()
+            target_prefix = "0" * diff
+            if not submitted_hash.startswith(target_prefix):
+                return False, f"Header-First rejection: Hash does not meet PoW target ({diff} leading zeroes required).", None
+
             # 1. Verify miner ECDSA ownership over the solved block header
             clean_pub = (public_key or "").strip() or self.wallets.get(clean_miner, {}).get("public_key", "")
             if not clean_pub or not signature:
@@ -3664,7 +3674,19 @@ class Blockchain:
             if submitted_idx != expected_idx or submitted_prev != expected_prev:
                 return False, f"Chain advanced (Stale Block). Expected block: #{expected_idx}", {"stale": True, "network_height": expected_idx}
 
-            if abs(time.time() - submitted_ts) > 300:
+            # 2b. Timestamp Monotonicity, Median-Time-Past (MTP) & Drift Guards (LT-06)
+            now_ts = time.time()
+            if submitted_ts > now_ts + 120.0:
+                return False, "Block timestamp too far in the future (max 120s drift allowed).", None
+            if self.chain and submitted_ts <= self.chain[-1].timestamp:
+                return False, f"Block timestamp must be strictly greater than predecessor block ({self.chain[-1].timestamp:.3f}s vs {submitted_ts:.3f}s).", None
+            if len(self.chain) >= 11:
+                past_window = sorted([b.timestamp for b in self.chain[-11:]])
+                mtp = past_window[len(past_window) // 2]
+                if submitted_ts <= mtp:
+                    return False, f"Block timestamp must be greater than Median-Time-Past ({mtp:.3f}s).", None
+
+            if abs(now_ts - submitted_ts) > 300:
                 return False, "Block timestamp invalid (exceeded ±300s window).", None
 
             # 3. Validate transactions against live mempool + exact protocol reward math
@@ -3879,6 +3901,7 @@ class Blockchain:
             node_entry["last_seen"] = time.time()
             node_entry["status"] = "online"
             node_entry["attested_height"] = max(int(node_entry.get("attested_height", 0)), block_index)
+            node_entry["last_attestation_ts"] = time.time()
             node_entry["block_height"] = max(int(node_entry.get("block_height", 0)), block_index + 1)
             if inserted:
                 node_entry["blocks_attested"] = int(node_entry.get("blocks_attested", 0)) + 1

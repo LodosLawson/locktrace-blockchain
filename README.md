@@ -89,9 +89,9 @@ LockTrace features a native on-chain domain and identity protocol that maps huma
 
 ---
 
-## 🥩 Non-Custodial Validator Staking & Yield Model (v2.3.0)
+## 🥩 Non-Custodial Validator Staking & Yield Model (v2.4.0)
 
-LockTrace v2.3.0 features an on-chain **Validator Staking Vault** that empowers participants to stake collateral, attest block headers, participate in the $2/3$ Quorum Finality checkpoint mechanism, and earn automated protocol rewards without trusting any third party or centralized custodian.
+LockTrace v2.4.0 features an on-chain **Validator Staking Vault** that empowers participants to stake collateral, attest block headers, participate in the $2/3$ Quorum Finality checkpoint mechanism, and earn automated protocol rewards without trusting any third party or centralized custodian.
 
 ### 🏛️ Staking Vault Specifications
 * **Vault Address:** `BCT_STAKE_VAULT_00000000000000000000000000000000`
@@ -118,9 +118,9 @@ LockTrace v2.3.0 features an on-chain **Validator Staking Vault** that empowers 
 
 ---
 
-## 📊 Financial Analytics Dashboard & Sovereign Portfolio Management (v2.3.0)
+## 📊 Financial Analytics Dashboard & Sovereign Portfolio Management (v2.4.0)
 
-Built directly into the **My Wallet** interface, the v2.3.0 **Financial Analytics View** provides non-custodial asset auditing and real-time ledger intelligence:
+Built directly into the **My Wallet** interface, the v2.4.0 **Financial Analytics View** provides non-custodial asset auditing and real-time ledger intelligence:
 * **Interactive Donut Breakdown:** Visualizes liquid balance vs. active locked collateral (PoS Staking Vault).
 * **Live Area Sparkline:** Tracks dynamic balance trajectories derived directly from cryptographic transaction graph history.
 * **Cashflow Inflow vs. Outflow:** Categorizes mining payouts, validator quorum distributions, creator royalties, BNS investments, and peer transfers.
@@ -358,11 +358,19 @@ curl -s "https://locktrace.space/api/v1/nodes"
 1. **Sovereign Client-Side Custody:** Private keys are generated and held strictly in client devices using pure WebCrypto BIP-39 / SECP256k1 algorithms. No user keys or credentials are ever sent to, processed by, or stored on remote nodes.
 2. **Deterministic State Resolution:** Account balances and BNS ownerships are dynamically derived through verified transaction graph evaluation across immutable blocks, eliminating mutable state tampering.
 3. **Replay & Double-Spend Protection:** Every transaction enforces sequential integer `nonce` validation and cryptographic SECP256k1 signature verification.
-4. **ACID Storage with O(1) Delta SQLite WAL & 3-Phase CAS Engine (v2.3.0):** Ledger records are committed incrementally using SQLite Write-Ahead Logging (WAL), non-blocking 3-phase Compare-And-Swap (CAS) PoW block sealing, per-wallet Anti-DDoS mempool quotas, and IPv4 `/24` Sybil subnet deduplication.
-5. **Cryptographic Frontend Integrity Seal (v2.3.0):**
+4. **Comprehensive Security & Audit Hardening Suite (v2.4.0):**
+   - **[LT-01] Quorum Proof-of-Attestation & Anti-Fake-Uptime:** Strictly enforces active cryptographic attestation within the last 3 blocks + 1,000 BCT stake in vault for 30% consensus reward participation.
+   - **[LT-02] Cross-Chain Bridge Reorg & Double-Spend Defense:** 8-10 L1 confirmation depth, fail-closed 12-block Base EVM confirmation depth verification, SQLite unique index, and atomic in-flight mutex locks.
+   - **[LT-03] Local Node Daemon Host & Origin CSRF Isolation:** Rigorous Host header and Origin/Sec-Fetch-Site checking on `node_runner.py` rejecting unauthorized third-party cross-origin RPC executions.
+   - **[LT-04] SECP256k1 Low-S Signature Malleability Immunity:** Full compliance with BIP-62 / BIP-146 / EIP-2 rejecting $s > \lfloor N/2 \rfloor$, coupled with deterministic canonical signatures.
+   - **[LT-05] DOM Injection Neutralization & Attribute XSS Guard:** Complete linkify URL attribute escaping and strict Content-Security-Policy (CSP) headers protecting BIP-39 recovery phrases.
+   - **[LT-06] P2P Header-First Pre-PoW, Median-Time-Past (MTP) & Drift Defense:** Immediate PoW difficulty validation before JSON parsing, +120s max future drift cap, and 11-block Median-Time-Past (MTP).
+   - **[LT-07] Zero-Disk TOCTOU-Free Atomic In-Memory Serving:** Direct serving of web assets from verified in-memory byte buffers eliminating Time-of-Check to Time-of-Use tampering risks.
+5. **ACID Storage with O(1) Delta SQLite WAL & 3-Phase CAS Engine (v2.4.0):** Ledger records are committed incrementally using SQLite Write-Ahead Logging (WAL), non-blocking 3-phase Compare-And-Swap (CAS) PoW block sealing, per-wallet Anti-DDoS mempool quotas, and IPv4 `/24` Sybil subnet deduplication.
+6. **Cryptographic Frontend Integrity Seal (v2.4.0):**
    - Canonical SHA-256 Checksums and ECDSA SECP256k1 release signatures (`frontend/integrity.json`).
    - Every node independently validates `index.html` and `sw.js` against the on-chain release block before serving. Any unauthorized file tampering triggers an immediate `HTTP 403` lockout.
-6. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+7. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

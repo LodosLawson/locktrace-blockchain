@@ -70,7 +70,8 @@ Aşağıdaki modüllerin tamamı sıfırdan geliştirilmiş, güvenlik testlerin
 - [x] **Uygulama İçi Bildirim Kutusu (Notification Bell):** Hem uygulama açıkken hem arka planda gelen tüm bildirimler senkronize olarak bildirim kutusunda saklanır ve okundu olarak işaretlenebilir.
 
 ### ✅ G. Kriptografik Arayüz Güvenliği & Denetim (Security Hardening)
-- [x] **On-Chain Frontend Sealing (`v2.3.0`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
+- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.4.0`):** LT-01'den LT-07'ye kadar konsensüs (%30 quorum tasdik zorunluluğu), köprü reorg koruması (10 blok L1 derinliği & fail-closed Base EVM teyidi), yerel RPC CSRF/Origin izolasyonu, SECP256k1 Low-S (BIP-62/146) imza sertleştirmesi, linkify attribute XSS sanitizasyonu, Median-Time-Past (MTP) zaman damgası kuralı ve TOCTOU-proof bellek tamponu.
+- [x] **On-Chain Frontend Sealing (`v2.4.0`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
 - [x] **Derinlemesine Güvenlik Taraması:** Sybil saldırı engelleri, kendi kendine sahte hacim (wash-trading) engeli, SQLite WAL kilit koruması, XSS temizliği ve hız sınırlandırma (Rate Limiting) tamamlandı.
 
 ---
@@ -206,7 +207,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.3.0` | On-Chain Frontend Integrity Mühürlü & 3-Phase CAS |
+| **Ağ Sürümü** | `v2.4.0` | On-Chain Frontend Integrity Mühürlü, 3-Phase CAS & Audit Hardened |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
