@@ -29,6 +29,7 @@ def main():
         tar.add("server.py", arcname="server.py")
         tar.add("node_runner.py", arcname="node_runner.py")
         tar.add("README.md", arcname="README.md")
+        tar.add("requirements.txt", arcname="requirements.txt")
         tar.add("config.py", arcname="config.py")
         tar.add("scripts/sign_frontend.py", arcname="scripts/sign_frontend.py")
 
@@ -59,12 +60,16 @@ sudo cp /tmp/docs/LockTrace_Whitepaper.pdf /opt/blockchaint/frontend/LockTrace_W
 sudo cp /tmp/server.py /opt/blockchaint/server.py
 sudo cp /tmp/node_runner.py /opt/blockchaint/node_runner.py
 sudo cp /tmp/README.md /opt/blockchaint/README.md
+sudo cp /tmp/requirements.txt /opt/blockchaint/requirements.txt
 sudo cp /tmp/config.py /opt/blockchaint/config.py
 sudo cp /tmp/frontend/index.html /opt/blockchaint/frontend/index.html
 sudo cp /tmp/frontend/sw.js /opt/blockchaint/frontend/sw.js
 sudo cp /tmp/templates/index.html /opt/blockchaint/templates/index.html
 sudo cp /tmp/templates/sw.js /opt/blockchaint/templates/sw.js
 sudo cp /tmp/scripts/sign_frontend.py /opt/blockchaint/scripts/sign_frontend.py
+
+# Install updated dependencies (cryptography)
+sudo /opt/blockchaint/venv/bin/pip install -q -r /opt/blockchaint/requirements.txt
 
 # 1. Sign Frontend with official Release Key
 cd /opt/blockchaint
