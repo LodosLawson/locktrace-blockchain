@@ -1,12 +1,14 @@
-# LockTrace (BCT) Technical Whitepaper — v2.0.0
+# LockTrace (BCT) Technical Whitepaper — v2.3.0
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.0.0 — November 2026*  
+*Version 2.3.0 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
 *Treasury Vault:* `BCT_HAZINE_0000000000000000000000000000000000000000`  
 *Bridge Proof-of-Reserve Vault:* `BCT_BRIDGE_VAULT_000000000000000000000000000000000`  
+*Validator Staking Vault:* `BCT_STAKE_VAULT_00000000000000000000000000000000`  
+*Provable Burn Address:* `BCT0000000000000000000000000000000000000000`  
 *Base Mainnet wBCT ERC-20:* `0xA3C743113a41cFd0146917065d4578337Bb77254`
 
 ---
@@ -17,19 +19,20 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.0.0**, LockTrace introduces the **Hybrid Armored Parallel & 3-Phase Atomic Compare-And-Swap (CAS) Engine** paired with an **$O(1)$ Incremental Delta SQLite Write-Ahead Logging (WAL) Persistence Layer**:
-1. **Non-Blocking Sub-5ms Transaction Ingestion:** User HTTP/RPC requests are completely decoupled from Proof-of-Work (PoW) hashing and P2P network broadcasting. Transactions validate ECDSA signatures, replay nonces, and $10^8$ integer atomic balances in $< 5\text{ ms}$, queuing into a shared WAL mempool while signaling an autonomous background batch sequencer (`_sequencer_wakeup`).
-2. **3-Phase Atomic Compare-And-Swap (CAS) Block Production (Zero-Fork Guarantee):** Candidate blocks are assembled under a microsecond snapshot lock (Phase 1), mined via SHA-256 Proof-of-Work completely outside the ledger lock (Phase 2), and committed via strict Compare-And-Swap tip verification (Phase 3). If an external P2P miner advances the canonical chain during local PoW computation, the CAS Fork Guard deterministically aborts the stale candidate—mathematically eliminating local chain splits and preserving all concurrent mempool arrivals.
-3. **$O(1)$ Delta Persistence & Incremental In-Memory Indexing:** Rather than re-serializing historical blocks or rescanning the chain from Genesis, LockTrace v2.0.0 persists only newly sealed delta blocks (`b.index > max_db_idx`) and modified wallet nonces (`dirty_wallets`), while maintaining incremental confirmed-chain balance and social/BNS state overlays.
-4. **Dual 70% PoW Proposer / 30% Active Validator Quorum Consensus:** Block rewards and fee pools are split deterministically between the PoW block producer (70%) and cryptographically attested peer validators (30%), enforced with IPv4 `/24` and IPv6 `/48` Sybil subnet deduplication.
-5. **Cryptographic Frontend Release Integrity Shield:** Every official web client release (`index.html`, `sw.js`) is hashed via SHA-256, anchored to an IPFS CIDv1 content identifier, signed by the Release Authority (`SECP256k1`), and sealed directly on-chain (`frontend_release`).
+In **Version 2.3.0**, LockTrace hardens the network with the **v2.3.0 Comprehensive Security & Consensus Suite**:
+1. **Strict Staking Vault Isolation (LT-01):** Eliminates Sybil stake spoofing by strictly requiring collateral locked in `BCT_STAKE_VAULT_...` for 30% consensus reward participation and block attestation finality.
+2. **Local Daemon Isolation & DNS Rebinding Immunity (LT-02):** Secures local node runners (`node_runner.py`) with strict `Host` header enforcement and origin-restricted CORS.
+3. **Structured Canonical Signatures & Mandatory Nonce Enforcement (LT-03):** Prevents signature replay attacks through deterministic payload templates (`TX:mainnet:<sender>:<receiver>:<amount>:<nonce>`) and non-optional sequential nonces.
+4. **DOM Injection Neutralization & Content Security Policy (LT-04):** Implements `sanitizeJsAttr` attribute sanitization and strict browser CSP headers to prevent XSS and seed phrase exfiltration.
+5. **P2P Header-First Pre-PoW Verification (LT-05):** Shields nodes from memory exhaustion (OOM DoS) via 512KB payload capping and pre-PoW header checks.
+6. **TOCTOU-Free Atomic In-Memory Serving (LT-06):** Serves `index.html` and `sw.js` directly from verified byte buffers, preventing Time-of-Check to Time-of-Use tampering.
 
 ---
 
 ## Table of Contents
 
 1. [Introduction & Architectural Motivation](#1-introduction--architectural-motivation)
-2. [v2.0.0 High-Concurrency Engine: 3-Phase Atomic CAS & O(1) Delta WAL](#2-v200-high-concurrency-engine-3-phase-atomic-cas--o1-delta-wal)
+2. [v2.2.0 High-Concurrency Engine: 3-Phase Atomic CAS & O(1) Delta WAL](#2-v200-high-concurrency-engine-3-phase-atomic-cas--o1-delta-wal)
 3. [Cryptographic Primitives & 10^8 Atomic Unit Accounting](#3-cryptographic-primitives--108-atomic-unit-accounting)
 4. [Dual Hybrid Consensus: 70% PoW Proposer + 30% Validator Quorum](#4-dual-hybrid-consensus-70-pow-proposer--30-validator-quorum)
 5. [Hybrid Time-and-Quota Batch Sequencer](#5-hybrid-time-and-quota-batch-sequencer)
@@ -54,21 +57,28 @@ Contemporary digital networks fail users across four critical dimensions:
 - **L1 Execution Stalls & UI Freezing:** Traditional single-threaded blockchain nodes lock ledger state during block assembly and persistence, causing severe request queueing, HTTP timeouts, and UI freezes when thousands of users transact simultaneously.
 - **Unverified Client Supply-Chain Attacks:** Most Web3 decentralized applications (DApps) serve unverified JavaScript from centralized CDNs; a single DNS hijack or compromised CDN cache allows attackers to drain non-custodial wallets silently.
 
-### 1.2 The LockTrace v2.0.0 Solution
-LockTrace v2.0.0 resolves these challenges through an end-to-end verifiable stack:
+
+### 1.3 Zero-Custodial Security Policy (v2.2.0 Mandate)
+A core security breakthrough in Version 2.2.0 is the absolute elimination of custodial and hybrid key-handling vectors:
+* **Zero Transmission of Secret Material:** Direct transmission of mnemonic phrases or private keys over HTTP/REST is strictly forbidden and rejected with `HTTP 400 Zero-Custodial Security Violation`.
+* **Client-Side SECP256k1 ECDSA Execution:** All state-changing operations (transfers, staking, unstaking, Space posts, likes, comments, follows, BNS registrations) are signed exclusively inside the client's browser or local terminal memory using RFC 6979 deterministic SECP256k1 signatures.
+* **Decentralized Relay Isolation:** Bridge relayer and node authority credentials are held strictly within isolated daemon environments with encrypted keystores; no shared or static key files remain in public repositories.
+
+### 1.2 The LockTrace v2.2.0 Solution
+LockTrace v2.2.0 resolves these challenges through an end-to-end verifiable stack:
 - **Protocol-Level SocialFi & Naming:** Posts, quote-reposts, likes, comments, follows, and `.bct` domain operations are first-class Layer-1 transactions—eliminating smart-contract reentrancy bugs while executing instant on-chain royalty splits.
 - **Lock-Free Asynchronous PoW & O(1) Delta Storage:** High-frequency user actions never wait on PoW mining or full-chain disk writes, enabling thousands of concurrent users to interact with sub-5ms responsiveness.
 - **Zero-Knowledge Browser Custody + On-Chain Code Verification:** Private keys never leave the client's WebCrypto sandbox, and the client verifies its own SHA-256 + ECDSA release signature against the blockchain before unlocking wallet operations.
 
 ---
 
-## 2. v2.0.0 High-Concurrency Engine: 3-Phase Atomic CAS & O(1) Delta WAL
+## 2. v2.2.0 High-Concurrency Engine: 3-Phase Atomic CAS & O(1) Delta WAL
 
-A foundational breakthrough in LockTrace v2.0.0 is the elimination of `O(N)` full-chain serialization and synchronous lock contention under heavy multi-user load.
+A foundational breakthrough in LockTrace v2.2.0 is the elimination of `O(N)` full-chain serialization and synchronous lock contention under heavy multi-user load.
 
 ```
 +-----------------------------------------------------------------------------------+
-|               LOCKTRACE v2.0.0 NON-BLOCKING TRANSACTION & CAS PIPELINE            |
+|               LOCKTRACE v2.2.0 NON-BLOCKING TRANSACTION & CAS PIPELINE            |
 +-----------------------------------------------------------------------------------+
 |  [Concurrent Users (1,000+)]                                                      |
 |       |                                                                           |
@@ -101,7 +111,7 @@ A foundational breakthrough in LockTrace v2.0.0 is the elimination of `O(N)` ful
 In naive implementations, reaching a batch threshold inside a user's HTTP request triggers synchronous Proof-of-Work mining while holding the global ledger mutex, followed by serializing the entire blockchain (`[b.to_dict() for b in chain]`) to disk. At 10,000+ blocks and 1,000+ concurrent users, this creates $O(N)$ disk I/O amplification and multi-second request stalls.
 
 ### 2.2 3-Phase Atomic Compare-And-Swap (CAS) Block Sealing
-LockTrace v2.0.0 separates transaction admission from block sealing via a strict 3-phase protocol:
+LockTrace v2.2.0 separates transaction admission from block sealing via a strict 3-phase protocol:
 1. **Phase 1 — Canonical Snapshot:** Under `self.lock`, the sequencer captures:
    $$\text{Snapshot} = \left(h_{\text{expected}} = |\mathcal{C}|,\; H_{\text{prev}} = \mathcal{C}[-1].\text{hash},\; \mathcal{P} = \{\text{tx.hash}() \mid \text{tx} \in \text{Mempool}\}\right)$$
    along with deterministic 70/30 reward transactions.
@@ -150,25 +160,77 @@ Any browser or light client can verify transaction inclusion via `/api/v1/explor
 
 ## 4. Dual Hybrid Consensus: 70% PoW Proposer + 30% Validator Quorum
 
-LockTrace combines permissionless Proof-of-Work block production with cryptographic peer validator attestations.
+LockTrace combines permissionless Proof-of-Work block production with cryptographic peer validator attestations, economic staking, and post-block finality checkpoints.
 
-### 4.1 Block Header v2 Specification & Proof-of-Work
+### 4.1 Block Header v2 Specification & Dynamic PoW (LWMA)
 A v2 block header is serialized deterministically as:
 $$\text{HeaderPayload} = \text{JSON}\left(\{\text{index}, \text{merkle\_root}, \text{miner}, \text{nonce}, \text{previous\_hash}, \text{timestamp}, \text{version}: 2\}\right)$$
 A block is valid only if:
 $$\text{SHA256}(\text{HeaderPayload})\text{ starts with } \underbrace{\text{"000...0"}}_{D\text{ zeroes}}$$
-where base difficulty $D = 3$ (scaling adaptively to $D + 1$ when $\ge 8$ external peer miners are concurrently active).
+where difficulty $D$ is dynamically adjusted using a **Linearly Weighted Moving Average (LWMA)** targeting $T_{\text{target}} = 20.0\text{ seconds}$ per block over a rolling window of $N = 20$ blocks. This smooths out difficulty jumps for both CPU and GPU mining fleets without sudden 16x cliff jumps.
 
-### 4.2 Deterministic 70% / 30% Reward Pool Split
+### 4.2 Deterministic 70% / 30% Reward Pool Split & Validator Staking
 Each block distributes a reward pool consisting of the base treasury subsidy ($0.05\text{ BCT}$) plus the miner share of transaction fees:
 $$\text{TotalPool}_u = \text{Subsidy}_u + \left\lfloor\frac{\text{TransferFees}_u}{2}\right\rfloor + \text{SocialAndBnsFees}_u$$
-- **Case A (Active Verified Peer Validators Online):**
-  - **30% Validator Quorum Pool:** $\text{ValPool}_u = \lfloor 0.30 \times \text{TotalPool}_u \rfloor$, divided equally among up to 10 eligible, Sybil-deduplicated peer validators (`validator_reward`).
+- **Validator Staking Requirement (Sybil Defense):** To qualify for the 30% Validator Attestation Pool, a peer node must hold a minimum stake balance of **$1{,}000.0\text{ BCT}$** (`MIN_VALIDATOR_STAKE`). Standard full nodes and CPU/GPU miners require zero stake.
+- **Equivocation Slashing:** Any validator node that cryptographically signs conflicting block headers at the same block index is detected, rejected, and permanently slashed.
+- **Case A (Active Staked Peer Validators Online):**
+  - **30% Validator Quorum Pool:** $\text{ValPool}_u = \lfloor 0.30 \times \text{TotalPool}_u \rfloor$, divided equally among up to 10 eligible, Sybil-deduplicated, staked peer validators (`validator_reward`).
   - **70% Proposer Share:** $\text{Proposer}_u = \text{TotalPool}_u - \text{ActualValTotal}_u$, paid to the miner who solved the PoW puzzle (`mining_reward`).
 - **Case B (No External Eligible Validators Online):**
   - 100% of $\text{TotalPool}_u$ is awarded to the PoW block producer.
 
-### 4.3 Zero-Trust External Mining (`getblocktemplate` / `submitblock`)
+
+### 4.3 Post-Block Finality Checkpoints (2/3 Quorum Finality)
+To combine rapid PoW block production with absolute settlement finality:
+- Blocks are mined rapidly via PoW ($20\text{s}$ target) and immediately included on-chain.
+- Active peer validators broadcast cryptographic ECDSA attestations for new blocks.
+- When $\ge 2/3$ of active eligible validators attest to a block, it achieves **Finalized Checkpoint** status (`finalized = True`).
+- High-value wire transfers and cross-chain bridge mints/unlocks require block finalization before execution, eliminating reorg risks.
+
+### 4.4 Proof-of-Stake (PoS) Validator Staking Vault & Slashing Mechanism (v2.2.0)
+
+To eliminate Sybil multi-account attacks without centralized gatekeepers, LockTrace v2.2.0 establishes an on-chain **Validator Staking Vault**:
+* **Vault Address:** `BCT_STAKE_VAULT_00000000000000000000000000000000`
+* **Collateral Requirement:** Minimum `1,000.0 BCT` permanently locked per validator address.
+* **Consensus Quorum Distribution:** Every validated block distributes 70% of total block rewards to the PoW block producer/miner and 30% pro-rata to the staked validators signing the finality checkpoint.
+* **Non-Custodial Deposit & Withdrawal:** Validators commit collateral via `POST /api/v1/validator/stake` signed with local ECDSA keypairs (`VALIDATOR_STAKE:<sender>:<amount>:<nonce>`). Withdrawals are subject to unbonding safety periods and signed via `POST /api/v1/validator/unstake`.
+* **Slashing Condition:** Any validator caught double-signing conflicting checkpoint finality roots at the same block height has 50% of their collateral slashed on-chain (burned to `BCT_BURN_VAULT`) with immediate quorum disqualification.
+
+#### 4.4.1 Staking Yield, Reward Emission & APR Economics
+
+The economic incentive model for LockTrace validators is mathematically derived from continuous on-chain block subsidies and transaction fee splits:
+
+1. **Block Frequency & Cadence:**
+   Target block cadence is $T_{\text{block}} = 20.0\text{ seconds}$, yielding:
+   $$\text{Blocks per Day} = \frac{86{,}400\text{ seconds}}{20\text{ seconds}} = 4{,}320\text{ blocks/day}$$
+   $$\text{Blocks per Year} = 4{,}320 \times 365 = 1{,}576{,}800\text{ blocks/year}$$
+
+2. **Per-Block Validator Subsidy:**
+   With a base protocol block subsidy of $0.05\text{ BCT}$, the 30% validator pool receives:
+   $$\text{Subsidy}_{\text{val}} = 0.05\text{ BCT} \times 0.30 = 0.015\text{ BCT / block}$$
+
+3. **Cumulative Reward Pools:**
+   $$\text{Daily Validator Pool} = 4{,}320 \times 0.015\text{ BCT} \approx 64.80\text{ BCT / day} \quad (+ 30\% \text{ of all network tx fees})$$
+   $$\text{Yearly Validator Pool} = 1{,}576{,}800 \times 0.015\text{ BCT} \approx 23{,}652.00\text{ BCT / year} \quad (+ 30\% \text{ of all network tx fees})$$
+
+4. **Validator Annual Percentage Rate (APR):**
+   For $N_v$ active online validators each staking the minimum required collateral $C_{\text{stake}} = 1{,}000.0\text{ BCT}$:
+   $$\text{APR}(N_v) = \frac{\text{Yearly Reward Pool}}{N_v \times C_{\text{stake}}} \times 100\% = \frac{23{,}652.00}{N_v \times 1{,}000.00} \times 100\% = \frac{2{,}365.2\%}{N_v}$$
+
+   | Active Quorum Validators ($N_v$) | Total Staked Collateral | Daily Reward / Validator | Yearly Reward / Validator | Estimated APR |
+   |:---|:---|:---|:---|:---|
+   | **1 Validator (Genesis Boot)** | $1{,}000\text{ BCT}$ | $64.80\text{ BCT}$ | $23{,}652.00\text{ BCT}$ | **$\sim 2{,}365.2\%$** |
+   | **3 Validators** | $3{,}000\text{ BCT}$ | $21.60\text{ BCT}$ | $7{,}884.00\text{ BCT}$ | **$\sim 788.4\%$** |
+   | **5 Validators** | $5{,}000\text{ BCT}$ | $12.96\text{ BCT}$ | $4{,}730.40\text{ BCT}$ | **$\sim 473.0\%$** |
+   | **10 Validators (Max Soft Quorum)** | $10{,}000\text{ BCT}$ | $6.48\text{ BCT}$ | $2{,}365.20\text{ BCT}$ | **$\sim 236.5\%$** |
+   | **25 Validators** | $25{,}000\text{ BCT}$ | $2.59\text{ BCT}$ | $946.08\text{ BCT}$ | **$\sim 94.6\%$** |
+   | **50 Validators** | $50{,}000\text{ BCT}$ | $1.30\text{ BCT}$ | $473.04\text{ BCT}$ | **$\sim 47.3\%$** |
+   | **100 Validators** | $100{,}000\text{ BCT}$ | $0.65\text{ BCT}$ | $236.52\text{ BCT}$ | **$\sim 23.7\%$** |
+
+*(Note: Transaction fees from Space social interactions, BNS auctions, and L1 peer transfers add additional dynamic APR on top of the fixed base emission).*
+
+### 4.5 Zero-Trust External Mining (`getblocktemplate` / `submitblock`)
 External nodes running `node_runner.py` request candidate templates via `/api/v1/mining/template`, compute SHA-256 PoW locally, sign the solved header (`SUBMIT_BLOCK:{index}:{hash}:{nonce}:{miner}`), and submit via `/api/v1/mining/submit`. The core verifier independently reconstructs the mempool transaction set, re-verifies the exact 70/30 reward transactions, checks the Merkle root, and validates the PoW hash before committing.
 
 ---
@@ -187,6 +249,19 @@ When any quota or time window is reached, `_seal_or_queue_mempool()` triggers `_
 
 ---
 
+
+### 5.1 Mempool Anti-Spam Action Cooldowns (Non-Blocking Serialization)
+To prevent race conditions, rapid double-spend attempts, and high-frequency mempool flooding, LockTrace enforces strict per-wallet action cooldowns:
+
+| Action Type | Cooldown Duration | Purpose & Cryptographic Invariant |
+|:------------|:------------------|:-----------------------------------|
+| **Wire Transfer (`transfer`)** | `20 seconds` | Guarantees sequential nonce settlement between transfers |
+| **Space Post (`space_post`)** | `20 seconds` | Prevents automated content spamming on L1 storage |
+| **Space Like (`space_like`)** | `60 seconds` | Defends against automated royalty drain & like-farming bots |
+| **Space Comment (`space_comment`)** | `60 seconds` | Enforces thoughtful engagement & protects author notification pipelines |
+| **Space Follow (`space_follow`)** | `60 seconds` | Protects creator relationship graph against sybil follow/unfollow cycling |
+| **BNS Registration (`bns_register`)** | `60 seconds` | Prevents front-running domain squatting scripts |
+
 ## 6. LockTrace Space: Native On-Chain SocialFi & Creator Royalties
 
 LockTrace Space embeds a complete decentralized social network directly into Layer-1 transaction primitives.
@@ -199,11 +274,12 @@ LockTrace Space embeds a complete decentralized social network directly into Lay
 | **Quote / Repost (`space_post`)** | $0.10\text{ BCT}$ | Embedded `@handle (BCT...)` attribution card | $0.08\text{ BCT}$ (80%) | $0.02\text{ BCT}$ (20%) |
 | **Like Post (`space_like`)** | $0.01\text{ BCT}$ | **$+0.002\text{ BCT}$ (20% to Author)** | $0.007\text{ BCT}$ (70%) | $0.001\text{ BCT}$ (10%) |
 | **Comment (`space_comment`)** | $0.02\text{ BCT}$ | **$+0.004\text{ BCT}$ (20% to Author)** | $0.014\text{ BCT}$ (70%) | $0.002\text{ BCT}$ (10%) |
-| **Follow User (`space_follow`)** | $0.02\text{ BCT}$ | **$+0.004\text{ BCT}$ (20% to Target)** | $0.014\text{ BCT}$ (70%) | $0.002\text{ BCT}$ (10%) |
+| **Follow User (`space_follow`)** | $1.00\text{ BCT}$ | **$+0.50\text{ BCT}$ (50% to Target)** | $0.20\text{ BCT}$ (20%) | $0.30\text{ BCT}$ (30%) |
 
 ### 6.2 Native Quote-Repost Attribution & Identity Modes
 - **Cryptographic Attribution:** When a user quotes/reposts a thought (`🔁 Alıntı: @handle (BCT...)`), the original author's BNS handle and wallet address are permanently embedded in the on-chain payload and rendered as an interactive profile-linked quote card.
 - **Sovereign Identity Selection:** Users can publish under their verified `.bct` handle, their raw `BCT` address, or in cryptographic `anonymous` mode while still receiving on-chain author royalties.
+- **Anti-Spam Action Cooldowns:** Enforced per-wallet cooldowns to prevent spam and double-spend race conditions (Transfer: 20s, Post: 20s, Like: 60s, Comment: 60s, Follow: 60s, BNS Register: 60s).
 
 ---
 
@@ -212,9 +288,9 @@ LockTrace Space embeds a complete decentralized social network directly into Lay
 LockTrace includes a native, zero-smart-contract domain registry and secondary peer-to-peer marketplace for `.bct` handles:
 
 ### 7.1 Tiered Registration Pricing (100% Permanent Ownership, Zero Renewal Fees)
-- **3 Characters (Ultra-Rare, e.g., `ali.bct`):** $25.00\text{ BCT}$
-- **4 Characters (Rare, e.g., `meta.bct`):** $10.00\text{ BCT}$
-- **5+ Characters (Standard, e.g., `satoshi.bct`):** $2.00\text{ BCT}$
+- **3 Characters (Ultra-Rare, e.g., `ali.bct`):** $100.00\text{ BCT}$
+- **4 Characters (Rare, e.g., `meta.bct`):** $50.00\text{ BCT}$
+- **5+ Characters (Standard, e.g., `satoshi.bct`):** $10.00\text{ BCT}$
 
 ### 7.2 Native Marketplace & Bidding Operations
 All BNS lifecycle operations are atomic Layer-1 transactions:
@@ -271,7 +347,7 @@ To defend against DNS hijacking, rogue reverse proxies, CDN cache poisoning, and
 
 ## 11. Multi-Layered Cyber Defense: Anti-DDoS, Replay & Sybil `/24` Hardening
 
-LockTrace v2.0.0 incorporates five interlocking security shields against network and application-layer attacks:
+LockTrace v2.2.0 incorporates five interlocking security shields against network and application-layer attacks:
 1. **Per-Wallet & Global Mempool Quotas (`MAX_PENDING_TX_PER_WALLET = 25`):** A single wallet address can hold at most 25 unconfirmed transactions in the mempool at once (with a global ceiling of `MAX_GLOBAL_MEMPOOL_SIZE = 5000`). Botnets attempting mempool exhaustion are rejected at the signature gateway before touching disk or consensus state.
 2. **Bounded Sliding-Window Rate Limiter:** `SlidingWindowRateLimiter` enforces strict per-IP and per-scope request windows while bounding internal memory tables (`MAX_BUCKETS = 25,000`, `MAX_SIG_CACHE = 50,000`) to guarantee zero RAM exhaustion under spoofed-IP DDoS floods.
 3. **Full-History + Mempool Signature Replay Immunity:** `_used_signatures_set` indexes every ECDSA signature ever committed from Block #0 through the live mempool in $O(1)$ hash-set lookup time, rendering transaction replay mathematically impossible.
@@ -290,7 +366,7 @@ LockTrace v2.0.0 incorporates five interlocking security shields against network
 
 ## 13. Comprehensive Threat Model & Formal Verification Matrix
 
-| Attack / Failure Vector | Threat Mechanism | LockTrace v2.0.0 Defense Mechanism | Complexity / Bound |
+| Attack / Failure Vector | Threat Mechanism | LockTrace v2.2.0 Defense Mechanism | Complexity / Bound |
 |:------------------------|:-----------------|:-----------------------------------|:-------------------|
 | **Concurrent PoW & P2P Race (Chain Split)** | Local sequencer mines block while external miner submits same height | **3-Phase Atomic CAS Fork Guard** verifies `(len(chain) == expected_idx and tip_hash == expected_prev)` under lock before commit | **0% Fork Probability** |
 | **High-Concurrency HTTP Freeze** | 1,000+ users trigger batch threshold simultaneously | Non-blocking `_sequencer_wakeup` + lock-free Phase 2 PoW hashing outside `self.lock` | **$< 5\text{ ms}$ Ingestion** |
@@ -307,7 +383,7 @@ LockTrace v2.0.0 incorporates five interlocking security shields against network
 
 - **v1.0 – v1.6 (Completed):** Mainnet Genesis, 70/30 PoW + Validator Quorum consensus, LockTrace Space SocialFi royalties, `.bct` BNS registry & marketplace, Base Mainnet `wBCT` 1:1 cross-chain bridge, Uniswap v4 liquidity pool.
 - **v1.9 (Completed):** On-chain SHA-256 + IPFS CIDv1 Frontend Release Integrity Shield, Quote-Repost attribution cards, Explorer BNS/wallet full-history indexing, Persistent Mainnet Security Discrepancy Alert System.
-- **v2.0.0 (Current Production Release):** 3-Phase Atomic CAS Non-Blocking Block Producer, $O(1)$ Incremental Delta SQLite WAL Engine, $O(\Delta)$ Multi-Worker Sync, Anti-DDoS Per-Wallet Mempool Quotas, IPv4 `/24` Sybil Subnet Hardening, and Stat-Memoized Integrity Gate.
+- **v2.2.0 (Current Production Release):** 3-Phase Atomic CAS Non-Blocking Block Producer, $O(1)$ Incremental Delta SQLite WAL Engine, $O(\Delta)$ Multi-Worker Sync, Anti-DDoS Per-Wallet Mempool Quotas, IPv4 `/24` Sybil Subnet Hardening, and Stat-Memoized Integrity Gate.
 - **v2.5+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---

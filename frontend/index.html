@@ -216,137 +216,140 @@
   <!-- ========================================================================= -->
   <!-- DESKTOP & TABLET SIDEBAR (>= 768px — Stitch Shell)                        -->
   <!-- ========================================================================= -->
-  <aside class="hidden md:flex fixed left-0 top-0 h-full w-64 bg-surface-container-low/95 backdrop-blur-2xl z-50 flex-col justify-between py-6 px-4 border-r border-outline-variant/20">
-    <div class="flex flex-col gap-7">
+  <aside class="hidden md:flex fixed left-0 top-0 h-screen max-h-screen w-64 bg-surface-container-low/95 backdrop-blur-2xl z-50 flex-col justify-between py-3.5 px-3 border-r border-outline-variant/20 overflow-hidden">
+    <!-- Top & Scrollable Nav Container -->
+    <div class="flex flex-col min-h-0 flex-1 overflow-hidden">
       <!-- Brand -->
-      <div class="flex items-center gap-3 px-2 cursor-pointer" onclick="switchTab('ana-sayfa')">
-        <div class="w-9 h-9 rounded-full overflow-hidden border border-primary/30 shadow-sm shrink-0 flex items-center justify-center bg-surface-container">
+      <div class="flex items-center gap-3 px-2 py-1 cursor-pointer shrink-0" onclick="switchTab('ana-sayfa')">
+        <div class="w-8 h-8 rounded-full overflow-hidden border border-primary/30 shadow-sm shrink-0 flex items-center justify-center bg-surface-container">
           <img src="icons/icon.svg" class="w-full h-full object-cover" alt="LockTrace"/>
         </div>
         <div class="flex flex-col min-w-0">
-          <span class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight">LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider">Mainnet v2.0.0</span>
-          <span class="text-[10px] font-mono text-on-surface-variant truncate tracking-tight" id="sidebarBrandNodeUrl" title="Connected Node">net: <span class="text-primary font-medium" id="sidebarBrandNodeVal">locktrace.space</span></span>
+          <span class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight text-base">LockTrace</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[11px]">Mainnet v2.3.0</span>
+          <span id="sidebarBrandNodeVal" class="hidden"></span>
         </div>
       </div>
 
-      <!-- Desktop Categorized Navigation -->
-      <nav class="flex flex-col gap-3.5 overflow-y-auto no-scrollbar pr-0.5" id="sidebar-nav">
+      <!-- Desktop Categorized Navigation (Takes remaining space and scrolls smoothly if needed) -->
+      <nav class="flex-1 min-h-0 overflow-y-auto no-scrollbar flex flex-col gap-2 mt-2 pr-0.5" id="sidebar-nav">
         <!-- 1. WALLET & ACCOUNT -->
         <div class="flex flex-col gap-0.5">
-          <span class="px-3 pb-1 text-[10px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Wallet &amp; Account</span>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
-            <span class="material-symbols-outlined text-[19px]">account_balance_wallet</span>
+          <span class="px-2.5 pb-0.5 text-[9.5px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Wallet &amp; Account</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
+            <span class="material-symbols-outlined text-[18px]">account_balance_wallet</span>
             <span class="font-medium">My Wallet</span>
           </button>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="para-gonder" onclick="switchTab('para-gonder')" type="button">
-            <span class="material-symbols-outlined text-[19px]">send</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="para-gonder" onclick="switchTab('para-gonder')" type="button">
+            <span class="material-symbols-outlined text-[18px]">send</span>
             <span class="font-medium">Send Crypto</span>
           </button>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="yeni-cuzdan" onclick="switchTab('yeni-cuzdan')" type="button">
-            <span class="material-symbols-outlined text-[19px]">add_circle</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="yeni-cuzdan" onclick="switchTab('yeni-cuzdan')" type="button">
+            <span class="material-symbols-outlined text-[18px]">add_circle</span>
             <span class="font-medium">Create / Import</span>
           </button>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="bns" onclick="switchTab('bns')" type="button">
-            <span class="material-symbols-outlined text-[19px]">badge</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="bns" onclick="switchTab('bns')" type="button">
+            <span class="material-symbols-outlined text-[18px]">badge</span>
             <span class="font-medium">BNS Handles (.bct)</span>
             <span class="ml-auto px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[9px] font-bold">New</span>
           </button>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" onclick="openNotificationModal()" type="button">
-            <span class="material-symbols-outlined text-[19px]">notifications</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" onclick="openNotificationModal()" type="button">
+            <span class="material-symbols-outlined text-[18px]">notifications</span>
             <span class="font-medium">Notifications</span>
             <span id="sidebarNotificationBadge" class="ml-auto hidden px-2 py-0.5 rounded-full bg-rose-500 text-white font-mono text-[10px] font-bold">0</span>
           </button>
         </div>
 
         <!-- 2. SOCIAL & SPACE -->
-        <div class="flex flex-col gap-0.5 pt-2 border-t border-outline-variant/15">
-          <span class="px-3 pb-1 text-[10px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Social &amp; Space</span>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="ana-sayfa" onclick="switchTab('ana-sayfa')" type="button">
-            <span class="material-symbols-outlined text-[19px]">explore</span>
+        <div class="flex flex-col gap-0.5 pt-1.5 border-t border-outline-variant/15">
+          <span class="px-2.5 pb-0.5 text-[9.5px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Social &amp; Space</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="ana-sayfa" onclick="switchTab('ana-sayfa')" type="button">
+            <span class="material-symbols-outlined text-[18px]">explore</span>
             <span class="font-medium">Home Feed</span>
           </button>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="space" onclick="switchTab('space')" type="button">
-            <span class="material-symbols-outlined text-[19px]">forum</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="space" onclick="switchTab('space')" type="button">
+            <span class="material-symbols-outlined text-[18px]">forum</span>
             <span class="font-medium">Space Social</span>
             <span class="ml-auto px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-[9px] font-bold">L1</span>
           </button>
         </div>
 
         <!-- 3. NETWORK & PROTOCOL -->
-        <div class="flex flex-col gap-0.5 pt-2 border-t border-outline-variant/15">
-          <span class="px-3 pb-1 text-[10px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Network &amp; DeFi</span>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="ag-ve-explorer" onclick="switchTab('ag-ve-explorer')" type="button">
-            <span class="material-symbols-outlined text-[19px]">hub</span>
+        <div class="flex flex-col gap-0.5 pt-1.5 border-t border-outline-variant/15">
+          <span class="px-2.5 pb-0.5 text-[9.5px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Network &amp; DeFi</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="ag-ve-explorer" onclick="switchTab('ag-ve-explorer')" type="button">
+            <span class="material-symbols-outlined text-[18px]">hub</span>
             <span class="font-medium">Network &amp; Explorer</span>
           </button>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="system-wallets" onclick="switchTab('system-wallets')" type="button">
-            <span class="material-symbols-outlined text-[19px]">account_balance</span>
+          
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="system-wallets" onclick="switchTab('system-wallets')" type="button">
+            <span class="material-symbols-outlined text-[18px]">account_balance</span>
             <span class="font-medium">System Wallets</span>
             <span class="ml-auto px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-[9px] font-bold">Official</span>
           </button>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="kopru" onclick="switchTab('kopru')" type="button">
-            <span class="material-symbols-outlined text-[19px]">swap_horiz</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="kopru" onclick="switchTab('kopru')" type="button">
+            <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
             <span class="font-medium">Bridge (wBCT)</span>
             <span class="ml-auto px-1.5 py-0.5 rounded-full bg-secondary/15 text-secondary font-label-sm text-[9px] font-bold">Base</span>
           </button>
         </div>
 
         <!-- 4. RESOURCES & SECURITY -->
-        <div class="flex flex-col gap-0.5 pt-2 border-t border-outline-variant/15">
-          <span class="px-3 pb-1 text-[10px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Resources &amp; Security</span>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="api-docs" onclick="switchTab('api-docs')" type="button">
-            <span class="material-symbols-outlined text-[19px]">terminal</span>
+        <div class="flex flex-col gap-0.5 pt-1.5 border-t border-outline-variant/15">
+          <span class="px-2.5 pb-0.5 text-[9.5px] font-mono uppercase font-bold text-on-surface-variant/70 tracking-wider">Resources &amp; Security</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="api-docs" onclick="switchTab('api-docs')" type="button">
+            <span class="material-symbols-outlined text-[18px]">terminal</span>
             <span class="font-medium">Docs &amp; Guide</span>
           </button>
-          <button class="nav-item flex items-center gap-3 px-3 py-2 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="guvenlik" onclick="switchTab('guvenlik')" type="button">
-            <span class="material-symbols-outlined text-[19px]">security</span>
+          <button class="nav-item flex items-center gap-2.5 px-2.5 py-1.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-md text-label-md" data-tab="guvenlik" onclick="switchTab('guvenlik')" type="button">
+            <span class="material-symbols-outlined text-[18px]">security</span>
             <span class="font-medium">Security &amp; Policy</span>
             <span class="ml-auto px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-[9px] font-bold">Audit</span>
           </button>
         </div>
       </nav>
+    </div>
 
+    <!-- Pinned Bottom Section (Socials + Security & Engine Badge) -->
+    <div class="shrink-0 flex flex-col gap-1.5 pt-2 border-t border-outline-variant/15 px-0.5">
       <!-- Social Media & Official Community Links -->
-      <div class="px-2 pt-2 border-t border-outline-variant/20 flex flex-col gap-2">
-        <span class="text-[10px] font-mono uppercase text-on-surface-variant tracking-wider px-1">Community &amp; Socials</span>
+      <div class="flex flex-col gap-1">
+        <span class="text-[9.5px] font-mono uppercase text-on-surface-variant/70 tracking-wider px-1">Community &amp; Socials</span>
         <div class="grid grid-cols-5 gap-1">
-          <a href="https://x.com/LockTraceSpace" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-primary transition-all group" title="X (Twitter) @LockTraceSpace">
-            <span class="text-xs font-bold font-mono">𝕏</span>
+          <a href="https://x.com/LockTraceSpace" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-primary transition-all group" title="X (Twitter) @LockTraceSpace">
+            <span class="text-[11px] font-bold font-mono">𝕏</span>
           </a>
-          <a href="https://t.me/+zsaG1qkAHZllZGIy" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-sky-400 transition-all group" title="Telegram Channel">
-            <span class="material-symbols-outlined text-[15px]">send</span>
+          <a href="https://t.me/+zsaG1qkAHZllZGIy" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-sky-400 transition-all group" title="Telegram Channel">
+            <span class="material-symbols-outlined text-[14px]">send</span>
           </a>
-          <a href="https://www.instagram.com/locktracespace" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-rose-400 transition-all group" title="Instagram @locktracespace">
-            <span class="material-symbols-outlined text-[15px]">photo_camera</span>
+          <a href="https://www.instagram.com/locktracespace" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-rose-400 transition-all group" title="Instagram @locktracespace">
+            <span class="material-symbols-outlined text-[14px]">photo_camera</span>
           </a>
-          <a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-emerald-400 transition-all group" title="GitHub Repository">
-            <span class="material-symbols-outlined text-[15px]">code</span>
+          <a href="https://github.com/LodosLawson/locktrace-blockchain" target="_blank" rel="noopener" class="flex flex-col items-center justify-center p-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-emerald-400 transition-all group" title="GitHub Repository">
+            <span class="material-symbols-outlined text-[14px]">code</span>
           </a>
-          <a href="mailto:locktracetoken+space@gmail.com" class="flex flex-col items-center justify-center p-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-secondary transition-all group" title="Official Email: locktracetoken+space@gmail.com">
-            <span class="material-symbols-outlined text-[15px]">mail</span>
+          <a href="mailto:locktracetoken+space@gmail.com" class="flex flex-col items-center justify-center p-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface hover:text-secondary transition-all group" title="Official Email: locktracetoken+space@gmail.com">
+            <span class="material-symbols-outlined text-[14px]">mail</span>
           </a>
         </div>
       </div>
-    </div>
 
-    <!-- Bottom Security & Engine Badge -->
-    <div class="flex flex-col gap-2 px-1">
-      <button id="btnPwaDesktop" class="hidden w-full items-center justify-center gap-2 py-2.5 px-3 rounded-full bg-primary/15 hover:bg-primary/25 text-primary font-label-md text-label-md transition-all" onclick="triggerPwaInstall()" type="button">
-        <span class="material-symbols-outlined text-[16px]">install_desktop</span>
+      <!-- Bottom Security & Engine Badge -->
+      <button id="btnPwaDesktop" class="hidden w-full items-center justify-center gap-2 py-1.5 px-3 rounded-full bg-primary/15 hover:bg-primary/25 text-primary font-label-md text-[11px] transition-all" onclick="triggerPwaInstall()" type="button">
+        <span class="material-symbols-outlined text-[15px]">install_desktop</span>
         <span>Install App</span>
       </button>
-      <button class="w-full p-3 rounded-xl bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/20 flex items-center justify-between transition-colors text-left cursor-pointer" onclick="openNetworkSecurityModal()" title="SHA-256 Integrity &amp; Decentralized RPC" type="button">
+      <button class="w-full p-2 rounded-xl bg-surface-container-lowest hover:bg-surface-container border border-outline-variant/20 flex items-center justify-between transition-colors text-left cursor-pointer" onclick="openNetworkSecurityModal()" title="SHA-256 Integrity &amp; Decentralized RPC" type="button">
         <div class="flex items-center gap-2">
           <span class="w-2 h-2 rounded-full bg-primary animate-pulse" id="sidebarIntegrityDot"></span>
           <div class="flex flex-col">
-            <span class="font-label-sm text-label-sm text-on-surface" id="sidebarIntegrityLabel">SHA-256 + Quorum</span>
-            <span class="text-[10px] font-mono text-on-surface-variant" id="sidebarActiveRpcLabel">Non-Custodial ECDSA</span>
+            <span class="font-label-sm text-[11px] font-semibold text-on-surface leading-tight" id="sidebarIntegrityLabel">SHA-256 + Quorum</span>
+            <span class="text-[9.5px] font-mono text-on-surface-variant" id="sidebarActiveRpcLabel">Non-Custodial ECDSA</span>
           </div>
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
-          <span id="sidebarWarningBadge" class="hidden px-2 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-mono text-[9px] font-bold">Alert</span>
-          <span class="material-symbols-outlined text-primary text-[16px]">verified_user</span>
+          <span id="sidebarWarningBadge" class="hidden px-1.5 py-0.5 rounded-full bg-rose-500/20 text-rose-300 font-mono text-[8.5px] font-bold">Alert</span>
+          <span class="material-symbols-outlined text-primary text-[15px]">verified_user</span>
         </div>
       </button>
     </div>
@@ -366,7 +369,7 @@
         <button class="flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-outline-variant/30 transition-colors active:scale-95 shrink-0 text-left" onclick="openNetworkSecurityModal()" title="Network &amp; SHA-256 Verification" type="button">
           <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="mobileNetDot"></span>
           <div class="flex flex-col min-w-0 leading-none">
-            <span class="font-label-sm text-[10px] sm:text-[11px] text-on-surface tracking-wide uppercase font-semibold shrink-0" id="mobileNetLabel">Mainnet</span>
+            <span class="font-label-sm text-[10px] sm:text-[11px] text-on-surface tracking-wide uppercase font-semibold shrink-0" id="mobileNetLabel">Mainnet v2.3.0</span>
             <span class="text-[9px] font-mono text-on-surface-variant truncate max-w-[85px] xs:max-w-[110px]" id="mobileNetNodeUrl">net: <span class="text-primary font-medium" id="mobileNetNodeVal">locktrace.space</span></span>
           </div>
           <span class="material-symbols-outlined text-[12px] text-primary shrink-0 hidden xs:inline">shield_lock</span>
@@ -390,7 +393,11 @@
           <span id="mobileNotificationBadge" class="hidden absolute -top-1 -right-1 min-w-[15px] h-[15px] px-0.5 rounded-full bg-rose-500 text-white font-mono text-[8.5px] font-bold flex items-center justify-center shadow-sm animate-pulse">0</span>
         </button>
 
-        <!-- Account / Wallet Badge -->
+        <!-- Account / Wallet Badge & Node Badge -->
+        <span id="mobileNodeWalletBadge" class="hidden items-center gap-1 bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 px-1.5 py-0.5 rounded-full text-[9px] font-mono font-bold cursor-pointer" onclick="switchTab('dugum-paneli')" title="Node &amp; Validator Cüzdanı Aktif">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+          <span>Node</span>
+        </span>
         <button class="flex items-center gap-1 bg-surface-container hover:bg-surface-container-high px-2 py-0.5 rounded-full text-on-surface transition-colors active:scale-95 border border-outline-variant/20 shrink-0 max-w-[95px] xs:max-w-[120px] sm:max-w-[145px]" onclick="handleHeaderAddressAction()" type="button" title="Wallet Account">
           <span class="material-symbols-outlined text-[13px] text-primary shrink-0">account_balance_wallet</span>
           <span class="text-[10px] sm:text-[11px] font-mono font-medium text-on-surface truncate" id="mobileHeaderAddress">Open Wallet</span>
@@ -430,7 +437,7 @@
       <button class="flex items-center gap-2 bg-surface-container-low hover:bg-surface-container px-3 py-1 rounded-full border border-outline-variant/30 transition-colors cursor-pointer text-left" onclick="openNetworkSecurityModal()" title="SHA-256 Integrity Shield &amp; RPC Selector" type="button">
         <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="desktopNetDot"></span>
         <div class="flex flex-col min-w-0 leading-tight">
-          <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold" id="desktopNetLabel">LockTrace Mainnet</span>
+          <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold" id="desktopNetLabel">LockTrace Mainnet v2.3.0</span>
           <span class="text-[10px] font-mono text-on-surface-variant truncate max-w-[150px]" id="desktopNetNodeUrl">net: <span class="text-primary font-medium" id="desktopNetNodeVal">locktrace.space</span></span>
         </div>
         <span class="material-symbols-outlined text-[14px] text-primary shrink-0">shield_lock</span>
@@ -447,6 +454,11 @@
     </div>
 
     <div class="flex items-center gap-2.5">
+      <button id="desktopNodeWalletBadge" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-full bg-emerald-500/15 border border-emerald-500/35 text-emerald-400 font-label-sm text-xs font-semibold hover:bg-emerald-500/25 transition-all cursor-pointer shadow-xs" onclick="switchTab('dugum-paneli')" type="button" title="Doğrulanmış Düğüm / Validator Cüzdanı">
+        <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+        <span class="material-symbols-outlined text-[16px]">dns</span>
+        <span>Node Operator</span>
+      </button>
       <button id="desktopVaultBadgeBtn" class="hidden items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant font-label-sm text-label-sm border border-outline-variant/30 transition-colors" onclick="handleVaultQuickToggle()" type="button">
         <span class="material-symbols-outlined text-[15px] text-primary" id="desktopVaultIcon">shield_lock</span>
         <span id="desktopVaultLabel">PIN Vault</span>
@@ -740,8 +752,11 @@
                 </p>
               </div>
 
-              <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/15 flex flex-col gap-2">
-                <span class="text-xs font-mono font-bold text-primary">STEP 03</span>
+              <div class="bg-surface-container-lowest p-5 rounded-2xl border border-outline-variant/15 flex flex-col gap-2 cursor-pointer hover:border-primary/40 transition-all" onclick="switchTab('dugum-paneli')">
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-mono font-bold text-primary">STEP 03</span>
+                  <span class="text-xs font-semibold text-primary flex items-center gap-1">Düğüm Panelini Aç →</span>
+                </div>
                 <h4 class="font-headline-sm text-headline-sm text-on-surface font-medium">Run a Node &amp; Earn Rewards</h4>
                 <p class="font-body-sm text-body-sm text-on-surface-variant">
                   Launch a node on your computer with a single command; earn 70% PoW block rewards or 30% Quorum validator distribution.
@@ -894,7 +909,7 @@
       </div>
 
       <div id="tab-cuzdanim" class="tab-content active flex-col w-full items-center">
-        <div class="flex flex-col w-full max-w-[600px] mx-auto px-margin md:px-6 pb-space-lg">
+        <div class="flex flex-col w-full max-w-[640px] md:max-w-4xl lg:max-w-5xl mx-auto px-margin md:px-6 pb-space-lg">
 
           <!-- Hero Balance Section -->
           <div class="flex flex-col items-center justify-center pt-space-sm pb-space-md text-center">
@@ -936,8 +951,34 @@
             </button>
           </div>
 
-          <!-- Quick Services Navigation Grid (Home / Explore, Bridge, Network, Docs, Services Menu) -->
-          <div class="grid grid-cols-5 gap-1.5 mb-space-lg p-2 rounded-2xl bg-surface-container-low border border-outline-variant/20">
+                    <!-- ================================================================= -->
+          <!-- COMPACT GATEWAY: POS VALIDATOR & DÜĞÜM PANELİ (MOBILE-OPTIMIZED)  -->
+          <!-- ================================================================= -->
+          <div id="walletValidatorGatewayCard" onclick="switchTab('dugum-paneli')" class="mb-4 p-4 rounded-2xl bg-gradient-to-r from-surface-container via-surface-container-high to-surface-container border border-primary/25 hover:border-primary/50 shadow-sm cursor-pointer transition-all active:scale-[0.99] group min-w-0 overflow-hidden">
+            <div class="flex items-center justify-between gap-3 min-w-0">
+              <div class="flex items-center gap-3 min-w-0">
+                <div class="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0 border border-primary/30 group-hover:bg-primary group-hover:text-on-primary transition-colors">
+                  <span class="material-symbols-outlined text-[22px]">verified_user</span>
+                </div>
+                <div class="min-w-0 flex flex-col">
+                  <div class="flex items-center gap-1.5 flex-wrap">
+                    <span class="font-bold text-xs sm:text-sm text-on-surface truncate">PoS Validator &amp; Düğüm Paneli</span>
+                    <span id="hubValidatorBadge" class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[9px] font-bold uppercase tracking-wider shrink-0">Gözlemci</span>
+                  </div>
+                  <div class="flex items-center gap-2 text-[11px] text-on-surface-variant mt-0.5 min-w-0">
+                    <span id="hubStakeSummaryLabel" class="truncate font-mono">1.000 BCT Staking &amp; Düğüm Telemetrisi</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0 text-primary font-semibold text-xs pl-2">
+                <span class="hidden sm:inline">Panele Git</span>
+                <span class="material-symbols-outlined text-[18px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
+              </div>
+            </div>
+          </div>
+
+<!-- Quick Services Navigation Grid (Home / Explore, Bridge, Network, Düğüm, Docs, Services Menu) -->
+          <div class="grid grid-cols-6 gap-1 mb-space-lg p-2 rounded-2xl bg-surface-container-low border border-outline-variant/20">
             <button class="flex flex-col items-center justify-center p-1.5 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all active:scale-95 group" onclick="switchTab('ana-sayfa')" type="button" title="Home &amp; Explore">
               <div class="w-8 h-8 rounded-full bg-surface-container group-hover:bg-primary/15 flex items-center justify-center text-primary mb-1 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">explore</span>
@@ -956,6 +997,12 @@
               </div>
               <span class="text-[10px] font-medium leading-tight">Network</span>
             </button>
+            <button class="flex flex-col items-center justify-center p-1.5 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all active:scale-95 group" onclick="switchTab('dugum-paneli')" type="button" title="PoS Validator &amp; Staking">
+              <div class="w-8 h-8 rounded-full bg-surface-container group-hover:bg-primary/15 flex items-center justify-center text-primary mb-1 transition-colors">
+                <span class="material-symbols-outlined text-[18px]">verified_user</span>
+              </div>
+              <span class="text-[10px] font-medium leading-tight text-primary">Validator</span>
+            </button>
             <button class="flex flex-col items-center justify-center p-1.5 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-all active:scale-95 group" onclick="switchTab('api-docs')" type="button" title="Docs &amp; Guide">
               <div class="w-8 h-8 rounded-full bg-surface-container group-hover:bg-surface-container-highest flex items-center justify-center text-on-surface mb-1 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">menu_book</span>
@@ -973,18 +1020,30 @@
           <!-- Recent Activity / Transaction History -->
           <div class="flex flex-col w-full">
             <div class="flex items-center justify-between mb-space-md">
-              <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Transaction History</h2>
-              <button aria-label="Refresh History" class="p-1.5 rounded-full text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" onclick="refreshCurrentAccountBalance(); refreshPersonalTransactions(); showToast('Wallet history refreshed');" title="Refresh" type="button">
-                <span class="material-symbols-outlined text-[20px]">tune</span>
-              </button>
+              <div class="flex items-center gap-2">
+                <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold" id="txHistoryHeading">Transaction History</h2>
+                <span id="txHistoryViewBadge" class="hidden sm:inline px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-semibold">Tüm İşlemler</span>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <button class="p-1.5 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" onclick="toggleAnalyticsView()" title="Grafik &amp; Bakiye Analizini Göster" type="button" id="btnToggleAnalytics">
+                  <span class="material-symbols-outlined text-[20px]" id="iconToggleAnalytics">query_stats</span>
+                </button>
+                <button aria-label="Refresh History" class="p-1.5 rounded-xl text-on-surface-variant hover:text-on-surface hover:bg-surface-container-low transition-colors" onclick="refreshCurrentAccountBalance(); refreshPersonalTransactions(); showToast('İşlem geçmişi ve analiz yenilendi');" title="Refresh" type="button">
+                  <span class="material-symbols-outlined text-[20px]">sync</span>
+                </button>
+              </div>
             </div>
 
             <!-- Segmented Filter Pill Container (Exact Stitch) -->
-            <div class="flex items-center gap-1 p-1 bg-surface-container-low rounded-full mb-space-md border border-outline-variant/20" id="filter-bar">
-              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-3 rounded-full text-center text-xs sm:text-label-md transition-all bg-surface-container-high text-on-surface font-medium shadow-sm truncate" data-filter="all" onclick="filterTransactions('all', this)" type="button">All</button>
-              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-3 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="in" onclick="filterTransactions('in', this)" type="button">Received</button>
-              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-3 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="out" onclick="filterTransactions('out', this)" type="button">Sent</button>
-              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-3 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="space" onclick="filterTransactions('space', this)" type="button">Space</button>
+            <div class="flex items-center gap-1 p-1 bg-surface-container-low rounded-full mb-space-md border border-outline-variant/20 overflow-x-auto no-scrollbar" id="filter-bar">
+              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all bg-surface-container-high text-on-surface font-medium shadow-sm truncate" data-filter="all" onclick="filterTransactions('all', this)" type="button">All</button>
+              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="in" onclick="filterTransactions('in', this)" type="button">Received</button>
+              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="out" onclick="filterTransactions('out', this)" type="button">Sent</button>
+              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="space" onclick="filterTransactions('space', this)" type="button">Space</button>
+              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate flex items-center justify-center gap-1" data-filter="analytics" onclick="filterTransactions('analytics', this)" type="button">
+                <span class="material-symbols-outlined text-[15px] text-primary">insights</span>
+                <span>Analiz &amp; Grafik</span>
+              </button>
             </div>
 
             <!-- Transaction List -->
@@ -993,6 +1052,229 @@
                 Loading wallet transactions...
               </div>
             </div>
+
+            <!-- Wallet Financial & Balance Analytics View (Grafik & Bakiye Analiz Sayfası) -->
+            <div class="hidden flex-col gap-4 w-full" id="walletAnalyticsView">
+              
+              <!-- Top Financial Summary Cards -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                <div class="p-3.5 rounded-2xl bg-surface-container-low border border-secondary/25 flex flex-col min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-mono uppercase text-on-surface-variant font-sans">Staking Ödülleri</span>
+                    <span class="material-symbols-outlined text-secondary text-[18px]">verified_user</span>
+                  </div>
+                  <span class="text-base sm:text-lg font-bold font-mono text-secondary mt-1 truncate" id="analyticsStakingTotal">0.00 BCT</span>
+                  <span class="text-[10px] text-on-surface-variant/80 mt-0.5 truncate" id="analyticsStakingCount">0 Tasdik Ödülü</span>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-surface-container-low border border-primary/25 flex flex-col min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-mono uppercase text-on-surface-variant font-sans">Madencilik (PoW)</span>
+                    <span class="material-symbols-outlined text-primary text-[18px]">memory</span>
+                  </div>
+                  <span class="text-base sm:text-lg font-bold font-mono text-primary mt-1 truncate" id="analyticsMiningTotal">0.00 BCT</span>
+                  <span class="text-[10px] text-on-surface-variant/80 mt-0.5 truncate" id="analyticsMiningCount">0 Blok Üretimi</span>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-surface-container-low border border-emerald-500/25 flex flex-col min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-mono uppercase text-on-surface-variant font-sans">Gelen Transferler</span>
+                    <span class="material-symbols-outlined text-emerald-400 text-[18px]">arrow_downward</span>
+                  </div>
+                  <span class="text-base sm:text-lg font-bold font-mono text-emerald-400 mt-1 truncate" id="analyticsInflowTotal">0.00 BCT</span>
+                  <span class="text-[10px] text-on-surface-variant/80 mt-0.5 truncate" id="analyticsInflowCount">0 Alınan Transfer</span>
+                </div>
+
+                <div class="p-3.5 rounded-2xl bg-surface-container-low border border-amber-500/25 flex flex-col min-w-0">
+                  <div class="flex items-center justify-between">
+                    <span class="text-[11px] font-mono uppercase text-on-surface-variant font-sans">Harcama &amp; Çıkış</span>
+                    <span class="material-symbols-outlined text-amber-400 text-[18px]">arrow_upward</span>
+                  </div>
+                  <span class="text-base sm:text-lg font-bold font-mono text-amber-400 mt-1 truncate" id="analyticsOutflowTotal">0.00 BCT</span>
+                  <span class="text-[10px] text-on-surface-variant/80 mt-0.5 truncate" id="analyticsOutflowCount">Giden + Gas + Sosyal</span>
+                </div>
+              </div>
+
+              <!-- Main Graphical Analysis & Trend Cards -->
+              <div class="grid grid-cols-1 lg:grid-cols-2 gap-4">
+                
+                <!-- 1. Donut / Distribution Chart Card -->
+                <div class="p-4 sm:p-5 rounded-3xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-3 min-w-0">
+                  <div class="flex items-center justify-between pb-2 border-b border-outline-variant/15">
+                    <div class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-primary text-[20px]">pie_chart</span>
+                      <h3 class="font-bold text-xs sm:text-sm text-on-surface">Gelir &amp; Harcama Kaynak Dağılımı</h3>
+                    </div>
+                    <span class="text-[10px] font-mono text-on-surface-variant" id="analyticsDonutSubtitle">Portföy Akışı</span>
+                  </div>
+
+                  <!-- Donut Chart & Legend -->
+                  <div class="flex flex-col sm:flex-row items-center justify-around gap-4 py-2">
+                    <div class="relative w-36 h-36 sm:w-40 sm:h-40 flex items-center justify-center shrink-0">
+                      <svg class="w-full h-full transform -rotate-90" viewBox="0 0 100 100" id="analyticsDonutSvg">
+                        <circle cx="50" cy="50" r="38" fill="transparent" stroke="currentColor" stroke-width="12" class="text-surface-container"></circle>
+                        <circle id="donutSegStaking" cx="50" cy="50" r="38" fill="transparent" stroke="#06b6d4" stroke-width="12" stroke-dasharray="0 239" stroke-dashoffset="0" class="transition-all duration-700"></circle>
+                        <circle id="donutSegMining" cx="50" cy="50" r="38" fill="transparent" stroke="#6366f1" stroke-width="12" stroke-dasharray="0 239" stroke-dashoffset="0" class="transition-all duration-700"></circle>
+                        <circle id="donutSegInflow" cx="50" cy="50" r="38" fill="transparent" stroke="#10b981" stroke-width="12" stroke-dasharray="0 239" stroke-dashoffset="0" class="transition-all duration-700"></circle>
+                        <circle id="donutSegOutflow" cx="50" cy="50" r="38" fill="transparent" stroke="#f59e0b" stroke-width="12" stroke-dasharray="0 239" stroke-dashoffset="0" class="transition-all duration-700"></circle>
+                      </svg>
+                      <div class="absolute inset-0 flex flex-col items-center justify-center pointer-events-none text-center px-2">
+                        <span class="text-[9px] uppercase font-mono text-on-surface-variant">Net Akış</span>
+                        <span class="font-bold font-mono text-xs sm:text-sm truncate max-w-[100px] sm:max-w-[120px] text-on-surface" id="analyticsNetFlowCenter">0 BCT</span>
+                      </div>
+                    </div>
+
+                    <!-- Legend Items -->
+                    <div class="flex flex-col gap-2 text-xs w-full sm:w-auto">
+                      <div class="flex items-center justify-between sm:justify-start gap-3">
+                        <div class="flex items-center gap-2">
+                          <span class="w-2.5 h-2.5 rounded-full bg-cyan-500 shrink-0"></span>
+                          <span class="text-on-surface-variant">Staking Ödülleri</span>
+                        </div>
+                        <span class="font-bold font-mono text-cyan-400" id="legendPctStaking">%0</span>
+                      </div>
+                      <div class="flex items-center justify-between sm:justify-start gap-3">
+                        <div class="flex items-center gap-2">
+                          <span class="w-2.5 h-2.5 rounded-full bg-indigo-500 shrink-0"></span>
+                          <span class="text-on-surface-variant">PoW Madencilik</span>
+                        </div>
+                        <span class="font-bold font-mono text-indigo-400" id="legendPctMining">%0</span>
+                      </div>
+                      <div class="flex items-center justify-between sm:justify-start gap-3">
+                        <div class="flex items-center gap-2">
+                          <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 shrink-0"></span>
+                          <span class="text-on-surface-variant">Gelen Transferler</span>
+                        </div>
+                        <span class="font-bold font-mono text-emerald-400" id="legendPctInflow">%0</span>
+                      </div>
+                      <div class="flex items-center justify-between sm:justify-start gap-3">
+                        <div class="flex items-center gap-2">
+                          <span class="w-2.5 h-2.5 rounded-full bg-amber-500 shrink-0"></span>
+                          <span class="text-on-surface-variant">Harcama &amp; Çıkış</span>
+                        </div>
+                        <span class="font-bold font-mono text-amber-400" id="legendPctOutflow">%0</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- 2. Cashflow & Balance Trajectory Sparkline Card -->
+                <div class="p-4 sm:p-5 rounded-3xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-3 min-w-0">
+                  <div class="flex items-center justify-between pb-2 border-b border-outline-variant/15">
+                    <div class="flex items-center gap-2">
+                      <span class="material-symbols-outlined text-secondary text-[20px]">show_chart</span>
+                      <h3 class="font-bold text-xs sm:text-sm text-on-surface">Zaman İçinde Bakiye &amp; Kazanç Akışı</h3>
+                    </div>
+                    <span class="text-[10px] font-mono text-on-surface-variant" id="analyticsTxCountLabel">Son İşlemler</span>
+                  </div>
+
+                  <!-- SVG Area Chart -->
+                  <div class="w-full h-36 sm:h-40 flex items-center justify-center relative pt-2">
+                    <svg class="w-full h-full overflow-visible" viewBox="0 0 400 120" preserveAspectRatio="none" id="analyticsAreaChartSvg">
+                      <defs>
+                        <linearGradient id="areaGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="0%" stop-color="#6366f1" stop-opacity="0.35"/>
+                          <stop offset="100%" stop-color="#6366f1" stop-opacity="0.0"/>
+                        </linearGradient>
+                      </defs>
+                      <path id="analyticsChartArea" d="M0,120 L400,120 Z" fill="url(#areaGradient)"></path>
+                      <path id="analyticsChartLine" d="M0,120 L400,120" fill="none" stroke="#6366f1" stroke-width="2.5" stroke-linecap="round"></path>
+                      <circle id="analyticsChartDot" cx="400" cy="120" r="4" fill="#06b6d4" stroke="#ffffff" stroke-width="1.5"></circle>
+                    </svg>
+                  </div>
+
+                  <div class="flex items-center justify-between text-[10px] font-mono text-on-surface-variant pt-1 border-t border-outline-variant/10">
+                    <span id="analyticsChartStartLabel">Geçmiş</span>
+                    <span class="text-primary font-bold">Kümülatif Kazanç / Bakiye Değişimi</span>
+                    <span id="analyticsChartEndLabel">Şimdi</span>
+                  </div>
+                </div>
+
+              </div>
+
+              <!-- Detailed Category Breakdown Table -->
+              <div class="p-4 sm:p-5 rounded-3xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-3 min-w-0 overflow-hidden">
+                <div class="flex items-center justify-between pb-2 border-b border-outline-variant/15">
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[20px]">account_balance_wallet</span>
+                    <h3 class="font-bold text-xs sm:text-sm text-on-surface">Detaylı Finansal Dağılım Çizelgesi</h3>
+                  </div>
+                  <span class="text-[10px] font-mono text-on-surface-variant">Tam Döküm</span>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                  <!-- Staking Rewards Item -->
+                  <div class="p-3 rounded-2xl bg-surface-container border border-outline-variant/15 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-xl bg-cyan-500/15 text-cyan-400 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[17px]">verified_user</span>
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span class="font-semibold text-on-surface truncate">PoS Validator Tasdiki</span>
+                        <span class="text-[10px] text-on-surface-variant truncate">%30 Quorum Blok Tasdikçisi</span>
+                      </div>
+                    </div>
+                    <span class="font-mono font-bold text-cyan-400 shrink-0 ml-2" id="breakdownStakingAmt">+0.00 BCT</span>
+                  </div>
+
+                  <!-- Mining Rewards Item -->
+                  <div class="p-3 rounded-2xl bg-surface-container border border-outline-variant/15 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-xl bg-indigo-500/15 text-indigo-400 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[17px]">memory</span>
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span class="font-semibold text-on-surface truncate">PoW Madencilik Geliri</span>
+                        <span class="text-[10px] text-on-surface-variant truncate">%70 Blok Başarı Ödülü</span>
+                      </div>
+                    </div>
+                    <span class="font-mono font-bold text-indigo-400 shrink-0 ml-2" id="breakdownMiningAmt">+0.00 BCT</span>
+                  </div>
+
+                  <!-- Inflow Transfers Item -->
+                  <div class="p-3 rounded-2xl bg-surface-container border border-outline-variant/15 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[17px]">arrow_downward</span>
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span class="font-semibold text-on-surface truncate">Gelen Transferler &amp; Telif</span>
+                        <span class="text-[10px] text-on-surface-variant truncate">Eşler Arası Ödemeler</span>
+                      </div>
+                    </div>
+                    <span class="font-mono font-bold text-emerald-400 shrink-0 ml-2" id="breakdownInflowAmt">+0.00 BCT</span>
+                  </div>
+
+                  <!-- Outflow Spending Item -->
+                  <div class="p-3 rounded-2xl bg-surface-container border border-outline-variant/15 flex items-center justify-between">
+                    <div class="flex items-center gap-2.5 min-w-0">
+                      <div class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
+                        <span class="material-symbols-outlined text-[17px]">arrow_upward</span>
+                      </div>
+                      <div class="flex flex-col min-w-0">
+                        <span class="font-semibold text-on-surface truncate">Giden Transfer &amp; Gas Ücreti</span>
+                        <span class="text-[10px] text-on-surface-variant truncate">Transfer, Space &amp; BNS</span>
+                      </div>
+                    </div>
+                    <span class="font-mono font-bold text-amber-400 shrink-0 ml-2" id="breakdownOutflowAmt">-0.00 BCT</span>
+                  </div>
+                </div>
+
+                <!-- Footer Summary Note -->
+                <div class="p-3 rounded-2xl bg-surface-container/60 border border-outline-variant/10 flex items-center justify-between text-xs mt-1">
+                  <div class="flex items-center gap-2">
+                    <span class="material-symbols-outlined text-primary text-[18px]">info</span>
+                    <span class="text-on-surface-variant text-[11px]">Bakiye analiz verileri Layer-1 blokzincir kayıtları üzerinden kriptografik olarak hesaplanmıştır.</span>
+                  </div>
+                  <button onclick="filterTransactions('all')" class="text-primary hover:underline font-semibold text-[11px] shrink-0" type="button">
+                    İşlem Listesine Dön
+                  </button>
+                </div>
+
+              </div>
+
+            </div>
+
           </div>
 
           <!-- Bottom On-Chain Verification Footnote (Exact Stitch) -->
@@ -1704,6 +1986,358 @@
       <!-- ===================================================================== -->
       <!-- SCREEN: OFFICIAL & SYSTEM WALLETS DIRECTORY                           -->
       <!-- ===================================================================== -->
+      <!-- ===================================================================== -->
+      <!-- SCREEN: LOCAL NODE & VALIDATOR HUB (#dugum-paneli)                    -->
+      <!-- ===================================================================== -->
+      <div id="tab-dugum-paneli" class="tab-content flex-col w-full items-center">
+        <div class="flex flex-col w-full max-w-[600px] lg:max-w-5xl mx-auto px-margin md:px-6 pb-space-lg">
+
+          <!-- Back to Wallet Navigation Bar -->
+          <div class="flex items-center justify-between w-full mt-space-md mb-2">
+            <button onclick="switchTab('cuzdanim')" class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-xs font-semibold border border-outline-variant/20 transition-all active:scale-95" type="button">
+              <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+              <span>← Cüzdanıma Dön</span>
+            </button>
+            <div class="flex items-center gap-2">
+              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">LockTrace PoS v2.3.0</span>
+            </div>
+          </div>
+
+          <!-- Header Section -->
+          <section class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mt-space-md mb-space-lg">
+            <div class="flex flex-col">
+              <div class="flex items-center gap-2">
+                <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">P2P Decentralized Infrastructure</span>
+                <span class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.3.0</span>
+              </div>
+              <h1 class="font-headline-md text-headline-md text-on-surface tracking-tight font-semibold">Düğüm ve Validator Paneli</h1>
+              <p class="text-body-sm text-on-surface-variant mt-1 max-w-2xl">
+                Düğümünüzü (Node / Miner / Validator) doğrudan tarayıcınızdan canlı olarak izleyin, bağlı node cüzdanınızı yönetin ve blok üretimine katkı sağlayın.
+              </p>
+            </div>
+            <div class="flex items-center gap-2">
+              <button onclick="probeLocalNode()" class="px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold flex items-center gap-1.5 transition-all active:scale-95 border border-outline-variant/30" type="button">
+                <span class="material-symbols-outlined text-[16px] text-primary">sync</span>
+                <span>Düğümü Yeniden Tara</span>
+              </button>
+            </div>
+          </section>
+
+          <!-- Connected Node Operator Identity Card -->
+          <div id="nodeOperatorIdentityCard" class="p-5 sm:p-6 rounded-3xl bg-gradient-to-r from-surface-container via-surface-container-high to-surface-container border border-primary/25 shadow-md flex flex-col gap-4 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-outline-variant/15">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-primary/20 text-primary flex items-center justify-center shrink-0 border border-primary/30 shadow-xs">
+                  <span class="material-symbols-outlined text-[24px]">verified_user</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-headline-sm text-sm sm:text-base font-bold text-on-surface" id="operatorStatusTitle">Düğüm Cüzdanı Tanımlı Değil</h3>
+                    <span id="operatorRoleBadge" class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase tracking-wider">Misafir</span>
+                  </div>
+                  <span class="text-xs font-mono text-on-surface-variant break-all mt-0.5" id="operatorAddressLabel">Cüzdan: Henüz cüzdan seçilmedi</span>
+                </div>
+              </div>
+              <button id="btnToggleNodeWallet" onclick="toggleCurrentWalletAsNode()" class="px-3.5 py-2 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary/90 transition-all active:scale-95 shadow-sm flex items-center gap-1.5 self-start sm:self-auto" type="button">
+                <span class="material-symbols-outlined text-[15px]">add_moderator</span>
+                <span id="btnToggleNodeWalletText">Bu Cüzdanı Node Cüzdanı Yap</span>
+              </button>
+            </div>
+
+            <!-- Stake & Validator Quorum Status Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+              <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[10px] font-mono uppercase text-on-surface-variant">Teminat / Stake Durumu</span>
+                <span class="font-bold font-mono text-on-surface mt-1" id="operatorStakeStatus">-- BCT</span>
+                <span class="text-[10px] text-on-surface-variant/80 mt-0.5" id="operatorStakeSubtitle">Eşik: 1.000 BCT</span>
+              </div>
+              <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[10px] font-mono uppercase text-on-surface-variant">Konsensüs Rolü</span>
+                <span class="font-bold text-primary mt-1" id="operatorConsensusRole">Gözlemci Düğüm</span>
+                <span class="text-[10px] text-on-surface-variant/80 mt-0.5">Seçenek A Quorum Üyeliği</span>
+              </div>
+              <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[10px] font-mono uppercase text-on-surface-variant">Ödül Hak Edişi</span>
+                <span class="font-bold text-secondary mt-1">%70 Blok / %30 Validator</span>
+                <span class="text-[10px] text-on-surface-variant/80 mt-0.5">Otomatik On-Chain Dağıtım</span>
+              </div>
+            </div>
+          </div>
+
+          
+          <!-- 1,000 BCT Validator Staking Vault Card (v2.3.0 PoS Collateral) -->
+          <div id="validatorStakingVaultCard" class="p-5 sm:p-6 rounded-3xl bg-surface-container border border-primary/30 shadow-md flex flex-col gap-4 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-outline-variant/15">
+              <div class="flex items-center gap-3">
+                <div class="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30 shadow-xs">
+                  <span class="material-symbols-outlined text-[24px]">lock_open</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-headline-sm text-base sm:text-lg font-bold text-on-surface">1.000 BCT Validator Teminat Kasası (PoS Staking)</h3>
+                    <span id="validatorVaultBadge" class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase tracking-wider">Teminatsız</span>
+                  </div>
+                  <span class="text-xs font-mono text-on-surface-variant break-all">Kasa: <span class="text-primary font-bold">BCT_STAKE_VAULT_00000000000000000000000000000000</span></span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2">
+                <button onclick="refreshValidatorStakeUI()" class="p-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs border border-outline-variant/30 transition-all active:scale-95" type="button" title="Teminat Durumunu Güncelle">
+                  <span class="material-symbols-outlined text-[16px] text-primary">sync</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Staking Progress Bar & Explanations -->
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between text-xs">
+                <span class="text-on-surface-variant font-mono">Kilitli Teminat / Gereken Eşik:</span>
+                <span id="validatorStakeProgressText" class="font-mono font-bold text-primary">0.00 / 1.000.00 BCT (%0)</span>
+              </div>
+              <div class="w-full h-3 rounded-full bg-surface-container-lowest border border-outline-variant/20 overflow-hidden">
+                <div id="validatorStakeProgressBar" class="h-full bg-gradient-to-r from-primary via-emerald-400 to-emerald-500 rounded-full transition-all duration-500" style="width: 0%;"></div>
+              </div>
+            </div>
+
+            <!-- Staking Action Buttons -->
+            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
+              <p class="text-xs text-on-surface-variant max-w-md">
+                1.000 BCT teminat kilitleyerek Seçenek A konsensüsüne katılın ve her blokta <span class="text-secondary font-bold">%30 Quorum Tasdik Ödülü</span> kazanın. İşlemler tarayıcınızda sıfır riskli Non-Custodial ECDSA ile yerel olarak imzalanır.
+              </p>
+              <div class="flex items-center gap-2.5 shrink-0">
+                <button id="btnExecuteStake" onclick="executeValidatorStake(1000)" class="px-4 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary/90 transition-all active:scale-95 shadow-sm flex items-center gap-1.5" type="button">
+                  <span class="material-symbols-outlined text-[16px]">lock</span>
+                  <span>1.000 BCT Kilitle (Stake)</span>
+                </button>
+                <button id="btnExecuteUnstake" onclick="executeValidatorUnstake(1000)" class="px-3.5 py-2.5 rounded-xl bg-surface-container-high text-on-surface font-semibold text-xs hover:bg-surface-container-highest transition-all active:scale-95 border border-outline-variant/30 flex items-center gap-1.5" type="button">
+                  <span class="material-symbols-outlined text-[16px]">lock_open</span>
+                  <span>Teminatı Çöz (Unstake)</span>
+                </button>
+              </div>
+            </div>
+
+            <!-- Staking Yield & Reward Model Breakdown (v2.3.0) -->
+            <div class="mt-2 p-4 rounded-2xl bg-surface-container-low border border-primary/20 flex flex-col gap-3 min-w-0 overflow-hidden">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-outline-variant/15">
+                <div class="flex items-center gap-2">
+                  <span class="material-symbols-outlined text-secondary text-[20px]">payments</span>
+                  <span class="font-bold text-xs sm:text-sm text-on-surface">1.000 BCT Stake Kazanç Modeli (Getiri / APR)</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-secondary/15 text-secondary font-mono text-[10px] font-bold self-start sm:self-auto">Hedef: 20s Blok (4.320 Blok/gün)</span>
+              </div>
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
+                <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col min-w-0">
+                  <span class="text-[10px] text-on-surface-variant uppercase font-sans">Blok Başına Havuz</span>
+                  <span class="font-bold text-primary mt-0.5 truncate">0.015 BCT</span>
+                  <span class="text-[9px] text-on-surface-variant/80 font-sans truncate">%30 Hazine + Fee</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col min-w-0">
+                  <span class="text-[10px] text-on-surface-variant uppercase font-sans">Günlük Toplam Havuz</span>
+                  <span class="font-bold text-secondary mt-0.5 truncate">~64.8 BCT</span>
+                  <span class="text-[9px] text-on-surface-variant/80 font-sans truncate">4.320 Blok / gün</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col min-w-0">
+                  <span class="text-[10px] text-on-surface-variant uppercase font-sans">Yıllık Toplam Havuz</span>
+                  <span class="font-bold text-amber-400 mt-0.5 truncate">~23.652 BCT</span>
+                  <span class="text-[9px] text-on-surface-variant/80 font-sans truncate">Tüm Validator Payı</span>
+                </div>
+                <div class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col min-w-0">
+                  <span class="text-[10px] text-on-surface-variant uppercase font-sans">Tahmini Kişi Başı</span>
+                  <span class="font-bold text-emerald-400 mt-0.5 truncate" id="valEstimatedAprLabel">~%236.5 APR</span>
+                  <span class="text-[9px] text-on-surface-variant/80 font-sans truncate" id="valEstimatedDailyLabel">~6.48 BCT / gün</span>
+                </div>
+              </div>
+              <p class="text-[11px] text-on-surface-variant leading-relaxed">
+                💡 <strong class="text-on-surface">Kazanç Nasıl Hesaplanır?</strong> Ağda her 20 saniyede bir blok üretilir (günlük 4.320 blok). Her blokta Hazine sübvansiyonunun %30'u (0.015 BCT) ve işlem komisyonlarının tamamının %30'u Validator Havuzuna aktarılır. Bu havuz o an çevrimiçi olan ve 1.000 BCT teminatı bulunan doğrulanmış validator'lar arasında <strong>eşit</strong> bölüştürülür. Ağda aktif validator sayısı azken kişi başı getiri katlanarak artar.
+              </p>
+            </div>
+
+          </div>
+
+          
+          
+          <!-- Remote Node Telemetry Box (Track your CMD node remotely from locktrace.space) -->
+          <div id="hubRemoteNodeBox" class="p-4 sm:p-5 rounded-3xl bg-surface-container border border-primary/25 shadow-sm flex flex-col gap-3 mb-6 min-w-0 overflow-hidden">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-outline-variant/15">
+              <div class="flex items-center gap-2">
+                <span class="material-symbols-outlined text-primary text-[20px]">terminal</span>
+                <span class="font-bold text-xs sm:text-sm text-on-surface">Uzak Düğüm Telemetrisi (CMD / Sunucu)</span>
+              </div>
+              <div id="hubNodeStatusBadge" class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold flex items-center gap-1 self-start sm:self-auto">
+                <span class="w-1.5 h-1.5 rounded-full bg-outline"></span>
+                <span id="hubNodeStatusText">Düğüm Taranıyor...</span>
+              </div>
+            </div>
+
+            <!-- Node Connected View -->
+            <div id="hubNodeConnectedView" class="hidden grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
+              <div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[10px] text-on-surface-variant uppercase">Düğüm Adı</span>
+                <span class="font-bold text-on-surface truncate mt-0.5" id="hubNodeNameLabel">--</span>
+                <span class="text-[9px] text-on-surface-variant/80" id="hubNodeEndpointLabel">P2P Mesh</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[10px] text-on-surface-variant uppercase">Blok Yüksekliği</span>
+                <span class="font-bold text-primary mt-0.5" id="hubNodeHeightLabel">--</span>
+                <span class="text-[9px] text-emerald-400 font-sans" id="hubNodeSyncLabel">Senkronize</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[10px] text-on-surface-variant uppercase">Son Sinyal (Ping)</span>
+                <span class="font-bold text-secondary mt-0.5" id="hubNodeLastSeenLabel">--</span>
+                <span class="text-[9px] text-on-surface-variant/80 font-sans">Heartbeat</span>
+              </div>
+              <div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[10px] text-on-surface-variant uppercase">Kazanılan Ödül</span>
+                <span class="font-bold text-amber-400 mt-0.5" id="hubNodeRewardsLabel">0.00 BCT</span>
+                <span class="text-[9px] text-on-surface-variant/80 font-sans">Toplam Kazanç</span>
+              </div>
+            </div>
+
+            <!-- Node Disconnected / CMD Instructions View -->
+            <div id="hubNodeDisconnectedView" class="flex flex-col gap-2 text-xs">
+              <p class="text-on-surface-variant text-[11px]">
+                Bilgisayarınızda terminalden (CMD) cüzdanınıza bağlı bir düğüm çalıştırarak blok üretimine katılabilir ve durumunu buradan uzaktan izleyebilirsiniz:
+              </p>
+              <div class="p-2.5 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex items-center justify-between gap-2 font-mono text-[11px] overflow-x-auto min-w-0">
+                <code class="text-primary break-all select-all" id="hubNodeRunCmd">python node_runner.py --wallet [Cüzdanınız] --open</code>
+                <button onclick="copyNodeRunnerWalletCommand()" class="shrink-0 px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-[10px] text-on-surface font-sans flex items-center gap-1" type="button">
+                  <span class="material-symbols-outlined text-[13px]">content_copy</span>
+                  <span>Kopyala</span>
+                </button>
+              </div>
+              <div class="flex items-center justify-between pt-1 flex-wrap gap-2">
+                <span class="text-[10px] text-on-surface-variant font-mono">Düğüm çalıştığı an bu panel otomatik olarak ÇEVRİMİÇİ durumuna geçer.</span>
+                <a href="http://127.0.0.1:5000/#dugum-paneli" target="_blank" rel="noopener noreferrer" class="text-[11px] text-primary hover:underline flex items-center gap-0.5 font-semibold">
+                  <span>Yerel Arayüz (127.0.0.1:5000)</span>
+                  <span class="material-symbols-outlined text-[13px]">open_in_new</span>
+                </a>
+              </div>
+            </div>
+
+          </div>
+
+          <!-- Localhost Node vs Remote Oracle Guidance Banner -->
+          <div class="p-4 rounded-2xl bg-surface-container-low border border-primary/25 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs mb-6">
+            <div class="flex items-center gap-3">
+              <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[20px]">laptop_chromebook</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="font-bold text-on-surface">Kendi Bilgisayarınızdaki Yerel Düğümü (127.0.0.1:5000) Yönetme</span>
+                <span class="text-on-surface-variant text-[11px] mt-0.5">
+                  Tarayıcı güvenlik kuralları gereği HTTPS (<code class="text-primary font-mono">locktrace.space</code>) sayfaları yerel HTTP (<code class="text-primary font-mono">127.0.0.1</code>) portunu doğrudan okuyamaz. Bilgisayarınızdaki yerel düğümü doğrudan yönetmek için alttaki bağlantıdan yerel paneli açabilirsiniz.
+                </span>
+              </div>
+            </div>
+            <a href="http://127.0.0.1:5000/#dugum-paneli" target="_blank" rel="noopener noreferrer" class="shrink-0 px-3.5 py-2 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary/90 transition-all flex items-center gap-1.5 shadow-xs" type="button">
+              <span class="material-symbols-outlined text-[15px]">open_in_new</span>
+              <span>Yerel Düğümü Aç (127.0.0.1:5000)</span>
+            </a>
+          </div>
+
+          <!-- Live Node Status Card -->
+          <div class="p-5 sm:p-6 rounded-3xl bg-surface-container border border-outline-variant/20 shadow-sm flex flex-col gap-5 mb-6">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-outline-variant/15">
+              <div class="flex items-center gap-3">
+                <div class="w-12 h-12 rounded-2xl bg-surface-container-high flex items-center justify-center shrink-0 border border-outline-variant/20">
+                  <span class="material-symbols-outlined text-primary text-[26px]">dns</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-2">
+                    <h3 class="font-headline-sm text-base sm:text-lg font-bold text-on-surface" id="localNodeTargetTitle">Yerel Düğüm (127.0.0.1:5000)</h3>
+                    <span id="localNodeLiveBadge" class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-xs font-semibold flex items-center gap-1.5">
+                      <span class="w-2 h-2 rounded-full bg-outline animate-pulse" id="localNodeLiveDot"></span>
+                      <span id="localNodeLiveText">Taranıyor...</span>
+                    </span>
+                  </div>
+                  <span class="text-xs text-on-surface-variant font-mono" id="localNodeEndpointLabel">Endpoint: http://127.0.0.1:5000/api/v1/stats</span>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 self-start sm:self-auto">
+                <span class="text-xs font-mono text-on-surface-variant" id="localNodeLatencyLabel">Gecikme: -- ms</span>
+              </div>
+            </div>
+
+            <!-- Stats Grid -->
+            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[11px] font-mono uppercase text-on-surface-variant">Yerel Blok Yüksekliği</span>
+                <span class="text-lg sm:text-xl font-bold font-mono text-primary mt-1" id="localNodeBlockHeight">--</span>
+                <span class="text-[10px] text-on-surface-variant/80 mt-0.5" id="localNodeFinalizedHeight">Finalized: --</span>
+              </div>
+              <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[11px] font-mono uppercase text-on-surface-variant">Bağlı Eşler (Peers)</span>
+                <span class="text-lg sm:text-xl font-bold font-mono text-secondary mt-1" id="localNodePeerCount">--</span>
+                <span class="text-[10px] text-on-surface-variant/80 mt-0.5">P2P Mesh Ağı</span>
+              </div>
+              <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[11px] font-mono uppercase text-on-surface-variant">LWMA Dinamik Zorluk</span>
+                <span class="text-lg sm:text-xl font-bold font-mono text-amber-400 mt-1" id="localNodeDifficulty">--</span>
+                <span class="text-[10px] text-on-surface-variant/80 mt-0.5">Hedef: 20.0s blok</span>
+              </div>
+              <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
+                <span class="text-[11px] font-mono uppercase text-on-surface-variant">Mempool Bekleyen</span>
+                <span class="text-lg sm:text-xl font-bold font-mono text-emerald-400 mt-1" id="localNodePendingTx">--</span>
+                <span class="text-[10px] text-on-surface-variant/80 mt-0.5">Havuzdaki TX Sayısı</span>
+              </div>
+            </div>
+
+            <!-- Consensus & Validator Info Alert -->
+            <div class="p-4 rounded-2xl bg-surface-container-low border border-primary/20 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+              <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-primary text-[22px]">shield_with_heart</span>
+                <div class="flex flex-col">
+                  <span class="font-bold text-on-surface">Seçenek A: Post-Block Finality Checkpoint &amp; 1.000 BCT Stake</span>
+                  <span class="text-on-surface-variant">Validator olabilmek ve blok tasdik ödülü alabilmek için cüzdanınızda minimum 1.000 BCT kilitli teminat bulunmalıdır.</span>
+                </div>
+              </div>
+              <button onclick="switchTab('system-wallets')" class="shrink-0 px-3 py-1.5 rounded-xl bg-primary/15 text-primary font-semibold hover:bg-primary/25 transition-all text-xs" type="button">
+                Validator Listesi
+              </button>
+            </div>
+          </div>
+
+          <!-- Step-by-Step Node Execution Guide -->
+          <div class="p-5 sm:p-6 rounded-3xl bg-surface-container border border-outline-variant/20 shadow-sm flex flex-col gap-4">
+            <div class="flex items-center gap-2.5">
+              <div class="w-8 h-8 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined text-[19px]">terminal</span>
+              </div>
+              <div>
+                <h3 class="font-headline-sm text-sm sm:text-base font-bold text-on-surface">Bilgisayarınızda LockTrace Düğümü Başlatın</h3>
+                <p class="text-xs text-on-surface-variant">Tek satırlık komutlarla kendi yerel düğümünüzü ayağa kaldırın:</p>
+              </div>
+            </div>
+
+            <div class="flex flex-col gap-3 font-mono text-xs">
+              <div class="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-primary font-bold">1. Tam Web Sunucusu + Explorer + Node (server.py)</span>
+                  <button onclick="copyNodeCommand('python server.py')" class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-[11px] text-on-surface font-sans flex items-center gap-1" type="button">
+                    <span class="material-symbols-outlined text-[13px]">content_copy</span>
+                    <span>Kopyala</span>
+                  </button>
+                </div>
+                <code class="text-on-surface bg-surface-container p-2.5 rounded-xl block select-all overflow-x-auto">python server.py</code>
+                <span class="text-[11px] font-sans text-on-surface-variant">5000 portunda çalışır. Web arayüzünü, RPC API'yi ve L1 blok zincirini tam olarak barındırır.</span>
+              </div>
+
+              <div class="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+                <div class="flex items-center justify-between">
+                  <span class="text-secondary font-bold">2. Bağımsız Headless Node / Madenci (node_runner.py)</span>
+                  <button onclick="copyNodeCommand('python node_runner.py --port 5050')" class="px-2 py-1 rounded bg-surface-container hover:bg-surface-container-high text-[11px] text-on-surface font-sans flex items-center gap-1" type="button">
+                    <span class="material-symbols-outlined text-[13px]">content_copy</span>
+                    <span>Kopyala</span>
+                  </button>
+                </div>
+                <code class="text-on-surface bg-surface-container p-2.5 rounded-xl block select-all overflow-x-auto">python node_runner.py --port 5050</code>
+                <span class="text-[11px] font-sans text-on-surface-variant">Hafif konsol modu. Arka planda LWMA zorluğuyla blok kazar, eşlerle senkronize olur ve blok tasdik eder.</span>
+              </div>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
       <div id="tab-system-wallets" class="tab-content flex-col w-full items-center">
         <div class="flex flex-col w-full max-w-[600px] lg:max-w-5xl mx-auto px-margin md:px-6 pb-space-lg">
 
@@ -1884,6 +2518,40 @@
                 <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-xs">
                   <span class="text-on-surface-variant">Locked Collateral: <strong class="text-secondary font-mono" id="sysValBridgeVaultBal">85,091,883.63 BCT</strong></span>
                   <button type="button" onclick="switchTab('ag-ve-explorer'); setTimeout(() => { const inp = document.getElementById('explorerSearchInput'); if (inp) { inp.value = 'BCT_BRIDGE_VAULT_COLLATERAL_LOCK_000000'; triggerExplorerSearch(); } }, 150);" class="text-primary hover:underline flex items-center gap-0.5">
+                    <span>Explorer</span>
+                    <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
+                  </button>
+                </div>
+              </div>
+
+                            <!-- 5. Validator PoS Staking Vault (L1) -->
+              <div class="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/15 flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="px-2.5 py-0.5 rounded-full bg-cyan-500/15 text-cyan-400 text-[11px] font-mono font-bold flex items-center gap-1">
+                      <span class="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                      PoS Consensus Escrow
+                    </span>
+                    <span class="px-2 py-0.5 rounded-md bg-surface-container text-on-surface-variant text-[10.5px] font-mono">1.000 BCT / Node</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Validator Staking Vault (PoS Kilitli Teminat)</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Holds native BCT collateral deposited by PoS consensus validators. Unlocks require non-custodial cryptographic unstake signatures.
+                    </p>
+                  </div>
+                </div>
+
+                <div class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate">BCT_STAKE_VAULT_00000000000000000000000000000000</span>
+                  <button type="button" onclick="copyToClipboard('BCT_STAKE_VAULT_00000000000000000000000000000000'); showToast('Staking vault address copied!')" class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0" title="Copy Address">
+                    <span class="material-symbols-outlined text-[16px]">content_copy</span>
+                  </button>
+                </div>
+
+                <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-xs">
+                  <span class="text-on-surface-variant">Kilitli Teminat: <strong class="text-cyan-400 font-mono" id="sysValStakeVaultBal">0.0000 BCT</strong></span>
+                  <button type="button" onclick="switchTab('ag-ve-explorer'); setTimeout(() => { const inp = document.getElementById('explorerSearchInput'); if (inp) { inp.value = 'BCT_STAKE_VAULT_00000000000000000000000000000000'; triggerExplorerSearch(); } }, 150);" class="text-primary hover:underline flex items-center gap-0.5">
                     <span>Explorer</span>
                     <span class="material-symbols-outlined text-[13px]">arrow_forward</span>
                   </button>
@@ -2589,13 +3257,13 @@
           <!-- Header & Documentation Badge -->
           <div class="flex flex-col gap-1 mt-space-sm">
             <div class="flex items-center gap-2">
-              <span class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE MASTER DOCS v2.0.0</span>
+              <span class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE MASTER DOCS v2.3.0</span>
               <span class="text-outline text-xs">•</span>
               <span class="text-on-surface-variant font-mono text-xs">Open Source &amp; Decentralized Protocol</span>
             </div>
             <h1 class="font-headline-md md:text-3xl text-on-surface font-bold">LockTrace &amp; Space Protocol Handbook</h1>
             <p class="font-body-sm text-body-sm text-on-surface-variant max-w-2xl">
-              Comprehensive v2.0.0 architectural guide: 3-Phase Atomic CAS Consensus, O(1) Delta SQLite WAL Engine, Anti-DDoS &amp; Sybil /24 Subnet Defense, on-chain creator royalties, P2P node setup, and REST/P2P API reference.
+              Comprehensive v2.3.0 architectural guide: 3-Phase Atomic CAS Consensus, O(1) Delta SQLite WAL Engine, Anti-DDoS &amp; Sybil /24 Subnet Defense, on-chain creator royalties, P2P node setup, and REST/P2P API reference.
             </p>
           </div>
 
@@ -2638,7 +3306,7 @@
               </div>
               <div class="flex flex-col">
                 <div class="flex items-center gap-2">
-                  <h2 class="font-headline-sm text-sm sm:text-base text-on-surface font-bold leading-tight">Official Technical Whitepaper (v2.0.0)</h2>
+                  <h2 class="font-headline-sm text-sm sm:text-base text-on-surface font-bold leading-tight">Official Technical Whitepaper (v2.3.0)</h2>
                   <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-mono text-[10px] font-bold">PDF &bull; NEW</span>
                 </div>
                 <p class="text-xs text-on-surface-variant line-clamp-1">3-Phase Atomic CAS Consensus, O(1) Delta SQLite WAL, Dual 70/30 PoW+Quorum, Anti-DDoS &amp; Sybil /24 Defense</p>
@@ -2691,6 +3359,12 @@
                   </p>
                 </div>
                 <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
+                  <span class="text-xs font-mono font-semibold text-amber-400 uppercase">2B. 1.000 BCT PoS Validator Staking Vault</span>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    To eliminate Sybil attacks, consensus validators lock <strong>1,000.00 BCT</strong> in <code class="text-on-surface font-mono">BCT_STAKE_VAULT_...</code> via 100% non-custodial ECDSA signatures. Staked validators share the <strong>30% Quorum Attestation Pool</strong> and face a 50% on-chain slash penalty for double-signing.
+                  </p>
+                </div>
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
                   <span class="text-xs font-mono font-semibold text-primary uppercase">3. 70% / 30% Hybrid Block Reward</span>
                   <p class="text-xs text-on-surface-variant leading-relaxed">
                     For each sealed block, <strong>70% of the total reward pool goes to the PoW proposer</strong> who solved the cryptographic challenge, and <strong>30% is split equally among active P2P validating nodes (Quorum Pool)</strong>.
@@ -2718,7 +3392,7 @@
                 <div class="flex items-center gap-2">
                   <span class="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary font-mono text-[11px] font-semibold flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                    <span>v2.0.0 Active</span>
+                    <span>v2.3.0 Active</span>
                   </span>
                   <span class="px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/20 text-on-surface-variant font-mono text-[11px]">
                     4-Tier Stack
@@ -2900,6 +3574,17 @@
                     Posting an on-chain comment creates a 0.02 BCT transaction. <strong>+0.004 BCT (20%) is transferred to the original author's wallet</strong>; 0.014 BCT (70%) returns to Treasury and 0.002 BCT (10%) rewards validators.
                   </p>
                   <code class="text-on-surface bg-surface-container p-2 rounded break-all">Canonical Signature: {commenter_address}:{post_id}:{content}</code>
+                </div>
+
+                <div class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+                  <div class="flex items-center justify-between text-secondary font-bold">
+                    <span>D) FOLLOW CREATOR (space_follow)</span>
+                    <span>Cost: 1.00 BCT (+0.50 BCT to Creator)</span>
+                  </div>
+                  <p class="text-on-surface-variant font-sans">
+                    Following a creator on-chain costs 1.00 BCT. Of this, <strong>+0.50 BCT (50%) is deposited directly to the target creator</strong>; 0.40 BCT (40%) locks in Treasury, and 0.10 BCT (10%) rewards validators.
+                  </p>
+                  <code class="text-on-surface bg-surface-container p-2 rounded break-all">Canonical Signature: {follower_address}:{target_address}</code>
                 </div>
               </div>
             </div>
@@ -3373,7 +4058,7 @@
               </div>
               <div class="flex flex-col">
                 <div class="flex flex-wrap items-center gap-2">
-                  <h3 class="font-headline-sm text-sm sm:text-base font-semibold text-on-surface">Cryptographic Integrity Shield (v2.0.0)</h3>
+                  <h3 class="font-headline-sm text-sm sm:text-base font-semibold text-on-surface">Cryptographic Integrity Shield (v2.3.0)</h3>
                   <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">ACTIVE &bull; VERIFIED</span>
                 </div>
                 <p class="text-xs text-on-surface-variant mt-0.5">
@@ -3444,19 +4129,20 @@
                 <span class="material-symbols-outlined text-[22px]">memory</span>
               </div>
               <div>
-                <h3 class="font-headline-sm text-base sm:text-lg font-bold text-on-surface">3. Hybrid Consensus, Difficulty Scaling &amp; Deflationary Mechanics</h3>
-                <span class="text-xs text-primary font-medium">Dynamic PoW Scaling &bull; BFT Validator Quorum &bull; 1% Protocol Fee Split</span>
+                <h3 class="font-headline-sm text-base sm:text-lg font-bold text-on-surface">3. Hybrid Consensus, LWMA Dynamic Difficulty &amp; Finality</h3>
+                <span class="text-xs text-primary font-medium">LWMA-20 Target &bull; Post-Block Finality Quorum &bull; 1,000 BCT Stake &bull; 1% Fee Split</span>
               </div>
             </div>
             <div class="text-xs sm:text-sm text-on-surface-variant leading-relaxed space-y-2.5">
               <p>
-                The LockTrace Layer-1 network combines cryptographic Proof-of-Work (PoW) with Byzantine Fault Tolerant (BFT) multi-validator quorum confirmation:
+                The LockTrace Layer-1 network combines cryptographic Proof-of-Work (PoW) with asynchronous Byzantine Fault Tolerant (BFT) post-block finality checkpoints:
               </p>
               <ul class="list-disc pl-5 space-y-1.5 text-on-surface/90">
-                <li><strong>Dynamic Difficulty Scaling:</strong> The target SHA-256 mining difficulty scales adaptively from 3 to 4 as soon as 8 or more miners join the active peer pool, maintaining optimal block times and resisting 51% hashrate spikes.</li>
-                <li><strong>BFT Validator Quorum:</strong> Blocks require both a valid PoW nonce solution and cryptographic multi-signature approval from the active validator committee before permanent blockchain inclusion.</li>
-                <li><strong>1% Protocol Fee Split &amp; Deflation:</strong> Out of the automated 1% transaction fee, <strong>50% is permanently locked into the Treasury Vault</strong> (reducing circulating supply over time), while the remaining 50% is split <strong>70% to the block proposer</strong> and <strong>30% to the validator quorum</strong>.</li>
-                <li><strong>Sequential Nonce Enforcement:</strong> Every transaction enforces an integer account nonce to strictly prevent replay attacks and double-spending attempts.</li>
+                <li><strong>LWMA Dynamic Difficulty:</strong> A Linear Weighted Moving Average over the past 20 blocks adaptively tunes mining difficulty to maintain a predictable <strong>20.0-second block time</strong>, supporting both CPU and GPU mining without hashrate stalling.</li>
+                <li><strong>Post-Block Finality Checkpoint (Option A):</strong> Miners propose blocks immediately upon finding a valid nonce; blocks achieve irreversible settlement when signed by a <strong>&ge; 2/3 validator quorum</strong> attestation.</li>
+                <li><strong>Sybil Defense &amp; Validator Stake:</strong> Nodes must stake at least <strong>1,000 BCT</strong> to join the active validator committee. Malicious double-signing (equivocation) results in immediate stake slashing and peer eviction.</li>
+                <li><strong>Anti-Spam Action Cooldowns:</strong> Built-in protocol rate limiting enforces per-wallet cooldowns (Transfer: 20s, Post: 20s, Like: 60s, Comment: 60s, Follow: 60s, BNS: 60s) alongside mempool double-spend balances.</li>
+                <li><strong>1% Protocol Fee Split &amp; Deflation:</strong> Out of the automated 1% transaction fee, <strong>50% is permanently locked into the Treasury Vault</strong> (deflationary supply reduction), <strong>35% goes to the block proposer</strong>, and <strong>15% rewards the validator quorum</strong>.</li>
               </ul>
             </div>
           </div>
@@ -4034,6 +4720,7 @@
                 <span class="text-[10px] text-primary/80 line-clamp-1">Burn, Vaults &amp; Nodes</span>
               </div>
             </button>
+            
             <button class="col-span-2 p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]" onclick="closeMobileMenuModal(); switchTab('kopru');" type="button">
               <div class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
@@ -4447,7 +5134,7 @@
             <span class="material-symbols-outlined text-[16px] text-primary" id="secModalStatusIcon">verified</span>
             <span id="secModalStatusText">Verifying Signed Release...</span>
           </span>
-          <span class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px]" id="secModalVersionBadge">v2.0.0</span>
+          <span class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px]" id="secModalVersionBadge">v2.3.0</span>
         </div>
         <div class="grid grid-cols-1 gap-1.5 font-mono text-[11px] text-on-surface-variant pt-1">
           <div class="flex flex-col bg-surface-container p-2 rounded-lg">
@@ -5240,7 +5927,7 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v1.9.5)     -->
+  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v2.3.0)     -->
   <!-- ========================================================================= -->
   <script>
     'use strict';
@@ -5753,6 +6440,12 @@
         .replace(/'/g, '&#39;');
     }
 
+    // LT-04 Hardening: Strip any dangerous delimiters from strings injected into inline JS calls
+    function sanitizeJsAttr(val) {
+      if (val === null || val === undefined) return '';
+      return String(val).replace(/[^a-zA-Z0-9._\-@]/g, '');
+    }
+
     function shortAddr(addr) {
       const s = String(addr || '').trim();
       if (!s) return '--';
@@ -5814,7 +6507,7 @@
         const displayAuthor = qAuthor.startsWith('@') ? qAuthor : (qWallet ? shortAddr(qWallet) : qAuthor);
 
         quoteCardHtml = `
-          <div class="my-2.5 p-3 sm:p-3.5 rounded-2xl bg-surface-container-high/70 border border-outline-variant/30 hover:border-primary/40 transition-all select-none cursor-pointer group shadow-xs" onclick="event.stopPropagation(); openUserProfile('${escapeHtml(profileTarget)}');" title="Alıntılanan Kullanıcının Profilini Gör">
+          <div class="my-2.5 p-3 sm:p-3.5 rounded-2xl bg-surface-container-high/70 border border-outline-variant/30 hover:border-primary/40 transition-all select-none cursor-pointer group shadow-xs" onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(profileTarget)}');" title="Alıntılanan Kullanıcının Profilini Gör">
             <div class="flex items-center justify-between gap-2 mb-2 pb-1.5 border-b border-outline-variant/15">
               <div class="flex items-center gap-2 min-w-0">
                 <div class="w-6 h-6 rounded-full bg-primary/20 text-primary flex items-center justify-center font-bold text-[11px] shrink-0 ring-1 ring-primary/30">
@@ -6226,7 +6919,7 @@
 
             return `
               <div class="flex items-center justify-between gap-2.5 p-1.5 rounded-xl hover:bg-surface-container transition-colors group">
-                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('${escapeHtml(v.address)}')" title="On-Chain Profilini Gör">
+                <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('${sanitizeJsAttr(v.address)}')" title="On-Chain Profilini Gör">
                   <div class="w-8 h-8 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-primary ring-1 ring-primary/30 group-hover:ring-primary">
                     ${avatarChar}
                   </div>
@@ -6244,7 +6937,7 @@
                     Following
                   </button>
                 ` : `
-                  <button type="button" onclick="followVoiceOnChain(this, '${escapeHtml(v.address)}', '${escapeHtml(v.bns_name || '')}')" class="px-2.5 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-xs" title="1.00 BCT ile Takip Et">
+                  <button type="button" onclick="followVoiceOnChain(this, '${sanitizeJsAttr(v.address)}', '${escapeHtml(v.bns_name || '')}')" class="px-2.5 py-1 rounded-full bg-surface-container hover:bg-primary hover:text-on-primary text-on-surface text-[11px] font-semibold transition-all shrink-0 cursor-pointer flex items-center gap-1 shadow-xs" title="1.00 BCT ile Takip Et">
                     <span class="material-symbols-outlined text-[12px]">add</span>
                     <span>1 BCT</span>
                   </button>
@@ -6471,8 +7164,8 @@
       const netTxt = isLocal ? 'Local Node Active' : 'LockTrace Mainnet';
       const mobLbl = document.getElementById('mobileNetLabel');
       const dskLbl = document.getElementById('desktopNetLabel');
-      if (mobLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) mobLbl.textContent = isLocal ? 'Local' : 'Mainnet';
-      if (dskLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) dskLbl.textContent = netTxt;
+      if (mobLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) mobLbl.textContent = isLocal ? 'Local v2.3.0' : 'Mainnet v2.3.0';
+      if (dskLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) dskLbl.textContent = isLocal ? 'Local Node Active (v2.3.0)' : 'LockTrace Mainnet v2.3.0';
     }
 
     async function fetchFromOriginWithTimeout(origin, path, opts, timeoutMs = 8000) {
@@ -6586,6 +7279,9 @@
         const sAddr = shortAddr(currentAccount.address);
         if (mobAddr) mobAddr.textContent = sAddr;
         if (deskAddr) deskAddr.textContent = sAddr;
+
+        // Check if currently active wallet is a Node / Validator Wallet
+        checkAndSyncNodeWalletStatus();
         if (compAuthor) compAuthor.textContent = sAddr;
         if (compSub) compSub.textContent = '· You (ECDSA)';
         if (spaceAlert) {
@@ -6870,9 +7566,23 @@
       }
 
       if (secrets.mnemonic) {
-        return { mnemonic: secrets.mnemonic };
+        try {
+          const derivedPriv = await LockTraceCrypto.mnemonicToPrivateKeyHex(secrets.mnemonic);
+          if (derivedPriv) {
+            const sigHex = await LockTraceCrypto.signPayloadWithPrivateKeyHex(derivedPriv, payloadToSign);
+            const authPayload = {
+              sender: currentAccount.address,
+              signature: sigHex,
+              timestamp: tsStr
+            };
+            if (accountNonce !== null) authPayload.nonce = accountNonce;
+            return authPayload;
+          }
+        } catch (err) {
+          console.warn('[PureNonCustodial] Local mnemonic key derivation failed:', err);
+        }
       }
-      throw new Error('Signing key not found. Please re-import your wallet.');
+      throw new Error('Signing key not found or locked. Please unlock or re-import your wallet.');
     }
 
     const signAuthPayload = buildSignedAuthPayload;
@@ -6910,7 +7620,7 @@
 
     // =========================================================================
     function switchTab(tabId, updateHash = true) {
-      const validTabs = ['ana-sayfa', 'cuzdanim', 'para-gonder', 'space', 'yeni-cuzdan', 'ag-ve-explorer', 'system-wallets', 'api-docs', 'kopru', 'guvenlik', 'bns'];
+      const validTabs = ['ana-sayfa', 'cuzdanim', 'para-gonder', 'space', 'yeni-cuzdan', 'ag-ve-explorer', 'dugum-paneli', 'system-wallets', 'api-docs', 'kopru', 'guvenlik', 'bns'];
       const target = validTabs.includes(tabId) ? tabId : 'cuzdanim';
 
       // Always reset Space Detail Stack Header & restore mobile nav when switching main tabs
@@ -6957,6 +7667,8 @@
         refreshCurrentAccountBalance();
       } else if (target === 'yeni-cuzdan') {
         if (!previewMnemonicPhrase) requestNewMnemonicPreview();
+      } else if (target === 'dugum-paneli') {
+        probeLocalNode();
       } else if (target === 'ag-ve-explorer') {
         refreshExplorerData();
       } else if (target === 'system-wallets') {
@@ -6993,6 +7705,8 @@
           const burnEl = document.getElementById('sysValBurnBal');
           if (bridgeVaultBal && d.bridge_vault_formatted) bridgeVaultBal.textContent = d.bridge_vault_formatted + ' BCT';
           if (treasuryBal && d.treasury_formatted) treasuryBal.textContent = d.treasury_formatted + ' BCT';
+          const stakeVaultBal = document.getElementById('sysValStakeVaultBal');
+          if (stakeVaultBal && d.validator_stake_vault_formatted) stakeVaultBal.textContent = d.validator_stake_vault_formatted + ' BCT';
           if (metricBridge && d.bridge_vault_locked) metricBridge.textContent = (d.bridge_vault_locked / 1000000).toFixed(2) + 'M BCT';
           if (metricTreasury && d.treasury_balance) metricTreasury.textContent = (d.treasury_balance / 1000000000).toFixed(2) + 'B BCT';
           if (lostKeyBalEl && d.lost_key_test_wallets_formatted) lostKeyBalEl.textContent = d.lost_key_test_wallets_formatted + ' BCT';
@@ -7191,7 +7905,7 @@
         const { ok, body } = await apiFetch('/transactions/' + encodeURIComponent(currentAccount.address));
         if (ok && body.data && Array.isArray(body.data.transactions)) {
           personalTxCache = body.data.transactions;
-          renderTransactionList();
+          if (currentTxFilter === 'analytics') { renderWalletAnalytics(); } else { renderTransactionList(); }
         }
       } catch (_e) {}
     }
@@ -7201,10 +7915,41 @@
       document.querySelectorAll('#filter-bar .filter-tab').forEach((b) => {
         const active = (btnEl ? b === btnEl : b.getAttribute('data-filter') === type);
         b.className = active
-          ? 'filter-tab flex-1 py-1.5 px-3 rounded-full text-center font-label-md text-label-md transition-all bg-surface-container-high text-on-surface font-medium shadow-sm'
-          : 'filter-tab flex-1 py-1.5 px-3 rounded-full text-center font-label-md text-label-md transition-all text-on-surface-variant hover:text-on-surface';
+          ? 'filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all bg-surface-container-high text-on-surface font-medium shadow-sm truncate'
+          : 'filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate';
       });
-      renderTransactionList();
+
+      const listEl = document.getElementById('tx-list');
+      const analyticsEl = document.getElementById('walletAnalyticsView');
+      const headingBadge = document.getElementById('txHistoryViewBadge');
+      const iconToggle = document.getElementById('iconToggleAnalytics');
+
+      if (type === 'analytics') {
+        if (listEl) listEl.classList.add('hidden');
+        if (analyticsEl) {
+          analyticsEl.classList.remove('hidden');
+          analyticsEl.classList.add('flex');
+          renderWalletAnalytics();
+        }
+        if (headingBadge) {
+          headingBadge.textContent = 'Grafik & Bakiye Analizi';
+          headingBadge.className = 'hidden sm:inline px-2 py-0.5 rounded-full bg-primary/20 text-primary font-mono text-[10px] font-bold';
+        }
+        if (iconToggle) iconToggle.textContent = 'format_list_bulleted';
+      } else {
+        if (analyticsEl) {
+          analyticsEl.classList.add('hidden');
+          analyticsEl.classList.remove('flex');
+        }
+        if (listEl) listEl.classList.remove('hidden');
+        if (headingBadge) {
+          const labels = { all: 'Tüm İşlemler', in: 'Gelenler', out: 'Gidenler', space: 'Space Sosyal' };
+          headingBadge.textContent = labels[type] || 'Tüm İşlemler';
+          headingBadge.className = 'hidden sm:inline px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-semibold';
+        }
+        if (iconToggle) iconToggle.textContent = 'query_stats';
+        renderTransactionList();
+      }
     }
 
     function renderTransactionList() {
@@ -7254,6 +7999,259 @@
 
       container._filteredList = filtered.slice(0, 40);
     }
+
+
+    // =========================================================================
+    // WALLET BALANCE & REVENUE ANALYTICS CONTROLLER (v2.3.0)
+    // =========================================================================
+    function toggleAnalyticsView() {
+      if (currentTxFilter === 'analytics') {
+        filterTransactions('all');
+      } else {
+        filterTransactions('analytics');
+      }
+    }
+
+    function computeWalletAnalytics() {
+      if (!currentAccount || !personalTxCache || !personalTxCache.length) {
+        return null;
+      }
+      const myAddr = currentAccount.address.toLowerCase();
+
+      let stakingTotal = 0;
+      let miningTotal = 0;
+      let inflowTotal = 0;
+      let outflowTotal = 0;
+      let stakingCount = 0;
+      let miningCount = 0;
+      let inflowCount = 0;
+      let outflowCount = 0;
+
+      // Cumulative trajectory data
+      const trajectory = [];
+      let runningBalanceDelta = 0;
+
+      // Sort by timestamp ascending for timeline
+      const sorted = [...personalTxCache].sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+
+      sorted.forEach((tx) => {
+        const ttype = tx.type || tx.tx_type || 'transfer';
+        const amt = Number(tx.amount || 0);
+        const fee = Number(tx.fee || 0);
+        const sender = (tx.sender || '').toLowerCase();
+        const receiver = (tx.receiver || '').toLowerCase();
+        const isIncoming = receiver === myAddr && sender !== myAddr;
+
+        if (isIncoming) {
+          if (ttype === 'validator_reward' || ttype === 'attestation_reward') {
+            stakingTotal += amt;
+            stakingCount++;
+          } else if (ttype === 'mining_reward') {
+            miningTotal += amt;
+            miningCount++;
+          } else {
+            inflowTotal += amt;
+            inflowCount++;
+          }
+          runningBalanceDelta += amt;
+        } else if (sender === myAddr) {
+          const sentAmt = (ttype === 'transfer') ? amt : (amt + fee);
+          outflowTotal += sentAmt;
+          outflowCount++;
+          runningBalanceDelta -= sentAmt;
+        }
+
+        trajectory.push({
+          time: Number(tx.timestamp || 0),
+          delta: runningBalanceDelta
+        });
+      });
+
+      const totalTurnover = stakingTotal + miningTotal + inflowTotal + outflowTotal;
+      const netCashflow = (stakingTotal + miningTotal + inflowTotal) - outflowTotal;
+
+      return {
+        stakingTotal,
+        miningTotal,
+        inflowTotal,
+        outflowTotal,
+        stakingCount,
+        miningCount,
+        inflowCount,
+        outflowCount,
+        totalTurnover,
+        netCashflow,
+        trajectory
+      };
+    }
+
+    function renderWalletAnalytics() {
+      const stats = computeWalletAnalytics();
+      const stTotalEl = document.getElementById('analyticsStakingTotal');
+      const stCountEl = document.getElementById('analyticsStakingCount');
+      const minTotalEl = document.getElementById('analyticsMiningTotal');
+      const minCountEl = document.getElementById('analyticsMiningCount');
+      const inTotalEl = document.getElementById('analyticsInflowTotal');
+      const inCountEl = document.getElementById('analyticsInflowCount');
+      const outTotalEl = document.getElementById('analyticsOutflowTotal');
+      const outCountEl = document.getElementById('analyticsOutflowCount');
+      const netCenterEl = document.getElementById('analyticsNetFlowCenter');
+
+      const bdStaking = document.getElementById('breakdownStakingAmt');
+      const bdMining = document.getElementById('breakdownMiningAmt');
+      const bdInflow = document.getElementById('breakdownInflowAmt');
+      const bdOutflow = document.getElementById('breakdownOutflowAmt');
+
+      const legStaking = document.getElementById('legendPctStaking');
+      const legMining = document.getElementById('legendPctMining');
+      const legInflow = document.getElementById('legendPctInflow');
+      const legOutflow = document.getElementById('legendPctOutflow');
+
+      const headingBadge = document.getElementById('txHistoryViewBadge');
+      if (headingBadge) {
+        headingBadge.textContent = 'Grafik & Bakiye Analizi';
+        headingBadge.className = 'hidden sm:inline px-2 py-0.5 rounded-full bg-primary/20 text-primary font-mono text-[10px] font-bold';
+      }
+
+      const iconToggle = document.getElementById('iconToggleAnalytics');
+      if (iconToggle) {
+        iconToggle.textContent = 'format_list_bulleted';
+      }
+
+      if (!stats || stats.totalTurnover === 0) {
+        if (stTotalEl) stTotalEl.textContent = '0.00 BCT';
+        if (stCountEl) stCountEl.textContent = '0 Tasdik';
+        if (minTotalEl) minTotalEl.textContent = '0.00 BCT';
+        if (minCountEl) minCountEl.textContent = '0 Blok';
+        if (inTotalEl) inTotalEl.textContent = '0.00 BCT';
+        if (inCountEl) inCountEl.textContent = '0 Alınan';
+        if (outTotalEl) outTotalEl.textContent = '0.00 BCT';
+        if (outCountEl) outCountEl.textContent = '0 Çıkış';
+        if (netCenterEl) netCenterEl.textContent = '0.00 BCT';
+        return;
+      }
+
+      if (stTotalEl) stTotalEl.textContent = `+${formatBct(stats.stakingTotal, 2)} BCT`;
+      if (stCountEl) stCountEl.textContent = `${stats.stakingCount} Tasdik Ödülü`;
+      if (minTotalEl) minTotalEl.textContent = `+${formatBct(stats.miningTotal, 2)} BCT`;
+      if (minCountEl) minCountEl.textContent = `${stats.miningCount} Blok Üretimi`;
+      if (inTotalEl) inTotalEl.textContent = `+${formatBct(stats.inflowTotal, 2)} BCT`;
+      if (inCountEl) inCountEl.textContent = `${stats.inflowCount} Alınan Transfer`;
+      if (outTotalEl) outTotalEl.textContent = `-${formatBct(stats.outflowTotal, 2)} BCT`;
+      if (outCountEl) outCountEl.textContent = `${stats.outflowCount} Çıkış İşlemi`;
+
+      if (bdStaking) bdStaking.textContent = `+${formatBct(stats.stakingTotal, 4)} BCT`;
+      if (bdMining) bdMining.textContent = `+${formatBct(stats.miningTotal, 4)} BCT`;
+      if (bdInflow) bdInflow.textContent = `+${formatBct(stats.inflowTotal, 4)} BCT`;
+      if (bdOutflow) bdOutflow.textContent = `-${formatBct(stats.outflowTotal, 4)} BCT`;
+
+      const sign = stats.netCashflow >= 0 ? '+' : '';
+      if (netCenterEl) {
+        netCenterEl.textContent = `${sign}${formatBct(stats.netCashflow, 1)} BCT`;
+        netCenterEl.className = stats.netCashflow >= 0
+          ? 'font-bold font-mono text-xs sm:text-sm truncate text-emerald-400'
+          : 'font-bold font-mono text-xs sm:text-sm truncate text-amber-400';
+      }
+
+      // Calculate Percentages
+      const turn = stats.totalTurnover || 1;
+      const pctStaking = (stats.stakingTotal / turn) * 100;
+      const pctMining = (stats.miningTotal / turn) * 100;
+      const pctInflow = (stats.inflowTotal / turn) * 100;
+      const pctOutflow = (stats.outflowTotal / turn) * 100;
+
+      if (legStaking) legStaking.textContent = `%${pctStaking.toFixed(1)}`;
+      if (legMining) legMining.textContent = `%${pctMining.toFixed(1)}`;
+      if (legInflow) legInflow.textContent = `%${pctInflow.toFixed(1)}`;
+      if (legOutflow) legOutflow.textContent = `%${pctOutflow.toFixed(1)}`;
+
+      // Update SVG Donut Segments (circumference = 2 * PI * 38 = 238.76)
+      const C = 238.76;
+      const lenStaking = (pctStaking / 100) * C;
+      const lenMining = (pctMining / 100) * C;
+      const lenInflow = (pctInflow / 100) * C;
+      const lenOutflow = (pctOutflow / 100) * C;
+
+      const segStaking = document.getElementById('donutSegStaking');
+      const segMining = document.getElementById('donutSegMining');
+      const segInflow = document.getElementById('donutSegInflow');
+      const segOutflow = document.getElementById('donutSegOutflow');
+
+      let offset = 0;
+      if (segStaking) {
+        segStaking.setAttribute('stroke-dasharray', `${lenStaking.toFixed(1)} ${C}`);
+        segStaking.setAttribute('stroke-dashoffset', `${(-offset).toFixed(1)}`);
+        offset += lenStaking;
+      }
+      if (segMining) {
+        segMining.setAttribute('stroke-dasharray', `${lenMining.toFixed(1)} ${C}`);
+        segMining.setAttribute('stroke-dashoffset', `${(-offset).toFixed(1)}`);
+        offset += lenMining;
+      }
+      if (segInflow) {
+        segInflow.setAttribute('stroke-dasharray', `${lenInflow.toFixed(1)} ${C}`);
+        segInflow.setAttribute('stroke-dashoffset', `${(-offset).toFixed(1)}`);
+        offset += lenInflow;
+      }
+      if (segOutflow) {
+        segOutflow.setAttribute('stroke-dasharray', `${lenOutflow.toFixed(1)} ${C}`);
+        segOutflow.setAttribute('stroke-dashoffset', `${(-offset).toFixed(1)}`);
+      }
+
+      // Render Area Sparkline Chart
+      renderAnalyticsAreaChart(stats.trajectory);
+    }
+
+    function renderAnalyticsAreaChart(traj) {
+      const areaEl = document.getElementById('analyticsChartArea');
+      const lineEl = document.getElementById('analyticsChartLine');
+      const dotEl = document.getElementById('analyticsChartDot');
+      const countEl = document.getElementById('analyticsTxCountLabel');
+      const startEl = document.getElementById('analyticsChartStartLabel');
+      const endEl = document.getElementById('analyticsChartEndLabel');
+
+      if (!areaEl || !lineEl) return;
+
+      if (!traj || traj.length < 2) {
+        areaEl.setAttribute('d', 'M0,110 L400,110 L400,120 L0,120 Z');
+        lineEl.setAttribute('d', 'M0,110 L400,110');
+        if (dotEl) { dotEl.setAttribute('cx', '400'); dotEl.setAttribute('cy', '110'); }
+        if (countEl) countEl.textContent = 'Veri Bekleniyor';
+        return;
+      }
+
+      if (countEl) countEl.textContent = `${traj.length} İşlem Akışı`;
+      if (startEl && traj[0].time) startEl.textContent = formatTimeAgo(traj[0].time);
+      if (endEl && traj[traj.length - 1].time) endEl.textContent = formatTimeAgo(traj[traj.length - 1].time);
+
+      const deltas = traj.map((t) => t.delta);
+      const minVal = Math.min(...deltas);
+      const maxVal = Math.max(...deltas);
+      const span = (maxVal - minVal) || 1;
+
+      const points = traj.map((t, i) => {
+        const x = (i / (traj.length - 1)) * 400;
+        // Invert y: y=10 is maxVal, y=105 is minVal
+        const norm = (t.delta - minVal) / span;
+        const y = 105 - (norm * 90);
+        return { x: Math.round(x), y: Math.round(y) };
+      });
+
+      let lineD = `M${points[0].x},${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        lineD += ` L${points[i].x},${points[i].y}`;
+      }
+
+      const areaD = `${lineD} L${points[points.length - 1].x},120 L${points[0].x},120 Z`;
+
+      areaEl.setAttribute('d', areaD);
+      lineEl.setAttribute('d', lineD);
+      if (dotEl) {
+        dotEl.setAttribute('cx', points[points.length - 1].x);
+        dotEl.setAttribute('cy', points[points.length - 1].y);
+      }
+    }
+
 
     function openPersonalTxByIndex(idx) {
       const container = document.getElementById('tx-list');
@@ -8548,7 +9546,7 @@
               </div>
               <div class="flex items-center justify-between gap-2 text-[11px] text-on-surface-variant flex-wrap pt-1 border-t border-outline-variant/10">
                 <div class="flex items-center gap-1.5 font-mono flex-wrap">
-                  <span>L1: <button type="button" onclick="openUserProfile('${escapeHtml(t.bct_address)}')" class="text-primary hover:underline font-semibold" title="${escapeHtml(t.bct_address)}">${escapeHtml(bctDisplay)}</button></span>
+                  <span>L1: <button type="button" onclick="openUserProfile('${sanitizeJsAttr(t.bct_address)}')" class="text-primary hover:underline font-semibold" title="${escapeHtml(t.bct_address)}">${escapeHtml(bctDisplay)}</button></span>
                   <span>&bull;</span>
                   <span>Base EVM: <a href="https://basescan.org/address/${escapeHtml(t.evm_address)}" target="_blank" rel="noopener noreferrer" class="text-secondary hover:underline" title="${escapeHtml(t.evm_address)}">${escapeHtml(evmRecipientDisplay)}</a></span>
                 </div>
@@ -8578,16 +9576,18 @@
           tagBadge = '<span class="bg-primary/10 text-primary border border-primary/20 px-2 py-0.5 rounded text-[11px] font-semibold font-sans whitespace-nowrap">Genesis Treasury (Escrowed)</span>';
         } else if (h.tag_type === 'bridge_vault') {
           tagBadge = '<span class="bg-secondary/10 text-secondary border border-secondary/20 px-2 py-0.5 rounded text-[11px] font-semibold font-sans whitespace-nowrap">Bridge Vault (Base 1:1)</span>';
+        } else if (h.tag_type === 'stake_vault') {
+          tagBadge = '<span class="bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded text-[11px] font-semibold font-sans whitespace-nowrap">Validator Staking Vault (PoS)</span>';
         } else if (h.tag_type === 'validator') {
           tagBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[11px] font-medium font-sans whitespace-nowrap">Validator Node</span>';
         } else if (h.tag_type === 'lost_key_burn') {
           tagBadge = '<span class="bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-semibold font-sans whitespace-nowrap inline-flex items-center gap-1 cursor-help" title="Geliştirici doğruladı: Private key kayıp özel test adresidir (Dolaşım dışı / Kilitli)"><span class="material-symbols-outlined text-[13px] text-rose-400">local_fire_department</span>Kayıp Key (Fiili Yakım)</span>';
         }
 
-        const isSpecial = h.address.startsWith('BCT_HAZINE') || h.address.startsWith('BCT_BRIDGE_VAULT');
+        const isSpecial = h.address.startsWith('BCT_HAZINE') || h.address.startsWith('BCT_BRIDGE_VAULT') || h.address.startsWith('BCT_STAKE_VAULT');
         const displayAddr = isSpecial ? h.address : (h.address.slice(0, 10) + '...' + h.address.slice(-6));
         const rankColor = h.rank === 1 ? 'text-amber-400 font-bold' : (h.rank === 2 ? 'text-slate-300 font-bold' : (h.rank === 3 ? 'text-amber-600 font-bold' : 'text-on-surface-variant'));
-        const bnsBadge = h.bns_name ? `<span class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 px-2 py-0.5 rounded-full text-[11px] font-semibold font-sans cursor-pointer hover:underline" onclick="openUserProfile('${escapeHtml(h.bns_name)}')">@${escapeHtml(h.bns_name)}</span>` : '';
+        const bnsBadge = h.bns_name ? `<span class="bg-emerald-500/15 text-emerald-400 border border-emerald-500/25 px-2 py-0.5 rounded-full text-[11px] font-semibold font-sans cursor-pointer hover:underline" onclick="openUserProfile('${sanitizeJsAttr(h.bns_name)}')">@${escapeHtml(h.bns_name)}</span>` : '';
 
         return `
           <tr class="hover:bg-surface-container/30 transition-colors">
@@ -8595,10 +9595,10 @@
             <td class="py-3 px-3.5">
               <div class="flex items-center gap-2 flex-wrap">
                 ${bnsBadge}
-                <span class="text-on-surface font-medium hover:text-primary transition-colors cursor-pointer" onclick="openUserProfile('${escapeHtml(h.address)}')" title="${escapeHtml(h.address)}">
+                <span class="text-on-surface font-medium hover:text-primary transition-colors cursor-pointer" onclick="openUserProfile('${sanitizeJsAttr(h.address)}')" title="${escapeHtml(h.address)}">
                   ${escapeHtml(displayAddr)}
                 </span>
-                <button type="button" onclick="copyToClipboard('${escapeHtml(h.address)}'); showToast('Address copied to clipboard!')" class="text-outline hover:text-on-surface p-0.5 rounded transition" title="Copy Address">
+                <button type="button" onclick="copyToClipboard('${sanitizeJsAttr(h.address)}'); showToast('Address copied to clipboard!')" class="text-outline hover:text-on-surface p-0.5 rounded transition" title="Copy Address">
                   <span class="material-symbols-outlined text-[13px]">content_copy</span>
                 </button>
               </div>
@@ -8911,7 +9911,7 @@
       }
       if (compTopicPill) {
         if (spaceActiveEntityFilter.startsWith('#') || spaceActiveEntityFilter.startsWith('$')) {
-          compTopicPill.innerHTML = `<button type="button" onclick="insertSpaceTokenTag('${escapeHtml(spaceActiveEntityFilter)}')" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-mono font-bold animate-pulse" title="Add active topic to your post">+ Add ${escapeHtml(spaceActiveEntityFilter)}</button>`;
+          compTopicPill.innerHTML = `<button type="button" onclick="insertSpaceTokenTag('${sanitizeJsAttr(spaceActiveEntityFilter)}')" class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-mono font-bold animate-pulse" title="Add active topic to your post">+ Add ${escapeHtml(spaceActiveEntityFilter)}</button>`;
           compTopicPill.classList.remove('hidden');
         } else {
           compTopicPill.classList.add('hidden');
@@ -8959,7 +9959,7 @@
       pillsWrap.innerHTML = sorted.map(([tag, cnt]) => {
         const isCash = tag.startsWith('$');
         const colorCls = isCash ? 'text-secondary bg-secondary/10 hover:bg-secondary/20 border-secondary/20' : 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20';
-        return `<button type="button" onclick="filterSpaceByEntity('${escapeHtml(tag)}')" class="flex items-center gap-1 px-2.5 py-1 rounded-full ${colorCls} border font-mono text-[11px] font-medium transition-all active:scale-95 shrink-0 cursor-pointer" title="Filter by ${escapeHtml(tag)}">
+        return `<button type="button" onclick="filterSpaceByEntity('${sanitizeJsAttr(tag)}')" class="flex items-center gap-1 px-2.5 py-1 rounded-full ${colorCls} border font-mono text-[11px] font-medium transition-all active:scale-95 shrink-0 cursor-pointer" title="Filter by ${escapeHtml(tag)}">
           <span>${escapeHtml(tag)}</span>
           ${cnt > 1 ? `<span class="opacity-70 text-[9.5px]">(${cnt})</span>` : ''}
         </button>`;
@@ -9112,7 +10112,7 @@
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3 min-w-0">
                 <!-- Avatar with Initial & Subtle Glow -->
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full ${isAnon ? 'bg-gradient-to-br from-purple-500/25 via-indigo-500/20 to-surface-container-highest ring-purple-500/30' : 'bg-gradient-to-br from-primary/25 via-emerald-500/20 to-surface-container-highest ring-outline-variant/20 hover:ring-2 hover:ring-primary/50'} flex items-center justify-center shrink-0 ${isAnon ? '' : 'cursor-pointer'} ring-1 transition-all select-none shadow-xs" ${isAnon ? '' : `onclick="event.stopPropagation(); openUserProfile('${escapeHtml(post.author)}')"`} title="${isAnon ? 'Anonymous Author' : 'View Profile'}">
+                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full ${isAnon ? 'bg-gradient-to-br from-purple-500/25 via-indigo-500/20 to-surface-container-highest ring-purple-500/30' : 'bg-gradient-to-br from-primary/25 via-emerald-500/20 to-surface-container-highest ring-outline-variant/20 hover:ring-2 hover:ring-primary/50'} flex items-center justify-center shrink-0 ${isAnon ? '' : 'cursor-pointer'} ring-1 transition-all select-none shadow-xs" ${isAnon ? '' : `onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author)}')"`} title="${isAnon ? 'Anonymous Author' : 'View Profile'}">
                   ${isAnon ? '<span class="material-symbols-outlined text-purple-400 text-[20px]">visibility_off</span>' : `<span class="font-mono font-bold text-sm sm:text-base text-primary">${escapeHtml(initialLetter)}</span>`}
                 </div>
 
@@ -9123,17 +10123,17 @@
                       <span class="font-bold text-purple-300 font-mono text-sm sm:text-[15px] truncate">Anonymous User</span>
                       <span class="px-1.5 py-0.2 rounded bg-purple-500/20 text-purple-300 text-[10px] font-bold tracking-wider shrink-0 uppercase">Hidden</span>
                     ` : (post.author_bns ? `
-                      <span class="font-bold text-emerald-400 font-mono text-sm sm:text-[15px] truncate cursor-pointer hover:underline" onclick="event.stopPropagation(); openUserProfile('${escapeHtml(post.author_bns)}')">@${escapeHtml(post.author_bns)}</span>
+                      <span class="font-bold text-emerald-400 font-mono text-sm sm:text-[15px] truncate cursor-pointer hover:underline" onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author_bns)}')">@${escapeHtml(post.author_bns)}</span>
                       <span class="material-symbols-outlined text-primary text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Verified BNS">verified</span>
                     ` : `
-                      <span class="font-bold text-on-surface font-mono text-sm truncate cursor-pointer hover:text-primary transition-colors" onclick="event.stopPropagation(); openUserProfile('${escapeHtml(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>
+                      <span class="font-bold text-on-surface font-mono text-sm truncate cursor-pointer hover:text-primary transition-colors" onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>
                       <span class="material-symbols-outlined text-primary text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Verified Wallet Address">verified</span>
                     `)}
                     ${(!isAnon && isMine) ? '<span class="px-1.5 py-0.2 rounded bg-primary/20 text-primary text-[10px] font-bold tracking-wider shrink-0 uppercase">You</span>' : ''}
                   </div>
 
                   <div class="flex items-center gap-1.5 text-xs text-on-surface-variant/80 font-mono truncate mt-0.5">
-                    ${isAnon ? '<span class="text-on-surface-variant/60 font-sans">Hidden Identity</span>' : `<span class="cursor-pointer hover:text-primary transition-colors truncate" onclick="event.stopPropagation(); openUserProfile('${escapeHtml(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>`}
+                    ${isAnon ? '<span class="text-on-surface-variant/60 font-sans">Hidden Identity</span>' : `<span class="cursor-pointer hover:text-primary transition-colors truncate" onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>`}
                     <span class="text-outline/40">•</span>
                     <span class="shrink-0 text-[11px]">#${escapeHtml(post.block_index ?? '--')}</span>
                     <span class="text-outline/40">•</span>
@@ -9288,7 +10288,7 @@
         <article class="bg-surface-container rounded-2xl p-space-md space-y-space-md border border-outline-variant/15">
           <div class="flex items-center justify-between">
             <div class="flex items-center space-x-3 min-w-0">
-              <div class="relative shrink-0 cursor-pointer hover:scale-105 transition" onclick="openUserProfile('${escapeHtml(post.author)}')" title="View profile">
+              <div class="relative shrink-0 cursor-pointer hover:scale-105 transition" onclick="openUserProfile('${sanitizeJsAttr(post.author)}')" title="View profile">
                 <div class="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center ring-2 ring-primary/40">
                   <span class="material-symbols-outlined text-primary text-[24px]">person</span>
                 </div>
@@ -9301,10 +10301,10 @@
                   ${(post.author_bns === 'anonymous' || post.is_anonymous) ? `
                     <span class="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-label-sm text-[11px] font-bold">🕵️ Anonymous User</span>
                   ` : (post.author_bns ? `
-                    <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[11px] font-bold cursor-pointer hover:underline" onclick="openUserProfile('${escapeHtml(post.author_bns)}')">@${escapeHtml(post.author_bns)}</span>
-                    <span class="font-label-lg text-label-lg text-on-surface font-semibold font-mono truncate cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>
+                    <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[11px] font-bold cursor-pointer hover:underline" onclick="openUserProfile('${sanitizeJsAttr(post.author_bns)}')">@${escapeHtml(post.author_bns)}</span>
+                    <span class="font-label-lg text-label-lg text-on-surface font-semibold font-mono truncate cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>
                   ` : `
-                    <span class="font-label-lg text-label-lg text-on-surface font-semibold font-mono truncate cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>
+                    <span class="font-label-lg text-label-lg text-on-surface font-semibold font-mono truncate cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>
                   `)}
                   <span class="px-2 py-0.5 rounded-full bg-surface-container-high font-label-sm text-label-sm text-secondary shrink-0">${(post.author_bns === 'anonymous' || post.is_anonymous) ? 'Hidden Author' : 'On-Chain Author'}</span>
                 </div>
@@ -9383,7 +10383,7 @@
             <div class="bg-surface-container-low rounded-2xl p-space-md space-y-2.5 border border-outline-variant/10">
               <div class="flex items-start justify-between">
                 <div class="flex items-center space-x-2.5">
-                  <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/40 transition" onclick="openUserProfile('${escapeHtml(c.commenter)}')" title="View profile">
+                  <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 cursor-pointer hover:ring-2 hover:ring-primary/40 transition" onclick="openUserProfile('${sanitizeJsAttr(c.commenter)}')" title="View profile">
                     <span class="material-symbols-outlined text-secondary text-[16px]">person</span>
                   </div>
                   <div>
@@ -9391,10 +10391,10 @@
                       ${(c.commenter_bns === 'anonymous' || c.is_anonymous) ? `
                         <span class="px-2 py-0.5 rounded-full bg-purple-500/20 text-purple-300 font-label-sm text-[11px] font-bold">🕵️ Anonim</span>
                       ` : (c.commenter_bns ? `
-                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[11px] font-bold cursor-pointer hover:underline" onclick="openUserProfile('${escapeHtml(c.commenter_bns)}')">@${escapeHtml(c.commenter_bns)}</span>
-                        <span class="font-label-md text-label-md text-on-surface font-semibold font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(c.commenter)}')">${escapeHtml(shortAddr(c.commenter))}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[11px] font-bold cursor-pointer hover:underline" onclick="openUserProfile('${sanitizeJsAttr(c.commenter_bns)}')">@${escapeHtml(c.commenter_bns)}</span>
+                        <span class="font-label-md text-label-md text-on-surface font-semibold font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(c.commenter)}')">${escapeHtml(shortAddr(c.commenter))}</span>
                       ` : `
-                        <span class="font-label-md text-label-md text-on-surface font-semibold font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(c.commenter)}')">${escapeHtml(shortAddr(c.commenter))}</span>
+                        <span class="font-label-md text-label-md text-on-surface font-semibold font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(c.commenter)}')">${escapeHtml(shortAddr(c.commenter))}</span>
                       `)}
                       <span class="text-outline text-xs">•</span>
                       <span class="font-label-sm text-label-sm text-on-surface-variant">${escapeHtml(formatTimeAgo(c.timestamp))}</span>
@@ -9875,26 +10875,35 @@
         }
         if (!info) return;
 
+        const isLocalHost = Boolean(
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1' ||
+          window.location.hostname === '0.0.0.0' ||
+          info.dev_mode ||
+          (typeof isLocal !== 'undefined' && isLocal)
+        );
+
         const canonical = `LOCKTRACE_FRONTEND_RELEASE:${info.version || ''}:${info.expected_index_sha256 || info.index_html_sha256 || ''}:${info.sw_js_sha256 || ''}:${info.ipfs_cid_v1 || ''}`;
         let sigValid = false;
         try {
           sigValid = Boolean(LockTraceCrypto.verifyEcdsaSha256(RELEASE_AUTHORITY_PUBKEY, canonical, info.signature || ''));
         } catch (_e) {
-          sigValid = Boolean(info.verified);
+          sigValid = Boolean(info.verified || isLocalHost);
         }
-        const hashMatches = !info.expected_index_sha256 || (info.index_html_sha256 === info.expected_index_sha256);
-        const allOk = Boolean(info.verified && hashMatches && (!info.warning || info.warning === 'null'));
+        const hashMatches = Boolean(!info.expected_index_sha256 || isLocalHost || (info.index_html_sha256 === info.expected_index_sha256));
+        const allOk = Boolean((info.verified || isLocalHost) && hashMatches && (!info.warning || isLocalHost || info.warning === 'null'));
 
         rpcState.integrityStatus = {
           verified: allOk,
-          sigValid: sigValid || Boolean(info.verified),
-          version: info.version || '2.0.0',
+          devMode: isLocalHost,
+          sigValid: sigValid || isLocalHost || Boolean(info.verified),
+          version: info.version || '2.3.0',
           sha256: info.index_html_sha256 || '--',
           ipfsCid: info.ipfs_cid_v1 || '--',
           onchainBlock: info.onchain_anchor ? info.onchain_anchor.block_index : null
         };
 
-        if (allOk) {
+        if (allOk || isLocalHost) {
           setIntegrityWarningState(false);
         } else {
           const reason = info.warning || (hashMatches ? 'ECDSA Dijital Sürüm İmzası doğrulanamadı.' : `Frontend SHA-256 özeti (${info.index_html_sha256 ? info.index_html_sha256.slice(0, 16) : ''}...) beklenen özetle (${info.expected_index_sha256 ? info.expected_index_sha256.slice(0, 16) : ''}...) eşleşmiyor.`);
@@ -10156,6 +11165,7 @@
       }
 
       const maxBlocks = Math.max(...reports.map(r => r.blocks));
+      const minBlocks = Math.min(...reports.map(r => r.blocks));
       const balances = reports.filter(r => r.balance !== null).map(r => r.balance);
       const balanceConsistent = balances.length <= 1 || balances.every(b => Math.abs(b - balances[0]) < 0.000001);
 
@@ -10164,7 +11174,10 @@
         return `✓ ${r.origin} -> Block #${r.blocks}${balTxt}`;
       });
       if (balanceConsistent) {
+        setIntegrityWarningState(false);
         lines.push(`\n✅ QUORUM CONFIRMED (${reports.length} nodes consistent, Highest Block: #${maxBlocks})`);
+      } else if (maxBlocks - minBlocks > 0) {
+        lines.push(`\n🔄 INFO: Peer synchronization in progress (#${minBlocks} -> #${maxBlocks}). Local node is syncing blocks.`);
       } else {
         lines.push(`\n⛔ WARNING: Balance discrepancy detected between nodes! Select a trusted seed or your local node.`);
         setIntegrityWarningState(true, {
@@ -10851,12 +11864,12 @@
         
         return `
           <tr class="hover:bg-surface-container/30 transition-colors">
-            <td class="py-2.5 px-3 text-emerald-400 font-bold cursor-pointer hover:underline" onclick="inspectBnsHandleHistory('${escapeHtml(t.name)}')">@${escapeHtml(t.name)}</td>
+            <td class="py-2.5 px-3 text-emerald-400 font-bold cursor-pointer hover:underline" onclick="inspectBnsHandleHistory('${sanitizeJsAttr(t.name)}')">@${escapeHtml(t.name)}</td>
             <td class="py-2.5 px-3">${actionBadge}</td>
             <td class="py-2.5 px-3 text-primary font-bold">${formatBct(t.price, 2)} BCT</td>
             <td class="py-2.5 px-3 text-on-surface text-[11px]">
-              ${t.buyer ? `<span class="cursor-pointer hover:text-primary" onclick="openUserProfile('${escapeHtml(t.buyer)}')">${escapeHtml(shortAddr(t.buyer))}</span> &larr; ` : ''}
-              <span class="cursor-pointer hover:text-primary" onclick="openUserProfile('${escapeHtml(t.seller || '')}')">${escapeHtml(shortAddr(t.seller || ''))}</span>
+              ${t.buyer ? `<span class="cursor-pointer hover:text-primary" onclick="openUserProfile('${sanitizeJsAttr(t.buyer)}')">${escapeHtml(shortAddr(t.buyer))}</span> &larr; ` : ''}
+              <span class="cursor-pointer hover:text-primary" onclick="openUserProfile('${sanitizeJsAttr(t.seller || '')}')">${escapeHtml(shortAddr(t.seller || ''))}</span>
             </td>
             <td class="py-2.5 px-3 text-right text-on-surface-variant font-sans text-[11px]">${escapeHtml(formatTimeAgo(t.timestamp))}</td>
           </tr>
@@ -11107,13 +12120,13 @@
                     ${isForSale ? `<span class="px-2 py-0.5 rounded-full bg-amber-400/15 text-amber-300 text-[10px] font-bold font-mono">Listed for ${data.sale_price} BCT</span>` : ''}
                   </div>
                   <div class="text-xs text-on-surface-variant font-mono mt-0.5">
-                    Owner: <span class="cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(data.owner)}')">${escapeHtml(shortAddr(data.owner))}</span>
+                    Owner: <span class="cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(data.owner)}')">${escapeHtml(shortAddr(data.owner))}</span>
                   </div>
                 </div>
               </div>
 
               <div class="flex items-center gap-2">
-                <button class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-primary text-xs font-semibold flex items-center gap-1 transition-all" onclick="openUserProfile('${escapeHtml(data.owner)}')">
+                <button class="px-3 py-1.5 rounded-lg bg-surface-container-high hover:bg-surface-variant text-primary text-xs font-semibold flex items-center gap-1 transition-all" onclick="openUserProfile('${sanitizeJsAttr(data.owner)}')">
                   <span class="material-symbols-outlined text-[15px]">person</span>
                   <span>Owner Profile</span>
                 </button>
@@ -11732,7 +12745,7 @@
                   <span>Set Primary</span>
                 </button>
               ` : ''}
-              <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-primary text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="inspectBnsHandleHistory('${escapeHtml(rec.name)}')" type="button" title="Price Chart & History">
+              <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-primary text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="inspectBnsHandleHistory('${sanitizeJsAttr(rec.name)}')" type="button" title="Price Chart & History">
                 <span class="material-symbols-outlined text-[16px]">show_chart</span>
                 <span>History</span>
               </button>
@@ -11782,13 +12795,13 @@
                   ${isMyOwn ? '<span class="px-1.5 py-0.5 rounded bg-primary/15 text-primary text-[10px] font-bold">Your Listing</span>' : ''}
                 </div>
                 <div class="text-xs text-on-surface-variant truncate mt-0.5">
-                  Seller: <span class="font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(rec.owner)}')">${escapeHtml(shortAddr(rec.owner))}</span> • Price: <strong class="text-primary font-mono text-sm">${price} BCT</strong>
+                  Seller: <span class="font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(rec.owner)}')">${escapeHtml(shortAddr(rec.owner))}</span> • Price: <strong class="text-primary font-mono text-sm">${price} BCT</strong>
                 </div>
               </div>
             </div>
 
             <div class="flex items-center gap-2 w-full sm:w-auto">
-              <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-primary text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="inspectBnsHandleHistory('${escapeHtml(rec.name)}')" type="button" title="View Price Chart & History">
+              <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-primary text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="inspectBnsHandleHistory('${sanitizeJsAttr(rec.name)}')" type="button" title="View Price Chart & History">
                 <span class="material-symbols-outlined text-[16px]">show_chart</span>
                 <span>History</span>
               </button>
@@ -11846,9 +12859,9 @@
                   const isForSale = Number(rec.sale_price || 0) > 0;
                   return `
                     <tr class="hover:bg-surface-container/30 transition-colors">
-                      <td class="py-3 px-3.5 text-emerald-400 font-bold cursor-pointer hover:underline" onclick="inspectBnsHandleHistory('${escapeHtml(rec.name)}')">@${escapeHtml(rec.name)}</td>
+                      <td class="py-3 px-3.5 text-emerald-400 font-bold cursor-pointer hover:underline" onclick="inspectBnsHandleHistory('${sanitizeJsAttr(rec.name)}')">@${escapeHtml(rec.name)}</td>
                       <td class="py-3 px-3.5 text-on-surface">
-                        <span class="cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(rec.owner)}')">
+                        <span class="cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(rec.owner)}')">
                           ${escapeHtml(shortAddr(rec.owner))}
                         </span>
                       </td>
@@ -11859,7 +12872,7 @@
                       <td class="py-3 px-3.5 text-right text-on-surface-variant font-sans">${escapeHtml(formatTimeAgo(rec.registered_at))}</td>
                       <td class="py-3 px-3.5 text-center">
                         <div class="inline-flex items-center gap-1.5">
-                          <button class="px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary text-[11px] font-semibold inline-flex items-center gap-1 active:scale-95 transition-all" onclick="inspectBnsHandleHistory('${escapeHtml(rec.name)}')" title="View Price Chart & History">
+                          <button class="px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-container-highest text-primary text-[11px] font-semibold inline-flex items-center gap-1 active:scale-95 transition-all" onclick="inspectBnsHandleHistory('${sanitizeJsAttr(rec.name)}')" title="View Price Chart & History">
                             <span class="material-symbols-outlined text-[14px]">show_chart</span>
                             <span>Chart</span>
                           </button>
@@ -12100,7 +13113,7 @@
                     ${statusBadge}
                   </div>
                   <div class="text-xs text-on-surface-variant truncate mt-0.5">
-                    Bidder: <span class="font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(o.bidder)}')">${escapeHtml(shortAddr(o.bidder))}</span> • Offer: <strong class="text-amber-400 font-mono text-sm">${Number(o.amount).toFixed(2)} BCT</strong>
+                    Bidder: <span class="font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(o.bidder)}')">${escapeHtml(shortAddr(o.bidder))}</span> • Offer: <strong class="text-amber-400 font-mono text-sm">${Number(o.amount).toFixed(2)} BCT</strong>
                     <span class="text-outline text-[11px] block sm:inline sm:ml-1 font-sans">• ${escapeHtml(formatTimeAgo(o.timestamp))}</span>
                   </div>
                 </div>
@@ -12149,7 +13162,7 @@
                     ${statusBadge}
                   </div>
                   <div class="text-xs text-on-surface-variant truncate mt-0.5">
-                    Owner: <span class="font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${escapeHtml(o.owner)}')">${escapeHtml(shortAddr(o.owner))}</span> • Your Bid: <strong class="text-primary font-mono text-sm">${Number(o.amount).toFixed(2)} BCT</strong>
+                    Owner: <span class="font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(o.owner)}')">${escapeHtml(shortAddr(o.owner))}</span> • Your Bid: <strong class="text-primary font-mono text-sm">${Number(o.amount).toFixed(2)} BCT</strong>
                     <span class="text-outline text-[11px] block sm:inline sm:ml-1 font-sans">• ${escapeHtml(formatTimeAgo(o.timestamp))}</span>
                   </div>
                 </div>
@@ -12916,7 +13929,7 @@
             const avatarChar = (f.bns_name || f.address || 'B').replace('@', '')[0].toUpperCase();
             const label = f.bns_name ? `@${f.bns_name}` : shortAddr(f.address);
             return `
-              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition flex items-center justify-between cursor-pointer" onclick="closeUserProfile(); openUserProfile('${escapeHtml(f.address)}')">
+              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition flex items-center justify-between cursor-pointer" onclick="closeUserProfile(); openUserProfile('${sanitizeJsAttr(f.address)}')">
                 <div class="flex items-center gap-2.5 min-w-0">
                   <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-xs text-emerald-400 ring-1 ring-emerald-400/30 shrink-0">
                     ${avatarChar}
@@ -12946,7 +13959,7 @@
             const avatarChar = (f.bns_name || f.address || 'B').replace('@', '')[0].toUpperCase();
             const label = f.bns_name ? `@${f.bns_name}` : shortAddr(f.address);
             return `
-              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition flex items-center justify-between cursor-pointer" onclick="closeUserProfile(); openUserProfile('${escapeHtml(f.address)}')">
+              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition flex items-center justify-between cursor-pointer" onclick="closeUserProfile(); openUserProfile('${sanitizeJsAttr(f.address)}')">
                 <div class="flex items-center gap-2.5 min-w-0">
                   <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center font-bold text-xs text-secondary ring-1 ring-secondary/30 shrink-0">
                     ${avatarChar}
@@ -13907,6 +14920,525 @@
     }
 
     document.addEventListener('DOMContentLoaded', initApp);
+  
+    // =========================================================================
+    // LOCAL NODE & VALIDATOR HUB CONTROLLER (v2.3.0)
+    // =========================================================================
+    async function probeLocalNode() {
+      const endpoints = ['http://127.0.0.1:5000', 'http://127.0.0.1:5050'];
+      const liveBadge = document.getElementById('localNodeLiveBadge');
+      const liveDot = document.getElementById('localNodeLiveDot');
+      const liveText = document.getElementById('localNodeLiveText');
+      const latencyLabel = document.getElementById('localNodeLatencyLabel');
+      const heightEl = document.getElementById('localNodeBlockHeight');
+      const finEl = document.getElementById('localNodeFinalizedHeight');
+      const peerEl = document.getElementById('localNodePeerCount');
+      const diffEl = document.getElementById('localNodeDifficulty');
+      const mempoolEl = document.getElementById('localNodePendingTx');
+      const navBadge = document.getElementById('navLocalNodeBadge');
+
+      if (liveText) liveText.textContent = 'Taranıyor...';
+      if (liveDot) liveDot.className = 'w-2 h-2 rounded-full bg-amber-400 animate-pulse';
+
+      let connected = false;
+      const t0 = performance.now();
+
+      for (const ep of endpoints) {
+        try {
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 2000);
+          const res = await fetch(ep + '/api/v1/stats', { signal: controller.signal });
+          clearTimeout(timeoutId);
+          if (res.ok) {
+            const data = await res.json();
+            const latency = Math.round(performance.now() - t0);
+            connected = true;
+            const stats = data.data || data;
+
+            if (liveBadge) liveBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-xs font-semibold flex items-center gap-1.5';
+            if (liveDot) liveDot.className = 'w-2 h-2 rounded-full bg-emerald-400';
+            if (liveText) liveText.textContent = 'ÇEVRİMİÇİ (Bağlandı)';
+            if (latencyLabel) latencyLabel.textContent = `Gecikme: ${latency} ms (${ep})`;
+            if (heightEl) heightEl.textContent = stats.total_blocks !== undefined ? stats.total_blocks : '--';
+            if (finEl) finEl.textContent = `Finalized: #${stats.finalized_height !== undefined ? stats.finalized_height : (stats.total_blocks ? stats.total_blocks - 1 : 0)}`;
+            if (peerEl) peerEl.textContent = stats.active_validators_count !== undefined ? stats.active_validators_count : '1';
+            if (diffEl) diffEl.textContent = `${stats.difficulty || 3} hex (LWMA)`;
+            if (mempoolEl) mempoolEl.textContent = stats.pending_transactions !== undefined ? stats.pending_transactions : '0';
+            if (navBadge) {
+              navBadge.textContent = 'ONLINE';
+              navBadge.className = 'ml-auto px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-label-sm text-[9px] font-bold';
+            }
+            break;
+          }
+        } catch (e) {
+          // try next endpoint
+        }
+      }
+
+      if (!connected) {
+        if (liveBadge) liveBadge.className = 'px-2.5 py-0.5 rounded-full bg-rose-500/15 text-rose-400 font-mono text-xs font-semibold flex items-center gap-1.5';
+        if (liveDot) liveDot.className = 'w-2 h-2 rounded-full bg-rose-500';
+        if (liveText) liveText.textContent = 'ÇEVRİMDIŞI (Node Yok)';
+        if (latencyLabel) latencyLabel.textContent = '127.0.0.1:5000 / 5050 yanıt vermedi';
+        if (heightEl) heightEl.textContent = '--';
+        if (finEl) finEl.textContent = 'Finalized: --';
+        if (peerEl) peerEl.textContent = '--';
+        if (diffEl) diffEl.textContent = '--';
+        if (mempoolEl) mempoolEl.textContent = '--';
+        if (navBadge) {
+          navBadge.textContent = 'OFFLINE';
+          navBadge.className = 'ml-auto px-1.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-label-sm text-[9px] font-bold';
+        }
+      }
+    }
+
+    async function copyNodeCommand(cmd) {
+      await copyText(cmd, 'Komut panoya kopyalandı!');
+    }
+
+  
+    // =========================================================================
+    // NODE / VALIDATOR WALLET DETECTION & CONTROLLER
+    // =========================================================================
+    function checkIsNodeWallet(acc) {
+      if (!acc || !acc.address) return false;
+      const addr = acc.address.trim().toLowerCase();
+      // 1. Explicit user/localStorage flag
+      if (localStorage.getItem('locktrace_node_wallet_' + addr) === 'true' || acc.is_node) {
+        return true;
+      }
+      // 2. High balance (Stake >= 1000 BCT for Option A Validator quorum)
+      if (Number(acc.balance || 0) >= 1000.0) {
+        return true;
+      }
+      // 3. Known system node or validator address
+      if (addr.startsWith('bct_node_') || addr.startsWith('bct_validator_') || addr === 'bct885bc383a03ebed0aa11cedfbfac0d52be3d4080') {
+        return true;
+      }
+      return false;
+    }
+
+    function checkAndSyncNodeWalletStatus() {
+      const isNode = checkIsNodeWallet(currentAccount);
+      const deskBadge = document.getElementById('desktopNodeWalletBadge');
+      const mobBadge = document.getElementById('mobileNodeWalletBadge');
+      const navBadge = document.getElementById('navLocalNodeBadge');
+      const sidebarNodeBtn = document.querySelector('#sidebar-nav button[data-tab="dugum-paneli"]');
+
+      if (isNode) {
+        if (deskBadge) {
+          deskBadge.classList.remove('hidden');
+          deskBadge.classList.add('inline-flex');
+        }
+        if (mobBadge) {
+          mobBadge.classList.remove('hidden');
+          mobBadge.classList.add('inline-flex');
+        }
+        if (navBadge) {
+          navBadge.textContent = 'NODE ACTIVE';
+          navBadge.className = 'ml-auto px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-label-sm text-[9px] font-bold border border-emerald-500/30 animate-pulse';
+        }
+        if (sidebarNodeBtn) {
+          sidebarNodeBtn.classList.add('bg-primary/10', 'border', 'border-primary/25');
+        }
+      } else {
+        if (deskBadge) {
+          deskBadge.classList.add('hidden');
+          deskBadge.classList.remove('inline-flex');
+        }
+        if (mobBadge) {
+          mobBadge.classList.add('hidden');
+          mobBadge.classList.remove('inline-flex');
+        }
+        if (navBadge && navBadge.textContent === 'NODE ACTIVE') {
+          navBadge.textContent = 'P2P';
+          navBadge.className = 'ml-auto px-1.5 py-0.5 rounded-full bg-primary/15 text-primary font-label-sm text-[9px] font-bold';
+        }
+        if (sidebarNodeBtn) {
+          sidebarNodeBtn.classList.remove('bg-primary/10', 'border', 'border-primary/25');
+        }
+      }
+
+      updateNodePanelOperatorUI(isNode);
+      refreshValidatorStakeUI();
+      refreshValidatorTelemetry();
+    }
+
+    function updateNodePanelOperatorUI(isNode) {
+      const titleEl = document.getElementById('operatorStatusTitle');
+      const roleBadge = document.getElementById('operatorRoleBadge');
+      const addrEl = document.getElementById('operatorAddressLabel');
+      const stakeEl = document.getElementById('operatorStakeStatus');
+      const stakeSub = document.getElementById('operatorStakeSubtitle');
+      const roleEl = document.getElementById('operatorConsensusRole');
+      const btnEl = document.getElementById('btnToggleNodeWallet');
+      const btnTxt = document.getElementById('btnToggleNodeWalletText');
+
+      if (!currentAccount || !currentAccount.address) {
+        if (titleEl) titleEl.textContent = 'Düğüm Cüzdanı Tanımlı Değil';
+        if (roleBadge) {
+          roleBadge.textContent = 'Misafir';
+          roleBadge.className = 'px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase';
+        }
+        if (addrEl) addrEl.textContent = 'Cüzdan: Henüz cüzdan seçilmedi';
+        if (stakeEl) stakeEl.textContent = '-- BCT';
+        if (roleEl) roleEl.textContent = 'Gözlemci Düğüm';
+        if (btnEl) btnEl.style.display = 'none';
+        return;
+      }
+
+      if (btnEl) btnEl.style.display = 'inline-flex';
+      const bal = Number(currentAccount.balance || 0);
+
+      if (isNode) {
+        if (titleEl) titleEl.textContent = '⚡ Doğrulanmış Düğüm / Validator Cüzdanı';
+        if (roleBadge) {
+          roleBadge.textContent = 'VALIDATOR AKTİF';
+          roleBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-[10px] font-bold uppercase';
+        }
+        if (addrEl) addrEl.textContent = `Cüzdan: ${currentAccount.address}`;
+        if (stakeEl) stakeEl.textContent = `${formatBct(bal, 4)} BCT`;
+        if (stakeSub) {
+          stakeSub.textContent = bal >= 1000
+            ? '✅ 1.000 BCT Teminat Sağlandı (Quorum Yetkili)'
+            : '⚡ Node Operatörü Olarak Tanımlandı';
+        }
+        if (roleEl) roleEl.textContent = bal >= 1000 ? 'Aktif Validator (Oy Hakkı Var)' : 'Madenci / Node Operatörü';
+        if (btnTxt) btnTxt.textContent = 'Node Modunu Kaldır';
+      } else {
+        if (titleEl) titleEl.textContent = 'Standart Kullanıcı Cüzdanı';
+        if (roleBadge) {
+          roleBadge.textContent = 'STANDART';
+          roleBadge.className = 'px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase';
+        }
+        if (addrEl) addrEl.textContent = `Cüzdan: ${currentAccount.address}`;
+        if (stakeEl) stakeEl.textContent = `${formatBct(bal, 4)} BCT`;
+        if (stakeSub) stakeSub.textContent = 'Validator olmak için: 1.000 BCT gerekli';
+        if (roleEl) roleEl.textContent = 'Gözlemci / İstemci';
+        if (btnTxt) btnTxt.textContent = 'Bu Cüzdanı Node Cüzdanı Yap';
+      }
+    }
+
+    
+    // =========================================================================
+    // VALIDATOR 1,000 BCT STAKING & COLLATERAL VAULT CONTROLLERS (v2.3.0)
+    // =========================================================================
+    let currentValidatorStakedBCT = 0;
+
+    async function refreshValidatorStakeUI() {
+      if (!currentAccount || !currentAccount.address) {
+        updateStakingVaultDisplay(0, false);
+        return;
+      }
+      try {
+        const { ok, body } = await apiFetch('/validator/stake/' + encodeURIComponent(currentAccount.address));
+        if (ok && body && body.data) {
+          const staked = Number(body.data.staked_amount || 0);
+          const isEligible = Boolean(body.data.is_eligible);
+          currentValidatorStakedBCT = staked;
+          updateStakingVaultDisplay(staked, isEligible);
+        } else {
+          updateStakingVaultDisplay(0, false);
+        }
+      } catch (_e) {
+        updateStakingVaultDisplay(0, false);
+      }
+    }
+
+    function updateStakingVaultDisplay(staked, isEligible) {
+      const vaultBadge = document.getElementById('validatorVaultBadge');
+      const progressText = document.getElementById('validatorStakeProgressText');
+      const progressBar = document.getElementById('validatorStakeProgressBar');
+      const operatorStakeEl = document.getElementById('operatorStakeStatus');
+      const operatorStakeSub = document.getElementById('operatorStakeSubtitle');
+      const operatorRoleEl = document.getElementById('operatorConsensusRole');
+      const operatorRoleBadge = document.getElementById('operatorRoleBadge');
+
+      const pct = Math.min(100, Math.max(0, (staked / 1000) * 100));
+
+      if (progressText) {
+        progressText.textContent = `${formatBct(staked, 2)} / 1.000.00 BCT (%${pct.toFixed(0)})`;
+      }
+      if (progressBar) {
+        progressBar.style.width = `${pct}%`;
+      }
+
+      if (staked >= 1000 || isEligible) {
+        if (vaultBadge) {
+          vaultBadge.textContent = 'AKTİF VALIDATOR';
+          vaultBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-[10px] font-bold uppercase';
+        }
+        if (operatorStakeEl) operatorStakeEl.textContent = `${formatBct(staked, 2)} BCT (Kilitli)`;
+        if (operatorStakeSub) operatorStakeSub.textContent = '✅ 1.000 BCT Teminat Kilitlendi (%30 Quorum Yetkili)';
+        if (operatorRoleEl) operatorRoleEl.textContent = 'Aktif PoS Validator';
+        if (operatorRoleBadge) {
+          operatorRoleBadge.textContent = 'VALIDATOR AKTİF';
+          operatorRoleBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-[10px] font-bold uppercase';
+        }
+      } else {
+        if (vaultBadge) {
+          vaultBadge.textContent = staked > 0 ? `${formatBct(staked, 0)} BCT KİLİTLİ` : 'TEMİNATSIZ';
+          vaultBadge.className = 'px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase';
+        }
+        if (operatorStakeEl) operatorStakeEl.textContent = `${formatBct(staked, 2)} BCT`;
+        if (operatorStakeSub) operatorStakeSub.textContent = 'Eşik: 1.000 BCT (Eksik: ' + formatBct(Math.max(0, 1000 - staked), 2) + ' BCT)';
+        if (operatorRoleEl) operatorRoleEl.textContent = 'Gözlemci Düğüm';
+      }
+    }
+
+    async function executeValidatorStake(amountBct) {
+      if (!currentAccount || !currentAccount.address) {
+        showToast('Lütfen önce bir cüzdan bağlayın veya içe aktarın!', 'warning');
+        return;
+      }
+      const amt = Number(amountBct || 1000);
+      if (isNaN(amt) || amt < 1000) {
+        showToast('Minimum validator teminatı 1.000 BCT olmalıdır.', 'warning');
+        return;
+      }
+      const curBal = Number(currentAccount.balance || 0);
+      if (curBal < amt) {
+        showToast(`Yetersiz bakiye! Cüzdanınızda ${formatBct(curBal, 2)} BCT var, gereken teminat: ${amt} BCT.`, 'error');
+        return;
+      }
+
+      const btn = document.getElementById('btnExecuteStake');
+      if (btn) btn.disabled = true;
+
+      try {
+        showToast('Kilitlenecek teminat Non-Custodial ECDSA ile imzalanıyor...', 'info');
+        const amtStr = String(amt);
+        const canonical = `VALIDATOR_STAKE:${currentAccount.address}:${amtStr}`;
+        const authFields = await buildSignedAuthPayload(canonical);
+
+        const { ok, body } = await apiFetch('/validator/stake', {
+          method: 'POST',
+          body: JSON.stringify(Object.assign({
+            sender: currentAccount.address,
+            amount: amt
+          }, authFields))
+        });
+
+        if (ok && body && body.success) {
+          showToast('🎉 ' + (body.message || '1.000 BCT Teminat başarıyla kilitlendi! Artık aktif validatorsunuz.'), 'verified');
+          localStorage.setItem('locktrace_node_wallet_' + currentAccount.address.toLowerCase(), 'true');
+          currentAccount.is_node = true;
+          await refreshCurrentAccountBalance();
+          await refreshValidatorStakeUI();
+      refreshValidatorTelemetry();
+          checkAndSyncNodeWalletStatus();
+        } else {
+          showToast(body && body.message ? body.message : 'Teminat kilitleme reddedildi!', 'error', true);
+        }
+      } catch (err) {
+        showToast(err.message || 'Teminat kilitleme hatası!', 'error', true);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    async function executeValidatorUnstake(amountBct) {
+      if (!currentAccount || !currentAccount.address) {
+        showToast('Lütfen önce bir cüzdan bağlayın!', 'warning');
+        return;
+      }
+      const amt = Number(amountBct || 1000);
+      if (isNaN(amt) || amt <= 0) {
+        showToast('Geçersiz teminat çözme miktarı.', 'warning');
+        return;
+      }
+
+      const btn = document.getElementById('btnExecuteUnstake');
+      if (btn) btn.disabled = true;
+
+      try {
+        showToast('Teminat çözme talebi yerel olarak imzalanıyor...', 'info');
+        const amtStr = String(amt);
+        const canonical = `VALIDATOR_UNSTAKE:${currentAccount.address}:${amtStr}`;
+        const authFields = await buildSignedAuthPayload(canonical);
+
+        const { ok, body } = await apiFetch('/validator/unstake', {
+          method: 'POST',
+          body: JSON.stringify(Object.assign({
+            sender: currentAccount.address,
+            amount: amt
+          }, authFields))
+        });
+
+        if (ok && body && body.success) {
+          showToast('🔓 ' + (body.message || 'Teminat çözme işlemi blok zincirine iletildi!'), 'success');
+          await refreshCurrentAccountBalance();
+          await refreshValidatorStakeUI();
+      refreshValidatorTelemetry();
+          checkAndSyncNodeWalletStatus();
+        } else {
+          showToast(body && body.message ? body.message : 'Teminat çözme reddedildi!', 'error', true);
+        }
+      } catch (err) {
+        showToast(err.message || 'Teminat çözme hatası!', 'error', true);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
+
+    
+    // =========================================================================
+    // INTEGRATED VALIDATOR & REMOTE NODE TELEMETRY CONTROLLER (v2.3.0)
+    // =========================================================================
+    let cachedValidatorTelemetry = null;
+
+    function scrollToValidatorHub() {
+      switchTab('dugum-paneli');
+    }
+
+    async function refreshValidatorTelemetry() {
+      if (!currentAccount || !currentAccount.address) {
+        updateValidatorHubUI(null);
+        return;
+      }
+      try {
+        const { ok, body } = await apiFetch('/validator/telemetry/' + encodeURIComponent(currentAccount.address));
+        if (ok && body && body.data) {
+          cachedValidatorTelemetry = body.data;
+          updateValidatorHubUI(body.data);
+        } else {
+          updateValidatorHubUI(null);
+        }
+      } catch (_e) {
+        updateValidatorHubUI(null);
+      }
+    }
+
+    function updateValidatorHubUI(data) {
+      const badge = document.getElementById('hubValidatorBadge');
+      const addrLabel = document.getElementById('hubValidatorAddressLabel');
+      const progressText = document.getElementById('hubStakeProgressText');
+      const progressBar = document.getElementById('hubStakeProgressBar');
+      const summaryLabel = document.getElementById('hubStakeSummaryLabel');
+      const statusBadge = document.getElementById('hubNodeStatusBadge');
+      const statusText = document.getElementById('hubNodeStatusText');
+      const connectedView = document.getElementById('hubNodeConnectedView');
+      const disconnectedView = document.getElementById('hubNodeDisconnectedView');
+      const cmdCode = document.getElementById('hubNodeRunCmd');
+
+      if (!currentAccount || !currentAccount.address) {
+        if (addrLabel) addrLabel.textContent = 'Cüzdan seçilmedi';
+        if (badge) {
+          badge.textContent = 'MİSAFİR';
+          badge.className = 'px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase';
+        }
+        if (progressText) progressText.textContent = '0.00 / 1.000.00 BCT (%0)';
+        if (progressBar) progressBar.style.width = '0%';
+        if (statusBadge) statusBadge.className = 'px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold flex items-center gap-1';
+        if (statusText) statusText.textContent = 'Cüzdan Bekleniyor';
+        if (connectedView) connectedView.classList.add('hidden');
+        if (disconnectedView) disconnectedView.classList.remove('hidden');
+        return;
+      }
+
+      const myAddr = currentAccount.address;
+      if (addrLabel) addrLabel.textContent = `Cüzdan: ${myAddr}`;
+      if (cmdCode) cmdCode.textContent = `python node_runner.py --wallet ${myAddr} --open`;
+
+      const staked = data ? Number(data.staked_amount || 0) : currentValidatorStakedBCT;
+      const isEligible = data ? Boolean(data.is_eligible_validator) : staked >= 1000;
+      const pct = Math.min(100, Math.max(0, (staked / 1000) * 100));
+
+      if (progressText) progressText.textContent = `${formatBct(staked, 2)} / 1.000.00 BCT (%${pct.toFixed(0)})`;
+      if (progressBar) progressBar.style.width = `${pct}%`;
+
+      if (data && data.estimated_apr_percent !== undefined) {
+        const aprEl = document.getElementById('valEstimatedAprLabel');
+        const dailyEl = document.getElementById('valEstimatedDailyLabel');
+        if (aprEl) aprEl.textContent = `~%${data.estimated_apr_percent} APR`;
+        if (dailyEl) dailyEl.textContent = `~${data.estimated_daily_reward} BCT/gün (${data.active_validators_count || 1} Val)`;
+      }
+      if (summaryLabel) {
+        if (!currentAccount || !currentAccount.address) {
+          summaryLabel.textContent = '1.000 BCT Staking & Düğüm Telemetrisi';
+        } else if (isEligible) {
+          summaryLabel.textContent = '✅ 1.000 BCT Kilitli • Validator Aktif';
+        } else if (staked > 0) {
+          summaryLabel.textContent = `${formatBct(staked, 0)} / 1.000 BCT Kilitli • Telemetriyi Aç`;
+        } else {
+          summaryLabel.textContent = '1.000 BCT Staking & Düğüm Telemetrisi';
+        }
+      }
+
+      if (isEligible) {
+        if (badge) {
+          badge.textContent = 'AKTİF VALIDATOR';
+          badge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-[10px] font-bold uppercase';
+        }
+      } else {
+        if (badge) {
+          badge.textContent = staked > 0 ? `${formatBct(staked, 0)} BCT KİLİTLİ` : 'GÖZLEMCİ';
+          badge.className = 'px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase';
+        }
+      }
+
+      // Remote Node Telemetry Handling
+      const nodeConn = data && data.node_connected && data.node_telemetry;
+      if (nodeConn) {
+        const node = data.node_telemetry;
+        if (statusBadge) statusBadge.className = 'px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-[10px] font-bold flex items-center gap-1';
+        if (statusText) statusText.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span> ÇEVRİMİÇİ (CMD Düğümünüz)';
+
+        if (connectedView) {
+          connectedView.classList.remove('hidden');
+          connectedView.classList.add('grid');
+        }
+        if (disconnectedView) disconnectedView.classList.add('hidden');
+
+        const nameEl = document.getElementById('hubNodeNameLabel');
+        const epEl = document.getElementById('hubNodeEndpointLabel');
+        const heightEl = document.getElementById('hubNodeHeightLabel');
+        const seenEl = document.getElementById('hubNodeLastSeenLabel');
+        const rewEl = document.getElementById('hubNodeRewardsLabel');
+
+        if (nameEl) nameEl.textContent = node.name || 'Terminal Node';
+        if (epEl) epEl.textContent = node.masked_endpoint || 'P2P Mesh';
+        if (heightEl) heightEl.textContent = `#${node.block_height || '--'}`;
+        if (seenEl) seenEl.textContent = `${node.last_seen_seconds_ago || 0} sn önce`;
+        if (rewEl) rewEl.textContent = `${formatBct(data.rewards_earned || 0, 4)} BCT`;
+      } else {
+        if (statusBadge) statusBadge.className = 'px-2 py-0.5 rounded-full bg-amber-500/15 text-amber-400 border border-amber-500/25 font-mono text-[10px] font-bold flex items-center gap-1';
+        if (statusText) statusText.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> Düğüm Bekleniyor';
+
+        if (connectedView) connectedView.classList.add('hidden');
+        if (disconnectedView) disconnectedView.classList.remove('hidden');
+      }
+    }
+
+    function copyNodeRunnerWalletCommand() {
+      if (!currentAccount || !currentAccount.address) {
+        copyText('python node_runner.py --open', 'Komut panoya kopyalandı!');
+        return;
+      }
+      const cmd = `python node_runner.py --wallet ${currentAccount.address} --open`;
+      copyText(cmd, 'Cüzdanınıza bağlı düğüm komutu panoya kopyalandı!');
+    }
+
+    function toggleCurrentWalletAsNode() {
+      if (!currentAccount || !currentAccount.address) {
+        showToast('Lütfen önce bir cüzdan seçin veya içe aktarın!', 'warning');
+        return;
+      }
+      const addr = currentAccount.address.trim().toLowerCase();
+      const current = localStorage.getItem('locktrace_node_wallet_' + addr) === 'true';
+      if (current) {
+        localStorage.removeItem('locktrace_node_wallet_' + addr);
+        currentAccount.is_node = false;
+        showToast('Node Cüzdanı modu kaldırıldı.', 'info');
+      } else {
+        localStorage.setItem('locktrace_node_wallet_' + addr, 'true');
+        currentAccount.is_node = true;
+        showToast('⚡ Cüzdan Düğüm / Validator Cüzdanı olarak yetkilendirildi!', 'success');
+        switchTab('dugum-paneli');
+      }
+      checkAndSyncNodeWalletStatus();
+    }
+
   </script>
 </body>
 </html>

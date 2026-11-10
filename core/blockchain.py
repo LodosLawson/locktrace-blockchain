@@ -38,6 +38,7 @@ def _to_units(val: float) -> int:
 TOTAL_SUPPLY = 1_000_000_000_000.0       # 1 Trillion BCT
 TREASURY_ADDRESS = "BCT_HAZINE_0000000000000000000000000000000000000000"
 BRIDGE_VAULT_ADDRESS = "BCT_BRIDGE_VAULT_000000000000000000000000000000000"
+VALIDATOR_STAKE_VAULT_ADDRESS = "BCT_STAKE_VAULT_00000000000000000000000000000000"
 
 # Developer Verified Lost-Key Test Wallets (Non-spendable / Permanently Locked / Effective Burn)
 BURN_ADDRESS = "BCT0000000000000000000000000000000000000000"
@@ -47,12 +48,24 @@ LOST_KEY_TEST_WALLETS = {
     "BCT7404325cf37316e3c6396ff1eef80c4ef381c27b",
     "BCT4ebea3d0f7132475e4e7c22573696eab6267a191",
 }
+try:
+    from config import Config
+except ImportError:
+    import sys
+    sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    from config import Config
+
+PROTOCOL_VERSION = getattr(Config, "PROTOCOL_VERSION", "2.2.0")
+
 FEE_PERCENT = 0.01                       # 1%
 MINER_FEE_SHARE = 0.50                   # 50% of the 1% fee allocated to block/validator reward pool
 TREASURY_FEE_SHARE = 0.50                # 50% returned to Treasury Vault
 BLOCK_REWARD = 0.05                      # 0.05 BCT fixed block subsidy from treasury
-PROPOSER_REWARD_SHARE = 0.70             # 70% of reward pool to winning PoW block producer
-VALIDATOR_POOL_SHARE = 0.30              # 30% of reward pool shared equally among active verified peer validators
+PROPOSER_REWARD_SHARE = getattr(Config, "REWARD_MINER_PERCENT", 70) / 100.0   # 70% of reward pool to winning PoW block producer
+VALIDATOR_POOL_SHARE = getattr(Config, "REWARD_VALIDATOR_PERCENT", 30) / 100.0 # 30% of reward pool shared equally among active verified peer validators
+MIN_VALIDATOR_STAKE = getattr(Config, "MIN_VALIDATOR_STAKE", 1000.0)          # 1000 BCT required for validator reward pool
+TARGET_BLOCK_TIME = getattr(Config, "TARGET_BLOCK_TIME", 20.0)                 # 20 seconds target block time
+LWMA_WINDOW = getattr(Config, "LWMA_WINDOW", 20)                              # 20 blocks window for difficulty adjustment
 MEMPOOL_MINER_WINDOW_SECONDS = 15.0      # Priority window for external PoW miners before fallback sealing
 ACTIVE_MINER_TTL_SECONDS = 90.0          # Heartbeat window identifying live external PoW miners
 
@@ -108,7 +121,7 @@ def is_valid_bct_address(addr: str) -> bool:
         return False
     clean = addr.strip()
     clean_upper = clean.upper()
-    if clean_upper in (TREASURY_ADDRESS, "GENESIS_VAULT", BRIDGE_VAULT_ADDRESS):
+    if clean_upper in (TREASURY_ADDRESS, "GENESIS_VAULT", BRIDGE_VAULT_ADDRESS, VALIDATOR_STAKE_VAULT_ADDRESS):
         return True
     return clean_upper.startswith("BCT") and len(clean) == 43 and all(c in "0123456789abcdefABCDEF" for c in clean[3:])
 
@@ -240,7 +253,8 @@ class Block:
     def __init__(self, index: int, transactions: List[Transaction],
                  previous_hash: str, timestamp: float = None, nonce: int = 0,
                  miner: str = "", version: int = 2, merkle_root: str = "",
-                 attestations_count: int = 0, precomputed_hash: str = ""):
+                 attestations_count: int = 0, precomputed_hash: str = "",
+                 finalized: bool = False):
         self.index = index
         self.transactions = transactions
         self.previous_hash = previous_hash
@@ -250,6 +264,7 @@ class Block:
         self.version = int(version)
         self.merkle_root = merkle_root or compute_merkle_root([tx.hash() for tx in self.transactions])
         self.attestations_count = int(attestations_count or 0)
+        self.finalized = bool(finalized)
         self._cached_dict: Optional[dict] = None
         self.hash = precomputed_hash or self.calculate_hash()
 
@@ -304,6 +319,7 @@ class Block:
             "nonce": self.nonce,
             "miner": self.miner,
             "attestations_count": att_cnt,
+            "finalized": getattr(self, "finalized", False),
             "transaction_count": len(self.transactions),
             "transactions": [tx.to_dict() for tx in self.transactions]
         }
@@ -357,6 +373,9 @@ class Blockchain:
         self._saved_wallet_nonces: Dict[str, Tuple[str, int]] = {}
         self._bns_index_key: Optional[tuple] = None
         self._space_index_key: Optional[tuple] = None
+        self.finalized_height: int = 0
+        self.slashed_validators: Dict[str, dict] = {}
+        self._attestations_by_validator: Dict[str, str] = {}
         self._stop_sequencer: Optional[threading.Event] = None
         self._sequencer_thread: Optional[threading.Thread] = None
 
@@ -389,7 +408,7 @@ class Blockchain:
             "last_seen": time.time(),
             "created_at": 1793620000.0,
             "status": "online",
-            "version": "2.0.0",
+            "version": PROTOCOL_VERSION,
             "block_height": len(self.chain),
             "is_genesis": True
         }
@@ -398,7 +417,7 @@ class Blockchain:
         else:
             self.nodes["node-stockholm-validator-01"]["last_seen"] = time.time()
             self.nodes["node-stockholm-validator-01"]["block_height"] = len(self.chain)
-            self.nodes["node-stockholm-validator-01"]["version"] = "2.0.0"
+            self.nodes["node-stockholm-validator-01"]["version"] = PROTOCOL_VERSION
 
     def _create_genesis_block(self):
         self.balances[TREASURY_ADDRESS] = TOTAL_SUPPLY
@@ -429,7 +448,7 @@ class Blockchain:
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
             "bns_accept_offer"
         }
-        net_credit_types = {"transfer", "space_post", "bns_register", "bns_buy", "bns_accept_offer"}
+        net_credit_types = {"transfer", "space_post", "bns_register", "bns_buy", "bns_accept_offer", "validator_stake", "validator_unstake"}
         social_treasury_types = {"space_like", "space_comment", "space_follow"}
 
         amt_u = _to_units(tx.amount)
@@ -707,8 +726,15 @@ class Blockchain:
                 }
 
             sender_balance = self.verify_and_recalc_balance(clean_sender)
-            if sender_balance < amount:
-                return False, f"Insufficient balance. Your balance is {sender_balance:.8f} BCT, attempted to send {amount:.8f} BCT", None
+            pending_out = sum(tx.amount for tx in self.pending_transactions if getattr(tx, "sender", "") == clean_sender)
+            spendable_balance = round(sender_balance - pending_out, 8)
+            if spendable_balance < amount:
+                return (
+                    False,
+                    f"Insufficient spendable balance. Confirmed: {sender_balance:.8f} BCT, "
+                    f"Pending in mempool: {pending_out:.8f} BCT, Spendable: {spendable_balance:.8f} BCT (attempted: {amount:.8f} BCT)",
+                    None
+                )
 
             # Calculate 1% fee returned to treasury
             fee = round(amount * FEE_PERCENT, 8)
@@ -748,6 +774,22 @@ class Blockchain:
             }
 
             return True, f"Transfer confirmed! Sent: {net_amount} BCT, 1% Fee ({fee} BCT) returned to treasury vault.", tx_info
+
+    def add_transaction(self, tx: Transaction) -> Tuple[bool, str]:
+        """Directly append a verified Transaction to pending mempool and trigger sealing."""
+        if not isinstance(tx, Transaction):
+            return False, "Invalid transaction object"
+        with self.lock:
+            self._load_state()
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            block = self._seal_or_queue_mempool()
+            if tx.sender:
+                self.balances[tx.sender] = self.verify_and_recalc_balance(tx.sender)
+            if tx.receiver:
+                self.balances[tx.receiver] = self.verify_and_recalc_balance(tx.receiver)
+            self._save_state()
+            return True, "Transaction successfully added to mempool"
 
     def create_space_post(self, author: str, content: str, signature: str = "",
                           public_key: str = "", signed_payload: str = "",
@@ -2653,6 +2695,273 @@ class Blockchain:
         """Disabled: Initial welcome grant cannot be dumped for free fiat."""
         return False, "Direct fiat withdrawal is disabled. BCT balances can be used on the LockTrace Space thought network and for transfers.", None
 
+
+    def get_validator_telemetry(self, wallet_address: str) -> dict:
+        """
+        Returns full validator telemetry for a given wallet address:
+        - Staked collateral amount & Quorum qualification
+        - Remote node telemetry (if node is running and registered with this wallet)
+        - Historical block production & attestation rewards
+        """
+        clean = (wallet_address or "").strip()
+        if not clean:
+            return {"error": "Invalid wallet address"}
+
+        with self.lock:
+            self._load_state()
+            stake = self.get_validator_stake(clean)
+            is_eligible = stake >= MIN_VALIDATOR_STAKE
+            bal = self.verify_and_recalc_balance(clean)
+
+            # Search active nodes registered with this wallet
+            now = time.time()
+            all_nodes = self.get_nodes()
+            matched_node = None
+            for n in all_nodes:
+                m_addr = (n.get("miner_address") or "").strip()
+                if m_addr and m_addr.lower() == clean.lower():
+                    matched_node = dict(n)
+                    break
+
+            # Calculate total blocks produced & total rewards earned
+            blocks_produced = 0
+            rewards_earned = 0.0
+            for b in self.chain:
+                if (getattr(b, "miner", "") or "").lower() == clean.lower():
+                    blocks_produced += 1
+                for tx in b.transactions:
+                    if tx.receiver.lower() == clean.lower() and tx.tx_type in ("mining_reward", "validator_reward", "attestation_reward"):
+                        rewards_earned += tx.amount
+
+            node_data = None
+            if matched_node:
+                raw_ep = matched_node.get("endpoint", "")
+                masked_ep = "P2P Mesh Private"
+                if "local-only" in raw_ep or "127.0.0.1" in raw_ep or "localhost" in raw_ep:
+                    port_str = raw_ep.split(":")[-1] if ":" in raw_ep else "5050"
+                    masked_ep = f"Yerel Düğüm (Port {port_str})"
+                elif raw_ep.startswith("http"):
+                    # Mask IP for security / anti-DDoS
+                    cleaned = raw_ep.replace("http://", "").replace("https://", "")
+                    parts = cleaned.split(":")
+                    host_part = parts[0]
+                    port_part = parts[1] if len(parts) > 1 else "5050"
+                    ip_octets = host_part.split(".")
+                    if len(ip_octets) == 4:
+                        masked_host = f"{ip_octets[0]}.***.***.{ip_octets[3]}"
+                    else:
+                        masked_host = host_part[:4] + "***"
+                    masked_ep = f"P2P Node ({masked_host}:{port_part})"
+
+                last_seen_sec = max(0, int(now - matched_node.get("last_seen", now)))
+                node_data = {
+                    "node_id": matched_node.get("node_id"),
+                    "name": matched_node.get("name") or "Community Node",
+                    "masked_endpoint": masked_ep,
+                    "role": matched_node.get("role", "Validator Peer"),
+                    "block_height": matched_node.get("block_height", len(self.chain)),
+                    "last_seen_seconds_ago": last_seen_sec,
+                    "is_online": last_seen_sec <= 90,
+                    "hashrate_hs": matched_node.get("hashrate_hs", 0.0),
+                    "version": matched_node.get("version", "2.2.0"),
+                    "auth_verified": bool(matched_node.get("auth_verified"))
+                }
+
+            # Calculate dynamic staking yield (APR) based on 20s block time
+            active_vals_list = self.get_eligible_validators(exclude_miner="", block_index=len(self.chain), now=now)
+            active_validators_count = len(active_vals_list)
+            # Daily validator pool: 4320 blocks/day * 0.015 BCT = 64.8 BCT/day
+            daily_val_pool = 64.8
+            yearly_val_pool = 23652.0
+            effective_vals = max(1, active_validators_count if is_eligible else (active_validators_count + 1))
+            est_daily_bct = round(daily_val_pool / effective_vals, 4)
+            est_yearly_bct = round(yearly_val_pool / effective_vals, 2)
+            est_apr_pct = round((est_yearly_bct / MIN_VALIDATOR_STAKE) * 100.0, 1)
+
+            return {
+                "wallet_address": clean,
+                "staked_amount": stake,
+                "min_required_stake": MIN_VALIDATOR_STAKE,
+                "is_eligible_validator": is_eligible,
+                "wallet_balance": bal,
+                "vault_address": VALIDATOR_STAKE_VAULT_ADDRESS,
+                "blocks_produced": blocks_produced,
+                "rewards_earned": round(rewards_earned, 8),
+                "node_connected": node_data is not None and node_data["is_online"],
+                "node_telemetry": node_data,
+                "daily_pool_reward": daily_val_pool,
+                "yearly_pool_reward": yearly_val_pool,
+                "active_validators_count": active_validators_count,
+                "estimated_daily_reward": est_daily_bct,
+                "estimated_yearly_reward": est_yearly_bct,
+                "estimated_apr_percent": est_apr_pct
+            }
+
+    def get_validator_stake(self, address: str) -> float:
+        """Returns the confirmed on-chain BCT amount locked by the validator in VALIDATOR_STAKE_VAULT."""
+        clean = (address or "").strip()
+        if not clean:
+            return 0.0
+        with self.lock:
+            self._ensure_ledger_index()
+            staked = 0.0
+            for b in self.chain:
+                for tx in b.transactions:
+                    if tx.receiver == VALIDATOR_STAKE_VAULT_ADDRESS and tx.sender == clean and tx.tx_type == "validator_stake":
+                        staked += tx.amount
+                    elif tx.sender == VALIDATOR_STAKE_VAULT_ADDRESS and tx.receiver == clean and tx.tx_type == "validator_unstake":
+                        staked -= tx.amount
+            for tx in self.pending_transactions:
+                if tx.receiver == VALIDATOR_STAKE_VAULT_ADDRESS and tx.sender == clean and tx.tx_type == "validator_stake":
+                    staked += tx.amount
+                elif tx.sender == VALIDATOR_STAKE_VAULT_ADDRESS and tx.receiver == clean and tx.tx_type == "validator_unstake":
+                    staked -= tx.amount
+            if clean in self.slashed_validators:
+                staked = max(0.0, staked - 1000.0)
+            return max(0.0, round(staked, 8))
+
+    def execute_validator_stake(self, sender: str, amount_bct: float,
+                                signature: str, public_key: str = "",
+                                signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        """
+        Binds and locks BCT collateral into VALIDATOR_STAKE_VAULT to become an active consensus validator.
+        Requires minimum 1,000.0 BCT.
+        """
+        with self.lock:
+            self._load_state()
+            clean_sender = (sender or "").strip()
+            if not is_valid_bct_address(clean_sender):
+                return False, f"Invalid validator wallet address: '{clean_sender}'", None
+
+            try:
+                amt = round(float(amount_bct), 8)
+            except (ValueError, TypeError):
+                return False, "Invalid stake amount.", None
+
+            if amt < MIN_VALIDATOR_STAKE:
+                return False, f"Minimum validator stake is {MIN_VALIDATOR_STAKE:.2f} BCT.", None
+
+            bal = self.verify_and_recalc_balance(clean_sender)
+            pending_out = sum(tx.amount for tx in self.pending_transactions if getattr(tx, "sender", "") == clean_sender)
+            if (bal - pending_out) < amt:
+                return False, f"Insufficient balance to stake {amt:.2f} BCT (Available: {bal - pending_out:.4f} BCT).", None
+
+            if signed_payload:
+                sig_ok, sig_msg = self._verify_actor_signature(clean_sender, signed_payload, signature, public_key)
+            else:
+                nonce = self.get_account_nonce(clean_sender)
+                amt_str_trim = f"{amt:.8f}".rstrip("0").rstrip(".") or "0"
+                amt_int = str(int(amt)) if amt.is_integer() else str(amt)
+                candidates = [
+                    f"VALIDATOR_STAKE:{clean_sender}:{amt}:{nonce}",
+                    f"VALIDATOR_STAKE:{clean_sender}:{amt_str_trim}:{nonce}",
+                    f"VALIDATOR_STAKE:{clean_sender}:{amt_int}:{nonce}",
+                    f"VALIDATOR_STAKE:{clean_sender}:{amt}",
+                    f"VALIDATOR_STAKE:{clean_sender}:{amt_str_trim}",
+                    f"VALIDATOR_STAKE:{clean_sender}:{amt_int}",
+                    f"{clean_sender}{VALIDATOR_STAKE_VAULT_ADDRESS}{amt}",
+                    f"{clean_sender}{VALIDATOR_STAKE_VAULT_ADDRESS}{amt_str_trim}",
+                    f"{clean_sender}{VALIDATOR_STAKE_VAULT_ADDRESS}{amt_int}",
+                ]
+                sig_ok = False
+                sig_msg = "Invalid ECDSA digital signature!"
+                for cand in candidates:
+                    ok_check, _ = self._verify_actor_signature(clean_sender, cand, signature, public_key)
+                    if ok_check:
+                        sig_ok = True
+                        break
+            if not sig_ok:
+                return False, sig_msg, None
+
+            tx = Transaction(
+                sender=clean_sender,
+                receiver=VALIDATOR_STAKE_VAULT_ADDRESS,
+                amount=amt,
+                fee=0.0,
+                signature=signature,
+                tx_type="validator_stake",
+                extra_data={"staker": clean_sender, "staked_at": time.time()}
+            )
+            ok, msg = self.add_transaction(tx)
+            if not ok:
+                return False, msg, None
+
+            new_staked = self.get_validator_stake(clean_sender) + amt
+            return True, f"Successfully locked {amt:.2f} BCT collateral into Validator Staking Vault!", {
+                "tx_hash": tx.hash(),
+                "staked_amount": amt,
+                "total_staked": new_staked,
+                "validator": clean_sender
+            }
+
+    def execute_validator_unstake(self, sender: str, amount_bct: float,
+                                  signature: str, public_key: str = "",
+                                  signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
+        """
+        Unlocks BCT collateral from VALIDATOR_STAKE_VAULT back to the validator.
+        """
+        with self.lock:
+            self._load_state()
+            clean_sender = (sender or "").strip()
+            if not is_valid_bct_address(clean_sender):
+                return False, f"Invalid validator wallet address: '{clean_sender}'", None
+
+            try:
+                amt = round(float(amount_bct), 8)
+            except (ValueError, TypeError):
+                return False, "Invalid unstake amount.", None
+
+            cur_staked = self.get_validator_stake(clean_sender)
+            if cur_staked < amt:
+                return False, f"Insufficient staked collateral. Current staked: {cur_staked:.4f} BCT (requested: {amt:.4f} BCT).", None
+
+            if signed_payload:
+                sig_ok, sig_msg = self._verify_actor_signature(clean_sender, signed_payload, signature, public_key)
+            else:
+                nonce = self.get_account_nonce(clean_sender)
+                amt_str_trim = f"{amt:.8f}".rstrip("0").rstrip(".") or "0"
+                amt_int = str(int(amt)) if amt.is_integer() else str(amt)
+                candidates = [
+                    f"VALIDATOR_UNSTAKE:{clean_sender}:{amt}:{nonce}",
+                    f"VALIDATOR_UNSTAKE:{clean_sender}:{amt_str_trim}:{nonce}",
+                    f"VALIDATOR_UNSTAKE:{clean_sender}:{amt_int}:{nonce}",
+                    f"VALIDATOR_UNSTAKE:{clean_sender}:{amt}",
+                    f"VALIDATOR_UNSTAKE:{clean_sender}:{amt_str_trim}",
+                    f"VALIDATOR_UNSTAKE:{clean_sender}:{amt_int}",
+                    f"{VALIDATOR_STAKE_VAULT_ADDRESS}{clean_sender}{amt}",
+                    f"{VALIDATOR_STAKE_VAULT_ADDRESS}{clean_sender}{amt_str_trim}",
+                    f"{VALIDATOR_STAKE_VAULT_ADDRESS}{clean_sender}{amt_int}",
+                ]
+                sig_ok = False
+                sig_msg = "Invalid ECDSA digital signature!"
+                for cand in candidates:
+                    ok_check, _ = self._verify_actor_signature(clean_sender, cand, signature, public_key)
+                    if ok_check:
+                        sig_ok = True
+                        break
+            if not sig_ok:
+                return False, sig_msg, None
+
+            tx = Transaction(
+                sender=VALIDATOR_STAKE_VAULT_ADDRESS,
+                receiver=clean_sender,
+                amount=amt,
+                fee=0.0,
+                signature=f"UNSTAKE_RELEASE_{int(time.time())}_{clean_sender[:8]}",
+                tx_type="validator_unstake",
+                extra_data={"staker": clean_sender, "unstaked_at": time.time()}
+            )
+            ok, msg = self.add_transaction(tx)
+            if not ok:
+                return False, msg, None
+
+            return True, f"Successfully requested unstake of {amt:.2f} BCT.", {
+                "tx_hash": tx.hash(),
+                "unstaked_amount": amt,
+                "remaining_staked": cur_staked - amt,
+                "validator": clean_sender
+            }
+
     def execute_bridge_unlock(self, recipient_address: str, amount_bct: float,
                               evm_tx_hash: str, evm_sender: str = "") -> Tuple[bool, str, Optional[dict]]:
         """
@@ -2821,6 +3130,13 @@ class Blockchain:
                 continue
             if not n.get("auth_verified", False):
                 continue
+            # Sybil Defense (LT-01 Hardening): Strictly require minimum validator stake locked in vault
+            staked = self.get_validator_stake(m_addr)
+            if staked < MIN_VALIDATOR_STAKE:
+                continue
+            # Equivocation Defense: Exclude slashed malicious validators
+            if m_addr in self.slashed_validators:
+                continue
             attested_h = int(n.get("attested_height", -1))
             if attested_h < max(0, block_index - 5):
                 continue
@@ -2842,10 +3158,36 @@ class Blockchain:
         return deduped
 
     def get_current_difficulty(self) -> int:
-        """Adaptive PoW difficulty: scales smoothly when a large fleet of external PoW miners is active."""
-        active_miners = len(self.get_active_peer_miners())
-        if active_miners >= 8:
+        """
+        Adaptive PoW Difficulty using LWMA (Linearly Weighted Moving Average).
+        Dynamically adjusts difficulty target based on block solve times over LWMA_WINDOW.
+        Suitable for both CPU and GPU miners while maintaining smooth block intervals.
+        """
+        if len(self.chain) < LWMA_WINDOW:
+            return self.difficulty
+
+        # Calculate solve times across the last LWMA_WINDOW blocks
+        recent = self.chain[-LWMA_WINDOW:]
+        time_diffs = []
+        for i in range(1, len(recent)):
+            dt = recent[i].timestamp - recent[i - 1].timestamp
+            time_diffs.append(max(0.1, min(dt, TARGET_BLOCK_TIME * 6.0)))
+
+        if not time_diffs:
+            return self.difficulty
+
+        weighted_sum = sum((idx + 1) * dt for idx, dt in enumerate(time_diffs))
+        weight_total = sum(idx + 1 for idx in range(len(time_diffs)))
+        avg_solve_time = weighted_sum / max(1.0, weight_total)
+
+        # Scale difficulty smoothly:
+        # If solve time is too fast (< 50% of target), increase difficulty
+        # If solve time is too slow (> 180% of target), decrease difficulty
+        if avg_solve_time < (TARGET_BLOCK_TIME * 0.5):
             return self.difficulty + 1
+        elif avg_solve_time > (TARGET_BLOCK_TIME * 1.8) and self.difficulty > 2:
+            return max(2, self.difficulty - 1)
+
         return self.difficulty
 
     def _should_defer_to_peer_miners(self) -> bool:
@@ -3472,6 +3814,26 @@ class Blockchain:
             if not verify_signature(clean_pub, msg, signature):
                 return False, "Invalid validator ECDSA signature!", None
 
+            # LT-01 Hardening: Strictly require minimum locked validator stake in vault
+            val_stake = self.get_validator_stake(clean_miner)
+            if val_stake < MIN_VALIDATOR_STAKE:
+                return False, f"Insufficient staked collateral ({val_stake:.2f} BCT). Minimum {MIN_VALIDATOR_STAKE:.2f} BCT must be locked in the validator stake vault to attest blocks.", None
+
+            # Equivocation Detection (Slashing defense)
+            val_key = f"{clean_miner}:{block_index}"
+            prev_hash = self._attestations_by_validator.get(val_key)
+            if prev_hash and prev_hash.lower() != clean_hash.lower():
+                logger.error(f"[SLASHING] Equivocation detected! Validator {clean_miner} double-attested block #{block_index} ({prev_hash} vs {clean_hash})")
+                self.slashed_validators[clean_miner] = {
+                    "block_index": block_index,
+                    "hash_a": prev_hash,
+                    "hash_b": clean_hash,
+                    "timestamp": time.time(),
+                    "slashed": True
+                }
+                return False, f"Equivocation detected on block #{block_index}! Validator stake has been slashed.", None
+            self._attestations_by_validator[val_key] = clean_hash
+
             existing = self.nodes.get(clean_id)
             if existing and existing.get("is_genesis"):
                 return False, "Genesis node identity cannot be claimed externally.", None
@@ -3488,6 +3850,15 @@ class Blockchain:
                 timestamp=float(timestamp),
             )
             target_block.attestations_count = total_att
+
+            # Post-Block Finality Checkpoint (Option A: 2/3 Quorum Finality)
+            eligible_validators = self.get_eligible_validators(exclude_miner="", block_index=block_index)
+            quorum_needed = max(1, math.ceil(len(eligible_validators) * (2.0 / 3.0))) if len(eligible_validators) > 2 else 1
+            if total_att >= quorum_needed:
+                target_block.finalized = True
+                if block_index > self.finalized_height:
+                    self.finalized_height = block_index
+                    logger.info(f"[FINALITY] Block #{block_index} marked FINALIZED (Attestations: {total_att}/{len(eligible_validators)})")
 
             node_entry = existing or {
                 "node_id": clean_id,
@@ -3774,6 +4145,7 @@ class Blockchain:
             all_addrs = set(self.wallets.keys()) | set(self._unit_balances_map.keys()) | set(self._tx_counts_map.keys())
             all_addrs.add(TREASURY_ADDRESS)
             all_addrs.add(BRIDGE_VAULT_ADDRESS)
+            all_addrs.add(VALIDATOR_STAKE_VAULT_ADDRESS)
 
             tx_counts = self._tx_counts_map
             validator_addrs = {n.get("miner_address") for n in self.nodes.values() if n.get("miner_address")}
@@ -3784,7 +4156,7 @@ class Blockchain:
                 if not clean_addr or clean_addr in ("GENESIS_VAULT", "GENESIS"):
                     continue
                 bal = round(self._unit_balances_map.get(clean_addr, 0) / ATOMIC_UNIT, 8)
-                if bal <= 0 and clean_addr not in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS) and tx_counts.get(clean_addr, 0) == 0:
+                if bal <= 0 and clean_addr not in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS, VALIDATOR_STAKE_VAULT_ADDRESS) and tx_counts.get(clean_addr, 0) == 0:
                     continue
 
                 tag = "User Wallet"
@@ -3801,6 +4173,9 @@ class Blockchain:
                 elif clean_addr == BRIDGE_VAULT_ADDRESS:
                     tag = "Bridge Vault (Base 1:1 wBCT)"
                     tag_type = "bridge_vault"
+                elif clean_addr == VALIDATOR_STAKE_VAULT_ADDRESS:
+                    tag = "Validator Staking Vault (PoS Kilitli Teminat)"
+                    tag_type = "stake_vault"
                 elif clean_addr in validator_addrs:
                     tag = "Validator / Mining Node"
                     tag_type = "validator"
@@ -3815,7 +4190,7 @@ class Blockchain:
                     "tag": tag,
                     "tag_type": tag_type,
                     "tx_count": tx_counts.get(clean_addr, 0),
-                    "is_contract": clean_addr in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS),
+                    "is_contract": clean_addr in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS, VALIDATOR_STAKE_VAULT_ADDRESS),
                     "created_at": self.wallets.get(clean_addr, {}).get("created_at", 0)
                 })
 
@@ -3987,7 +4362,7 @@ class Blockchain:
         location: str = "Decentralized",
         block_height: int = 0,
         miner_address: str = "",
-        version: str = "2.0.0",
+        version: str = PROTOCOL_VERSION,
         public_key: str = "",
         signature: str = "",
         timestamp: Optional[float] = None,
@@ -4064,7 +4439,7 @@ class Blockchain:
                 "miner_address": clean_miner or node_info.get("miner_address", ""),
                 "last_seen": time.time(),
                 "status": "online",
-                "version": safe_version or node_info.get("version", "2.0.0"),
+                "version": safe_version or node_info.get("version", PROTOCOL_VERSION),
                 "block_height": safe_height if safe_height > 0 else len(self.chain),
             })
             if client_ip:
@@ -4128,12 +4503,14 @@ class Blockchain:
             total_units = _to_units(TOTAL_SUPPLY)
             treasury_units = self.verify_and_recalc_units(TREASURY_ADDRESS)
             vault_units = self.verify_and_recalc_units(BRIDGE_VAULT_ADDRESS)
+            stake_vault_units = self.verify_and_recalc_units(VALIDATOR_STAKE_VAULT_ADDRESS)
             lost_key_units = sum(self.verify_and_recalc_units(addr) for addr in LOST_KEY_TEST_WALLETS)
             burn_units = self.verify_and_recalc_units(BURN_ADDRESS)
             # Dead/lost test wallet coins and burn address balance are subtracted from circulation as effective permanent burn
-            circulating_units = max(0, total_units - treasury_units - vault_units - lost_key_units - burn_units)
+            circulating_units = max(0, total_units - treasury_units - vault_units - stake_vault_units - lost_key_units - burn_units)
             treasury_dec = Decimal(treasury_units) / Decimal(ATOMIC_UNIT)
             vault_dec = Decimal(vault_units) / Decimal(ATOMIC_UNIT)
+            stake_vault_dec = Decimal(stake_vault_units) / Decimal(ATOMIC_UNIT)
             lost_key_dec = Decimal(lost_key_units) / Decimal(ATOMIC_UNIT)
             burn_dec = Decimal(burn_units) / Decimal(ATOMIC_UNIT)
             effective_burned_units = treasury_units + lost_key_units + burn_units
@@ -4150,6 +4527,9 @@ class Blockchain:
                 "treasury_formatted": f"{treasury_dec:,.8f}",
                 "bridge_vault_locked": float(vault_dec),
                 "bridge_vault_formatted": f"{vault_dec:,.8f}",
+                "validator_stake_vault_locked": float(stake_vault_dec),
+                "validator_stake_vault_formatted": f"{stake_vault_dec:,.8f}",
+                "validator_stake_vault_address": VALIDATOR_STAKE_VAULT_ADDRESS,
                 "burn_address_balance": float(burn_dec),
                 "burn_address_formatted": f"{burn_dec:,.6f}",
                 "lost_key_test_wallets_count": len(LOST_KEY_TEST_WALLETS),

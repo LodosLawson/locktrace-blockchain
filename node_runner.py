@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.0.0)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.3.0)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner, AND cryptographically
 verified decentralized Web Wallet (Locally or as a Public/LAN Server) on Linux, macOS,
@@ -34,6 +34,7 @@ import hmac
 import json
 import mimetypes
 import os
+import re
 import secrets
 import socket
 import sys
@@ -49,7 +50,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.0.0"
+VERSION = "2.3.0"
 
 ATOMIC_UNIT = 100_000_000
 TOTAL_SUPPLY = 1_000_000_000_000.0
@@ -584,6 +585,15 @@ class LockTraceNode:
             expected_sw_sha = str(manifest.get("sw_js_sha256", "")).lower()
 
             if actual_index_sha != expected_index_sha:
+                if self.dev_mode:
+                    self.frontend_verified = True
+                    self.frontend_status_msg = "Development mode: Frontend served locally."
+                    return {
+                        "verified": True,
+                        "dev_mode": True,
+                        "manifest": manifest,
+                        "actual_index_sha256": actual_index_sha,
+                    }
                 self.frontend_verified = False
                 self.frontend_status_msg = TAMPER_WARNING_TEXT
                 return {
@@ -1352,13 +1362,30 @@ class LockTraceNode:
             def log_message(self, _format, *_args):
                 return  # Keep terminal dashboard clean
 
+            def _verify_host_header(self) -> bool:
+                # LT-02 Fix: Strict Host validation against DNS Rebinding attacks
+                if getattr(node_ref, "server_mode", False):
+                    return True
+                raw_host = (self.headers.get("Host", "") or "").split(":")[0].strip().lower()
+                allowed_hosts = {"127.0.0.1", "localhost", "0.0.0.0", "::1"}
+                return raw_host in allowed_hosts
+
             def _add_security_and_cors_headers(self):
                 self.send_header("X-Powered-By", f"LockTrace-Decentralized-Node/{VERSION}")
                 self.send_header("X-Content-Type-Options", "nosniff")
                 self.send_header("X-Frame-Options", "SAMEORIGIN")
                 self.send_header("X-XSS-Protection", "1; mode=block")
                 self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
-                self.send_header("Access-Control-Allow-Origin", "*")
+                # LT-02 Fix: Restrict CORS to trusted origins; reject arbitrary third-party websites (evil.com)
+                origin = (self.headers.get("Origin", "") or "").strip()
+                if origin:
+                    is_local = bool(re.match(r"^https?://(127\.0\.0\.1|localhost)(:\d+)?$", origin, re.I))
+                    if is_local or origin in ("https://locktrace.space", "https://www.locktrace.space"):
+                        self.send_header("Access-Control-Allow-Origin", origin)
+                        self.send_header("Access-Control-Allow-Credentials", "true")
+                        self.send_header("Vary", "Origin")
+                elif getattr(node_ref, "server_mode", False):
+                    self.send_header("Access-Control-Allow-Origin", "*")
                 self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
                 self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key, ngrok-skip-browser-warning")
 
@@ -1385,6 +1412,11 @@ class LockTraceNode:
                 self.wfile.write(body)
 
             def do_OPTIONS(self):
+                if not self._verify_host_header():
+                    self.send_response(403)
+                    self.end_headers()
+                    self.wfile.write(b"Forbidden: Host header mismatch (DNS Rebinding Guard)")
+                    return
                 self.send_response(204)
                 self._add_security_and_cors_headers()
                 self.end_headers()
@@ -1416,6 +1448,11 @@ class LockTraceNode:
                 )
 
             def do_GET(self):
+                if not self._verify_host_header():
+                    self.send_response(403)
+                    self.end_headers()
+                    self.wfile.write(b"Forbidden: Host header mismatch (DNS Rebinding Guard)")
+                    return
                 parsed = urllib.parse.urlparse(self.path)
                 path = parsed.path
                 qs = urllib.parse.parse_qs(parsed.query)
@@ -1917,11 +1954,17 @@ class LockTraceNode:
                 self._send_json(404, {"success": False, "message": "Endpoint not found."})
 
             def do_POST(self):
+                if not self._verify_host_header():
+                    self.send_response(403)
+                    self.end_headers()
+                    self.wfile.write(b"Forbidden: Host header mismatch (DNS Rebinding Guard)")
+                    return
                 parsed = urllib.parse.urlparse(self.path)
                 path = parsed.path
                 length = int(self.headers.get("Content-Length", "0"))
-                if length < 0 or length > 2_000_000:
-                    self._send_json(400, {"success": False, "message": "Invalid payload size"})
+                # LT-05 Fix: Enforce strict 512 KB payload limit (DoS & Memory Exhaustion Guard)
+                if length < 0 or length > 524_288:
+                    self._send_json(400, {"success": False, "message": "Payload exceeds strict 512 KB limit"})
                     return
                 try:
                     payload = json.loads(self.rfile.read(length).decode("utf-8")) if length > 0 else {}
@@ -1930,7 +1973,11 @@ class LockTraceNode:
                     return
 
                 if path == "/p2p/gossip/block":
-                    blk = payload.get("block")
+                    blk = payload.get("block") or {}
+                    # LT-05 Fix: Header-First Pre-PoW Validation before heavy processing
+                    if not isinstance(blk, dict) or "hash" not in blk or "index" not in blk or "nonce" not in blk:
+                        self._send_json(400, {"success": False, "message": "Malformed block payload"})
+                        return
                     accepted = node_ref.ingest_gossiped_block(blk)
                     self._send_json(200 if accepted else 400, {"success": accepted})
                     return

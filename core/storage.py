@@ -1,5 +1,5 @@
 """
-BlockChainT - High-Performance ACID SQLite WAL Persistence Engine (v2.0.0)
+BlockChainT - High-Performance ACID SQLite WAL Persistence Engine (v2.3.0)
 ==========================================================================
 Provides multi-worker safe SQLite WAL storage for blocks, shared mempool,
 wallets, decentralized P2P nodes, and cryptographic validator block attestations.

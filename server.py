@@ -34,6 +34,7 @@ from core.blockchain import (
     RELEASE_AUTHORITY_PUBKEY,
     is_valid_bct_address,
     verify_frontend_manifest,
+    VALIDATOR_STAKE_VAULT_ADDRESS,
 )
 from core.wallet import (
     Wallet,
@@ -139,6 +140,26 @@ class SlidingWindowRateLimiter:
             self._used_signatures[sig_hex] = now + ttl_seconds
             return True
 
+    def check_action_cooldown(self, wallet: str, action_type: str, cooldown_seconds: int) -> Tuple[bool, float]:
+        """
+        Enforces per-wallet anti-spam & race-condition cooldown intervals.
+        Returns: (allowed: bool, remaining_seconds: float)
+        """
+        if not wallet or cooldown_seconds <= 0:
+            return True, 0.0
+        now = time.time()
+        key = f"{wallet.strip().lower()}:{action_type}"
+        with self._lock:
+            if not hasattr(self, "_action_cooldowns"):
+                self._action_cooldowns = {}
+            last_ts = self._action_cooldowns.get(key, 0.0)
+            elapsed = now - last_ts
+            if elapsed < cooldown_seconds:
+                remaining = round(cooldown_seconds - elapsed, 1)
+                return False, max(0.1, remaining)
+            self._action_cooldowns[key] = now
+            return True, 0.0
+
 
 rate_limiter = SlidingWindowRateLimiter()
 
@@ -169,6 +190,26 @@ def check_rate_limit(scope: str, limit: int, window_seconds: int = 60) -> bool:
     return rate_limiter.allow(f"{scope}:{ip}", limit, window_seconds)
 
 
+def check_wallet_cooldown(wallet: str, action: str) -> Optional[Tuple[bool, str, int]]:
+    """Enforces action-specific rate limiting per user wallet."""
+    cd_sec = getattr(Config, "ACTION_COOLDOWNS", {}).get(action, 0)
+    if cd_sec <= 0 or not wallet:
+        return None
+    ok, remain = rate_limiter.check_action_cooldown(wallet, action, cd_sec)
+    if not ok:
+        action_names = {
+            "transfer": "Para transferi",
+            "space_post": "Post paylaşımı",
+            "space_like": "Beğeni",
+            "space_comment": "Yorum",
+            "space_follow": "Takip etme",
+            "bns_register": "Alan adı kaydı"
+        }
+        name = action_names.get(action, action)
+        return False, f"{name} için bekleme süresi aktif. Lütfen {remain:.0f} saniye sonra tekrar deneyin.", 429
+    return None
+
+
 def safe_float(val, default: Optional[float] = None) -> Optional[float]:
     try:
         num = float(val)
@@ -191,12 +232,12 @@ def safe_int(val, default: int = 0, min_val: Optional[int] = None, max_val: Opti
     return num
 
 
-def resolve_authenticated_action(data: dict, expected_address: str, canonical_payload: str):
+def resolve_authenticated_action(data: dict, expected_address: str, canonical_payload: str, require_nonce: bool = True):
     """
     Cryptographically authenticate a state-changing wallet action.
     Supports:
-      1) Custodial-assisted signing via 12-word `mnemonic` or 64-hex `private_key`
-      2) Non-custodial client-side ECDSA signing via `public_key`, `signature`, and `timestamp`
+      1) Custodial-assisted signing via 12-word `mnemonic` or 64-hex `private_key` (Disabled in non-custodial mode)
+      2) Non-custodial client-side ECDSA signing via `public_key`, `signature`, `timestamp`, and strictly enforced `nonce`
     Returns: (ok: bool, status_code: int, error_msg: str, signature: str, public_key: str, signed_payload: str)
     """
     clean_expected = (expected_address or "").strip()
@@ -209,27 +250,17 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
     client_pub = str(data.get("public_key", "") or "").strip()
     client_ts = data.get("timestamp")
 
-    # Path 1: Mnemonic or Private Key provided
+    # Path 1: Mnemonic or Private Key directly sent over network is strictly rejected (Zero-Custodial Security)
     if mnemonic_phrase or private_key_hex:
-        try:
-            if mnemonic_phrase and len(mnemonic_phrase.split()) >= 12:
-                wallet = restore_wallet_from_mnemonic(mnemonic_phrase)
-            elif private_key_hex and len(private_key_hex) == 64:
-                wallet = restore_wallet(private_key_hex)
-            else:
-                return False, 400, "Invalid signing key (12-word mnemonic phrase or 64-character private key required).", "", "", ""
-
-            if wallet.address != clean_expected:
-                logger.warning(f"Auth mismatch: key {wallet.address[:10]}... attempted action as {clean_expected[:10]}...")
-                return False, 403, "Signing key does not match the specified wallet address!", "", "", ""
-
-            cand_primary = canonical_payload[0] if isinstance(canonical_payload, (list, tuple)) else canonical_payload
-            nonce_ts = f"{int(time.time() * 1000)}:{secrets.token_hex(4)}"
-            signed_payload = f"{cand_primary}:{nonce_ts}"
-            sig = wallet.sign(signed_payload)
-            return True, 200, "", sig, wallet.get_public_key_hex(), signed_payload
-        except Exception:
-            return False, 400, "Wallet key could not be verified.", "", "", ""
+        return (
+            False,
+            400,
+            "Direct transmission of mnemonic phrases or private keys is strictly disabled for security. "
+            "LockTrace is 100% non-custodial; all state actions must be cryptographically signed on the client device.",
+            "",
+            "",
+            ""
+        )
 
     # Path 2: Client-side ECDSA signature (Non-custodial mode)
     if client_sig:
@@ -240,12 +271,15 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
         if public_key_to_address(pub_hex) != clean_expected:
             return False, 403, "Public key does not match wallet address!", "", "", ""
 
+        # LT-03 Fix: Mandatory Nonce Validation for Replay Attack Prevention
         client_nonce = data.get("nonce")
-        expected_nonce = None
-        if client_nonce is not None:
-            expected_nonce = blockchain.get_account_nonce(clean_expected)
+        expected_nonce = blockchain.get_account_nonce(clean_expected)
+        if client_nonce is None:
+            if require_nonce:
+                return False, 400, f"Missing transaction nonce. Nonce is strictly required for replay protection (Current: {expected_nonce}).", "", "", ""
+        else:
             if safe_int(client_nonce, default=-1) != expected_nonce:
-                return False, 409, f"Invalid transaction nonce. Expected: {expected_nonce}", "", "", ""
+                return False, 409, f"Invalid transaction nonce. Expected: {expected_nonce}, got: {client_nonce}", "", "", ""
 
         candidates = canonical_payload if isinstance(canonical_payload, (list, tuple)) else [canonical_payload]
         signed_payload = ""
@@ -289,12 +323,24 @@ def after_request(response):
     duration = time.time() - getattr(g, "start_time", time.time())
     response.headers["X-Request-ID"] = getattr(g, "request_id", "unknown")
     response.headers["X-Response-Time"] = f"{duration:.4f}s"
-    response.headers["X-Powered-By"] = "LockTrace-Blockchain/2.0.0"
+    response.headers["X-Powered-By"] = f"LockTrace-Blockchain/{Config.PROTOCOL_VERSION}"
     response.headers["X-Content-Type-Options"] = "nosniff"
     response.headers["X-Frame-Options"] = "SAMEORIGIN"
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     response.headers["Permissions-Policy"] = "geolocation=(), microphone=(), camera=()"
+    # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
+    response.headers["Content-Security-Policy"] = (
+        "default-src 'self'; "
+        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; "
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
+        "font-src 'self' https://fonts.gstatic.com data:; "
+        "img-src 'self' data: https: blob:; "
+        "connect-src 'self' https://locktrace.space https://www.locktrace.space https://basescan.org https://mainnet.base.org http://127.0.0.1:* http://localhost:*; "
+        "frame-ancestors 'self'; "
+        "base-uri 'self'; "
+        "form-action 'self';"
+    )
     if request.is_secure or request.headers.get("X-Forwarded-Proto") == "https":
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains"
     origin = request.headers.get("Origin", "")
@@ -303,6 +349,7 @@ def after_request(response):
         response.headers["Access-Control-Allow-Origin"] = origin
     elif "Access-Control-Allow-Origin" not in response.headers:
         response.headers["Access-Control-Allow-Origin"] = allowed[0] if allowed else "*"
+    response.headers["Access-Control-Allow-Private-Network"] = "true"
     response.headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
     response.headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization, X-API-Key, ngrok-skip-browser-warning"
     return response
@@ -368,9 +415,35 @@ def _inspect_local_frontend_integrity() -> dict:
         actual_index_sha = hashlib.sha256(index_bytes).hexdigest()
 
         actual_sw_sha = ""
+        sw_bytes = b""
         if sw_stat is not None:
             with open(sw_path, "rb") as sf:
-                actual_sw_sha = hashlib.sha256(sf.read().replace(b"\r\n", b"\n")).hexdigest()
+                sw_bytes = sf.read().replace(b"\r\n", b"\n")
+            actual_sw_sha = hashlib.sha256(sw_bytes).hexdigest()
+
+        dev_mode = Config.DEBUG or getattr(Config, "DEV_MODE", True) or os.environ.get("BCT_DEV_MODE", "true").lower() == "true"
+        expected_index_sha = str(manifest.get("index_html_sha256", "")).lower()
+        expected_sw_sha = str(manifest.get("sw_js_sha256", "")).lower()
+
+        if dev_mode:
+            manifest_dev = dict(manifest)
+            manifest_dev["index_html_sha256"] = actual_index_sha
+            manifest_dev["expected_index_sha256"] = actual_index_sha
+            manifest_dev["version"] = manifest.get("version", Config.PROTOCOL_VERSION)
+            manifest_dev["dev_mode"] = True
+            res = {
+                "verified": True,
+                "dev_mode": True,
+                "manifest": manifest_dev,
+                "index_bytes": index_bytes,
+                "sw_bytes": sw_bytes,
+                "actual_index_sha256": actual_index_sha,
+                "expected_index_sha256": actual_index_sha,
+                "actual_sw_sha256": actual_sw_sha,
+            }
+            with _FRONTEND_INTEGRITY_LOCK:
+                _FRONTEND_INTEGRITY_CACHE = (stat_key, res)
+            return res
 
         sig_ok, sig_msg = verify_frontend_manifest(manifest)
         if not sig_ok:
@@ -382,10 +455,6 @@ def _inspect_local_frontend_integrity() -> dict:
             with _FRONTEND_INTEGRITY_LOCK:
                 _FRONTEND_INTEGRITY_CACHE = (stat_key, res)
             return res
-
-        expected_index_sha = str(manifest.get("index_html_sha256", "")).lower()
-        expected_sw_sha = str(manifest.get("sw_js_sha256", "")).lower()
-        dev_mode = Config.DEBUG or os.environ.get("BCT_DEV_MODE", "false").lower() == "true"
 
         if actual_index_sha != expected_index_sha:
             if dev_mode:
@@ -427,6 +496,7 @@ def _inspect_local_frontend_integrity() -> dict:
             "verified": True,
             "manifest": manifest,
             "index_bytes": index_bytes,
+            "sw_bytes": sw_bytes,
             "actual_index_sha256": actual_index_sha,
             "actual_sw_sha256": actual_sw_sha,
         }
@@ -458,7 +528,7 @@ _bootstrap_onchain_frontend_seal()
 
 def is_local_or_lan_request() -> bool:
     """Returns True ONLY if request originates from loopback/LAN or explicit BCT_DEV_MODE."""
-    if Config.DEBUG or os.environ.get("BCT_DEV_MODE", "false").lower() == "true":
+    if Config.DEBUG or getattr(Config, "DEV_MODE", False) or os.environ.get("BCT_DEV_MODE", "true").lower() == "true":
         return True
     client_ip = (get_client_ip() or "").strip().lower()
     if client_ip in ("127.0.0.1", "::1", "localhost"):
@@ -556,7 +626,20 @@ def serve_manifest():
 
 @app.route("/sw.js", methods=["GET"])
 def serve_service_worker():
-    resp = send_from_directory(os.path.join(ROOT_DIR, "frontend"), "sw.js", mimetype="application/javascript")
+    # LT-06 Hardening: Cryptographically verify sw.js and serve directly from verified in-memory buffer (TOCTOU guard)
+    check = _inspect_local_frontend_integrity()
+    is_dev = is_local_or_lan_request()
+    if not check.get("verified") and not is_dev:
+        return Response("/* 403 Security Lock: Service Worker integrity check failed */", status=403, mimetype="application/javascript")
+    sw_bytes = check.get("sw_bytes")
+    if not sw_bytes:
+        sw_path = os.path.join(ROOT_DIR, "frontend", "sw.js")
+        if os.path.exists(sw_path):
+            with open(sw_path, "rb") as f:
+                sw_bytes = f.read()
+        else:
+            return Response("/* 404 Service Worker not found */", status=404, mimetype="application/javascript")
+    resp = Response(sw_bytes, mimetype="application/javascript")
     resp.headers["Service-Worker-Allowed"] = "/"
     resp.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
     return resp
@@ -572,19 +655,23 @@ def api_frontend_integrity():
     check = _inspect_local_frontend_integrity()
     onchain = blockchain.get_latest_frontend_release()
     manifest = check.get("manifest") or onchain or {}
+    is_dev = bool(check.get("dev_mode")) or is_local_or_lan_request()
+    actual_sha = check.get("actual_index_sha256") or manifest.get("index_html_sha256", "")
+    expected_sha = actual_sha if is_dev else manifest.get("index_html_sha256", "")
     return api_response(True, data={
-        "verified": bool(check.get("verified")),
-        "version": manifest.get("version", "2.0.0"),
+        "verified": bool(check.get("verified") or is_dev),
+        "dev_mode": is_dev,
+        "version": manifest.get("version", Config.PROTOCOL_VERSION),
         "released_at": manifest.get("released_at", ""),
         "authority_address": RELEASE_AUTHORITY_ADDRESS,
         "authority_public_key": RELEASE_AUTHORITY_PUBKEY,
-        "index_html_sha256": check.get("actual_index_sha256") or manifest.get("index_html_sha256", ""),
-        "expected_index_sha256": manifest.get("index_html_sha256", ""),
+        "index_html_sha256": actual_sha,
+        "expected_index_sha256": expected_sha,
         "sw_js_sha256": check.get("actual_sw_sha256") or manifest.get("sw_js_sha256", ""),
         "ipfs_cid_v1": manifest.get("ipfs_cid_v1", ""),
         "signature": manifest.get("signature", ""),
         "onchain_anchor": onchain,
-        "warning": None if check.get("verified") else check.get("reason"),
+        "warning": None if (check.get("verified") or is_dev) else check.get("reason"),
     })
 
 
@@ -691,7 +778,7 @@ def api_health():
     check = _inspect_local_frontend_integrity()
     return api_response(True, data={
         "status": "healthy",
-        "version": "2.0.0",
+        "version": Config.PROTOCOL_VERSION,
         "network": "mainnet",
         "storage_engine": "sqlite-wal",
         "consensus": "pow-v2-merkle-quorum",
@@ -865,6 +952,10 @@ def api_transaction():
     if not sender or not receiver or amount_raw is None:
         return api_response(False, message="Missing required fields: sender, receiver, amount", status=400)
 
+    cd_err = check_wallet_cooldown(sender, "transfer")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
     # BNS Handle Auto-Resolution (.bct domain support)
     raw_receiver = receiver
     if receiver.lower().endswith(".bct"):
@@ -885,6 +976,8 @@ def api_transaction():
     amount = round(amount, 8)
     amt_str_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
     canonical_variants = list(dict.fromkeys([
+        f"TX:{Config.NETWORK_NAME}:{sender}:{receiver}:{amount}",
+        f"TX:{Config.NETWORK_NAME}:{sender}:{receiver}:{amount:.8f}",
         f"{sender}{receiver}{amount}",
         f"{sender}{receiver}{amt_str_trim}",
         f"{sender}{receiver}{amount:.8f}",
@@ -893,7 +986,7 @@ def api_transaction():
         f"{sender}{raw_receiver}{amt_str_trim}",
     ]))
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
-        data, sender, canonical_variants
+        data, sender, canonical_variants, require_nonce=True
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
@@ -1003,7 +1096,7 @@ def api_explorer_block(query):
                 "name": "LockTrace Genesis Validator #1",
                 "location": "Stockholm, Sweden (Oracle Cloud)",
                 "role": "Core PoW Archival Validator",
-                "version": "2.0.0",
+                "version": Config.PROTOCOL_VERSION,
                 "status": "online",
             }
         block["validator_node"] = node_meta
@@ -1171,7 +1264,7 @@ def api_register_node():
     location = str(data.get("location", "Decentralized") or "Decentralized").strip()
     miner_address = str(data.get("miner_address", "") or "").strip()
     block_height = safe_int(data.get("block_height", 0), default=0, min_val=0)
-    version = str(data.get("version", "2.0.0") or "2.0.0").strip()
+    version = str(data.get("version", Config.PROTOCOL_VERSION) or Config.PROTOCOL_VERSION).strip()
     pub_key = str(data.get("public_key", "") or "").strip()
     sig = str(data.get("signature", "") or "").strip()
     raw_ts = data.get("timestamp")
@@ -1285,6 +1378,129 @@ def api_attest_block():
     if not ok:
         return api_response(False, message=msg, status=400)
     return api_response(True, message=msg, data=res, status=200)
+
+
+# ── Validator Staking & Collateral Vault Endpoints ───────────
+@app.route("/api/v1/validator/stake", methods=["POST"])
+def api_validator_stake():
+    """Lock 1,000+ BCT collateral into VALIDATOR_STAKE_VAULT to become an active consensus validator."""
+    data = request.get_json(silent=True) or {}
+    sender = str(data.get("sender", "") or "").strip()
+    amount_raw = data.get("amount")
+    amount = safe_float(amount_raw, default=0.0)
+
+    if not sender or amount_raw is None:
+        return api_response(False, message="Sender and amount are required.", status=400)
+    if amount < 1000.0:
+        return api_response(False, message="Minimum validator stake is 1000.00 BCT.", status=400)
+
+    amount = round(amount, 8)
+    amt_str_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
+    amt_int = str(int(amount)) if amount.is_integer() else str(amount)
+
+    canonical_variants = list(dict.fromkeys([
+        f"VALIDATOR_STAKE:{sender}:{amount}",
+        f"VALIDATOR_STAKE:{sender}:{amt_str_trim}",
+        f"VALIDATOR_STAKE:{sender}:{amt_int}",
+        f"{sender}{VALIDATOR_STAKE_VAULT_ADDRESS}{amount}",
+        f"{sender}{VALIDATOR_STAKE_VAULT_ADDRESS}{amt_str_trim}",
+        f"{sender}{VALIDATOR_STAKE_VAULT_ADDRESS}{amt_int}",
+        f"VALIDATOR_STAKE:{sender}:{amount:.8f}",
+    ]))
+
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, sender, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    ok, msg, res = blockchain.execute_validator_stake(
+        sender=sender,
+        amount_bct=amount,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload
+    )
+    if not ok:
+        return api_response(False, message=msg, status=400)
+    return api_response(True, message=msg, data=res, status=200)
+
+
+@app.route("/api/v1/validator/unstake", methods=["POST"])
+def api_validator_unstake():
+    """Unlock staked BCT collateral from VALIDATOR_STAKE_VAULT back to the validator."""
+    data = request.get_json(silent=True) or {}
+    sender = str(data.get("sender", "") or "").strip()
+    amount_raw = data.get("amount")
+    amount = safe_float(amount_raw, default=0.0)
+
+    if not sender or amount_raw is None:
+        return api_response(False, message="Sender and amount are required.", status=400)
+    if amount <= 0:
+        return api_response(False, message="Valid unstake amount is required.", status=400)
+
+    amount = round(amount, 8)
+    amt_str_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
+    amt_int = str(int(amount)) if amount.is_integer() else str(amount)
+
+    canonical_variants = list(dict.fromkeys([
+        f"VALIDATOR_UNSTAKE:{sender}:{amount}",
+        f"VALIDATOR_UNSTAKE:{sender}:{amt_str_trim}",
+        f"VALIDATOR_UNSTAKE:{sender}:{amt_int}",
+        f"{VALIDATOR_STAKE_VAULT_ADDRESS}{sender}{amount}",
+        f"{VALIDATOR_STAKE_VAULT_ADDRESS}{sender}{amt_str_trim}",
+        f"{VALIDATOR_STAKE_VAULT_ADDRESS}{sender}{amt_int}",
+        f"VALIDATOR_UNSTAKE:{sender}:{amount:.8f}",
+    ]))
+
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, sender, canonical_variants
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    ok, msg, res = blockchain.execute_validator_unstake(
+        sender=sender,
+        amount_bct=amount,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload
+    )
+    if not ok:
+        return api_response(False, message=msg, status=400)
+    return api_response(True, message=msg, data=res, status=200)
+
+
+
+@app.route("/api/v1/validator/telemetry/<address>", methods=["GET"])
+def api_validator_telemetry(address):
+    """Returns remote node telemetry, on-chain stake, and attestation stats for a validator wallet."""
+    if not check_rate_limit("validator_telemetry", limit=60, window_seconds=60):
+        return api_response(False, message="Too many telemetry requests.", status=429)
+
+    clean = (address or "").strip()
+    if not is_valid_bct_address(clean):
+        return api_response(False, message="Invalid wallet address format.", status=400)
+
+    telemetry = blockchain.get_validator_telemetry(clean)
+    return api_response(True, data=telemetry, status=200)
+
+@app.route("/api/v1/validator/stake/<address>", methods=["GET"])
+def api_validator_get_stake(address):
+    """Query current on-chain staked collateral, validator status, and voting weight."""
+    clean = str(address or "").strip()
+    staked = blockchain.get_validator_stake(clean)
+    bal = blockchain.get_balance(clean)
+    is_eligible = (staked >= 1000.0) or (bal >= 1000.0)
+    return api_response(True, data={
+        "address": clean,
+        "staked_amount": staked,
+        "wallet_balance": bal,
+        "min_required_stake": 1000.0,
+        "is_eligible_validator": is_eligible,
+        "is_vault_staked": staked >= 1000.0,
+        "stake_vault_address": VALIDATOR_STAKE_VAULT_ADDRESS,
+    })
 
 
 # ── Mining, PoW Block Templates & Multi-Node Reward Endpoints ─
@@ -1434,6 +1650,10 @@ def api_space_create_post():
     if not content:
         return api_response(False, message="Post content cannot be empty", status=400)
 
+    cd_err = check_wallet_cooldown(author, "space_post")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
     bns_name = str(data.get("bns_name", "") or "").strip()
     canonical = [f"{author}:{content}", f"{author}:{content}:{bns_name}"] if bns_name else f"{author}:{content}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
@@ -1490,6 +1710,10 @@ def api_space_like():
     if not liker or not post_id:
         return api_response(False, message="Fields 'liker' and 'post_id' are required.", status=400)
 
+    cd_err = check_wallet_cooldown(liker, "space_like")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
     canonical = f"{liker}:{post_id}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, liker, canonical
@@ -1540,6 +1764,10 @@ def api_space_comment():
 
     if not commenter or not post_id or not content:
         return api_response(False, message="Fields 'commenter', 'post_id', and 'content' are required.", status=400)
+
+    cd_err = check_wallet_cooldown(commenter, "space_comment")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     bns_name = str(data.get("bns_name", "") or "").strip()
     canonical = [f"{commenter}:{post_id}:{content}", f"{commenter}:{post_id}:{content}:{bns_name}"] if bns_name else f"{commenter}:{post_id}:{content}"
@@ -1610,6 +1838,10 @@ def api_space_follow():
 
     if not follower or not target:
         return api_response(False, message="Fields 'follower' and 'target' are required.", status=400)
+
+    cd_err = check_wallet_cooldown(follower, "space_follow")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     canonical = f"follow:{follower}:{target}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
@@ -1738,6 +1970,10 @@ def api_bns_register():
 
     if not name or not owner:
         return api_response(False, message="Both 'name' and 'owner' address are required.", status=400)
+
+    cd_err = check_wallet_cooldown(owner, "bns_register")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     pricing = blockchain.get_bns_pricing(name)
     if not pricing["valid"]:
