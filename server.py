@@ -504,9 +504,10 @@ def _inspect_local_frontend_integrity() -> dict:
             _FRONTEND_INTEGRITY_CACHE = (stat_key, res)
         return res
     except Exception as exc:
+        logger.warning(f"Frontend integrity inspection error: {exc}")
         return {
             "verified": False,
-            "reason": f"⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked. ({exc})",
+            "reason": "⛔ WARNING: This frontend file has been modified or tampered with! Execution blocked.",
         }
 
 

@@ -1384,44 +1384,51 @@ class LockTraceNode:
                 is_trusted = origin in ("https://locktrace.space", "https://www.locktrace.space", "https://spectacular-brioche-aafb73.netlify.app")
                 return is_local or is_trusted
 
+            def _safe_header(self, val: str) -> str:
+                # HTTP Response Splitting Guard (CWE-113): Strip CR/LF and control characters
+                return re.sub(r"[\r\n\x00-\x1f\x7f-\x9f]+", "", str(val or "")).strip()
+
+            def _send_clean_header(self, name: str, value: str):
+                self.send_header(self._safe_header(name), self._safe_header(value))
+
             def _add_security_and_cors_headers(self):
-                self.send_header("X-Powered-By", f"LockTrace-Decentralized-Node/{VERSION}")
-                self.send_header("X-Content-Type-Options", "nosniff")
-                self.send_header("X-Frame-Options", "SAMEORIGIN")
-                self.send_header("X-XSS-Protection", "1; mode=block")
-                self.send_header("Referrer-Policy", "strict-origin-when-cross-origin")
+                self._send_clean_header("X-Powered-By", f"LockTrace-Decentralized-Node/{VERSION}")
+                self._send_clean_header("X-Content-Type-Options", "nosniff")
+                self._send_clean_header("X-Frame-Options", "SAMEORIGIN")
+                self._send_clean_header("X-XSS-Protection", "1; mode=block")
+                self._send_clean_header("Referrer-Policy", "strict-origin-when-cross-origin")
                 # LT-02 Fix: Restrict CORS to trusted origins; reject arbitrary third-party websites (evil.com)
-                origin = (self.headers.get("Origin", "") or "").strip()
+                origin = self._safe_header(self.headers.get("Origin", ""))
                 if origin:
                     is_local = bool(re.match(r"^https?://(127\.0\.0\.1|localhost)(:\d+)?$", origin, re.I))
                     if is_local or origin in ("https://locktrace.space", "https://www.locktrace.space"):
-                        self.send_header("Access-Control-Allow-Origin", origin)
-                        self.send_header("Access-Control-Allow-Credentials", "true")
-                        self.send_header("Vary", "Origin")
+                        self._send_clean_header("Access-Control-Allow-Origin", origin)
+                        self._send_clean_header("Access-Control-Allow-Credentials", "true")
+                        self._send_clean_header("Vary", "Origin")
                 elif getattr(node_ref, "server_mode", False):
-                    self.send_header("Access-Control-Allow-Origin", "*")
-                self.send_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
-                self.send_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key, ngrok-skip-browser-warning")
+                    self._send_clean_header("Access-Control-Allow-Origin", "*")
+                self._send_clean_header("Access-Control-Allow-Methods", "GET, POST, OPTIONS")
+                self._send_clean_header("Access-Control-Allow-Headers", "Content-Type, Authorization, X-API-Key, ngrok-skip-browser-warning")
 
             def _send_json(self, code: int, payload: dict):
                 if "timestamp" not in payload:
                     payload["timestamp"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
                 raw = json.dumps(payload, ensure_ascii=False).encode("utf-8")
                 self.send_response(code)
-                self.send_header("Content-Type", "application/json; charset=utf-8")
-                self.send_header("Content-Length", str(len(raw)))
+                self._send_clean_header("Content-Type", "application/json; charset=utf-8")
+                self._send_clean_header("Content-Length", str(len(raw)))
                 self._add_security_and_cors_headers()
                 self.end_headers()
                 self.wfile.write(raw)
 
             def _send_bytes(self, code: int, body: bytes, content_type: str, extra_headers: dict = None):
                 self.send_response(code)
-                self.send_header("Content-Type", content_type)
-                self.send_header("Content-Length", str(len(body)))
+                self._send_clean_header("Content-Type", content_type)
+                self._send_clean_header("Content-Length", str(len(body)))
                 self._add_security_and_cors_headers()
                 if extra_headers:
                     for k, v in extra_headers.items():
-                        self.send_header(k, v)
+                        self._send_clean_header(k, v)
                 self.end_headers()
                 self.wfile.write(body)
 

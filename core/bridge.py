@@ -60,7 +60,7 @@ def verify_evm_burn_receipt(
             res_data = json.loads(response.read().decode("utf-8"))
     except Exception as e:
         logger.warning(f"Base RPC connection failed while verifying burn tx {clean_hash}: {e}")
-        return False, f"Failed to connect to Base Mainnet RPC: {e}", {"network_error": True}
+        return False, "Failed to connect to Base Mainnet RPC endpoint.", {"network_error": True}
 
     receipt = res_data.get("result")
     if not receipt:
@@ -96,7 +96,7 @@ def verify_evm_burn_receipt(
                 return False, f"EVM transaction has {confs} confirmation(s); at least {min_confs} required for reorg security.", {"confirmations": confs, "required": min_confs}
     except Exception as e:
         logger.warning(f"Could not verify confirmation depth: {e}")
-        return False, f"Could not verify Base EVM confirmation depth ({e}); reorg guard failed.", {"network_error": True}
+        return False, "Could not verify Base EVM confirmation depth; reorg guard failed.", {"network_error": True}
 
     # 3. Find BurnedToBridge event in logs
     logs = receipt.get("logs") or []
