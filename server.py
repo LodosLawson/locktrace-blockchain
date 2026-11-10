@@ -356,6 +356,17 @@ def after_request(response):
 
 
 def api_response(success: bool, data=None, message=None, status=200, **extra):
+    # Security Guard (CWE-209): Prevent information exposure through exceptions
+    safe_message = message
+    if isinstance(message, BaseException):
+        safe_message = "An internal processing error occurred."
+    elif safe_message is not None:
+        clean_msg = str(safe_message)
+        if any(term in clean_msg for term in ("Traceback (most recent call last)", "Exception:", "Error:", "PermissionError")):
+            safe_message = "An error occurred while processing the request."
+        else:
+            safe_message = clean_msg
+
     body = {
         "success": success,
         "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
@@ -363,8 +374,8 @@ def api_response(success: bool, data=None, message=None, status=200, **extra):
     }
     if data is not None:
         body["data"] = data
-    if message:
-        body["message"] = message
+    if safe_message:
+        body["message"] = safe_message
     body.update(extra)
     return jsonify(body), status
 
