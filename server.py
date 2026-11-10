@@ -368,15 +368,17 @@ def api_response(success: bool, data=None, message=None, status=200, **extra):
             safe_message = clean_msg
 
     body = {
-        "success": success,
+        "success": bool(success),
         "timestamp": datetime.now(timezone.utc).isoformat().replace("+00:00", "Z"),
         "request_id": getattr(g, "request_id", None),
     }
-    if data is not None:
+    if data is not None and not isinstance(data, BaseException):
         body["data"] = data
     if safe_message:
-        body["message"] = safe_message
-    body.update(extra)
+        body["message"] = str(safe_message)
+    for k, v in extra.items():
+        if not isinstance(v, BaseException):
+            body[k] = v
     return jsonify(body), status
 
 

@@ -79,8 +79,8 @@ class ThirdwebService:
         except subprocess.TimeoutExpired:
             return {"success": False, "error": "Thirdweb operation timed out (45s)"}
         except Exception as e:
-            logger.exception("Error executing Thirdweb CLI runner")
-            return {"success": False, "error": str(e)}
+            logger.exception(f"Error executing Thirdweb CLI runner: {e}")
+            return {"success": False, "error": "Thirdweb CLI execution failed"}
 
     def claim_erc1155(
         self,
