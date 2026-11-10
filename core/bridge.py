@@ -76,6 +76,26 @@ def verify_evm_burn_receipt(
     if to_addr != target_contract:
         return False, f"Transaction was not sent to the official wBCT contract ({target_contract}).", {}
 
+    # 2b. Check EVM confirmation depth (reorg protection)
+    receipt_block = receipt.get("blockNumber")
+    if receipt_block:
+        try:
+            rb_int = int(receipt_block, 16) if isinstance(receipt_block, str) and receipt_block.startswith("0x") else int(receipt_block)
+            block_req = urllib.request.Request(
+                rpc_url or "https://mainnet.base.org",
+                data=json.dumps({"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 2}).encode("utf-8"),
+                headers={"Content-Type": "application/json", "User-Agent": "LockTraceBridge/1.5"}
+            )
+            with urllib.request.urlopen(block_req, timeout=8) as b_resp:
+                b_data = json.loads(b_resp.read().decode("utf-8"))
+                latest_block = int(b_data.get("result", "0x0"), 16)
+                confs = (latest_block - rb_int + 1) if latest_block >= rb_int else 0
+                min_confs = int(os.environ.get("MIN_EVM_CONFIRMATIONS", "12"))
+                if confs < min_confs:
+                    return False, f"EVM transaction has {confs} confirmation(s); at least {min_confs} required for reorg security.", {"confirmations": confs, "required": min_confs}
+        except Exception as e:
+            logger.debug(f"Could not verify confirmation depth: {e}")
+
     # 3. Find BurnedToBridge event in logs
     logs = receipt.get("logs") or []
     matched_event = None

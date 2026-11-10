@@ -32,7 +32,9 @@ LockTrace is an independent, high-performance Layer-1 decentralized blockchain l
 | **Asset Symbol** | **BCT** (BlockChain Trace) | Native Layer-1 cryptographic ledger unit |
 | **Total Supply** | **1,000,000,000,000.00 BCT** (1 Trillion) | Fixed in Genesis Block #0. Mathematically hard-capped; zero future minting or inflation. |
 | **Genesis Treasury Vault** | `BCT_HAZINE_0000000000000000000000000000000000000000` | Holds uncirculated reserves, genesis subsidies, and welcome grants. |
-| **Cross-Chain Bridge Vault** | `BCT_BRIDGE_VAULT_0000000000000000000000000000000` | Holds 1:1 escrowed L1 collateral backing EVM wrapped tokens. |
+| **Cross-Chain Bridge Vault** | `BCT_BRIDGE_VAULT_000000000000000000000000000000000` | Holds 1:1 escrowed L1 collateral backing EVM wrapped tokens (43 chars). |
+| **Validator Staking Vault** | `BCT_STAKE_VAULT_00000000000000000000000000000000` | Holds 1,000.00 BCT PoS validator collateral qualifying for 30% Quorum Pool. |
+| **Provable Burn Address** | `BCT0000000000000000000000000000000000000000` | Deflationary burn address (effectively provable lost key sink). |
 | **Welcome Grant** | **1.00 BCT** automated protocol grant | Granted directly from Treasury Vault to every newly generated wallet address. |
 | **Transaction Fee** | **1.0%** automated protocol fee | **50% permanently locked to Treasury** (deflationary supply reduction). Remaining 50% split **70% to Block Proposer/Miner** and **30% to Validator Quorum**. |
 | **Key Derivation** | **BIP-39 Mnemonic** + ECDSA SECP256k1 | 12-word seed phrase + 256-bit private key. |
@@ -45,9 +47,11 @@ LockTrace is an independent, high-performance Layer-1 decentralized blockchain l
 
 LockTrace Space embeds social interactions directly into the Layer-1 transaction graph. Thoughts, likes, and comments are decentralized financial interactions where creators receive direct micro-royalties without intermediaries:
 
-- **Publish Post (`space_post`):** Cost is **0.05 BCT** to prevent spam and ensure content permanence. Content is permanently stored across blockchain blocks.
-- **Like Royalty (`space_like`):** Cost is **0.003 BCT**. **+0.002 BCT is instantly paid on-chain to the post creator's wallet**, and 0.001 BCT goes to Treasury.
-- **Comment Royalty (`space_comment`):** Cost is **0.02 BCT**. **+0.005 BCT is transferred directly to the original author's wallet**.
+- **Publish Post (`space_post`):** Cost is **0.10 BCT** to prevent spam and ensure content permanence. Content is permanently stored across blockchain blocks (80% Treasury pool, 20% fee pool).
+- **Like Royalty (`space_like`):** Cost is **0.01 BCT**. **+0.002 BCT is instantly paid on-chain to the post creator's wallet** as creator royalty (70% Treasury, 10% fee pool).
+- **Comment Royalty (`space_comment`):** Cost is **0.02 BCT**. **+0.004 BCT is transferred directly to the thread author's wallet** (70% Treasury, 10% fee pool).
+- **Follow Creator (`space_follow`):** Cost is **1.00 BCT**. **+0.50 BCT is transferred directly to the creator's wallet** (30% miner/quorum pool, 20% Treasury).
+- **Anti-Spam Action Cooldowns:** Enforced per-wallet cooldowns to prevent spam and double-spend race conditions (Transfer: 20s, Post: 20s, Like: 60s, Comment: 60s, Follow: 60s, BNS Register: 60s).
 - **Tip Royalty (`space_tip`):** Readers can tip creators directly in any custom amount of BCT with 0% intermediary commission.
 - **Creator Identity:** Verified via on-chain BNS `.bct` handles or verified public ECDSA wallet addresses.
 
@@ -82,6 +86,47 @@ LockTrace features a native on-chain domain and identity protocol that maps huma
 - **🏦 80% Returns to Protocol Treasury Pool:** 80% of paid registration fees return directly into the Protocol Treasury Vault pool (Hazine havuzuna geri aktarım, yakım değil), replenishing the ecosystem reserves.
 - **⚡ 20% Returned to Active Participants:** 20% flows to active PoW miners (70%) and Quorum validators (30%) as transaction fee rewards.
 - **Peer-to-Peer Marketplace & Bidding System:** Handles can be transferred, listed for sale, or bid on via decentralized non-custodial offers in BCT coins.
+
+---
+
+## 🥩 Non-Custodial Validator Staking & Yield Model (v2.3.0)
+
+LockTrace v2.3.0 features an on-chain **Validator Staking Vault** that empowers participants to stake collateral, attest block headers, participate in the $2/3$ Quorum Finality checkpoint mechanism, and earn automated protocol rewards without trusting any third party or centralized custodian.
+
+### 🏛️ Staking Vault Specifications
+* **Vault Address:** `BCT_STAKE_VAULT_00000000000000000000000000000000`
+* **Collateral Threshold:** Exactly **$1{,}000.00\text{ BCT}$** locked per validator address.
+* **Non-Custodial Cryptographic Security:** Staking operations are executed entirely client-side using deterministic SECP256k1 ECDSA signatures (`VALIDATOR_STAKE:<sender>:<amount>:<nonce>`).
+* **Consensus Split:** Every 20-second block rewards are divided into **70% to winning PoW Miner / Block Proposer** and **30% pro-rata to Active Staked Quorum Validators**.
+
+### 📈 Emission Math & APR Economic Projections
+1. **Cadence:** Block interval $T = 20.0\text{s} \implies 4{,}320\text{ blocks/day} \implies 1{,}576{,}800\text{ blocks/year}$.
+2. **Subsidy per Block:** Fixed treasury subsidy of $0.05\text{ BCT}$ per block $\times 30\% = \mathbf{0.015\text{ BCT / block}}$ for validators.
+3. **Daily Validator Pool:** $4{,}320 \times 0.015\text{ BCT} = \mathbf{64.80\text{ BCT / day}}$ ($+ 30\%$ of all network transaction fees).
+4. **Yearly Validator Pool:** $1{,}576{,}800 \times 0.015\text{ BCT} = \mathbf{23{,}652.00\text{ BCT / year}}$ ($+ 30\%$ of all network transaction fees).
+5. **Yield Schedule Table:**
+
+| Active Quorum Validators | Total Staked Collateral | Daily Reward / Validator | Yearly Reward / Validator | Estimated APR |
+|:---|:---|:---|:---|:---|
+| **1 Validator (Genesis Boot)** | $1{,}000\text{ BCT}$ | $64.80\text{ BCT}$ | $23{,}652.00\text{ BCT}$ | **$\sim 2{,}365.2\%$** |
+| **3 Validators** | $3{,}000\text{ BCT}$ | $21.60\text{ BCT}$ | $7{,}884.00\text{ BCT}$ | **$\sim 788.4\%$** |
+| **5 Validators** | $5{,}000\text{ BCT}$ | $12.96\text{ BCT}$ | $4{,}730.40\text{ BCT}$ | **$\sim 473.0\%$** |
+| **10 Validators (Max Soft Quorum)** | $10{,}000\text{ BCT}$ | $6.48\text{ BCT}$ | $2{,}365.20\text{ BCT}$ | **$\sim 236.5\%$** |
+| **25 Validators** | $25{,}000\text{ BCT}$ | $2.59\text{ BCT}$ | $946.08\text{ BCT}$ | **$\sim 94.6\%$** |
+| **50 Validators** | $50{,}000\text{ BCT}$ | $1.30\text{ BCT}$ | $473.04\text{ BCT}$ | **$\sim 47.3\%$** |
+| **100 Validators** | $100{,}000\text{ BCT}$ | $0.65\text{ BCT}$ | $236.52\text{ BCT}$ | **$\sim 23.7\%$** |
+
+---
+
+## 📊 Financial Analytics Dashboard & Sovereign Portfolio Management (v2.3.0)
+
+Built directly into the **My Wallet** interface, the v2.3.0 **Financial Analytics View** provides non-custodial asset auditing and real-time ledger intelligence:
+* **Interactive Donut Breakdown:** Visualizes liquid balance vs. active locked collateral (PoS Staking Vault).
+* **Live Area Sparkline:** Tracks dynamic balance trajectories derived directly from cryptographic transaction graph history.
+* **Cashflow Inflow vs. Outflow:** Categorizes mining payouts, validator quorum distributions, creator royalties, BNS investments, and peer transfers.
+* **One-Click Gateway:** Seamless transition to the Validator Hub with telemetry tracking for remote cloud nodes and local miners.
+
+---
 
 ---
 
@@ -192,7 +237,7 @@ curl -s "https://locktrace.space/api/v1/health"
   "data": {
     "status": "healthy",
     "network": "mainnet",
-    "version": "2.0.0",
+    "version": "2.3.0",
     "chain_valid": true,
     "consensus": "pow-v2-merkle-quorum",
     "storage_engine": "sqlite-wal",
@@ -241,7 +286,39 @@ GET /api/v1/bns/lookup/<query>
 curl -s "https://locktrace.space/api/v1/bns/lookup/locktrace.bct"
 ```
 
-### 7. Space Social & Royalty Feed
+### 7. Validator Telemetry & Remote Node Status
+```http
+GET /api/v1/validator/telemetry/<address_or_bns>
+```
+```bash
+curl -s "https://locktrace.space/api/v1/validator/telemetry/BCT3fec00e39c728050c1f1cef4cbe78fcc85881572"
+```
+**Response:**
+```json
+{
+  "success": true,
+  "data": {
+    "wallet_address": "BCT3fec00e39c728050c1f1cef4cbe78fcc85881572",
+    "staked_amount": 1000.0,
+    "min_required_stake": 1000.0,
+    "is_eligible_validator": true,
+    "node_connected": true,
+    "node_telemetry": {
+      "name": "Community Validator",
+      "masked_endpoint": "P2P Node (192.***.***.105:5050)",
+      "block_height": 550,
+      "last_seen_seconds_ago": 0,
+      "is_online": true,
+      "hashrate_hs": 59369.73,
+      "version": "2.3.0"
+    },
+    "blocks_produced": 139,
+    "rewards_earned": 157.6394503
+  }
+}
+```
+
+### 8. Space Social & Royalty Feed
 ```http
 GET /api/v1/space/feed?limit=50&page=1
 ```
@@ -249,7 +326,7 @@ GET /api/v1/space/feed?limit=50&page=1
 curl -s "https://locktrace.space/api/v1/space/feed?limit=10"
 ```
 
-### 8. Submit Cryptographically Signed Transaction
+### 9. Submit Cryptographically Signed Transaction
 ```http
 POST /api/v1/transaction
 Content-Type: application/json
@@ -266,7 +343,7 @@ Content-Type: application/json
 }
 ```
 
-### 9. Active Peer Nodes Directory
+### 10. Active Peer Nodes Directory
 ```http
 GET /api/v1/nodes
 ```
@@ -281,8 +358,8 @@ curl -s "https://locktrace.space/api/v1/nodes"
 1. **Sovereign Client-Side Custody:** Private keys are generated and held strictly in client devices using pure WebCrypto BIP-39 / SECP256k1 algorithms. No user keys or credentials are ever sent to, processed by, or stored on remote nodes.
 2. **Deterministic State Resolution:** Account balances and BNS ownerships are dynamically derived through verified transaction graph evaluation across immutable blocks, eliminating mutable state tampering.
 3. **Replay & Double-Spend Protection:** Every transaction enforces sequential integer `nonce` validation and cryptographic SECP256k1 signature verification.
-4. **ACID Storage with O(1) Delta SQLite WAL & 3-Phase CAS Engine (v2.0.0):** Ledger records are committed incrementally using SQLite Write-Ahead Logging (WAL), non-blocking 3-phase Compare-And-Swap (CAS) PoW block sealing, per-wallet Anti-DDoS mempool quotas, and IPv4 `/24` Sybil subnet deduplication.
-5. **Cryptographic Frontend Integrity Seal (v2.0.0):**
+4. **ACID Storage with O(1) Delta SQLite WAL & 3-Phase CAS Engine (v2.3.0):** Ledger records are committed incrementally using SQLite Write-Ahead Logging (WAL), non-blocking 3-phase Compare-And-Swap (CAS) PoW block sealing, per-wallet Anti-DDoS mempool quotas, and IPv4 `/24` Sybil subnet deduplication.
+5. **Cryptographic Frontend Integrity Seal (v2.3.0):**
    - Canonical SHA-256 Checksums and ECDSA SECP256k1 release signatures (`frontend/integrity.json`).
    - Every node independently validates `index.html` and `sw.js` against the on-chain release block before serving. Any unauthorized file tampering triggers an immediate `HTTP 403` lockout.
 6. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).

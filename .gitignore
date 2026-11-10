@@ -8,21 +8,25 @@ env/
 logs/
 
 # Data
-data/*.json
-data/*.db
-data/*.db-wal
-data/*.db-shm
-data/*.sqlite*
+data/
+data/*
+*.db
+*.db-wal
+*.db-shm
 
 # Keys & Secrets
 *.key
 *.pem
 *release_signing_key*
+*wallet*.json
+relayer_wallet.json
 deploy_package.tar.gz
 frontend_update.tar.gz
 update*.tar.gz
 *.tar.gz
 .env
+.env.*
+!.env.example
 .netlify/
 node_modules/
 package-lock.json

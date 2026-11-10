@@ -29,6 +29,7 @@ def main():
         tar.add("server.py", arcname="server.py")
         tar.add("node_runner.py", arcname="node_runner.py")
         tar.add("README.md", arcname="README.md")
+        tar.add("config.py", arcname="config.py")
         tar.add("scripts/sign_frontend.py", arcname="scripts/sign_frontend.py")
 
     print("[*] Uploading bundle in single SCP stream...")
@@ -58,6 +59,7 @@ sudo cp /tmp/docs/LockTrace_Whitepaper.pdf /opt/blockchaint/frontend/LockTrace_W
 sudo cp /tmp/server.py /opt/blockchaint/server.py
 sudo cp /tmp/node_runner.py /opt/blockchaint/node_runner.py
 sudo cp /tmp/README.md /opt/blockchaint/README.md
+sudo cp /tmp/config.py /opt/blockchaint/config.py
 sudo cp /tmp/frontend/index.html /opt/blockchaint/frontend/index.html
 sudo cp /tmp/frontend/sw.js /opt/blockchaint/frontend/sw.js
 sudo cp /tmp/templates/index.html /opt/blockchaint/templates/index.html
@@ -66,7 +68,7 @@ sudo cp /tmp/scripts/sign_frontend.py /opt/blockchaint/scripts/sign_frontend.py
 
 # 1. Sign Frontend with official Release Key
 cd /opt/blockchaint
-sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.0.0 --key-file /home/ubuntu/.locktrace/release_signing_key.json
+sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.3.0 --key-file /home/ubuntu/.locktrace/release_signing_key.json
 
 # 2. Publish to Nginx document root
 sudo mkdir -p /var/www/locktrace

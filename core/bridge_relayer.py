@@ -13,8 +13,13 @@ import sqlite3
 import logging
 from decimal import Decimal
 from typing import Dict, Any, Optional
-from web3 import Web3
-from web3.middleware import ExtraDataToPOAMiddleware
+try:
+    from web3 import Web3
+    from web3.middleware import ExtraDataToPOAMiddleware
+    HAS_WEB3 = True
+except ImportError:
+    Web3 = None
+    HAS_WEB3 = False
 
 logger = logging.getLogger("LockTrace.Relayer")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
@@ -68,31 +73,59 @@ class BridgeRelayer:
     def __init__(self, db_path: str = DB_PATH, key_path: str = RELAYER_KEY_PATH):
         self.db_path = db_path
         self.key_path = key_path
+        if not HAS_WEB3:
+            self.w3 = None
+            self.contract = None
+            self.account = None
+            logger.info("web3 library not installed. BridgeRelayer is inactive on this standard node.")
+            return
         self.w3 = Web3(Web3.HTTPProvider(BASE_RPC_URL, request_kwargs={"headers": {"User-Agent": "Mozilla/5.0"}}))
         self.contract = self.w3.eth.contract(address=Web3.to_checksum_address(WBCT_CONTRACT), abi=WBCT_ABI)
         self.account = self._load_or_create_wallet()
 
     def _load_or_create_wallet(self):
         from eth_account import Account
-        if os.path.exists(self.key_path):
-            with open(self.key_path, "r", encoding="utf-8") as f:
-                data = json.load(f)
-            return Account.from_key(data["private_key"])
-        else:
-            acct = Account.create()
-            data = {"address": acct.address, "private_key": acct.key.hex()}
-            os.makedirs(os.path.dirname(os.path.abspath(self.key_path)), exist_ok=True)
-            with open(self.key_path, "w", encoding="utf-8") as f:
-                json.dump(data, f, indent=2)
+        # 1. Environment variable (Highest priority & zero-leakage)
+        env_pk = os.environ.get("BCT_RELAYER_PRIVATE_KEY", "").strip()
+        if env_pk:
+            if not env_pk.startswith("0x") and len(env_pk) == 64:
+                env_pk = "0x" + env_pk
             try:
-                os.chmod(self.key_path, 0o600)
-            except Exception:
-                pass
-            logger.info(f"Generated new Bridge Relayer wallet: {acct.address}")
-            return acct
+                acct = Account.from_key(env_pk)
+                logger.info(f"Loaded Bridge Relayer wallet from BCT_RELAYER_PRIVATE_KEY: {acct.address}")
+                return acct
+            except Exception as e:
+                logger.error(f"Failed to load relayer key from environment variable: {e}")
+                return None
+
+        # 2. File path if explicitly configured and exists
+        if self.key_path and os.path.exists(self.key_path):
+            try:
+                with open(self.key_path, "r", encoding="utf-8") as f:
+                    data = json.load(f)
+                pk = data.get("private_key", "").strip()
+                if not pk.startswith("0x") and len(pk) == 64:
+                    pk = "0x" + pk
+                acct = Account.from_key(pk)
+                logger.info(f"Loaded Bridge Relayer wallet from file {self.key_path}: {acct.address}")
+                return acct
+            except Exception as e:
+                logger.error(f"Failed to load key from {self.key_path}: {e}")
+                return None
+
+        # 3. Fallback: Never auto-generate or write sensitive keys to disk on arbitrary nodes
+        logger.info("No bridge relayer key configured (BCT_RELAYER_PRIVATE_KEY). Running in standard node mode.")
+        return None
 
     def get_status(self) -> Dict[str, Any]:
         """Returns relayer health, balance, and authorization status."""
+        if not self.account:
+            return {
+                "status": "disabled",
+                "message": "Relayer private key not set. Bridge relayer is inactive on this node.",
+                "contract_address": WBCT_CONTRACT,
+                "connected": self.w3.is_connected()
+            }
         try:
             bal_wei = self.w3.eth.get_balance(self.account.address)
             bal_eth = self.w3.from_wei(bal_wei, "ether")
@@ -112,6 +145,8 @@ class BridgeRelayer:
 
     def process_pending_locks(self) -> int:
         """Finds all verified L1 locked orders that haven't been minted on EVM yet."""
+        if not self.account:
+            return 0
         if not os.path.exists(self.db_path):
             return 0
 
@@ -158,6 +193,28 @@ class BridgeRelayer:
             evm_dest = r["evm_address"]
             net_amt = float(r["net_amount"])
             l1_hash = r["tx_hash_l1"]
+
+            # L1 Finality Verification: Ensure lock transaction is sealed in an attested/deep block
+            try:
+                check_conn = sqlite3.connect(self.db_path, timeout=10.0)
+                check_conn.row_factory = sqlite3.Row
+                tx_row = check_conn.execute("SELECT block_index FROM tx_lookup WHERE tx_hash = ?", (l1_hash,)).fetchone()
+                if not tx_row:
+                    logger.info(f"Bridge {bridge_id}: L1 lock tx {l1_hash[:16]}... not yet sealed in a block. Deferring mint.")
+                    check_conn.close()
+                    continue
+                l1_b_idx = tx_row["block_index"]
+                att_c = check_conn.execute("SELECT COUNT(*) AS c FROM block_attestations WHERE block_index = ?", (l1_b_idx,)).fetchone()["c"]
+                max_row = check_conn.execute("SELECT MAX(block_index) AS tip FROM blocks").fetchone()
+                tip_b = max_row["tip"] if max_row and max_row["tip"] is not None else l1_b_idx
+                depth = tip_b - l1_b_idx
+                check_conn.close()
+
+                if att_c < 1 and depth < 2:
+                    logger.info(f"Bridge {bridge_id}: Block #{l1_b_idx} awaiting validator finality (attestations: {att_c}, depth: {depth}).")
+                    continue
+            except Exception as _f_err:
+                logger.debug(f"Could not verify L1 finality for {bridge_id}: {_f_err}")
 
             # Validate destination
             if not Web3.is_address(evm_dest) or evm_dest.lower() == WBCT_CONTRACT.lower():
