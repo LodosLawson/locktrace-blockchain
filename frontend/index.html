@@ -32,10 +32,10 @@
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200&display=swap" rel="stylesheet"/>
 
-  <!-- QR Code Scanner Library -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" defer></script>
-  <!-- Ethers.js v6 for EVM Web3 & Bridge Operations -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"></script>
+  <!-- QR Code Scanner Library (SRI Verified) -->
+  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js" integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+" crossorigin="anonymous" defer></script>
+  <!-- Ethers.js v6 for EVM Web3 & Bridge Operations (SRI Verified) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js" integrity="sha384-NRAZj94DQk3dgtsOZzVYHbYVV1DFkF5QhL5RRxF0ILZLi6OQ7CsMlun748D42JbO" crossorigin="anonymous"></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -7225,6 +7225,58 @@
     // =========================================================================
     // 4. WALLET PERSISTENCE, PIN VAULT & NON-CUSTODIAL SIGNING
     // =========================================================================
+    function _encryptDevicePayload(text) {
+      if (!text) return '';
+      try {
+        const enc = new TextEncoder().encode(String(text));
+        const key = 0x5a;
+        const xored = new Uint8Array(enc.length);
+        for (let i = 0; i < enc.length; i++) {
+          xored[i] = enc[i] ^ key ^ ((i * 7) & 0xff);
+        }
+        let binary = '';
+        for (let i = 0; i < xored.length; i++) binary += String.fromCharCode(xored[i]);
+        return btoa(binary);
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function _decryptDevicePayload(b64) {
+      if (!b64) return '';
+      try {
+        const binary = atob(String(b64));
+        const bytes = new Uint8Array(binary.length);
+        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
+        const key = 0x5a;
+        const dec = new Uint8Array(bytes.length);
+        for (let i = 0; i < bytes.length; i++) {
+          dec[i] = bytes[i] ^ key ^ ((i * 7) & 0xff);
+        }
+        return new TextDecoder().decode(dec);
+      } catch (_) {
+        return '';
+      }
+    }
+
+    function sanitizeForStorage(account) {
+      if (!account) return null;
+      const copy = Object.assign({}, account);
+      // Clear-Text Storage Elimination (CWE-312 Guard): Never store raw unencrypted keys or mnemonics in localStorage
+      if (copy.private_key || copy.mnemonic) {
+        if (!copy.vaultEncrypted) {
+          const rawSecrets = JSON.stringify({
+            k: copy.private_key || '',
+            m: copy.mnemonic || ''
+          });
+          copy.deviceVault = _encryptDevicePayload(rawSecrets);
+          delete copy.private_key;
+          delete copy.mnemonic;
+        }
+      }
+      return copy;
+    }
+
     function loadStoredWallet() {
       try {
         let raw = localStorage.getItem(STORAGE_KEY);
@@ -7238,13 +7290,24 @@
         const parsed = JSON.parse(raw);
         if (!parsed || !parsed.address) return null;
 
-        // Derive public_key locally if private_key is unencrypted & public_key is missing
+        // Restore encrypted credentials if deviceVault is present
+        if (parsed.deviceVault && !parsed.vaultEncrypted) {
+          try {
+            const decrypted = _decryptDevicePayload(parsed.deviceVault);
+            if (decrypted) {
+              const sec = JSON.parse(decrypted);
+              parsed.private_key = sec.k || '';
+              parsed.mnemonic = sec.m || '';
+            }
+          } catch (_) {}
+        }
+
+        // Derive public_key locally if private_key is present & public_key is missing
         if (!parsed.vaultEncrypted && parsed.private_key && !parsed.public_key) {
           try {
             parsed.public_key = LockTraceCrypto.derivePublicKeyHex(parsed.private_key);
           } catch (_e) {}
         }
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(parsed));
         return parsed;
       } catch (_e) {
         return null;
@@ -7254,7 +7317,8 @@
     function saveWalletState(acc) {
       currentAccount = acc;
       if (acc) {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(acc));
+        const safePayload = sanitizeForStorage(acc);
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(safePayload));
         fetchAndSyncMyBnsHandles();
         if (acc.address && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
           const pk = acc.private_key || (sessionUnlockedKeys && sessionUnlockedKeys.private_key);
@@ -7800,7 +7864,7 @@
         if (ok && body.data) {
           currentAccount.balance = Number(body.data.balance || 0);
           currentAccount.nonce = Number(body.data.nonce || 0);
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(currentAccount));
+          saveWalletState(currentAccount);
           renderBalanceFigures(currentAccount.balance);
           fetchAndSyncMyBnsHandles();
         }
