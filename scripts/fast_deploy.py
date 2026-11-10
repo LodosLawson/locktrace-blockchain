@@ -68,7 +68,7 @@ sudo cp /tmp/scripts/sign_frontend.py /opt/blockchaint/scripts/sign_frontend.py
 
 # 1. Sign Frontend with official Release Key
 cd /opt/blockchaint
-sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.3.0 --key-file /home/ubuntu/.locktrace/release_signing_key.json
+sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.4.0 --key-file /home/ubuntu/.locktrace/release_signing_key.json
 
 # 2. Publish to Nginx document root
 sudo mkdir -p /var/www/locktrace

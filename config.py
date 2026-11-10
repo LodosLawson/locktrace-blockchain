@@ -30,7 +30,7 @@ if os.path.exists(env_path):
 
 class Config:
     # ── Protokol & Versiyon ───────────────────────────
-    PROTOCOL_VERSION = "2.3.0"
+    PROTOCOL_VERSION = "2.4.0"
     NETWORK_NAME = os.environ.get("BCT_NETWORK", "mainnet")
 
     # ── Güvenlik ──────────────────────────────────────

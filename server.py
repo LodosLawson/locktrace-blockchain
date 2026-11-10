@@ -2759,6 +2759,10 @@ def api_bridge_confirm():
     return api_response(True, data=res)
 
 
+_BRIDGE_CLAIM_LOCK = threading.Lock()
+_BRIDGE_CLAIMS_IN_FLIGHT = set()
+
+
 @app.route("/api/v1/bridge/claim_burn", methods=["POST"])
 def api_bridge_claim_burn():
     """
@@ -2787,85 +2791,95 @@ def api_bridge_claim_burn():
     if amount_bct < 1.0:
         return api_response(False, message="Minimum bridge amount is 1.00 BCT.", status=400)
 
-    # 0. Cryptographic On-Chain Verification on Base Mainnet
-    verified, v_msg, event_data = verify_evm_burn_receipt(
-        evm_tx_hash=evm_tx_hash,
-        expected_recipient=bct_address,
-        expected_amount=amount_bct
-    )
-    if not verified:
-        # Allow admin key override only if network is offline and caller has admin key
-        if event_data.get("network_error") and _require_admin_api_key():
-            logger.warning(f"Bridge unlock granted via ADMIN_API_KEY override for {evm_tx_hash}")
-        else:
-            return api_response(False, message=f"Burn could not be verified on Base Mainnet: {v_msg}", status=400)
-    else:
-        verified_sender = str(event_data.get("sender") or "").strip().lower()
-        if verified_sender.startswith("0x") and len(verified_sender) == 42:
-            safe_sender = verified_sender
+    # Concurrency Lock (LT-02 Race-Condition & Double-Spend Defense)
+    with _BRIDGE_CLAIM_LOCK:
+        if evm_tx_hash in _BRIDGE_CLAIMS_IN_FLIGHT:
+            return api_response(False, message="This EVM burn transaction is currently being processed.", status=409)
+        _BRIDGE_CLAIMS_IN_FLIGHT.add(evm_tx_hash)
 
-    # 0.5. Check if this EVM transaction has already been unlocked on-chain
-    for block in blockchain.chain:
-        for tx in block.transactions:
-            if tx.tx_type == "bridge_unlock" and tx.extra_data and str(tx.extra_data.get("evm_tx_hash", "")).lower() == evm_tx_hash:
-                with bridge_manager._get_connection() as conn:
-                    conn.execute("UPDATE bridge_transactions SET status = 'COMPLETED', updated_at = ? WHERE tx_hash_evm = ?", (time.time(), evm_tx_hash))
+    try:
+        # 0. Cryptographic On-Chain Verification on Base Mainnet
+        verified, v_msg, event_data = verify_evm_burn_receipt(
+            evm_tx_hash=evm_tx_hash,
+            expected_recipient=bct_address,
+            expected_amount=amount_bct
+        )
+        if not verified:
+            # Allow admin key override only if network is offline and caller has admin key
+            if event_data.get("network_error") and _require_admin_api_key():
+                logger.warning(f"Bridge unlock granted via ADMIN_API_KEY override for {evm_tx_hash}")
+            else:
+                return api_response(False, message=f"Burn could not be verified on Base Mainnet: {v_msg}", status=400)
+        else:
+            verified_sender = str(event_data.get("sender") or "").strip().lower()
+            if verified_sender.startswith("0x") and len(verified_sender) == 42:
+                safe_sender = verified_sender
+
+        # 0.5. Check if this EVM transaction has already been unlocked on-chain
+        for block in blockchain.chain:
+            for tx in block.transactions:
+                if tx.tx_type == "bridge_unlock" and tx.extra_data and str(tx.extra_data.get("evm_tx_hash", "")).lower() == evm_tx_hash:
+                    with bridge_manager._get_connection() as conn:
+                        conn.execute("UPDATE bridge_transactions SET status = 'COMPLETED', updated_at = ? WHERE tx_hash_evm = ?", (time.time(), evm_tx_hash))
+                    return api_response(True, data={
+                        "already_unlocked": True,
+                        "evm_tx_hash": evm_tx_hash,
+                        "recipient": bct_address,
+                        "message": "This EVM burn transaction has already been unlocked on LockTrace."
+                    }, status=200)
+
+        # 1. Register order in bridge_manager if not already registered
+        order_res = bridge_manager.create_bridge_order(
+            direction="EVM_TO_L1",
+            bct_address=bct_address,
+            evm_address=safe_sender,
+            amount_bct=amount_bct,
+            chain="base",
+            tx_hash_evm=evm_tx_hash
+        )
+        bridge_id = order_res.get("data", {}).get("bridge_id", "")
+
+        # 2. Execute on-chain Layer-1 unlock (transfers BCT to user and seals block)
+        ok, msg, tx_data = blockchain.execute_bridge_unlock(
+            recipient_address=bct_address,
+            amount_bct=amount_bct,
+            evm_tx_hash=evm_tx_hash,
+            evm_sender=safe_sender
+        )
+
+        if not ok:
+            if "daha önce" in msg or "already" in msg:
+                if bridge_id:
+                    bridge_manager.complete_bridge(bridge_id, tx_hash_evm=evm_tx_hash)
                 return api_response(True, data={
                     "already_unlocked": True,
                     "evm_tx_hash": evm_tx_hash,
-                    "recipient": bct_address,
-                    "message": "This EVM burn transaction has already been unlocked on LockTrace."
+                    "message": msg
                 }, status=200)
+            else:
+                if bridge_id:
+                    with bridge_manager._get_connection() as conn:
+                        conn.execute("UPDATE bridge_transactions SET status = 'FAILED', error_message = ?, updated_at = ? WHERE bridge_id = ?", (msg, time.time(), bridge_id))
+                return api_response(False, message=msg, status=400)
 
-    # 1. Register order in bridge_manager if not already registered
-    order_res = bridge_manager.create_bridge_order(
-        direction="EVM_TO_L1",
-        bct_address=bct_address,
-        evm_address=safe_sender,
-        amount_bct=amount_bct,
-        chain="base",
-        tx_hash_evm=evm_tx_hash
-    )
-    bridge_id = order_res.get("data", {}).get("bridge_id", "")
+        # 3. Mark bridge order as completed in bridge database
+        if bridge_id:
+            bridge_manager.complete_bridge(bridge_id, tx_hash_evm=evm_tx_hash)
 
-    # 2. Execute on-chain Layer-1 unlock (transfers BCT to user and seals block)
-    ok, msg, tx_data = blockchain.execute_bridge_unlock(
-        recipient_address=bct_address,
-        amount_bct=amount_bct,
-        evm_tx_hash=evm_tx_hash,
-        evm_sender=safe_sender
-    )
-
-    if not ok:
-        if "daha önce" in msg or "already" in msg:
-            if bridge_id:
-                bridge_manager.complete_bridge(bridge_id, tx_hash_evm=evm_tx_hash)
-            return api_response(True, data={
-                "already_unlocked": True,
-                "evm_tx_hash": evm_tx_hash,
-                "message": msg
-            }, status=200)
-        else:
-            if bridge_id:
-                with bridge_manager._get_connection() as conn:
-                    conn.execute("UPDATE bridge_transactions SET status = 'FAILED', error_message = ?, updated_at = ? WHERE bridge_id = ?", (msg, time.time(), bridge_id))
-            return api_response(False, message=msg, status=400)
-
-    # 3. Mark bridge order as completed in bridge database
-    if bridge_id:
-        bridge_manager.complete_bridge(bridge_id, tx_hash_evm=evm_tx_hash)
-
-    logger.info(f"Cross-Chain Bridge EVM->L1 Unlock Successful: {amount_bct} BCT to {bct_address} (EVM Tx: {evm_tx_hash})")
-    return api_response(True, data={
-        "bridge_id": bridge_id,
-        "l1_tx_hash": tx_data.get("tx_hash"),
-        "evm_tx_hash": evm_tx_hash,
-        "recipient": bct_address,
-        "amount": amount_bct,
-        "block_index": tx_data.get("block_index"),
-        "new_balance": tx_data.get("new_balance"),
-        "message": msg
-    }, status=200)
+        logger.info(f"Cross-Chain Bridge EVM->L1 Unlock Successful: {amount_bct} BCT to {bct_address} (EVM Tx: {evm_tx_hash})")
+        return api_response(True, data={
+            "bridge_id": bridge_id,
+            "l1_tx_hash": tx_data.get("tx_hash"),
+            "evm_tx_hash": evm_tx_hash,
+            "recipient": bct_address,
+            "amount": amount_bct,
+            "block_index": tx_data.get("block_index"),
+            "new_balance": tx_data.get("new_balance"),
+            "message": msg
+        }, status=200)
+    finally:
+        with _BRIDGE_CLAIM_LOCK:
+            _BRIDGE_CLAIMS_IN_FLIGHT.discard(evm_tx_hash)
 
 
 

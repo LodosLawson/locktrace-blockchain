@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.3.0)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.4.0)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner, AND cryptographically
 verified decentralized Web Wallet (Locally or as a Public/LAN Server) on Linux, macOS,
@@ -50,7 +50,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.3.0"
+VERSION = "2.4.0"
 
 ATOMIC_UNIT = 100_000_000
 TOTAL_SUPPLY = 1_000_000_000_000.0
@@ -1363,12 +1363,26 @@ class LockTraceNode:
                 return  # Keep terminal dashboard clean
 
             def _verify_host_header(self) -> bool:
-                # LT-02 Fix: Strict Host validation against DNS Rebinding attacks
+                # LT-03 Fix: Strict Host validation against DNS Rebinding attacks
                 if getattr(node_ref, "server_mode", False):
                     return True
                 raw_host = (self.headers.get("Host", "") or "").split(":")[0].strip().lower()
                 allowed_hosts = {"127.0.0.1", "localhost", "0.0.0.0", "::1"}
                 return raw_host in allowed_hosts
+
+            def _verify_origin_header(self) -> bool:
+                # LT-03 Fix: Strict Origin & CSRF guard against cross-origin RPC executions from arbitrary sites (evil.com)
+                if getattr(node_ref, "server_mode", False):
+                    return True
+                origin = (self.headers.get("Origin", "") or "").strip()
+                if not origin:
+                    fetch_site = (self.headers.get("Sec-Fetch-Site", "") or "").strip().lower()
+                    if fetch_site == "cross-site":
+                        return False
+                    return True
+                is_local = bool(re.match(r"^https?://(127\.0\.0\.1|localhost)(:\d+)?$", origin, re.I))
+                is_trusted = origin in ("https://locktrace.space", "https://www.locktrace.space", "https://spectacular-brioche-aafb73.netlify.app")
+                return is_local or is_trusted
 
             def _add_security_and_cors_headers(self):
                 self.send_header("X-Powered-By", f"LockTrace-Decentralized-Node/{VERSION}")
@@ -1416,6 +1430,11 @@ class LockTraceNode:
                     self.send_response(403)
                     self.end_headers()
                     self.wfile.write(b"Forbidden: Host header mismatch (DNS Rebinding Guard)")
+                    return
+                if not self._verify_origin_header():
+                    self.send_response(403)
+                    self.end_headers()
+                    self.wfile.write(b"Forbidden: Origin not allowed (LT-03 CORS Guard)")
                     return
                 self.send_response(204)
                 self._add_security_and_cors_headers()
@@ -1958,6 +1977,11 @@ class LockTraceNode:
                     self.send_response(403)
                     self.end_headers()
                     self.wfile.write(b"Forbidden: Host header mismatch (DNS Rebinding Guard)")
+                    return
+                if not self._verify_origin_header():
+                    self.send_response(403)
+                    self.end_headers()
+                    self.wfile.write(b"Forbidden: Cross-Origin RPC execution rejected (LT-03 CSRF/Origin Guard)")
                     return
                 parsed = urllib.parse.urlparse(self.path)
                 path = parsed.path

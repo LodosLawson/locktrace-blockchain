@@ -6546,9 +6546,18 @@
 
       let safe = escapeHtml(text || '');
 
-      // 1. External URLs (safe links)
-      safe = safe.replace(/(https?:\/\/[^\s<]+)/gi, (url) => {
-        return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline inline-flex items-center gap-0.5 break-all" onclick="event.stopPropagation();">${url}</a>`;
+      // 1. External URLs (strict attribute escaping & protocol validation - LT-05 XSS Guard)
+      safe = safe.replace(/(https?:\/\/[^\s<"'`]+)/gi, (rawUrl) => {
+        try {
+          const cleanRaw = rawUrl.replace(/&quot;|&amp;|&lt;|&gt;|&#39;/gi, '');
+          const parsed = new URL(cleanRaw);
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return escapeHtml(rawUrl);
+          const safeHref = escapeHtml(parsed.href);
+          const safeDisplay = escapeHtml(rawUrl);
+          return `<a href="${safeHref}" target="_blank" rel="noopener noreferrer nofollow" class="text-primary hover:underline inline-flex items-center gap-0.5 break-all" onclick="event.stopPropagation();">${safeDisplay}</a>`;
+        } catch (_) {
+          return escapeHtml(rawUrl);
+        }
       });
 
       // 2. Mentions & Replies: Clickable to view author profile directly
