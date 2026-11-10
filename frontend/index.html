@@ -7225,56 +7225,22 @@
     // =========================================================================
     // 4. WALLET PERSISTENCE, PIN VAULT & NON-CUSTODIAL SIGNING
     // =========================================================================
-    function _encryptDevicePayload(text) {
-      if (!text) return '';
-      try {
-        const enc = new TextEncoder().encode(String(text));
-        const key = 0x5a;
-        const xored = new Uint8Array(enc.length);
-        for (let i = 0; i < enc.length; i++) {
-          xored[i] = enc[i] ^ key ^ ((i * 7) & 0xff);
-        }
-        let binary = '';
-        for (let i = 0; i < xored.length; i++) binary += String.fromCharCode(xored[i]);
-        return btoa(binary);
-      } catch (_) {
-        return '';
-      }
-    }
-
-    function _decryptDevicePayload(b64) {
-      if (!b64) return '';
-      try {
-        const binary = atob(String(b64));
-        const bytes = new Uint8Array(binary.length);
-        for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i);
-        const key = 0x5a;
-        const dec = new Uint8Array(bytes.length);
-        for (let i = 0; i < bytes.length; i++) {
-          dec[i] = bytes[i] ^ key ^ ((i * 7) & 0xff);
-        }
-        return new TextDecoder().decode(dec);
-      } catch (_) {
-        return '';
-      }
-    }
-
+    // Clear-Text Storage Elimination (CWE-312 Guard): Only non-sensitive public metadata and encrypted vault bundles are stored.
     function sanitizeForStorage(account) {
       if (!account) return null;
-      const copy = Object.assign({}, account);
-      // Clear-Text Storage Elimination (CWE-312 Guard): Never store raw unencrypted keys or mnemonics in localStorage
-      if (copy.private_key || copy.mnemonic) {
-        if (!copy.vaultEncrypted) {
-          const rawSecrets = JSON.stringify({
-            k: copy.private_key || '',
-            m: copy.mnemonic || ''
-          });
-          copy.deviceVault = _encryptDevicePayload(rawSecrets);
-          delete copy.private_key;
-          delete copy.mnemonic;
-        }
-      }
-      return copy;
+      return {
+        address: String(account.address || ''),
+        public_key: String(account.public_key || ''),
+        balance: Number(account.balance || 0),
+        nonce: Number(account.nonce || 0),
+        bns_name: String(account.bns_name || ''),
+        vaultEncrypted: Boolean(account.vaultEncrypted),
+        vaultBundle: account.vaultBundle ? {
+          saltHex: String(account.vaultBundle.saltHex || ''),
+          ivHex: String(account.vaultBundle.ivHex || ''),
+          cipherHex: String(account.vaultBundle.cipherHex || '')
+        } : null
+      };
     }
 
     function loadStoredWallet() {
@@ -7290,25 +7256,15 @@
         const parsed = JSON.parse(raw);
         if (!parsed || !parsed.address) return null;
 
-        // Restore encrypted credentials if deviceVault is present
-        if (parsed.deviceVault && !parsed.vaultEncrypted) {
-          try {
-            const decrypted = _decryptDevicePayload(parsed.deviceVault);
-            if (decrypted) {
-              const sec = JSON.parse(decrypted);
-              parsed.private_key = sec.k || '';
-              parsed.mnemonic = sec.m || '';
-            }
-          } catch (_) {}
-        }
-
-        // Derive public_key locally if private_key is present & public_key is missing
-        if (!parsed.vaultEncrypted && parsed.private_key && !parsed.public_key) {
-          try {
-            parsed.public_key = LockTraceCrypto.derivePublicKeyHex(parsed.private_key);
-          } catch (_e) {}
-        }
-        return parsed;
+        return {
+          address: String(parsed.address || ''),
+          public_key: String(parsed.public_key || ''),
+          balance: Number(parsed.balance || 0),
+          nonce: Number(parsed.nonce || 0),
+          bns_name: String(parsed.bns_name || ''),
+          vaultEncrypted: Boolean(parsed.vaultEncrypted),
+          vaultBundle: parsed.vaultBundle || null
+        };
       } catch (_e) {
         return null;
       }
@@ -7317,17 +7273,24 @@
     function saveWalletState(acc) {
       currentAccount = acc;
       if (acc) {
+        if (acc.private_key || acc.mnemonic) {
+          sessionUnlockedKeys = {
+            private_key: String(acc.private_key || ''),
+            mnemonic: String(acc.mnemonic || '')
+          };
+        }
         const safePayload = sanitizeForStorage(acc);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(safePayload));
         fetchAndSyncMyBnsHandles();
         if (acc.address && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          const pk = acc.private_key || (sessionUnlockedKeys && sessionUnlockedKeys.private_key);
+          const pk = (sessionUnlockedKeys && sessionUnlockedKeys.private_key) || acc.private_key;
           if (pk) {
             registerDevicePushSubscription(pk, false);
           }
         }
       } else {
         localStorage.removeItem(STORAGE_KEY);
+        sessionUnlockedKeys = null;
         bnsMyHandlesCache = [];
         currentBnsHandle = '';
         syncSpaceHandleSelectors([], '');
