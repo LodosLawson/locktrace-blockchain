@@ -394,7 +394,11 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Cross-Chain Canonical Address Ingress Normalization (LT-SOL-02):** Enforced case-insensitive canonical address mapping (`BCT` + lowercase hex) across `core/bridge.py`, `server.py`, and `core/bridge_relayer.py`, preventing stuck or unclaimable bridged assets.
    - **Multi-Core Parallel Thread Mining & Honest Telemetry (LT-GPU-01):** Integrated `ThreadPoolExecutor` parallel worker pool and first-priority delegation to Rust Rayon in `core/gpu_miner.py` with accurate engine telemetry.
    - **100k Bot Army & Sybil Testnet Benchmark:** 100% test passage across Sybil faucet exhaustion, zero-stake validator quorums, mempool flood limits, concurrent race condition double-spends, and validator equivocation slashing.
-11. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+11. **Critical Cryptographic & SPV Logic Hardening (v2.8.2):**
+   - **Zero-Bypass Public Key Address Derivation:** Fixed fallback bypass in `fast_public_key_to_address` (`core/native_bridge.py`); invalid or off-curve public keys return `None` immediately, eliminating fake address generation via unauthenticated double-SHA256 fallback.
+   - **Strict Exception-Based Merkle Duplicate Rejection (CVE-2012-2459):** Replaced poisoned `"0"*64` return with explicit `ValueError("CVE-2012-2459: Duplicate transaction hashes in block")` across `core/blockchain.py`, `core/native_bridge.py`, `crates/locktrace_core/src/merkle.rs`, and `node_runner.py`, preventing attackers from creating valid blocks with `"0"*64` Merkle roots.
+   - **Single-Transaction Block SPV Proof Parity:** Fixed `fast_verify_spv_proof` to correctly verify single-transaction blocks (`proof_steps = []`) where the transaction hash equals the block Merkle root, establishing 100% interoperability with lightweight SPV clients.
+12. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

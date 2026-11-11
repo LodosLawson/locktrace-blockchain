@@ -3,22 +3,23 @@ use std::collections::HashSet;
 
 /// Computes canonical LockTrace Merkle root from transaction hash list.
 /// Hardened against CVE-2012-2459 (Merkle tree collision via duplicate/odd leaves).
-pub fn compute_merkle_root(tx_hashes: &[String]) -> String {
+pub fn compute_merkle_root(tx_hashes: &[String]) -> Result<String, String> {
     if tx_hashes.is_empty() {
-        return "0".repeat(64);
+        return Ok("0".repeat(64));
     }
 
-    let clean: Vec<String> = tx_hashes
-        .iter()
-        .map(|h| h.trim().to_ascii_lowercase())
-        .collect();
+    let mut clean = Vec::with_capacity(tx_hashes.len());
+    let mut unique_check = HashSet::with_capacity(tx_hashes.len());
 
-    // CVE-2012-2459: Block must not contain duplicate transaction hashes
-    let mut unique_check = HashSet::with_capacity(clean.len());
-    for h in &clean {
-        if !unique_check.insert(h) {
-            return "0".repeat(64); // Mutated block detected
+    for h in tx_hashes {
+        let trimmed = h.trim().to_ascii_lowercase();
+        if trimmed.len() != 64 || !trimmed.chars().all(|c| c.is_ascii_hexdigit()) {
+            return Err("Invalid transaction hash format in Merkle tree".to_string());
         }
+        if !unique_check.insert(trimmed.clone()) {
+            return Err("CVE-2012-2459: Duplicate transaction hashes in block".to_string());
+        }
+        clean.push(trimmed);
     }
 
     let mut current_level = clean;
@@ -34,11 +35,11 @@ pub fn compute_merkle_root(tx_hashes: &[String]) -> String {
         current_level = next_level;
     }
 
-    current_level[0].clone()
+    Ok(current_level[0].clone())
 }
 
 /// Verifies an SPV Merkle inclusion proof against a block Merkle root in microseconds.
-/// Validates hash lengths, enforces strict directions, and rejects empty proofs (LT-MRK-01).
+/// Validates hash lengths, enforces strict directions, and handles single-tx blocks (LT-MRK-01).
 pub fn verify_spv_proof(
     target_hash: &str,
     merkle_root: &str,
@@ -55,7 +56,8 @@ pub fn verify_spv_proof(
     }
 
     if proof_steps.is_empty() {
-        return false;
+        // In single-transaction blocks, leaf == root (proof path is empty)
+        return target_clean == root_clean;
     }
 
     let mut current = target_clean;
