@@ -4105,6 +4105,7 @@ class Blockchain:
                             break
                         if cursor >= start_idx:
                             tx_dict = tx.to_dict()
+                            tx_dict["recipient"] = tx.receiver
                             tx_dict["block_index"] = block.index
                             tx_dict["block_hash"] = block.hash
                             tx_dict["status"] = "confirmed"
@@ -4153,6 +4154,10 @@ class Blockchain:
                     used_indexed = True
                     for ctx in confirmed_txs:
                         ctx["status"] = "confirmed"
+                        if "receiver" not in ctx and "recipient" in ctx:
+                            ctx["receiver"] = ctx["recipient"]
+                        elif "recipient" not in ctx and "receiver" in ctx:
+                            ctx["recipient"] = ctx["receiver"]
                         extra = ctx.get("extra_data") or {}
                         if extra.get("author") == clean_addr and ctx.get("sender") != clean_addr:
                             ctx["is_author_royalty"] = True
@@ -4173,6 +4178,7 @@ class Blockchain:
                         )
                         if tx.sender == clean_addr or tx.receiver == clean_addr or is_author_royalty:
                             tx_dict = tx.to_dict()
+                            tx_dict["recipient"] = tx.receiver
                             tx_dict["block_index"] = block.index
                             tx_dict["block_hash"] = block.hash
                             tx_dict["status"] = "confirmed"

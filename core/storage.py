@@ -674,6 +674,7 @@ class SQLiteStorage:
                     "block_index": r["block_index"],
                     "sender": r["sender"],
                     "recipient": r["recipient"],
+                    "receiver": r["recipient"],
                     "amount": r["amount"],
                     "fee": r["fee"],
                     "type": r["tx_type"],

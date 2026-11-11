@@ -7949,7 +7949,10 @@
     function classifyPersonalTx(tx, myAddr) {
       const txType = tx.type || tx.tx_type || 'transfer';
       const isRoyalty = Boolean(tx.is_author_royalty);
-      const isIncoming = isRoyalty || (tx.receiver === myAddr && tx.sender !== myAddr);
+      const receiverAddr = String(tx.receiver || tx.recipient || '').trim().toLowerCase();
+      const senderAddr = String(tx.sender || '').trim().toLowerCase();
+      const myCleanAddr = String(myAddr || '').trim().toLowerCase();
+      const isIncoming = isRoyalty || (receiverAddr === myCleanAddr && senderAddr !== myCleanAddr);
       const isSpace = txType.startsWith('space_') || isRoyalty;
 
       let title = 'BCT Transferi';
@@ -7957,32 +7960,38 @@
       let iconColor = isIncoming ? 'text-primary' : 'text-on-surface';
       let amountNum = Number(tx.amount || 0);
       let sign = isIncoming ? '+' : '-';
-      let counterparty = isIncoming ? tx.sender : tx.receiver;
+      let counterparty = isIncoming ? tx.sender : (tx.receiver || tx.recipient || '--');
       let prefixLabel = isIncoming ? 'From' : 'To';
 
       if (isRoyalty) {
         title = 'Space Creator Royalty';
         icon = 'workspace_premium';
         iconColor = 'text-primary';
-        amountNum = Number(tx.royalty_amount || 0.002);
+        amountNum = Number(tx.royalty_amount || (txType === 'space_comment' ? 0.004 : 0.002));
         sign = '+';
         counterparty = tx.sender;
         prefixLabel = 'Reader';
-      } else if (txType === 'welcome_bonus' || (tx.sender === 'BCT_TREASURY_VAULT' && isIncoming && amountNum === 1)) {
+      } else if (txType === 'reward' || txType === 'welcome_bonus' || ((senderAddr === 'bct_treasury_vault' || senderAddr.startsWith('bct_hazine_')) && isIncoming && amountNum === 1)) {
         title = 'Genesis Welcome Bonus';
         icon = 'redeem';
         iconColor = 'text-primary';
         sign = '+';
+        counterparty = 'LockTrace Genesis Vault';
+        prefixLabel = 'Protocol';
       } else if (txType === 'mining_reward') {
         title = 'PoW Block Mining Reward (70%)';
         icon = 'memory';
         iconColor = 'text-primary';
         sign = '+';
-      } else if (txType === 'validator_reward') {
+        counterparty = 'Mining Consensus Pool';
+        prefixLabel = 'Protocol';
+      } else if (txType === 'validator_reward' || txType === 'attestation_reward') {
         title = 'Validator Quorum Reward (30%)';
         icon = 'verified_user';
         iconColor = 'text-secondary';
         sign = '+';
+        counterparty = 'Validator Quorum Pool';
+        prefixLabel = 'Protocol';
       } else if (txType === 'space_post') {
         title = 'Space Post Publication';
         icon = 'forum';
@@ -7995,15 +8004,29 @@
         icon = 'favorite';
         iconColor = 'text-tertiary';
         sign = '-';
+        prefixLabel = 'Protocol';
+        counterparty = 'LockTrace Space';
       } else if (txType === 'space_comment') {
         title = 'Space Comment Royalty';
         icon = 'chat_bubble';
         iconColor = 'text-secondary';
         sign = '-';
+        prefixLabel = 'Protocol';
+        counterparty = 'LockTrace Space';
+      } else if (txType === 'space_follow') {
+        title = 'Space Creator Follow';
+        icon = 'person_add';
+        iconColor = 'text-primary';
+        sign = '-';
       } else if (txType === 'bns_buy' || txType === 'bns_accept_offer') {
         title = isIncoming ? 'BNS Handle Sold' : 'BNS Handle Purchased';
         icon = 'badge';
         iconColor = 'text-emerald-400';
+      } else if (txType === 'bns_register') {
+        title = 'BNS Handle Registration';
+        icon = 'app_registration';
+        iconColor = 'text-primary';
+        sign = '-';
       } else {
         title = isIncoming ? 'BCT Received' : 'BCT Sent';
       }
@@ -8076,6 +8099,11 @@
           analyticsEl.classList.remove('hidden');
           analyticsEl.classList.add('flex');
           renderWalletAnalytics();
+          if (!personalTxCache || !personalTxCache.length) {
+            refreshPersonalTransactions().then(() => {
+              if (currentTxFilter === 'analytics') renderWalletAnalytics();
+            });
+          }
         }
         if (headingBadge) {
           headingBadge.textContent = 'Grafik & Bakiye Analizi';
@@ -8159,10 +8187,11 @@
     }
 
     function computeWalletAnalytics() {
-      if (!currentAccount || !personalTxCache || !personalTxCache.length) {
+      if (!currentAccount || !currentAccount.address) {
         return null;
       }
-      const myAddr = currentAccount.address.toLowerCase();
+      const myAddr = String(currentAccount.address).trim().toLowerCase();
+      const currentBal = Number(currentAccount.balance || 0);
 
       let stakingTotal = 0;
       let miningTotal = 0;
@@ -8173,50 +8202,84 @@
       let inflowCount = 0;
       let outflowCount = 0;
 
-      // Cumulative trajectory data
-      const trajectory = [];
-      let runningBalanceDelta = 0;
+      const txList = Array.isArray(personalTxCache) ? personalTxCache : [];
+      // Sort ascending by timestamp for accurate historical timeline
+      const sorted = [...txList].sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
 
-      // Sort by timestamp ascending for timeline
-      const sorted = [...personalTxCache].sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+      const trajectory = [];
+      let runningDelta = 0;
 
       sorted.forEach((tx) => {
         const ttype = tx.type || tx.tx_type || 'transfer';
         const amt = Number(tx.amount || 0);
         const fee = Number(tx.fee || 0);
-        const sender = (tx.sender || '').toLowerCase();
-        const receiver = (tx.receiver || '').toLowerCase();
-        const isIncoming = receiver === myAddr && sender !== myAddr;
+        const sender = String(tx.sender || '').trim().toLowerCase();
+        const receiver = String(tx.receiver || tx.recipient || '').trim().toLowerCase();
+        const isRoyalty = Boolean(tx.is_author_royalty);
+        const isIncoming = isRoyalty || (receiver === myAddr && sender !== myAddr);
+        const isSelf = (sender === myAddr && receiver === myAddr);
+        const isOutgoing = (sender === myAddr && !isIncoming && !isSelf);
 
         if (isIncoming) {
           if (ttype === 'validator_reward' || ttype === 'attestation_reward') {
             stakingTotal += amt;
             stakingCount++;
+            runningDelta += amt;
           } else if (ttype === 'mining_reward') {
             miningTotal += amt;
             miningCount++;
+            runningDelta += amt;
+          } else if (isRoyalty) {
+            const royAmt = Number(tx.royalty_amount || (ttype === 'space_comment' ? 0.004 : 0.002));
+            inflowTotal += royAmt;
+            inflowCount++;
+            runningDelta += royAmt;
           } else {
             inflowTotal += amt;
             inflowCount++;
+            runningDelta += amt;
           }
-          runningBalanceDelta += amt;
-        } else if (sender === myAddr) {
-          const sentAmt = (ttype === 'transfer') ? amt : (amt + fee);
+        } else if (isOutgoing) {
+          const sentAmt = amt + fee;
           outflowTotal += sentAmt;
           outflowCount++;
-          runningBalanceDelta -= sentAmt;
+          runningDelta -= sentAmt;
+        } else if (isSelf) {
+          outflowTotal += fee;
+          outflowCount++;
+          runningDelta -= fee;
         }
 
+        const tTime = Number(tx.timestamp || 0) || Math.floor(Date.now() / 1000);
         trajectory.push({
-          time: Number(tx.timestamp || 0),
-          delta: runningBalanceDelta
+          time: tTime,
+          delta: runningDelta
         });
       });
+
+      // Provide responsive trajectory timeline even with 0 or 1 transaction
+      const nowTs = Math.floor(Date.now() / 1000);
+      if (trajectory.length === 0) {
+        trajectory.push({ time: nowTs - 86400, delta: currentBal });
+        trajectory.push({ time: nowTs, delta: currentBal });
+      } else if (trajectory.length === 1) {
+        const first = trajectory[0];
+        trajectory.unshift({ time: first.time - 3600, delta: 0 });
+        if (nowTs - first.time > 60) {
+          trajectory.push({ time: nowTs, delta: first.delta });
+        }
+      } else {
+        const last = trajectory[trajectory.length - 1];
+        if (nowTs - last.time > 60) {
+          trajectory.push({ time: nowTs, delta: last.delta });
+        }
+      }
 
       const totalTurnover = stakingTotal + miningTotal + inflowTotal + outflowTotal;
       const netCashflow = (stakingTotal + miningTotal + inflowTotal) - outflowTotal;
 
       return {
+        currentBalance: currentBal,
         stakingTotal,
         miningTotal,
         inflowTotal,
@@ -8264,87 +8327,94 @@
         iconToggle.textContent = 'format_list_bulleted';
       }
 
-      if (!stats || stats.totalTurnover === 0) {
-        if (stTotalEl) stTotalEl.textContent = '0.00 BCT';
-        if (stCountEl) stCountEl.textContent = '0 Tasdik';
-        if (minTotalEl) minTotalEl.textContent = '0.00 BCT';
-        if (minCountEl) minCountEl.textContent = '0 Blok';
-        if (inTotalEl) inTotalEl.textContent = '0.00 BCT';
-        if (inCountEl) inCountEl.textContent = '0 Alınan';
-        if (outTotalEl) outTotalEl.textContent = '0.00 BCT';
-        if (outCountEl) outCountEl.textContent = '0 Çıkış';
-        if (netCenterEl) netCenterEl.textContent = '0.00 BCT';
-        return;
-      }
+      if (!stats) return;
 
-      if (stTotalEl) stTotalEl.textContent = `+${formatBct(stats.stakingTotal, 2)} BCT`;
+      // 1. Top 4 Metric Cards
+      if (stTotalEl) stTotalEl.textContent = stats.stakingTotal > 0 ? `+${formatBct(stats.stakingTotal, 2)} BCT` : '0.00 BCT';
       if (stCountEl) stCountEl.textContent = `${stats.stakingCount} Tasdik Ödülü`;
-      if (minTotalEl) minTotalEl.textContent = `+${formatBct(stats.miningTotal, 2)} BCT`;
+      if (minTotalEl) minTotalEl.textContent = stats.miningTotal > 0 ? `+${formatBct(stats.miningTotal, 2)} BCT` : '0.00 BCT';
       if (minCountEl) minCountEl.textContent = `${stats.miningCount} Blok Üretimi`;
-      if (inTotalEl) inTotalEl.textContent = `+${formatBct(stats.inflowTotal, 2)} BCT`;
+      if (inTotalEl) inTotalEl.textContent = stats.inflowTotal > 0 ? `+${formatBct(stats.inflowTotal, 2)} BCT` : '0.00 BCT';
       if (inCountEl) inCountEl.textContent = `${stats.inflowCount} Alınan Transfer`;
-      if (outTotalEl) outTotalEl.textContent = `-${formatBct(stats.outflowTotal, 2)} BCT`;
-      if (outCountEl) outCountEl.textContent = `${stats.outflowCount} Çıkış İşlemi`;
+      if (outTotalEl) outTotalEl.textContent = stats.outflowTotal > 0 ? `-${formatBct(stats.outflowTotal, 2)} BCT` : '0.00 BCT';
+      if (outCountEl) outCountEl.textContent = stats.outflowCount > 0 ? `${stats.outflowCount} Çıkış İşlemi` : 'Giden + Gas + Sosyal';
 
-      if (bdStaking) bdStaking.textContent = `+${formatBct(stats.stakingTotal, 4)} BCT`;
-      if (bdMining) bdMining.textContent = `+${formatBct(stats.miningTotal, 4)} BCT`;
-      if (bdInflow) bdInflow.textContent = `+${formatBct(stats.inflowTotal, 4)} BCT`;
-      if (bdOutflow) bdOutflow.textContent = `-${formatBct(stats.outflowTotal, 4)} BCT`;
+      // 2. Breakdown Detail Cards
+      if (bdStaking) bdStaking.textContent = stats.stakingTotal > 0 ? `+${formatBct(stats.stakingTotal, 4)} BCT` : '0.00 BCT';
+      if (bdMining) bdMining.textContent = stats.miningTotal > 0 ? `+${formatBct(stats.miningTotal, 4)} BCT` : '0.00 BCT';
+      if (bdInflow) bdInflow.textContent = stats.inflowTotal > 0 ? `+${formatBct(stats.inflowTotal, 4)} BCT` : '0.00 BCT';
+      if (bdOutflow) bdOutflow.textContent = stats.outflowTotal > 0 ? `-${formatBct(stats.outflowTotal, 4)} BCT` : '0.00 BCT';
 
-      const sign = stats.netCashflow >= 0 ? '+' : '';
+      // 3. Center Donut Net Cashflow / Portfolio Figure
       if (netCenterEl) {
-        netCenterEl.textContent = `${sign}${formatBct(stats.netCashflow, 1)} BCT`;
-        netCenterEl.className = stats.netCashflow >= 0
-          ? 'font-bold font-mono text-xs sm:text-sm truncate text-emerald-400'
-          : 'font-bold font-mono text-xs sm:text-sm truncate text-amber-400';
+        if (stats.totalTurnover === 0) {
+          const bal = stats.currentBalance || 0;
+          netCenterEl.textContent = `${formatBct(bal, 2)} BCT`;
+          netCenterEl.className = 'font-bold font-mono text-xs sm:text-sm truncate text-on-surface';
+        } else {
+          const sign = stats.netCashflow > 0 ? '+' : (stats.netCashflow < 0 ? '-' : '');
+          netCenterEl.textContent = `${sign}${formatBct(Math.abs(stats.netCashflow), 2)} BCT`;
+          netCenterEl.className = stats.netCashflow >= 0
+            ? 'font-bold font-mono text-xs sm:text-sm truncate text-emerald-400'
+            : 'font-bold font-mono text-xs sm:text-sm truncate text-amber-400';
+        }
       }
 
-      // Calculate Percentages
-      const turn = stats.totalTurnover || 1;
-      const pctStaking = (stats.stakingTotal / turn) * 100;
-      const pctMining = (stats.miningTotal / turn) * 100;
-      const pctInflow = (stats.inflowTotal / turn) * 100;
-      const pctOutflow = (stats.outflowTotal / turn) * 100;
+      // 4. Percentage Calculations
+      const turn = stats.totalTurnover > 0 ? stats.totalTurnover : 1;
+      const pctStaking = stats.totalTurnover > 0 ? (stats.stakingTotal / turn) * 100 : 0;
+      const pctMining = stats.totalTurnover > 0 ? (stats.miningTotal / turn) * 100 : 0;
+      const pctInflow = stats.totalTurnover > 0 ? (stats.inflowTotal / turn) * 100 : 0;
+      const pctOutflow = stats.totalTurnover > 0 ? (stats.outflowTotal / turn) * 100 : 0;
 
       if (legStaking) legStaking.textContent = `%${pctStaking.toFixed(1)}`;
       if (legMining) legMining.textContent = `%${pctMining.toFixed(1)}`;
       if (legInflow) legInflow.textContent = `%${pctInflow.toFixed(1)}`;
       if (legOutflow) legOutflow.textContent = `%${pctOutflow.toFixed(1)}`;
 
-      // Update SVG Donut Segments (circumference = 2 * PI * 38 = 238.76)
+      // 5. SVG Donut Ring Segments
       const C = 238.76;
-      const lenStaking = (pctStaking / 100) * C;
-      const lenMining = (pctMining / 100) * C;
-      const lenInflow = (pctInflow / 100) * C;
-      const lenOutflow = (pctOutflow / 100) * C;
-
       const segStaking = document.getElementById('donutSegStaking');
       const segMining = document.getElementById('donutSegMining');
       const segInflow = document.getElementById('donutSegInflow');
       const segOutflow = document.getElementById('donutSegOutflow');
 
-      let offset = 0;
-      if (segStaking) {
-        segStaking.setAttribute('stroke-dasharray', `${lenStaking.toFixed(1)} ${C}`);
-        segStaking.setAttribute('stroke-dashoffset', `${(-offset).toFixed(1)}`);
-        offset += lenStaking;
-      }
-      if (segMining) {
-        segMining.setAttribute('stroke-dasharray', `${lenMining.toFixed(1)} ${C}`);
-        segMining.setAttribute('stroke-dashoffset', `${(-offset).toFixed(1)}`);
-        offset += lenMining;
-      }
-      if (segInflow) {
-        segInflow.setAttribute('stroke-dasharray', `${lenInflow.toFixed(1)} ${C}`);
-        segInflow.setAttribute('stroke-dashoffset', `${(-offset).toFixed(1)}`);
-        offset += lenInflow;
-      }
-      if (segOutflow) {
-        segOutflow.setAttribute('stroke-dasharray', `${lenOutflow.toFixed(1)} ${C}`);
-        segOutflow.setAttribute('stroke-dashoffset', `${(-offset).toFixed(1)}`);
+      if (stats.totalTurnover === 0) {
+        [segStaking, segMining, segInflow, segOutflow].forEach((s) => {
+          if (s) {
+            s.setAttribute('stroke-dasharray', `0 ${C}`);
+            s.setAttribute('stroke-dashoffset', '0');
+            s.style.opacity = '0';
+          }
+        });
+      } else {
+        const lenStaking = (pctStaking / 100) * C;
+        const lenMining = (pctMining / 100) * C;
+        const lenInflow = (pctInflow / 100) * C;
+        const lenOutflow = (pctOutflow / 100) * C;
+
+        let offset = 0;
+        const applySeg = (el, len) => {
+          if (!el) return;
+          if (len > 0.1) {
+            el.setAttribute('stroke-dasharray', `${len.toFixed(1)} ${C}`);
+            el.setAttribute('stroke-dashoffset', `${(-offset).toFixed(1)}`);
+            el.style.opacity = '1';
+            offset += len;
+          } else {
+            el.setAttribute('stroke-dasharray', `0 ${C}`);
+            el.setAttribute('stroke-dashoffset', '0');
+            el.style.opacity = '0';
+          }
+        };
+
+        applySeg(segStaking, lenStaking);
+        applySeg(segMining, lenMining);
+        applySeg(segInflow, lenInflow);
+        applySeg(segOutflow, lenOutflow);
       }
 
-      // Render Area Sparkline Chart
+      // 6. Area Sparkline Chart
       renderAnalyticsAreaChart(stats.trajectory);
     }
 
@@ -8359,28 +8429,33 @@
       if (!areaEl || !lineEl) return;
 
       if (!traj || traj.length < 2) {
-        areaEl.setAttribute('d', 'M0,110 L400,110 L400,120 L0,120 Z');
-        lineEl.setAttribute('d', 'M0,110 L400,110');
-        if (dotEl) { dotEl.setAttribute('cx', '400'); dotEl.setAttribute('cy', '110'); }
-        if (countEl) countEl.textContent = 'Veri Bekleniyor';
+        areaEl.setAttribute('d', 'M0,60 L400,60 L400,120 L0,120 Z');
+        lineEl.setAttribute('d', 'M0,60 L400,60');
+        if (dotEl) { dotEl.setAttribute('cx', '400'); dotEl.setAttribute('cy', '60'); }
+        if (countEl) countEl.textContent = 'İşlem Yok';
+        if (startEl) startEl.textContent = 'Başlangıç';
+        if (endEl) endEl.textContent = 'Şimdi';
         return;
       }
 
-      if (countEl) countEl.textContent = `${traj.length} İşlem Akışı`;
+      const txCount = Array.isArray(personalTxCache) ? personalTxCache.length : 0;
+      if (countEl) countEl.textContent = `${txCount} İşlem Akışı`;
       if (startEl && traj[0].time) startEl.textContent = formatTimeAgo(traj[0].time);
       if (endEl && traj[traj.length - 1].time) endEl.textContent = formatTimeAgo(traj[traj.length - 1].time);
 
       const deltas = traj.map((t) => t.delta);
       const minVal = Math.min(...deltas);
       const maxVal = Math.max(...deltas);
-      const span = (maxVal - minVal) || 1;
+      const span = maxVal - minVal;
 
       const points = traj.map((t, i) => {
-        const x = (i / (traj.length - 1)) * 400;
-        // Invert y: y=10 is maxVal, y=105 is minVal
-        const norm = (t.delta - minVal) / span;
-        const y = 105 - (norm * 90);
-        return { x: Math.round(x), y: Math.round(y) };
+        const x = Math.round((i / (traj.length - 1)) * 400);
+        let y = 60;
+        if (span > 0.000001) {
+          const norm = (t.delta - minVal) / span;
+          y = Math.round(98 - (norm * 78)); // smooth y between 20 and 98
+        }
+        return { x, y };
       });
 
       let lineD = `M${points[0].x},${points[0].y}`;
@@ -8425,7 +8500,7 @@
         isIncoming: false,
         sign: '',
         displayAmount: Number(tx.amount || 0),
-        counterparty: tx.receiver || '--'
+        counterparty: tx.receiver || tx.recipient || '--'
       };
 
       const txHash = tx.tx_hash || tx.hash || '--';
@@ -9866,7 +9941,7 @@
                   <span class="font-body-sm text-body-sm text-on-surface font-medium truncate font-mono">${escapeHtml(txHash.slice(0, 10))}...${escapeHtml(txHash.slice(-4))}</span>
                   <span class="bg-surface-container px-1.5 py-0.5 rounded font-label-sm text-label-sm text-primary shrink-0">${escapeHtml(label)}</span>
                 </div>
-                <span class="font-label-sm text-label-sm text-on-surface-variant block truncate">${escapeHtml(shortAddr(tx.sender))} → ${escapeHtml(shortAddr(tx.receiver))} • ${escapeHtml(formatTimeAgo(tx.timestamp))}</span>
+                <span class="font-label-sm text-label-sm text-on-surface-variant block truncate">${escapeHtml(shortAddr(tx.sender))} → ${escapeHtml(shortAddr(tx.receiver || tx.recipient))} • ${escapeHtml(formatTimeAgo(tx.timestamp))}</span>
               </div>
             </div>
             <div class="text-right shrink-0 ml-2">
@@ -14216,7 +14291,7 @@
                           <span class="font-bold text-xs text-on-surface capitalize">${escapeHtml(typeLabel.replace(/_/g, ' '))}</span>
                           <span class="px-1.5 py-0.2 rounded-full ${tx.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-300'} font-mono text-[9px] uppercase font-bold">${escapeHtml(tx.status || 'confirmed')}</span>
                         </div>
-                        <span class="font-mono text-[10.5px] text-on-surface-variant truncate">${isSender ? 'To: ' + (tx.receiver ? shortAddr(tx.receiver) : 'Protocol') : 'From: ' + (tx.sender ? shortAddr(tx.sender) : 'Genesis')}</span>
+                        <span class="font-mono text-[10.5px] text-on-surface-variant truncate">${isSender ? 'To: ' + (tx.receiver || tx.recipient ? shortAddr(tx.receiver || tx.recipient) : 'Protocol') : 'From: ' + (tx.sender ? shortAddr(tx.sender) : 'Genesis')}</span>
                       </div>
                     </div>
                     <div class="text-right shrink-0">
