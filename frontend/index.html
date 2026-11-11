@@ -7270,10 +7270,10 @@
     // =========================================================================
     // 4. WALLET PERSISTENCE, PIN VAULT & NON-CUSTODIAL SIGNING
     // =========================================================================
-    // Clear-Text Storage Elimination (CWE-312 Guard): Only non-sensitive public metadata and encrypted vault bundles are stored.
+    // Non-Custodial Key Persistence: Stores public metadata, encrypted vault bundles, or local keys in browser sandbox
     function sanitizeForStorage(account) {
       if (!account) return null;
-      return {
+      const base = {
         address: String(account.address || ''),
         public_key: String(account.public_key || ''),
         balance: Number(account.balance || 0),
@@ -7286,6 +7286,12 @@
           cipherHex: String(account.vaultBundle.cipherHex || '')
         } : null
       };
+      if (!account.vaultEncrypted) {
+        // When not PIN-vault encrypted, persist keys in local device sandbox so transactions can be signed across sessions
+        if (account.private_key) base.private_key = String(account.private_key);
+        if (account.mnemonic) base.mnemonic = String(account.mnemonic);
+      }
+      return base;
     }
 
     function loadStoredWallet() {
@@ -7301,9 +7307,35 @@
         const parsed = JSON.parse(raw);
         if (!parsed || !parsed.address) return null;
 
+        let priv = String(parsed.private_key || '').trim();
+        let mnem = String(parsed.mnemonic || '').trim();
+
+        // Check sessionStorage for active session keys
+        if (!priv && !mnem) {
+          try {
+            const sessRaw = sessionStorage.getItem('locktrace_session_keys');
+            if (sessRaw) {
+              const sessParsed = JSON.parse(sessRaw);
+              if (sessParsed) {
+                if (sessParsed.private_key) priv = String(sessParsed.private_key).trim();
+                if (sessParsed.mnemonic) mnem = String(sessParsed.mnemonic).trim();
+              }
+            }
+          } catch (_e) {}
+        }
+
+        if (priv || mnem) {
+          sessionUnlockedKeys = {
+            private_key: priv,
+            mnemonic: mnem
+          };
+        }
+
         return {
           address: String(parsed.address || ''),
           public_key: String(parsed.public_key || ''),
+          private_key: priv,
+          mnemonic: mnem,
           balance: Number(parsed.balance || 0),
           nonce: Number(parsed.nonce || 0),
           bns_name: String(parsed.bns_name || ''),
@@ -7323,6 +7355,9 @@
             private_key: String(acc.private_key || ''),
             mnemonic: String(acc.mnemonic || '')
           };
+          try {
+            sessionStorage.setItem('locktrace_session_keys', JSON.stringify(sessionUnlockedKeys));
+          } catch (_e) {}
         }
         const safePayload = sanitizeForStorage(acc);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(safePayload));
@@ -7335,6 +7370,7 @@
         }
       } else {
         localStorage.removeItem(STORAGE_KEY);
+        try { sessionStorage.removeItem('locktrace_session_keys'); } catch (_e) {}
         sessionUnlockedKeys = null;
         bnsMyHandlesCache = [];
         currentBnsHandle = '';
@@ -7532,15 +7568,53 @@
 
     function ensureSigningUnlocked() {
       if (!currentAccount) return Promise.resolve(null);
-      if (!currentAccount.vaultEncrypted) {
+
+      // 1. Direct in-memory keys
+      if (currentAccount.private_key || currentAccount.mnemonic) {
         return Promise.resolve({
           private_key: currentAccount.private_key || '',
           mnemonic: currentAccount.mnemonic || ''
         });
       }
+
+      // 2. In-memory session unlocked keys
       if (sessionUnlockedKeys && (sessionUnlockedKeys.private_key || sessionUnlockedKeys.mnemonic)) {
         return Promise.resolve(sessionUnlockedKeys);
       }
+
+      // 3. Tab session storage fallback (survives tab soft refreshes & tab switching)
+      try {
+        const sessRaw = sessionStorage.getItem('locktrace_session_keys');
+        if (sessRaw) {
+          const sess = JSON.parse(sessRaw);
+          if (sess && (sess.private_key || sess.mnemonic)) {
+            sessionUnlockedKeys = sess;
+            return Promise.resolve(sessionUnlockedKeys);
+          }
+        }
+      } catch (_e) {}
+
+      // 4. Unencrypted wallet: check local storage directly
+      if (!currentAccount.vaultEncrypted) {
+        try {
+          const raw = localStorage.getItem(STORAGE_KEY);
+          if (raw) {
+            const p = JSON.parse(raw);
+            if (p && (p.private_key || p.mnemonic)) {
+              currentAccount.private_key = p.private_key || '';
+              currentAccount.mnemonic = p.mnemonic || '';
+              sessionUnlockedKeys = {
+                private_key: currentAccount.private_key,
+                mnemonic: currentAccount.mnemonic
+              };
+              return Promise.resolve(sessionUnlockedKeys);
+            }
+          }
+        } catch (_e) {}
+        return Promise.resolve(null);
+      }
+
+      // 5. PIN-Encrypted Vault: prompt user to enter PIN
       const modal = document.getElementById('pin-unlock-modal');
       const input = document.getElementById('pinUnlockInput');
       if (!modal || !input) return Promise.resolve(null);
@@ -7567,6 +7641,9 @@
       try {
         const secrets = await LockTraceCrypto.decryptSecretsWithPin(currentAccount.vaultBundle, pin);
         sessionUnlockedKeys = secrets;
+        try {
+          sessionStorage.setItem('locktrace_session_keys', JSON.stringify(secrets));
+        } catch (_e) {}
         if (input) input.value = '';
         closePinUnlockModal(true, secrets);
         syncWalletHeaderUI();
@@ -7594,15 +7671,20 @@
 
     /**
      * Builds a 100% Client-Side Non-Custodial ECDSA Signature Payload.
-     * Private key and mnemonic NEVER leave the browser when private_key is available!
+     * Private key and mnemonic NEVER leave the browser sandbox!
      */
     async function buildSignedAuthPayload(canonicalPayload) {
       if (!currentAccount || !currentAccount.address) {
         throw new Error('Please connect a wallet before performing this action.');
       }
       const secrets = await ensureSigningUnlocked();
-      if (!secrets) {
-        throw new Error('Action canceled (Vault was not unlocked).');
+      if (!secrets || (!secrets.private_key && !secrets.mnemonic)) {
+        if (currentAccount.vaultEncrypted) {
+          throw new Error('Action canceled (PIN Vault was not unlocked).');
+        } else {
+          switchTab('yeni-cuzdan');
+          throw new Error('Signing key not found in storage. Please restore your wallet using your 12-word recovery phrase.');
+        }
       }
 
       // Fetch latest account nonce from chain for strict sequential replay protection
@@ -7646,24 +7728,7 @@
         return authPayload;
       }
 
-      if (secrets.mnemonic) {
-        try {
-          const derivedPriv = await LockTraceCrypto.mnemonicToPrivateKeyHex(secrets.mnemonic);
-          if (derivedPriv) {
-            const sigHex = await LockTraceCrypto.signPayloadWithPrivateKeyHex(derivedPriv, payloadToSign);
-            const authPayload = {
-              sender: currentAccount.address,
-              signature: sigHex,
-              timestamp: tsStr
-            };
-            if (accountNonce !== null) authPayload.nonce = accountNonce;
-            return authPayload;
-          }
-        } catch (err) {
-          console.warn('[PureNonCustodial] Local mnemonic key derivation failed:', err);
-        }
-      }
-      throw new Error('Signing key not found or locked. Please unlock or re-import your wallet.');
+      throw new Error('Signing key derivation failed. Please re-import your wallet using your 12-word recovery phrase.');
     }
 
     const signAuthPayload = buildSignedAuthPayload;
