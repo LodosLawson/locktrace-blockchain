@@ -84,12 +84,12 @@ class Config:
 
     # ── Anti-Spam & İşlem Tipi Bekleme Süreleri (Saniye)
     ACTION_COOLDOWNS = {
-        "space_like": 60,       # Beğeni: 1 dakika
-        "space_comment": 60,    # Yorum: 1 dakika
-        "transfer": 20,         # Para Transferi: 20 saniye
-        "space_post": 20,       # Post Paylaşımı: 20 saniye
-        "bns_register": 60,     # İsim Alma: 1 dakika
-        "space_follow": 60      # Takip Etme: 1 dakika
+        "space_like": 0,        # Beğeni: Anlık (0s) - Mempool çift beğeni & IP limitleri devrede
+        "space_comment": 5,     # Yorum: 5 saniye
+        "transfer": 3,          # Para Transferi: 3 saniye
+        "space_post": 10,       # Post Paylaşımı: 10 saniye
+        "bns_register": 10,     # İsim Alma: 10 saniye
+        "space_follow": 3       # Takip Etme: 3 saniye
     }
 
     # ── Cross-Chain Bridge Güvenliği ──────────────────
