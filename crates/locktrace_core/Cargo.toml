@@ -1,0 +1,21 @@
+[package]
+name = "locktrace_rs"
+version = "2.8.0"
+edition = "2021"
+authors = ["LockTrace Core Architecture Team <locktracetoken+space@gmail.com>"]
+description = "Native Rust Acceleration Core for LockTrace Layer-1 Blockchain"
+license = "MIT"
+
+[lib]
+name = "locktrace_rs"
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+pyo3 = { version = "0.23", features = ["extension-module"] }
+k256 = { version = "0.13", features = ["ecdsa", "sha256", "arithmetic"] }
+sha2 = "0.10"
+rayon = "1.10"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
+hex = "0.4"
+
