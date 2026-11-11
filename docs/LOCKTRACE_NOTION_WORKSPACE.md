@@ -70,8 +70,9 @@ Aşağıdaki modüllerin tamamı sıfırdan geliştirilmiş, güvenlik testlerin
 - [x] **Uygulama İçi Bildirim Kutusu (Notification Bell):** Hem uygulama açıkken hem arka planda gelen tüm bildirimler senkronize olarak bildirim kutusunda saklanır ve okundu olarak işaretlenebilir.
 
 ### ✅ G. Kriptografik Arayüz Güvenliği & Denetim (Security Hardening)
-- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.4.0`):** LT-01'den LT-07'ye kadar konsensüs (%30 quorum tasdik zorunluluğu), köprü reorg koruması (10 blok L1 derinliği & fail-closed Base EVM teyidi), yerel RPC CSRF/Origin izolasyonu, SECP256k1 Low-S (BIP-62/146) imza sertleştirmesi, linkify attribute XSS sanitizasyonu, Median-Time-Past (MTP) zaman damgası kuralı ve TOCTOU-proof bellek tamponu.
-- [x] **On-Chain Frontend Sealing (`v2.4.0`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
+- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.7.0`):** LT-01'den LT-07'ye kadar konsensüs (%30 quorum tasdik zorunluluğu), köprü reorg koruması (10 blok L1 derinliği & fail-closed Base EVM teyidi), yerel RPC CSRF/Origin izolasyonu, SECP256k1 Low-S (BIP-62/146) imza sertleştirmesi, linkify attribute XSS sanitizasyonu, Median-Time-Past (MTP) zaman damgası kuralı ve TOCTOU-proof bellek tamponu.
+- [x] **On-Chain Frontend Sealing (`v2.7.0`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
+- [x] **P2P Compact Block Relay & State Snapshot Fast Sync (`v2.7.0`):** BIP-152 %90+ bant genişliği tasarrufu, deterministik durum özeti (state root) ile saniyeler içinde düğüm kurulumu ve OpenCL GPU donanım madencilik motoru.
 - [x] **Derinlemesine Güvenlik Taraması:** Sybil saldırı engelleri, kendi kendine sahte hacim (wash-trading) engeli, SQLite WAL kilit koruması, XSS temizliği ve hız sınırlandırma (Rate Limiting) tamamlandı.
 
 ---
@@ -83,14 +84,18 @@ Projenin teknik yapısını hızlıca anlamak ve referans almak için dosya hari
 ```
 BlockChainT/
 ├── core/
-│   ├── blockchain.py        # L1 Blokzincir kalbi: Blok üretimi, PoW, BFT Quorum, BNS (.bct), Space sosyal işlemleri, Teklif/Escrow
+│   ├── blockchain.py        # L1 Blokzincir kalbi: Blok üretimi, PoW, BFT Quorum, BNS (.bct), Space, Compact Block, State Snapshot
 │   ├── storage.py           # SQLite-WAL veritabanı motoru: Blokları, işlemleri ve durum (state) verilerini kalıcı saklar
 │   ├── wallet.py            # SECP256k1 ECDSA anahtar çifti üretimi, adres türetimi (BCT...) ve imza doğrulama
 │   ├── mnemonic.py          # BIP-39 12 kelimelik kurtarma cümlesi (Seed Phrase) motoru
+│   ├── gpu_miner.py         # OpenCL C kernel ile GPU donanım hızlandırmalı PoW madencilik motoru (v2.7.0)
+│   ├── native_bridge.py     # Rust (crates/locktrace_core) ve OpenSSL çift motorlu köprü (Dual-Engine)
 │   ├── bridge.py            # Base L2 <-> LockTrace L1 köprü doğrulama ve kilit mantığı
 │   ├── bridge_relayer.py    # Base Mainnet kontratını dinleyen ve transferleri tamamlayan arka plan servisi
 │   ├── push_service.py      # VAPID tabanlı Web Push (iOS/Android/Web) bildirim gönderim motoru
 │   └── thirdweb_service.py  # EVM / Base L2 kontrat etkileşim yardımcı servisi
+├── crates/
+│   └── locktrace_core/      # Rust native performans modülleri (crypto, merkle, pow, compact)
 ├── frontend/
 │   ├── index.html           # Tüm Web3 Cüzdan, Explorer, Space Sosyal Ağ, BNS Pazar Yeri ve Dokümantasyon arayüzü (Tek Sayfa PWA)
 │   ├── sw.js                # PWA Çevrimdışı Önbellek (Service Worker v34) ve Arka Plan Push Bildirim Dinleyicisi
