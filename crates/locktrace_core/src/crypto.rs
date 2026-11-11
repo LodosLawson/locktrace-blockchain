@@ -1,7 +1,6 @@
 use k256::ecdsa::signature::hazmat::PrehashVerifier;
 use k256::ecdsa::{Signature, VerifyingKey};
-use k256::elliptic_curve::sec1::ToEncodedPoint;
-use k256::Secp256k1;
+use k256::elliptic_curve::scalar::IsHigh;
 use sha2::{Digest, Sha256};
 
 /// Derives canonical uncompressed SECP256k1 public key bytes (64 bytes = X || Y).
