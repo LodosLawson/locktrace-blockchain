@@ -1,3 +1,4 @@
+pub mod compact;
 pub mod crypto;
 pub mod merkle;
 pub mod pow;
@@ -15,8 +16,22 @@ fn verify_signature(pub_hex: &str, data: &str, sig_hex: &str) -> PyResult<bool> 
 }
 
 #[pyfunction]
+fn batch_verify_signatures(items: Vec<(String, String, String)>) -> PyResult<Vec<bool>> {
+    Ok(crypto::batch_verify_signatures(&items))
+}
+
+#[pyfunction]
 fn compute_merkle_root(tx_hashes: Vec<String>) -> PyResult<String> {
     Ok(merkle::compute_merkle_root(&tx_hashes))
+}
+
+#[pyfunction]
+fn verify_spv_proof(
+    target_hash: &str,
+    merkle_root: &str,
+    proof_steps: Vec<(String, String)>,
+) -> PyResult<bool> {
+    Ok(merkle::verify_spv_proof(target_hash, merkle_root, &proof_steps))
 }
 
 #[pyfunction]
@@ -38,7 +53,9 @@ fn is_native_rust_active() -> PyResult<bool> {
 fn locktrace_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(public_key_to_address, m)?)?;
     m.add_function(wrap_pyfunction!(verify_signature, m)?)?;
+    m.add_function(wrap_pyfunction!(batch_verify_signatures, m)?)?;
     m.add_function(wrap_pyfunction!(compute_merkle_root, m)?)?;
+    m.add_function(wrap_pyfunction!(verify_spv_proof, m)?)?;
     m.add_function(wrap_pyfunction!(solve_pow, m)?)?;
     m.add_function(wrap_pyfunction!(is_native_rust_active, m)?)?;
     m.add("__version__", "2.8.0")?;

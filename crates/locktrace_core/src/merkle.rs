@@ -26,3 +26,22 @@ pub fn compute_merkle_root(tx_hashes: &[String]) -> String {
     current_level[0].clone()
 }
 
+/// Verifies an SPV Merkle inclusion proof against a block Merkle root in microseconds.
+pub fn verify_spv_proof(
+    target_hash: &str,
+    merkle_root: &str,
+    proof_steps: &[(String, String)],
+) -> bool {
+    let mut current = target_hash.trim().to_ascii_lowercase();
+    for (dir, sibling) in proof_steps {
+        let sib = sibling.trim().to_ascii_lowercase();
+        let combined = if dir.eq_ignore_ascii_case("left") {
+            format!("{}{}", sib, current)
+        } else {
+            format!("{}{}", current, sib)
+        };
+        current = hex::encode(Sha256::digest(combined.as_bytes()));
+    }
+    current.eq_ignore_ascii_case(merkle_root.trim())
+}
+
