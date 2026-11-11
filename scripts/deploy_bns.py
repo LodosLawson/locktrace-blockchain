@@ -3,7 +3,7 @@ import subprocess
 import sys
 import json
 
-DEFAULT_KEY = r"C:\Users\mehem\Downloads\ssh-key-2026-11-02.key"
+DEFAULT_KEY = os.path.join(os.path.expanduser("~"), "Downloads", "ssh-key-2026-11-02.key")
 SSH_KEY = os.environ.get("LOCKTRACE_SSH_KEY", DEFAULT_KEY if os.path.exists(DEFAULT_KEY) else "deploy/id_rsa")
 VPS_HOST = os.environ.get("LOCKTRACE_SSH_HOST", "ubuntu@129.151.205.219")
 

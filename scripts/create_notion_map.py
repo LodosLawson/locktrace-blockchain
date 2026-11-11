@@ -13,8 +13,7 @@ def get_notion_token():
         return token
     cfg_paths = [
         os.path.expanduser("~/.gemini/config/mcp_config.json"),
-        os.path.expanduser("~/.gemini/config/plugins/notion/mcp_config.json"),
-        r"C:\Users\mehem\.gemini\config\mcp_config.json"
+        os.path.expanduser("~/.gemini/config/plugins/notion/mcp_config.json")
     ]
     for p in cfg_paths:
         if os.path.exists(p):
