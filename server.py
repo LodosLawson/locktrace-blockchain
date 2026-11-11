@@ -2720,6 +2720,8 @@ def api_bridge_create_order():
     payload = request.get_json(silent=True) or {}
     direction = str(payload.get("direction", "L1_TO_EVM")).strip().upper()
     bct_address = str(payload.get("bct_address", "")).strip()
+    if bct_address.upper().startswith("BCT") and len(bct_address) == 43:
+        bct_address = "BCT" + bct_address[3:].lower()
     evm_address = str(payload.get("evm_address", "")).strip()
     chain = str(payload.get("chain", "base")).strip()
     tx_hash_l1 = str(payload.get("tx_hash_l1", "")).strip().lower()
@@ -2865,6 +2867,8 @@ def api_bridge_claim_burn():
     payload = request.get_json(silent=True) or {}
     evm_tx_hash = str(payload.get("evm_tx_hash", "")).strip().lower()
     bct_address = str(payload.get("bct_address", "")).strip()
+    if bct_address.upper().startswith("BCT") and len(bct_address) == 43:
+        bct_address = "BCT" + bct_address[3:].lower()
     evm_sender = str(payload.get("evm_sender", "")).strip().lower()
     safe_sender = evm_sender if (evm_sender.startswith("0x") and len(evm_sender) == 42) else "0x0000000000000000000000000000000000000000"
 

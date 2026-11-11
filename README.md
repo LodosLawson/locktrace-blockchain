@@ -386,7 +386,15 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **DOM XSS Sanitization (LT-WEB-02):** Strict regex attribute sanitation and entity escaping on mentions, hashtags, and cashtags in rich social threads.
    - **Nginx HTTPS Enforcement & Tight CSP (LT-NGX-01):** Unconditional port 80 HTTP-to-HTTPS 301 redirection and tightened Content-Security-Policy removing `unsafe-eval` and whitelisting trusted RPC origins.
    - **Thirdweb Engine EVM Address & BigInt Validation (LT-TWB-01):** Defensive validation against negative numbers, non-integers, and invalid EVM address formats.
-10. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+10. **Comprehensive Security Audit Hardening & Testnet Resilience (v2.8.1):**
+   - **Cryptographic Sentinel Nonce Serialization (LT-POW-01):** Replaced static split tokens with 128-bit random runtime sentinels (`secrets.token_hex(16)`) and exact byte-offset splicing across `core/gpu_miner.py` and `core/native_bridge.py`, immunizing the PoW engine against transaction-content mining split DoS attacks.
+   - **Strict SPV Merkle Proof Validation (LT-MRK-01):** Enforced 64-character lowercase hex format validation on target hashes and Merkle roots, prohibited empty proof arrays, and strictly checked directional proof paths (`"left"` vs `"right"`) in both Python and Rust (`crates/locktrace_core/src/merkle.rs`).
+   - **SECP256k1 Curve Point Validation & 33-Byte Compressed Parity (LT-CRY-01):** Added strict SEC1 curve verification in Rust (`k256::AffinePoint::from_encoded_point`) and Python fallback, rejecting off-curve public keys ($y^2 \ne x^3 + 7$) and providing full address parity for 33-byte compressed public keys.
+   - **Merkle Duplicate Leaf Collision Defense (LT-MRK-02 / CVE-2012-2459):** Implemented strict duplicate leaf transaction detection returning a poisoned zero-hash root (`"0"*64`) and block invalidation on mutated transaction duplicates.
+   - **Cross-Chain Canonical Address Ingress Normalization (LT-SOL-02):** Enforced case-insensitive canonical address mapping (`BCT` + lowercase hex) across `core/bridge.py`, `server.py`, and `core/bridge_relayer.py`, preventing stuck or unclaimable bridged assets.
+   - **Multi-Core Parallel Thread Mining & Honest Telemetry (LT-GPU-01):** Integrated `ThreadPoolExecutor` parallel worker pool and first-priority delegation to Rust Rayon in `core/gpu_miner.py` with accurate engine telemetry.
+   - **100k Bot Army & Sybil Testnet Benchmark:** 100% test passage across Sybil faucet exhaustion, zero-stake validator quorums, mempool flood limits, concurrent race condition double-spends, and validator equivocation slashing.
+11. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

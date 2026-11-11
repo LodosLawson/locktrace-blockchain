@@ -126,11 +126,21 @@ def verify_evm_burn_receipt(
                 recip_bytes = data_bytes[str_offset + 32:str_offset + 32 + str_len]
                 recip_str = recip_bytes.decode("utf-8", errors="replace").strip()
 
-                if recip_str == clean_recipient and abs(amount_bct - expected_amount) < 0.0001:
+                # LT-SOL-02: Canonical address normalization (BCT prefix + lowercase hex)
+                def _to_canonical_bct(addr: str) -> str:
+                    s = (addr or "").strip()
+                    if s.upper().startswith("BCT") and len(s) == 43:
+                        return "BCT" + s[3:].lower()
+                    return s
+
+                canon_recip = _to_canonical_bct(recip_str)
+                canon_expected = _to_canonical_bct(clean_recipient)
+
+                if canon_recip == canon_expected and abs(amount_bct - expected_amount) < 0.0001:
                     matched_event = {
                         "sender": sender_addr,
                         "amount_bct": amount_bct,
-                        "recipient": recip_str,
+                        "recipient": canon_recip,
                         "block_number": receipt.get("blockNumber")
                     }
                     break

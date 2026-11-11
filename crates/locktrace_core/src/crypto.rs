@@ -5,28 +5,31 @@ use k256::Secp256k1;
 use sha2::{Digest, Sha256};
 
 /// Derives canonical uncompressed SECP256k1 public key bytes (64 bytes = X || Y).
+/// Enforces that the point is a valid point on the SECP256k1 curve (LT-CRY-01).
 pub fn normalize_pubkey_bytes(pub_hex: &str) -> Option<[u8; 64]> {
     let clean = pub_hex.trim().trim_start_matches("0x").trim_start_matches("0X");
     let bytes = hex::decode(clean).ok()?;
-    if bytes.len() == 64 {
-        let mut arr = [0u8; 64];
-        arr.copy_from_slice(&bytes);
-        Some(arr)
+    let sec1_bytes = if bytes.len() == 64 {
+        let mut s = Vec::with_capacity(65);
+        s.push(0x04);
+        s.extend_from_slice(&bytes);
+        s
     } else if bytes.len() == 65 && bytes[0] == 0x04 {
-        let mut arr = [0u8; 64];
-        arr.copy_from_slice(&bytes[1..]);
-        Some(arr)
+        bytes
     } else if bytes.len() == 33 && (bytes[0] == 0x02 || bytes[0] == 0x03) {
-        let vk = VerifyingKey::from_sec1_bytes(&bytes).ok()?;
-        let encoded = vk.to_encoded_point(false);
-        let raw = encoded.as_bytes();
-        if raw.len() == 65 && raw[0] == 0x04 {
-            let mut arr = [0u8; 64];
-            arr.copy_from_slice(&raw[1..]);
-            Some(arr)
-        } else {
-            None
-        }
+        bytes
+    } else {
+        return None;
+    };
+
+    // Cryptographic curve validation: Verifies point lies on SECP256k1 curve
+    let vk = VerifyingKey::from_sec1_bytes(&sec1_bytes).ok()?;
+    let encoded = vk.to_encoded_point(false);
+    let raw = encoded.as_bytes();
+    if raw.len() == 65 && raw[0] == 0x04 {
+        let mut arr = [0u8; 64];
+        arr.copy_from_slice(&raw[1..]);
+        Some(arr)
     } else {
         None
     }

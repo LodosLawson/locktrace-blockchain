@@ -333,6 +333,8 @@ class BridgeRelayer:
         for r in rows:
             bridge_id = r["bridge_id"]
             bct_dest = str(r["bct_address"] or "").strip()
+            if bct_dest.upper().startswith("BCT") and len(bct_dest) == 43:
+                bct_dest = "BCT" + bct_dest[3:].lower()
             amt = float(r["net_amount"] or r["amount_bct"])
             evm_hash = r["tx_hash_evm"]
             evm_sender = r["evm_address"]

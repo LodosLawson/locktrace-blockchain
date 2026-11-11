@@ -190,10 +190,19 @@ class Transaction:
 
 
 def compute_merkle_root(tx_hashes: List[str]) -> str:
-    """Compute canonical binary SHA-256 Merkle root over ordered transaction hashes."""
+    """
+    Compute canonical binary SHA-256 Merkle root over ordered transaction hashes.
+    Immune to CVE-2012-2459 (Merkle tree collision via duplicate/mutated leaves).
+    """
     if not tx_hashes:
         return "0" * 64
-    level = [str(h).strip().lower() for h in tx_hashes]
+
+    clean_hashes = [str(h).strip().lower() for h in tx_hashes]
+    # CVE-2012-2459: Block must not contain duplicate transaction hashes
+    if len(clean_hashes) != len(set(clean_hashes)):
+        return "0" * 64
+
+    level = clean_hashes
     while len(level) > 1:
         if len(level) % 2 == 1:
             level.append(level[-1])
@@ -4364,7 +4373,12 @@ class Blockchain:
                 if not current.hash.startswith(base_target):
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False
-                expected_merkle = compute_merkle_root([tx.hash() for tx in current.transactions])
+                # CVE-2012-2459 Defense: Block must not contain duplicate transaction hashes
+                blk_hashes = [tx.hash() for tx in current.transactions]
+                if len(blk_hashes) != len(set(blk_hashes)):
+                    self._chain_valid_cache = (len(self.chain), tip_hash, False)
+                    return False
+                expected_merkle = compute_merkle_root(blk_hashes)
                 if current.merkle_root != expected_merkle:
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False

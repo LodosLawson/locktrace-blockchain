@@ -206,6 +206,7 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
 
     /**
      * @notice Burns wBCT on EVM to release native BCT back to the user's address on LockTrace Layer-1.
+     * @dev Address format: "BCT" prefix + 40 hexadecimal characters (case-insensitive, canonicalized to lowercase on L1).
      * @param amount Amount of wBCT to burn.
      * @param locktraceRecipient Destination 43-character BCT address (e.g., BCT...).
      */

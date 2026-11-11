@@ -8,7 +8,9 @@ Dual-Engine Architecture:
     seamlessly falls back to optimized Python OpenSSL implementations with zero downtime.
 """
 
+import re
 import json
+import secrets
 import hashlib
 from typing import Tuple, List, Optional
 
@@ -96,39 +98,63 @@ def fast_batch_verify_signatures(items: List[Tuple[str, str, str]]) -> List[bool
     return [py_verify(pub, data, sig) for (pub, data, sig) in items]
 
 
+HEX_64_PATTERN = re.compile(r"^[0-9a-fA-F]{64}$")
+
+
 def fast_verify_spv_proof(target_hash: str, merkle_root: str, proof_steps: List[Tuple[str, str]]) -> bool:
     """Verifies SPV Merkle inclusion proof in microseconds using Rust engine or Python fallback."""
+    t_clean = (target_hash or "").strip().lower()
+    r_clean = (merkle_root or "").strip().lower()
+
+    if not HEX_64_PATTERN.match(t_clean) or not HEX_64_PATTERN.match(r_clean):
+        return False
+
+    if not proof_steps:
+        return False
+
+    for direction, sibling in proof_steps:
+        d = str(direction).strip().lower()
+        s = str(sibling).strip().lower()
+        if d not in ("left", "right") or not HEX_64_PATTERN.match(s):
+            return False
+
     if is_rust_accelerated():
         try:
-            return bool(_RUST_CORE.verify_spv_proof(target_hash, merkle_root, proof_steps))
+            return bool(_RUST_CORE.verify_spv_proof(t_clean, r_clean, proof_steps))
         except Exception:
             pass
 
-    current = (target_hash or "").strip().lower()
+    current = t_clean
     for direction, sibling in proof_steps:
         sib = str(sibling).strip().lower()
-        if str(direction).lower() == "left":
+        d = str(direction).strip().lower()
+        if d == "left":
             combined = (sib + current).encode("utf-8")
         else:
             combined = (current + sib).encode("utf-8")
         current = hashlib.sha256(combined).hexdigest()
 
-    return current.lower() == str(merkle_root).strip().lower()
+    return current == r_clean
 
 
 # ── Merkle Tree Bridge ────────────────────────────────────────────
 def fast_compute_merkle_root(tx_hashes: List[str]) -> str:
-    """Computes SHA-256 Merkle root using Rust native engine or Python fallback."""
-    if is_rust_accelerated():
-        try:
-            return _RUST_CORE.compute_merkle_root(tx_hashes)
-        except Exception:
-            pass
-
+    """Computes SHA-256 Merkle root using Rust native engine or Python fallback (CVE-2012-2459 protected)."""
     if not tx_hashes:
         return "0" * 64
 
-    level = [str(h).strip().lower() for h in tx_hashes]
+    clean_hashes = [str(h).strip().lower() for h in tx_hashes]
+    # CVE-2012-2459: Block must not contain duplicate transaction hashes
+    if len(clean_hashes) != len(set(clean_hashes)):
+        return "0" * 64
+
+    if is_rust_accelerated():
+        try:
+            return _RUST_CORE.compute_merkle_root(clean_hashes)
+        except Exception:
+            pass
+
+    level = clean_hashes
     while len(level) > 1:
         next_level = []
         for i in range(0, len(level), 2):
@@ -149,15 +175,20 @@ def fast_solve_pow(
 ) -> Tuple[bool, int, str, float]:
     """
     Parallel PoW mining using Rust native multi-threaded engine or CPU/GPU fallback.
+    Immune to magic nonce splitting DoS (LT-POW-01).
     """
     if is_rust_accelerated():
         try:
             dummy = dict(candidate)
-            dummy["nonce"] = 777777777777
+            sentinel = f"__BCT_NONCE_{secrets.token_hex(16)}__"
+            dummy["nonce"] = sentinel
             serialized = json.dumps(dummy, sort_keys=True)
-            parts = serialized.split("777777777777")
-            if len(parts) == 2:
-                ok, nonce, h, hr = _RUST_CORE.solve_pow(parts[0], parts[1], int(target_difficulty), int(max_nonces))
+            target_token = f'"nonce": "{sentinel}"'
+            token_pos = serialized.find(target_token)
+            if token_pos != -1:
+                prefix = serialized[:token_pos + len('"nonce": ')]
+                suffix = serialized[token_pos + len(target_token):]
+                ok, nonce, h, hr = _RUST_CORE.solve_pow(prefix, suffix, int(target_difficulty), int(max_nonces))
                 if ok and h:
                     return True, int(nonce), str(h), float(hr)
         except Exception:
