@@ -70,8 +70,8 @@ Aşağıdaki modüllerin tamamı sıfırdan geliştirilmiş, güvenlik testlerin
 - [x] **Uygulama İçi Bildirim Kutusu (Notification Bell):** Hem uygulama açıkken hem arka planda gelen tüm bildirimler senkronize olarak bildirim kutusunda saklanır ve okundu olarak işaretlenebilir.
 
 ### ✅ G. Kriptografik Arayüz Güvenliği & Denetim (Security Hardening)
-- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.8.1`):** LT-01'den LT-07'ye, LT-WEB-01..02, LT-SOL-01, LT-NGX-01, LT-RST-01, LT-OPS-01, LT-TWB-01 ve v2.8.1 ile LT-POW-01, LT-MRK-01, LT-CRY-01, LT-MRK-02, LT-SOL-02, LT-GPU-01 kapatmaları: Kriptografik rastgele nöbetçi nonce ayrımı ile madenci DoS koruması, 64-karakter hex SPV Merkle doğrulaması, Rust/Python SECP256k1 eğri doğrulaması ve sıkıştırılmış anahtar uyumu, çift yapraklı Merkle çakışma koruması (CVE-2012-2459) ve büyük/küçük harf köprü adres kanonikleştirilmesi.
-- [x] **On-Chain Frontend Sealing (`v2.8.1`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
+- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.8.2`):** LT-01'den LT-07'ye, LT-WEB-01..02, LT-SOL-01, LT-NGX-01, LT-RST-01, LT-OPS-01, LT-TWB-01, LT-POW-01, LT-MRK-01..02, LT-CRY-01, LT-SOL-02, LT-GPU-01 kapatmaları ve v2.8.2 mantık sertleştirmeleri: Kriptografik rastgele nöbetçi nonce ayrımı ile madenci DoS koruması, sahte adres türetme engeli, CVE-2012-2459 için açık `ValueError` istisnası, tek işlemli bloklarda SPV kök eşitlik doğrulaması.
+- [x] **On-Chain Frontend Sealing (`v2.8.2`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
 - [x] **P2P Compact Block Relay & State Snapshot Fast Sync (`v2.7.0`):** BIP-152 %90+ bant genişliği tasarrufu, deterministik durum özeti (state root) ile saniyeler içinde düğüm kurulumu ve OpenCL GPU donanım madencilik motoru.
 - [x] **Derinlemesine Güvenlik Taraması:** Sybil saldırı engelleri, kendi kendine sahte hacim (wash-trading) engeli, SQLite WAL kilit koruması, XSS temizliği ve hız sınırlandırma (Rate Limiting) tamamlandı.
 
@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.8.1` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.8.2` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -321,4 +321,19 @@ LockTrace v2.8.1 sürümü ile birlikte hayata geçirilen 6 kritik güvenlik aç
 
 7. **100.000 Aktif Kullanıcı Bot Ordusu & Sybil Testnet Benchmark:**
    - 100k bot cüzdanı, 5.000 işlem/blok mühürleme, Sybil musluk sömürüsü, çift harcama yarış koşulu ve doğrulayıcı stake kesintisi (slashing) testlerinin tamamından %100 başarıyla geçti.
+
+---
+
+## 🛡️ 11. LockTrace v2.8.2: Kritik Kriptografik & SPV Mantık Sertleştirmesi
+
+LockTrace v2.8.2 sürümü ile hayata geçirilen 3 kritik mantık düzeltmesi:
+
+1. **Sıfır-Baypas Açık Anahtar Adres Türetimi (`core/native_bridge.py`):**
+   - Rust motorundan `None` dönen veya Python OpenSSL eğri doğrulamasına uymayan geçersiz/eğri dışı ($y^2 \ne x^3 + 7$) açık anahtarlar için ham SHA-256 fallback'i tamamen kaldırıldı. Geçersiz anahtarlarda anında `None` dönülerek sahte `BCT...` adresi üretimi engellendi.
+
+2. **İstisna Tabanlı Merkle Kopya İşlem Engeli (CVE-2012-2459):**
+   - Kopya veya yinelenen işlem içeren bloklarda `"0"*64` zehirli kök döndürme mantığı yerine açık `ValueError("CVE-2012-2459: Duplicate transaction hashes in block")` fırlatılması sağlandı. Kötü niyetli madencilerin blok başlığına `"0"*64` yazarak kopya işlemleri geçerli kılması riski tamamen ortadan kaldırıldı.
+
+3. **Tek İşlemli Bloklar İçin SPV Kök Eşitlik Doğrulaması (`core/native_bridge.py`, `crates/locktrace_core/src/merkle.rs`):**
+   - Tek işlemli bloklarda (yaprak == kök) Merkle kardeş adımları olmadığı için `proof_steps = []` boş gelir. Boş liste geldiğinde hedef işlem özeti ile Merkle kökü eşitse (`target_hash == merkle_root`) SPV doğrulaması `True` dönecek şekilde düzeltildi; tek işlemli blokların reddedilmesi hatası çözüldü.
 

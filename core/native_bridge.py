@@ -47,28 +47,23 @@ def get_engine_status() -> dict:
 
 
 # ── Cryptography Bridge ───────────────────────────────────────────
-def fast_public_key_to_address(public_key_hex: str) -> str:
+def fast_public_key_to_address(public_key_hex: str) -> Optional[str]:
     """Derives BCT address using Rust native engine or Python OpenSSL fallback."""
     if is_rust_accelerated():
         try:
-            addr = _RUST_CORE.public_key_to_address(public_key_hex)
-            if addr:
-                return addr
+            # If Rust engine returns None/empty, key is invalid; do NOT fall back to Python!
+            res = _RUST_CORE.public_key_to_address(public_key_hex)
+            return res if res else None
         except Exception:
-            pass
+            return None
 
     # Python Fallback
     try:
         from core.wallet import public_key_to_address as py_addr
-        return py_addr(public_key_hex)
+        res = py_addr(public_key_hex)
+        return res if res else None
     except Exception:
-        clean = (public_key_hex or "").strip().lower()
-        if clean.startswith("04") and len(clean) == 130:
-            clean = clean[2:]
-        b = bytes.fromhex(clean)
-        h1 = hashlib.sha256(b).hexdigest()
-        h2 = hashlib.sha256(h1.encode()).hexdigest()
-        return f"BCT{h2[:40]}"
+        return None
 
 
 def fast_verify_signature(public_key_hex: str, message: str, signature_hex: str) -> bool:
@@ -110,7 +105,8 @@ def fast_verify_spv_proof(target_hash: str, merkle_root: str, proof_steps: List[
         return False
 
     if not proof_steps:
-        return False
+        # In single-transaction blocks, leaf == root (proof path is empty)
+        return t_clean == r_clean
 
     for direction, sibling in proof_steps:
         d = str(direction).strip().lower()
@@ -144,13 +140,18 @@ def fast_compute_merkle_root(tx_hashes: List[str]) -> str:
         return "0" * 64
 
     clean_hashes = [str(h).strip().lower() for h in tx_hashes]
+    if any(not HEX_64_PATTERN.match(h) for h in clean_hashes):
+        raise ValueError("Invalid transaction hash format in Merkle tree")
+
     # CVE-2012-2459: Block must not contain duplicate transaction hashes
     if len(clean_hashes) != len(set(clean_hashes)):
-        return "0" * 64
+        raise ValueError("CVE-2012-2459: Duplicate transaction hashes in block")
 
     if is_rust_accelerated():
         try:
             return _RUST_CORE.compute_merkle_root(clean_hashes)
+        except ValueError:
+            raise
         except Exception:
             pass
 

@@ -189,6 +189,9 @@ class Transaction:
         return self._cached_hash
 
 
+HEX_64_PATTERN = re.compile(r"^[0-9a-fA-F]{64}$")
+
+
 def compute_merkle_root(tx_hashes: List[str]) -> str:
     """
     Compute canonical binary SHA-256 Merkle root over ordered transaction hashes.
@@ -198,9 +201,12 @@ def compute_merkle_root(tx_hashes: List[str]) -> str:
         return "0" * 64
 
     clean_hashes = [str(h).strip().lower() for h in tx_hashes]
+    if any(not HEX_64_PATTERN.match(h) for h in clean_hashes):
+        raise ValueError("Invalid transaction hash format in Merkle tree")
+
     # CVE-2012-2459: Block must not contain duplicate transaction hashes
     if len(clean_hashes) != len(set(clean_hashes)):
-        return "0" * 64
+        raise ValueError("CVE-2012-2459: Duplicate transaction hashes in block")
 
     level = clean_hashes
     while len(level) > 1:
@@ -217,9 +223,14 @@ def compute_merkle_root(tx_hashes: List[str]) -> str:
 def compute_merkle_proof(tx_hashes: List[str], target_hash: str) -> Optional[List[dict]]:
     """Build SPV Merkle inclusion proof path for target_hash inside tx_hashes."""
     target = (target_hash or "").strip().lower()
-    level = [str(h).strip().lower() for h in tx_hashes]
-    if target not in level:
+    clean_hashes = [str(h).strip().lower() for h in tx_hashes]
+    if not HEX_64_PATTERN.match(target) or any(not HEX_64_PATTERN.match(h) for h in clean_hashes):
         return None
+    if len(clean_hashes) != len(set(clean_hashes)):
+        return None
+    if target not in clean_hashes:
+        return None
+    level = clean_hashes
     idx = level.index(target)
     proof: List[dict] = []
     while len(level) > 1:
@@ -244,16 +255,24 @@ def compute_merkle_proof(tx_hashes: List[str], target_hash: str) -> Optional[Lis
 def verify_merkle_proof(tx_hash: str, proof: List[dict], expected_root: str) -> bool:
     """Verify SPV Merkle inclusion proof deterministically."""
     current = (tx_hash or "").strip().lower()
-    for step in (proof or []):
+    root_clean = (expected_root or "").strip().lower()
+    if not HEX_64_PATTERN.match(current) or not HEX_64_PATTERN.match(root_clean):
+        return False
+    if not proof:
+        # In single-transaction blocks, leaf == root (proof path is empty)
+        return current == root_clean
+    for step in proof:
         sibling = str(step.get("hash", "")).strip().lower()
-        pos = step.get("position")
+        pos = str(step.get("position", "")).strip().lower()
+        if not HEX_64_PATTERN.match(sibling):
+            return False
         if pos == "right":
             current = hashlib.sha256(f"{current}{sibling}".encode("utf-8")).hexdigest()
         elif pos == "left":
             current = hashlib.sha256(f"{sibling}{current}".encode("utf-8")).hexdigest()
         else:
             return False
-    return current == (expected_root or "").strip().lower()
+    return current == root_clean
 
 
 class Block:
@@ -3804,7 +3823,10 @@ class Blockchain:
 
             # 4. Reconstruct candidate block and verify Merkle Root + SHA-256 Proof-of-Work
             final_txs = matched_user_txs + expected_reward_txs
-            expected_merkle = compute_merkle_root([t.hash() for t in final_txs])
+            try:
+                expected_merkle = compute_merkle_root([t.hash() for t in final_txs])
+            except ValueError as e:
+                return False, f"Merkle Root verification failed: {e}", None
             submitted_merkle = str(block_data.get("merkle_root", "") or "").strip().lower()
             if submitted_merkle != expected_merkle:
                 return False, "Merkle Root verification failed!", None
@@ -4355,7 +4377,12 @@ class Blockchain:
 
             base_target = "0" * self.difficulty
             genesis = self.chain[0]
-            if genesis.merkle_root != compute_merkle_root([tx.hash() for tx in genesis.transactions]):
+            try:
+                gen_merkle = compute_merkle_root([tx.hash() for tx in genesis.transactions])
+            except ValueError:
+                self._chain_valid_cache = (len(self.chain), tip_hash, False)
+                return False
+            if genesis.merkle_root != gen_merkle:
                 self._chain_valid_cache = (len(self.chain), tip_hash, False)
                 return False
             for i in range(1, len(self.chain)):
@@ -4378,7 +4405,11 @@ class Blockchain:
                 if len(blk_hashes) != len(set(blk_hashes)):
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False
-                expected_merkle = compute_merkle_root(blk_hashes)
+                try:
+                    expected_merkle = compute_merkle_root(blk_hashes)
+                except ValueError:
+                    self._chain_valid_cache = (len(self.chain), tip_hash, False)
+                    return False
                 if current.merkle_root != expected_merkle:
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False
@@ -5291,7 +5322,10 @@ class Blockchain:
             return False, "Missing transactions", None, missing_indices
 
         hashes = [t.get("tx_hash", "") for t in assembled_txs]
-        calc_merkle = compute_merkle_root(hashes)
+        try:
+            calc_merkle = compute_merkle_root(hashes)
+        except ValueError:
+            return False, "Merkle root calculation failed due to invalid or duplicate hashes", None, []
         if calc_merkle != header.get("merkle_root", "").lower():
             return False, "Merkle root mismatch after reconstruction", None, []
 

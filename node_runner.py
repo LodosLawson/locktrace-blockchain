@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.8.1)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.8.2)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner (CPU & GPU Accelerated),
 and cryptographically verified decentralized Web Wallet on Linux, macOS, or Windows with
@@ -12,7 +12,7 @@ Key Capabilities:
   3. Hybrid GPU (OpenCL / NVIDIA / AMD / Intel) & Multi-Worker CPU PoW Miner (`--miner-engine`).
   4. v2.6.0 P2P Compact Block Relay (~90% bandwidth reduction).
   5. v2.7.0 Decentralized State Snapshot Sync (warp sync with verified state root).
-  6. v2.8.1 Native Rust Acceleration Engine & Multi-Layer Hardening.
+  6. v2.8.2 Native Rust Acceleration Engine & Multi-Layer Hardening.
 
 Usage:
     # Local Mode (Accessible only on your computer at http://127.0.0.1:5050)
@@ -48,7 +48,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.8.1"
+VERSION = "2.8.2"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)
@@ -388,7 +388,12 @@ def compute_merkle_root(tx_hashes: list) -> str:
     """Canonical binary SHA-256 Merkle root verification for archival peer nodes."""
     if not tx_hashes:
         return "0" * 64
-    level = [str(h).strip().lower() for h in tx_hashes]
+    clean_hashes = [str(h).strip().lower() for h in tx_hashes]
+    if any(len(h) != 64 or not all(c in "0123456789abcdef" for c in h) for h in clean_hashes):
+        raise ValueError("Invalid transaction hash format in Merkle tree")
+    if len(clean_hashes) != len(set(clean_hashes)):
+        raise ValueError("CVE-2012-2459: Duplicate transaction hashes in block")
+    level = clean_hashes
     while len(level) > 1:
         if len(level) % 2 == 1:
             level.append(level[-1])
@@ -402,10 +407,17 @@ def compute_merkle_root(tx_hashes: list) -> str:
 
 def compute_merkle_proof_steps(tx_hashes: list, target_hash: str):
     target = (target_hash or "").strip().lower()
-    level = [str(h).strip().lower() for h in tx_hashes]
-    if target not in level:
+    clean_hashes = [str(h).strip().lower() for h in tx_hashes]
+    if len(target) != 64 or not all(c in "0123456789abcdef" for c in target):
         return None
-    idx = level.index(target)
+    if any(len(h) != 64 or not all(c in "0123456789abcdef" for c in h) for h in clean_hashes):
+        return None
+    if len(clean_hashes) != len(set(clean_hashes)):
+        return None
+    if target not in clean_hashes:
+        return None
+    idx = clean_hashes.index(target)
+    level = clean_hashes
     proof = []
     while len(level) > 1:
         if len(level) % 2 == 1:
@@ -2290,7 +2302,11 @@ class LockTraceNode:
             return False
 
         if computed_tx_hashes and blk.get("merkle_root"):
-            if compute_merkle_root(computed_tx_hashes) != str(blk["merkle_root"]).lower():
+            try:
+                calc_m = compute_merkle_root(computed_tx_hashes)
+            except ValueError:
+                return False
+            if calc_m != str(blk["merkle_root"]).lower():
                 return False
 
         with self.chain_lock:
@@ -2344,7 +2360,10 @@ class LockTraceNode:
             else:
                 return False  # Missing tx, node will receive full block via regular gossip
 
-        calc_merkle = compute_merkle_root([t.get("tx_hash", "") for t in assembled])
+        try:
+            calc_merkle = compute_merkle_root([t.get("tx_hash", "") for t in assembled])
+        except ValueError:
+            return False
         if calc_merkle != header.get("merkle_root", "").lower():
             return False
 
@@ -2566,7 +2585,10 @@ class LockTraceNode:
             return False
 
         txs = tpl["transactions"]
-        computed_merkle = compute_merkle_root([t["tx_hash"] for t in txs])
+        try:
+            computed_merkle = compute_merkle_root([t["tx_hash"] for t in txs])
+        except ValueError:
+            return False
         if computed_merkle != str(tpl["merkle_root"]).lower():
             return False
 
