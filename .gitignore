@@ -39,3 +39,6 @@ Thumbs.db
 backups/
 
 scratch/
+
+target/
+crates/**/target/
