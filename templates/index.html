@@ -8428,7 +8428,7 @@
       if (!rawText) return '';
       let text = String(rawText);
 
-      // 0. Quoted Post Attribution Card (Exact Twitter/Farcaster Style)
+      // 0. Quoted Post Attribution Card (AUD-02: Spoofing Protected with Unverified Notice)
       const quoteRegex = /(?:🔁|🔄)\s*(?:Alıntı|Quote):\s*(@?[a-zA-Z0-9_\-\.]+)?\s*(?:\((BCT[a-fA-F0-9]{36,44})\))?\s*\n?["“]([^"”]+)["”]/i;
       const quoteMatch = text.match(quoteRegex);
       let quoteCardHtml = '';
@@ -8449,13 +8449,13 @@
                   ${escapeHtml(avatarChar)}
                 </div>
                 <div class="flex items-center gap-1.5 min-w-0">
-                  <span class="text-xs font-bold text-emerald-400 font-mono truncate hover:underline">${escapeHtml(displayAuthor)}</span>
+                  <span class="text-xs font-bold text-on-surface font-mono truncate hover:underline">${escapeHtml(displayAuthor)}</span>
                   ${qWallet ? `<span class="text-[10px] text-on-surface-variant font-mono truncate hidden sm:inline">(${escapeHtml(shortAddr(qWallet))})</span>` : ''}
                 </div>
               </div>
-              <span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-mono text-[9.5px] font-bold shrink-0 flex items-center gap-0.5 border border-primary/20">
-                <span class="material-symbols-outlined text-[11px]">format_quote</span>
-                <span>Alıntı Yapıldı</span>
+              <span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[9px] font-semibold shrink-0 flex items-center gap-1 border border-outline-variant/30" title="Metin alıntısı - Zincir üstü kriptografik olarak doğrulanmamış">
+                <span class="material-symbols-outlined text-[11px] text-on-surface-variant">format_quote</span>
+                <span>Alıntı &bull; Doğrulanmamış</span>
               </span>
             </div>
             <div class="text-xs sm:text-[13px] text-on-surface-variant italic leading-relaxed pl-1">
@@ -8478,25 +8478,30 @@
         text = (text.slice(0, quoteMatch.index) + text.slice(quoteMatch.index + quoteMatch[0].length)).trim();
       }
 
-      let safe = escapeHtml(text || '');
-
-      // 1. External URLs (placeholder extraction prevents @, #, $ regexes from corrupting HTML attributes - NEW-01 Guard)
+      // 1. External URLs (AUD-01: Extracted from raw text BEFORE escaping to prevent link corruption & entity mangling)
       const urlPlaceholders = [];
-      safe = safe.replace(/(https?:\/\/[^\s<"'`]+)/gi, (rawUrl) => {
+      text = text.replace(/(https?:\/\/[^\s<>"'`]+)/gi, (match) => {
+        let urlStr = match;
+        let trailing = '';
+        while (/[.,\)\?!;:]$/.test(urlStr)) {
+          trailing = urlStr.slice(-1) + trailing;
+          urlStr = urlStr.slice(0, -1);
+        }
         try {
-          const cleanRaw = rawUrl.replace(/&quot;|&amp;|&lt;|&gt;|&#39;/gi, '');
-          const parsed = new URL(cleanRaw);
-          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return escapeHtml(rawUrl);
+          const parsed = new URL(urlStr);
+          if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return match;
           const safeHref = escapeHtml(parsed.href);
-          const safeDisplay = escapeHtml(rawUrl);
+          const safeDisplay = escapeHtml(urlStr);
           const linkHtml = `<a href="${safeHref}" target="_blank" rel="noopener noreferrer nofollow" class="text-primary hover:underline inline-flex items-center gap-0.5 break-all" onclick="event.stopPropagation();">${safeDisplay}</a>`;
           const placeholder = `\uE000BCT_URL_${urlPlaceholders.length}\uE000`;
           urlPlaceholders.push({ placeholder, html: linkHtml });
-          return placeholder;
+          return placeholder + trailing;
         } catch (_) {
-          return escapeHtml(rawUrl);
+          return match;
         }
       });
+
+      let safe = escapeHtml(text || '');
 
       // 2. Mentions & Replies: Clickable to view author profile directly (LT-WEB-02 Sanitized)
       safe = safe.replace(/@([a-zA-Z0-9_\-\.]+)/g, (match, handle) => {
@@ -8526,9 +8531,9 @@
         return `<span class="cashtag-tag inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-secondary/10 text-secondary font-mono font-semibold hover:bg-secondary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('$${s}')" title="Filter symbol $${escSym}">$${escSym}</span>`;
       });
 
-      // 5. Restore sanitized URL links (NEW-01 DOM Integrity)
+      // 5. Restore sanitized URL links (AUD-01: Function-based replaceAll prevents $ regex substitution corruption)
       for (const item of urlPlaceholders) {
-        safe = safe.replace(item.placeholder, item.html);
+        safe = safe.replaceAll(item.placeholder, () => item.html);
       }
 
       // 6. Line breaks
@@ -15877,7 +15882,7 @@
       const content = textarea.value.trim();
       if (!content) return;
 
-      if (!currentAccount) {
+      if (!currentAccount || !currentAccount.address) {
         showToast('Please create or unlock a wallet first', 'warning', true);
         closeQuickComposeModal();
         switchTab('yeni-cuzdan');
@@ -15898,11 +15903,11 @@
 
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span><span>Publishing...</span>';
+        btn.innerHTML = '<span class="material-symbols-outlined text-[16px] animate-spin">sync</span><span>Signing & Publishing...</span>';
       }
 
       try {
-        const canonical = authorBns ? `${currentAccount.address}:${content}:${authorBns}` : `${currentAccount.address}:${content}`;
+        const canonical = `${currentAccount.address}:${content}`;
         const authFields = await buildSignedAuthPayload(canonical);
 
         const { ok, body } = await apiFetch('/space/post', {
@@ -15911,21 +15916,23 @@
             content: content,
             author: currentAccount.address,
             bns_name: authorBns,
-            author_bns: authorBns
+            author_bns: authorBns,
+            signed_payload: canonical
           }, authFields))
         });
 
-        if (ok && body.data) {
-          showToast('Thought published successfully on-chain! (+20% royalty enabled)', 'success', true);
+        if (ok && (body.data || body.success)) {
+          showToast('Thought published successfully on-chain! (+20% royalty enabled)', 'verified', true);
           textarea.value = '';
           updateQuickComposeCharCount();
           closeQuickComposeModal();
-          loadSpaceFeed();
+          await refreshCurrentAccountBalance();
+          await loadSpaceFeed();
         } else {
           showToast(body.message || 'Failed to publish post', 'error', true);
         }
       } catch (err) {
-        showToast('Network error while publishing post', 'error', true);
+        showToast(err.message || 'Signing was canceled or failed', 'error', true);
       } finally {
         if (btn) {
           btn.disabled = false;
@@ -16012,20 +16019,20 @@
     let activeCommentReplyTarget = null;
 
     function replyToComment(displayHandle, address) {
-      activeCommentReplyTarget = { handle: displayHandle, address: address };
+      const cleanHandle = String(displayHandle || '').replace(/^@+/, '').trim();
+      activeCommentReplyTarget = { handle: cleanHandle, address: address };
       const banner = document.getElementById('detailCommentReplyBanner');
       const targetLbl = document.getElementById('detailCommentReplyTarget');
       const input = document.getElementById('detailCommentInput');
       if (banner && targetLbl) {
-        targetLbl.textContent = `Replying to @${displayHandle}`;
+        targetLbl.textContent = `Replying to @${cleanHandle}`;
         banner.classList.remove('hidden');
         banner.classList.add('flex');
       }
       if (input) {
-        const prefix = `@${displayHandle} `;
-        if (!input.value.startsWith(prefix)) {
-          input.value = prefix + input.value;
-        }
+        // Strip any existing leading @mention to prevent duplicate tag accumulation (AUD-07)
+        input.value = input.value.replace(/^@[a-zA-Z0-9_.\-]+\s*/, '');
+        input.value = `@${cleanHandle} ` + input.value.trimStart();
         input.focus();
       }
     }
@@ -16038,8 +16045,9 @@
         banner.classList.add('hidden');
         banner.classList.remove('flex');
       }
-      if (input && input.value.startsWith('@')) {
-        input.value = input.value.replace(/^@[a-zA-Z0-9_\-\.]+\s*/, '');
+      if (input) {
+        // Cleanly remove the leading reply mention without breaking user typed text
+        input.value = input.value.replace(/^@[a-zA-Z0-9_.\-]+\s*/, '');
       }
     }
 
@@ -16458,14 +16466,15 @@
           viewTxs.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">No on-chain transactions found for this account.</div>';
           return;
         }
-        window._profileTxList = txList;
+        const displayTxs = txList.slice(0, 100);
+        window._profileTxList = displayTxs;
         viewTxs.innerHTML = `
           <div class="mb-2 flex items-center justify-between px-1 text-xs text-on-surface-variant">
             <span class="font-mono font-bold text-on-surface">${txList.length} Transactions Found</span>
-            <span class="font-mono text-[11px]">All On-Chain Records</span>
+            <span class="font-mono text-[11px]">${txList.length > 100 ? 'Showing Latest 100 Records' : 'All On-Chain Records'}</span>
           </div>
           <div class="space-y-2">
-            ${txList.map((tx, idx) => {
+            ${displayTxs.map((tx, idx) => {
           const isSender = tx.sender === data.address;
           const isFollowReward = Boolean(tx.is_creator_follow_reward || (tx.extra_data && tx.extra_data.target === data.address && tx.sender !== data.address));
           const isRoyalty = Boolean(tx.is_author_royalty || isFollowReward || (tx.extra_data && tx.extra_data.author === data.address && tx.sender !== data.address));

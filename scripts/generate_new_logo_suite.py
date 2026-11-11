@@ -9,7 +9,12 @@ import io
 import shutil
 from PIL import Image
 
-UPLOADED_PATH = r'C:/Users/mehem/.gemini/antigravity/brain/e94df9ad-452a-40fd-9546-259750b5d3e6/.user_uploaded/media_1794434951348_506db067.jpg'
+DEFAULT_UPLOADED_PATH = os.path.join(
+    os.path.expanduser("~"),
+    ".gemini", "antigravity", "brain", "e94df9ad-452a-40fd-9546-259750b5d3e6",
+    ".user_uploaded", "media_1794434951348_506db067.jpg"
+)
+UPLOADED_PATH = os.environ.get("LOCKTRACE_LOGO_SOURCE", DEFAULT_UPLOADED_PATH)
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 FRONTEND_ICONS_DIR = os.path.join(ROOT_DIR, "frontend", "icons")
 TEMPLATES_ICONS_DIR = os.path.join(ROOT_DIR, "templates", "icons")
@@ -20,7 +25,8 @@ def generate_logo_suite():
     os.makedirs(FRONTEND_ICONS_DIR, exist_ok=True)
     os.makedirs(TEMPLATES_ICONS_DIR, exist_ok=True)
 
-    img = Image.open(UPLOADED_PATH).convert('RGB')
+    source_path = UPLOADED_PATH if os.path.exists(UPLOADED_PATH) else os.path.join(FRONTEND_ICONS_DIR, "icon-512.png")
+    img = Image.open(source_path).convert('RGB')
     w, h = img.size
     pixels = img.load()
 
@@ -31,17 +37,18 @@ def generate_logo_suite():
             if (r + g + b) / 3 >= 244:
                 pixels[x, y] = (255, 255, 255)
 
-    # 2. Symmetrical square crop around optical center (527, 520) with size 600x600
-    # This frames the padlock+B perfectly with 72.6% height and balanced padding
-    center_x = 527
-    center_y = 520
-    crop_size = 600
-    left = center_x - crop_size // 2
-    top = center_y - crop_size // 2
-    right = left + crop_size
-    bottom = top + crop_size
-
-    master_square = img.crop((left, top, right, bottom))
+    # 2. Symmetrical square crop around optical center (527, 520) with size 600x600 if raw upload
+    if w >= 600 and h >= 600:
+        center_x = min(w // 2, 527)
+        center_y = min(h // 2, 520)
+        crop_size = min(w, h, 600)
+        left = max(0, center_x - crop_size // 2)
+        top = max(0, center_y - crop_size // 2)
+        right = left + crop_size
+        bottom = top + crop_size
+        master_square = img.crop((left, top, right, bottom))
+    else:
+        master_square = img
 
     # 3. Generate PNG sizes
     sizes = {
@@ -64,9 +71,7 @@ def generate_logo_suite():
         print(f"✅ Generated: {filename} ({dim_w}x{dim_h})")
 
     # 4. Generate multi-resolution Favicon (.ico: 16x16, 32x32, 48x48)
-    ico_16 = master_square.resize((16, 16), Image.Resampling.LANCZOS)
     ico_32 = master_square.resize((32, 32), Image.Resampling.LANCZOS)
-    ico_48 = master_square.resize((48, 48), Image.Resampling.LANCZOS)
 
     ico_32.save(
         FRONTEND_FAVICON,
@@ -92,18 +97,24 @@ def generate_logo_suite():
     shutil.copy2(svg_path_512, os.path.join(TEMPLATES_ICONS_DIR, "icon.svg"))
     print("✅ Generated: icon.svg")
 
-    svg_content_32 = f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="512" height="512" viewBox="0 0 512 512">
-  <rect width="512" height="512" fill="#ffffff"/>
-  <image width="512" height="512" href="data:image/png;base64,{b64_512}"/>
+    # AUD-05: Embed lightweight 32x32 base64 PNG into icon-32.svg instead of 512x512
+    buf_32 = io.BytesIO()
+    generated_images["icon-32.png"].save(buf_32, format="PNG", optimize=True)
+    b64_32 = base64.b64encode(buf_32.getvalue()).decode("ascii")
+
+    svg_content_32 = f'''<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="0 0 32 32">
+  <rect width="32" height="32" fill="#ffffff"/>
+  <image width="32" height="32" href="data:image/png;base64,{b64_32}"/>
 </svg>
 '''
     svg_path_32 = os.path.join(FRONTEND_ICONS_DIR, "icon-32.svg")
     with open(svg_path_32, "w", encoding="utf-8") as f:
         f.write(svg_content_32)
     shutil.copy2(svg_path_32, os.path.join(TEMPLATES_ICONS_DIR, "icon-32.svg"))
-    print("✅ Generated: icon-32.svg")
+    print("✅ Generated: icon-32.svg (optimized ~1KB)")
 
     print("\n🎉 ALL ICONS AND LOGOS GENERATED & SYNCHRONIZED SUCCESSFULLY!")
 
 if __name__ == "__main__":
     generate_logo_suite()
+

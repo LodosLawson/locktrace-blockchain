@@ -1235,7 +1235,19 @@ def api_wallet_transactions(address):
     if not is_valid_bct_address(clean):
         return api_response(False, message="Invalid address syntax", status=400)
     txs = blockchain.get_wallet_transactions(clean)
-    return api_response(True, data={"transactions": txs, "total": len(txs), "address": clean})
+    total = len(txs)
+    limit = safe_int(request.args.get("limit", 100), default=100, min_val=1, max_val=500)
+    page = safe_int(request.args.get("page", 1), default=1, min_val=1)
+    start_idx = (page - 1) * limit
+    page_txs = txs[start_idx:start_idx + limit]
+    return api_response(True, data={
+        "transactions": page_txs,
+        "total": total,
+        "page": page,
+        "limit": limit,
+        "total_pages": max(1, (total + limit - 1) // limit),
+        "address": clean
+    })
 
 
 @app.route("/api/v1/blocks/latest", methods=["GET"])

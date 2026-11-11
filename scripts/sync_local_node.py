@@ -1,7 +1,7 @@
 import shutil
 import os
 
-target_dir = r"C:\Users\mehem\Documents\testndoe"
+target_dir = os.environ.get("LOCKTRACE_TEST_NODE_DIR", os.path.join(os.path.expanduser("~"), "Documents", "testndoe"))
 if os.path.exists(target_dir):
     files_to_sync = [
         ('server.py', os.path.join(target_dir, 'server.py')),
