@@ -2714,6 +2714,12 @@ class LockTraceNode:
         print(f" Mining Engine    : {self.miner_engine_info.get('active_engine')}")
         if self.miner_engine_info.get("gpu_available"):
             print(f" GPU Model        : {self.miner_engine_info.get('device_name')}")
+        try:
+            from core.native_bridge import get_engine_status
+            c_eng = get_engine_status()
+            print(f" Crypto Engine    : {c_eng.get('engine')}")
+        except Exception:
+            pass
         print(f" Sync Engine      : {self.sync_mode.upper()} (v2.7.0 State Snapshot & Compact Relay)")
         print("-" * 74)
         status_txt = "SYNCHRONIZED & ATTESTING" if self.synced else "AUTONOMOUS P2P / SYNCING"

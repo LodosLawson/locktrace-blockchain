@@ -32,6 +32,8 @@ def main():
         tar.add("requirements.txt", arcname="requirements.txt")
         tar.add("config.py", arcname="config.py")
         tar.add("scripts/sign_frontend.py", arcname="scripts/sign_frontend.py")
+        if os.path.isdir("crates"):
+            tar.add("crates", arcname="crates")
 
     print("[*] Uploading bundle in single SCP stream...")
     scp_cmd = [
@@ -58,6 +60,10 @@ sudo cp /tmp/docs/LockTrace_Whitepaper.pdf /opt/blockchaint/LockTrace_Whitepaper
 sudo cp /tmp/docs/LockTrace_Whitepaper.pdf /var/www/locktrace/LockTrace_Whitepaper.pdf || true
 sudo cp /tmp/docs/LockTrace_Whitepaper.pdf /opt/blockchaint/frontend/LockTrace_Whitepaper.pdf || true
 sudo cp /tmp/server.py /opt/blockchaint/server.py
+if [ -d /tmp/crates ]; then
+    sudo mkdir -p /opt/blockchaint/crates
+    sudo cp -r /tmp/crates/* /opt/blockchaint/crates/
+fi
 sudo cp /tmp/node_runner.py /opt/blockchaint/node_runner.py
 sudo cp /tmp/README.md /opt/blockchaint/README.md
 sudo cp /tmp/requirements.txt /opt/blockchaint/requirements.txt

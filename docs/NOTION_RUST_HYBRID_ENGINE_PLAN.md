@@ -150,3 +150,4 @@ Kullanıcı onayı verildiğinde sırasıyla şu adımlar yürütülecektir:
 
 > ✋ **Bekleme Durumu:**  
 > Bu rapor incelendikten sonra onay vermeniz halinde **Adım 1'den başlanarak** Rust hibrit motoru projeye entegre edilecek ve adım adım test edilerek canlıya alınacaktır.
+
