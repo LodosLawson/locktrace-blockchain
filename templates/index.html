@@ -4611,7 +4611,11 @@
   <!-- MOBILE BOTTOM NAVIGATION BAR (< 768px — Streamlined & Uncluttered)        -->
   <!-- ========================================================================= -->
   <nav class="md:hidden fixed bottom-0 w-full z-40 pb-safe bg-surface/90 backdrop-blur-md border-t border-outline-variant/20 shadow-[0_-4px_16px_rgba(0,0,0,0.25)]" id="mobile-nav">
-    <div class="h-14 px-3 flex items-center justify-around">
+    <div class="h-14 px-1.5 sm:px-3 flex items-center justify-around">
+      <button class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-primary transition-colors active:scale-90 cursor-pointer" id="mobileNavBackBtn" onclick="navigatePwaBack()" type="button" title="Geri / Back">
+        <span class="material-symbols-outlined text-[22px]">arrow_back</span>
+        <span class="font-label-sm text-[10px] font-medium leading-none">Back</span>
+      </button>
       <button class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95" data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
         <span class="material-symbols-outlined text-[23px]">account_balance_wallet</span>
         <span class="font-label-sm text-[10px] font-medium leading-none">Wallet</span>
@@ -4839,6 +4843,29 @@
           <span class="material-symbols-outlined text-on-surface-variant text-[16px]">chevron_right</span>
         </button>
       </div>
+
+      <!-- Mobile & PWA Preferences / Settings -->
+      <div class="flex flex-col gap-2 pt-2 border-t border-outline-variant/15">
+        <div class="flex items-center justify-between px-1">
+          <span class="text-[10.5px] font-mono uppercase font-bold text-on-surface-variant/80 tracking-wider">Preferences &amp; PWA</span>
+          <span class="text-[10px] text-primary font-mono font-medium">Navigation</span>
+        </div>
+        <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex items-center justify-between gap-3 shadow-xs">
+          <div class="flex items-center gap-2.5 min-w-0">
+            <div class="w-8 h-8 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined text-[19px]">arrow_back</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-on-surface truncate">PWA Mobil Geri Tuşu</span>
+              <span class="text-[10px] text-on-surface-variant line-clamp-1">Alt menüde geri dönüş butonunu göster/gizle</span>
+            </div>
+          </div>
+          <label class="relative inline-flex items-center cursor-pointer shrink-0">
+            <input type="checkbox" id="settingPwaBackBtn" class="sr-only peer" onchange="togglePwaBackButtonSetting(this.checked)">
+            <div class="w-11 h-6 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+          </label>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -5008,6 +5035,23 @@
             Remove PIN
           </button>
         </div>
+      </div>
+
+      <!-- PWA / Navigation Preferences Toggle -->
+      <div class="p-3 bg-surface-container-low rounded-xl border border-outline-variant/20 flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-7 h-7 rounded-lg bg-primary/20 text-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="font-label-md text-xs font-semibold text-on-surface">PWA Mobil Geri Tuşu</span>
+            <span class="text-[10px] text-on-surface-variant truncate">Alt navigasyon çubuğunda geri tuşunu göster</span>
+          </div>
+        </div>
+        <label class="relative inline-flex items-center cursor-pointer shrink-0">
+          <input type="checkbox" id="settingPwaBackBtnVault" class="sr-only peer" onchange="togglePwaBackButtonSetting(this.checked)">
+          <div class="w-10 h-5 bg-surface-container-highest peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-primary"></div>
+        </label>
       </div>
 
       <div class="flex items-center gap-2">
@@ -5555,6 +5599,14 @@
             <span class="text-on-surface-variant text-[11px]">Daha az boşluk ile ekranda daha fazla gönderi göster</span>
           </div>
           <input type="checkbox" id="settingCompactFeed" class="rounded accent-primary w-4 h-4 cursor-pointer" onchange="applySpaceSettings()">
+        </label>
+
+        <label class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low border border-outline-variant/15 cursor-pointer hover:bg-surface-container-high transition">
+          <div class="flex flex-col">
+            <span class="font-semibold text-on-surface text-sm">PWA Mobil Geri Tuşu</span>
+            <span class="text-on-surface-variant text-[11px]">Alt navigasyon çubuğunda akıllı geri tuşu göster</span>
+          </div>
+          <input type="checkbox" id="settingPwaBackBtnFeed" class="rounded accent-primary w-4 h-4 cursor-pointer" onchange="togglePwaBackButtonSetting(this.checked)">
         </label>
       </div>
 
@@ -7765,9 +7817,22 @@
     }
 
     // =========================================================================
-    function switchTab(tabId, updateHash = true) {
+    function switchTab(tabId, updateHash = true, pushHistory = true) {
       const validTabs = ['ana-sayfa', 'cuzdanim', 'para-gonder', 'space', 'yeni-cuzdan', 'ag-ve-explorer', 'dugum-paneli', 'system-wallets', 'api-docs', 'kopru', 'guvenlik', 'bns'];
       const target = validTabs.includes(tabId) ? tabId : 'cuzdanim';
+
+      if (!Array.isArray(window._pwaTabHistory)) {
+        window._pwaTabHistory = [];
+      }
+      if (pushHistory) {
+        const last = window._pwaTabHistory[window._pwaTabHistory.length - 1];
+        if (last !== target) {
+          window._pwaTabHistory.push(target);
+          if (window._pwaTabHistory.length > 30) {
+            window._pwaTabHistory.shift();
+          }
+        }
+      }
 
       // Always reset Space Detail Stack Header & restore mobile nav when switching main tabs
       if (target !== 'space' || activeDetailPostId !== null) {
@@ -7790,8 +7855,8 @@
         }
       });
 
-      // Mobile Bottom Nav Active Highlight
-      document.querySelectorAll('#mobile-nav .mobile-nav-btn').forEach((btn) => {
+      // Mobile Bottom Nav Active Highlight (Only for tabs with data-tab)
+      document.querySelectorAll('#mobile-nav .mobile-nav-btn[data-tab]').forEach((btn) => {
         const active = btn.getAttribute('data-tab') === target;
         btn.className = active
           ? 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-primary font-semibold transition-colors'
@@ -8596,6 +8661,7 @@
         qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(currentAccount.address);
       }
       updateVaultControlsUI();
+      if (typeof applyPwaBackButtonUI === 'function') applyPwaBackButtonUI();
       if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
@@ -8617,6 +8683,7 @@
     }
 
     function openMobileMenuModal() {
+      if (typeof applyPwaBackButtonUI === 'function') applyPwaBackButtonUI();
       const modal = document.getElementById('mobileMenuModal');
       const card = document.getElementById('mobileMenuDrawerCard');
       if (!modal || !card) return;
@@ -10965,81 +11032,165 @@
       return iOS && !standalone;
     }
 
+    // Global Modal & Overlay Dismissal Helper
+    function closeTopmostActiveModal() {
+      if (!document.getElementById('network-security-modal')?.classList.contains('hidden')) {
+        closeNetworkSecurityModal();
+        return true;
+      }
+      if (!document.getElementById('spaceSettingsModal')?.classList.contains('hidden')) {
+        closeSpaceSettingsModal();
+        return true;
+      }
+      if (!document.getElementById('pin-unlock-modal')?.classList.contains('hidden')) {
+        closePinUnlockModal(false);
+        return true;
+      }
+      if (!document.getElementById('qr-scanner-modal')?.classList.contains('hidden')) {
+        closeQrScannerModal();
+        return true;
+      }
+      if (!document.getElementById('tx-modal')?.classList.contains('hidden')) {
+        closeTxModal();
+        return true;
+      }
+      if (!document.getElementById('receive-modal')?.classList.contains('hidden')) {
+        closeReceiveModal();
+        return true;
+      }
+      if (!document.getElementById('block-detail-modal')?.classList.contains('hidden')) {
+        closeBlockDetailModal();
+        return true;
+      }
+      if (!document.getElementById('ios-pwa-modal')?.classList.contains('hidden')) {
+        closeIosPwaModal();
+        return true;
+      }
+      if (!document.getElementById('notificationModal')?.classList.contains('hidden')) {
+        if (typeof closeNotificationModal === 'function') closeNotificationModal();
+        return true;
+      }
+      if (!document.getElementById('userProfileModal')?.classList.contains('hidden')) {
+        if (typeof closeUserProfile === 'function') closeUserProfile();
+        else if (typeof closeUserProfileModal === 'function') closeUserProfileModal();
+        return true;
+      }
+      if (!document.getElementById('bnsOfferModal')?.classList.contains('hidden')) {
+        if (typeof closeBnsOfferModal === 'function') closeBnsOfferModal();
+        return true;
+      }
+      if (!document.getElementById('bnsSetPriceModal')?.classList.contains('hidden')) {
+        if (typeof closeBnsSetPriceModal === 'function') closeBnsSetPriceModal();
+        return true;
+      }
+      if (!document.getElementById('bnsTransferModal')?.classList.contains('hidden')) {
+        if (typeof closeBnsTransferModal === 'function') closeBnsTransferModal();
+        return true;
+      }
+      if (!document.getElementById('bnsBuyModal')?.classList.contains('hidden')) {
+        if (typeof closeBnsBuyModal === 'function') closeBnsBuyModal();
+        return true;
+      }
+      const mobMenu = document.getElementById('mobileMenuModal');
+      if (mobMenu && !mobMenu.classList.contains('hidden') && !mobMenu.classList.contains('opacity-0')) {
+        if (typeof closeMobileMenuModal === 'function') closeMobileMenuModal();
+        return true;
+      }
+      if (typeof activeDetailPostId !== 'undefined' && activeDetailPostId !== null) {
+        closeSpacePostDetail();
+        return true;
+      }
+      return false;
+    }
+
+    // PWA & Mobile Smart Back Navigation
+    function navigatePwaBack() {
+      // 1. Close open modals or overlays first
+      if (closeTopmostActiveModal()) {
+        return;
+      }
+
+      // 2. Tab Navigation Stack
+      if (!Array.isArray(window._pwaTabHistory)) {
+        window._pwaTabHistory = ['cuzdanim'];
+      }
+      if (window._pwaTabHistory.length > 1) {
+        window._pwaTabHistory.pop(); // Remove active tab
+        const prevTab = window._pwaTabHistory[window._pwaTabHistory.length - 1];
+        switchTab(prevTab, true, false);
+        return;
+      }
+
+      // 3. Fallback: If stack at root, but not currently on wallet, switch to wallet
+      const activeEl = document.querySelector('.tab-content.active');
+      const currentTab = activeEl ? activeEl.id.replace('tab-', '') : '';
+      if (currentTab && currentTab !== 'cuzdanim') {
+        switchTab('cuzdanim', true, false);
+        return;
+      }
+
+      // 4. Already at home/wallet root
+      if (typeof showToast === 'function') {
+        showToast('Ana ekrandasınız', 'info');
+      }
+    }
+
+    // PWA Back Button Settings & Persistence
+    function isPwaBackButtonEnabled() {
+      try {
+        const val = localStorage.getItem('locktrace_pwa_back_btn_enabled_v1');
+        return val === null ? true : (val === 'true' || val === '1');
+      } catch (_) {
+        return true;
+      }
+    }
+
+    function togglePwaBackButtonSetting(enabled) {
+      try {
+        localStorage.setItem('locktrace_pwa_back_btn_enabled_v1', enabled ? 'true' : 'false');
+      } catch (_) {}
+      applyPwaBackButtonUI(enabled);
+      if (typeof showToast === 'function') {
+        showToast(enabled ? 'PWA geri tuşu aktif edildi' : 'PWA geri tuşu gizlendi', 'check_circle');
+      }
+    }
+
+    function applyPwaBackButtonUI(enabled) {
+      if (enabled === undefined) {
+        enabled = isPwaBackButtonEnabled();
+      }
+      const backBtn = document.getElementById('mobileNavBackBtn');
+      if (backBtn) {
+        if (enabled) {
+          backBtn.classList.remove('hidden');
+          if (!backBtn.classList.contains('flex')) backBtn.classList.add('flex');
+        } else {
+          backBtn.classList.remove('flex');
+          backBtn.classList.add('hidden');
+        }
+      }
+      const chk1 = document.getElementById('settingPwaBackBtn');
+      if (chk1) chk1.checked = !!enabled;
+      const chk2 = document.getElementById('settingPwaBackBtnVault');
+      if (chk2) chk2.checked = !!enabled;
+      const chk3 = document.getElementById('settingPwaBackBtnFeed');
+      if (chk3) chk3.checked = !!enabled;
+    }
+
     // Global Keyboard & History Navigation
     window.addEventListener('keydown', (e) => {
       if (e.key === 'Escape' || e.key === 'Esc') {
-        if (!document.getElementById('network-security-modal')?.classList.contains('hidden')) {
-          closeNetworkSecurityModal();
-          return;
-        }
-        if (!document.getElementById('pin-unlock-modal')?.classList.contains('hidden')) {
-          closePinUnlockModal(false);
-          return;
-        }
-        if (!document.getElementById('qr-scanner-modal')?.classList.contains('hidden')) {
-          closeQrScannerModal();
-          return;
-        }
-        if (!document.getElementById('tx-modal')?.classList.contains('hidden')) {
-          closeTxModal();
-          return;
-        }
-        if (!document.getElementById('receive-modal')?.classList.contains('hidden')) {
-          closeReceiveModal();
-          return;
-        }
-        if (!document.getElementById('block-detail-modal')?.classList.contains('hidden')) {
-          closeBlockDetailModal();
-          return;
-        }
-        if (!document.getElementById('ios-pwa-modal')?.classList.contains('hidden')) {
-          closeIosPwaModal();
-          return;
-        }
-        if (!document.getElementById('notificationModal')?.classList.contains('hidden')) {
-          if (typeof closeNotificationModal === 'function') closeNotificationModal();
-          return;
-        }
-        if (!document.getElementById('userProfileModal')?.classList.contains('hidden')) {
-          if (typeof closeUserProfile === 'function') closeUserProfile();
-          else if (typeof closeUserProfileModal === 'function') closeUserProfileModal();
-          return;
-        }
-        if (!document.getElementById('bnsOfferModal')?.classList.contains('hidden')) {
-          if (typeof closeBnsOfferModal === 'function') closeBnsOfferModal();
-          return;
-        }
-        if (!document.getElementById('bnsSetPriceModal')?.classList.contains('hidden')) {
-          if (typeof closeBnsSetPriceModal === 'function') closeBnsSetPriceModal();
-          return;
-        }
-        if (!document.getElementById('bnsTransferModal')?.classList.contains('hidden')) {
-          if (typeof closeBnsTransferModal === 'function') closeBnsTransferModal();
-          return;
-        }
-        if (!document.getElementById('bnsBuyModal')?.classList.contains('hidden')) {
-          if (typeof closeBnsBuyModal === 'function') closeBnsBuyModal();
-          return;
-        }
-        if (!document.getElementById('mobileMenuModal')?.classList.contains('hidden')) {
-          if (typeof closeMobileMenuModal === 'function') closeMobileMenuModal();
-          return;
-        }
-        if (activeDetailPostId !== null) {
-          closeSpacePostDetail();
-          return;
-        }
+        closeTopmostActiveModal();
       }
     });
 
     window.addEventListener('popstate', () => {
-      if (activeDetailPostId !== null) {
-        closeSpacePostDetail();
+      if (closeTopmostActiveModal()) {
         return;
       }
       const hash = (window.location.hash || '').replace(/^#/, '').trim();
       if (hash) {
-        switchTab(hash, false);
+        switchTab(hash, false, false);
       }
     });
 
@@ -13445,6 +13596,7 @@
       loadRpcSettings();
       updateRpcBadgeUI();
       setupPwaHandlers();
+      if (typeof applyPwaBackButtonUI === 'function') applyPwaBackButtonUI();
       currentAccount = loadStoredWallet();
       syncWalletHeaderUI();
       updateVaultControlsUI();
@@ -13771,6 +13923,7 @@
     }
 
     function openSpaceSettingsModal() {
+      if (typeof applyPwaBackButtonUI === 'function') applyPwaBackButtonUI();
       const modal = document.getElementById('spaceSettingsModal');
       const card = document.getElementById('spaceSettingsModalCard');
       if (!modal || !card) return;
