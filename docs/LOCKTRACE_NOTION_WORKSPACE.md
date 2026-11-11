@@ -207,7 +207,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.5.0` | On-Chain Frontend Integrity Mühürlü, Anti-Stall Failsafe, RBF Mempool & Constant-Time Cryptography |
+| **Ağ Sürümü** | `v2.7.0` | P2P Compact Block Relay, State Snapshot Fast Sync, GPU Acceleration, Anti-Stall LWMA & RBF Mempool |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -242,4 +242,23 @@ Yapılan stres testleri ve geleceğe yönelik çökme/darboğaz simülasyonları
 
 5. **Yerel Düğüm (`node_runner.py`) Senkronizasyonu:**
    - Yerel düğüm çalıştırıcısı v2.5.0 çekirdeği ile eşitlendi; dinamik zorluk geçişleri, P2P yedek tohum bağlantı dayanıklılığı ve bağlantı kopmalarında üstel geri çekilme (exponential backoff) eklendi.
+
+---
+
+## ⚡ 8. LockTrace v2.7.0: P2P Compact Block Relay, State Snapshot Fast Sync & GPU Hızlandırma Mimarisi
+
+Merkeziyetsizlikten ve güvenlikten asla ödün vermeden hayata geçirilen üç dev yenilik:
+
+1. **P2P Compact Block Relay (v2.6.0 - %90+ Bant Genişliği Tasarrufu):**
+   - **Çalışma Mantığı:** Madenciler ve doğrulayıcı düğümler blok yayarken işlemlerin tamamını tekrar tekrar göndermez. Blok başlığı, prefilled coinbase işlemi ve mempool eşleştirmesi için 16 karakterlik kısa işlem kimlikleri (`short_ids`) iletilir.
+   - **Merkeziyetsiz Güvenlik Koruması:** Düğüm, mempoolundaki işlemlerle bloğu yeniden birleştirir ve anında **Merkle Kökü (`merkle_root`)** kontrolü yapar. Eğer bir tek bayt bile uyuşmazsa veya eksik işlem varsa blok derhal reddedilir. Böylece ağdaki blok yayılma gecikmesi sıfıra yaklaşırken sıfır-güven (zero-trust) güvenliği %100 korunur.
+
+2. **Merkeziyetsiz State Snapshot Warp Sync (v2.7.0 - Hızlı Kurulum):**
+   - **Çalışma Mantığı:** Yeni bir doğrulayıcı düğüm kurulurken Genesis #0'dan itibaren yüz binlerce bloğu tek tek indirip saatlerce beklemek yerine, ağın anlık durum özeti (bakiye, nonce ve BNS kayıtları) indirilir.
+   - **Merkeziyetsiz Güvenlik Koruması:** Snapshot körü körüne kabul edilmez! Snapshot'ın kanonik SHA-256 durum kökü (`state_root`) düğüm tarafından bağımsızca hesaplanır ve doğrulanır. Ardından düğüm son **1.000 bloğu (rolling window)** indirerek her bir işlemin imzasını, bakiyesini ve Quorum tasdiklerini eksiksiz doğrular. Sahte bakiye veya manipüle edilmiş snapshot enjekte edilmesi matematiksel olarak imkansızdır.
+
+3. **GPU Madencilik Desteği (OpenCL Accelerated - NVIDIA / AMD / Intel):**
+   - **Çalışma Mantığı:** `node_runner.py` içine standart Python `ctypes` kütüphanesi üzerinden çalışan sıfır bağımlılıklı yerel OpenCL C-bağlantısı eklendi.
+   - **Donanım Uyumluluğu:** Bilgisayarda bulunan NVIDIA (Örn: GeForce RTX 3050), AMD Radeon veya Intel Arc GPU'ları otomatik algılanır. GPU mevcutsa paralel nonce taraması GPU üzerinden yüz binlerce H/s ile koşturulur; GPU bulunmayan cihazlarda ise çok çekirdekli CPU madenciliği kesintisiz devam eder.
+   - **Kullanım Seçenekleri:** `--miner-engine {auto,gpu,cpu}` ve `--sync-mode {snapshot,full}` parametreleriyle tam kullanıcı denetimi sunulur.
 

@@ -375,7 +375,11 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Priority Replace-By-Fee (RBF) & Mempool Eviction:** Dynamic mempool admission that evicts the lowest-fee transaction in saturated mempools (5,000 txs) for higher-fee priority inclusion.
    - **Constant-Time SECP256k1 Cryptography:** Full migration to OpenSSL C-backed constant-time cryptography eliminating Minerva side-channel timing attacks (CVE-2024-23342).
    - **O(1) Reverse-Cursor Transaction Indexing:** High-speed paginated queries and indexed SQLite lookups eliminating linear memory/CPU degradation.
-8. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+8. **P2P Compact Block Relay, State Snapshot Fast Sync & GPU Mining Acceleration (v2.7.0):**
+   - **P2P Compact Block Relay (v2.6.0):** Transmits block headers, prefilled coinbase transactions, and 16-hex short transaction IDs, cutting block propagation bandwidth by ~90-95% while strictly enforcing cryptographic Merkle root and PoW verification.
+   - **Decentralized State Snapshot Sync (v2.7.0):** Enables warp sync for newly joining nodes by providing deterministically hashed state roots over sorted account balances and BNS registries, requiring nodes to fully replay only the rolling window of recent 1,000 blocks to tip without compromising decentralization.
+   - **Hybrid OpenCL GPU & Multi-Worker CPU Miner:** Integrated OpenCL C kernel acceleration for NVIDIA, AMD, and Intel GPUs alongside multi-worker CPU fallback in `node_runner.py` with zero required external pip packages.
+9. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

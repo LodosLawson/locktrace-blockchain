@@ -1227,6 +1227,80 @@ def api_chain_range():
     return api_response(True, data=blockchain.get_chain_range(start=start, limit=limit))
 
 
+@app.route("/api/v1/snapshot/latest", methods=["GET"])
+def api_get_latest_snapshot():
+    """
+    v2.7.0 Decentralized State Snapshot Sync endpoint.
+    Returns a cryptographically audited state root over sorted balances, nonces, and BNS domains.
+    Allows new nodes to fast-sync their ledger in seconds and verify only the latest 1,000 blocks.
+    """
+    snapshot = blockchain.get_state_snapshot()
+    return api_response(True, message="Verified state snapshot ready.", data=snapshot)
+
+
+@app.route("/p2p/gossip/compact_block", methods=["POST"])
+def api_p2p_gossip_compact_block():
+    """
+    v2.6.0 P2P Compact Block Relay endpoint.
+    Accepts compact block header + prefilled coinbase and short IDs, reconstructing
+    the full block from local mempool without transmitting redundant transaction bytes.
+    """
+    if not check_rate_limit("p2p_compact_gossip", limit=60, window_seconds=60):
+        return api_response(False, message="Compact block gossip rate limit exceeded.", status=429)
+
+    payload = request.get_json(silent=True) or {}
+    compact_data = payload.get("compact_block") or {}
+    header = compact_data.get("header") or {}
+
+    if not header or "hash" not in header or "merkle_root" not in header:
+        return api_response(False, message="Malformed compact block header.", status=400)
+
+    # Reconstruct from local pending mempool
+    ok, msg, reconstructed_block, missing = blockchain.reconstruct_compact_block(compact_data)
+    if not ok:
+        if missing:
+            return api_response(False, message="Missing transactions for compact block.", data={"missing_indices": missing, "header_hash": header.get("hash")}, status=206)
+        return api_response(False, message=msg, status=400)
+
+    # Submit reconstructed block to consensus engine
+    submit_ok, submit_msg, receipt = blockchain.submit_mined_block(
+        block_data=reconstructed_block,
+        node_id=str(payload.get("node_id", "") or "P2P-Peer"),
+        public_key="",
+        signature="",
+        reported_hashrate=0.0
+    )
+    if not submit_ok:
+        return api_response(False, message=submit_msg, data=receipt, status=400)
+
+    return api_response(True, message="Compact block reconstructed and sealed.", data=receipt, status=201)
+
+
+@app.route("/p2p/getblocktxn", methods=["POST"])
+def api_p2p_getblocktxn():
+    """
+    v2.6.0 Compact Block transaction responder.
+    Supplies the exact missing transactions requested by a peer node to complete block assembly.
+    """
+    payload = request.get_json(silent=True) or {}
+    block_hash = str(payload.get("block_hash", "")).strip().lower()
+    indices = payload.get("indices", [])
+    if not block_hash or not isinstance(indices, list):
+        return api_response(False, message="Invalid block transaction query.", status=400)
+
+    blk_dict = blockchain.get_block_by_index_or_hash(block_hash)
+    if not blk_dict:
+        return api_response(False, message="Block not found.", status=404)
+
+    txs = blk_dict.get("transactions", [])
+    requested_txs = []
+    for idx in indices:
+        if 0 <= int(idx) < len(txs):
+            requested_txs.append({"index": int(idx), "tx": txs[int(idx)]})
+
+    return api_response(True, data={"block_hash": block_hash, "transactions": requested_txs})
+
+
 # ── Decentralized Network Nodes & P2P Consensus Endpoints ─────
 @app.route("/api/v1/nodes", methods=["GET"])
 def api_get_nodes():

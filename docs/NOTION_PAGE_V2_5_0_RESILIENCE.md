@@ -142,3 +142,4 @@ flowchart TD
 
 > 🔒 **Doğrulama ve İnceleme:**  
 > Canlı sunucu durumu [https://locktrace.space](https://locktrace.space) üzerinden, açık kaynak kodları ise [GitHub Deposu](https://github.com/LodosLawson/locktrace-blockchain) üzerinden her zaman anlık olarak doğrulanabilir.
+
