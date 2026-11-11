@@ -810,6 +810,57 @@ def api_stats():
     return api_response(True, data=blockchain.get_stats())
 
 
+# ── Live / Cached DEX & Uniswap Market Price ───────────────────
+_market_price_cache = {
+    "price_usd": 0.000000003938765,
+    "last_fetched": 0.0,
+    "dex": "Uniswap (Base)",
+    "pair": "0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe",
+    "token": "0xA3C743113a41cFd0146917065d4578337Bb77254"
+}
+
+
+@app.route("/api/v1/market/price", methods=["GET"])
+def api_market_price():
+    """Returns cached/live Uniswap v3/v4 wBCT market price on Base (CORS & CSP safe)."""
+    global _market_price_cache
+    now = time.time()
+    if (now - _market_price_cache.get("last_fetched", 0.0)) > 30.0:
+        fetched_ok = False
+        # 1. Primary source: GeckoTerminal Pool API for wBCT/USDC
+        try:
+            import urllib.request, json
+            url = "https://api.geckoterminal.com/api/v2/networks/base/pools/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe"
+            req = urllib.request.Request(url, headers={"User-Agent": "LockTrace/2.8"})
+            with urllib.request.urlopen(req, timeout=3.5) as resp:
+                data = json.loads(resp.read().decode())
+                p_usd = float(data.get("data", {}).get("attributes", {}).get("base_token_price_usd", 0.0) or 0.0)
+                if p_usd > 0:
+                    _market_price_cache["price_usd"] = p_usd
+                    _market_price_cache["last_fetched"] = now
+                    _market_price_cache["dex"] = data.get("data", {}).get("attributes", {}).get("dex", "Uniswap (Base)")
+                    fetched_ok = True
+        except Exception:
+            pass
+
+        # 2. Secondary fallback: DexScreener Token API
+        if not fetched_ok:
+            try:
+                import urllib.request, json
+                ds_url = "https://api.dexscreener.com/latest/dex/tokens/0xA3C743113a41cFd0146917065d4578337Bb77254"
+                req_ds = urllib.request.Request(ds_url, headers={"User-Agent": "LockTrace/2.8"})
+                with urllib.request.urlopen(req_ds, timeout=3.5) as resp_ds:
+                    ds_data = json.loads(resp_ds.read().decode())
+                    pairs = ds_data.get("pairs") or []
+                    if pairs and pairs[0].get("priceUsd"):
+                        _market_price_cache["price_usd"] = float(pairs[0]["priceUsd"])
+                        _market_price_cache["last_fetched"] = now
+            except Exception:
+                pass
+
+    return api_response(True, data=_market_price_cache)
+
+
 # ── Wallet Mnemonic Preview & Creation ───────────────────────
 @app.route("/api/v1/wallet/mnemonic-preview", methods=["GET"])
 def api_mnemonic_preview():
