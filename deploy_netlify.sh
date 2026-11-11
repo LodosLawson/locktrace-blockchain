@@ -1,3 +1,27 @@
 #!/bin/bash
-cd /opt/blockchaint/frontend
-npx -y @netlify/mcp@latest --site-id b987ae8a-de6e-48cc-b75e-535dcdc5e31d --proxy-path "https://netlify-mcp.netlify.app/proxy/eyJhbGciOiJkaXIiLCJlbmMiOiJBMjU2R0NNIn0..hDNjHFIGnnpICxv0.1Ucqx_mwyY4FsE8Ez7O3R9oXo1VPYNij3wPFdqnRh6A8Yg_urmCZG8h3n-_pTlO_TJKUwmLxgMdfA-BMLxw6njamT-6gZEK-1ZSbjt5x5wfG9lTZzaFEZhMLRUjqe9JGn6R-HeUlJajsaQ6gg2xu7hsZWyZR1VmkYM_MDR52XZgWRj73M_j0NTR1Rf5Dl3t_4OeiLt5vb-rIyY45rjuHoQqNG9jt2geQXYqOaiZLojfI1pI-xmZgD8cSlAjqgO08HmiyrR0wCf1pfTlxk4s-hlBjd3T2oxCP6rpBhbvh6rpew7q5okOvOkRbAAa94gxdJv_Cf794iu5BJv2oObHX3PE_d8nTTn--LMa3lAMgY6Ewtfx2YVLsZG0qLVsrOXRF0tEuLlpmcaNHEymSj33RXRbSBFw.mA2rPH4OIDQP0pvU5tD_ww" --no-wait
+# ==============================================================================
+# SEC-NET-01: Secure Netlify Deployment Wrapper
+# DO NOT hardcode sensitive Netlify auth tokens or JWE proxy paths in this script.
+# Provide NETLIFY_PROXY_PATH or NETLIFY_AUTH_TOKEN via environment variables or CI/CD secrets.
+# ==============================================================================
+set -euo pipefail
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRONTEND_DIR="${SCRIPT_DIR}/frontend"
+
+if [ -d "$FRONTEND_DIR" ]; then
+    cd "$FRONTEND_DIR"
+elif [ -d "/opt/blockchaint/frontend" ]; then
+    cd "/opt/blockchaint/frontend"
+fi
+
+SITE_ID="${NETLIFY_SITE_ID:-b987ae8a-de6e-48cc-b75e-535dcdc5e31d}"
+PROXY_PATH="${NETLIFY_PROXY_PATH:-}"
+
+if [ -n "$PROXY_PATH" ]; then
+    npx -y @netlify/mcp@latest --site-id "$SITE_ID" --proxy-path "$PROXY_PATH" --no-wait
+else
+    # Safe production deploy using official Netlify CLI
+    echo "[INFO] NETLIFY_PROXY_PATH not set; deploying via netlify-cli..."
+    npx -y netlify-cli deploy --prod --dir=.
+fi

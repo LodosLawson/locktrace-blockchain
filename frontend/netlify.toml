@@ -1,12 +1,12 @@
 [[redirects]]
   from = "/api/*"
-  to = "http://129.151.205.219/api/:splat"
+  to = "https://locktrace.space/api/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/node_runner.py"
-  to = "http://129.151.205.219/node_runner.py"
+  to = "https://locktrace.space/node_runner.py"
   status = 200
   force = true
 

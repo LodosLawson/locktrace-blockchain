@@ -34,10 +34,10 @@ except ImportError:
 class Wallet:
     """ECDSA + BIP-39 Seed based blockchain wallet (Constant-time OpenSSL SECP256k1)."""
 
-    def __init__(self, mnemonic: Optional[str] = None, private_key_hex: Optional[str] = None):
+    def __init__(self, mnemonic: Optional[str] = None, private_key_hex: Optional[str] = None, passphrase: str = ""):
         if mnemonic:
             self.mnemonic = " ".join(mnemonic.strip().lower().split())
-            pk_hex = mnemonic_to_private_key(self.mnemonic)
+            pk_hex = mnemonic_to_private_key(self.mnemonic, passphrase=passphrase)
         elif private_key_hex:
             self.mnemonic = ""
             pk_hex = private_key_hex.strip()
@@ -45,7 +45,7 @@ class Wallet:
                 pk_hex = pk_hex[2:]
         else:
             self.mnemonic = generate_mnemonic()
-            pk_hex = mnemonic_to_private_key(self.mnemonic)
+            pk_hex = mnemonic_to_private_key(self.mnemonic, passphrase=passphrase)
 
         self._priv_hex = pk_hex
         priv_bytes = binascii.unhexlify(pk_hex)
