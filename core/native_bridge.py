@@ -176,8 +176,10 @@ def fast_solve_pow(
 ) -> Tuple[bool, int, str, float]:
     """
     Parallel PoW mining using Rust native multi-threaded engine or CPU/GPU fallback.
-    Immune to magic nonce splitting DoS (LT-POW-01).
+    Immune to magic nonce splitting DoS (LT-POW-01) and redundant chunk re-computation (BUG-01).
     """
+    target_diff = max(1, int(target_difficulty))
+    max_n = max(1, int(max_nonces))
     if is_rust_accelerated():
         try:
             dummy = dict(candidate)
@@ -189,13 +191,13 @@ def fast_solve_pow(
             if token_pos != -1:
                 prefix = serialized[:token_pos + len('"nonce": ')]
                 suffix = serialized[token_pos + len(target_token):]
-                ok, nonce, h, hr = _RUST_CORE.solve_pow(prefix, suffix, int(target_difficulty), int(max_nonces))
-                if ok and h:
-                    return True, int(nonce), str(h), float(hr)
+                ok, nonce, h, hr = _RUST_CORE.solve_pow(prefix, suffix, target_diff, max_n)
+                # Rust successfully scanned 0..max_n. Return result directly without redundant re-runs.
+                return bool(ok), int(nonce), str(h), float(hr)
         except Exception:
             pass
 
     from core.gpu_miner import LockTraceMinerEngine
     miner = LockTraceMinerEngine(preferred_engine="auto")
-    return miner.solve_pow(candidate, target_difficulty, max_nonces)
+    return miner.solve_pow(candidate, target_diff, max_n)
 

@@ -1,7 +1,7 @@
-# LockTrace (BCT) Technical Whitepaper — v2.8.2
+# LockTrace (BCT) Technical Whitepaper — v2.8.3
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.8.2 — November 2026*  
+*Version 2.8.3 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
@@ -19,15 +19,19 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.8.2**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
-1. **Zero-Bypass Public Key Address Derivation:** Prohibits unauthenticated double-SHA256 address generation; invalid or off-curve public keys return `None` immediately across Rust native engine and Python fallback.
-2. **Strict Exception-Based Merkle Duplicate Rejection (CVE-2012-2459):** Raises explicit `ValueError` on duplicate transaction leaves, preventing block tampering and eliminating `"0"*64` Merkle root collision exploits.
-3. **Single-Transaction Block SPV Proof Parity:** Fully supports zero-step SPV inclusion proofs for single-transaction blocks where the transaction hash directly equals the block Merkle root.
-4. **Cryptographic Sentinel Nonce Serialization (LT-POW-01):** Replaces static split tokens with 128-bit random runtime sentinels (`secrets.token_hex(16)`) and exact byte-offset splicing across `core/gpu_miner.py` and `core/native_bridge.py`, immunizing the PoW mining engine against transaction-content split DoS exploits.
-5. **Strict SPV Merkle Proof Validation (LT-MRK-01):** Enforces 64-character lowercase hex format validation on target hashes and Merkle roots, rejects empty proofs with mismatched roots, and strictly verifies directional paths (`"left"` vs `"right"`) in both Python and Rust (`crates/locktrace_core/src/merkle.rs`).
-6. **SECP256k1 Curve Point Validation & 33-Byte Compressed Parity (LT-CRY-01):** Adds strict SEC1 curve verification in Rust (`k256::AffinePoint::from_encoded_point`) and Python fallback, rejecting off-curve points ($y^2 \ne x^3 + 7$) and providing full address derivation parity for 33-byte compressed public keys.
-7. **Cross-Chain Canonical Address Ingress Normalization (LT-SOL-02):** Enforces case-insensitive canonical address mapping (`BCT` + lowercase hex) across `core/bridge.py`, `server.py`, and `core/bridge_relayer.py`, preventing unclaimable bridged assets.
-8. **Multi-Core Parallel Thread Mining & Honest Telemetry (LT-GPU-01):** Integrates `ThreadPoolExecutor` parallel worker pool and first-priority delegation to Rust Rayon in `core/gpu_miner.py` with accurate engine telemetry.
+In **Version 2.8.3**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+1. **Creator Follow Royalty On-Chain Indexing:** Synchronizes SQLite transaction indexing (`extra_json LIKE '%"target": "..."%'`) and balance analytics, ensuring the 0.50 BCT follow reward is transparently recorded and attributed in creator history.
+2. **WrappedBCT Canonical Double-Mint Immunity:** Employs canonical `bytes32` hash mapping (`mapping(bytes32 => bool) public processedL1TxHashes`) and strict string parsing, mathematically preventing double-minting via character casing or `0x` prefixes.
+3. **PoW Multi-Pass Elimination & Worker Synchronization:** Enforces single-pass termination on failed iterations (`ok == False`), eliminates CPU/Rayon redundant loops, and introduces atomic synchronization across parallel mining worker threads.
+4. **Explorer Search DoS Mitigation & Quick Compose Parity:** Limits search results to 50 paginated records for high-frequency accounts (Treasury, Miners), fixes inline JSON serialization crashes, and aligns quick compose fees with canonical consensus (0.10 BCT).
+5. **Zero-Bypass Public Key Address Derivation:** Prohibits unauthenticated double-SHA256 address generation; invalid or off-curve public keys return `None` immediately across Rust native engine and Python fallback.
+6. **Strict Exception-Based Merkle Duplicate Rejection (CVE-2012-2459):** Raises explicit `ValueError` on duplicate transaction leaves, preventing block tampering and eliminating `"0"*64` Merkle root collision exploits.
+7. **Single-Transaction Block SPV Proof Parity:** Fully supports zero-step SPV inclusion proofs for single-transaction blocks where the transaction hash directly equals the block Merkle root.
+8. **Cryptographic Sentinel Nonce Serialization (LT-POW-01):** Replaces static split tokens with 128-bit random runtime sentinels (`secrets.token_hex(16)`) and exact byte-offset splicing across `core/gpu_miner.py` and `core/native_bridge.py`, immunizing the PoW mining engine against transaction-content split DoS exploits.
+9. **Strict SPV Merkle Proof Validation (LT-MRK-01):** Enforces 64-character lowercase hex format validation on target hashes and Merkle roots, rejects empty proofs with mismatched roots, and strictly verifies directional paths (`"left"` vs `"right"`) in both Python and Rust (`crates/locktrace_core/src/merkle.rs`).
+10. **SECP256k1 Curve Point Validation & 33-Byte Compressed Parity (LT-CRY-01):** Adds strict SEC1 curve verification in Rust (`k256::AffinePoint::from_encoded_point`) and Python fallback, rejecting off-curve points ($y^2 \ne x^3 + 7$) and providing full address derivation parity for 33-byte compressed public keys.
+11. **Cross-Chain Canonical Address Ingress Normalization (LT-SOL-02):** Enforces case-insensitive canonical address mapping (`BCT` + lowercase hex) across `core/bridge.py`, `server.py`, and `core/bridge_relayer.py`, preventing unclaimable bridged assets.
+12. **Multi-Core Parallel Thread Mining & Honest Telemetry (LT-GPU-01):** Integrates `ThreadPoolExecutor` parallel worker pool and first-priority delegation to Rust Rayon in `core/gpu_miner.py` with accurate engine telemetry.
 9. **Native Rust Acceleration Core (`crates/locktrace_core`):** High-speed cryptographic validation, lazy parallel Rayon PoW mining with accurate atomic hashrate telemetry, zero heap allocation chunking, and deterministic serialization.
 8. **Multi-Layer Cross-Chain Bridge Hardening (LT-SOL-01):** Hex-character enforcement (`[0-9a-fA-F]`) on 43-character BCT addresses and zero burn address rejection across Solidity smart contract (`WrappedBCT.sol`), frontend Web3 client, and backend bridge relayer daemon.
 9. **ECDSA Space Cast Authentication (LT-WEB-01):** Enforces cryptographic secp256k1 canonical signature verification on quick compose casts, eliminating unauthorized impersonation.
@@ -405,7 +409,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.7.0 (Completed):** Decentralized State Snapshot Warp Sync (deterministic state root over sorted accounts & BNS records, rolling 1,000-block verification), Hybrid OpenCL GPU & Multi-Worker CPU Miner Engine (`core/gpu_miner.py`, `node_runner.py`).
 - **v2.8.0 (Completed):** Native Rust Acceleration Core (`crates/locktrace_core`), Multi-Layer Bridge Hardening (LT-SOL-01), ECDSA Space Cast Authentication (LT-WEB-01), DOM XSS Attribute Sanitization (LT-WEB-02), Nginx Strict HTTPS Enforcement & CSP Hardening (LT-NGX-01), Thirdweb Engine EVM Address & BigInt Validation (LT-TWB-01).
 - **v2.8.1 (Completed):** Cryptographic Sentinel Nonce Serialization (LT-POW-01), Strict SPV Merkle Proof Validation (LT-MRK-01), SECP256k1 Curve Point Validation & 33-Byte Compressed Parity (LT-CRY-01), Cross-Chain Canonical Address Ingress Normalization (LT-SOL-02), Multi-Core Parallel Thread Mining & Honest Telemetry (LT-GPU-01), and Master 100k Bot Army / Sybil Testnet Benchmark Suite.
-- **v2.8.2 (Current Production Release):** Zero-Bypass Public Key Address Derivation (rejection of off-curve/invalid keys with None without fallback spoofing), Strict Exception-Based Merkle Duplicate Rejection (CVE-2012-2459 with ValueError), Single-Transaction Block SPV Proof Parity (`proof_steps=[]` when `leaf == root`).
+- **v2.8.2 (Completed):** Zero-Bypass Public Key Address Derivation (rejection of off-curve/invalid keys with None without fallback spoofing), Strict Exception-Based Merkle Duplicate Rejection (CVE-2012-2459 with ValueError), Single-Transaction Block SPV Proof Parity (`proof_steps=[]` when `leaf == root`).
+- **v2.8.3 (Current Production Release):** Creator Follow Royalty On-Chain Indexing & UI Attribution, WrappedBCT Canonical Hash Double-Mint Immunity (`mapping(bytes32 => bool)`), PoW Single-Pass Execution & Worker Sync, Explorer Search DoS Defense (50-record cap), and Quick Compose Fee Synchronization (0.10 BCT).
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---

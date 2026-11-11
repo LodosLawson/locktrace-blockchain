@@ -1066,7 +1066,7 @@ def api_explorer_search():
                     "handle": bns_cand,
                     "balance": bal,
                     "transaction_count": len(history),
-                    "transactions": history,
+                    "transactions": history[:50],
                 },
             })
 
@@ -1079,7 +1079,7 @@ def api_explorer_search():
                 "address": q,
                 "balance": bal,
                 "transaction_count": len(history),
-                "transactions": history,
+                "transactions": history[:50],
             },
         })
 

@@ -111,6 +111,7 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
 
     // Deduplication mapping: Prevents double-minting of Layer-1 LockTrace transaction hashes
     mapping(string => bool) public processedL1Transactions;
+    mapping(bytes32 => bool) public processedL1TxHashes;
 
     // Events
     event BridgeRelayerSet(address indexed relayer, bool active);
@@ -176,9 +177,33 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
 
     // ── Bridge Operations (Lock & Mint / Burn & Unlock) ──────────────────────
     
+    function _fromHexChar(bytes1 c) private pure returns (uint8) {
+        if (c >= '0' && c <= '9') return uint8(c) - uint8(bytes1('0'));
+        if (c >= 'a' && c <= 'f') return 10 + uint8(c) - uint8(bytes1('a'));
+        if (c >= 'A' && c <= 'F') return 10 + uint8(c) - uint8(bytes1('A'));
+        revert("wBCT: Invalid hex char in L1 tx hash");
+    }
+
+    function _canonicalizeTxHash(string calldata txHashStr) internal pure returns (bytes32) {
+        bytes calldata b = bytes(txHashStr);
+        uint256 start = 0;
+        if (b.length == 66 && b[0] == '0' && (b[1] == 'x' || b[1] == 'X')) {
+            start = 2;
+        } else {
+            require(b.length == 64, "wBCT: L1 tx hash must be 64 hex chars");
+        }
+        bytes memory canonical = new bytes(32);
+        for (uint256 i = 0; i < 32; i++) {
+            uint8 hi = _fromHexChar(b[start + i * 2]);
+            uint8 lo = _fromHexChar(b[start + i * 2 + 1]);
+            canonical[i] = bytes1((hi << 4) | lo);
+        }
+        return bytes32(canonical);
+    }
+
     /**
      * @notice Mints wBCT to recipient after a verified lock of native BCT on LockTrace Layer-1.
-     * @dev Strictly idempotent: checks processedL1Transactions to guarantee zero double-minting.
+     * @dev Strictly idempotent: checks processedL1Transactions and processedL1TxHashes to guarantee zero double-minting.
      * @param to Destination EVM address receiving wBCT.
      * @param amount Amount of wBCT in 18-decimal wei (1 BCT = 10^18 wei).
      * @param locktraceTxHash Hash of the LockTrace Layer-1 bridge_lock transaction.
@@ -191,9 +216,13 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
         require(to != address(0), "wBCT: Cannot mint to zero address");
         require(amount > 0, "wBCT: Amount must be greater than zero");
         require(bytes(locktraceTxHash).length > 0, "wBCT: Empty L1 transaction hash");
+
+        bytes32 canonicalHash = _canonicalizeTxHash(locktraceTxHash);
+        require(!processedL1TxHashes[canonicalHash], "wBCT: L1 transaction already processed");
         require(!processedL1Transactions[locktraceTxHash], "wBCT: L1 transaction already processed");
         require(_totalSupply + amount <= MAX_SUPPLY, "wBCT: Max supply exceeded");
 
+        processedL1TxHashes[canonicalHash] = true;
         processedL1Transactions[locktraceTxHash] = true;
         _mint(to, amount);
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.8.2)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.8.3)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner (CPU & GPU Accelerated),
 and cryptographically verified decentralized Web Wallet on Linux, macOS, or Windows with
@@ -12,7 +12,7 @@ Key Capabilities:
   3. Hybrid GPU (OpenCL / NVIDIA / AMD / Intel) & Multi-Worker CPU PoW Miner (`--miner-engine`).
   4. v2.6.0 P2P Compact Block Relay (~90% bandwidth reduction).
   5. v2.7.0 Decentralized State Snapshot Sync (warp sync with verified state root).
-  6. v2.8.2 Native Rust Acceleration Engine & Multi-Layer Hardening.
+  6. v2.8.3 Native Rust Acceleration Engine & Multi-Layer Hardening.
 
 Usage:
     # Local Mode (Accessible only on your computer at http://127.0.0.1:5050)
@@ -48,7 +48,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.8.2"
+VERSION = "2.8.3"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)
@@ -1425,15 +1425,15 @@ class LockTraceNode:
             if not ok:
                 return 403, {"success": False, "message": err}
             bal, _, _ = self.local_calc_balance_and_nonce(author)
-            if bal < 0.05:
-                return 400, {"success": False, "message": "At least 0.05 BCT is required to post."}
+            if bal < 0.10:
+                return 400, {"success": False, "message": "At least 0.10 BCT is required to post."}
             pid = f"post_{secrets.token_hex(6)}"
             tx = {
                 "sender": author,
                 "receiver": TREASURY_ADDRESS,
-                "amount": 0.05,
-                "fee": 0.05,
-                "net_amount": 0.0,
+                "amount": 0.10,
+                "fee": 0.02,
+                "net_amount": 0.08,
                 "signature": payload["signature"],
                 "timestamp": time.time(),
                 "tx_type": "space_post",
