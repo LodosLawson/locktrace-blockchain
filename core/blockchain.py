@@ -3831,8 +3831,8 @@ class Blockchain:
             final_txs = matched_user_txs + expected_reward_txs
             try:
                 expected_merkle = compute_merkle_root([t.hash() for t in final_txs])
-            except ValueError as e:
-                return False, f"Merkle Root verification failed: {e}", None
+            except ValueError:
+                return False, "Merkle Root verification failed (duplicate or malformed transaction hash)!", None
             submitted_merkle = str(block_data.get("merkle_root", "") or "").strip().lower()
             if submitted_merkle != expected_merkle:
                 return False, "Merkle Root verification failed!", None

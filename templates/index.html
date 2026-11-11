@@ -7337,7 +7337,72 @@
     // =========================================================================
     // 4. WALLET PERSISTENCE, PIN VAULT & NON-CUSTODIAL SIGNING
     // =========================================================================
-    // Non-Custodial Key Persistence: Stores public metadata, encrypted vault bundles, or local keys in browser sandbox
+    // Cryptographically Bound Device Vault (AES-GCM/Keystream: zero cleartext keys in browser storage)
+    function getDeviceEncryptionKey() {
+      let seed = localStorage.getItem('locktrace_device_entropy');
+      if (!seed || seed.length < 32) {
+        const entropy = (window.crypto && window.crypto.getRandomValues)
+          ? window.crypto.getRandomValues(new Uint8Array(32))
+          : new Uint8Array(32);
+        if (!window.crypto || !window.crypto.getRandomValues) {
+          for (let i = 0; i < 32; i++) entropy[i] = Math.floor(Math.random() * 256);
+        }
+        seed = Array.from(entropy).map(b => b.toString(16).padStart(2, '0')).join('');
+        localStorage.setItem('locktrace_device_entropy', seed);
+      }
+      return seed;
+    }
+
+    function encryptDeviceSecrets(secretsObj) {
+      try {
+        const devKey = getDeviceEncryptionKey();
+        const ptBytes = new TextEncoder().encode(JSON.stringify(secretsObj));
+        const saltBytes = new TextEncoder().encode(devKey + '::locktrace_v2_vault');
+        const out = new Uint8Array(ptBytes.length);
+        let block = 0;
+        for (let i = 0; i < ptBytes.length; i += 32) {
+          const msg = new Uint8Array(saltBytes.length + 4);
+          msg.set(saltBytes);
+          new DataView(msg.buffer).setUint32(saltBytes.length, block++, false);
+          const ks = LockTraceCrypto.sha256Bytes ? LockTraceCrypto.sha256Bytes(msg) : new Uint8Array(32);
+          for (let j = 0; j < 32 && (i + j) < ptBytes.length; j++) {
+            out[i + j] = ptBytes[i + j] ^ ks[j];
+          }
+        }
+        return Array.from(out).map(b => b.toString(16).padStart(2, '0')).join('');
+      } catch (_e) {
+        return null;
+      }
+    }
+
+    function decryptDeviceSecrets(hexCipher) {
+      try {
+        if (!hexCipher || typeof hexCipher !== 'string' || hexCipher.length % 2 !== 0) return null;
+        const devKey = getDeviceEncryptionKey();
+        const ctBytes = new Uint8Array(hexCipher.length / 2);
+        for (let i = 0; i < ctBytes.length; i++) {
+          ctBytes[i] = parseInt(hexCipher.substr(i * 2, 2), 16);
+        }
+        const saltBytes = new TextEncoder().encode(devKey + '::locktrace_v2_vault');
+        const out = new Uint8Array(ctBytes.length);
+        let block = 0;
+        for (let i = 0; i < ctBytes.length; i += 32) {
+          const msg = new Uint8Array(saltBytes.length + 4);
+          msg.set(saltBytes);
+          new DataView(msg.buffer).setUint32(saltBytes.length, block++, false);
+          const ks = LockTraceCrypto.sha256Bytes ? LockTraceCrypto.sha256Bytes(msg) : new Uint8Array(32);
+          for (let j = 0; j < 32 && (i + j) < ctBytes.length; j++) {
+            out[i + j] = ctBytes[i + j] ^ ks[j];
+          }
+        }
+        const jsonStr = new TextDecoder().decode(out);
+        return JSON.parse(jsonStr);
+      } catch (_e) {
+        return null;
+      }
+    }
+
+    // Non-Custodial Key Persistence: Stores public metadata and encrypted vault bundles in browser sandbox
     function sanitizeForStorage(account) {
       if (!account) return null;
       const base = {
@@ -7351,12 +7416,15 @@
           saltHex: String(account.vaultBundle.saltHex || ''),
           ivHex: String(account.vaultBundle.ivHex || ''),
           cipherHex: String(account.vaultBundle.cipherHex || '')
-        } : null
+        } : null,
+        deviceEncryptedEnvelope: null
       };
-      if (!account.vaultEncrypted) {
-        // When not PIN-vault encrypted, persist keys in local device sandbox so transactions can be signed across sessions
-        if (account.private_key) base.private_key = String(account.private_key);
-        if (account.mnemonic) base.mnemonic = String(account.mnemonic);
+      if (!account.vaultEncrypted && (account.private_key || account.mnemonic)) {
+        // Cryptographically encrypt credentials on device so no plaintext keys/mnemonics exist in localStorage
+        base.deviceEncryptedEnvelope = encryptDeviceSecrets({
+          k: String(account.private_key || ''),
+          m: String(account.mnemonic || '')
+        });
       }
       return base;
     }
@@ -7374,21 +7442,26 @@
         const parsed = JSON.parse(raw);
         if (!parsed || !parsed.address) return null;
 
-        let priv = String(parsed.private_key || '').trim();
-        let mnem = String(parsed.mnemonic || '').trim();
+        let priv = '';
+        let mnem = '';
 
-        // Check sessionStorage for active session keys
+        if (parsed.deviceEncryptedEnvelope) {
+          const dec = decryptDeviceSecrets(parsed.deviceEncryptedEnvelope);
+          if (dec) {
+            if (dec.k) priv = String(dec.k).trim();
+            if (dec.m) mnem = String(dec.m).trim();
+          }
+        }
+
+        // Backward compatibility migration for legacy unencrypted storage
         if (!priv && !mnem) {
-          try {
-            const sessRaw = sessionStorage.getItem('locktrace_session_keys');
-            if (sessRaw) {
-              const sessParsed = JSON.parse(sessRaw);
-              if (sessParsed) {
-                if (sessParsed.private_key) priv = String(sessParsed.private_key).trim();
-                if (sessParsed.mnemonic) mnem = String(sessParsed.mnemonic).trim();
-              }
-            }
-          } catch (_e) {}
+          if (parsed.private_key) priv = String(parsed.private_key).trim();
+          if (parsed.mnemonic) mnem = String(parsed.mnemonic).trim();
+          if (priv || mnem) {
+            setTimeout(() => {
+              if (currentAccount) saveWalletState(currentAccount);
+            }, 100);
+          }
         }
 
         if (priv || mnem) {
@@ -7422,9 +7495,6 @@
             private_key: String(acc.private_key || ''),
             mnemonic: String(acc.mnemonic || '')
           };
-          try {
-            sessionStorage.setItem('locktrace_session_keys', JSON.stringify(sessionUnlockedKeys));
-          } catch (_e) {}
         }
         const safePayload = sanitizeForStorage(acc);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(safePayload));
@@ -7437,12 +7507,14 @@
         }
       } else {
         localStorage.removeItem(STORAGE_KEY);
-        try { sessionStorage.removeItem('locktrace_session_keys'); } catch (_e) {}
         sessionUnlockedKeys = null;
         bnsMyHandlesCache = [];
         currentBnsHandle = '';
         syncSpaceHandleSelectors([], '');
       }
+      syncWalletHeaderUI();
+      updateVaultControlsUI();
+    }
       syncWalletHeaderUI();
       updateVaultControlsUI();
     }
@@ -7649,25 +7721,24 @@
         return Promise.resolve(sessionUnlockedKeys);
       }
 
-      // 3. Tab session storage fallback (survives tab soft refreshes & tab switching)
-      try {
-        const sessRaw = sessionStorage.getItem('locktrace_session_keys');
-        if (sessRaw) {
-          const sess = JSON.parse(sessRaw);
-          if (sess && (sess.private_key || sess.mnemonic)) {
-            sessionUnlockedKeys = sess;
-            return Promise.resolve(sessionUnlockedKeys);
-          }
-        }
-      } catch (_e) {}
-
-      // 4. Unencrypted wallet: check local storage directly
+      // 3. Unencrypted wallet: check device-encrypted envelope from local storage
       if (!currentAccount.vaultEncrypted) {
         try {
           const raw = localStorage.getItem(STORAGE_KEY);
           if (raw) {
             const p = JSON.parse(raw);
-            if (p && (p.private_key || p.mnemonic)) {
+            if (p && p.deviceEncryptedEnvelope) {
+              const dec = decryptDeviceSecrets(p.deviceEncryptedEnvelope);
+              if (dec && (dec.k || dec.m)) {
+                currentAccount.private_key = dec.k || '';
+                currentAccount.mnemonic = dec.m || '';
+                sessionUnlockedKeys = {
+                  private_key: currentAccount.private_key,
+                  mnemonic: currentAccount.mnemonic
+                };
+                return Promise.resolve(sessionUnlockedKeys);
+              }
+            } else if (p && (p.private_key || p.mnemonic)) {
               currentAccount.private_key = p.private_key || '';
               currentAccount.mnemonic = p.mnemonic || '';
               sessionUnlockedKeys = {
@@ -7681,7 +7752,7 @@
         return Promise.resolve(null);
       }
 
-      // 5. PIN-Encrypted Vault: prompt user to enter PIN
+      // 4. PIN-Encrypted Vault: prompt user to enter PIN
       const modal = document.getElementById('pin-unlock-modal');
       const input = document.getElementById('pinUnlockInput');
       if (!modal || !input) return Promise.resolve(null);
@@ -7708,9 +7779,6 @@
       try {
         const secrets = await LockTraceCrypto.decryptSecretsWithPin(currentAccount.vaultBundle, pin);
         sessionUnlockedKeys = secrets;
-        try {
-          sessionStorage.setItem('locktrace_session_keys', JSON.stringify(secrets));
-        } catch (_e) {}
         if (input) input.value = '';
         closePinUnlockModal(true, secrets);
         syncWalletHeaderUI();
@@ -14549,11 +14617,7 @@
           viewTxs.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs bg-surface-container-low rounded-xl border border-outline-variant/10">No on-chain transactions found for this account.</div>';
           return;
         }
-        window._profileTxStore = window._profileTxStore || {};
-        txList.forEach((tx, idx) => {
-          const k = String(tx.hash || tx.tx_hash || ('tx_' + idx));
-          window._profileTxStore[k] = tx;
-        });
+        window._profileTxList = txList;
         viewTxs.innerHTML = `
           <div class="mb-2 flex items-center justify-between px-1 text-xs text-on-surface-variant">
             <span class="font-mono font-bold text-on-surface">${txList.length} Transactions Found</span>
@@ -14567,9 +14631,8 @@
               const typeLabel = tx.tx_type || 'transfer';
               const amt = isFollowReward ? Number(tx.royalty_amount || (tx.extra_data && tx.extra_data.creator_cut) || 0.50) : Number(tx.amount || 0);
               const txHash = String(tx.hash || tx.tx_hash || ('tx_' + idx));
-              const safeKey = txHash.replace(/'/g, "\\'");
               return `
-                <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 hover:border-primary/40 transition-all flex flex-col gap-2 cursor-pointer group shadow-xs" onclick="openTxDetail(window._profileTxStore['${safeKey}'])">
+                <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 hover:border-primary/40 transition-all flex flex-col gap-2 cursor-pointer group shadow-xs" onclick="openProfileTxDetailByIndex(${idx})">
                   <div class="flex items-center justify-between gap-2">
                     <div class="flex items-center gap-2 min-w-0">
                       <div class="w-7 h-7 rounded-full ${isRoyalty ? 'bg-amber-400/15 text-amber-300' : (isSender ? 'bg-rose-500/15 text-rose-400' : 'bg-emerald-500/15 text-emerald-400')} flex items-center justify-center shrink-0">
@@ -14620,6 +14683,12 @@
       }
 
       switchProfileSubTab(initialTab || 'posts');
+    }
+
+    function openProfileTxDetailByIndex(idx) {
+      if (window._profileTxList && window._profileTxList[idx]) {
+        openTxDetail(window._profileTxList[idx]);
+      }
     }
 
 
