@@ -403,7 +403,15 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **WrappedBCT Canonical Double-Mint Immunity (BUG-02):** Hardened `contracts/WrappedBCT.sol` with `mapping(bytes32 => bool) public processedL1TxHashes` and `_canonicalizeTxHash`, immunizing the bridge against casing and `0x` prefix duplicate minting.
    - **PoW Multi-Pass & Worker Thread Loop Elimination (BUG-01 & BUG-05):** Eliminated redundant 3-pass nonce recalculations when `ok == False` in `core/native_bridge.py` and `core/gpu_miner.py`, replaced blocking sequential `f.result()` with atomic event synchronization, and clamped non-positive target difficulty.
    - **Explorer Search DoS & Quick Compose Fee Parity (BUG-03 & BUG-04):** Enforced 50-item search history pagination to prevent server/browser freezes on treasury/miner addresses, fixed `JSON.stringify` quote breaking in transaction modals, and synchronized Space post fee validation at 0.10 BCT.
-13. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+13. **Systemd Security Hardening, Multi-Thread Race Elimination & EVM Event Parity (v2.8.4):**
+   - **Systemd Secret Key Hardening (LT-SRV-01):** Replaced hardcoded default secrets with `EnvironmentFile=-/opt/blockchaint/.env`, implemented automated 256-bit secret provisioning in `setup.sh` (`chmod 600`), and added defense-in-depth in `config.py` automatically invalidating insecure defaults.
+   - **DOM Integrity & Safe URL Regex Isolation (NEW-01):** Introduced private Unicode sentinel placeholders isolating URLs during mention/hashtag/cashtag regex parsing, eliminating HTML tag attribute corruption and XSS risks.
+   - **Coinbase Spot Price Feed CSP & Nginx Security Header Inheritance (NEW-02 & NEW-03):** Whitelisted `https://api.coinbase.com` in `connect-src` and preserved HSTS/X-Frame-Options/nosniff headers across `/sw.js`, `.json`, and image location blocks.
+   - **Anti-Spoofing Plaintext Quote Guard (NEW-04):** Eliminated unverified 'verified' checkmarks from arbitrary text quotes, ensuring verified badges reflect only cryptographic on-chain consensus.
+   - **WrappedBCT Un-Indexed Event Log Parity (NEW-05):** Converted `locktraceTxHash` to un-indexed string in `MintedFromBridge`, preserving plaintext L1 hash strings in EVM transaction logs for indexers and BaseScan.
+   - **Atomic State Index Pointer Swaps (NEW-06):** Replaced in-place dictionary wipes with atomic reference swaps in `_load_in_memory_bns_index` and `_load_in_memory_space_index`, eliminating race conditions across Gunicorn's 8 worker threads.
+   - **Comment Reply Hyphen Support & .env Inline Comment Parsing (NEW-07):** Added hyphen support in handle removal regex and stripped inline comments in `.env` parsing across Python and Node.js.
+14. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

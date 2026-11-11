@@ -33,17 +33,31 @@ source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
 
-# ── 5. Log dizini ────────────────────────────────
-echo "[5/7] Log dizini oluşturuluyor..."
+# ── 5. Log dizini ve Gizli Anahtarlar (.env) ─────
+echo "[5/7] Log dizini ve güvenli .env hazırlanıyor..."
 mkdir -p /opt/blockchaint/logs
 mkdir -p /opt/blockchaint/data
+
+if [ ! -f /opt/blockchaint/.env ]; then
+    SECRET_HEX=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+    ADMIN_HEX=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+    cat <<EOF > /opt/blockchaint/.env
+BCT_SECRET_KEY=${SECRET_HEX}
+BCT_ADMIN_KEY=${ADMIN_HEX}
+BCT_DEBUG=false
+BCT_LOG_LEVEL=INFO
+EOF
+    chmod 600 /opt/blockchaint/.env
+    chown ubuntu:ubuntu /opt/blockchaint/.env
+    echo "  -> Yeni 256-bit kriptografik .env oluşturuldu ve kilitlendi (chmod 600)."
+fi
 
 # ── 6. Systemd servisi ──────────────────────────
 echo "[6/7] Systemd servisi kuruluyor..."
 sudo cp deploy/blockchain.service /etc/systemd/system/blockchaint.service
 sudo systemctl daemon-reload
 sudo systemctl enable blockchaint
-sudo systemctl start blockchaint
+sudo systemctl restart blockchaint
 
 # ── 7. Nginx yapılandırma ────────────────────────
 echo "[7/7] Nginx yapılandırılıyor..."

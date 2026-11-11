@@ -4726,8 +4726,9 @@ class Blockchain:
         bns_key = (len(self.chain), tip_hash, mempool_hashes)
         if self._bns_index_key == bns_key and self.bns_records is not None:
             return
-        self.bns_records = {}
-        self.bns_reverse = {}
+        # Atomic thread-safe build in local scope (NEW-06 Multi-Thread Race Guard)
+        new_bns_records = {}
+        new_bns_reverse = {}
         all_sources = [(b.index, "confirmed", tx) for b in self.chain for tx in b.transactions] + [
             ("Mempool", "mempool", tx) for tx in self.pending_transactions
         ]
@@ -4739,7 +4740,7 @@ class Blockchain:
                 owner = tx.extra_data.get("owner", tx.sender)
                 tier = tx.extra_data.get("tier", "")
                 cost = float(tx.extra_data.get("cost", tx.amount))
-                self.bns_records[name] = {
+                new_bns_records[name] = {
                     "name": name,
                     "owner": owner,
                     "registered_at": tx.timestamp,
@@ -4759,14 +4760,14 @@ class Blockchain:
                         "block": b_idx
                     }]
                 }
-                if owner not in self.bns_reverse:
-                    self.bns_reverse[owner] = name
+                if owner not in new_bns_reverse:
+                    new_bns_reverse[owner] = name
             elif tx.tx_type == "bns_transfer" and tx.extra_data:
                 name = tx.extra_data.get("name")
                 from_addr = tx.extra_data.get("from_address", tx.sender)
                 to_addr = tx.extra_data.get("to_address", tx.receiver)
-                if name and name in self.bns_records:
-                    rec = self.bns_records[name]
+                if name and name in new_bns_records:
+                    rec = new_bns_records[name]
                     rec["owner"] = to_addr
                     rec["sale_price"] = 0.0
                     rec["updated_at"] = tx.timestamp
@@ -4778,21 +4779,21 @@ class Blockchain:
                         "tx_hash": tx.hash(),
                         "block": b_idx
                     })
-                    if self.bns_reverse.get(from_addr) == name:
-                        other = next((n for n, r in self.bns_records.items() if r.get("owner") == from_addr), "")
+                    if new_bns_reverse.get(from_addr) == name:
+                        other = next((n for n, r in new_bns_records.items() if r.get("owner") == from_addr), "")
                         if other:
-                            self.bns_reverse[from_addr] = other
+                            new_bns_reverse[from_addr] = other
                         else:
-                            self.bns_reverse.pop(from_addr, None)
-                    if to_addr not in self.bns_reverse:
-                        self.bns_reverse[to_addr] = name
+                            new_bns_reverse.pop(from_addr, None)
+                    if to_addr not in new_bns_reverse:
+                        new_bns_reverse[to_addr] = name
             elif tx.tx_type == "bns_set_price" and tx.extra_data:
                 name = tx.extra_data.get("name")
                 price = float(tx.extra_data.get("price", 0.0))
-                if name and name in self.bns_records:
-                    self.bns_records[name]["sale_price"] = price
-                    self.bns_records[name]["updated_at"] = tx.timestamp
-                    self.bns_records[name]["history"].append({
+                if name and name in new_bns_records:
+                    new_bns_records[name]["sale_price"] = price
+                    new_bns_records[name]["updated_at"] = tx.timestamp
+                    new_bns_records[name]["history"].append({
                         "action": "listed_for_sale" if price > 0 else "unlisted",
                         "price": price,
                         "timestamp": tx.timestamp,
@@ -4804,8 +4805,8 @@ class Blockchain:
                 buyer = tx.extra_data.get("buyer", tx.sender)
                 seller = tx.extra_data.get("seller", tx.receiver)
                 price = float(tx.extra_data.get("price", tx.amount))
-                if name and name in self.bns_records:
-                    rec = self.bns_records[name]
+                if name and name in new_bns_records:
+                    rec = new_bns_records[name]
                     rec["owner"] = buyer
                     rec["sale_price"] = 0.0
                     rec["updated_at"] = tx.timestamp
@@ -4818,19 +4819,19 @@ class Blockchain:
                         "tx_hash": tx.hash(),
                         "block": b_idx
                     })
-                    if self.bns_reverse.get(seller) == name:
-                        other = next((n for n, r in self.bns_records.items() if r.get("owner") == seller), "")
+                    if new_bns_reverse.get(seller) == name:
+                        other = next((n for n, r in new_bns_records.items() if r.get("owner") == seller), "")
                         if other:
-                            self.bns_reverse[seller] = other
+                            new_bns_reverse[seller] = other
                         else:
-                            self.bns_reverse.pop(seller, None)
-                    if buyer not in self.bns_reverse:
-                        self.bns_reverse[buyer] = name
+                            new_bns_reverse.pop(seller, None)
+                    if buyer not in new_bns_reverse:
+                        new_bns_reverse[buyer] = name
             elif tx.tx_type == "bns_set_primary" and tx.extra_data:
                 name = tx.extra_data.get("name")
                 owner = tx.extra_data.get("owner", tx.sender)
-                if name and owner and name in self.bns_records:
-                    rec = self.bns_records[name]
+                if name and owner and name in new_bns_records:
+                    rec = new_bns_records[name]
                     if rec.get("owner") == owner:
                         rec["updated_at"] = tx.timestamp
                         rec["history"].append({
@@ -4840,15 +4841,15 @@ class Blockchain:
                             "tx_hash": tx.hash(),
                             "block": b_idx
                         })
-                        self.bns_reverse[owner] = name
+                        new_bns_reverse[owner] = name
             elif tx.tx_type == "bns_offer" and tx.extra_data:
                 name = tx.extra_data.get("name")
                 bidder = tx.extra_data.get("bidder", tx.sender)
                 owner = tx.extra_data.get("owner", tx.receiver)
                 offer_id = tx.extra_data.get("offer_id")
                 amount = float(tx.extra_data.get("amount", 0.0))
-                if name and offer_id and name in self.bns_records:
-                    rec = self.bns_records[name]
+                if name and offer_id and name in new_bns_records:
+                    rec = new_bns_records[name]
                     if "offers" not in rec or not isinstance(rec["offers"], dict):
                         rec["offers"] = {}
                     # Auto-supersede any previous active offer from the same bidder on this domain
@@ -4884,8 +4885,8 @@ class Blockchain:
                 bidder = tx.extra_data.get("bidder", tx.sender)
                 seller = tx.extra_data.get("seller", tx.receiver)
                 amount = float(tx.extra_data.get("amount", tx.amount))
-                if name and name in self.bns_records:
-                    rec = self.bns_records[name]
+                if name and name in new_bns_records:
+                    rec = new_bns_records[name]
                     rec["owner"] = bidder
                     rec["sale_price"] = 0.0
                     rec["updated_at"] = tx.timestamp
@@ -4904,21 +4905,21 @@ class Blockchain:
                         "tx_hash": tx.hash(),
                         "block": b_idx
                     })
-                    if self.bns_reverse.get(seller) == name:
-                        other = next((n for n, r in self.bns_records.items() if r.get("owner") == seller), "")
+                    if new_bns_reverse.get(seller) == name:
+                        other = next((n for n, r in new_bns_records.items() if r.get("owner") == seller), "")
                         if other:
-                            self.bns_reverse[seller] = other
+                            new_bns_reverse[seller] = other
                         else:
-                            self.bns_reverse.pop(seller, None)
-                    if bidder not in self.bns_reverse:
-                        self.bns_reverse[bidder] = name
+                            new_bns_reverse.pop(seller, None)
+                    if bidder not in new_bns_reverse:
+                        new_bns_reverse[bidder] = name
             elif tx.tx_type == "bns_cancel_offer" and tx.extra_data:
                 name = tx.extra_data.get("name")
                 offer_id = tx.extra_data.get("offer_id")
                 actor = tx.extra_data.get("actor", tx.sender)
                 status = tx.extra_data.get("status", "cancelled")
-                if name and name in self.bns_records:
-                    rec = self.bns_records[name]
+                if name and name in new_bns_records:
+                    rec = new_bns_records[name]
                     if "offers" in rec and isinstance(rec["offers"], dict) and offer_id in rec["offers"]:
                         rec["offers"][offer_id]["status"] = status
                         rec["offers"][offer_id]["resolved_at"] = tx.timestamp
@@ -4930,6 +4931,8 @@ class Blockchain:
                         "tx_hash": tx.hash(),
                         "block": b_idx
                     })
+        self.bns_records = new_bns_records
+        self.bns_reverse = new_bns_reverse
         self._bns_index_key = bns_key
 
     def _load_in_memory_space_index(self):
@@ -4939,9 +4942,9 @@ class Blockchain:
         space_key = (len(self.chain), tip_hash, mempool_hashes)
         if self._space_index_key == space_key and self.space_posts is not None:
             return
-        self.space_posts = {}
-        self.follows = {}
-        self.following = {}
+        new_space_posts = {}
+        new_follows = {}
+        new_following = {}
         all_sources = [(b.index, "confirmed", tx) for b in self.chain for tx in b.transactions] + [
             ("Mempool", "mempool", tx) for tx in self.pending_transactions
         ]
@@ -4959,7 +4962,7 @@ class Blockchain:
                             author_bns = ""
                     else:
                         author_bns = self.bns_reverse.get(tx.sender, "")
-                    self.space_posts[pid] = {
+                    new_space_posts[pid] = {
                         "post_id": pid,
                         "author": tx.sender,
                         "author_bns": author_bns,
@@ -4978,15 +4981,15 @@ class Blockchain:
             elif tx.tx_type == "space_like" and tx.extra_data:
                 pid = tx.extra_data.get("post_id")
                 liker = tx.sender
-                if pid in self.space_posts and liker not in self.space_posts[pid]["likes"]:
-                    self.space_posts[pid]["likes"].append(liker)
-                    self.space_posts[pid]["likes_count"] += 1
-                    self.space_posts[pid]["author_earnings"] = round(
-                        self.space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.002), 8
+                if pid in new_space_posts and liker not in new_space_posts[pid]["likes"]:
+                    new_space_posts[pid]["likes"].append(liker)
+                    new_space_posts[pid]["likes_count"] += 1
+                    new_space_posts[pid]["author_earnings"] = round(
+                        new_space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.002), 8
                     )
             elif tx.tx_type == "space_comment" and tx.extra_data:
                 pid = tx.extra_data.get("post_id")
-                if pid in self.space_posts:
+                if pid in new_space_posts:
                     if "bns_name" in tx.extra_data:
                         raw_bns = str(tx.extra_data.get("bns_name") or "").strip().lower()
                         if raw_bns in ("anonymous", "anon"):
@@ -5007,23 +5010,26 @@ class Blockchain:
                         "tx_hash": tx.hash(),
                         "status": status_lbl,
                     }
-                    self.space_posts[pid]["comments"].append(cmt)
-                    self.space_posts[pid]["comments_count"] += 1
-                    self.space_posts[pid]["author_earnings"] = round(
-                        self.space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.004), 8
+                    new_space_posts[pid]["comments"].append(cmt)
+                    new_space_posts[pid]["comments_count"] += 1
+                    new_space_posts[pid]["author_earnings"] = round(
+                        new_space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.004), 8
                     )
             elif tx.tx_type == "space_follow" and tx.extra_data:
                 target = tx.extra_data.get("target")
                 follower = tx.sender
                 if target and follower:
-                    if target not in self.follows:
-                        self.follows[target] = []
-                    if follower not in self.follows[target]:
-                        self.follows[target].append(follower)
-                    if follower not in self.following:
-                        self.following[follower] = []
-                    if target not in self.following[follower]:
-                        self.following[follower].append(target)
+                    if target not in new_follows:
+                        new_follows[target] = []
+                    if follower not in new_follows[target]:
+                        new_follows[target].append(follower)
+                    if follower not in new_following:
+                        new_following[follower] = []
+                    if target not in new_following[follower]:
+                        new_following[follower].append(target)
+        self.space_posts = new_space_posts
+        self.follows = new_follows
+        self.following = new_following
         self._space_index_key = space_key
 
     def _save_state(self, force_json_backup: bool = False):

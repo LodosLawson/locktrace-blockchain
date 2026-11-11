@@ -115,7 +115,7 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
 
     // Events
     event BridgeRelayerSet(address indexed relayer, bool active);
-    event MintedFromBridge(address indexed recipient, uint256 amount, string indexed locktraceTxHash);
+    event MintedFromBridge(address indexed recipient, uint256 amount, string locktraceTxHash);
     event BurnedToBridge(address indexed sender, uint256 amount, string locktraceRecipient);
 
     modifier onlyBridgeOrOwner() {
