@@ -20,7 +20,7 @@ HALF_SECP256K1_N = SECP256K1_N // 2
 
 try:
     from cryptography.hazmat.primitives.asymmetric import ec
-    from cryptography.hazmat.primitives import hashes
+    from cryptography.hazmat.primitives import hashes, serialization
     from cryptography.hazmat.primitives.asymmetric.utils import (
         encode_dss_signature, decode_dss_signature
     )
@@ -118,13 +118,33 @@ def restore_wallet_from_mnemonic(mnemonic: str) -> Wallet:
 
 
 def _normalize_uncompressed_pubkey_bytes(public_key_hex: str) -> bytes:
-    """Normalize 64-byte raw (x||y) or 65-byte (04||x||y) public key to 64 bytes."""
+    """Normalize 64-byte raw (x||y), 65-byte uncompressed (04||x||y), or 33-byte compressed public key to 64 bytes."""
     clean = (public_key_hex or "").strip()
     if clean.startswith("0x") or clean.startswith("0X"):
         clean = clean[2:]
-    raw = binascii.unhexlify(clean)
+    try:
+        raw = binascii.unhexlify(clean)
+    except Exception:
+        return b""
     if len(raw) == 65 and raw[0] == 0x04:
         return raw[1:]
+    if len(raw) == 33 and raw[0] in (0x02, 0x03):
+        if _HAS_CRYPTOGRAPHY:
+            try:
+                pk = ec.EllipticCurvePublicKey.from_encoded_point(ec.SECP256K1(), raw)
+                uncompressed = pk.public_bytes(
+                    encoding=serialization.Encoding.X962,
+                    format=serialization.PublicFormat.UncompressedPoint
+                )
+                return uncompressed[1:]
+            except Exception:
+                return b""
+        else:
+            try:
+                vk = VerifyingKey.from_string(raw, curve=SECP256k1)
+                return vk.to_string()
+            except Exception:
+                return b""
     return raw
 
 

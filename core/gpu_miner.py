@@ -13,6 +13,8 @@ import json
 import hashlib
 import ctypes
 import threading
+import secrets
+from concurrent.futures import ThreadPoolExecutor
 from typing import Optional, Tuple, Dict, Any
 
 
@@ -97,14 +99,26 @@ class LockTraceMinerEngine:
             self.gpu_ready = False
 
     def get_engine_info(self) -> Dict[str, Any]:
+        cpu_count = os.cpu_count() or 4
+        try:
+            from core.native_bridge import is_rust_accelerated
+            if is_rust_accelerated():
+                return {
+                    "active_engine": f"Rust Rayon Parallel Core ({cpu_count} Threads)",
+                    "device_name": "SIMD/Rayon Native Accelerated Core",
+                    "platform": sys.platform,
+                    "gpu_available": self.gpu_ready,
+                }
+        except Exception:
+            pass
+
         if self.gpu_ready and self.preferred_engine != "cpu":
             return {
-                "active_engine": "GPU (OpenCL Accelerated)",
+                "active_engine": f"Multi-Worker Engine ({cpu_count} Cores + OpenCL Ready)",
                 "device_name": self.gpu_device_name,
                 "platform": self.gpu_platform_name,
                 "gpu_available": True,
             }
-        cpu_count = os.cpu_count() or 4
         return {
             "active_engine": f"CPU Multi-Worker ({cpu_count} Cores)",
             "device_name": "Host Processor",
@@ -121,48 +135,78 @@ class LockTraceMinerEngine:
     ) -> Tuple[bool, int, str, float]:
         """
         Solves PoW for candidate block.
-        Splits canonical JSON payload around nonce and parallelizes hashing.
+        Extracts nonce using cryptographically unique runtime sentinel (LT-POW-01 immune).
+        Executes parallel hashing via Rust Rayon or Python multi-worker pool (LT-GPU-01).
         Returns: (found, winning_nonce, winning_hash, measured_hashrate)
         """
         dummy = dict(block_candidate)
-        dummy["nonce"] = 888888888888
+        sentinel = f"__BCT_NONCE_{secrets.token_hex(16)}__"
+        dummy["nonce"] = sentinel
         serialized = json.dumps(dummy, sort_keys=True)
-        parts = serialized.split("888888888888")
-        if len(parts) != 2:
+        target_token = f'"nonce": "{sentinel}"'
+        token_pos = serialized.find(target_token)
+        if token_pos == -1:
             return False, 0, "", 0.0
 
-        prefix = parts[0]
-        suffix = parts[1]
+        prefix = serialized[:token_pos + len('"nonce": ')]
+        suffix = serialized[token_pos + len(target_token):]
         target_prefix = "0" * int(target_difficulty)
 
+        # 1. First Priority: Native Rust Rayon Multi-Threaded Engine
+        try:
+            from core.native_bridge import is_rust_accelerated, _RUST_CORE
+            if is_rust_accelerated() and _RUST_CORE is not None:
+                ok, nonce, h, hr = _RUST_CORE.solve_pow(prefix, suffix, int(target_difficulty), int(max_nonces))
+                if ok and h:
+                    return True, int(nonce), str(h), float(hr)
+        except Exception:
+            pass
+
+        # 2. Second Priority: Multi-Core Thread Worker Pool
         t_start = time.perf_counter()
-        solved_nonce = -1
-        solved_hash = ""
-        hashes_computed = 0
+        found_flag = threading.Event()
+        result_holder = {"nonce": -1, "hash": ""}
+        total_hashes = 0
+        lock = threading.Lock()
 
-        # High-throughput batch worker
-        batch_size = 200_000
-        for base in range(0, max_nonces, batch_size):
-            if stop_event and stop_event.is_set():
-                break
+        cpu_workers = max(1, os.cpu_count() or 4)
+        chunk_size = 50_000
+        num_chunks = (max_nonces + chunk_size - 1) // chunk_size
 
-            limit = min(base + batch_size, max_nonces)
+        def _worker_chunk(chunk_idx: int):
+            nonlocal total_hashes
+            if found_flag.is_set() or (stop_event and stop_event.is_set()):
+                return
+            base = chunk_idx * chunk_size
+            limit = min(base + chunk_size, max_nonces)
+            local_count = 0
             for n in range(base, limit):
+                if found_flag.is_set() or (stop_event and stop_event.is_set()):
+                    break
                 candidate_str = prefix + str(n) + suffix
                 h = hashlib.sha256(candidate_str.encode("utf-8")).hexdigest()
-                hashes_computed += 1
+                local_count += 1
                 if h.startswith(target_prefix):
-                    solved_nonce = n
-                    solved_hash = h
+                    with lock:
+                        if not found_flag.is_set():
+                            found_flag.set()
+                            result_holder["nonce"] = n
+                            result_holder["hash"] = h
                     break
+            with lock:
+                total_hashes += local_count
 
-            if solved_hash:
-                break
+        with ThreadPoolExecutor(max_workers=cpu_workers) as executor:
+            futures = [executor.submit(_worker_chunk, idx) for idx in range(num_chunks)]
+            for f in futures:
+                if found_flag.is_set():
+                    break
+                f.result()
 
         elapsed = max(0.0001, time.perf_counter() - t_start)
-        hashrate = round(hashes_computed / elapsed, 2)
+        hashrate = round(total_hashes / elapsed, 2)
 
-        if solved_hash:
-            return True, solved_nonce, solved_hash, hashrate
+        if result_holder["hash"]:
+            return True, result_holder["nonce"], result_holder["hash"], hashrate
         return False, 0, "", hashrate
 
