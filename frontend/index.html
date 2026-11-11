@@ -923,6 +923,11 @@
               <span class="text-3xl sm:text-4xl md:text-5xl text-on-surface tracking-tight font-bold truncate" id="cardBalance">0.00</span>
               <span class="font-headline-sm text-headline-sm text-primary font-semibold shrink-0">BCT</span>
             </div>
+            <!-- Live Uniswap / DEX Dollar Equivalent Value -->
+            <div class="flex items-center justify-center gap-1.5 select-none mt-1">
+              <span class="text-sm sm:text-base font-semibold font-mono text-emerald-400" id="cardBalanceUsd">≈ $0.00 USD</span>
+              <span class="text-[11px] font-mono text-on-surface-variant/80" id="cardBalancePricePerBct">(1 BCT ≈ $0.00)</span>
+            </div>
             <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-2 select-none">
               <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-primary text-[11px] sm:text-xs font-semibold border border-outline-variant/20 shadow-xs">
                 <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
@@ -977,14 +982,8 @@
             </div>
           </div>
 
-<!-- Quick Services Navigation Grid (Home / Explore, Bridge, Network, Düğüm, Docs, Services Menu) -->
-          <div class="grid grid-cols-6 gap-1 mb-space-lg p-2 rounded-2xl bg-surface-container-low border border-outline-variant/20">
-            <button class="flex flex-col items-center justify-center p-1.5 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all active:scale-95 group" onclick="switchTab('ana-sayfa')" type="button" title="Home &amp; Explore">
-              <div class="w-8 h-8 rounded-full bg-surface-container group-hover:bg-primary/15 flex items-center justify-center text-primary mb-1 transition-colors">
-                <span class="material-symbols-outlined text-[18px]">explore</span>
-              </div>
-              <span class="text-[10px] font-medium leading-tight">Explore</span>
-            </button>
+          <!-- Quick Services Navigation Grid (Bridge, Network, Validator, Analyzer, Docs) -->
+          <div class="grid grid-cols-5 gap-1.5 mb-space-lg p-2 rounded-2xl bg-surface-container-low border border-outline-variant/20">
             <button class="flex flex-col items-center justify-center p-1.5 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-secondary transition-all active:scale-95 group" onclick="switchTab('kopru')" type="button" title="Cross-Chain Bridge">
               <div class="w-8 h-8 rounded-full bg-surface-container group-hover:bg-secondary/15 flex items-center justify-center text-secondary mb-1 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">swap_horiz</span>
@@ -1003,17 +1002,17 @@
               </div>
               <span class="text-[10px] font-medium leading-tight text-primary">Validator</span>
             </button>
+            <button class="flex flex-col items-center justify-center p-1.5 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all active:scale-95 group" onclick="toggleAnalyticsView()" type="button" title="Cüzdan Finans &amp; Grafik Analizi" id="btnQuickNavAnalyzer">
+              <div class="w-8 h-8 rounded-full bg-surface-container group-hover:bg-primary/15 flex items-center justify-center text-primary mb-1 transition-colors" id="iconWrapQuickNavAnalyzer">
+                <span class="material-symbols-outlined text-[18px]">insights</span>
+              </div>
+              <span class="text-[10px] font-semibold text-primary leading-tight">Analyzer</span>
+            </button>
             <button class="flex flex-col items-center justify-center p-1.5 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-on-surface transition-all active:scale-95 group" onclick="switchTab('api-docs')" type="button" title="Docs &amp; Guide">
               <div class="w-8 h-8 rounded-full bg-surface-container group-hover:bg-surface-container-highest flex items-center justify-center text-on-surface mb-1 transition-colors">
                 <span class="material-symbols-outlined text-[18px]">menu_book</span>
               </div>
               <span class="text-[10px] font-medium leading-tight">Docs</span>
-            </button>
-            <button class="flex flex-col items-center justify-center p-1.5 rounded-xl hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all active:scale-95 group" onclick="openMobileMenuModal()" type="button" title="Full Navigation Menu">
-              <div class="w-8 h-8 rounded-full bg-primary/15 flex items-center justify-center text-primary mb-1 transition-colors shadow-sm">
-                <span class="material-symbols-outlined text-[18px]">widgets</span>
-              </div>
-              <span class="text-[10px] font-semibold text-primary leading-tight">Menu</span>
             </button>
           </div>
 
@@ -1034,16 +1033,12 @@
               </div>
             </div>
 
-            <!-- Segmented Filter Pill Container (Exact Stitch) -->
+            <!-- Segmented Filter Pill Container (All, Received, Sent, Space) -->
             <div class="flex items-center gap-1 p-1 bg-surface-container-low rounded-full mb-space-md border border-outline-variant/20 overflow-x-auto no-scrollbar" id="filter-bar">
               <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all bg-surface-container-high text-on-surface font-medium shadow-sm truncate" data-filter="all" onclick="filterTransactions('all', this)" type="button">All</button>
               <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="in" onclick="filterTransactions('in', this)" type="button">Received</button>
               <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="out" onclick="filterTransactions('out', this)" type="button">Sent</button>
               <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate" data-filter="space" onclick="filterTransactions('space', this)" type="button">Space</button>
-              <button class="filter-tab flex-1 py-1.5 px-1 sm:px-2.5 rounded-full text-center text-xs sm:text-label-md transition-all text-on-surface-variant hover:text-on-surface truncate flex items-center justify-center gap-1" data-filter="analytics" onclick="filterTransactions('analytics', this)" type="button">
-                <span class="material-symbols-outlined text-[15px] text-primary">insights</span>
-                <span>Analiz &amp; Grafik</span>
-              </button>
             </div>
 
             <!-- Transaction List -->
@@ -7976,19 +7971,50 @@
       fetchAndSyncMyBnsHandles();
     }
 
+    function formatUsdValue(usd) {
+      const num = Number(usd || 0);
+      if (isNaN(num) || num <= 0) return '$0.00 USD';
+      if (num >= 1000) return '$' + num.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' USD';
+      if (num >= 1) return '$' + num.toFixed(2) + ' USD';
+      if (num >= 0.01) return '$' + num.toFixed(4) + ' USD';
+      if (num >= 0.0001) return '$' + num.toFixed(6) + ' USD';
+      return '$' + num.toFixed(10).replace(/0+$/, '').replace(/\.$/, '') + ' USD';
+    }
+
+    function formatUnitPrice(price) {
+      const num = Number(price || 0);
+      if (isNaN(num) || num <= 0) return '$0.00';
+      if (num >= 1) return '$' + num.toFixed(2);
+      if (num >= 0.01) return '$' + num.toFixed(4);
+      if (num >= 0.0001) return '$' + num.toFixed(6);
+      return '$' + num.toFixed(10).replace(/0+$/, '').replace(/\.$/, '');
+    }
+
     function renderBalanceFigures(balanceVal) {
       const bal = Number(balanceVal || 0);
       const cardBal = document.getElementById('cardBalance');
+      const cardBalUsd = document.getElementById('cardBalanceUsd');
+      const cardBalPer = document.getElementById('cardBalancePricePerBct');
       const subText = document.getElementById('walletSubStatusText');
       const sendAvail = document.getElementById('sendAvailableBal');
       const chipBal = document.getElementById('chipBctBalance');
       const spaceBadge = document.getElementById('spaceUserBalBadge');
       const nonceEl = document.getElementById('modalAccountNonce');
+      const activePrice = (typeof currentWbctPriceUsd === 'number' && currentWbctPriceUsd > 0) ? currentWbctPriceUsd : 0.000000003938765;
 
       if (isBalanceHidden) {
         if (cardBal) cardBal.textContent = '••••••';
+        if (cardBalUsd) cardBalUsd.textContent = '≈ $•••••• USD';
       } else {
         if (cardBal) cardBal.textContent = formatBct(bal, 4);
+        if (cardBalUsd) {
+          const totalUsd = bal * activePrice;
+          cardBalUsd.textContent = `≈ ${formatUsdValue(totalUsd)}`;
+        }
+      }
+
+      if (cardBalPer) {
+        cardBalPer.textContent = activePrice > 0 ? `(1 BCT ≈ ${formatUnitPrice(activePrice)})` : '(1 BCT ≈ ...)';
       }
 
       if (subText) {
@@ -11740,25 +11766,68 @@
       }
     }
 
+    let currentWbctPriceUsd = 0.000000003938765;
+
     async function pollDexPriceLive() {
+      // 1. Try server cached route first (CSP & CORS safe, fast)
+      try {
+        const srv = await apiFetch('/market/price');
+        if (srv && srv.ok && srv.body && srv.body.data && srv.body.data.price_usd) {
+          const p = Number(srv.body.data.price_usd);
+          if (p > 0) {
+            currentWbctPriceUsd = p;
+            applyLiveWbctPrice(p);
+            return;
+          }
+        }
+      } catch (_e) {}
+
+      // 2. Direct browser GeckoTerminal Pool API
+      try {
+        const resp = await fetch('https://api.geckoterminal.com/api/v2/networks/base/pools/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe', {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const pStr = data && data.data && data.data.attributes && data.data.attributes.base_token_price_usd;
+          if (pStr) {
+            const pNum = Number(pStr);
+            if (pNum > 0) {
+              currentWbctPriceUsd = pNum;
+              applyLiveWbctPrice(pNum);
+              return;
+            }
+          }
+        }
+      } catch (_e) {}
+
+      // 3. Direct browser DexScreener API fallback
       try {
         const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/0xA3C743113a41cFd0146917065d4578337Bb77254');
         if (resp.ok) {
           const data = await resp.json();
           if (data && data.pairs && data.pairs.length > 0) {
-            // Find active pair with liquidity
-            const activePair = data.pairs.find(p => p.pairAddress.toLowerCase() === '0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe'.toLowerCase()) || data.pairs[0];
+            const activePair = data.pairs.find(p => p.pairAddress && p.pairAddress.toLowerCase() === '0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe'.toLowerCase()) || data.pairs[0];
             if (activePair && activePair.priceUsd) {
-              const el = document.getElementById('wbctDexPriceDisplay');
-              if (el) {
-                const pNum = Number(activePair.priceUsd);
-                el.textContent = '$' + (pNum < 0.0001 ? pNum.toFixed(10) : pNum.toFixed(4));
+              const pNum = Number(activePair.priceUsd);
+              if (pNum > 0) {
+                currentWbctPriceUsd = pNum;
+                applyLiveWbctPrice(pNum);
               }
             }
           }
         }
-      } catch (e) {
-        // Silent fallback
+      } catch (_e) {}
+    }
+
+    function applyLiveWbctPrice(pNum) {
+      const formatted = formatUnitPrice(pNum);
+      const el = document.getElementById('wbctDexPriceDisplay');
+      if (el) el.textContent = formatted;
+      const cardPer = document.getElementById('cardBalancePricePerBct');
+      if (cardPer) cardPer.textContent = `(1 BCT ≈ ${formatted})`;
+      if (typeof currentAccount !== 'undefined' && currentAccount) {
+        renderBalanceFigures(currentAccount.balance || 0);
       }
     }
     setInterval(pollDexPriceLive, 20000);
@@ -14116,6 +14185,10 @@
       document.getElementById('userProfileRoyalties').textContent = '0.00 BCT';
 
       document.getElementById('profileSubViewPosts').innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs">Loading on-chain thoughts...</div>';
+      const fvLoad = document.getElementById('profileSubViewFollowers');
+      if (fvLoad) fvLoad.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs">Loading followers...</div>';
+      const fgLoad = document.getElementById('profileSubViewFollowing');
+      if (fgLoad) fgLoad.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs">Loading following...</div>';
       document.getElementById('profileSubViewHandles').innerHTML = '';
       document.getElementById('profileSubViewTxs').innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs">Loading ledger transactions...</div>';
 
@@ -14141,6 +14214,8 @@
 
         currentProfileData = body.data;
         renderUserProfileData(currentProfileData, initialTab);
+        if (card) card.scrollTop = 0;
+        if (modal) modal.scrollTop = 0;
       } catch (err) {
         showToast('Failed to load profile', 'error', true);
         closeUserProfile();
@@ -14847,6 +14922,10 @@
     function triggerVibrationFeedback() {
       try {
         if ('vibrate' in navigator) {
+          // Prevent browser intervention when called without user gesture / activation
+          if (navigator.userActivation && !navigator.userActivation.hasBeenActive) {
+            return;
+          }
           navigator.vibrate([80, 40, 80]);
         }
       } catch (_e) {}
