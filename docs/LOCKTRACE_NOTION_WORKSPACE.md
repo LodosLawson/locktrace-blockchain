@@ -70,8 +70,8 @@ Aşağıdaki modüllerin tamamı sıfırdan geliştirilmiş, güvenlik testlerin
 - [x] **Uygulama İçi Bildirim Kutusu (Notification Bell):** Hem uygulama açıkken hem arka planda gelen tüm bildirimler senkronize olarak bildirim kutusunda saklanır ve okundu olarak işaretlenebilir.
 
 ### ✅ G. Kriptografik Arayüz Güvenliği & Denetim (Security Hardening)
-- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.8.3`):** LT-01'den LT-07'ye, LT-WEB-01..02, LT-SOL-01, LT-NGX-01, LT-RST-01, LT-OPS-01, LT-TWB-01, LT-POW-01, LT-MRK-01..02, LT-CRY-01, LT-SOL-02, LT-GPU-01, BUG-01..05 kapatmaları: Takipçi telif geçmişi indekslemesi, WrappedBCT çift basım koruması (`bytes32`), madenci tek geçiş döngüsü, gezgin DoS engeli (50 sınır), hızlı gönderi ücret eşitlemesi.
-- [x] **On-Chain Frontend Sealing (`v2.8.3`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
+- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.8.4`):** LT-01..07, LT-WEB-01..02, LT-SOL-01..02, LT-NGX-01, LT-RST-01, LT-OPS-01, LT-TWB-01, LT-POW-01, LT-MRK-01..02, LT-CRY-01, LT-GPU-01, BUG-01..05, LT-SRV-01, NEW-01..07 kapatmaları: Systemd gizli anahtar güvenliği, URL regex placeholder izolasyonu, Coinbase CSP ve Nginx miras koruması, sahte verified alıntı engeli, WrappedBCT un-indexed event logu, atomik indeks referans takası ve .env inline yorum desteği.
+- [x] **On-Chain Frontend Sealing (`v2.8.4`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
 - [x] **P2P Compact Block Relay & State Snapshot Fast Sync (`v2.7.0`):** BIP-152 %90+ bant genişliği tasarrufu, deterministik durum özeti (state root) ile saniyeler içinde düğüm kurulumu ve OpenCL GPU donanım madencilik motoru.
 - [x] **Derinlemesine Güvenlik Taraması:** Sybil saldırı engelleri, kendi kendine sahte hacim (wash-trading) engeli, SQLite WAL kilit koruması, XSS temizliği ve hız sınırlandırma (Rate Limiting) tamamlandı.
 
@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.8.3` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.8.4` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -357,4 +357,31 @@ LockTrace v2.8.3 sürümü ile hayata geçirilen 5 kritik düzeltme:
 
 5. **Hızlı Gönderi Ücret Eşitlemesi & JSON Hata Düzeltmesi (BUG-04):**
    - `frontend/index.html` işlem listesinde `onclick="openTxDetail(${JSON.stringify(tx)...})"` kullanımının tırnak ve satır sonlarında kırılması engellenerek `window._profileTxStore` nesnesi üzerinden güvenli çağrı sağlandı. Hızlı gönderi (`submitQuickComposePost`) için 0.10 BCT bakiye kontrolü ve `node_runner.py` doğrulaması tam mutabakata bağlandı.
+
+---
+
+## 🛡️ 13. LockTrace v2.8.4: Systemd Güvenliği, Çoklu İş Parçacığı & EVM Event Sertleştirmesi
+
+LockTrace v2.8.4 sürümü ile hayata geçirilen 8 kritik düzeltme:
+
+1. **Systemd Ortam Değişkeni İzolasyonu & Otomatik Gizli Anahtar Üretimi (LT-SRV-01):**
+   - `deploy/blockchain.service` içindeki sabit `CHANGE_ME_IN_PRODUCTION` tanımları kaldırıldı ve `EnvironmentFile=-/opt/blockchaint/.env` direktifine geçildi. `deploy/setup.sh` içine otomatik 256-bit kriptografik anahtar üretimi eklendi (`chmod 600`). `config.py` içinde güvensiz varsayılan metinler (`CHANGE_ME_IN_PRODUCTION` vb.) algılandığında bellekte anında rastgele anahtarla ezilmesi sağlandı.
+
+2. **DOM Bütünlüğü & URL Regex İzolasyonu (NEW-01):**
+   - `formatSpaceBodyHtml` içinde URL'lerin sonradan gelen `@`, `#` ve `$` etiketleri tarafından HTML `href` özniteliklerinin ezilmesi (DOM kırılması) önlendi. URL'ler özel Unicode sentinel belirteçleriyle (`\uE000BCT_URL_x\uE000`) geçici olarak ayrıştırıldı ve etiketlemeler tamamlandıktan sonra güvenli biçimde geri yerleştirildi.
+
+3. **Coinbase Canlı Fiyat CSP İzni & Nginx Güvenlik Başlıkları Mirası (NEW-02 & NEW-03):**
+   - `deploy/nginx_ssl.conf` `connect-src` direktifine `https://api.coinbase.com` eklendi. Nginx `add_header` kuralı gereği `/sw.js`, `.json` ve görsel dosyalarında düşen `Strict-Transport-Security`, `X-Content-Type-Options: nosniff` ve `X-Frame-Options` başlıkları ilgili konumlarda korunarak güçlendirildi.
+
+4. **Metin Alıntısı Sahte "Doğrulanmış Hesap" Rozeti Engeli (NEW-04):**
+   - `formatSpaceBodyHtml` içindeki düz metin alıntılarında koşulsuz olarak basılan "Doğrulanmış Hesap (verified)" rozeti kaldırıldı; yanıltıcı onay işareti yerine standart `format_quote` ikonu yerleştirildi.
+
+5. **WrappedBCT Un-Indexed Event Log Okunabilirliği (NEW-05):**
+   - `contracts/WrappedBCT.sol` içinde `MintedFromBridge` olayında `string indexed locktraceTxHash` yerine `string locktraceTxHash` tanımına geçildi. Böylece L1 işlem özeti 32-baytlık Keccak-256 özetine dönüşmeden açık metin olarak EVM log verisinde saklanır; BaseScan ve relayer tarafından doğrudan okunabilir.
+
+6. **Atomik Referans Değişimi ile Çoklu İş Parçacığı (8-Thread) Yarış Koruması (NEW-06):**
+   - `_load_in_memory_bns_index` ve `_load_in_memory_space_index` fonksiyonlarındaki yerinde sözlük temizliği (`self.bns_records = {}`) kaldırıldı. Veriler yerel kapsamda (`new_bns_records`) inşa edilip tamamlandığında atomik referans ataması (`STORE_ATTR`) ile tek adımda takas edilir; eşzamanlı isteklerde boş/yarım veri veya `RuntimeError` riski sıfırlandı.
+
+7. **Yorum Yanıtında Tire (-) Karakter Desteği & .env Satır İçi Yorum Desteği (NEW-07):**
+   - `cancelCommentReply` içindeki regex `^@[a-zA-Z0-9_\-\.]+` olarak genişletildi. Python ve Node.js `.env` ayrıştırıcılarında `KEY=value # comment` şeklindeki satır içi yorumlar temizlenerek yapılandırma kirliliği giderildi.
 

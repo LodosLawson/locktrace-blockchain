@@ -21,7 +21,17 @@ if os.path.exists(env_path):
                 if line and not line.startswith("#") and "=" in line:
                     k, v = line.split("=", 1)
                     k = k.strip()
-                    v = v.strip().strip("'\"")
+                    v = v.strip()
+                    # Strip inline comments (e.g. KEY=val # comment) while preserving quotes
+                    if not (v.startswith('"') or v.startswith("'")):
+                        v = v.split("#")[0].strip()
+                    else:
+                        q = v[0]
+                        end_idx = v.find(q, 1)
+                        if end_idx != -1:
+                            v = v[1:end_idx]
+                        else:
+                            v = v.strip("'\"")
                     if k and k not in os.environ:
                         os.environ[k] = v
     except Exception:
@@ -30,7 +40,7 @@ if os.path.exists(env_path):
 
 class Config:
     # ── Protokol & Versiyon ───────────────────────────
-    PROTOCOL_VERSION = "2.8.3"
+    PROTOCOL_VERSION = "2.8.4"
     NETWORK_NAME = os.environ.get("BCT_NETWORK", "mainnet")
 
     # ── Anti-Stall & Resilience Parameters (v2.5.0) ───
@@ -43,9 +53,13 @@ class Config:
     STATE_SNAPSHOT_WINDOW = 1000          # Hızlı senkronizasyonda doğrulanacak son blok penceresi
     GPU_MINING_ENABLED = True             # OpenCL / CUDA GPU madenciliği hızlandırması
 
-    # ── Güvenlik ──────────────────────────────────────
-    SECRET_KEY = os.environ.get("BCT_SECRET_KEY", secrets.token_hex(32))
-    ADMIN_API_KEY = os.environ.get("BCT_ADMIN_KEY", secrets.token_hex(24))
+    # ── Güvenlik (LT-SRV-01 Defense-In-Depth Koruması) ──
+    _insecure_defaults = {"change_me_in_production", "change_me", "admin", "123456", "secret", "password"}
+    _raw_secret = os.environ.get("BCT_SECRET_KEY", "").strip()
+    _raw_admin = os.environ.get("BCT_ADMIN_KEY", "").strip()
+
+    SECRET_KEY = secrets.token_hex(32) if (not _raw_secret or _raw_secret.lower() in _insecure_defaults) else _raw_secret
+    ADMIN_API_KEY = secrets.token_hex(32) if (not _raw_admin or _raw_admin.lower() in _insecure_defaults) else _raw_admin
 
     # ── Thirdweb Yapılandırması ───────────────────────
     THIRDWEB_CLIENT_ID = os.environ.get("THIRDWEB_CLIENT_ID", "")

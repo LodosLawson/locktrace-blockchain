@@ -1,7 +1,7 @@
-# LockTrace (BCT) Technical Whitepaper — v2.8.3
+# LockTrace (BCT) Technical Whitepaper — v2.8.4
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.8.3 — November 2026*  
+*Version 2.8.4 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
@@ -19,11 +19,14 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.8.3**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
-1. **Creator Follow Royalty On-Chain Indexing:** Synchronizes SQLite transaction indexing (`extra_json LIKE '%"target": "..."%'`) and balance analytics, ensuring the 0.50 BCT follow reward is transparently recorded and attributed in creator history.
-2. **WrappedBCT Canonical Double-Mint Immunity:** Employs canonical `bytes32` hash mapping (`mapping(bytes32 => bool) public processedL1TxHashes`) and strict string parsing, mathematically preventing double-minting via character casing or `0x` prefixes.
-3. **PoW Multi-Pass Elimination & Worker Synchronization:** Enforces single-pass termination on failed iterations (`ok == False`), eliminates CPU/Rayon redundant loops, and introduces atomic synchronization across parallel mining worker threads.
-4. **Explorer Search DoS Mitigation & Quick Compose Parity:** Limits search results to 50 paginated records for high-frequency accounts (Treasury, Miners), fixes inline JSON serialization crashes, and aligns quick compose fees with canonical consensus (0.10 BCT).
+In **Version 2.8.4**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+1. **Systemd Environment Isolation & Automated Secret Provisioning (LT-SRV-01):** Replaces static service defaults with secure `EnvironmentFile=-/opt/blockchaint/.env`, generates 256-bit cryptographic secrets during provisioning with `chmod 600`, and dynamically invalidates insecure defaults in `Config`.
+2. **DOM Integrity & Safe URL Placeholder Isolation (NEW-01):** Employs private Unicode sentinel tokens isolating URLs during mention/hashtag/cashtag regex parsing, completely preventing malformed HTML anchor tags and DOM corruption.
+3. **Live Coinbase Spot Price Feed CSP & Nginx Header Preservation (NEW-02 & NEW-03):** Whitelists `https://api.coinbase.com` in `connect-src` and preserves HSTS/nosniff/X-Frame-Options across static PWA and Service Worker location blocks.
+4. **Anti-Spoofing Cryptographic Quote Attestation (NEW-04):** Removes misleading 'verified' account badges from plain text quote blocks, restricting verified badges strictly to cryptographically proven on-chain identities.
+5. **WrappedBCT Un-Indexed Event Log Parity (NEW-05):** Updates `MintedFromBridge` to emit un-indexed L1 transaction hashes, ensuring raw hash strings are preserved in EVM logs for cross-chain explorers and indexers.
+6. **Atomic Reference-Swap Multithreaded State Indexes (NEW-06):** Replaces in-place dictionary clears with atomic reference swaps in `_load_in_memory_bns_index` and `_load_in_memory_space_index`, guaranteeing race-free concurrent read access under multi-threaded Gunicorn serving.
+7. **Comment Reply Hyphenation & Robust .env Parser (NEW-07):** Supports hyphenated BNS handles in reply cancellation and cleanly strips inline comments during `.env` loading.
 5. **Zero-Bypass Public Key Address Derivation:** Prohibits unauthenticated double-SHA256 address generation; invalid or off-curve public keys return `None` immediately across Rust native engine and Python fallback.
 6. **Strict Exception-Based Merkle Duplicate Rejection (CVE-2012-2459):** Raises explicit `ValueError` on duplicate transaction leaves, preventing block tampering and eliminating `"0"*64` Merkle root collision exploits.
 7. **Single-Transaction Block SPV Proof Parity:** Fully supports zero-step SPV inclusion proofs for single-transaction blocks where the transaction hash directly equals the block Merkle root.
@@ -410,7 +413,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.8.0 (Completed):** Native Rust Acceleration Core (`crates/locktrace_core`), Multi-Layer Bridge Hardening (LT-SOL-01), ECDSA Space Cast Authentication (LT-WEB-01), DOM XSS Attribute Sanitization (LT-WEB-02), Nginx Strict HTTPS Enforcement & CSP Hardening (LT-NGX-01), Thirdweb Engine EVM Address & BigInt Validation (LT-TWB-01).
 - **v2.8.1 (Completed):** Cryptographic Sentinel Nonce Serialization (LT-POW-01), Strict SPV Merkle Proof Validation (LT-MRK-01), SECP256k1 Curve Point Validation & 33-Byte Compressed Parity (LT-CRY-01), Cross-Chain Canonical Address Ingress Normalization (LT-SOL-02), Multi-Core Parallel Thread Mining & Honest Telemetry (LT-GPU-01), and Master 100k Bot Army / Sybil Testnet Benchmark Suite.
 - **v2.8.2 (Completed):** Zero-Bypass Public Key Address Derivation (rejection of off-curve/invalid keys with None without fallback spoofing), Strict Exception-Based Merkle Duplicate Rejection (CVE-2012-2459 with ValueError), Single-Transaction Block SPV Proof Parity (`proof_steps=[]` when `leaf == root`).
-- **v2.8.3 (Current Production Release):** Creator Follow Royalty On-Chain Indexing & UI Attribution, WrappedBCT Canonical Hash Double-Mint Immunity (`mapping(bytes32 => bool)`), PoW Single-Pass Execution & Worker Sync, Explorer Search DoS Defense (50-record cap), and Quick Compose Fee Synchronization (0.10 BCT).
+- **v2.8.3 (Completed):** Creator Follow Royalty On-Chain Indexing & UI Attribution, WrappedBCT Canonical Hash Double-Mint Immunity (`mapping(bytes32 => bool)`), PoW Single-Pass Execution & Worker Sync, Explorer Search DoS Defense (50-record cap), and Quick Compose Fee Synchronization (0.10 BCT).
+- **v2.8.4 (Current Production Release):** Systemd EnvironmentFile & Auto 256-bit Secret Provisioning (LT-SRV-01), URL Regex Isolation Sentinel (NEW-01), Coinbase Spot Price Feed CSP & Nginx Location Header Preservation (NEW-02 & NEW-03), Anti-Spoofing Quote Guard (NEW-04), WrappedBCT Un-Indexed Event Log Parity (NEW-05), Atomic Reference-Swap State Indexes (NEW-06), and Reply Regex Hyphenation & .env Inline Comment Parsing (NEW-07).
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---

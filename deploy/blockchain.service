@@ -7,10 +7,8 @@ Type=simple
 User=ubuntu
 Group=ubuntu
 WorkingDirectory=/opt/blockchaint
+EnvironmentFile=-/opt/blockchaint/.env
 Environment="PATH=/opt/blockchaint/venv/bin:/usr/bin"
-Environment="BCT_SECRET_KEY=CHANGE_ME_IN_PRODUCTION"
-Environment="BCT_ADMIN_KEY=CHANGE_ME_IN_PRODUCTION"
-Environment="BCT_DEBUG=false"
 Environment="BCT_LOG_LEVEL=INFO"
 ExecStart=/opt/blockchaint/venv/bin/gunicorn \
     --bind 127.0.0.1:5000 \
