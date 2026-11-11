@@ -81,6 +81,41 @@ def fast_verify_signature(public_key_hex: str, message: str, signature_hex: str)
     return py_verify(public_key_hex, message, signature_hex)
 
 
+def fast_batch_verify_signatures(items: List[Tuple[str, str, str]]) -> List[bool]:
+    """
+    Batch verifies multiple SECP256k1 signatures in parallel across all CPU cores.
+    Uses native Rust Rayon parallel iterator if available, or Python OpenSSL fallback.
+    """
+    if is_rust_accelerated():
+        try:
+            return list(_RUST_CORE.batch_verify_signatures(items))
+        except Exception:
+            pass
+
+    from core.wallet import verify_signature as py_verify
+    return [py_verify(pub, data, sig) for (pub, data, sig) in items]
+
+
+def fast_verify_spv_proof(target_hash: str, merkle_root: str, proof_steps: List[Tuple[str, str]]) -> bool:
+    """Verifies SPV Merkle inclusion proof in microseconds using Rust engine or Python fallback."""
+    if is_rust_accelerated():
+        try:
+            return bool(_RUST_CORE.verify_spv_proof(target_hash, merkle_root, proof_steps))
+        except Exception:
+            pass
+
+    current = (target_hash or "").strip().lower()
+    for direction, sibling in proof_steps:
+        sib = str(sibling).strip().lower()
+        if str(direction).lower() == "left":
+            combined = (sib + current).encode("utf-8")
+        else:
+            combined = (current + sib).encode("utf-8")
+        current = hashlib.sha256(combined).hexdigest()
+
+    return current.lower() == str(merkle_root).strip().lower()
+
+
 # ── Merkle Tree Bridge ────────────────────────────────────────────
 def fast_compute_merkle_root(tx_hashes: List[str]) -> str:
     """Computes SHA-256 Merkle root using Rust native engine or Python fallback."""
