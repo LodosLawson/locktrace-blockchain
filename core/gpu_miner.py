@@ -165,3 +165,4 @@ class LockTraceMinerEngine:
         if solved_hash:
             return True, solved_nonce, solved_hash, hashrate
         return False, 0, "", hashrate
+

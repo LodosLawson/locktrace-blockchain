@@ -262,3 +262,14 @@ Merkeziyetsizlikten ve güvenlikten asla ödün vermeden hayata geçirilen üç 
    - **Donanım Uyumluluğu:** Bilgisayarda bulunan NVIDIA (Örn: GeForce RTX 3050), AMD Radeon veya Intel Arc GPU'ları otomatik algılanır. GPU mevcutsa paralel nonce taraması GPU üzerinden yüz binlerce H/s ile koşturulur; GPU bulunmayan cihazlarda ise çok çekirdekli CPU madenciliği kesintisiz devam eder.
    - **Kullanım Seçenekleri:** `--miner-engine {auto,gpu,cpu}` ve `--sync-mode {snapshot,full}` parametreleriyle tam kullanıcı denetimi sunulur.
 
+---
+
+## 🦀 9. Gelecek Mimari: Python + Rust Hibrit Motoru (PyO3 & Maturin) Planı
+
+LockTrace çekirdeğini endüstri standardı Rust performansı ile buluşturacak hibrit motor tasarımı:
+
+- **Strateji:** Canlı Flask API, Web3 cüzdan ve SQLite mimarisini %100 koruyarak, yalnızca ağır CPU yükü getiren 4 katmanı (SECP256k1 toplu imza doğrulama, SIMD AVX-512 PoW madenciliği, paralel Merkle ağacı ve sıfır kopyalı seride) Rust (`crates/locktrace_core`) ile yazmak.
+- **Hedef:** Tek çekirdekte saniyede 50.000+ imza doğrulama (24 kat artış) ve %60 daha düşük bellek tüketimi.
+- **Güvenlik / Çift Motor (Dual-Engine):** Rust derlemesi olan sistemlerde native `.pyd` / `.so` çalışır; olmayan sistemlerde Python OpenSSL motoru kesintisiz yedek olarak devam eder.
+- **Ayrıntılı Rapor:** [`docs/NOTION_RUST_HYBRID_ENGINE_PLAN.md`](file:///c:/Users/mehem/Documents/BlockChainT/docs/NOTION_RUST_HYBRID_ENGINE_PLAN.md) dosyasından incelenebilir.
+
