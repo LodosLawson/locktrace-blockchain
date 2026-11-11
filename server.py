@@ -1790,7 +1790,7 @@ def api_space_like():
     Likes an on-chain thought (Requires cryptographic wallet authentication).
     Cost: 0.01 BCT (20% to tweet author, 70% to Treasury, 10% validator fee).
     """
-    if not check_rate_limit("space_like", limit=30, window_seconds=60):
+    if not check_rate_limit("space_like", limit=60, window_seconds=60):
         return api_response(False, message="Liking too fast. Please wait a moment.", status=429)
 
     data = request.get_json(silent=True) or {}

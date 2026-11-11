@@ -4185,7 +4185,7 @@
                 <li><strong>Sybil Defense &amp; Validator Stake:</strong> Nodes must stake at least <strong>1,000 BCT</strong> to join the active validator committee. Malicious double-signing (equivocation) results in immediate stake slashing and peer eviction.</li>
                 <li><strong>Priority RBF &amp; Mempool Eviction:</strong> Saturated mempools (5,000 tx ceiling) dynamically evict lowest-fee transfers to accommodate higher-fee incoming transactions.</li>
                 <li><strong>P2P Compact Block Relay &amp; State Snapshot Sync:</strong> BIP-152 short txid block relay slashes bandwidth by ~90-95%, while deterministic state root snapshots allow warp syncing nodes with rolling 1,000-block verification.</li>
-                <li><strong>Anti-Spam Action Cooldowns:</strong> Built-in protocol rate limiting enforces per-wallet cooldowns (Transfer: 20s, Post: 20s, Like: 60s, Comment: 60s, Follow: 60s, BNS: 60s) alongside mempool double-spend balances.</li>
+                <li><strong>Anti-Spam Action Cooldowns:</strong> Built-in protocol rate limiting enforces per-wallet cooldowns (Transfer: 3s, Post: 10s, Like: 0s Instant, Comment: 5s, Follow: 3s, BNS: 10s) alongside mempool double-spend balances.</li>
                 <li><strong>1% Protocol Fee Split &amp; Deflation:</strong> Out of the automated 1% transaction fee, <strong>50% is permanently locked into the Treasury Vault</strong> (deflationary supply reduction), <strong>35% goes to the block proposer</strong>, and <strong>15% rewards the validator quorum</strong>.</li>
               </ul>
             </div>
@@ -10644,10 +10644,32 @@
         switchTab('yeni-cuzdan');
         return;
       }
+
+      // Pre-check if already liked in local cache
+      const cachedPost = spacePostsCache.find(p => String(p.id || p.post_id) === String(postId));
+      if (cachedPost && Array.isArray(cachedPost.likes) && cachedPost.likes.includes(currentAccount.address)) {
+        showToast('Bu gönderiyi zaten beğendiniz', 'favorite', false);
+        return;
+      }
+
       inFlightLikes.add(postId);
+      let didOptimisticUpdate = false;
       try {
         const canonical = `${currentAccount.address}:${postId}`;
         let authFields = await buildSignedAuthPayload(canonical);
+
+        // Instant Optimistic UX: Immediately reflect heart and count in UI
+        if (cachedPost) {
+          if (!Array.isArray(cachedPost.likes)) cachedPost.likes = [];
+          if (!cachedPost.likes.includes(currentAccount.address)) {
+            cachedPost.likes.push(currentAccount.address);
+            cachedPost.likes_count = (cachedPost.likes_count || 0) + 1;
+            didOptimisticUpdate = true;
+            renderSpacePosts();
+            if (activeDetailPostId) renderSpacePostDetailContent(activeDetailPostId);
+          }
+        }
+
         let resp = await apiFetch('/space/like', {
           method: 'POST',
           body: JSON.stringify(Object.assign({
@@ -10676,9 +10698,22 @@
           await refreshCurrentAccountBalance();
           await loadSpaceFeed();
         } else {
+          // Revert optimistic update on failure
+          if (didOptimisticUpdate && cachedPost) {
+            cachedPost.likes = cachedPost.likes.filter(a => a !== currentAccount.address);
+            cachedPost.likes_count = Math.max(0, (cachedPost.likes_count || 1) - 1);
+            renderSpacePosts();
+            if (activeDetailPostId) renderSpacePostDetailContent(activeDetailPostId);
+          }
           showToast((resp.body && resp.body.message) || 'Could not submit like', 'warning', true);
         }
       } catch (err) {
+        if (didOptimisticUpdate && cachedPost) {
+          cachedPost.likes = cachedPost.likes.filter(a => a !== currentAccount.address);
+          cachedPost.likes_count = Math.max(0, (cachedPost.likes_count || 1) - 1);
+          renderSpacePosts();
+          if (activeDetailPostId) renderSpacePostDetailContent(activeDetailPostId);
+        }
         showToast(err.message || 'Operation canceled', 'error', true);
       } finally {
         inFlightLikes.delete(postId);

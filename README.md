@@ -51,7 +51,7 @@ LockTrace Space embeds social interactions directly into the Layer-1 transaction
 - **Like Royalty (`space_like`):** Cost is **0.01 BCT**. **+0.002 BCT is instantly paid on-chain to the post creator's wallet** as creator royalty (70% Treasury, 10% fee pool).
 - **Comment Royalty (`space_comment`):** Cost is **0.02 BCT**. **+0.004 BCT is transferred directly to the thread author's wallet** (70% Treasury, 10% fee pool).
 - **Follow Creator (`space_follow`):** Cost is **1.00 BCT**. **+0.50 BCT is transferred directly to the creator's wallet** (30% miner/quorum pool, 20% Treasury).
-- **Anti-Spam Action Cooldowns:** Enforced per-wallet cooldowns to prevent spam and double-spend race conditions (Transfer: 20s, Post: 20s, Like: 60s, Comment: 60s, Follow: 60s, BNS Register: 60s).
+- **Anti-Spam Action Cooldowns:** Enforced per-wallet cooldowns to prevent spam and double-spend race conditions (Transfer: 3s, Post: 10s, Like: 0s Instant, Comment: 5s, Follow: 3s, BNS Register: 10s).
 - **Tip Royalty (`space_tip`):** Readers can tip creators directly in any custom amount of BCT with 0% intermediary commission.
 - **Creator Identity:** Verified via on-chain BNS `.bct` handles or verified public ECDSA wallet addresses.
 
