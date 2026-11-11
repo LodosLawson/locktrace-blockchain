@@ -370,7 +370,12 @@ curl -s "https://locktrace.space/api/v1/nodes"
 6. **Cryptographic Frontend Integrity Seal (v2.4.0):**
    - Canonical SHA-256 Checksums and ECDSA SECP256k1 release signatures (`frontend/integrity.json`).
    - Every node independently validates `index.html` and `sw.js` against the on-chain release block before serving. Any unauthorized file tampering triggers an immediate `HTTP 403` lockout.
-7. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+7. **Anti-Stall Consensus & High-Throughput Resilience Engine (v2.5.0):**
+   - **Emergency LWMA Stall Failsafe:** Automatic difficulty relaxation when block intervals exceed 120 seconds, preventing network freezes during severe miner drop-offs.
+   - **Priority Replace-By-Fee (RBF) & Mempool Eviction:** Dynamic mempool admission that evicts the lowest-fee transaction in saturated mempools (5,000 txs) for higher-fee priority inclusion.
+   - **Constant-Time SECP256k1 Cryptography:** Full migration to OpenSSL C-backed constant-time cryptography eliminating Minerva side-channel timing attacks (CVE-2024-23342).
+   - **O(1) Reverse-Cursor Transaction Indexing:** High-speed paginated queries and indexed SQLite lookups eliminating linear memory/CPU degradation.
+8. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 
