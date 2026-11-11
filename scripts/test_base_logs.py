@@ -1,8 +1,10 @@
+import os
 import subprocess
 import json
 
-KEY_PATH = r"C:\Users\mehem\Downloads\ssh-key-2026-11-02.key"
-HOST = "ubuntu@129.151.205.219"
+DEFAULT_KEY = r"C:\Users\mehem\Downloads\ssh-key-2026-11-02.key"
+KEY_PATH = os.environ.get("LOCKTRACE_SSH_KEY", DEFAULT_KEY if os.path.exists(DEFAULT_KEY) else "deploy/id_rsa")
+HOST = os.environ.get("LOCKTRACE_SSH_HOST", "ubuntu@129.151.205.219")
 
 cmd = """python3 -c "
 import sqlite3, json

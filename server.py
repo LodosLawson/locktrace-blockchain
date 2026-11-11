@@ -2875,8 +2875,8 @@ def api_bridge_claim_burn():
     if not evm_tx_hash or not evm_tx_hash.startswith("0x") or len(evm_tx_hash) != 66:
         return api_response(False, message="Invalid Base EVM transaction hash (0x... 66 characters required).", status=400)
 
-    if not (bct_address.startswith("BCT") and len(bct_address) == 43):
-        return api_response(False, message="Invalid LockTrace BCT recipient address.", status=400)
+    if not (bct_address.startswith("BCT") and len(bct_address) == 43) or not re.match(r"^BCT[0-9a-fA-F]{40}$", bct_address) or re.match(r"^BCT0{40}$", bct_address, re.IGNORECASE):
+        return api_response(False, message="Invalid or reserved LockTrace BCT recipient address.", status=400)
 
     if amount_bct < 1.0:
         return api_response(False, message="Minimum bridge amount is 1.00 BCT.", status=400)

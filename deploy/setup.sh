@@ -53,12 +53,15 @@ sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
 sudo systemctl restart nginx
 
-# ── 8. Firewall ──────────────────────────────────
-echo "[EXTRA] Firewall yapılandırılıyor..."
-sudo ufw allow 22/tcp
+# ── 8. Firewall & SSH Hardening ──────────────────
+echo "[EXTRA] Firewall ve SSH güvenliği yapılandırılıyor..."
+sudo ufw limit 22/tcp comment 'SSH rate limiting & brute-force defense'
 sudo ufw allow 80/tcp
 sudo ufw allow 443/tcp
 sudo ufw --force enable
+sudo apt-get install -y fail2ban
+sudo systemctl enable fail2ban
+sudo systemctl start fail2ban
 
 echo ""
 echo "══════════════════════════════════════"

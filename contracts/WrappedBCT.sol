@@ -200,6 +200,10 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
         emit MintedFromBridge(to, amount, locktraceTxHash);
     }
 
+    function _isValidHexChar(bytes1 b) private pure returns (bool) {
+        return (b >= '0' && b <= '9') || (b >= 'a' && b <= 'f') || (b >= 'A' && b <= 'F');
+    }
+
     /**
      * @notice Burns wBCT on EVM to release native BCT back to the user's address on LockTrace Layer-1.
      * @param amount Amount of wBCT to burn.
@@ -210,13 +214,24 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
         string calldata locktraceRecipient
     ) external whenNotPaused {
         require(amount > 0, "wBCT: Amount must be greater than zero");
-        require(bytes(locktraceRecipient).length == 43, "wBCT: Invalid LockTrace address length");
+        bytes calldata rBytes = bytes(locktraceRecipient);
+        require(rBytes.length == 43, "wBCT: Invalid LockTrace address length");
         require(
-            bytes(locktraceRecipient)[0] == 'B' &&
-            bytes(locktraceRecipient)[1] == 'C' &&
-            bytes(locktraceRecipient)[2] == 'T',
+            rBytes[0] == 'B' &&
+            rBytes[1] == 'C' &&
+            rBytes[2] == 'T',
             "wBCT: Must start with BCT prefix"
         );
+
+        bool hasNonZero = false;
+        for (uint256 i = 3; i < 43; i++) {
+            bytes1 b = rBytes[i];
+            require(_isValidHexChar(b), "wBCT: Address must contain valid hex characters");
+            if (b != '0') {
+                hasNonZero = true;
+            }
+        }
+        require(hasNonZero, "wBCT: Cannot bridge to burn zero address");
 
         _burn(_msgSender(), amount);
         emit BurnedToBridge(_msgSender(), amount, locktraceRecipient);

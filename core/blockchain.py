@@ -83,8 +83,8 @@ GENERAL_TX_BATCH_QUOTA = 25            # General transaction block threshold
 MAX_PENDING_TX_PER_WALLET = 25         # Max unconfirmed transactions per wallet in mempool
 MAX_GLOBAL_MEMPOOL_SIZE = 5000         # Hard global mempool ceiling against DDoS floods
 
-MINING_DIFFICULTY = 3                    # Base Proof of Work Difficulty
-DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
+MINING_DIFFICULTY = int(os.environ.get("BCT_MINING_DIFFICULTY", "3"))  # Base Proof of Work Difficulty
+DATA_DIR = os.environ.get("BCT_DATA_DIR") or os.path.join(os.path.dirname(os.path.dirname(__file__)), "data")
 
 RELEASE_AUTHORITY_ADDRESS = "BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080"
 RELEASE_AUTHORITY_PUBKEY = (
@@ -3315,6 +3315,15 @@ class Blockchain:
         )
         self._sequencer_thread.start()
 
+    def stop(self):
+        """Cleanly stops the background batch sequencer thread and flushes storage."""
+        if self._stop_sequencer:
+            self._stop_sequencer.set()
+        self._sequencer_wakeup.set()
+        if self._sequencer_thread and self._sequencer_thread.is_alive():
+            self._sequencer_thread.join(timeout=2.0)
+        self._storage = None
+
     def _run_batch_sequencer_loop(self):
         while self._stop_sequencer and not self._stop_sequencer.is_set():
             try:
@@ -3880,10 +3889,6 @@ class Blockchain:
             if block_index < 0 or block_index >= len(self.chain):
                 return False, f"Block #{block_index} is not yet available.", None
 
-            target_block = self.chain[block_index]
-            if target_block.hash.lower() != clean_hash:
-                return False, "Block hash mismatch against canonical chain! (Fork or corrupted data)", None
-
             msg = f"ATTEST:{clean_id}:{block_index}:{clean_hash}:{ts_str}"
             if not verify_signature(clean_pub, msg, signature):
                 return False, "Invalid validator ECDSA signature!", None
@@ -3893,7 +3898,7 @@ class Blockchain:
             if val_stake < MIN_VALIDATOR_STAKE:
                 return False, f"Insufficient staked collateral ({val_stake:.2f} BCT). Minimum {MIN_VALIDATOR_STAKE:.2f} BCT must be locked in the validator stake vault to attest blocks.", None
 
-            # Equivocation Detection (Slashing defense)
+            # Equivocation Detection (Slashing defense: must precede canonical hash filter to punish fork-signers)
             val_key = f"{clean_miner}:{block_index}"
             prev_hash = self._attestations_by_validator.get(val_key)
             if prev_hash and prev_hash.lower() != clean_hash.lower():
@@ -3906,6 +3911,11 @@ class Blockchain:
                     "slashed": True
                 }
                 return False, f"Equivocation detected on block #{block_index}! Validator stake has been slashed.", None
+
+            target_block = self.chain[block_index]
+            if target_block.hash.lower() != clean_hash:
+                return False, "Block hash mismatch against canonical chain! (Fork or corrupted data)", None
+
             self._attestations_by_validator[val_key] = clean_hash
 
             existing = self.nodes.get(clean_id)
@@ -4211,7 +4221,6 @@ class Blockchain:
     def get_account_nonce(self, address: str) -> int:
         """Compute exact sequential outgoing transaction nonce for an address from on-chain + pending history."""
         with self.lock:
-            self._load_state()
             clean_addr = (address or "").strip()
             if not clean_addr:
                 return 0

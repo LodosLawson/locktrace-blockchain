@@ -11,6 +11,7 @@ import time
 import json
 import sqlite3
 import logging
+import re
 from decimal import Decimal
 from typing import Dict, Any, Optional
 try:
@@ -331,10 +332,16 @@ class BridgeRelayer:
         import urllib.request
         for r in rows:
             bridge_id = r["bridge_id"]
-            bct_dest = r["bct_address"]
+            bct_dest = str(r["bct_address"] or "").strip()
             amt = float(r["net_amount"] or r["amount_bct"])
             evm_hash = r["tx_hash_evm"]
             evm_sender = r["evm_address"]
+
+            # Defense-in-depth: Reject malformed or zero burn address on L1 unlock
+            if not re.match(r"^BCT[0-9a-fA-F]{40}$", bct_dest) or re.match(r"^BCT0{40}$", bct_dest, re.IGNORECASE):
+                logger.error(f"Bridge {bridge_id}: Invalid or reserved BCT destination address ({bct_dest}). Aborting automatic unlock.")
+                self._mark_failed(bridge_id, "FAILED_INVALID_RECIPIENT: Recipient BCT address is invalid or reserved burn address. Manual admin review required.")
+                continue
 
             try:
                 req_data = json.dumps({

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.7.0)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.8.0)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner (CPU & GPU Accelerated),
 and cryptographically verified decentralized Web Wallet on Linux, macOS, or Windows with
@@ -12,6 +12,7 @@ Key Capabilities:
   3. Hybrid GPU (OpenCL / NVIDIA / AMD / Intel) & Multi-Worker CPU PoW Miner (`--miner-engine`).
   4. v2.6.0 P2P Compact Block Relay (~90% bandwidth reduction).
   5. v2.7.0 Decentralized State Snapshot Sync (warp sync with verified state root).
+  6. v2.8.0 Native Rust Acceleration Engine & Multi-Layer Hardening.
 
 Usage:
     # Local Mode (Accessible only on your computer at http://127.0.0.1:5050)
@@ -47,7 +48,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.7.0"
+VERSION = "2.8.0"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)

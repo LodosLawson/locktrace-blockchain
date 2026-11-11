@@ -1,6 +1,6 @@
 {
   "name": "blockchaint",
-  "version": "2.7.0",
+  "version": "2.8.0",
   "description": "[![Mainnet Status](https://img.shields.io/badge/Mainnet-Online%20%28Stockholm%29-10b981?style=for-the-badge&logo=oracle)](https://locktrace.space) [![Total Supply](https://img.shields.io/badge/Total%20Supply-1%20Trillion%20BCT-2563eb?style=for-the-badge)](https://locktrace.space) [![PWA Ready](https://img.shields.io/badge/PWA-Desktop%20%26%20Mobile-f59e0b?style=for-the-badge&logo=pwa)](https://locktrace.space) [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/LodosLawson/locktrace-blockchain)",
   "main": "index.js",
   "scripts": {

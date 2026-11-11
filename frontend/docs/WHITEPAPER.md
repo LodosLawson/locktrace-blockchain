@@ -1,7 +1,7 @@
-# LockTrace (BCT) Technical Whitepaper — v2.7.0
+# LockTrace (BCT) Technical Whitepaper — v2.8.0
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.7.0 — November 2026*  
+*Version 2.8.0 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
@@ -19,18 +19,24 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.7.0**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, and decentralized hardware acceleration:
-1. **P2P Compact Block Relay (v2.6.0):** Transmits block headers, prefilled coinbase/system transactions, and 16-hex short transaction IDs, cutting network bandwidth consumption by ~90-95% while strictly enforcing cryptographic Merkle root and PoW verification.
-2. **Decentralized State Snapshot Sync (v2.7.0):** Enables warp sync for newly joining nodes by providing deterministically hashed state roots over sorted account balances and BNS registries, requiring nodes to fully replay only the rolling window of recent 1,000 blocks to tip without compromising decentralization.
-3. **Hybrid OpenCL GPU & Multi-Worker CPU Miner Engine (v2.7.0):** Integrated OpenCL C acceleration for NVIDIA, AMD, and Intel GPUs alongside multi-worker CPU fallback in `node_runner.py` with zero required external pip packages.
-4. **Emergency LWMA Stall Failsafe (v2.5.0):** Dynamic difficulty relaxation when block intervals exceed 120s (6x target block time), preventing network deadlocks during severe miner drop-offs.
-5. **Priority Replace-By-Fee (RBF) & Mempool Eviction (v2.5.0):** Dynamic mempool admission that automatically evicts the lowest-fee transaction in saturated mempools (5,000 txs) for higher-fee priority inclusion, rendering mempool flood DoS economically unviable.
-6. **Constant-Time SECP256k1 Cryptography Engine (v2.5.0):** Full migration to OpenSSL C-backed constant-time cryptography eliminating Minerva timing side-channels (CVE-2024-23342).
-7. **O(1) Reverse-Cursor Transaction Indexing & Query Scalability (v2.5.0):** Zero-overhead paginated transaction lookup and indexed SQLite access eliminating linear memory/CPU degradation.
-8. **Consensus Quorum Proof-of-Attestation & Fake Uptime Immunity (LT-01):** Eliminates Sybil stake spoofing and idle heartbeat emission exploitation by strictly requiring both collateral locked in `BCT_STAKE_VAULT_...` (minimum 1,000.0 BCT) and real-time cryptographic ECDSA block attestations within the last 3 blocks for 30% validator pool reward participation.
-9. **Cross-Chain Bridge Reorg & Concurrency Guard (LT-02):** Enforces 8-to-10 block L1 confirmation depth prior to Base EVM minting, strict *fail-closed* 12-block Base confirmation depth verification, SQLite unique index constraints on EVM burn hashes, and in-flight mutex locks preventing double-spend race conditions.
-10. **BIP-62/146 Low-S Signature Malleability Immunity & Deterministic Canonical Signatures (LT-04):** Strictly enforces canonical ECDSA Low-S ($s \le \lfloor N/2 \rfloor$) in SECP256k1 signature validation, rejecting all malleable signatures, and mandates deterministic canonical payload templates (`TX:mainnet:<sender>:<receiver>:<amount>:<nonce>`) with strictly sequential nonces.
-11. **Zero-Disk TOCTOU-Free Atomic In-Memory Serving (LT-07):** Serves `index.html`, `sw.js`, and `manifest.json` directly from cryptographically verified in-memory byte buffers, eliminating Time-of-Check to Time-of-Use tampering risks.
+In **Version 2.8.0**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+1. **Native Rust Acceleration Core (`crates/locktrace_core`):** High-speed cryptographic validation, lazy parallel Rayon PoW mining with accurate atomic hashrate telemetry, zero heap allocation chunking, and deterministic serialization.
+2. **Multi-Layer Cross-Chain Bridge Hardening (LT-SOL-01):** Hex-character enforcement (`[0-9a-fA-F]`) on 43-character BCT addresses and zero burn address rejection across Solidity smart contract (`WrappedBCT.sol`), frontend Web3 client, and backend bridge relayer daemon.
+3. **ECDSA Space Cast Authentication (LT-WEB-01):** Enforces cryptographic secp256k1 canonical signature verification on quick compose casts, eliminating unauthorized impersonation.
+4. **DOM XSS Sanitization (LT-WEB-02):** Strict regex attribute sanitation and entity escaping on mentions, hashtags, and cashtags in rich social threads.
+5. **Nginx HTTPS Enforcement & Tight CSP (LT-NGX-01):** Unconditional port 80 HTTP-to-HTTPS 301 redirection and tightened Content-Security-Policy removing `unsafe-eval` and whitelisting trusted RPC origins.
+6. **Thirdweb Engine EVM Address & BigInt Validation (LT-TWB-01):** Defensive validation against negative numbers, non-integers, and invalid EVM address formats.
+7. **P2P Compact Block Relay (v2.6.0):** Transmits block headers, prefilled coinbase/system transactions, and 16-hex short transaction IDs, cutting network bandwidth consumption by ~90-95% while strictly enforcing cryptographic Merkle root and PoW verification.
+8. **Decentralized State Snapshot Sync (v2.7.0):** Enables warp sync for newly joining nodes by providing deterministically hashed state roots over sorted account balances and BNS registries, requiring nodes to fully replay only the rolling window of recent 1,000 blocks to tip without compromising decentralization.
+9. **Hybrid OpenCL GPU & Multi-Worker CPU Miner Engine (v2.7.0):** Integrated OpenCL C acceleration for NVIDIA, AMD, and Intel GPUs alongside multi-worker CPU fallback in `node_runner.py` with zero required external pip packages.
+10. **Emergency LWMA Stall Failsafe (v2.5.0):** Dynamic difficulty relaxation when block intervals exceed 120s (6x target block time), preventing network deadlocks during severe miner drop-offs.
+11. **Priority Replace-By-Fee (RBF) & Mempool Eviction (v2.5.0):** Dynamic mempool admission that automatically evicts the lowest-fee transaction in saturated mempools (5,000 txs) for higher-fee priority inclusion, rendering mempool flood DoS economically unviable.
+12. **Constant-Time SECP256k1 Cryptography Engine (v2.5.0):** Full migration to OpenSSL C-backed constant-time cryptography eliminating Minerva timing side-channels (CVE-2024-23342).
+13. **O(1) Reverse-Cursor Transaction Indexing & Query Scalability (v2.5.0):** Zero-overhead paginated transaction lookup and indexed SQLite access eliminating linear memory/CPU degradation.
+14. **Consensus Quorum Proof-of-Attestation & Fake Uptime Immunity (LT-01):** Eliminates Sybil stake spoofing and idle heartbeat emission exploitation by strictly requiring both collateral locked in `BCT_STAKE_VAULT_...` (minimum 1,000.0 BCT) and real-time cryptographic ECDSA block attestations within the last 3 blocks for 30% validator pool reward participation.
+15. **Cross-Chain Bridge Reorg & Concurrency Guard (LT-02):** Enforces 8-to-10 block L1 confirmation depth prior to Base EVM minting, strict *fail-closed* 12-block Base confirmation depth verification, SQLite unique index constraints on EVM burn hashes, and in-flight mutex locks preventing double-spend race conditions.
+16. **BIP-62/146 Low-S Signature Malleability Immunity & Deterministic Canonical Signatures (LT-04):** Strictly enforces canonical ECDSA Low-S ($s \le \lfloor N/2 \rfloor$) in SECP256k1 signature validation, rejecting all malleable signatures, and mandates deterministic canonical payload templates (`TX:mainnet:<sender>:<receiver>:<amount>:<nonce>`) with strictly sequential nonces.
+17. **Zero-Disk TOCTOU-Free Atomic In-Memory Serving (LT-07):** Serves `index.html`, `sw.js`, and `manifest.json` directly from cryptographically verified in-memory byte buffers, eliminating Time-of-Check to Time-of-Use tampering risks.
 
 ---
 
@@ -388,7 +394,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.2.0 (Completed):** 3-Phase Atomic CAS Non-Blocking Block Producer, $O(1)$ Incremental Delta SQLite WAL Engine, $O(\Delta)$ Multi-Worker Sync, Anti-DDoS Per-Wallet Mempool Quotas, IPv4 `/24` Sybil Subnet Hardening, and Stat-Memoized Integrity Gate.
 - **v2.5.0 (Completed):** Anti-Stall Emergency LWMA Failsafe (120s difficulty relaxation), Priority Replace-By-Fee (RBF) Mempool Admission & Eviction, Constant-Time SECP256k1 Cryptography Engine (OpenSSL C-backed, Minerva mitigation), $O(1)$ Reverse-Cursor Transaction Indexing & Query Scalability.
 - **v2.6.0 (Completed):** P2P Compact Block Relay (BIP-152 standard, short 16-hex txids, ~90-95% network bandwidth reduction, roundtrip reconstruction via `/p2p/getblocktxn`).
-- **v2.7.0 (Current Production Release):** Decentralized State Snapshot Warp Sync (deterministic state root over sorted accounts & BNS records, rolling 1,000-block verification), Hybrid OpenCL GPU & Multi-Worker CPU Miner Engine (`core/gpu_miner.py`, `node_runner.py`), Rust Hybrid Acceleration Modules (`crates/locktrace_core`).
+- **v2.7.0 (Completed):** Decentralized State Snapshot Warp Sync (deterministic state root over sorted accounts & BNS records, rolling 1,000-block verification), Hybrid OpenCL GPU & Multi-Worker CPU Miner Engine (`core/gpu_miner.py`, `node_runner.py`).
+- **v2.8.0 (Current Production Release):** Native Rust Acceleration Core (`crates/locktrace_core`), Multi-Layer Bridge Hardening (LT-SOL-01), ECDSA Space Cast Authentication (LT-WEB-01), DOM XSS Attribute Sanitization (LT-WEB-02), Nginx Strict HTTPS Enforcement & CSP Hardening (LT-NGX-01), Thirdweb Engine EVM Address & BigInt Validation (LT-TWB-01).
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---

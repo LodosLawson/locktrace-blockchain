@@ -379,7 +379,14 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **P2P Compact Block Relay (v2.6.0):** Transmits block headers, prefilled coinbase transactions, and 16-hex short transaction IDs, cutting block propagation bandwidth by ~90-95% while strictly enforcing cryptographic Merkle root and PoW verification.
    - **Decentralized State Snapshot Sync (v2.7.0):** Enables warp sync for newly joining nodes by providing deterministically hashed state roots over sorted account balances and BNS registries, requiring nodes to fully replay only the rolling window of recent 1,000 blocks to tip without compromising decentralization.
    - **Hybrid OpenCL GPU & Multi-Worker CPU Miner:** Integrated OpenCL C kernel acceleration for NVIDIA, AMD, and Intel GPUs alongside multi-worker CPU fallback in `node_runner.py` with zero required external pip packages.
-9. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+9. **Native Rust Acceleration Core, Multi-Layer Bridge Hardening & Security Audit Fixes (v2.8.0):**
+   - **Native Rust Acceleration Core (`crates/locktrace_core`):** High-speed cryptographic validation, lazy parallel Rayon PoW mining with accurate atomic hashrate telemetry, zero heap allocation chunking, and deterministic serialization.
+   - **Multi-Layer Cross-Chain Bridge Hardening (LT-SOL-01):** Hex-character enforcement (`[0-9a-fA-F]`) on 43-character BCT addresses and zero burn address rejection across Solidity smart contract (`WrappedBCT.sol`), frontend Web3 client, and backend bridge relayer daemon.
+   - **ECDSA Space Cast Authentication (LT-WEB-01):** Enforces cryptographic secp256k1 canonical signature verification on quick compose casts, eliminating unauthorized impersonation.
+   - **DOM XSS Sanitization (LT-WEB-02):** Strict regex attribute sanitation and entity escaping on mentions, hashtags, and cashtags in rich social threads.
+   - **Nginx HTTPS Enforcement & Tight CSP (LT-NGX-01):** Unconditional port 80 HTTP-to-HTTPS 301 redirection and tightened Content-Security-Policy removing `unsafe-eval` and whitelisting trusted RPC origins.
+   - **Thirdweb Engine EVM Address & BigInt Validation (LT-TWB-01):** Defensive validation against negative numbers, non-integers, and invalid EVM address formats.
+10. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

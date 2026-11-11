@@ -70,8 +70,8 @@ Aşağıdaki modüllerin tamamı sıfırdan geliştirilmiş, güvenlik testlerin
 - [x] **Uygulama İçi Bildirim Kutusu (Notification Bell):** Hem uygulama açıkken hem arka planda gelen tüm bildirimler senkronize olarak bildirim kutusunda saklanır ve okundu olarak işaretlenebilir.
 
 ### ✅ G. Kriptografik Arayüz Güvenliği & Denetim (Security Hardening)
-- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.7.0`):** LT-01'den LT-07'ye kadar konsensüs (%30 quorum tasdik zorunluluğu), köprü reorg koruması (10 blok L1 derinliği & fail-closed Base EVM teyidi), yerel RPC CSRF/Origin izolasyonu, SECP256k1 Low-S (BIP-62/146) imza sertleştirmesi, linkify attribute XSS sanitizasyonu, Median-Time-Past (MTP) zaman damgası kuralı ve TOCTOU-proof bellek tamponu.
-- [x] **On-Chain Frontend Sealing (`v2.7.0`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
+- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.8.0`):** LT-01'den LT-07'ye ve LT-WEB-01..02, LT-SOL-01, LT-NGX-01, LT-RST-01, LT-OPS-01, LT-TWB-01 zafiyet kapatmaları: Hızlı gönderilerde zorunlu ECDSA imza doğrulaması, Solidity/Frontend/Relayer çok katmanlı 43-karakter hex köprü doğrulaması, DOM XSS sanitizasyonu, Nginx port 80 301 HTTPS zorunluluğu, Rust lazy Rayon bellek optimizasyonu ve Thirdweb Engine güvenli BigInt doğrulaması.
+- [x] **On-Chain Frontend Sealing (`v2.8.0`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
 - [x] **P2P Compact Block Relay & State Snapshot Fast Sync (`v2.7.0`):** BIP-152 %90+ bant genişliği tasarrufu, deterministik durum özeti (state root) ile saniyeler içinde düğüm kurulumu ve OpenCL GPU donanım madencilik motoru.
 - [x] **Derinlemesine Güvenlik Taraması:** Sybil saldırı engelleri, kendi kendine sahte hacim (wash-trading) engeli, SQLite WAL kilit koruması, XSS temizliği ve hız sınırlandırma (Rate Limiting) tamamlandı.
 
@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.7.0` | P2P Compact Block Relay, State Snapshot Fast Sync, GPU Acceleration, Anti-Stall LWMA & RBF Mempool |
+| **Ağ Sürümü** | `v2.8.0` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -269,12 +269,29 @@ Merkeziyetsizlikten ve güvenlikten asla ödün vermeden hayata geçirilen üç 
 
 ---
 
-## 🦀 9. Gelecek Mimari: Python + Rust Hibrit Motoru (PyO3 & Maturin) Planı
+## 🦀 9. LockTrace v2.8.0: Rust Core Hızlandırma, Çok Katmanlı Köprü & Tam Güvenlik Denetim Paketi
 
-LockTrace çekirdeğini endüstri standardı Rust performansı ile buluşturacak hibrit motor tasarımı:
+LockTrace v2.8.0 sürümü ile birlikte hayata geçirilen kritik performans ve güvenlik geliştirmeleri:
 
-- **Strateji:** Canlı Flask API, Web3 cüzdan ve SQLite mimarisini %100 koruyarak, yalnızca ağır CPU yükü getiren 4 katmanı (SECP256k1 toplu imza doğrulama, SIMD AVX-512 PoW madenciliği, paralel Merkle ağacı ve sıfır kopyalı seride) Rust (`crates/locktrace_core`) ile yazmak.
-- **Hedef:** Tek çekirdekte saniyede 50.000+ imza doğrulama (24 kat artış) ve %60 daha düşük bellek tüketimi.
-- **Güvenlik / Çift Motor (Dual-Engine):** Rust derlemesi olan sistemlerde native `.pyd` / `.so` çalışır; olmayan sistemlerde Python OpenSSL motoru kesintisiz yedek olarak devam eder.
-- **Ayrıntılı Rapor:** [`docs/NOTION_RUST_HYBRID_ENGINE_PLAN.md`](file:///c:/Users/mehem/Documents/BlockChainT/docs/NOTION_RUST_HYBRID_ENGINE_PLAN.md) dosyasından incelenebilir.
+1. **Rust Native Hızlandırma Motoru (`crates/locktrace_core`):**
+   - **Kriptografik Doğrulama:** SECP256k1 imza doğrulaması ve Merkle kök hesaplamalarında yüksek hızlı Rust çekirdeği.
+   - **Lazy Chunking PoW:** Rayon iş parçacıklarında sıfır bellek ayırma (zero-heap allocation) ve `AtomicU64` ile hassas kümülatif hashrate telemetrisi.
+   - **Çift Motorlu Mimari (Dual-Engine):** Rust modülü yüklü ise doğrudan native `.pyd` / `.so` çalışır; derleme olmayan ortamlarda Python OpenSSL motoru kesintisiz çalışır.
+
+2. **Çok Katmanlı Köprü Güvenliği (LT-SOL-01):**
+   - **Solidity Seviyesi (`contracts/WrappedBCT.sol`):** `burnToBridge` fonksiyonunda 43 karakterlik hedef BCT adresinin karakter karakter `[0-9a-fA-F]` hex kontrolü ve `BCT0000...` sıfır yakım adresine transfer engeli.
+   - **Web3 Arayüz Koruması:** Kullanıcı Base'den L1'e çekim yaparken arayüz regex doğrulamasıyla hatalı veya sıfır adres girişini cüzdan onayına göndermeden engeller.
+   - **Relayer Failsafe (`core/bridge_relayer.py`):** Doğrulanamayan veya hatalı adresli yakımlar `FAILED_INVALID_RECIPIENT` durumuna alınarak admin incelemesi için güvenceye alınır.
+
+3. **Kriptografik Sosyal Gönderi İmzası (LT-WEB-01):**
+   - Hızlı gönderi (`submitQuickComposePost`) fonksiyonuna `buildSignedAuthPayload` ve kanonik ECDSA imza doğrulaması eklendi; yetkisiz kimlik taklidi riski tamamen kapatıldı.
+
+4. **DOM XSS Sanitizasyonu (LT-WEB-02):**
+   - Sosyal akıştaki mention (`@`), hashtag (`#`) ve cashtag (`$`) girdileri `sanitizeJsAttr` ve `escapeHtml` ile katı sanitizasyondan geçirilerek XSS açıkları kapatıldı.
+
+5. **Nginx HTTPS Zorunluluğu & Sıkılaştırılmış CSP (LT-NGX-01):**
+   - Port 80 HTTP üzerinden `/api/` proxy kaldırıldı ve tüm trafik koşulsuz olarak 301 ile HTTPS'e yönlendirildi. CSP'den `unsafe-eval` temizlendi ve RPC çıkışları sınırlandırıldı.
+
+6. **Thirdweb Engine EVM Adres & BigInt Güvenliği (LT-TWB-01):**
+   - Pozitif tamsayı ve EVM adres format kontrolleri ile motor sağlamlaştırıldı.
 
