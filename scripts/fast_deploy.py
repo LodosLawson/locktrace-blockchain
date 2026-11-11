@@ -23,6 +23,9 @@ def main():
     with tarfile.open(tar_path, "w:gz") as tar:
         tar.add("frontend/index.html", arcname="frontend/index.html")
         tar.add("frontend/sw.js", arcname="frontend/sw.js")
+        tar.add("frontend/icons", arcname="frontend/icons")
+        if os.path.exists("frontend/favicon.ico"):
+            tar.add("frontend/favicon.ico", arcname="frontend/favicon.ico")
         tar.add("templates/index.html", arcname="templates/index.html")
         tar.add("templates/sw.js", arcname="templates/sw.js")
         tar.add("core", arcname="core")
@@ -83,7 +86,13 @@ cd /opt/blockchaint
 sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.8.0 --key-file /home/ubuntu/.locktrace/release_signing_key.json
 
 # 2. Publish to Nginx document root
-sudo mkdir -p /var/www/locktrace
+sudo mkdir -p /var/www/locktrace /var/www/locktrace/icons /opt/blockchaint/frontend/icons
+sudo cp -r /tmp/frontend/icons/* /opt/blockchaint/frontend/icons/
+sudo cp -r /tmp/frontend/icons/* /var/www/locktrace/icons/
+if [ -f /tmp/frontend/favicon.ico ]; then
+    sudo cp /tmp/frontend/favicon.ico /opt/blockchaint/frontend/favicon.ico
+    sudo cp /tmp/frontend/favicon.ico /var/www/locktrace/favicon.ico
+fi
 sudo cp /opt/blockchaint/frontend/index.html /var/www/locktrace/index.html
 sudo cp /opt/blockchaint/frontend/sw.js /var/www/locktrace/sw.js
 sudo cp /opt/blockchaint/frontend/integrity.json /var/www/locktrace/integrity.json

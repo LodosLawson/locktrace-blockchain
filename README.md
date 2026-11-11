@@ -1,5 +1,9 @@
 # 🛡️ LockTrace: Decentralized Layer-1 Blockchain & Sovereign Asset Protocol
 
+<p align="center">
+  <img src="frontend/icons/icon-192.png" width="128" height="128" alt="LockTrace Official Logo" />
+</p>
+
 [![Mainnet Status](https://img.shields.io/badge/Mainnet-Online%20%28Stockholm%29-10b981?style=for-the-badge&logo=oracle)](https://locktrace.space)
 [![Total Supply](https://img.shields.io/badge/Total%20Supply-1%20Trillion%20BCT-2563eb?style=for-the-badge)](https://locktrace.space)
 [![Base Mainnet wBCT](https://img.shields.io/badge/Base%20L2-wBCT%20Bridge-0052ff?style=for-the-badge&logo=coinbase)](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254)
