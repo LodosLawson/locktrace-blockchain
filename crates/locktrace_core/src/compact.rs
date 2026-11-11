@@ -28,13 +28,13 @@ pub struct NativeCompactBlock {
     pub total_transactions: u32,
 }
 
-/// Zero-copy binary serialization of compact block using bincode
+/// Zero-copy JSON serialization of compact block
 pub fn serialize_compact_block(block: &NativeCompactBlock) -> Result<Vec<u8>, String> {
-    bincode::serialize(block).map_err(|e| e.to_string())
+    serde_json::to_vec(block).map_err(|e| e.to_string())
 }
 
-/// Zero-copy binary deserialization of compact block using bincode
+/// Zero-copy JSON deserialization of compact block
 pub fn deserialize_compact_block(bytes: &[u8]) -> Result<NativeCompactBlock, String> {
-    bincode::deserialize(bytes).map_err(|e| e.to_string())
+    serde_json::from_slice(bytes).map_err(|e| e.to_string())
 }
 

@@ -81,6 +81,25 @@ function getClient() {
   return createThirdwebClient({ secretKey });
 }
 
+function isValidEvmAddress(address) {
+  return typeof address === "string" && /^0x[a-fA-F0-9]{40}$/.test(address.trim());
+}
+
+function parseSafePositiveBigInt(val, fieldName = "value", allowZero = false) {
+  if (val === undefined || val === null) {
+    throw new Error(`Field '${fieldName}' is required`);
+  }
+  const strVal = String(val).trim();
+  if (!/^\d+$/.test(strVal)) {
+    throw new Error(`Field '${fieldName}' must be a non-negative integer`);
+  }
+  const big = BigInt(strVal);
+  if (!allowZero && big <= 0n) {
+    throw new Error(`Field '${fieldName}' must be greater than zero`);
+  }
+  return big;
+}
+
 /**
  * Mint or claim ERC1155 NFT to a user via Engine or Server Wallet
  */
@@ -92,6 +111,15 @@ export async function claimERC1155({
   quantity = 1,
   serverWalletAddress,
 }) {
+  if (!isValidEvmAddress(contractAddress)) {
+    throw new Error(`Invalid contract address: ${contractAddress}`);
+  }
+  if (!isValidEvmAddress(to)) {
+    throw new Error(`Invalid recipient EVM address: ${to}`);
+  }
+  const safeTokenId = parseSafePositiveBigInt(tokenId, "tokenId", true);
+  const safeQuantity = parseSafePositiveBigInt(quantity, "quantity", false);
+
   const client = getClient();
   const targetChain = resolveChain(chain);
   const targetWallet =
@@ -106,8 +134,8 @@ export async function claimERC1155({
   const transaction = claimToERC1155({
     contract,
     to,
-    tokenId: BigInt(tokenId),
-    quantity: BigInt(quantity),
+    tokenId: safeTokenId,
+    quantity: safeQuantity,
   });
 
   // If server wallet address is provided, use Engine.serverWallet
