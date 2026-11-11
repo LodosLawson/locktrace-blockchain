@@ -1,11 +1,11 @@
 {
   "version": "2.5.0",
-  "released_at": "2026-11-11T01:17:12Z",
+  "released_at": "2026-11-11T01:23:10Z",
   "authority_address": "BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080",
   "authority_public_key": "5e3686d4e64119cc049dd966e57150a04db4160a335610c8740748ba618c002321a5882ed90bfd5597bc144a7c4926369aec9b89070d3d337819d6626c67a150",
   "index_html_sha256": "4eb54276463f4baca3f5e201431c9c3bf2c321eff8dd3352ab874f6335332bd7",
   "sw_js_sha256": "4ac2e771dbb3e5aa8baf677d7000b62e8ea08e86c93feab9a7c9d317c492bba8",
   "ipfs_cid_v1": "bafkreicowvbhmrr7jowkh5pcafbrzhb36lbsd37y3uzvfk4hj5rtkmzl24",
   "canonical_payload": "LOCKTRACE_FRONTEND_RELEASE:2.5.0:4eb54276463f4baca3f5e201431c9c3bf2c321eff8dd3352ab874f6335332bd7:4ac2e771dbb3e5aa8baf677d7000b62e8ea08e86c93feab9a7c9d317c492bba8:bafkreicowvbhmrr7jowkh5pcafbrzhb36lbsd37y3uzvfk4hj5rtkmzl24",
-  "signature": "72ec37750493a438935d156f562616c77f9d3365ef7752a5043e3038028431be653dbb3a22c528705b7ad3bab4268ebe05ead813a188f41fecda28b0e961a2b9"
+  "signature": "6298b8f177323c5c3550634b118ce9a436882fbe27d89a17175c296583fef84d189a5be277b6b35e80ea029b54fe8cecec5533b9fbc2afebcef7bdd5f61655b5"
 }

@@ -37,3 +37,4 @@ pub fn serialize_compact_block(block: &NativeCompactBlock) -> Result<Vec<u8>, St
 pub fn deserialize_compact_block(bytes: &[u8]) -> Result<NativeCompactBlock, String> {
     bincode::deserialize(bytes).map_err(|e| e.to_string())
 }
+
