@@ -1,7 +1,7 @@
-# LockTrace (BCT) Technical Whitepaper — v2.5.0
+# LockTrace (BCT) Technical Whitepaper — v2.7.0
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.5.0 — November 2026*  
+*Version 2.7.0 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
@@ -19,11 +19,14 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.5.0**, LockTrace hardens the network with the **v2.5.0 High-Throughput Resilience & Anti-Stall Suite**:
-1. **Emergency LWMA Stall Failsafe:** Dynamic difficulty relaxation when block intervals exceed 120s (6x target block time), preventing network deadlocks during severe miner drop-offs.
-2. **Priority Replace-By-Fee (RBF) & Mempool Eviction:** Dynamic mempool admission that automatically evicts the lowest-fee transaction in saturated mempools (5,000 txs) for higher-fee priority inclusion, rendering mempool flood DoS economically unviable.
-3. **Constant-Time SECP256k1 Cryptography Engine:** Full migration to OpenSSL C-backed constant-time cryptography eliminating Minerva timing side-channels (CVE-2024-23342).
-4. **O(1) Reverse-Cursor Transaction Indexing & Query Scalability:** Zero-overhead paginated transaction lookup and indexed SQLite access eliminating linear memory/CPU degradation.
+In **Version 2.7.0**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, and decentralized hardware acceleration:
+1. **P2P Compact Block Relay (v2.6.0):** Transmits block headers, prefilled coinbase/system transactions, and 16-hex short transaction IDs, cutting network bandwidth consumption by ~90-95% while strictly enforcing cryptographic Merkle root and PoW verification.
+2. **Decentralized State Snapshot Sync (v2.7.0):** Enables warp sync for newly joining nodes by providing deterministically hashed state roots over sorted account balances and BNS registries, requiring nodes to fully replay only the rolling window of recent 1,000 blocks to tip without compromising decentralization.
+3. **Hybrid OpenCL GPU & Multi-Worker CPU Miner Engine:** Integrated OpenCL C acceleration for NVIDIA, AMD, and Intel GPUs alongside multi-worker CPU fallback in `node_runner.py` with zero required external pip packages.
+4. **Emergency LWMA Stall Failsafe (v2.5.0):** Dynamic difficulty relaxation when block intervals exceed 120s (6x target block time), preventing network deadlocks during severe miner drop-offs.
+5. **Priority Replace-By-Fee (RBF) & Mempool Eviction (v2.5.0):** Dynamic mempool admission that automatically evicts the lowest-fee transaction in saturated mempools (5,000 txs) for higher-fee priority inclusion, rendering mempool flood DoS economically unviable.
+6. **Constant-Time SECP256k1 Cryptography Engine:** Full migration to OpenSSL C-backed constant-time cryptography eliminating Minerva timing side-channels (CVE-2024-23342).
+7. **O(1) Reverse-Cursor Transaction Indexing & Query Scalability:** Zero-overhead paginated transaction lookup and indexed SQLite access eliminating linear memory/CPU degradation.
 5. **Consensus Quorum Proof-of-Attestation & Fake Uptime Immunity (LT-01):** Eliminates Sybil stake spoofing and idle heartbeat emission exploitation by strictly requiring both collateral locked in `BCT_STAKE_VAULT_...` (minimum 1,000.0 BCT) and real-time cryptographic ECDSA block attestations within the last 3 blocks for 30% validator pool reward participation.
 6. **Cross-Chain Bridge Reorg & Concurrency Guard (LT-02):** Enforces 8-to-10 block L1 confirmation depth prior to Base EVM minting, strict *fail-closed* 12-block Base confirmation depth verification, SQLite unique index constraints on EVM burn hashes, and in-flight mutex locks preventing double-spend race conditions.
 7. **Local Daemon Isolation, DNS Rebinding & Cross-Origin RPC Defense (LT-03):** Secures local node runners (`node_runner.py`) with strict `Host` header validation and `Origin`/`Sec-Fetch-Site` filtering that rejects unauthorized cross-origin execution from malicious websites.

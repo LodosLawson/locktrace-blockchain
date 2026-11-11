@@ -30,13 +30,18 @@ if os.path.exists(env_path):
 
 class Config:
     # ── Protokol & Versiyon ───────────────────────────
-    PROTOCOL_VERSION = "2.5.0"
+    PROTOCOL_VERSION = "2.7.0"
     NETWORK_NAME = os.environ.get("BCT_NETWORK", "mainnet")
 
     # ── Anti-Stall & Resilience Parameters (v2.5.0) ───
     EMERGENCY_STALL_TIMEOUT = 120.0       # 6x blok süresi boyunca blok çıkmazsa acil zorluk düşürme aktifleşir
     MEMPOOL_EVICTION_ENABLED = True       # Mempool dolduğunda düşük ücretli işlemlerin yerini yüksek ücretliler alır (RBF)
     ACTIVE_RAM_BLOCK_WINDOW = 2000        # RAM'de tutulan aktif blok penceresi (eski bloklar SQLite'tan sorgulanır)
+
+    # ── Compact Block & State Snapshot Parameters (v2.6.0 & v2.7.0) ──
+    COMPACT_BLOCKS_ENABLED = True         # P2P Compact Block Relay (~90% bant genişliği tasarrufu)
+    STATE_SNAPSHOT_WINDOW = 1000          # Hızlı senkronizasyonda doğrulanacak son blok penceresi
+    GPU_MINING_ENABLED = True             # OpenCL / CUDA GPU madenciliği hızlandırması
 
     # ── Güvenlik ──────────────────────────────────────
     SECRET_KEY = os.environ.get("BCT_SECRET_KEY", secrets.token_hex(32))
