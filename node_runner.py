@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.4.0)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.5.0)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner, AND cryptographically
 verified decentralized Web Wallet (Locally or as a Public/LAN Server) on Linux, macOS,
@@ -50,7 +50,7 @@ from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.4.0"
+VERSION = "2.5.0"
 
 ATOMIC_UNIT = 100_000_000
 TOTAL_SUPPLY = 1_000_000_000_000.0
@@ -2098,7 +2098,8 @@ class LockTraceNode:
         if calculate_block_hash_dict(blk) != b_hash:
             return False
 
-        if b_idx > 0 and not b_hash.startswith("0" * max(1, base_difficulty)):
+        target_diff = int(blk.get("difficulty", base_difficulty) or base_difficulty)
+        if b_idx > 0 and not b_hash.startswith("0" * max(1, target_diff)):
             return False
 
         txs = blk.get("transactions", [])

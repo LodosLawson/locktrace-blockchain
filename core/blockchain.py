@@ -602,7 +602,10 @@ class Blockchain:
 
         # Anti-DDoS & Mempool Flood Shield: Per-wallet and global pending transaction quotas
         if len(self.pending_transactions) >= MAX_GLOBAL_MEMPOOL_SIZE:
-            return False, "Network mempool is temporarily at capacity under high load. Please retry in a few seconds."
+            # Check if mempool can accommodate priority RBF replacement
+            min_fee_val = min((float(getattr(t, "fee", 0.0) or 0.0) for t in self.pending_transactions), default=float("inf"))
+            if min_fee_val == float("inf"):
+                return False, "Network mempool is temporarily at capacity under high load. Please retry in a few seconds."
         sender_pending_count = sum(1 for tx in self.pending_transactions if tx.sender == clean_addr)
         if sender_pending_count >= MAX_PENDING_TX_PER_WALLET:
             return (
@@ -685,6 +688,40 @@ class Blockchain:
             self._save_state()
             return True, f"Wallet registered successfully! Available balance: {final_bal} BCT"
 
+    def _admit_or_evict_mempool(self, tx: Transaction) -> Tuple[bool, str]:
+        """
+        v2.5.0 Dynamic Mempool Admission & Replace-By-Fee (RBF) Eviction:
+        Guarantees that priority/fee-bearing transactions are never blocked by low-fee spam.
+        If mempool is saturated (>= MAX_GLOBAL_MEMPOOL_SIZE):
+        - Finds candidate with lowest fee.
+        - If new tx offers higher fee, evicts lowest-fee tx.
+        - Otherwise rejects with transparent fee threshold.
+        """
+        if len(self.pending_transactions) < MAX_GLOBAL_MEMPOOL_SIZE:
+            self.pending_transactions.append(tx)
+            return True, "Transaction admitted to mempool"
+
+        # Find candidate with lowest fee
+        min_fee_idx = -1
+        min_fee_val = float("inf")
+        for idx, pending in enumerate(self.pending_transactions):
+            p_fee = float(getattr(pending, "fee", 0.0) or 0.0)
+            if p_fee < min_fee_val:
+                min_fee_val = p_fee
+                min_fee_idx = idx
+
+        new_fee = float(getattr(tx, "fee", 0.0) or 0.0)
+        if new_fee > min_fee_val and min_fee_idx >= 0:
+            evicted = self.pending_transactions.pop(min_fee_idx)
+            logger.info(
+                f"Mempool RBF Eviction: Evicted tx {evicted.hash()[:10]} (fee {min_fee_val:.6f}) "
+                f"for higher priority tx {tx.hash()[:10]} (fee {new_fee:.6f})"
+            )
+            self.pending_transactions.append(tx)
+            return True, "Transaction admitted via priority mempool eviction"
+
+        return False, f"Mempool is at full capacity (5,000 txs). Higher transaction fee required (> {min_fee_val:.6f} BCT) for priority inclusion."
+
     def create_transaction(self, sender: str, receiver: str,
                            amount: float, signature: str,
                            public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
@@ -749,7 +786,10 @@ class Blockchain:
                 tx_type="transfer"
             )
 
-            self.pending_transactions.append(tx)
+            admitted, adm_msg = self._admit_or_evict_mempool(tx)
+            if not admitted:
+                return False, adm_msg, None
+
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + fee, 8)
 
@@ -781,7 +821,9 @@ class Blockchain:
             return False, "Invalid transaction object"
         with self.lock:
             self._load_state()
-            self.pending_transactions.append(tx)
+            admitted, adm_msg = self._admit_or_evict_mempool(tx)
+            if not admitted:
+                return False, adm_msg
             self.total_transactions += 1
             block = self._seal_or_queue_mempool()
             if tx.sender:
@@ -3184,6 +3226,16 @@ class Blockchain:
         weight_total = sum(idx + 1 for idx in range(len(time_diffs)))
         avg_solve_time = weighted_sum / max(1.0, weight_total)
 
+        # v2.5.0 Emergency Stall Recovery (Anti-Freeze Guard):
+        # If the network has stalled without a block for > 6x target time (120s) due to hashrate collapse,
+        # dynamically relax difficulty so miners can recover block generation immediately.
+        if self.chain:
+            tip_time = self.chain[-1].timestamp
+            time_since_tip = time.time() - tip_time
+            if time_since_tip > (TARGET_BLOCK_TIME * 6.0):
+                stall_drop = int((time_since_tip - (TARGET_BLOCK_TIME * 6.0)) // 60.0) + 1
+                return max(1, self.difficulty - stall_drop)
+
         # Scale difficulty smoothly:
         # If solve time is too fast (< 50% of target), increase difficulty
         # If solve time is too slow (> 180% of target), decrease difficulty
@@ -4020,7 +4072,7 @@ class Blockchain:
         with self.lock:
             self._load_state()
             safe_limit = max(1, min(int(limit), 100))
-            total_txs = len(self.pending_transactions) + sum(len(b.transactions) for b in self.chain)
+            total_txs = len(self.pending_transactions) + max(self.total_transactions, len(self.chain))
             total_pages = max(1, (total_txs + safe_limit - 1) // safe_limit)
             safe_page = max(1, min(int(page), total_pages))
             start_idx = (safe_page - 1) * safe_limit

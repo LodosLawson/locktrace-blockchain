@@ -718,3 +718,70 @@ class SQLiteStorage:
             }
         finally:
             conn.close()
+
+    def get_block_by_index(self, block_index: int) -> Optional[dict]:
+        """Instant O(1) indexed lookup of any block by block_index from SQLite."""
+        conn = self._connect()
+        try:
+            cur = conn.execute(
+                """
+                SELECT block_index, hash, previous_hash, merkle_root, timestamp, nonce, miner, version, transactions_json
+                FROM blocks
+                WHERE block_index = ?;
+                """,
+                (block_index,),
+            )
+            r = cur.fetchone()
+            if not r:
+                return None
+            try:
+                txs = json.loads(r["transactions_json"])
+            except Exception:
+                txs = []
+            return {
+                "index": int(r["block_index"]),
+                "hash": r["hash"],
+                "previous_hash": r["previous_hash"],
+                "merkle_root": r["merkle_root"],
+                "timestamp": r["timestamp"],
+                "nonce": r["nonce"],
+                "miner": r["miner"],
+                "version": r["version"],
+                "transactions": txs,
+            }
+        finally:
+            conn.close()
+
+    def get_recent_blocks(self, limit: int = 20, offset: int = 0) -> List[dict]:
+        """Fetch range of recent blocks directly from SQLite indexed by block_index DESC."""
+        conn = self._connect()
+        try:
+            cur = conn.execute(
+                """
+                SELECT block_index, hash, previous_hash, merkle_root, timestamp, nonce, miner, version, transactions_json
+                FROM blocks
+                ORDER BY block_index DESC
+                LIMIT ? OFFSET ?;
+                """,
+                (max(1, min(limit, 100)), max(0, offset)),
+            )
+            results = []
+            for r in cur.fetchall():
+                try:
+                    txs = json.loads(r["transactions_json"])
+                except Exception:
+                    txs = []
+                results.append({
+                    "index": int(r["block_index"]),
+                    "hash": r["hash"],
+                    "previous_hash": r["previous_hash"],
+                    "merkle_root": r["merkle_root"],
+                    "timestamp": r["timestamp"],
+                    "nonce": r["nonce"],
+                    "miner": r["miner"],
+                    "version": r["version"],
+                    "transactions": txs,
+                })
+            return results
+        finally:
+            conn.close()
