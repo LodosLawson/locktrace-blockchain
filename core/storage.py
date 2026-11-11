@@ -656,11 +656,11 @@ class SQLiteStorage:
                 """
                 SELECT tx_hash, block_index, sender, recipient, amount, fee, tx_type, timestamp, extra_json
                 FROM tx_lookup
-                WHERE sender = ? OR recipient = ? OR extra_json LIKE ?
+                WHERE sender = ? OR recipient = ? OR extra_json LIKE ? OR extra_json LIKE ?
                 ORDER BY block_index DESC, timestamp DESC
                 LIMIT ?;
                 """,
-                (address, address, f'%"author": "{address}"%', limit),
+                (address, address, f'%"author": "{address}"%', f'%"target": "{address}"%', limit),
             )
             rows = cur.fetchall()
             results = []

@@ -243,9 +243,10 @@ class BridgeRelayer:
         try:
             nonce = self.w3.eth.get_transaction_count(self.account.address, "pending")
             dest = Web3.to_checksum_address(to_address)
+            clean_l1_hash = str(l1_tx_hash or "").strip().lower().removeprefix("0x")
             
             # Estimate gas
-            fn = self.contract.functions.mintFromBridge(dest, amount_wei, l1_tx_hash)
+            fn = self.contract.functions.mintFromBridge(dest, amount_wei, clean_l1_hash)
             
             # Fetch current Base fees (Base uses EIP-1559)
             base_fee = self.w3.eth.get_block("latest")["baseFeePerGas"]

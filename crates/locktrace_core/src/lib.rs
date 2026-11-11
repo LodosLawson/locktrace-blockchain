@@ -59,7 +59,7 @@ fn locktrace_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(verify_spv_proof, m)?)?;
     m.add_function(wrap_pyfunction!(solve_pow, m)?)?;
     m.add_function(wrap_pyfunction!(is_native_rust_active, m)?)?;
-    m.add("__version__", "2.8.2")?;
+    m.add("__version__", "2.8.3")?;
     Ok(())
 }
 

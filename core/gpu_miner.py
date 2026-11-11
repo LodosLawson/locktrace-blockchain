@@ -139,6 +139,9 @@ class LockTraceMinerEngine:
         Executes parallel hashing via Rust Rayon or Python multi-worker pool (LT-GPU-01).
         Returns: (found, winning_nonce, winning_hash, measured_hashrate)
         """
+        target_diff = max(1, int(target_difficulty))
+        max_n = max(1, int(max_nonces))
+
         dummy = dict(block_candidate)
         sentinel = f"__BCT_NONCE_{secrets.token_hex(16)}__"
         dummy["nonce"] = sentinel
@@ -150,15 +153,15 @@ class LockTraceMinerEngine:
 
         prefix = serialized[:token_pos + len('"nonce": ')]
         suffix = serialized[token_pos + len(target_token):]
-        target_prefix = "0" * int(target_difficulty)
+        target_prefix = "0" * target_diff
 
         # 1. First Priority: Native Rust Rayon Multi-Threaded Engine
         try:
             from core.native_bridge import is_rust_accelerated, _RUST_CORE
             if is_rust_accelerated() and _RUST_CORE is not None:
-                ok, nonce, h, hr = _RUST_CORE.solve_pow(prefix, suffix, int(target_difficulty), int(max_nonces))
-                if ok and h:
-                    return True, int(nonce), str(h), float(hr)
+                ok, nonce, h, hr = _RUST_CORE.solve_pow(prefix, suffix, target_diff, max_n)
+                # Rust scanned 0..max_n. Return immediately (BUG-01: zero redundant recalculations).
+                return bool(ok), int(nonce), str(h), float(hr)
         except Exception:
             pass
 
@@ -171,14 +174,14 @@ class LockTraceMinerEngine:
 
         cpu_workers = max(1, os.cpu_count() or 4)
         chunk_size = 50_000
-        num_chunks = (max_nonces + chunk_size - 1) // chunk_size
+        num_chunks = (max_n + chunk_size - 1) // chunk_size
 
         def _worker_chunk(chunk_idx: int):
             nonlocal total_hashes
             if found_flag.is_set() or (stop_event and stop_event.is_set()):
                 return
             base = chunk_idx * chunk_size
-            limit = min(base + chunk_size, max_nonces)
+            limit = min(base + chunk_size, max_n)
             local_count = 0
             for n in range(base, limit):
                 if found_flag.is_set() or (stop_event and stop_event.is_set()):
@@ -198,10 +201,15 @@ class LockTraceMinerEngine:
 
         with ThreadPoolExecutor(max_workers=cpu_workers) as executor:
             futures = [executor.submit(_worker_chunk, idx) for idx in range(num_chunks)]
-            for f in futures:
-                if found_flag.is_set():
+            while not found_flag.is_set() and not (stop_event and stop_event.is_set()):
+                if all(f.done() for f in futures):
                     break
-                f.result()
+                found_flag.wait(timeout=0.01)
+
+            if found_flag.is_set() or (stop_event and stop_event.is_set()):
+                for f in futures:
+                    if not f.done():
+                        f.cancel()
 
         elapsed = max(0.0001, time.perf_counter() - t_start)
         hashrate = round(total_hashes / elapsed, 2)

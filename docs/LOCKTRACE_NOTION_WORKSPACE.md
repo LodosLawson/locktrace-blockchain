@@ -70,8 +70,8 @@ Aşağıdaki modüllerin tamamı sıfırdan geliştirilmiş, güvenlik testlerin
 - [x] **Uygulama İçi Bildirim Kutusu (Notification Bell):** Hem uygulama açıkken hem arka planda gelen tüm bildirimler senkronize olarak bildirim kutusunda saklanır ve okundu olarak işaretlenebilir.
 
 ### ✅ G. Kriptografik Arayüz Güvenliği & Denetim (Security Hardening)
-- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.8.2`):** LT-01'den LT-07'ye, LT-WEB-01..02, LT-SOL-01, LT-NGX-01, LT-RST-01, LT-OPS-01, LT-TWB-01, LT-POW-01, LT-MRK-01..02, LT-CRY-01, LT-SOL-02, LT-GPU-01 kapatmaları ve v2.8.2 mantık sertleştirmeleri: Kriptografik rastgele nöbetçi nonce ayrımı ile madenci DoS koruması, sahte adres türetme engeli, CVE-2012-2459 için açık `ValueError` istisnası, tek işlemli bloklarda SPV kök eşitlik doğrulaması.
-- [x] **On-Chain Frontend Sealing (`v2.8.2`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
+- [x] **Comprehensive Audit Hardening & On-Chain Integrity (`v2.8.3`):** LT-01'den LT-07'ye, LT-WEB-01..02, LT-SOL-01, LT-NGX-01, LT-RST-01, LT-OPS-01, LT-TWB-01, LT-POW-01, LT-MRK-01..02, LT-CRY-01, LT-SOL-02, LT-GPU-01, BUG-01..05 kapatmaları: Takipçi telif geçmişi indekslemesi, WrappedBCT çift basım koruması (`bytes32`), madenci tek geçiş döngüsü, gezgin DoS engeli (50 sınır), hızlı gönderi ücret eşitlemesi.
+- [x] **On-Chain Frontend Sealing (`v2.8.3`):** `index.html` ve `sw.js` dosyalarının SHA-256 özetleri ve IPFS CIDv1 adresleri resmi otorite anahtarıyla imzalanıp doğrudan blokzincir bloğuna mühürlenir. Kullanıcı tarayıcısı arayüzün değiştirilmediğini (`verified: true`) kriptografik olarak doğrular.
 - [x] **P2P Compact Block Relay & State Snapshot Fast Sync (`v2.7.0`):** BIP-152 %90+ bant genişliği tasarrufu, deterministik durum özeti (state root) ile saniyeler içinde düğüm kurulumu ve OpenCL GPU donanım madencilik motoru.
 - [x] **Derinlemesine Güvenlik Taraması:** Sybil saldırı engelleri, kendi kendine sahte hacim (wash-trading) engeli, SQLite WAL kilit koruması, XSS temizliği ve hız sınırlandırma (Rate Limiting) tamamlandı.
 
@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.8.2` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.8.3` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -336,4 +336,25 @@ LockTrace v2.8.2 sürümü ile hayata geçirilen 3 kritik mantık düzeltmesi:
 
 3. **Tek İşlemli Bloklar İçin SPV Kök Eşitlik Doğrulaması (`core/native_bridge.py`, `crates/locktrace_core/src/merkle.rs`):**
    - Tek işlemli bloklarda (yaprak == kök) Merkle kardeş adımları olmadığı için `proof_steps = []` boş gelir. Boş liste geldiğinde hedef işlem özeti ile Merkle kökü eşitse (`target_hash == merkle_root`) SPV doğrulaması `True` dönecek şekilde düzeltildi; tek işlemli blokların reddedilmesi hatası çözüldü.
+
+---
+
+## 🛡️ 12. LockTrace v2.8.3: Takipçi Telif Geçmişi, WrappedBCT Çift Basım Koruması & Madencilik Sertleştirmesi
+
+LockTrace v2.8.3 sürümü ile hayata geçirilen 5 kritik düzeltme:
+
+1. **Yaratıcı Takipçi Telifi İşlem Geçmişi (0.50 BCT Telif İndekslemesi):**
+   - Bir kullanıcı bir yaratıcıyı takip ettiğinde ödenen 1.00 BCT'nin 0.50 BCT'si doğrudan takip edilen yaratıcıya aktarılır. İşlemin alıcısı teknik olarak `BCT_TREASURY_SYSTEM_REWARD_POOL` olduğu için arama sorgularında ve işlem geçmişinde yaratıcı adresi gözükmüyordu. `core/storage.py` içindeki `get_transactions_for_address` sorgusuna `extra_json LIKE '%"target": "..."%'` eklendi, `core/blockchain.py` ve arayüzde (frontend) `is_creator_follow_reward` bayrağı ile yaratıcının işlem geçmişinde yeşil `+ 0.5000 BCT` telif kazancı olarak listelenmesi sağlandı.
+
+2. **WrappedBCT Kanonik Hash Çift Basım Koruması (BUG-02):**
+   - `contracts/WrappedBCT.sol` içinde `mintFromBridge` fonksiyonuna `mapping(bytes32 => bool) public processedL1TxHashes;` haritası ve `_canonicalizeTxHash` dahili dönüştürücüsü eklendi. `locktraceTxHash` parametresinin büyük/küçük harf veya `0x` önekiyle değiştirilerek aynı L1 işleminin iki kez basılması (double-mint) riski matematiksel olarak engellendi.
+
+3. **Madenci Tek Geçiş Döngüsü & İş Parçacığı Senkronizasyonu (BUG-01 & BUG-05):**
+   - `core/native_bridge.py` ve `core/gpu_miner.py` içinde çözüm bulunamadığında (`ok == False`) aynı nonce aralığının 3 kez üst üste hesaplanması engellendi; Rust Rayon motorundan dönen sonuç doğrudan kabul edildi. Çoklu iş parçacıklı CPU madenciliğinde `f.result()` ardışık bloklama döngüsü yerine olay tabanlı bekleme (`found_flag.wait`) uygulandı ve geçersiz/negatif zorluklar sınırlandırıldı.
+
+4. **Blok Gezgini Arama DoS Engeli (BUG-03):**
+   - `server.py` `/api/v1/explorer/search` uç noktasında hazine veya madenci gibi on binlerce işlemi olan adresler arandığında tüm geçmişin tek seferde döndürülmesi sunucuyu ve tarayıcıyı kilitliyordu (`DoS`). Arama sonucu `history[:50]` ile 50 işlemle sınırlandırıldı; toplam işlem sayısı `transaction_count` olarak korundu.
+
+5. **Hızlı Gönderi Ücret Eşitlemesi & JSON Hata Düzeltmesi (BUG-04):**
+   - `frontend/index.html` işlem listesinde `onclick="openTxDetail(${JSON.stringify(tx)...})"` kullanımının tırnak ve satır sonlarında kırılması engellenerek `window._profileTxStore` nesnesi üzerinden güvenli çağrı sağlandı. Hızlı gönderi (`submitQuickComposePost`) için 0.10 BCT bakiye kontrolü ve `node_runner.py` doğrulaması tam mutabakata bağlandı.
 

@@ -2658,7 +2658,10 @@ class Blockchain:
             total_tx_count = 0
 
             for tx in reversed(self.pending_transactions):
-                if tx.sender == target_address or tx.receiver == target_address:
+                is_extra_rec = bool(tx.extra_data) and (
+                    tx.extra_data.get("author") == target_address or tx.extra_data.get("target") == target_address
+                )
+                if tx.sender == target_address or tx.receiver == target_address or is_extra_rec:
                     total_tx_count += 1
                     th = tx.hash()
                     if th not in seen_hashes and len(recent_txs) < 30:
@@ -2678,7 +2681,10 @@ class Blockchain:
 
             for b in reversed(self.chain):
                 for tx in reversed(b.transactions):
-                    if tx.sender == target_address or tx.receiver == target_address:
+                    is_extra_rec = bool(tx.extra_data) and (
+                        tx.extra_data.get("author") == target_address or tx.extra_data.get("target") == target_address
+                    )
+                    if tx.sender == target_address or tx.receiver == target_address or is_extra_rec:
                         total_tx_count += 1
                         th = tx.hash()
                         if th not in seen_hashes and len(recent_txs) < 30:
@@ -4203,6 +4209,9 @@ class Blockchain:
                         if extra.get("author") == clean_addr and ctx.get("sender") != clean_addr:
                             ctx["is_author_royalty"] = True
                             ctx["royalty_amount"] = extra.get("author_cut", 0.0)
+                        elif extra.get("target") == clean_addr and ctx.get("sender") != clean_addr:
+                            ctx["is_creator_follow_reward"] = True
+                            ctx["royalty_amount"] = extra.get("creator_cut", 0.50)
                 except Exception:
                     confirmed_txs = []
                     used_indexed = False
@@ -4217,7 +4226,13 @@ class Blockchain:
                             and tx.extra_data.get("author") == clean_addr
                             and tx.sender != clean_addr
                         )
-                        if tx.sender == clean_addr or tx.receiver == clean_addr or is_author_royalty:
+                        is_creator_reward = (
+                            tx.tx_type == "space_follow"
+                            and bool(tx.extra_data)
+                            and tx.extra_data.get("target") == clean_addr
+                            and tx.sender != clean_addr
+                        )
+                        if tx.sender == clean_addr or tx.receiver == clean_addr or is_author_royalty or is_creator_reward:
                             tx_dict = tx.to_dict()
                             tx_dict["recipient"] = tx.receiver
                             tx_dict["block_index"] = block.index
@@ -4226,6 +4241,9 @@ class Blockchain:
                             if is_author_royalty:
                                 tx_dict["is_author_royalty"] = True
                                 tx_dict["royalty_amount"] = tx.extra_data.get("author_cut", 0.0)
+                            elif is_creator_reward:
+                                tx_dict["is_creator_follow_reward"] = True
+                                tx_dict["royalty_amount"] = tx.extra_data.get("creator_cut", 0.50)
                             confirmed_txs.append(tx_dict)
 
             # Mempool pending transactions
@@ -4237,7 +4255,13 @@ class Blockchain:
                     and tx.extra_data.get("author") == clean_addr
                     and tx.sender != clean_addr
                 )
-                if tx.sender == clean_addr or tx.receiver == clean_addr or is_author_royalty:
+                is_creator_reward = (
+                    tx.tx_type == "space_follow"
+                    and bool(tx.extra_data)
+                    and tx.extra_data.get("target") == clean_addr
+                    and tx.sender != clean_addr
+                )
+                if tx.sender == clean_addr or tx.receiver == clean_addr or is_author_royalty or is_creator_reward:
                     tx_dict = tx.to_dict()
                     tx_dict["block_index"] = None
                     tx_dict["block_hash"] = "MEMPOOL"
@@ -4245,6 +4269,9 @@ class Blockchain:
                     if is_author_royalty:
                         tx_dict["is_author_royalty"] = True
                         tx_dict["royalty_amount"] = tx.extra_data.get("author_cut", 0.0)
+                    elif is_creator_reward:
+                        tx_dict["is_creator_follow_reward"] = True
+                        tx_dict["royalty_amount"] = tx.extra_data.get("creator_cut", 0.50)
                     pending_txs.append(tx_dict)
 
             return pending_txs + confirmed_txs
