@@ -26,7 +26,7 @@ and security bug verification.
 
 ## 📋 System Architecture Overview
 
-- **Protocol Version:** `v2.8.5` (Production Mainnet: https://locktrace.space)
+- **Protocol Version:** `v2.8.6` (Production Mainnet: https://locktrace.space)
 - **Consensus Architecture:** Hybrid 70% Proof-of-Work (PoW) + 30% BFT Quorum Validator Attestation
 - **Native Token:** BCT (Blockchain Trace, 1 Trillion fixed max supply, non-inflationary)
 - **Database Engine:** SQLite in WAL mode (`sqlite-wal`) with O(1) reverse cursor indexing
@@ -164,3 +164,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

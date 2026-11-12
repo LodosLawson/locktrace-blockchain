@@ -143,8 +143,34 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable2Step, Pausable {
     mapping(address => bool) public isBridgeRelayer;
 
     // Deduplication mapping: Prevents double-minting of Layer-1 LockTrace transaction hashes
-    mapping(string => bool) public processedL1Transactions;
     mapping(bytes32 => bool) public processedL1TxHashes;
+
+    /**
+     * @notice Backward-compatible public getter for processedL1Transactions(string).
+     * @dev Canonicalizes the hash (casing and 0x prefix immune) and reads from processedL1TxHashes,
+     *      saving ~22,100 gas on every bridge mint while eliminating redundant dynamic string SSTORE writes.
+     */
+    function processedL1Transactions(string calldata txHashStr) external view returns (bool) {
+        bytes calldata b = bytes(txHashStr);
+        uint256 start = 0;
+        if (b.length == 66 && b[0] == '0' && (b[1] == 'x' || b[1] == 'X')) {
+            start = 2;
+        } else if (b.length != 64) {
+            return false;
+        }
+        bytes memory canonical = new bytes(32);
+        for (uint256 i = 0; i < 32; i++) {
+            bytes1 hiC = b[start + i * 2];
+            bytes1 loC = b[start + i * 2 + 1];
+            if (!_isValidHexChar(hiC) || !_isValidHexChar(loC)) {
+                return false;
+            }
+            uint8 hi = _fromHexChar(hiC);
+            uint8 lo = _fromHexChar(loC);
+            canonical[i] = bytes1((hi << 4) | lo);
+        }
+        return processedL1TxHashes[bytes32(canonical)];
+    }
 
     // Events
     event BridgeRelayerSet(address indexed relayer, bool active);
@@ -251,11 +277,10 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable2Step, Pausable {
         require(bytes(locktraceTxHash).length > 0, "wBCT: Empty L1 transaction hash");
 
         bytes32 canonicalHash = _canonicalizeTxHash(locktraceTxHash);
-        require(!processedL1TxHashes[canonicalHash] && !processedL1Transactions[locktraceTxHash], "wBCT: L1 transaction already processed");
+        require(!processedL1TxHashes[canonicalHash], "wBCT: L1 transaction already processed");
         require(_totalSupply + amount <= MAX_SUPPLY, "wBCT: Max supply exceeded");
 
         processedL1TxHashes[canonicalHash] = true;
-        processedL1Transactions[locktraceTxHash] = true;
         _mint(to, amount);
 
         emit MintedFromBridge(to, amount, locktraceTxHash);

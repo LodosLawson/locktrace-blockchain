@@ -23,7 +23,7 @@ CHAIN_REGEX = re.compile(r"^[a-zA-Z0-9_\-]{2,32}$")
 
 
 def _mask_text(text: str, secrets: Optional[list] = None) -> str:
-    """Masks secret keys and sensitive bearer tokens in logs and errors."""
+    """Masks secret keys, private keys, and sensitive bearer tokens in logs and errors."""
     if not text:
         return ""
     masked = str(text)
@@ -32,12 +32,15 @@ def _mask_text(text: str, secrets: Optional[list] = None) -> str:
             if s and len(str(s)) >= 6:
                 masked = masked.replace(str(s), "***REDACTED***")
     masked = re.sub(r"(bearer\s+)[a-zA-Z0-9_\-\.]+", r"\1***REDACTED***", masked, flags=re.IGNORECASE)
+    # AUD12-02: Automatically redact raw EVM private keys (0x + 64 hex characters)
+    masked = re.sub(r"\b0x[a-fA-F0-9]{64}\b", "0x***REDACTED_PRIVKEY***", masked)
     return masked
 
 
 class ThirdwebService:
     def __init__(self, secret_key: Optional[str] = None, client_id: Optional[str] = None):
         self.secret_key = secret_key or os.environ.get("THIRDWEB_SECRET_KEY", "")
+        self.server_private_key = os.environ.get("THIRDWEB_SERVER_PRIVATE_KEY", "")
         self.client_id = client_id or os.environ.get("THIRDWEB_CLIENT_ID", "")
         self.server_wallet = os.environ.get("THIRDWEB_SERVER_WALLET_ADDRESS", "")
         self.engine_url = os.environ.get("THIRDWEB_ENGINE_URL", "")
@@ -63,6 +66,8 @@ class ThirdwebService:
         env = os.environ.copy()
         if self.secret_key:
             env["THIRDWEB_SECRET_KEY"] = self.secret_key
+        if self.server_private_key:
+            env["THIRDWEB_SERVER_PRIVATE_KEY"] = self.server_private_key
         if self.client_id:
             env["THIRDWEB_CLIENT_ID"] = self.client_id
         if self.server_wallet:
@@ -70,11 +75,12 @@ class ThirdwebService:
         if self.engine_url:
             env["THIRDWEB_ENGINE_URL"] = self.engine_url
 
+        # AUD12-02: Protect private keys; do not mask public client_id
         known_secrets = [
             self.secret_key,
-            self.client_id,
+            self.server_private_key,
             os.environ.get("THIRDWEB_SECRET_KEY", ""),
-            os.environ.get("THIRDWEB_CLIENT_ID", ""),
+            os.environ.get("THIRDWEB_SERVER_PRIVATE_KEY", ""),
         ]
 
         try:

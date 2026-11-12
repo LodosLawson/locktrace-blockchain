@@ -25,6 +25,7 @@ import hashlib
 import logging
 import threading
 import ipaddress
+from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any, Optional, Tuple, List
 from urllib.parse import urlparse
 
@@ -107,6 +108,7 @@ class PushNotificationService:
         
         self.vapid_obj = None
         self.vapid_public_b64 = ""
+        self._executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix="LockTracePush")
         self._init_vapid_keys()
         self._init_db()
 
@@ -218,6 +220,14 @@ class PushNotificationService:
 
         if not endpoint or not p256dh or not auth:
             return False, "Missing endpoint, p256dh, or auth in push subscription."
+
+        # AUD12-04: Length bounding against database bloat and memory DoS attacks
+        if len(endpoint) > 512:
+            return False, "Push endpoint exceeds maximum allowed length (512 characters)."
+        if len(p256dh) < 16 or len(p256dh) > 128:
+            return False, "Invalid p256dh key length (must be between 16 and 128 characters)."
+        if len(auth) < 8 or len(auth) > 64:
+            return False, "Invalid auth secret length (must be between 8 and 64 characters)."
 
         # Verify secure HTTPS and authorized push gateway (SSRF Protection)
         if not is_safe_push_endpoint(endpoint):
@@ -358,12 +368,11 @@ class PushNotificationService:
             "tag": f"locktrace-{category}-{int(time.time())}"
         }
 
-        # Run dispatch in a background worker thread to prevent blocking block consensus
-        threading.Thread(
-            target=self._dispatch_push_worker,
-            args=(subs, payload),
-            daemon=True
-        ).start()
+        # AUD12-04: Run dispatch in a bounded thread pool executor to eliminate thread exhaustion DoS
+        try:
+            self._executor.submit(self._dispatch_push_worker, subs, payload)
+        except Exception as e:
+            logger.error(f"Failed to submit push task to thread pool executor: {e}")
 
     def _dispatch_push_worker(self, subscriptions: List[Dict[str, Any]], payload: Dict[str, Any]):
         """Worker executing RFC 8291 payload encryption and HTTP POST to push gateways."""

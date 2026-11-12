@@ -5,11 +5,30 @@ use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Arc;
 use std::time::Instant;
 
+/// Checks if SHA-256 raw bytes have required number of leading zero hex characters.
+/// Operates directly on [u8; 32] without any heap allocations (zero hex::encode in inner loop).
+#[inline(always)]
+fn check_leading_zeros(digest: &[u8; 32], difficulty: usize) -> bool {
+    let full_bytes = difficulty / 2;
+    for i in 0..full_bytes {
+        if digest[i] != 0 {
+            return false;
+        }
+    }
+    if difficulty % 2 != 0 {
+        if (digest[full_bytes] >> 4) != 0 {
+            return false;
+        }
+    }
+    true
+}
+
 pub fn solve_pow(
     prefix: &str,
     suffix: &str,
     target_difficulty: u32,
     max_nonces: u64,
+    start_nonce: u64,
 ) -> (bool, u64, String, f64) {
     // SHA-256 hex string is exactly 64 characters. Difficulty > 64 is mathematically
     // impossible and difficulty 0 is invalid. Enforce strict boundary checks against DoS.
@@ -18,9 +37,12 @@ pub fn solve_pow(
     }
 
     let t_start = Instant::now();
-    let target_prefix = "0".repeat(target_difficulty as usize);
     let found = Arc::new(AtomicBool::new(false));
     let total_hashes = Arc::new(AtomicU64::new(0));
+
+    // AUD12-01: Pre-hash prefix mid-state once to avoid redundant re-hashing per nonce
+    let mut base_hasher = Sha256::new();
+    base_hasher.update(prefix.as_bytes());
 
     // Parallel chunking using lazy index range without collecting large Vec into memory
     let chunk_size = 50_000u64;
@@ -34,28 +56,32 @@ pub fn solve_pow(
     let hashes_clone = Arc::clone(&total_hashes);
 
     let result = (0..num_chunks).into_par_iter().find_map_any(|chunk_idx| {
-        let base = chunk_idx * chunk_size;
-        let limit = (base + chunk_size).min(max_nonces);
+        let chunk_start = start_nonce + chunk_idx * chunk_size;
+        let chunk_limit = (chunk_start + chunk_size).min(start_nonce + max_nonces);
         let mut local_count = 0u64;
-        let mut buffer = String::with_capacity(prefix.len() + 32 + suffix.len());
+        let mut nonce_buf = String::with_capacity(32);
 
-        for nonce in base..limit {
+        for nonce in chunk_start..chunk_limit {
             if found_clone.load(Ordering::Relaxed) {
                 hashes_clone.fetch_add(local_count, Ordering::Relaxed);
                 return None;
             }
 
             local_count += 1;
-            buffer.clear();
-            buffer.push_str(prefix);
-            let _ = write!(&mut buffer, "{}", nonce);
-            buffer.push_str(suffix);
+            nonce_buf.clear();
+            let _ = write!(&mut nonce_buf, "{}", nonce);
 
-            let hash = hex::encode(Sha256::digest(buffer.as_bytes()));
-            if hash.starts_with(&target_prefix) {
+            let mut hasher = base_hasher.clone();
+            hasher.update(nonce_buf.as_bytes());
+            hasher.update(suffix.as_bytes());
+            let digest: [u8; 32] = hasher.finalize().into();
+
+            // AUD12-01: Fast zero-allocation byte check
+            if check_leading_zeros(&digest, target_difficulty as usize) {
                 found_clone.store(true, Ordering::Relaxed);
                 hashes_clone.fetch_add(local_count, Ordering::Relaxed);
-                return Some((nonce, hash));
+                let winning_hash = hex::encode(digest);
+                return Some((nonce, winning_hash));
             }
         }
 
@@ -80,20 +106,20 @@ mod tests {
     #[test]
     fn test_pow_boundary_checks() {
         // Difficulty > 64 must be rejected immediately without scanning
-        let (ok, _, _, _) = solve_pow("header", "footer", 65, 1000);
+        let (ok, _, _, _) = solve_pow("header", "footer", 65, 1000, 0);
         assert!(!ok);
 
-        let (ok, _, _, _) = solve_pow("header", "footer", 1000, 1000);
+        let (ok, _, _, _) = solve_pow("header", "footer", 1000, 1000, 0);
         assert!(!ok);
 
         // Difficulty 0 must be rejected
-        let (ok, _, _, _) = solve_pow("header", "footer", 0, 1000);
+        let (ok, _, _, _) = solve_pow("header", "footer", 0, 1000, 0);
         assert!(!ok);
     }
 
     #[test]
     fn test_pow_valid_solve() {
-        let (ok, nonce, hash, _) = solve_pow("block_", "_end", 1, 10_000);
+        let (ok, nonce, hash, _) = solve_pow("block_", "_end", 1, 10_000, 0);
         if ok {
             assert!(hash.starts_with('0'));
             assert!(nonce < 10_000);

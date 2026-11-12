@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.8.5` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.8.6` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -408,4 +408,34 @@ LockTrace v2.8.5 sürümü ile tespit edilen 6 kritik bulgunun tamamı çözüme
 
 6. **OpenCL Donanım Dizi Sınır Güvenliği & URL Zaman Aşımı Koruması (REV11-06):**
    - `core/gpu_miner.py` içinde OpenCL aygıt sayısı dinamik olarak sorgulanıp tahsis edildi, indeks sınırlandırıldı (`IndexError` engeli). `scripts/*.py` altındaki tüm `urllib.request.urlopen` çağrılarına açık `timeout` parametresi eklendi.
+
+---
+
+## 🛡️ 15. LockTrace v2.8.6: Konsensüs Optimizasyonu, Kriptografik Normalizasyon & Kaynak Sertleştirmesi (AUD12)
+
+LockTrace v2.8.6 sürümü ile çözülen 8 kritik optimizasyon ve güvenlik bulgusu:
+
+1. **PoW Sıfır Tahsisli İç Döngü & İptal Sinyali Entegrasyonu (AUD12-01):**
+   - `crates/locktrace_core/src/pow.rs` içinde her nonce döngüsündeki `hex::encode` heap tahsisi kaldırıldı; doğrudan `[u8; 32]` bayt seviyesinde sıfır maliyetli kontrol sağlandı. Başlık öneki mid-state olarak önceden hash'lenip klonlandı. `core/gpu_miner.py` içinde `stop_event` sinyali dilimlenmiş batch döngüsüyle Rust motoruna bağlandı.
+
+2. **Thirdweb Sunucu Özel Anahtarı Maskelemesi (AUD12-02):**
+   - `core/thirdweb_service.py` içinde `THIRDWEB_SERVER_PRIVATE_KEY` ve ham 64-hex özel anahtar desenleri maskeleme listesine alındı; genel `client_id` değeri maskelemeden çıkarılarak arayüz şeffaflığı korundu.
+
+3. **WrappedBCT SSTORE Gaz Optimizasyonu & Kanonik Getter (AUD12-03):**
+   - `contracts/WrappedBCT.sol` kontratında fazladan ~22.100 gaz tüketen dinamik string `processedL1Transactions` state haritası kaldırıldı; yerine `processedL1TxHashes` haritasını okuyan ve 0x/büyük-küçük harfe duyarsız kanonik bir getter fonksiyonu tanımlandı.
+
+4. **Web Push DoS Uzunluk Sınırları & Bounded Thread Pool (AUD12-04):**
+   - `core/push_service.py` içinde `endpoint` (512 karakter), `p256dh` (128 karakter) ve `auth` (64 karakter) uzunluk sınırları getirildi. Sınırsız iş parçacığı (`threading.Thread`) açılması yerine 4 işçili `ThreadPoolExecutor` motoruna geçildi.
+
+5. **Mnemonic Doğrulaması & BIP-39 NFKD Normalizasyonu (AUD12-05):**
+   - `core/mnemonic.py` modülünde boş veya geçersiz kurtarma kelimeleri verildiğinde sabit anahtar üretilmesi engellendi (`ValueError`); BIP-39 standardına uygun UTF-8 NFKD normalizasyonu zorunlu kılındı.
+
+6. **Kompakt Blok Değişmezleri & Zorluk Kontrolü (AUD12-06):**
+   - `crates/locktrace_core/src/compact.rs` içinde `difficulty` (1..64) aralığı denetlendi; `prefilled.len() + short_ids.len() == total_transactions` eşitliği ve `prefilled.index` sınır ve tekillik kontrolleri eklendi.
+
+7. **Paylaşımlı Madenci Motoru Tekili (Singleton) (AUD12-07):**
+   - `core/native_bridge.py` içinde her PoW yedek çağrısında OpenCL Ctypes sürücüsünün sıfırdan yüklenmesi engellendi; iş parçacığı güvenli `get_shared_miner_engine()` tekil nesnesi kuruldu.
+
+8. **Nginx HTTP Fallback CSP & Dağıtım Sertleştirmesi (AUD12-08):**
+   - `deploy/nginx.conf` dosyasına tam özellikli Web3 Content-Security-Policy başlıkları, API proxy ve rate limiting eklendi; eski `X-XSS-Protection` başlığı kaldırıldı.
 

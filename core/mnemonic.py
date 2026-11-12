@@ -7,6 +7,7 @@ Compatible with standard cryptocurrency wallet seed systems (MetaMask, Ledger, T
 
 import hashlib
 import secrets
+import unicodedata
 from typing import List
 
 # Official BIP-39 English Wordlist (Clean, standard 2048 words)
@@ -41,11 +42,22 @@ def generate_mnemonic(strength: int = 128) -> str:
 def mnemonic_to_private_key(mnemonic: str, passphrase: str = "") -> str:
     """
     Derive a deterministic 32-byte (64-hex) private key from the mnemonic seed phrase.
-    Uses PBKDF2 HMAC-SHA512 with 'mnemonic' + passphrase salt matching BIP-39 specification.
+    Uses PBKDF2 HMAC-SHA512 with 'mnemonic' + passphrase salt matching BIP-39 specification
+    with UTF-8 NFKD normalization and strict mnemonic validation.
     """
-    cleaned_mnemonic = " ".join(mnemonic.strip().lower().split())
-    salt = ("mnemonic" + passphrase).encode("utf-8")
-    seed = hashlib.pbkdf2_hmac("sha512", cleaned_mnemonic.encode("utf-8"), salt, iterations=2048, dklen=64)
+    if not mnemonic or not isinstance(mnemonic, str):
+        raise ValueError("Mnemonic must be a non-empty string.")
+
+    cleaned_mnemonic = " ".join(mnemonic.strip().split())
+    if not validate_mnemonic(cleaned_mnemonic):
+        raise ValueError("Invalid BIP-39 mnemonic phrase (checksum, word count, or invalid word).")
+
+    # AUD12-05: BIP-39 standard UTF-8 NFKD normalization for mnemonic and salt
+    norm_mnemonic = unicodedata.normalize("NFKD", cleaned_mnemonic)
+    norm_passphrase = unicodedata.normalize("NFKD", passphrase or "")
+    salt = unicodedata.normalize("NFKD", "mnemonic" + norm_passphrase).encode("utf-8")
+
+    seed = hashlib.pbkdf2_hmac("sha512", norm_mnemonic.encode("utf-8"), salt, iterations=2048, dklen=64)
     return seed[:32].hex()
 
 
