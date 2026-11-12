@@ -35,6 +35,7 @@ def main():
         tar.add("README.md", arcname="README.md")
         tar.add("requirements.txt", arcname="requirements.txt")
         tar.add("config.py", arcname="config.py")
+        tar.add("deploy", arcname="deploy")
         tar.add("scripts/sign_frontend.py", arcname="scripts/sign_frontend.py")
         if os.path.isdir("crates"):
             tar.add("crates", arcname="crates")
@@ -77,13 +78,17 @@ sudo cp /tmp/frontend/sw.js /opt/blockchaint/frontend/sw.js
 sudo cp /tmp/templates/index.html /opt/blockchaint/templates/index.html
 sudo cp /tmp/templates/sw.js /opt/blockchaint/templates/sw.js
 sudo cp /tmp/scripts/sign_frontend.py /opt/blockchaint/scripts/sign_frontend.py
+if [ -f /tmp/deploy/nginx_ssl.conf ]; then
+    sudo cp /tmp/deploy/nginx_ssl.conf /etc/nginx/sites-available/blockchaint
+    sudo nginx -t && sudo systemctl reload nginx
+fi
 
 # Install updated dependencies (cryptography)
 sudo /opt/blockchaint/venv/bin/pip install -q -r /opt/blockchaint/requirements.txt
 
 # 1. Sign Frontend with official Release Key
 cd /opt/blockchaint
-sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.8.4 --key-file /home/ubuntu/.locktrace/release_signing_key.json
+sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.8.5 --key-file /home/ubuntu/.locktrace/release_signing_key.json
 
 # 2. Publish to Nginx document root
 sudo mkdir -p /var/www/locktrace /var/www/locktrace/icons /opt/blockchaint/frontend/icons
