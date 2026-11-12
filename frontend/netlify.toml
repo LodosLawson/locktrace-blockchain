@@ -1,12 +1,12 @@
 [[redirects]]
   from = "/api/*"
-  to = "https://locktrace.space/api/:splat"
+  to = "https://www.locktrace.space/api/:splat"
   status = 200
   force = true
 
 [[redirects]]
   from = "/node_runner.py"
-  to = "https://locktrace.space/node_runner.py"
+  to = "https://www.locktrace.space/node_runner.py"
   status = 200
   force = true
 
@@ -23,9 +23,10 @@
 [[headers]]
   for = "/*"
   [headers.values]
+    Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
     X-Frame-Options = "SAMEORIGIN"
     X-XSS-Protection = "1; mode=block"
     X-Content-Type-Options = "nosniff"
     Referrer-Policy = "strict-origin-when-cross-origin"
     Permissions-Policy = "camera=(self), microphone=(), geolocation=()"
-
+    Content-Security-Policy = "default-src 'self' https: data: blob:; script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://unpkg.com; connect-src 'self' https://locktrace.space https://www.locktrace.space https://mainnet.base.org https://basescan.org https://*.rpc.thirdweb.com https://*.thirdweb.com wss://*.thirdweb.com https://api.coinbase.com https://api.geckoterminal.com https://api.dexscreener.com; font-src 'self' https: data:; img-src 'self' data: https: blob:; style-src 'self' 'unsafe-inline' https:; object-src 'none'; base-uri 'self';"

@@ -65,10 +65,19 @@ def clean_markdown_inline(text: str) -> str:
     """Cleans LaTeX and markdown markup for ReportLab Paragraph rendering."""
     # Escape HTML special chars first
     t = text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+
+    # Protect inline code spans so their content (e.g. *, _, $) is not mangled
+    code_blocks = []
+    def code_replacer(m):
+        code_blocks.append(m.group(1))
+        return f"___CODE_BLOCK_{len(code_blocks) - 1}___"
+
+    t = re.sub(r'`(.*?)`', code_replacer, t)
+
     # Restore basic formatting
     t = re.sub(r'\*\*(.*?)\*\*', r'<b>\1</b>', t)
     t = re.sub(r'\*(.*?)\*', r'<i>\1</i>', t)
-    t = re.sub(r'`(.*?)`', r'<font name="Courier" size="8" color="#0F766E"><b>\1</b></font>', t)
+
     # LaTeX math replacements
     t = re.sub(r'\\text\{([^}]+)\}', r'\1', t)
     t = re.sub(r'\\ne', r'&ne;', t)
@@ -78,6 +87,14 @@ def clean_markdown_inline(text: str) -> str:
     t = re.sub(r'\\approx', r'&asymp;', t)
     t = re.sub(r'\$O\((.*?)\)\$', r'<b>O(\1)</b>', t)
     t = re.sub(r'\$(.*?)\$', r'<i>\1</i>', t)
+
+    # Restore styled code spans
+    for idx, code_content in enumerate(code_blocks):
+        t = t.replace(
+            f"___CODE_BLOCK_{idx}___",
+            f'<font name="Courier" size="8" color="#0F766E"><b>{code_content}</b></font>'
+        )
+
     return t
 
 def generate_pdf():

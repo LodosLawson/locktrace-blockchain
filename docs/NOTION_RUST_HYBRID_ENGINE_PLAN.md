@@ -15,7 +15,7 @@
 | **Konu** | Python + Rust Hibrit Çekirdek Geçiş Planı (PyO3 / Maturin) |
 | **Hedef Sürüm** | `v2.8.0 (Native Rust Accelerated Core)` |
 | **Hazırlanma Tarihi** | 11 Kasım 2026 |
-| **Durum** | 🟡 Onay Bekliyor (Kullanıcı onayı sonrası uygulamaya başlanacak) |
+| **Durum** | 🟢 Tamamlandı & Canlıda (Rust Çekirdeği crates/locktrace_core altında entegre edildi) |
 | **Strateji** | Dual-Engine Fallback (Rust derlemesi varsa native hız, yoksa saf Python kesintisiz çalışır) |
 
 ---
