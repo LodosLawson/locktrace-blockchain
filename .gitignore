@@ -36,8 +36,9 @@ package-lock.json
 .DS_Store
 Thumbs.db
 
-# Repomix
+# Repomix & Audit Bundles
 repomix-output*
+output/
 
 backups/
 
