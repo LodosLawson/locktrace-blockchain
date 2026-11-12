@@ -1,6 +1,6 @@
 {
-  "version": "2.8.5",
-  "released_at": "2026-11-12T11:43:52Z",
+  "version": "2.8.6",
+  "released_at": "2026-11-12T12:20:16Z",
   "authority_address": "BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080",
   "authority_public_key": "5e3686d4e64119cc049dd966e57150a04db4160a335610c8740748ba618c002321a5882ed90bfd5597bc144a7c4926369aec9b89070d3d337819d6626c67a150",
   "index_html_sha256": "002a270df1ec535809d6c8a449f64684c662406b4b6135019d1193ffc2588f7e",
@@ -8,6 +8,6 @@
   "sw_js_sha256": "89ee50091424d858eadf69d0b47f817fb43bc274916d6fac1b2d97962723eebe",
   "sw_sha256": "89ee50091424d858eadf69d0b47f817fb43bc274916d6fac1b2d97962723eebe",
   "ipfs_cid_v1": "bafkreiaafitq34pmknmatvwiure7mrueyzrea22lme2qdhirsp74eweppy",
-  "canonical_payload": "LOCKTRACE_FRONTEND_RELEASE:2.8.5:002a270df1ec535809d6c8a449f64684c662406b4b6135019d1193ffc2588f7e:89ee50091424d858eadf69d0b47f817fb43bc274916d6fac1b2d97962723eebe:bafkreiaafitq34pmknmatvwiure7mrueyzrea22lme2qdhirsp74eweppy",
-  "signature": "0e15f7799ba6fbafbbdc20c31df2706623faf697ade6fde169ae2debaf7f37da051bba4fc132865aadda11e60b3bc5821414ec5c4718eb9921cd0d5acd443dda"
+  "canonical_payload": "LOCKTRACE_FRONTEND_RELEASE:2.8.6:002a270df1ec535809d6c8a449f64684c662406b4b6135019d1193ffc2588f7e:89ee50091424d858eadf69d0b47f817fb43bc274916d6fac1b2d97962723eebe:bafkreiaafitq34pmknmatvwiure7mrueyzrea22lme2qdhirsp74eweppy",
+  "signature": "38459ae9d34a2bb2665ebe59635b8fb4b4c0784f75560a352eb4bced245306466407f80d17cdd70f58a1fc5fd6fcbbcd01490132ad3b12529bce9a9b7a64631e"
 }
