@@ -449,7 +449,16 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **P2P Compact Block Version, Raw JSON & Short ID Verification (AUD15-06):** Enforced `compact_version == 1`, 64KB raw JSON bounds, and 16-hex character formatting in `crates/locktrace_core/src/compact.rs`.
    - **Thirdweb 0x Key Normalization & CLI Flag Injection Defense (AUD15-07):** Normalized raw 64-hex server private keys with `0x` prefix and prohibited leading hyphens in transaction ID and chain name regexes.
    - **Audit Bundle Privacy Filters & Dynamic Protocol SSOT (AUD15-08):** Configured strict exclusions for `.env`, keys, certificates, and bound protocol version dynamically to `Config.PROTOCOL_VERSION`.
-18. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+18. **Rayon Clamping, DOM Sanitization & Protocol SSOT Alignment (v2.8.9):**
+   - **High Start-Nonce Rayon Clamping (AUD16-01):** Clamped `max_nonces` in `crates/locktrace_core/src/pow.rs` and bounded 64-bit integer ranges to eliminate empty chunk Rayon iterations and 100% CPU thread exhaustion.
+   - **Prioritized Non-Empty Database Discovery (AUD16-02):** Reordered candidate database paths in `scripts/test_base_logs.py` to prioritize active `/opt/blockchaint/data/blockchain.db` over stale 0-byte databases.
+   - **DOM XSS Attribute Sanitization (AUD16-03):** Replaced `escapeHtml` with `sanitizeJsAttr` across all inline `onclick` event attributes in `scripts/replace_embed.py`, `frontend/index.html`, and `templates/index.html`.
+   - **P2P Compact Block Header & Duplicate ID Defense (AUD16-04):** Enforced non-empty string validation on `CompactHeader` fields (`hash`, `previous_hash`, `merkle_root`, `miner`) and eliminated duplicate transaction IDs via `HashSet` in `crates/locktrace_core/src/compact.rs`.
+   - **Thirdweb 64-Hex Validation & Dual-Prefix Key Redaction (AUD16-05):** Strictly validated 64-hex private keys, ensured lowercase `0x` formatting in `thirdweb_engine.mjs`, and masked both raw 64-hex and `0x`/`0X` prefixed keys in Python log redaction.
+   - **BIP-39 Pre-Split NFKD Unicode Normalization (AUD16-06):** Applied NFKD normalization directly to raw mnemonic strings in `core/mnemonic.py` prior to whitespace splitting, fully conforming to BIP-39 specification.
+   - **Audit Bundle Privacy Filters & Output XML Parity (AUD16-07):** Filtered `"wallet"` and `".bak"` artifacts from security packages and ensured dynamic `repomix-output_16.xml` bundling.
+   - **Universal Protocol SSOT Version Synchronization (AUD16-08):** Harmonized all deployment scripts, launchers, whitepapers, and core packages to v2.8.9.
+19. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

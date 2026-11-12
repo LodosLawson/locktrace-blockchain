@@ -179,10 +179,13 @@ class LockTraceMinerEngine:
         try:
             from core.native_bridge import is_rust_accelerated, _RUST_CORE
             if is_rust_accelerated() and _RUST_CORE is not None:
-                # AUD12-01 & AUD14-03: Support start_nonce and cancellation stop_event by scanning in bounded batches
+                # AUD12-01, AUD14-03 & AUD16-01: Clamp to 64-bit integer bounds and support cancellation stop_event
+                max_u64 = 0xFFFFFFFFFFFFFFFF
+                if s_nonce >= max_u64:
+                    return False, 0, "", 0.0
                 slice_size = 200_000
                 total_scanned = s_nonce
-                max_limit = s_nonce + max_n
+                max_limit = min(s_nonce + max_n, max_u64)
                 last_hashrate = 0.0
 
                 while total_scanned < max_limit:

@@ -22,7 +22,7 @@ replacement_grid = '''<!-- 4-Col Action Buttons Grid (Responsive, compact, no ho
               <span class="material-symbols-outlined text-[16px] sm:text-[18px]">repeat</span>
               <span class="truncate">Quote</span>
             </button>
-            <button class="flex items-center justify-center space-x-1 py-2 px-1 rounded-xl bg-primary/15 text-primary hover:bg-primary/25 transition-all active:scale-95 text-xs font-semibold" onclick="tipAuthorPrompt('${escapeHtml(post.author)}', event)" type="button">
+            <button class="flex items-center justify-center space-x-1 py-2 px-1 rounded-xl bg-primary/15 text-primary hover:bg-primary/25 transition-all active:scale-95 text-xs font-semibold" onclick="tipAuthorPrompt('${sanitizeJsAttr(post.author)}', event)" type="button">
               <span class="material-symbols-outlined text-[16px] sm:text-[18px]">bolt</span>
               <span class="truncate font-semibold">Tip</span>
             </button>

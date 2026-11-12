@@ -79,11 +79,18 @@ impl NativeCompactBlock {
             ));
         }
 
-        // AUD15-06: Strict BIP-152 short_id validation (16 hex chars = 8 bytes)
+        // AUD15-06 & AUD16-04: Strict BIP-152 short_id validation (16 hex chars = 8 bytes) and duplicate rejection
+        let mut seen_short_ids = std::collections::HashSet::with_capacity(self.short_ids.len());
         for sid in &self.short_ids {
             if sid.len() != 16 || !sid.chars().all(|c| c.is_ascii_hexdigit()) {
                 return Err(format!(
                     "Invalid short_id format: '{}'. Expected exactly 16 hex characters.",
+                    sid
+                ));
+            }
+            if !seen_short_ids.insert(sid) {
+                return Err(format!(
+                    "Duplicate short_id ({}) detected in compact block",
                     sid
                 ));
             }
@@ -122,7 +129,14 @@ impl NativeCompactBlock {
             }
         }
 
-        // 3. String field bounding
+        // 3. String field bounding and non-empty checks (AUD16-04)
+        if self.header.hash.is_empty()
+            || self.header.previous_hash.is_empty()
+            || self.header.merkle_root.is_empty()
+            || self.header.miner.is_empty()
+        {
+            return Err("Compact block header fields (hash, previous_hash, merkle_root, miner) cannot be empty".to_string());
+        }
         if self.header.hash.len() > MAX_FIELD_LEN
             || self.header.previous_hash.len() > MAX_FIELD_LEN
             || self.header.merkle_root.len() > MAX_FIELD_LEN
@@ -270,6 +284,18 @@ mod tests {
         // 6. AUD15-06: Invalid short_id length or hex
         block.short_ids = vec!["invalid_short_id".to_string()];
         block.total_transactions = 3;
+        assert!(block.validate().is_err());
+
+        // 7. AUD16-04: Duplicate short_id rejected
+        block.short_ids = vec!["0123456789abcdef".to_string(), "0123456789abcdef".to_string()];
+        block.prefilled = vec![];
+        block.total_transactions = 2;
+        assert!(block.validate().is_err());
+
+        // 8. AUD16-04: Empty header field rejected
+        block.short_ids = vec!["0123456789abcdef".to_string()];
+        block.total_transactions = 1;
+        block.header.miner = String::new();
         assert!(block.validate().is_err());
     }
 

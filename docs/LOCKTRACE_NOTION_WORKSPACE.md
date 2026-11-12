@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.8.8` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.8.9` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -498,4 +498,35 @@ LockTrace v2.8.8 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 
 8. **Güvenlik Paketi Gizlilik Filtreleri & Dinamik Protokol SSOT (AUD15-08):**
    - `scripts/create_audit_bundle.py` içindeki zip paketleyicisine `.env*`, `*key*`, `*rsa*` ve sertifikaları dışlayan katı gizlilik filtreleri eklendi; protokol sürümü doğrudan `Config.PROTOCOL_VERSION` değişkenine bağlandı.
+
+---
+
+## 🛡️ 18. LockTrace v2.8.9: Rayon Sınırlandırması, DOM Sanitizasyonu & Protokol SSOT Senkronizasyonu (AUD16)
+
+LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
+
+1. **Yüksek Start-Nonce Rayon Sonsuz Döngü Koruması (AUD16-01):**
+   - `crates/locktrace_core/src/pow.rs` içinde `max_nonces`, `u64::MAX - start_nonce` aralığına sınırlandırılarak Rayon'un boş chunk'lar üretmesi ve CPU'nun %100'e kilitlenmesi engellendi.
+
+2. **Öncelikli ve Boyut Kontrollü Veritabanı Tespiti (AUD16-02):**
+   - `scripts/test_base_logs.py` içinde `/opt/blockchaint/data/blockchain.db` ilk sıraya alındı ve `os.path.getsize(p) > 0` şartı eklenerek 0-byte boş dosyaların seçilmesi önlendi.
+
+3. **DOM XSS inline Olay Sanitizasyonu (AUD16-03):**
+   - `scripts/replace_embed.py`, `frontend/index.html` ve `templates/index.html` içindeki `onclick` özniteliklerinde `escapeHtml` yerine HTML entity çözümleme bypass'ını engelleyen `sanitizeJsAttr` kullanıldı.
+
+4. **Kompakt Blok Başlık ve Tekil Kısa Kimlik Denetimi (AUD16-04):**
+   - `crates/locktrace_core/src/compact.rs` içinde `hash`, `previous_hash`, `merkle_root`, `miner` alanlarına `!is_empty()` denetimi ve `short_ids` listesine `HashSet` ile mükerrer kimlik engellemesi getirildi.
+
+5. **Thirdweb 64-Hex Format Doğrulaması & Çift Önek Maskeleme (AUD16-05):**
+   - `thirdweb_engine.mjs` içinde büyük harf `0X` önekleri temizlenip küçük harf `0x` formatına zorlandı; Python `_mask_text` fonksiyonunda hem yalın 64-hex hem de `0x`/`0X` önekli anahtarlar maskelendi.
+
+6. **BIP-39 Bölme Öncesi NFKD Normalizasyonu (AUD16-06):**
+   - `core/mnemonic.py` içinde Unicode boşluk ve birleştirici karakterlerin ayrıştırma hatasına yol açmaması için `unicodedata.normalize("NFKD", ...)` işlemi `.split()` çağrısından önceye alındı.
+
+7. **Güvenlik Denetim Paketi Filtre ve Dinamik XML Güncellemesi (AUD16-07):**
+   - `scripts/create_audit_bundle.py` hariç tutma kurallarına `"wallet"` ve `".bak"` filtreleri eklendi; çıktı XML adı `repomix-output_16.xml` olarak güncellendi.
+
+8. **Evrensel Protokol SSOT Sürüm Uyumlaştırması (AUD16-08):**
+   - `scripts/sign_frontend.py`, `scripts/build_whitepaper_pdf.py`, `scripts/fast_deploy.py`, `scripts/run_node.*` ve tüm dokümantasyon v2.8.9 olarak senkronize edildi.
+
 

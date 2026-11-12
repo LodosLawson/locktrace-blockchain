@@ -107,16 +107,16 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     print(f"[*] Packaging security audit bundle to {ZIP_PATH}...")
 
-    # AUD15-08: Strictly exclude sensitive keys, certificates, credentials, and temp files
+    # AUD15-08 & AUD16-07: Strictly exclude sensitive keys, certificates, credentials, backups, and temp files
     excluded_dirs = {
         "__pycache__", ".git", "venv", "env", "node_modules", "target",
         ".netlify", "backups", "data", "output", ".idea", ".vscode"
     }
     excluded_exts = {
         ".pyc", ".pyo", ".pyd", ".db", ".db-wal", ".db-shm",
-        ".key", ".pem", ".crt", ".p12", ".pfx"
+        ".key", ".pem", ".crt", ".p12", ".pfx", ".bak"
     }
-    excluded_file_markers = {".env", "id_rsa", "ssh-key", "release_signing_key"}
+    excluded_file_markers = {".env", "id_rsa", "ssh-key", "release_signing_key", "wallet", ".bak"}
 
     with zipfile.ZipFile(ZIP_PATH, "w", zipfile.ZIP_DEFLATED) as zf:
         # 1. Add audit guide
@@ -168,17 +168,16 @@ def main():
                     full_path = os.path.join(test_dir, f)
                     zf.write(full_path, arcname=f"tests/{f}")
 
-        for test_file in ["test_rev11_fixes.py", "test_aud12_fixes.py", "test_aud14_fixes.py", "test_aud15_fixes.py"]:
+        for test_file in ["test_rev11_fixes.py", "test_aud12_fixes.py", "test_aud14_fixes.py", "test_aud15_fixes.py", "test_aud16_fixes.py"]:
             t_path = os.path.join(ROOT_DIR, "scratch", test_file)
             if os.path.exists(t_path):
                 zf.write(t_path, arcname=f"tests/{test_file}")
 
-    # Copy repomix-output.xml directly to output/ folder
     if os.path.exists(repomix_xml):
         out_xml = os.path.join(OUTPUT_DIR, "repomix-output.xml")
         shutil.copy2(repomix_xml, out_xml)
-        shutil.copy2(repomix_xml, os.path.join(OUTPUT_DIR, "repomix-output_15.xml"))
-        print("[+] Copied repomix-output.xml to output/repomix-output.xml & output/repomix-output_15.xml")
+        shutil.copy2(repomix_xml, os.path.join(OUTPUT_DIR, "repomix-output_16.xml"))
+        print("[+] Copied repomix-output.xml to output/repomix-output.xml & output/repomix-output_16.xml")
 
     zip_size_mb = os.path.getsize(ZIP_PATH) / (1024 * 1024)
     print(f"[SUCCESS] Security Audit Package generated successfully!")
