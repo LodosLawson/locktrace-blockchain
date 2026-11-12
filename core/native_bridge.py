@@ -187,11 +187,13 @@ def fast_compute_merkle_root(tx_hashes: List[str]) -> str:
 def fast_solve_pow(
     candidate: dict,
     target_difficulty: int,
-    max_nonces: int = 1_000_000
+    max_nonces: int = 1_000_000,
+    start_nonce: int = 0
 ) -> Tuple[bool, int, str, float]:
     """
     Parallel PoW mining using Rust native multi-threaded engine or CPU/GPU fallback.
     Immune to magic nonce splitting DoS (LT-POW-01) and redundant chunk re-computation (BUG-01).
+    Supports start_nonce parameter to avoid re-scanning identical nonce ranges (AUD14-03).
     """
     try:
         target_diff = int(target_difficulty)
@@ -200,6 +202,7 @@ def fast_solve_pow(
     except Exception:
         return False, 0, "", 0.0
     max_n = max(1, int(max_nonces))
+    s_nonce = max(0, int(start_nonce))
     if is_rust_accelerated():
         try:
             dummy = dict(candidate)
@@ -211,15 +214,15 @@ def fast_solve_pow(
             if token_pos != -1:
                 prefix = serialized[:token_pos + len('"nonce": ')]
                 suffix = serialized[token_pos + len(target_token):]
-                ok, nonce, h, hr = _RUST_CORE.solve_pow(prefix, suffix, target_diff, max_n)
-                # Rust successfully scanned 0..max_n. Return result directly without redundant re-runs.
+                ok, nonce, h, hr = _RUST_CORE.solve_pow(prefix, suffix, target_diff, max_n, s_nonce)
+                # Rust successfully scanned s_nonce..(s_nonce + max_n). Return result directly without redundant re-runs.
                 return bool(ok), int(nonce), str(h), float(hr)
         except Exception:
             pass
 
-    # AUD12-07: Use singleton shared miner engine to eliminate repeated OpenCL ctypes initialization latency
+    # AUD12-07 & AUD14-03: Use singleton shared miner engine with start_nonce support
     miner = get_shared_miner_engine()
-    return miner.solve_pow(candidate, target_diff, max_n)
+    return miner.solve_pow(candidate, target_diff, max_n, start_nonce=s_nonce)
 
 
 _SHARED_MINER = None

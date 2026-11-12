@@ -26,7 +26,7 @@ and security bug verification.
 
 ## 📋 System Architecture Overview
 
-- **Protocol Version:** `v2.8.6` (Production Mainnet: https://locktrace.space)
+- **Protocol Version:** `v2.8.7` (Production Mainnet: https://locktrace.space)
 - **Consensus Architecture:** Hybrid 70% Proof-of-Work (PoW) + 30% BFT Quorum Validator Attestation
 - **Native Token:** BCT (Blockchain Trace, 1 Trillion fixed max supply, non-inflationary)
 - **Database Engine:** SQLite in WAL mode (`sqlite-wal`) with O(1) reverse cursor indexing
@@ -152,9 +152,17 @@ def main():
                     full_path = os.path.join(test_dir, f)
                     zf.write(full_path, arcname=f"tests/{f}")
 
-        rev11_test = os.path.join(ROOT_DIR, "scratch", "test_rev11_fixes.py")
-        if os.path.exists(rev11_test):
-            zf.write(rev11_test, arcname="tests/test_rev11_fixes.py")
+        for test_file in ["test_rev11_fixes.py", "test_aud12_fixes.py", "test_aud14_fixes.py"]:
+            t_path = os.path.join(ROOT_DIR, "scratch", test_file)
+            if os.path.exists(t_path):
+                zf.write(t_path, arcname=f"tests/{test_file}")
+
+    # Copy repomix-output.xml directly to output/ folder
+    if os.path.exists(repomix_xml):
+        out_xml = os.path.join(OUTPUT_DIR, "repomix-output.xml")
+        shutil.copy2(repomix_xml, out_xml)
+        shutil.copy2(repomix_xml, os.path.join(OUTPUT_DIR, "repomix-output_14.xml"))
+        print("[+] Copied repomix-output.xml to output/repomix-output.xml & output/repomix-output_14.xml")
 
     zip_size_mb = os.path.getsize(ZIP_PATH) / (1024 * 1024)
     print(f"[SUCCESS] Security Audit Package generated successfully!")

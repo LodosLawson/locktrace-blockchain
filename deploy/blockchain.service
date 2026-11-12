@@ -10,6 +10,8 @@ WorkingDirectory=/opt/blockchaint
 EnvironmentFile=-/opt/blockchaint/.env
 Environment="PATH=/opt/blockchaint/venv/bin:/usr/bin"
 Environment="BCT_LOG_LEVEL=INFO"
+LimitNOFILE=65535
+LimitNPROC=65535
 ExecStart=/opt/blockchaint/venv/bin/gunicorn \
     --bind 127.0.0.1:5000 \
     --workers 1 \

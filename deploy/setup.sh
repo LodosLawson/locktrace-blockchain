@@ -16,7 +16,7 @@ sudo apt-get upgrade -y
 
 # ── 2. Gerekli paketler ──────────────────────────
 echo "[2/7] Gerekli paketler kuruluyor..."
-sudo apt-get install -y python3 python3-pip python3-venv nginx ufw certbot python3-certbot-nginx
+sudo apt-get install -y python3 python3-pip python3-venv nginx ufw certbot python3-certbot-nginx cargo rustc build-essential
 
 # ── 3. Proje dizini ──────────────────────────────
 echo "[3/7] Proje dizini hazırlanıyor..."
@@ -26,12 +26,21 @@ sudo chown ubuntu:ubuntu /opt/blockchaint
 # Eğer dosyalar zaten kopyalandıysa, venv oluştur
 cd /opt/blockchaint
 
-# ── 4. Python sanal ortam ────────────────────────
-echo "[4/7] Python sanal ortam oluşturuluyor..."
+# ── 4. Python sanal ortam & Rust Çekirdeği ───────
+echo "[4/7] Python sanal ortam oluşturuluyor ve bağımlılıklar kuruluyor..."
 python3 -m venv venv
 source venv/bin/activate
 pip install --upgrade pip
 pip install -r requirements.txt
+
+# AUD14-05: Rust Core Native Acceleration Build via maturin
+echo "  -> Rust çekirdeği (locktrace_core) derleniyor..."
+if command -v cargo >/dev/null 2>&1; then
+    pip install maturin
+    (cd /opt/blockchaint/crates/locktrace_core && maturin develop --release) || echo "  [UYARI] maturin derlemesi başarısız, Python fallback devrede kalacak."
+else
+    echo "  [BİLGİ] Cargo bulunamadı, Rust çekirdeği atlanıyor (saf Python fallback etkin)."
+fi
 
 # ── 5. Log dizini ve Gizli Anahtarlar (.env) ─────
 echo "[5/7] Log dizini ve güvenli .env hazırlanıyor..."

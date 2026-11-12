@@ -10,7 +10,7 @@ idx2 = text.find(end_marker, idx1)
 
 replacement_grid = '''<!-- 4-Col Action Buttons Grid (Responsive, compact, no horizontal overflow) -->
           <div class="grid grid-cols-4 gap-1 sm:gap-2 pt-1">
-            <button class="flex items-center justify-center space-x-1 py-2 px-1 rounded-xl ${likedByMe ? 'bg-tertiary/15 text-tertiary font-bold' : 'bg-surface-container-high text-on-surface hover:bg-surface-variant'} transition-all active:scale-95 text-xs font-semibold" onclick="likeSpacePost('${pid}', event)" type="button">
+            <button class="flex items-center justify-center space-x-1 py-2 px-1 rounded-xl ${likedByMe ? 'bg-tertiary/15 text-tertiary font-bold' : 'bg-surface-container-high text-on-surface hover:bg-surface-variant'} transition-all active:scale-95 text-xs font-semibold" onclick="likeSpacePost('${sanitizeJsAttr(pid)}', event)" type="button">
               <span class="material-symbols-outlined text-[16px] sm:text-[18px]" ${likedByMe ? 'style="font-variation-settings: \\'FILL\\' 1;"' : ''}>favorite</span>
               <span class="truncate">Like</span>
             </button>
@@ -18,7 +18,7 @@ replacement_grid = '''<!-- 4-Col Action Buttons Grid (Responsive, compact, no ho
               <span class="material-symbols-outlined text-[16px] sm:text-[18px]">chat_bubble</span>
               <span class="truncate">Comment</span>
             </button>
-            <button class="flex items-center justify-center space-x-1 py-2 px-1 rounded-xl bg-surface-container-high text-on-surface hover:bg-surface-variant transition-all active:scale-95 text-xs font-semibold" onclick="closeSpacePostDetail(); quoteSpacePost('${pid}', event)" type="button">
+            <button class="flex items-center justify-center space-x-1 py-2 px-1 rounded-xl bg-surface-container-high text-on-surface hover:bg-surface-variant transition-all active:scale-95 text-xs font-semibold" onclick="closeSpacePostDetail(); quoteSpacePost('${sanitizeJsAttr(pid)}', event)" type="button">
               <span class="material-symbols-outlined text-[16px] sm:text-[18px]">repeat</span>
               <span class="truncate">Quote</span>
             </button>
@@ -52,31 +52,38 @@ replacement_fn = '''function generateSpacePostEmbedHtml(rawContent) {
         </svg>
       `;
 
-      // Helper to render asset card
+      // Helper to render asset card (AUD14-04: Strict HTML escaping on change & telemetry)
       const makeAssetCard = (sym, name, priceFormatted, change, metricTitle, metricVal, colorClass, bgClass, strokeHex, iconName) => {
-        const cleanSym = sym.replace('$', '').toLowerCase();
+        const cleanSym = sanitizeJsAttr(sym.replace('$', '').toLowerCase());
+        const safeChange = escapeHtml(String(change || ''));
+        const safeSym = escapeHtml(String(sym || ''));
+        const safeName = escapeHtml(String(name || ''));
+        const safePrice = escapeHtml(String(priceFormatted || ''));
+        const safeMetricTitle = escapeHtml(String(metricTitle || ''));
+        const safeMetricVal = escapeHtml(String(metricVal || ''));
+        const safeIcon = escapeHtml(String(iconName || 'trending_up'));
         return `
           <div class="rounded-xl bg-surface-container-lowest p-3 sm:p-3.5 my-1 border border-outline-variant/15 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-xs select-none w-full" onclick="event.stopPropagation()">
             <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
               <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl ${bgClass} ${colorClass} flex items-center justify-center shrink-0">
-                <span class="material-symbols-outlined text-[18px] sm:text-[20px]">${iconName || 'trending_up'}</span>
+                <span class="material-symbols-outlined text-[18px] sm:text-[20px]">${safeIcon}</span>
               </div>
               <div class="flex flex-col min-w-0">
                 <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
-                  <span class="font-mono text-xs sm:text-sm font-bold text-on-surface">${sym}</span>
-                  <span class="font-mono text-xs sm:text-sm font-medium text-on-surface market-price-${cleanSym}">${priceFormatted}</span>
+                  <span class="font-mono text-xs sm:text-sm font-bold text-on-surface">${safeSym}</span>
+                  <span class="font-mono text-xs sm:text-sm font-medium text-on-surface market-price-${cleanSym}">${safePrice}</span>
                   <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full ${bgClass} ${colorClass} font-mono text-[10px] font-bold">
                     <span class="material-symbols-outlined text-[10px]">trending_up</span>
-                    <span class="market-change-${cleanSym}">${change}</span>
+                    <span class="market-change-${cleanSym}">${safeChange}</span>
                   </span>
                 </div>
-                <span class="text-[10px] sm:text-[11px] text-on-surface-variant truncate">${name}</span>
+                <span class="text-[10px] sm:text-[11px] text-on-surface-variant truncate">${safeName}</span>
               </div>
             </div>
             <div class="flex items-center gap-2.5 self-end sm:self-auto shrink-0">
               <div class="flex flex-col items-end">
-                <span class="text-[9px] sm:text-[10px] text-on-surface-variant font-mono">${metricTitle}</span>
-                <span class="font-mono text-xs ${colorClass} font-bold">${metricVal}</span>
+                <span class="text-[9px] sm:text-[10px] text-on-surface-variant font-mono">${safeMetricTitle}</span>
+                <span class="font-mono text-xs ${colorClass} font-bold">${safeMetricVal}</span>
               </div>
               <div class="w-16 sm:w-20 h-5 sm:h-6 flex items-center">
                 ${makeSparklineSvg(strokeHex)}
