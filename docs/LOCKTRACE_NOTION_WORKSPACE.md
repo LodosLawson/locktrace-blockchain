@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.8.4` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.8.5` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -384,4 +384,28 @@ LockTrace v2.8.4 sürümü ile hayata geçirilen 8 kritik düzeltme:
 
 7. **Yorum Yanıtında Tire (-) Karakter Desteği & .env Satır İçi Yorum Desteği (NEW-07):**
    - `cancelCommentReply` içindeki regex `^@[a-zA-Z0-9_\-\.]+` olarak genişletildi. Python ve Node.js `.env` ayrıştırıcılarında `KEY=value # comment` şeklindeki satır içi yorumlar temizlenerek yapılandırma kirliliği giderildi.
+
+---
+
+## 🛡️ 14. LockTrace v2.8.5: Derinlemesine Denetim & Tam Mutabakat Güvenliği (REV11)
+
+LockTrace v2.8.5 sürümü ile tespit edilen 6 kritik bulgunun tamamı çözüme kavuşturuldu:
+
+1. **Nginx /health Proxy Güvenliği & IP Maskeleme Engeli (REV11-01):**
+   - `deploy/nginx_ssl.conf` `/health` konumuna `limit_req zone=api burst=20 nodelay;` ve `proxy_set_header X-Real-IP`, `X-Forwarded-For`, `X-Forwarded-Proto` başlıkları eklendi. Rate-limit atlatma ve istemci IP adresini gizleme açığı kapatıldı.
+
+2. **WrappedBCT processedL1Transactions Eşitlemesi (REV11-02):**
+   - `contracts/WrappedBCT.sol` kontratında `mintFromBridge` çağrısında `processedL1TxHashes` ile birlikte `processedL1Transactions[locktraceTxHash] = true;` haritası da güncellendi. Dış sorgularda dönen `false` hatası giderildi.
+
+3. **Thirdweb CLI Hassas Veri Maskeleme & Girdi Doğrulaması (REV11-03):**
+   - `core/thirdweb_service.py` içinde hata loglarına yazılmadan önce `_mask_text` ile gizli anahtarlar, API anahtarları ve token'lar disk loglarından maskelendi. `claim_erc1155` fonksiyonunda adres, token_id, quantity ve chain parametrelerine katı doğrulama kuralları eklendi.
+
+4. **SPV Kanıt Derinlik Sınırı (MAX_SPV_DEPTH) & Tekil Yaprak Yön Kontrolü (REV11-04):**
+   - `core/native_bridge.py` ve `crates/locktrace_core/src/merkle.rs` modüllerinde SPV kanıt adımı sınırı `MAX_SPV_DEPTH = 32` olarak belirlendi. Tekil yaprakların kendisiyle eşleştiği durumlarda yönün zorunlu olarak `"right"` olması kuralı getirilerek DoS açığı engellendi.
+
+5. **WrappedBCT İki Adımlı Mülkiyet Devri (Ownable2Step) (REV11-05):**
+   - `contracts/WrappedBCT.sol` kontratı `Ownable2Step` mimarisine yükseltildi (`pendingOwner()`, `transferOwnership`, `acceptOwnership()`). Yanlış veya sıfır adrese tek adımda geri dönülemez yetki devri riski ortadan kaldırıldı.
+
+6. **OpenCL Donanım Dizi Sınır Güvenliği & URL Zaman Aşımı Koruması (REV11-06):**
+   - `core/gpu_miner.py` içinde OpenCL aygıt sayısı dinamik olarak sorgulanıp tahsis edildi, indeks sınırlandırıldı (`IndexError` engeli). `scripts/*.py` altındaki tüm `urllib.request.urlopen` çağrılarına açık `timeout` parametresi eklendi.
 

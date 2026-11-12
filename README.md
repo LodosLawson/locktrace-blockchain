@@ -415,7 +415,14 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **WrappedBCT Un-Indexed Event Log Parity (NEW-05):** Converted `locktraceTxHash` to un-indexed string in `MintedFromBridge`, preserving plaintext L1 hash strings in EVM transaction logs for indexers and BaseScan.
    - **Atomic State Index Pointer Swaps (NEW-06):** Replaced in-place dictionary wipes with atomic reference swaps in `_load_in_memory_bns_index` and `_load_in_memory_space_index`, eliminating race conditions across Gunicorn's 8 worker threads.
    - **Comment Reply Hyphen Support & .env Inline Comment Parsing (NEW-07):** Added hyphen support in handle removal regex and stripped inline comments in `.env` parsing across Python and Node.js.
-14. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+14. **Deep Security Audit Hardening & Zero-Defect Parity (v2.8.5):**
+   - **Nginx /health Proxy Hardening (REV11-01):** Applied `limit_req zone=api burst=20 nodelay;` and forwarded `X-Real-IP`, `X-Forwarded-For`, and `X-Forwarded-Proto` headers to prevent IP masking and rate-limit bypass on the `/health` endpoint.
+   - **WrappedBCT Processed Transaction Mapping Parity (REV11-02):** Synchronized `processedL1Transactions` alongside `processedL1TxHashes` during `mintFromBridge`, ensuring public getter lookups accurately reflect processed L1 transaction states.
+   - **Thirdweb Service Log Masking & Input Hardening (REV11-03):** Implemented pre-log sensitive credential masking (`_mask_text`) for stdout/stderr/exceptions and enforced strict regex and boundary validation for addresses, token IDs, quantities, and chains in `claim_erc1155`.
+   - **SPV Proof Depth Bounds & Solitary Leaf Direction Enforcement (REV11-04):** Bounded SPV Merkle verification to `MAX_SPV_DEPTH = 32` in Rust and Python to eliminate CPU exhaustion DoS, and enforced canonical `"right"` direction validation for duplicated solitary leaves (`sib == current`).
+   - **WrappedBCT Two-Step Governance Ownership (REV11-05):** Upgraded `WrappedBCT.sol` ownership architecture to `Ownable2Step` (`pendingOwner()`, `transferOwnership`, `acceptOwnership()`), eliminating irreversible ownership loss from accidental zero/mistyped address transfers.
+   - **OpenCL Hardware Bounds & URL Request Timeout Guards (REV11-06):** Replaced fixed OpenCL device querying with dynamic device count allocation and clamped indices to eliminate `IndexError`, and added explicit network timeouts across all `urllib.request.urlopen` calls in utility scripts.
+15. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

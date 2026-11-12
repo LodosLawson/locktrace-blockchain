@@ -77,15 +77,27 @@ class LockTraceMinerEngine:
                 ctypes.c_void_p, ctypes.c_uint64, ctypes.c_uint32,
                 ctypes.POINTER(ctypes.c_void_p), ctypes.POINTER(ctypes.c_uint32)
             ]
-            devices = (ctypes.c_void_p * 8)()
             CL_DEVICE_TYPE_ALL = 0xFFFFFFFF
+            # Query actual OpenCL device count first
             err = self._cl.clGetDeviceIDs(
-                self._cl_platform, CL_DEVICE_TYPE_ALL, 8, devices, ctypes.byref(num_devices)
+                self._cl_platform, CL_DEVICE_TYPE_ALL, 0, None, ctypes.byref(num_devices)
             )
             if err != 0 or num_devices.value == 0:
                 return
 
-            dev_idx = min(self.device_id, num_devices.value - 1)
+            dev_count = int(num_devices.value)
+            devices = (ctypes.c_void_p * dev_count)()
+            err = self._cl.clGetDeviceIDs(
+                self._cl_platform, CL_DEVICE_TYPE_ALL, dev_count, devices, None
+            )
+            if err != 0:
+                return
+
+            try:
+                target_id = max(0, int(self.device_id))
+            except Exception:
+                target_id = 0
+            dev_idx = min(target_id, dev_count - 1)
             self._cl_device = devices[dev_idx]
 
             dev_buf = ctypes.create_string_buffer(1024)

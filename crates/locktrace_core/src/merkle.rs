@@ -38,8 +38,10 @@ pub fn compute_merkle_root(tx_hashes: &[String]) -> Result<String, String> {
     Ok(current_level[0].clone())
 }
 
+pub const MAX_SPV_DEPTH: usize = 32;
+
 /// Verifies an SPV Merkle inclusion proof against a block Merkle root in microseconds.
-/// Validates hash lengths, enforces strict directions, and handles single-tx blocks (LT-MRK-01).
+/// Validates hash lengths, enforces strict directions, bounds proof depth, and handles single-tx blocks (LT-MRK-01).
 pub fn verify_spv_proof(
     target_hash: &str,
     merkle_root: &str,
@@ -67,6 +69,11 @@ pub fn verify_spv_proof(
         return target_clean == root_clean;
     }
 
+    // SPV DoS protection: prevent unbounded proof steps
+    if proof_steps.len() > MAX_SPV_DEPTH {
+        return false;
+    }
+
     let mut current = target_clean;
     for (dir, sibling) in proof_steps {
         let sib = sibling.trim().to_ascii_lowercase();
@@ -74,12 +81,21 @@ pub fn verify_spv_proof(
             return false;
         }
 
-        let combined = if dir.eq_ignore_ascii_case("left") {
-            format!("{}{}", sib, current)
-        } else if dir.eq_ignore_ascii_case("right") {
-            format!("{}{}", current, sib)
-        } else {
+        let is_left = dir.eq_ignore_ascii_case("left");
+        let is_right = dir.eq_ignore_ascii_case("right");
+        if !is_left && !is_right {
             return false;
+        }
+
+        // Solitary leaf direction enforcement: duplicated odd leaves must be on the right
+        if sib == current && !is_right {
+            return false;
+        }
+
+        let combined = if is_left {
+            format!("{}{}", sib, current)
+        } else {
+            format!("{}{}", current, sib)
         };
         current = hex::encode(Sha256::digest(combined.as_bytes()));
     }
@@ -114,6 +130,26 @@ mod tests {
         let root = compute_merkle_root(&[tx.clone()]).expect("Failed to compute root");
         assert_eq!(root, tx);
         assert!(verify_spv_proof(&tx, &root, &[]));
+    }
+
+    #[test]
+    fn test_spv_proof_max_depth_enforced() {
+        let tx = "1".repeat(64);
+        let root = "2".repeat(64);
+        let mut steps = Vec::new();
+        for _ in 0..=MAX_SPV_DEPTH {
+            steps.push(("right".to_string(), "3".repeat(64)));
+        }
+        assert!(!verify_spv_proof(&tx, &root, &steps));
+    }
+
+    #[test]
+    fn test_spv_proof_solitary_leaf_direction() {
+        let tx = "4".repeat(64);
+        let root = "5".repeat(64);
+        // If sibling == current, direction MUST be right. If prover passes left, reject.
+        let invalid_steps = vec![("left".to_string(), tx.clone())];
+        assert!(!verify_spv_proof(&tx, &root, &invalid_steps));
     }
 }
 

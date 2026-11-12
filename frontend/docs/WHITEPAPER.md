@@ -1,7 +1,7 @@
-# LockTrace (BCT) Technical Whitepaper — v2.8.4
+# LockTrace (BCT) Technical Whitepaper — v2.8.5
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.8.4 — November 2026*  
+*Version 2.8.5 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
@@ -19,13 +19,19 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.8.4**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
-1. **Systemd Environment Isolation & Automated Secret Provisioning (LT-SRV-01):** Replaces static service defaults with secure `EnvironmentFile=-/opt/blockchaint/.env`, generates 256-bit cryptographic secrets during provisioning with `chmod 600`, and dynamically invalidates insecure defaults in `Config`.
-2. **DOM Integrity & Safe URL Placeholder Isolation (NEW-01):** Employs private Unicode sentinel tokens isolating URLs during mention/hashtag/cashtag regex parsing, completely preventing malformed HTML anchor tags and DOM corruption.
-3. **Live Coinbase Spot Price Feed CSP & Nginx Header Preservation (NEW-02 & NEW-03):** Whitelists `https://api.coinbase.com` in `connect-src` and preserves HSTS/nosniff/X-Frame-Options across static PWA and Service Worker location blocks.
-4. **Anti-Spoofing Cryptographic Quote Attestation (NEW-04):** Removes misleading 'verified' account badges from plain text quote blocks, restricting verified badges strictly to cryptographically proven on-chain identities.
-5. **WrappedBCT Un-Indexed Event Log Parity (NEW-05):** Updates `MintedFromBridge` to emit un-indexed L1 transaction hashes, ensuring raw hash strings are preserved in EVM logs for cross-chain explorers and indexers.
-6. **Atomic Reference-Swap Multithreaded State Indexes (NEW-06):** Replaces in-place dictionary clears with atomic reference swaps in `_load_in_memory_bns_index` and `_load_in_memory_space_index`, guaranteeing race-free concurrent read access under multi-threaded Gunicorn serving.
+In **Version 2.8.5**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+1. **Nginx /health Proxy Rate Limiting & Real IP Forwarding (REV11-01):** Enforces `limit_req zone=api burst=20 nodelay;` and forwards `X-Real-IP`, `X-Forwarded-For`, and `X-Forwarded-Proto` headers, neutralizing IP spoofing and rate-limit bypass.
+2. **WrappedBCT Processed L1 Mapping Parity (REV11-02):** Dual-writes and queries `processedL1Transactions` alongside `processedL1TxHashes` during `mintFromBridge`, ensuring public getter calls accurately report processed bridge transfers.
+3. **Thirdweb CLI Secret Masking & Input Validation (REV11-03):** Masks sensitive credentials before writing to log streams and applies strict format, integer, and boundary guards on ERC-1155 claiming.
+4. **SPV Proof Depth Limit & Solitary Leaf Direction Guard (REV11-04):** Caps SPV proof traversal to `MAX_SPV_DEPTH = 32` to prevent CPU exhaustion DoS, and enforces canonical `"right"` direction validation for duplicated solitary leaves (`sib == current`).
+5. **WrappedBCT Two-Step Governance Ownership (REV11-05):** Implements `Ownable2Step` (`pendingOwner()`, `transferOwnership`, `acceptOwnership()`), preventing permanent governance loss from accidental wrong/zero-address transfers.
+6. **Dynamic OpenCL Hardware Query & Network Timeouts (REV11-06):** Dynamically allocates OpenCL device buffers with clamped index selection to eliminate `IndexError`, and enforces explicit timeouts on all `urllib.request.urlopen` requests.
+7. **Systemd Environment Isolation & Automated Secret Provisioning (LT-SRV-01):** Replaces static service defaults with secure `EnvironmentFile=-/opt/blockchaint/.env`, generates 256-bit cryptographic secrets during provisioning with `chmod 600`, and dynamically invalidates insecure defaults in `Config`.
+8. **DOM Integrity & Safe URL Placeholder Isolation (NEW-01):** Employs private Unicode sentinel tokens isolating URLs during mention/hashtag/cashtag regex parsing, completely preventing malformed HTML anchor tags and DOM corruption.
+9. **Live Coinbase Spot Price Feed CSP & Nginx Header Preservation (NEW-02 & NEW-03):** Whitelists `https://api.coinbase.com` in `connect-src` and preserves HSTS/nosniff/X-Frame-Options across static PWA and Service Worker location blocks.
+10. **Anti-Spoofing Cryptographic Quote Attestation (NEW-04):** Removes misleading 'verified' account badges from plain text quote blocks, restricting verified badges strictly to cryptographically proven on-chain identities.
+11. **WrappedBCT Un-Indexed Event Log Parity (NEW-05):** Updates `MintedFromBridge` to emit un-indexed L1 transaction hashes, ensuring raw hash strings are preserved in EVM logs for cross-chain explorers and indexers.
+12. **Atomic Reference-Swap Multithreaded State Indexes (NEW-06):** Replaces in-place dictionary clears with atomic reference swaps in `_load_in_memory_bns_index` and `_load_in_memory_space_index`, guaranteeing race-free concurrent read access under multi-threaded Gunicorn serving.
 7. **Comment Reply Hyphenation & Robust .env Parser (NEW-07):** Supports hyphenated BNS handles in reply cancellation and cleanly strips inline comments during `.env` loading.
 5. **Zero-Bypass Public Key Address Derivation:** Prohibits unauthenticated double-SHA256 address generation; invalid or off-curve public keys return `None` immediately across Rust native engine and Python fallback.
 6. **Strict Exception-Based Merkle Duplicate Rejection (CVE-2012-2459):** Raises explicit `ValueError` on duplicate transaction leaves, preventing block tampering and eliminating `"0"*64` Merkle root collision exploits.

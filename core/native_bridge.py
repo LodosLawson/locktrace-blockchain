@@ -94,6 +94,7 @@ def fast_batch_verify_signatures(items: List[Tuple[str, str, str]]) -> List[bool
 
 
 HEX_64_PATTERN = re.compile(r"^[0-9a-fA-F]{64}$")
+MAX_SPV_DEPTH = 32
 
 
 def fast_verify_spv_proof(target_hash: str, merkle_root: str, proof_steps: List[Tuple[str, str]]) -> bool:
@@ -114,6 +115,10 @@ def fast_verify_spv_proof(target_hash: str, merkle_root: str, proof_steps: List[
         # In single-transaction blocks, leaf == root (proof path is empty)
         return t_clean == r_clean
 
+    # DoS protection: prevent unbounded proof steps
+    if len(proof_steps) > MAX_SPV_DEPTH:
+        return False
+
     for direction, sibling in proof_steps:
         d = str(direction).strip().lower()
         s = str(sibling).strip().lower()
@@ -130,6 +135,9 @@ def fast_verify_spv_proof(target_hash: str, merkle_root: str, proof_steps: List[
     for direction, sibling in proof_steps:
         sib = str(sibling).strip().lower()
         d = str(direction).strip().lower()
+        # Enforce solitary leaf direction: duplicated odd leaf must be on the right
+        if sib == current and d != "right":
+            return False
         if d == "left":
             combined = (sib + current).encode("utf-8")
         else:
