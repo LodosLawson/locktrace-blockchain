@@ -24,12 +24,62 @@ import sqlite3
 import hashlib
 import logging
 import threading
+import ipaddress
 from typing import Dict, Any, Optional, Tuple, List
 from urllib.parse import urlparse
 
 from core.wallet import verify_signature, public_key_to_address
 
 logger = logging.getLogger("LockTrace.Push")
+
+ALLOWED_PUSH_DOMAINS = (
+    "fcm.googleapis.com",
+    "android.googleapis.com",
+    ".push.apple.com",
+    ".push.services.mozilla.com",
+    "updates.push.services.mozilla.com",
+    ".notify.windows.com",
+    ".wns.windows.com",
+    ".push.brave.com",
+)
+
+
+def is_safe_push_endpoint(endpoint: str) -> bool:
+    """
+    Validates Web Push endpoint against SSRF (Server-Side Request Forgery).
+    Strictly enforces:
+    1. Scheme must be HTTPS.
+    2. Hostname must NOT be an IP address (disallowing loopback, RFC1918, link-local, cloud metadata).
+    3. Hostname must match authorized browser push notification gateways.
+    """
+    if not endpoint or not isinstance(endpoint, str):
+        return False
+    try:
+        parsed = urlparse(endpoint.strip())
+        if parsed.scheme.lower() != "https" or not parsed.netloc:
+            return False
+        hostname = (parsed.hostname or "").lower()
+        if not hostname:
+            return False
+        # Disallow raw IP addresses (prevents 127.0.0.1, 169.254.169.254, ::1, etc.)
+        try:
+            ipaddress.ip_address(hostname)
+            return False
+        except ValueError:
+            pass
+        # Disallow localhost, local domains
+        if hostname in ("localhost",) or hostname.endswith((".local", ".internal", ".localhost", ".onion")):
+            return False
+        # Check against allowed browser push gateways
+        for allowed in ALLOWED_PUSH_DOMAINS:
+            if allowed.startswith("."):
+                if hostname.endswith(allowed) or hostname == allowed[1:]:
+                    return True
+            elif hostname == allowed:
+                return True
+        return False
+    except Exception:
+        return False
 
 # Try to import pywebpush & py_vapid; graceful fallback if offline/mock
 try:
@@ -163,10 +213,9 @@ class PushNotificationService:
         if not endpoint or not p256dh or not auth:
             return False, "Missing endpoint, p256dh, or auth in push subscription."
 
-        # Verify HTTPS
-        parsed = urlparse(endpoint)
-        if parsed.scheme.lower() != "https" or not parsed.netloc:
-            return False, "Push endpoint must be a valid secure HTTPS URI."
+        # Verify secure HTTPS and authorized push gateway (SSRF Protection)
+        if not is_safe_push_endpoint(endpoint):
+            return False, "Push endpoint must be an authorized HTTPS browser push notification gateway (SSRF protection enforced)."
 
         # 4. Cryptographic Proof of Ownership (SECP256k1 Signature)
         endpoint_hash = hashlib.sha256(endpoint.encode("utf-8")).hexdigest()
@@ -298,6 +347,9 @@ class PushNotificationService:
 
         for sub in subscriptions:
             endpoint = sub.get("endpoint", "")
+            if not is_safe_push_endpoint(endpoint):
+                logger.warning(f"Skipping dispatch to disallowed push endpoint (SSRF blocked): {endpoint}")
+                continue
             try:
                 webpush(
                     subscription_info=sub,

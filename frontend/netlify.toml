@@ -21,6 +21,11 @@
     Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
 
 [[headers]]
+  for = "/integrity.json"
+  [headers.values]
+    Cache-Control = "no-store, no-cache, must-revalidate, max-age=0"
+
+[[headers]]
   for = "/*"
   [headers.values]
     Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"

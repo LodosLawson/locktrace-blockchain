@@ -24,7 +24,9 @@ with open('frontend/sw.js', 'rb') as f:
 
 integrity = {
     "version": "v45",
+    "index_html_sha256": index_hash,
     "index_sha256": index_hash,
+    "sw_js_sha256": sw_hash,
     "sw_sha256": sw_hash
 }
 

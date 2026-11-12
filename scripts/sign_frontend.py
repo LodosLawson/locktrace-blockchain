@@ -65,8 +65,8 @@ def verify_local_frontend() -> bool:
     pub = manifest.get("authority_public_key", "")
     sig = manifest.get("signature", "")
     ver = manifest.get("version", "")
-    expected_index_sha = manifest.get("index_html_sha256", "")
-    expected_sw_sha = manifest.get("sw_js_sha256", "")
+    expected_index_sha = manifest.get("index_html_sha256") or manifest.get("index_sha256", "")
+    expected_sw_sha = manifest.get("sw_js_sha256") or manifest.get("sw_sha256", "")
     expected_cid = manifest.get("ipfs_cid_v1", "")
 
     if pub != RELEASE_AUTHORITY_PUBKEY or public_key_to_address(pub) != RELEASE_AUTHORITY_ADDRESS:
@@ -127,6 +127,9 @@ def sign_release(version: str, key_file: str):
         sw_bytes = canonical_file_bytes(sw_path)
         with open(sw_path, "wb") as f:
             f.write(sw_bytes)
+        template_sw_path = os.path.join(ROOT_DIR, "templates", "sw.js")
+        with open(template_sw_path, "wb") as f:
+            f.write(sw_bytes)
 
     index_sha256 = hashlib.sha256(index_bytes).hexdigest()
     sw_sha256 = hashlib.sha256(sw_bytes).hexdigest() if sw_bytes else ""
@@ -143,7 +146,9 @@ def sign_release(version: str, key_file: str):
         "authority_address": RELEASE_AUTHORITY_ADDRESS,
         "authority_public_key": RELEASE_AUTHORITY_PUBKEY,
         "index_html_sha256": index_sha256,
+        "index_sha256": index_sha256,
         "sw_js_sha256": sw_sha256,
+        "sw_sha256": sw_sha256,
         "ipfs_cid_v1": ipfs_cid,
         "canonical_payload": canonical_payload,
         "signature": signature,
@@ -151,6 +156,10 @@ def sign_release(version: str, key_file: str):
 
     manifest_bytes = (json.dumps(manifest, indent=2) + "\n").encode("utf-8")
     with open(manifest_path, "wb") as f:
+        f.write(manifest_bytes)
+    template_manifest_path = os.path.join(ROOT_DIR, "templates", "integrity.json")
+    os.makedirs(os.path.dirname(template_manifest_path), exist_ok=True)
+    with open(template_manifest_path, "wb") as f:
         f.write(manifest_bytes)
 
     print("=" * 72)

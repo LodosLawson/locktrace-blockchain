@@ -10,7 +10,7 @@ VPS_HOST = os.environ.get("LOCKTRACE_SSH_HOST", "ubuntu@129.151.205.219")
 def run_ssh(cmd):
     full_cmd = [
         "ssh", "-i", SSH_KEY,
-        "-o", "StrictHostKeyChecking=no",
+        "-o", "StrictHostKeyChecking=accept-new",
         "-o", "BatchMode=yes",
         "-o", "ConnectTimeout=15",
         VPS_HOST, cmd
@@ -25,7 +25,7 @@ def run_ssh(cmd):
 def run_scp(local_path, remote_path):
     full_cmd = [
         "scp", "-i", SSH_KEY,
-        "-o", "StrictHostKeyChecking=no",
+        "-o", "StrictHostKeyChecking=accept-new",
         "-o", "BatchMode=yes",
         "-o", "ConnectTimeout=15",
         local_path, f"{VPS_HOST}:{remote_path}"
@@ -40,7 +40,7 @@ def run_scp(local_path, remote_path):
 def run_download(remote_path, local_path):
     full_cmd = [
         "scp", "-i", SSH_KEY,
-        "-o", "StrictHostKeyChecking=no",
+        "-o", "StrictHostKeyChecking=accept-new",
         "-o", "BatchMode=yes",
         "-o", "ConnectTimeout=15",
         f"{VPS_HOST}:{remote_path}", local_path

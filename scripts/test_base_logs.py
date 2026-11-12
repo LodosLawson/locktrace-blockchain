@@ -18,7 +18,7 @@ except Exception as e:
     print('ERROR:', e)
 " """
 
-full_cmd = ["ssh", "-i", KEY_PATH, "-o", "StrictHostKeyChecking=no", HOST, cmd]
+full_cmd = ["ssh", "-i", KEY_PATH, "-o", "StrictHostKeyChecking=accept-new", HOST, cmd]
 res = subprocess.run(full_cmd, capture_output=True, text=True, timeout=30)
 print(res.stdout)
 if res.stderr:
