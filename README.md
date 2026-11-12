@@ -466,7 +466,15 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Nginx /p2p/ Reverse-Proxy Routing (AUD17-05):** Added dedicated `location /p2p/` proxy blocks with rate-limiting and 2MB body limits in `deploy/nginx_ssl.conf` and `deploy/nginx.conf`.
    - **Validator Stake & Unstake Rate-Limiting (AUD17-06):** Added per-IP sliding-window rate limits to `/api/v1/validator/stake` and `/api/v1/validator/unstake`.
    - **Authenticated Web Push Unsubscribe (AUD17-07):** Hardened `/api/v1/notifications/unsubscribe` with `unsubscribe_authenticated`, requiring either an ECDSA wallet signature or the device's Web Push `auth` secret.
-20. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+20. **Bridge Gas Drain Defense, Rust Division Ceiling & Cryptographic SECP256k1 Bounds (v2.9.1):**
+   - **Bridge Gas Drain Prevention & Contract State Check (AUD17B-01):** Added `processedL1Transactions` verification and dynamic gas estimation in `_mint_on_base` before broadcasting, eliminating Base ETH drainage on reverting calls.
+   - **Rust PoW u64 Overflow-Free Ceiling Division (AUD17B-02):** Replaced `(effective_max + chunk_size - 1) / chunk_size` with safe ceiling division in `crates/locktrace_core/src/pow.rs`, preventing u64 integer overflow.
+   - **Wallet 64-Hex & SECP256k1 Curve Order Validation (AUD17B-03):** Strictly validated 64-hex string format and SECP256k1 curve order boundaries (`1 <= k < n`) in `core/wallet.py`.
+   - **Bridge Burn Queue HTTP 400/422 Handling (AUD17B-04):** Handled `urllib.error.HTTPError` in `process_pending_burns` and marked unrecoverable orders as `FAILED` to prevent queue deadlock.
+   - **Relayer NoneType Status & Connection Leak Guards (AUD17B-05):** Added safety guards in `get_status` when web3 is uninitialized and ensured SQLite connections are closed in `finally:` blocks.
+   - **Prioritized Active Database Discovery & Direct Decimal Parsing (AUD17B-06):** Prioritized `/opt/blockchaint/data/blockchain.db` in `core/bridge_relayer.py` and eliminated intermediate `float()` conversions.
+   - **Netlify /p2p/* Reverse Proxy Redirect (AUD17B-07):** Added `/p2p/*` proxy rule in `frontend/netlify.toml`.
+21. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

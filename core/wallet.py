@@ -5,6 +5,7 @@ Constant-Time SECP256k1 Cryptography + BIP-39 12-word recovery phrase system.
 Engineered with OpenSSL/cryptography (immune to Minerva timing side-channels) with seamless fallback.
 """
 
+import re
 import hashlib
 import binascii
 import warnings
@@ -31,6 +32,9 @@ except ImportError:
     from ecdsa.util import sigencode_string, sigdecode_string
 
 
+SECP256K1_ORDER = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
+
+
 class Wallet:
     """ECDSA + BIP-39 Seed based blockchain wallet (Constant-time OpenSSL SECP256k1)."""
 
@@ -40,9 +44,16 @@ class Wallet:
             pk_hex = mnemonic_to_private_key(self.mnemonic, passphrase=passphrase)
         elif private_key_hex:
             self.mnemonic = ""
-            pk_hex = private_key_hex.strip()
-            if pk_hex.startswith("0x") or pk_hex.startswith("0X"):
-                pk_hex = pk_hex[2:]
+            raw_pk = private_key_hex.strip()
+            if raw_pk.startswith("0x") or raw_pk.startswith("0X"):
+                raw_pk = raw_pk[2:]
+            # AUD17B-03: Strict 64-hex format and SECP256k1 curve order boundary validation
+            if len(raw_pk) != 64 or not re.fullmatch(r"[0-9a-fA-F]{64}", raw_pk):
+                raise ValueError("Invalid private key: must be a 64-character hexadecimal string.")
+            priv_int = int(raw_pk, 16)
+            if priv_int < 1 or priv_int >= SECP256K1_ORDER:
+                raise ValueError("Invalid private key: value out of SECP256k1 curve order bounds (1 <= k < n).")
+            pk_hex = raw_pk.lower()
         else:
             self.mnemonic = generate_mnemonic()
             pk_hex = mnemonic_to_private_key(self.mnemonic, passphrase=passphrase)

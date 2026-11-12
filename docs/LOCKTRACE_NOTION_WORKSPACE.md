@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.9.0` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.9.1` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -542,3 +542,15 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 5. **Nginx /p2p/ Proxy Yönlendirmesi (AUD17-05):** `nginx_ssl.conf` ve `nginx.conf` dosyalarına `location /p2p/` bloğu eklendi.
 6. **Validator Stake/Unstake Hız Sınırı (AUD17-06):** `/api/v1/validator/stake` ve `/api/v1/validator/unstake` uç noktalarına IP bazlı hız sınırı eklendi.
 7. **Yetkilendirilmiş Web Push İptali (AUD17-07):** `/api/v1/notifications/unsubscribe` için ECDSA cüzdan imzası veya cihaz `auth` sırrı doğrulaması zorunlu kılındı.
+
+---
+
+## 🛡️ 20. LockTrace v2.9.1: Köprü Gas Drenajı Savunması, Rust Tamsayı Bölme Koruması & SECP256k1 Mertebe Denetimi (AUD17B)
+
+1. **Köprü Gas Drenajı Savunması & Kontrat Mükerrerlik Denetimi (AUD17B-01):** `_mint_on_base` içinde `processedL1Transactions` kontrolü ve dinamik `estimate_gas` eklendi; revert eden işlemlerin Base ETH bakiyesini tüketmesi engellendi.
+2. **Rust PoW u64 Taşmasız Yukarı Yuvarlama Bölmesi (AUD17B-02):** `crates/locktrace_core/src/pow.rs` içinde `(effective_max + chunk_size - 1)` taşma riski taşmasız bölme formülüyle giderildi.
+3. **Cüzdan 64-Hex & SECP256k1 Eğri Mertebesi Sınır Denetimi (AUD17B-03):** `core/wallet.py` içinde 64-hex format ve `1 <= k < SECP256K1_ORDER` sınır kontrolü uygulandı.
+4. **Köprü Kuyruk Blokajı HTTP 400/422 Drenaj Savunması (AUD17B-04):** `process_pending_burns` içinde `urllib.error.HTTPError` yakalanarak hatalı emirlerin `FAILED` işaretlenmesi ve kuyruğu tıkamaması sağlandı.
+5. **Relayer NoneType & Veritabanı Bağlantı Sızıntısı Koruması (AUD17B-05):** `get_status()` içinde `NoneType` kontrolleri eklendi; `check_conn` bağlantısı `finally` bloğu ile kapatıldı.
+6. **Öncelikli Veritabanı Yolu & Doğrudan Decimal Dönüşümü (AUD17B-06):** `core/bridge_relayer.py` varsayılan DB yolu `data/blockchain.db` olarak güncellendi ve ara `float()` dönüşümü kaldırıldı.
+7. **Netlify /p2p/* Yönlendirme Kuralı (AUD17B-07):** `frontend/netlify.toml` içine `/p2p/*` yönlendirme kuralı eklendi.
