@@ -113,6 +113,7 @@ class PushNotificationService:
     def _init_db(self):
         """Create push_subscriptions table with indices in SQLite WAL."""
         with self.lock:
+            conn = None
             try:
                 conn = sqlite3.connect(self.db_path, timeout=10.0)
                 cur = conn.cursor()
@@ -131,9 +132,14 @@ class PushNotificationService:
                 """)
                 cur.execute("CREATE INDEX IF NOT EXISTS idx_push_wallet ON push_subscriptions(wallet_address);")
                 conn.commit()
-                conn.close()
             except Exception as e:
                 logger.error(f"Error initializing push database: {e}")
+            finally:
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
 
     def _init_vapid_keys(self):
         """Load or create persistent VAPID SECP256R1 keypair."""
@@ -226,17 +232,19 @@ class PushNotificationService:
 
         # 5. Commit to database with FIFO device capping (max 5 devices per wallet)
         with self.lock:
+            conn = None
             try:
                 conn = sqlite3.connect(self.db_path, timeout=10.0)
                 cur = conn.cursor()
 
-                # Clean up existing count for this wallet
+                # Clean up existing count for this wallet only if registering a brand new device
                 cur.execute(
                     "SELECT id, endpoint FROM push_subscriptions WHERE wallet_address = ? ORDER BY created_at ASC",
                     (clean_addr,)
                 )
                 existing = cur.fetchall()
-                if len(existing) >= 5:
+                existing_endpoints = {r[1] for r in existing}
+                if endpoint not in existing_endpoints and len(existing) >= 5:
                     oldest_id = existing[0][0]
                     cur.execute("DELETE FROM push_subscriptions WHERE id = ?", (oldest_id,))
 
@@ -254,12 +262,17 @@ class PushNotificationService:
                 """, (clean_addr, endpoint, p256dh, auth, (user_agent or "")[:120], now, now))
 
                 conn.commit()
-                conn.close()
                 logger.info(f"Subscribed push device for {clean_addr[:10]}... (endpoint: {endpoint[:32]}...)")
                 return True, "Push notifications subscribed successfully."
             except Exception as e:
                 logger.error(f"Failed to save push subscription: {e}")
                 return False, "Database error occurred while saving push subscription."
+            finally:
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
 
     def unsubscribe(self, endpoint: str) -> bool:
         """Removes a push subscription by endpoint."""
@@ -267,16 +280,22 @@ class PushNotificationService:
         if not clean_ep:
             return False
         with self.lock:
+            conn = None
             try:
                 conn = sqlite3.connect(self.db_path, timeout=10.0)
                 cur = conn.cursor()
                 cur.execute("DELETE FROM push_subscriptions WHERE endpoint = ?", (clean_ep,))
                 conn.commit()
-                conn.close()
                 return True
             except Exception as e:
                 logger.error(f"Failed to unsubscribe push: {e}")
                 return False
+            finally:
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
 
     def get_subscriptions_for_wallet(self, wallet_address: str) -> List[Dict[str, Any]]:
         """Retrieve all active push subscriptions for a wallet."""
@@ -284,6 +303,7 @@ class PushNotificationService:
         if not clean_addr:
             return []
         with self.lock:
+            conn = None
             try:
                 conn = sqlite3.connect(self.db_path, timeout=10.0)
                 conn.row_factory = sqlite3.Row
@@ -293,7 +313,6 @@ class PushNotificationService:
                     (clean_addr,)
                 )
                 rows = cur.fetchall()
-                conn.close()
                 return [
                     {
                         "endpoint": r["endpoint"],
@@ -307,6 +326,12 @@ class PushNotificationService:
             except Exception as e:
                 logger.error(f"Failed to query push subscriptions: {e}")
                 return []
+            finally:
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
 
     def send_push_to_wallet(
         self,

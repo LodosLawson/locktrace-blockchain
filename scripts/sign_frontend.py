@@ -131,6 +131,16 @@ def sign_release(version: str, key_file: str):
         with open(template_sw_path, "wb") as f:
             f.write(sw_bytes)
 
+    # Sync frontend/manifest.json to templates/manifest.json
+    manifest_pwa_path = os.path.join(ROOT_DIR, "frontend", "manifest.json")
+    template_manifest_pwa = os.path.join(ROOT_DIR, "templates", "manifest.json")
+    if os.path.exists(manifest_pwa_path):
+        with open(manifest_pwa_path, "rb") as f:
+            pwa_bytes = f.read()
+        os.makedirs(os.path.dirname(template_manifest_pwa), exist_ok=True)
+        with open(template_manifest_pwa, "wb") as f:
+            f.write(pwa_bytes)
+
     index_sha256 = hashlib.sha256(index_bytes).hexdigest()
     sw_sha256 = hashlib.sha256(sw_bytes).hexdigest() if sw_bytes else ""
     ipfs_cid = compute_ipfs_cid_v1(index_sha256)

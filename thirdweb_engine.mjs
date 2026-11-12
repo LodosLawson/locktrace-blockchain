@@ -277,10 +277,18 @@ async function runCLI() {
     }
   } catch (err) {
     const rawMsg = err.message || String(err);
-    // Sanitize any secret keys or internal paths from error message
-    const sanitizedMsg = rawMsg
+    // Sanitize any secret keys or internal private keys from error message
+    let sanitizedMsg = rawMsg
       .replace(/THIRDWEB_SECRET_KEY=[^\s&]+/g, "THIRDWEB_SECRET_KEY=***")
-      .replace(/[a-zA-Z0-9_\-]{32,}/g, (m) => (process.env.THIRDWEB_SECRET_KEY && m.includes(process.env.THIRDWEB_SECRET_KEY) ? "***" : m));
+      .replace(/THIRDWEB_SERVER_PRIVATE_KEY=[^\s&]+/g, "THIRDWEB_SERVER_PRIVATE_KEY=***");
+
+    if (process.env.THIRDWEB_SECRET_KEY && process.env.THIRDWEB_SECRET_KEY.length >= 8) {
+      sanitizedMsg = sanitizedMsg.replaceAll(process.env.THIRDWEB_SECRET_KEY, "***");
+    }
+    if (process.env.THIRDWEB_SERVER_PRIVATE_KEY && process.env.THIRDWEB_SERVER_PRIVATE_KEY.length >= 8) {
+      sanitizedMsg = sanitizedMsg.replaceAll(process.env.THIRDWEB_SERVER_PRIVATE_KEY, "***");
+    }
+
     console.log(
       JSON.stringify({
         success: false,
