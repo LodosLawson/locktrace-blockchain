@@ -105,7 +105,7 @@ self.addEventListener('notificationclick', (event) => {
         let isSameOrigin = false;
         try {
           isSameOrigin = (new URL(client.url).origin === self.location.origin);
-        } catch (_e) {}
+        } catch (_e) { }
         if (isSameOrigin && 'focus' in client) {
           if ('navigate' in client) {
             client.navigate(safeTargetUrl);
@@ -155,6 +155,6 @@ self.addEventListener('push', (event) => {
         }
       });
     }
-  }).catch(() => {});
+  }).catch(() => { });
   event.waitUntil(Promise.all([notifyPromise, broadcastPromise]));
 });
