@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-LockTrace Official Frontend Checksum & ECDSA Release Signer (v2.9.0)
+LockTrace Official Frontend Checksum & ECDSA Release Signer (v2.9.1)
 ====================================================================
 Generates canonical SHA-256 checksums, IPFS CIDv1 content identifiers,
 and SECP256k1 ECDSA release signatures for `frontend/index.html` and `frontend/sw.js`.
 
 Usage:
   Sign new release (requires ~/.locktrace/release_signing_key.json):
-      python scripts/sign_frontend.py --version 2.9.0
+      python scripts/sign_frontend.py --version 2.9.1
 
   Verify existing local frontend integrity (public-key only, zero secrets needed):
       python scripts/sign_frontend.py --verify-only
@@ -185,7 +185,7 @@ def sign_release(version: str, key_file: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LockTrace Frontend SHA-256 & ECDSA Release Signer")
-    parser.add_argument("--version", default="2.9.0", help="Frontend release version string")
+    parser.add_argument("--version", default="2.9.1", help="Frontend release version string")
     parser.add_argument(
         "--key-file",
         default=os.path.expanduser("~/.locktrace/release_signing_key.json"),

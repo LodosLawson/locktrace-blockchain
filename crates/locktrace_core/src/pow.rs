@@ -44,8 +44,12 @@ pub fn solve_pow(
     let mut base_hasher = Sha256::new();
     base_hasher.update(prefix.as_bytes());
 
-    // AUD16-01: Clamp max_nonces to remaining nonces until u64::MAX to eliminate Rayon empty-chunk CPU DoS
-    let remaining_nonces = u64::MAX.saturating_sub(start_nonce).saturating_add(1);
+    // AUD16-01 & AUD17B-02: Clamp max_nonces to remaining nonces until u64::MAX without overflow
+    let remaining_nonces = if start_nonce == u64::MAX {
+        1
+    } else {
+        (u64::MAX - start_nonce).saturating_add(1)
+    };
     let effective_max = max_nonces.min(remaining_nonces);
     if effective_max == 0 {
         return (false, 0, String::new(), 0.0);
@@ -53,7 +57,8 @@ pub fn solve_pow(
 
     // Parallel chunking using lazy index range without collecting large Vec into memory
     let chunk_size = 50_000u64;
-    let num_chunks = (effective_max + chunk_size - 1) / chunk_size;
+    // AUD17B-02: Ceiling division without integer overflow (effective_max + chunk_size - 1 can overflow u64)
+    let num_chunks = (effective_max / chunk_size) + if effective_max % chunk_size != 0 { 1 } else { 0 };
 
     let found_clone = Arc::clone(&found);
     let hashes_clone = Arc::clone(&total_hashes);

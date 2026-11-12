@@ -27,7 +27,13 @@ logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(na
 
 BASE_RPC_URL = os.environ.get("BASE_RPC_URL", "https://mainnet.base.org")
 WBCT_CONTRACT = os.environ.get("WBCT_CONTRACT_ADDRESS", "0xA3C743113a41cFd0146917065d4578337Bb77254")
-DB_PATH = os.environ.get("BCT_DB_PATH", "/opt/blockchaint/blockchain.db")
+# AUD17B-06: Prioritize active data/blockchain.db over bare root paths
+_default_db = "/opt/blockchaint/data/blockchain.db" if os.path.exists("/opt/blockchaint/data/blockchain.db") else (
+    "/opt/blockchaint/blockchain.db" if os.path.exists("/opt/blockchaint/blockchain.db") else (
+        "data/blockchain.db" if os.path.exists("data/blockchain.db") else "blockchain.db"
+    )
+)
+DB_PATH = os.environ.get("BCT_DB_PATH", _default_db)
 RELAYER_KEY_PATH = os.environ.get("RELAYER_KEY_PATH", "/opt/blockchaint/relayer_wallet.json")
 CHAIN_ID = 8453  # Base Mainnet
 
@@ -41,6 +47,13 @@ WBCT_ABI = [
         "name": "mintFromBridge",
         "outputs": [],
         "stateMutability": "nonpayable",
+        "type": "function"
+    },
+    {
+        "inputs": [{"internalType": "string", "name": "txHashStr", "type": "string"}],
+        "name": "processedL1Transactions",
+        "outputs": [{"internalType": "bool", "name": "", "type": "bool"}],
+        "stateMutability": "view",
         "type": "function"
     },
     {
@@ -120,12 +133,20 @@ class BridgeRelayer:
 
     def get_status(self) -> Dict[str, Any]:
         """Returns relayer health, balance, and authorization status."""
+        # AUD17B-05: Guard against NoneType AttributeError if web3 library is missing or disconnected
+        if not HAS_WEB3 or self.w3 is None:
+            return {
+                "status": "disabled",
+                "message": "web3 library not available or initialized. Bridge relayer is inactive.",
+                "contract_address": WBCT_CONTRACT,
+                "connected": False
+            }
         if not self.account:
             return {
                 "status": "disabled",
                 "message": "Relayer private key not set. Bridge relayer is inactive on this node.",
                 "contract_address": WBCT_CONTRACT,
-                "connected": self.w3.is_connected()
+                "connected": bool(self.w3.is_connected()) if self.w3 else False
             }
         try:
             bal_wei = self.w3.eth.get_balance(self.account.address)
@@ -192,24 +213,25 @@ class BridgeRelayer:
         for r in rows:
             bridge_id = r["bridge_id"]
             evm_dest = r["evm_address"]
-            net_amt = float(r["net_amount"])
+            # AUD17B-06: Direct Decimal parsing without intermediate float64 loss
+            net_amt_dec = Decimal(str(r["net_amount"]))
             l1_hash = r["tx_hash_l1"]
 
             # L1 Finality Verification: Ensure lock transaction is sealed in an attested/deep block
+            # AUD17B-05: Ensure check_conn is safely closed in a finally block
+            check_conn = None
             try:
                 check_conn = sqlite3.connect(self.db_path, timeout=10.0)
                 check_conn.row_factory = sqlite3.Row
                 tx_row = check_conn.execute("SELECT block_index FROM tx_lookup WHERE tx_hash = ?", (l1_hash,)).fetchone()
                 if not tx_row:
                     logger.info(f"Bridge {bridge_id}: L1 lock tx {l1_hash[:16]}... not yet sealed in a block. Deferring mint.")
-                    check_conn.close()
                     continue
                 l1_b_idx = tx_row["block_index"]
                 att_c = check_conn.execute("SELECT COUNT(*) AS c FROM block_attestations WHERE block_index = ?", (l1_b_idx,)).fetchone()["c"]
                 max_row = check_conn.execute("SELECT MAX(block_index) AS tip FROM blocks").fetchone()
                 tip_b = max_row["tip"] if max_row and max_row["tip"] is not None else l1_b_idx
                 depth = tip_b - l1_b_idx
-                check_conn.close()
 
                 # LT-02 Hardening: Strict L1 confirmation depth & validator finality guard
                 is_finalized = (att_c >= 2 and depth >= 4) or depth >= 8
@@ -219,6 +241,12 @@ class BridgeRelayer:
             except Exception as _f_err:
                 logger.warning(f"Could not verify L1 finality for {bridge_id}: {_f_err}. Deferring mint.")
                 continue
+            finally:
+                if check_conn:
+                    try:
+                        check_conn.close()
+                    except Exception:
+                        pass
 
             # Validate destination
             if not Web3.is_address(evm_dest) or evm_dest.lower() == WBCT_CONTRACT.lower():
@@ -227,13 +255,16 @@ class BridgeRelayer:
                 continue
 
             # Exact amount in 18 decimals (immune to float64 IEEE-754 drift)
-            amt_wei = int((Decimal(str(net_amt)) * Decimal(10 ** 18)).to_integral_value())
+            amt_wei = int((net_amt_dec * Decimal(10 ** 18)).to_integral_value())
 
-            logger.info(f"Minting {net_amt} wBCT to {evm_dest} (L1 Hash: {l1_hash})...")
+            logger.info(f"Minting {net_amt_dec} wBCT to {evm_dest} (L1 Hash: {l1_hash})...")
             tx_evm = self._mint_on_base(evm_dest, amt_wei, l1_hash)
 
             if tx_evm:
-                self._mark_completed(bridge_id, tx_evm)
+                if tx_evm == "ALREADY_PROCESSED_ON_CHAIN":
+                    self._mark_completed(bridge_id, "PREVIOUSLY_MINTED_ON_BASE")
+                else:
+                    self._mark_completed(bridge_id, tx_evm)
                 processed += 1
                 logger.info(f"Bridge {bridge_id} SUCCESS! Base Tx: {tx_evm}")
 
@@ -241,12 +272,30 @@ class BridgeRelayer:
 
     def _mint_on_base(self, to_address: str, amount_wei: int, l1_tx_hash: str) -> Optional[str]:
         try:
-            nonce = self.w3.eth.get_transaction_count(self.account.address, "pending")
             dest = Web3.to_checksum_address(to_address)
             clean_l1_hash = str(l1_tx_hash or "").strip().lower().removeprefix("0x")
-            
-            # Estimate gas
+
+            # AUD17B-01: Check if already processed on contract before spending any gas
+            try:
+                if hasattr(self.contract.functions, "processedL1Transactions"):
+                    is_already_processed = self.contract.functions.processedL1Transactions(clean_l1_hash).call()
+                    if is_already_processed:
+                        logger.warning(f"L1 tx {clean_l1_hash[:16]} already marked processed on WrappedBCT. Skipping mint to avoid revert & gas drain.")
+                        return "ALREADY_PROCESSED_ON_CHAIN"
+            except Exception as check_err:
+                logger.debug(f"Could not check processedL1Transactions on contract: {check_err}")
+
             fn = self.contract.functions.mintFromBridge(dest, amount_wei, clean_l1_hash)
+
+            # AUD17B-01: Estimate gas to verify transaction will succeed before broadcasting
+            try:
+                estimated_gas = fn.estimate_gas({"from": self.account.address})
+                gas_limit = min(int(estimated_gas * 1.3) + 15_000, 300_000)
+            except Exception as est_err:
+                logger.error(f"Gas estimation failed for mintFromBridge (revert expected, aborted broadcast): {est_err}")
+                return None
+
+            nonce = self.w3.eth.get_transaction_count(self.account.address, "pending")
             
             # Fetch current Base fees (Base uses EIP-1559)
             base_fee = self.w3.eth.get_block("latest")["baseFeePerGas"]
@@ -259,7 +308,7 @@ class BridgeRelayer:
                 "nonce": nonce,
                 "maxFeePerGas": max_fee,
                 "maxPriorityFeePerGas": priority_fee,
-                "gas": 120_000
+                "gas": gas_limit
             })
 
             signed = self.account.sign_transaction(tx)
@@ -277,6 +326,7 @@ class BridgeRelayer:
 
         except Exception as e:
             logger.error(f"Error executing mint on Base: {e}")
+            return None
             return None
 
     def _mark_completed(self, bridge_id: str, tx_hash_evm: str):
@@ -358,24 +408,46 @@ class BridgeRelayer:
                     data=req_data,
                     headers={"Content-Type": "application/json"}
                 )
-                with urllib.request.urlopen(req, timeout=10) as resp:
-                    resp_json = json.loads(resp.read().decode("utf-8"))
-                    if resp_json.get("success"):
-                        self._mark_completed(bridge_id, evm_hash)
-                        processed += 1
-                        logger.info(f"Bridge {bridge_id} EVM->L1 unlock SUCCESS: {amt} BCT to {bct_dest}")
-                    else:
-                        msg = str(resp_json.get("message", ""))
-                        if "daha önce" in msg or "already" in msg:
+                import urllib.error
+                try:
+                    with urllib.request.urlopen(req, timeout=10) as resp:
+                        resp_json = json.loads(resp.read().decode("utf-8"))
+                        if resp_json.get("success"):
                             self._mark_completed(bridge_id, evm_hash)
-                            logger.info(f"Bridge {bridge_id} was already processed on L1. Marked COMPLETED.")
+                            processed += 1
+                            logger.info(f"Bridge {bridge_id} EVM->L1 unlock SUCCESS: {amt} BCT to {bct_dest}")
                         else:
-                            self._mark_failed(bridge_id, msg)
-                            logger.warning(f"Bridge {bridge_id} unlock rejected: {msg}")
-                time.sleep(1.0)
+                            msg = str(resp_json.get("message", ""))
+                            if "daha önce" in msg or "already" in msg:
+                                self._mark_completed(bridge_id, evm_hash)
+                                logger.info(f"Bridge {bridge_id} was already processed on L1. Marked COMPLETED.")
+                            else:
+                                self._mark_failed(bridge_id, msg)
+                                logger.warning(f"Bridge {bridge_id} unlock rejected: {msg}")
+                except urllib.error.HTTPError as http_err:
+                    err_body = ""
+                    try:
+                        err_body = http_err.read().decode("utf-8")
+                    except Exception:
+                        pass
+                    logger.error(f"Bridge {bridge_id} claim_burn HTTP {http_err.code}: {err_body}")
+                    msg = err_body
+                    try:
+                        err_json = json.loads(err_body)
+                        msg = err_json.get("message", err_body)
+                    except Exception:
+                        pass
+                    if "daha önce" in msg or "already" in msg:
+                        self._mark_completed(bridge_id, evm_hash)
+                    elif http_err.code in (400, 422):
+                        # AUD17B-04: Mark unrecoverable HTTP 400/422 requests as FAILED to prevent queue blockage
+                        self._mark_failed(bridge_id, f"HTTP_{http_err.code}: {msg[:200]}")
+                    time.sleep(1.0)
+                except Exception as e:
+                    logger.error(f"Failed to process EVM burn {bridge_id}: {e}")
+                    time.sleep(2.0)
             except Exception as e:
-                logger.error(f"Failed to process EVM burn {bridge_id}: {e}")
-                time.sleep(2.0)
+                logger.error(f"Error preparing EVM burn payload for {bridge_id}: {e}")
 
         return processed
 

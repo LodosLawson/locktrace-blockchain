@@ -3,7 +3,7 @@
 LockTrace (BCT) Official Whitepaper PDF Generator
 =================================================
 Converts docs/WHITEPAPER.md into a high-fidelity, publication-grade PDF whitepaper
-matching the latest protocol version (v2.9.0).
+matching the latest protocol version (v2.9.1).
 """
 
 import os
@@ -48,7 +48,7 @@ class NumberedCanvas(canvas.Canvas):
         # Do not print header on page 1 (cover)
         if self._pageNumber > 1:
             # Running Header
-            self.drawString(54, 800, "LockTrace (BCT) Technical Whitepaper — Protocol Specification v2.9.0")
+            self.drawString(54, 800, "LockTrace (BCT) Technical Whitepaper — Protocol Specification v2.9.1")
             self.setStrokeColor(colors.HexColor("#E2E8F0"))
             self.setLineWidth(0.5)
             self.line(54, 792, 541, 792)
@@ -240,7 +240,7 @@ def generate_pdf():
 
     meta_box = [
         [
-            Paragraph("<b>Protocol Release:</b> v2.9.0 (Production Mainnet)", meta_style),
+            Paragraph("<b>Protocol Release:</b> v2.9.1 (Production Mainnet)", meta_style),
             Paragraph("<b>Release Authority:</b> BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080", meta_style)
         ],
         [
