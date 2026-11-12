@@ -1,7 +1,7 @@
-# LockTrace (BCT) Technical Whitepaper — v2.9.1
+# LockTrace (BCT) Technical Whitepaper — v2.9.2
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.9.1 — November 2026*  
+*Version 2.9.2 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
@@ -19,7 +19,7 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.9.1**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+In **Version 2.9.2**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
 1. **High Start-Nonce Rayon Clamping (AUD16-01):** Clamped `max_nonces` in `crates/locktrace_core/src/pow.rs` and bounded 64-bit integer ranges to eliminate empty chunk Rayon iterations and 100% CPU thread exhaustion.
 2. **Prioritized Non-Empty Database Discovery (AUD16-02):** Reordered candidate database paths in `scripts/test_base_logs.py` to prioritize active `/opt/blockchaint/data/blockchain.db` over stale 0-byte databases.
 3. **DOM XSS Attribute Sanitization (AUD16-03):** Replaced `escapeHtml` with `sanitizeJsAttr` across all inline `onclick` event attributes in `scripts/replace_embed.py`, `frontend/index.html`, and `templates/index.html`.
@@ -432,7 +432,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.8.8 (Completed):** Frontend Embedding Text Slicing Bug Fix (AUD15-01), Secret Masking Regex Callable & Dual DB Fallback (AUD15-02), Checked Arithmetic Integer Overflow Immunization (AUD15-03), Nginx Child Location CSP Inheritance & /integrity.json Parity (AUD15-04), Full BIP-39 NFKD Normalization Prior to Validation (AUD15-05), P2P Compact Block Version, Raw JSON & Short ID Verification (AUD15-06), Thirdweb 0x Key Normalization & CLI Flag Injection Defense (AUD15-07), Audit Bundle Privacy Filters & Dynamic Protocol SSOT (AUD15-08).
 - **v2.8.9 (Completed):** High Start-Nonce Rayon Clamping (AUD16-01), Prioritized Non-Empty Database Discovery (AUD16-02), DOM XSS Attribute Sanitization (AUD16-03), P2P Compact Block Header & Duplicate ID Defense (AUD16-04), Thirdweb 64-Hex Validation & Dual-Prefix Key Redaction (AUD16-05), BIP-39 Pre-Split NFKD Unicode Normalization (AUD16-06), Audit Bundle Privacy Filters & Output XML Parity (AUD16-07), Universal Protocol SSOT Version Synchronization (AUD16-08).
 - **v2.9.0 (Completed):** P2P getblocktxn Rate-Limit & Index Amplification Defense (AUD17-01), State Snapshot Memoization & Rate-Limit Guard (AUD17-02), P2P Gossip HTTP Redirect SSRF Protection (AUD17-03), Compact Block Miner Signature Forwarding (AUD17-04), Nginx /p2p/ Reverse-Proxy Routing (AUD17-05), Validator Stake/Unstake Rate-Limiting (AUD17-06), Authenticated Web Push Unsubscribe (AUD17-07).
-- **v2.9.1 (Current Production Release):** Bridge Gas Drain Prevention & Contract Deduplication Check (AUD17B-01), Rust PoW u64 Overflow-Free Ceiling Division (AUD17B-02), Wallet 64-Hex & SECP256k1 Curve Order Validation (AUD17B-03), Bridge Burn Queue Unrecoverable HTTP 400/422 Drain Protection (AUD17B-04), Bridge Relayer NoneType & FD Leak Guards (AUD17B-05), Prioritized Data DB Path & Decimal Loss Elimination (AUD17B-06), Netlify /p2p/* Forwarding Rule (AUD17B-07).
+- **v2.9.1 (Completed):** Bridge Gas Drain Prevention & Contract Deduplication Check (AUD17B-01), Rust PoW u64 Overflow-Free Ceiling Division (AUD17B-02), Wallet 64-Hex & SECP256k1 Curve Order Validation (AUD17B-03), Bridge Burn Queue Unrecoverable HTTP 400/422 Drain Protection (AUD17B-04), Bridge Relayer NoneType & FD Leak Guards (AUD17B-05), Prioritized Data DB Path & Decimal Loss Elimination (AUD17B-06), Netlify /p2p/* Forwarding Rule (AUD17B-07).
+- **v2.9.2 (Current Production Release):** Web3 v6 Compatibility & POA Middleware Cleanup (AUD18-01), Bridge Confirmation Deferral against Premature FAILED Locks (AUD18-02), Rust PoW Inclusive Range & u64::MAX Boundary Support (AUD18-03), Bridge Relayer 0x Canonical Prefix & Gas Defense (AUD18-04), BIP-39 NFKD Unicode Normalization & Order Consolidation (AUD18-05), Nginx Permissions-Policy Child Location Inheritance (AUD18-06), Audit Packaging & SSOT Protocol Synchronization (AUD18-07).
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---

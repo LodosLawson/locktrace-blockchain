@@ -474,7 +474,15 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Relayer NoneType Status & Connection Leak Guards (AUD17B-05):** Added safety guards in `get_status` when web3 is uninitialized and ensured SQLite connections are closed in `finally:` blocks.
    - **Prioritized Active Database Discovery & Direct Decimal Parsing (AUD17B-06):** Prioritized `/opt/blockchaint/data/blockchain.db` in `core/bridge_relayer.py` and eliminated intermediate `float()` conversions.
    - **Netlify /p2p/* Reverse Proxy Redirect (AUD17B-07):** Added `/p2p/*` proxy rule in `frontend/netlify.toml`.
-21. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+21. **Web3 v6 Compatibility, Bridge Confirmation Deferral & Inclusive PoW Range (v2.9.2):**
+   - **Web3 v6+ Compatibility (AUD18-01):** Removed deprecated and unused `ExtraDataToPOAMiddleware` import from `core/bridge_relayer.py`, restoring full bridge operations under web3.py v6+.
+   - **Bridge Confirmation Deferral (AUD18-02):** Prevented premature `FAILED` marking in `process_pending_burns` when transactions are awaiting confirmation depth (`MIN_EVM_CONFIRMATIONS`), deferring until finalized.
+   - **Rust PoW Inclusive Range & u64::MAX Boundary Support (AUD18-03):** Migrated PoW chunk iteration in `crates/locktrace_core/src/pow.rs` to inclusive ranges (`chunk_start..=chunk_end_inclusive`), guaranteeing `u64::MAX` boundary search without range drops.
+   - **Bridge Relayer Canonical Hashes & Gas Hygiene (AUD18-04):** Enforced canonical `0x` prefix on broadcasted Base transactions, validated positive `amount_wei > 0`, removed duplicate dead code, and added configurable `LOCKTRACE_API_URL`.
+   - **BIP-39 NFKD Unicode Normalization & Consolidated Curve Order (AUD18-05):** Applied strict `unicodedata.normalize("NFKD", ...)` to `self.mnemonic` in `core/wallet.py` and consolidated SECP256k1 order constants.
+   - **Nginx Permissions-Policy Child Location Inheritance (AUD18-06):** Preserved `Permissions-Policy` across all child locations (`/node_runner.py`, `/sw.js`, `/integrity.json`, assets) in `deploy/nginx.conf` and `deploy/nginx_ssl.conf`.
+   - **Audit Synchronization & v2.9.2 Protocol Bump (AUD18-07):** Synchronized release versions, audit test suites, and XML bundles across the entire repository.
+22. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

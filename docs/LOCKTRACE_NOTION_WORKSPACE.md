@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.9.1` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.9.2` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -554,3 +554,15 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 5. **Relayer NoneType & Veritabanı Bağlantı Sızıntısı Koruması (AUD17B-05):** `get_status()` içinde `NoneType` kontrolleri eklendi; `check_conn` bağlantısı `finally` bloğu ile kapatıldı.
 6. **Öncelikli Veritabanı Yolu & Doğrudan Decimal Dönüşümü (AUD17B-06):** `core/bridge_relayer.py` varsayılan DB yolu `data/blockchain.db` olarak güncellendi ve ara `float()` dönüşümü kaldırıldı.
 7. **Netlify /p2p/* Yönlendirme Kuralı (AUD17B-07):** `frontend/netlify.toml` içine `/p2p/*` yönlendirme kuralı eklendi.
+
+---
+
+## 🛡️ 21. LockTrace v2.9.2: Web3 v6 Uyumluluğu, Köprü Onay Ertelemesi & Kapsayıcı PoW Aralığı (AUD18)
+
+1. **Web3 v6+ Uyumluluğu & POA Middleware Temizliği (AUD18-01):** `core/bridge_relayer.py` içindeki kullanılmayan ve `web3` v6+ sürümlerinde bulunmayan `ExtraDataToPOAMiddleware` içe aktarımı kaldırılarak relayer çalışma hatası giderildi.
+2. **Köprü Onay Derinliği Ertelemesi (AUD18-02):** `process_pending_burns` içinde 12 EVM onayını bekleyen işlemlerin HTTP 400 ile erken `FAILED` işaretlenmesi engellendi; işlem onaylar tamamlanana kadar ertelendi.
+3. **Rust PoW Kapsayıcı Aralık & u64::MAX Sınır Desteği (AUD18-03):** `crates/locktrace_core/src/pow.rs` içinde chunk yinelemesi `chunk_start..=chunk_end_inclusive` biçimine dönüştürülerek `u64::MAX` sınırının taranması güvenceye alındı.
+4. **Köprü Relayer 0x Kanonik Önek & Gas Hijyeni (AUD18-04):** Base üzerinde yayınlanan işlemlere `0x` öneki zorunlu kılındı, pozitif `amount_wei` denetimi yapıldı, ölü kod kaldırıldı ve `LOCKTRACE_API_URL` yapılandırılabilir kılındı.
+5. **BIP-39 NFKD Unicode Normalizasyonu & Eğri Mertebesi Birleştirmesi (AUD18-05):** `core/wallet.py` içinde `self.mnemonic` için `unicodedata.normalize("NFKD", ...)` uygulandı ve `SECP256K1_ORDER` tekilleştirildi.
+6. **Nginx Permissions-Policy Alt Konum Mirası (AUD18-06):** `nginx.conf` ve `nginx_ssl.conf` içerisindeki tüm alt `location` bloklarına `Permissions-Policy` başlığı eklenerek tarayıcı güvenlik başlığı korundu.
+7. **Denetim Paketi & SSOT Protokol Senkronizasyonu (AUD18-07):** Protokol `v2.9.2` sürümüne yükseltildi, `repomix-output_19.xml` ve `test_aud18_fixes.py` güvenlik paketine dahil edildi.
