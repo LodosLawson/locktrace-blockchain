@@ -61,7 +61,13 @@ sudo systemctl restart blockchaint
 
 # ── 7. Nginx yapılandırma ────────────────────────
 echo "[7/7] Nginx yapılandırılıyor..."
-sudo cp deploy/nginx.conf /etc/nginx/sites-available/blockchaint
+if [ -f "/etc/letsencrypt/live/www.locktrace.space/fullchain.pem" ] || [ -f "/etc/letsencrypt/live/locktrace.space/fullchain.pem" ]; then
+    echo "  -> Let's Encrypt SSL sertifikaları tespit edildi. deploy/nginx_ssl.conf kuruluyor..."
+    sudo cp deploy/nginx_ssl.conf /etc/nginx/sites-available/blockchaint
+else
+    echo "  -> SSL sertifikası bulunamadı. Port 80 HTTP yapılandırması (deploy/nginx.conf) kuruluyor..."
+    sudo cp deploy/nginx.conf /etc/nginx/sites-available/blockchaint
+fi
 sudo ln -sf /etc/nginx/sites-available/blockchaint /etc/nginx/sites-enabled/
 sudo rm -f /etc/nginx/sites-enabled/default
 sudo nginx -t
@@ -80,6 +86,7 @@ sudo systemctl start fail2ban
 echo ""
 echo "══════════════════════════════════════"
 echo "  ✅ Kurulum tamamlandı!"
-echo "  API: http://$(curl -s ifconfig.me)/api/v1/stats"
+echo "  Canlı API: https://www.locktrace.space/api/v1/stats"
+echo "  Yerel API: http://$(curl -s ifconfig.me)/api/v1/stats"
 echo "══════════════════════════════════════"
 

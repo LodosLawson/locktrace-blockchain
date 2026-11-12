@@ -9,6 +9,7 @@ import os
 import sys
 import json
 import logging
+import re
 import subprocess
 from typing import Dict, Any, Optional
 
@@ -16,6 +17,7 @@ logger = logging.getLogger("LockTrace.Thirdweb")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENGINE_SCRIPT = os.path.join(BASE_DIR, "thirdweb_engine.mjs")
+TX_ID_REGEX = re.compile(r"^[a-zA-Z0-9_\-]{8,128}$")
 
 
 class ThirdwebService:
@@ -68,9 +70,14 @@ class ThirdwebService:
             if proc.returncode != 0:
                 logger.error(f"Thirdweb CLI error ({proc.returncode}): {stderr or stdout}")
                 try:
-                    return json.loads(stdout)
+                    parsed = json.loads(stdout)
+                    # Sanitize error message to prevent secret or system leakage
+                    err_msg = str(parsed.get("error", "") or "Execution failed")
+                    if self.secret_key and self.secret_key in err_msg:
+                        err_msg = err_msg.replace(self.secret_key, "***")
+                    return {"success": False, "error": err_msg}
                 except Exception:
-                    return {"success": False, "error": stderr or stdout or f"Exited with code {proc.returncode}"}
+                    return {"success": False, "error": "Thirdweb engine operation failed"}
 
             try:
                 return json.loads(stdout)
@@ -108,11 +115,17 @@ class ThirdwebService:
 
     def get_transaction_status(self, transaction_id: str) -> Dict[str, Any]:
         """Gets execution status of an enqueued transaction via Engine."""
-        return self._call_engine_cli("status", transaction_id)
+        clean_id = (transaction_id or "").strip()
+        if not TX_ID_REGEX.match(clean_id):
+            return {"success": False, "error": "Invalid transaction ID format"}
+        return self._call_engine_cli("status", clean_id)
 
     def wait_for_transaction_hash(self, transaction_id: str) -> Dict[str, Any]:
         """Polls Engine until onchain transaction hash is mined."""
-        return self._call_engine_cli("wait-hash", transaction_id)
+        clean_id = (transaction_id or "").strip()
+        if not TX_ID_REGEX.match(clean_id):
+            return {"success": False, "error": "Invalid transaction ID format"}
+        return self._call_engine_cli("wait-hash", clean_id)
 
 
 # Global singleton

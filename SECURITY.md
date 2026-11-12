@@ -6,9 +6,9 @@ The following versions of LockTrace are actively supported with security patches
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 2.4.x   | :white_check_mark: | **Current Active Mainnet Release** (Comprehensive Audit Hardened) |
-| 2.3.x   | :white_check_mark: | Legacy Consensus Supported |
-| < 2.3.0 | :x:                | Deprecated (Upgrade Mandatory) |
+| 2.8.x   | :white_check_mark: | **Current Active Mainnet Release** (Comprehensive Audit Hardened) |
+| 2.7.x   | :white_check_mark: | Legacy Consensus Supported |
+| < 2.7.0 | :x:                | Deprecated (Upgrade Mandatory) |
 
 ## Reporting a Vulnerability
 

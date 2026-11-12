@@ -31,7 +31,7 @@ import { fileURLToPath } from "url";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
-// Load environment variables from .env if present (Zero-dependency parser)
+// Load environment variables from .env if present (Zero-dependency parser - REV7-01 Hardened)
 const envPath = path.resolve(__dirname, ".env");
 if (fs.existsSync(envPath)) {
   try {
@@ -42,10 +42,11 @@ if (fs.existsSync(envPath)) {
         const [k, ...v] = trimmed.split("=");
         const key = k.trim();
         let val = v.join("=").trim();
-        if (!val.startsWith('"') && !val.startsWith("'")) {
-          val = val.split("#")[0].trim();
+        const quoteMatch = val.match(/^(['"])([\s\S]*?)\1(?:\s*#.*)?$/);
+        if (quoteMatch) {
+          val = quoteMatch[2];
         } else {
-          val = val.replace(/^['"]|['"]$/g, "");
+          val = val.split("#")[0].trim();
         }
         if (key && !process.env[key]) {
           process.env[key] = val;
@@ -197,14 +198,21 @@ export async function claimERC1155({
   );
 }
 
+function isValidTransactionId(id) {
+  return typeof id === "string" && /^[a-zA-Z0-9_\-]{8,128}$/.test(id.trim());
+}
+
 /**
  * Check transaction status on Engine
  */
 export async function getTransactionStatus(transactionId) {
+  if (!isValidTransactionId(transactionId)) {
+    throw new Error("Invalid transaction ID format");
+  }
   const client = getClient();
   const executionResult = await Engine.getTransactionStatus({
     client,
-    transactionId,
+    transactionId: transactionId.trim(),
   });
   return executionResult;
 }
@@ -213,10 +221,13 @@ export async function getTransactionStatus(transactionId) {
  * Wait for transaction hash
  */
 export async function waitForTransactionHash(transactionId) {
+  if (!isValidTransactionId(transactionId)) {
+    throw new Error("Invalid transaction ID format");
+  }
   const client = getClient();
   const txHash = await Engine.waitForTransactionHash({
     client,
-    transactionId,
+    transactionId: transactionId.trim(),
   });
   return txHash;
 }
@@ -235,12 +246,12 @@ async function runCLI() {
       console.log(JSON.stringify({ success: true, data: res }));
     } else if (command === "status") {
       const txId = args[1];
-      if (!txId) throw new Error("Transaction ID required");
+      if (!txId || !isValidTransactionId(txId)) throw new Error("Valid transaction ID required");
       const res = await getTransactionStatus(txId);
       console.log(JSON.stringify({ success: true, data: res }));
     } else if (command === "wait-hash") {
       const txId = args[1];
-      if (!txId) throw new Error("Transaction ID required");
+      if (!txId || !isValidTransactionId(txId)) throw new Error("Valid transaction ID required");
       const hash = await waitForTransactionHash(txId);
       console.log(JSON.stringify({ success: true, data: { transactionHash: hash } }));
     } else if (command === "info") {
@@ -265,10 +276,15 @@ async function runCLI() {
       );
     }
   } catch (err) {
+    const rawMsg = err.message || String(err);
+    // Sanitize any secret keys or internal paths from error message
+    const sanitizedMsg = rawMsg
+      .replace(/THIRDWEB_SECRET_KEY=[^\s&]+/g, "THIRDWEB_SECRET_KEY=***")
+      .replace(/[a-zA-Z0-9_\-]{32,}/g, (m) => (process.env.THIRDWEB_SECRET_KEY && m.includes(process.env.THIRDWEB_SECRET_KEY) ? "***" : m));
     console.log(
       JSON.stringify({
         success: false,
-        error: err.message || String(err),
+        error: sanitizedMsg,
       })
     );
     process.exit(1);
