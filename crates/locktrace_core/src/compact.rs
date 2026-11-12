@@ -38,6 +38,14 @@ pub struct NativeCompactBlock {
 impl NativeCompactBlock {
     /// Validates compact block structure against DoS, memory exhaustion and float anomalies.
     pub fn validate(&self) -> Result<(), String> {
+        // AUD15-06: Strict compact_version validation (v1 standard)
+        if self.compact_version != 1 {
+            return Err(format!(
+                "Unsupported compact block version: {}. Expected 1.",
+                self.compact_version
+            ));
+        }
+
         // 1. Float timestamp validation (REV7-02: Prevent NaN/Infinity crash vectors)
         if !self.header.timestamp.is_finite() || self.header.timestamp < 0.0 {
             return Err("Compact block timestamp must be a finite, positive number".to_string());
@@ -71,6 +79,16 @@ impl NativeCompactBlock {
             ));
         }
 
+        // AUD15-06: Strict BIP-152 short_id validation (16 hex chars = 8 bytes)
+        for sid in &self.short_ids {
+            if sid.len() != 16 || !sid.chars().all(|c| c.is_ascii_hexdigit()) {
+                return Err(format!(
+                    "Invalid short_id format: '{}'. Expected exactly 16 hex characters.",
+                    sid
+                ));
+            }
+        }
+
         // AUD12-06: Consistency invariant: sum of prefilled and short_ids must match total_transactions
         let total_items = self.prefilled.len() + self.short_ids.len();
         if total_items != self.total_transactions as usize {
@@ -80,9 +98,16 @@ impl NativeCompactBlock {
             ));
         }
 
-        // AUD12-06: Index bounds and uniqueness validation for prefilled transactions
+        // AUD12-06 & AUD15-06: Index bounds, uniqueness, and raw_json memory validation for prefilled transactions
+        const MAX_RAW_JSON_LEN: usize = 65_536;
         let mut seen_indices = std::collections::HashSet::with_capacity(self.prefilled.len());
         for p in &self.prefilled {
+            if p.raw_json.is_empty() || p.raw_json.len() > MAX_RAW_JSON_LEN {
+                return Err(format!(
+                    "Prefilled transaction raw_json length ({}) out of valid range (1..{})",
+                    p.raw_json.len(), MAX_RAW_JSON_LEN
+                ));
+            }
             if p.index >= self.total_transactions {
                 return Err(format!(
                     "Prefilled transaction index ({}) out of range for total_transactions ({})",
@@ -154,7 +179,7 @@ mod tests {
             compact_version: 1,
             header: dummy_header(1700000000.0),
             prefilled: vec![],
-            short_ids: vec!["abcd1234efgh5678".to_string()],
+            short_ids: vec!["0123456789abcdef".to_string()],
             total_transactions: 1,
         };
         assert!(block.validate().is_ok());
@@ -203,7 +228,7 @@ mod tests {
             compact_version: 1,
             header: dummy_header(1700000000.0),
             prefilled: vec![],
-            short_ids: vec!["abc".to_string()],
+            short_ids: vec!["0123456789abcdef".to_string()],
             total_transactions: 1,
         };
         block.header.difficulty = 0;
@@ -225,7 +250,7 @@ mod tests {
             index: 2, // Must be < 2 (0 or 1)
             raw_json: "{}".to_string(),
         }];
-        block.short_ids = vec!["abc".to_string()];
+        block.short_ids = vec!["0123456789abcdef".to_string()];
         assert!(block.validate().is_err());
 
         // 4. Duplicate prefilled index
@@ -235,6 +260,16 @@ mod tests {
             CompactPrefilledTx { index: 0, raw_json: "{}".to_string() },
         ];
         block.short_ids = vec![];
+        assert!(block.validate().is_err());
+
+        // 5. AUD15-06: Compact version mismatch
+        block.compact_version = 2;
+        assert!(block.validate().is_err());
+        block.compact_version = 1;
+
+        // 6. AUD15-06: Invalid short_id length or hex
+        block.short_ids = vec!["invalid_short_id".to_string()];
+        block.total_transactions = 3;
         assert!(block.validate().is_err());
     }
 

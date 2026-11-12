@@ -11,11 +11,15 @@ import zipfile
 import shutil
 
 ROOT_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+sys.path.insert(0, ROOT_DIR)
+
+from config import Config
+
 OUTPUT_DIR = os.path.join(ROOT_DIR, "output")
 ZIP_NAME = "locktrace_security_audit_package.zip"
 ZIP_PATH = os.path.join(OUTPUT_DIR, ZIP_NAME)
 
-AUDIT_GUIDE_CONTENT = """# 🛡️ LockTrace (BCT) — Third-Party Security Audit & Bug Testing Guide
+AUDIT_GUIDE_CONTENT = f"""# 🛡️ LockTrace (BCT) — Third-Party Security Audit & Bug Testing Guide
 
 Welcome to the **LockTrace Layer-1 Blockchain** Security Audit Package.
 This bundle contains the complete source code, smart contracts, cryptographic modules,
@@ -26,7 +30,7 @@ and security bug verification.
 
 ## 📋 System Architecture Overview
 
-- **Protocol Version:** `v2.8.7` (Production Mainnet: https://locktrace.space)
+- **Protocol Version:** `v{Config.PROTOCOL_VERSION}` (Production Mainnet: https://locktrace.space)
 - **Consensus Architecture:** Hybrid 70% Proof-of-Work (PoW) + 30% BFT Quorum Validator Attestation
 - **Native Token:** BCT (Blockchain Trace, 1 Trillion fixed max supply, non-inflationary)
 - **Database Engine:** SQLite in WAL mode (`sqlite-wal`) with O(1) reverse cursor indexing
@@ -59,8 +63,11 @@ python tests/test_new_vulnerabilities_patch.py
 # 6. Run Rust vs Python Mathematical Parity Audit
 python tests/test_rust_spec_parity.py
 
-# 7. Run Latest Audit (REV11) Verification Suite
+# 7. Run Latest Audit Verification Suites
 python tests/test_rev11_fixes.py
+python tests/test_aud12_fixes.py
+python tests/test_aud14_fixes.py
+python tests/test_aud15_fixes.py
 ```
 
 ---
@@ -100,12 +107,16 @@ def main():
     os.makedirs(OUTPUT_DIR, exist_ok=True)
     print(f"[*] Packaging security audit bundle to {ZIP_PATH}...")
 
-    # Excluded directories and file patterns
+    # AUD15-08: Strictly exclude sensitive keys, certificates, credentials, and temp files
     excluded_dirs = {
         "__pycache__", ".git", "venv", "env", "node_modules", "target",
-        ".netlify", "backups", "data", "output"
+        ".netlify", "backups", "data", "output", ".idea", ".vscode"
     }
-    excluded_exts = {".pyc", ".pyo", ".pyd", ".db", ".db-wal", ".db-shm", ".key", ".pem"}
+    excluded_exts = {
+        ".pyc", ".pyo", ".pyd", ".db", ".db-wal", ".db-shm",
+        ".key", ".pem", ".crt", ".p12", ".pfx"
+    }
+    excluded_file_markers = {".env", "id_rsa", "ssh-key", "release_signing_key"}
 
     with zipfile.ZipFile(ZIP_PATH, "w", zipfile.ZIP_DEFLATED) as zf:
         # 1. Add audit guide
@@ -117,7 +128,7 @@ def main():
             print("[+] Adding repomix-output.xml...")
             zf.write(repomix_xml, arcname="repomix-output.xml")
 
-        # 3. Add root files
+        # 3. Add root files (AUD15-08: Enforce clean non-sensitive root files)
         root_files = [
             "server.py", "node_runner.py", "wsgi.py", "config.py",
             "requirements.txt", "package.json", "README.md", "SECURITY.md",
@@ -138,7 +149,12 @@ def main():
                 dirs[:] = [d for d in dirs if d not in excluded_dirs and not d.endswith(".egg-info")]
                 for f in files:
                     ext = os.path.splitext(f)[1].lower()
-                    if ext in excluded_exts or f.endswith(".tar.gz") or "release_signing_key" in f:
+                    f_lower = f.lower()
+                    if (
+                        ext in excluded_exts
+                        or f.endswith(".tar.gz")
+                        or any(m in f_lower for m in excluded_file_markers)
+                    ):
                         continue
                     full_path = os.path.join(root, f)
                     rel_path = os.path.relpath(full_path, ROOT_DIR)
@@ -152,7 +168,7 @@ def main():
                     full_path = os.path.join(test_dir, f)
                     zf.write(full_path, arcname=f"tests/{f}")
 
-        for test_file in ["test_rev11_fixes.py", "test_aud12_fixes.py", "test_aud14_fixes.py"]:
+        for test_file in ["test_rev11_fixes.py", "test_aud12_fixes.py", "test_aud14_fixes.py", "test_aud15_fixes.py"]:
             t_path = os.path.join(ROOT_DIR, "scratch", test_file)
             if os.path.exists(t_path):
                 zf.write(t_path, arcname=f"tests/{test_file}")
@@ -161,8 +177,8 @@ def main():
     if os.path.exists(repomix_xml):
         out_xml = os.path.join(OUTPUT_DIR, "repomix-output.xml")
         shutil.copy2(repomix_xml, out_xml)
-        shutil.copy2(repomix_xml, os.path.join(OUTPUT_DIR, "repomix-output_14.xml"))
-        print("[+] Copied repomix-output.xml to output/repomix-output.xml & output/repomix-output_14.xml")
+        shutil.copy2(repomix_xml, os.path.join(OUTPUT_DIR, "repomix-output_15.xml"))
+        print("[+] Copied repomix-output.xml to output/repomix-output.xml & output/repomix-output_15.xml")
 
     zip_size_mb = os.path.getsize(ZIP_PATH) / (1024 * 1024)
     print(f"[SUCCESS] Security Audit Package generated successfully!")

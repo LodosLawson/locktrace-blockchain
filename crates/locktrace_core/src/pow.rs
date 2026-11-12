@@ -49,15 +49,30 @@ pub fn solve_pow(
     let num_chunks = if max_nonces == 0 {
         0
     } else {
-        (max_nonces + chunk_size - 1) / chunk_size
+        match max_nonces.checked_add(chunk_size - 1) {
+            Some(sum) => sum / chunk_size,
+            None => u64::MAX / chunk_size,
+        }
     };
 
     let found_clone = Arc::clone(&found);
     let hashes_clone = Arc::clone(&total_hashes);
 
     let result = (0..num_chunks).into_par_iter().find_map_any(|chunk_idx| {
-        let chunk_start = start_nonce + chunk_idx * chunk_size;
-        let chunk_limit = (chunk_start + chunk_size).min(start_nonce + max_nonces);
+        // AUD15-03: Checked arithmetic to prevent u64 integer overflow on high nonces
+        let chunk_offset = match chunk_idx.checked_mul(chunk_size) {
+            Some(off) => off,
+            None => return None,
+        };
+        let chunk_start = match start_nonce.checked_add(chunk_offset) {
+            Some(s) => s,
+            None => return None,
+        };
+        let max_bound = start_nonce.saturating_add(max_nonces);
+        let chunk_limit = chunk_start.saturating_add(chunk_size).min(max_bound);
+        if chunk_start >= chunk_limit {
+            return None;
+        }
         let mut local_count = 0u64;
         let mut nonce_buf = String::with_capacity(32);
 

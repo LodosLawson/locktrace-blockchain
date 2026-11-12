@@ -17,9 +17,10 @@ logger = logging.getLogger("LockTrace.Thirdweb")
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ENGINE_SCRIPT = os.path.join(BASE_DIR, "thirdweb_engine.mjs")
-TX_ID_REGEX = re.compile(r"^[a-zA-Z0-9_\-]{8,128}$")
+# AUD15-07: Disallow leading hyphens to prevent CLI option injection
+TX_ID_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_\-]{7,127}$")
 EVM_ADDR_REGEX = re.compile(r"^0x[a-fA-F0-9]{40}$")
-CHAIN_REGEX = re.compile(r"^[a-zA-Z0-9_\-]{2,32}$")
+CHAIN_REGEX = re.compile(r"^[a-zA-Z0-9][a-zA-Z0-9_\-]{1,31}$")
 
 
 def _mask_text(text: str, secrets: Optional[list] = None) -> str:

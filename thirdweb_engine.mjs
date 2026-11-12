@@ -172,9 +172,14 @@ export async function claimERC1155({
 
   // Fallback: If local server private key is configured
   if (process.env.THIRDWEB_SERVER_PRIVATE_KEY) {
+    // AUD15-07: Normalize 0x prefix for Thirdweb private key to support both raw 64-hex and 0x formats
+    let rawPk = process.env.THIRDWEB_SERVER_PRIVATE_KEY.trim();
+    if (!rawPk.startsWith("0x") && !rawPk.startsWith("0X")) {
+      rawPk = `0x${rawPk}`;
+    }
     const account = privateKeyToAccount({
       client,
-      privateKey: process.env.THIRDWEB_SERVER_PRIVATE_KEY,
+      privateKey: rawPk,
     });
 
     const result = await sendTransaction({
@@ -199,7 +204,8 @@ export async function claimERC1155({
 }
 
 function isValidTransactionId(id) {
-  return typeof id === "string" && /^[a-zA-Z0-9_\-]{8,128}$/.test(id.trim());
+  // AUD15-07: Prevent CLI flag/option injection by disallowing leading hyphens
+  return typeof id === "string" && /^[a-zA-Z0-9][a-zA-Z0-9_\-]{7,127}$/.test(id.trim());
 }
 
 /**

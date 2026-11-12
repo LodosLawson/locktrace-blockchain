@@ -440,7 +440,16 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Nginx Wallet Endpoint Request Body & Timeout Bounds (AUD14-06):** Enforced `client_max_body_size 1m;` alongside strict connect/read/send proxy timeouts on `/api/v1/wallet/create`.
    - **SSH Log Inspector Timeout & Secret Masking (AUD14-07):** Hardened `scripts/test_base_logs.py` with 30s timeout guards and regex-based credential masking.
    - **Mnemonic Case Normalization (AUD13-01):** Applied BIP-39 case-insensitive lowercasing in `mnemonic_to_private_key` prior to NFKD normalization.
-17. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+17. **Integer Overflow Hardening, Nginx CSP Inheritance & Engine Option Defense (v2.8.8):**
+   - **Frontend Embedding Text Slicing Bug Fix (AUD15-01):** Sliced directly from `f_idx2` preserving `window.liveMarketPrices =` in `scripts/replace_embed.py` to prevent frontend JS execution breaks.
+   - **Secret Masking Regex Callable & Dual DB Fallback (AUD15-02):** Fixed `scripts/test_base_logs.py` backreference leak using group match callables and multi-path sqlite database discovery.
+   - **Checked Arithmetic Integer Overflow Immunization (AUD15-03):** Immunized `crates/locktrace_core/src/pow.rs` against `u64` arithmetic overflows via `checked_mul`, `checked_add`, and `saturating_add`.
+   - **Nginx Child Location CSP Inheritance & /integrity.json Parity (AUD15-04):** Re-declared Content-Security-Policy across all sub-locations with custom `add_header` and added explicit `/integrity.json` caching guards in `nginx.conf`.
+   - **Full BIP-39 NFKD Normalization Prior to Validation (AUD15-05):** Enforced Unicode NFKD normalization in both `validate_mnemonic` and `mnemonic_to_private_key` before wordlist verification.
+   - **P2P Compact Block Version, Raw JSON & Short ID Verification (AUD15-06):** Enforced `compact_version == 1`, 64KB raw JSON bounds, and 16-hex character formatting in `crates/locktrace_core/src/compact.rs`.
+   - **Thirdweb 0x Key Normalization & CLI Flag Injection Defense (AUD15-07):** Normalized raw 64-hex server private keys with `0x` prefix and prohibited leading hyphens in transaction ID and chain name regexes.
+   - **Audit Bundle Privacy Filters & Dynamic Protocol SSOT (AUD15-08):** Configured strict exclusions for `.env`, keys, certificates, and bound protocol version dynamically to `Config.PROTOCOL_VERSION`.
+18. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

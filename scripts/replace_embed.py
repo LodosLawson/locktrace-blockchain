@@ -216,13 +216,11 @@ replacement_fn = '''function generateSpacePostEmbedHtml(rawContent) {
           </div>
         </div>
       `;
-    }
-
-    // ── Live Multi-Asset Market Telemetry (BTC, ETH, SOL, AAPL, etc.) ─────────────
-    '''
+    }'''
 
 if f_idx1 != -1 and f_idx2 != -1:
-    text = text[:f_idx1] + replacement_fn + text[f_idx2 + len(end_fn):]
+    # AUD15-01: Preserve window.liveMarketPrices = by slicing text from f_idx2 directly
+    text = text[:f_idx1] + replacement_fn + '\n\n    // ── Live Multi-Asset Market Telemetry (BTC, ETH, SOL, AAPL, etc.) ─────────────\n    ' + text[f_idx2:]
     print('generateSpacePostEmbedHtml replaced successfully!')
 
 with open('frontend/index.html', 'w', encoding='utf-8') as f:

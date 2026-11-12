@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.8.7` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.8.8` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -468,4 +468,34 @@ LockTrace v2.8.7 sürümü ile çözülen 7 yeni güvenlik açığı, mantık ha
 
 8. **Mnemonic Küçük Harf Normalizasyonu (AUD13-01):**
    - `core/mnemonic.py` içindeki `mnemonic_to_private_key` fonksiyonunda BIP-39 standartlarına uygun olarak NFKD normalizasyonu öncesi `cleaned_mnemonic = " ".join(mnemonic.strip().lower().split())` uygulanarak büyük/küçük harf duyarsızlığı güvenceye alındı.
+
+---
+
+## 🛡️ 17. LockTrace v2.8.8: Tamsayı Taşması Savunması, Nginx CSP Kalıtımı & Engine Seçenek Koruması (AUD15)
+
+LockTrace v2.8.8 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
+
+1. **Frontend Canlı Piyasa Dilimleme Hatası Onarımı (AUD15-01):**
+   - `scripts/replace_embed.py` içinde `f_idx2` başlangıcı doğrudan referans alınarak `window.liveMarketPrices =` tanımının silinmesi önlendi; frontend JS sözdizimi kırılması engellendi.
+
+2. **Gizli Anahtar Maskeleme Geri Başvuru Hatası & Çoklu DB Yolu (AUD15-02):**
+   - `scripts/test_base_logs.py` içinde `r'\1'` yerine grup eşleşmesi fonksiyonu (`_mask_match`) kullanılarak 64-hex anahtarların ekrana iki kez basılması engellendi; hem `/opt/blockchaint/blockchain.db` hem de `/opt/blockchaint/data/blockchain.db` yollarını otomatik tespit eden yapı kuruldu.
+
+3. **Rust Çekirdeği u64 Tamsayı Taşması (Integer Overflow) Koruması (AUD15-03):**
+   - `crates/locktrace_core/src/pow.rs` içinde yüksek `start_nonce` ve `max_nonces` değerlerinde panik veya taşma yaşanmaması için `checked_mul`, `checked_add` ve `saturating_add` güvenli aritmetik kontrolleri uygulandı.
+
+4. **Nginx Alt Konum CSP Kalıtımı & /integrity.json Eşitlemesi (AUD15-04):**
+   - Nginx'in `add_header` direktifini alt konumlara devretmeme kuralı nedeniyle `/sw.js`, `/integrity.json`, `/node_runner.py` gibi tüm alt bloklara Content-Security-Policy ve güvenlik başlıkları açıkça eklendi; `deploy/nginx.conf` içine eksik `/integrity.json` bloğu yerleştirildi.
+
+5. **BIP-39 Doğrulama Öncesi Tam Unicode NFKD Normalizasyonu (AUD15-05):**
+   - `core/mnemonic.py` içinde hem `validate_mnemonic` hem de `mnemonic_to_private_key` fonksiyonlarında kelime listesi doğrulanmadan önce `unicodedata.normalize("NFKD", ...)` çalıştırılması zorunlu kılındı.
+
+6. **P2P Kompakt Blok Sürüm, Ham JSON ve Kısa Kimlik Denetimi (AUD15-06):**
+   - `crates/locktrace_core/src/compact.rs` içinde `compact_version == 1` kontrolü, 64 KB prefilled `raw_json` bellek sınırı ve 16-hex kısa kimlik (short_id) format doğrulaması uygulandı.
+
+7. **Thirdweb 0x Önek Normalizasyonu & CLI Komut Enjeksiyon Savunması (AUD15-07):**
+   - `thirdweb_engine.mjs` içinde sunucu özel anahtarına otomatik `0x` öneki eklendi; `core/thirdweb_service.py` ve `thirdweb_engine.mjs` içinde işlem kimliği ve zincir adı regex'lerinin tire (`-`) ile başlaması engellenerek CLI parametre enjeksiyonu kapatıldı.
+
+8. **Güvenlik Paketi Gizlilik Filtreleri & Dinamik Protokol SSOT (AUD15-08):**
+   - `scripts/create_audit_bundle.py` içindeki zip paketleyicisine `.env*`, `*key*`, `*rsa*` ve sertifikaları dışlayan katı gizlilik filtreleri eklendi; protokol sürümü doğrudan `Config.PROTOCOL_VERSION` değişkenine bağlandı.
 
