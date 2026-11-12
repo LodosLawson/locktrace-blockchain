@@ -1,6 +1,6 @@
 [package]
 name = "locktrace_rs"
-version = "2.8.9"
+version = "2.9.0"
 edition = "2021"
 authors = ["LockTrace Core Architecture Team <locktracetoken+space@gmail.com>"]
 description = "Native Rust Acceleration Core for LockTrace Layer-1 Blockchain"

@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.8.9` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.9.0` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -530,3 +530,15 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - `scripts/sign_frontend.py`, `scripts/build_whitepaper_pdf.py`, `scripts/fast_deploy.py`, `scripts/run_node.*` ve tüm dokümantasyon v2.8.9 olarak senkronize edildi.
 
 
+
+---
+
+## 🛡️ 19. LockTrace v2.9.0: P2P Amplifikasyon Koruması, Snapshot Önbelleği & SSRF Yönlendirme Savunması (AUD17)
+
+1. **P2P getblocktxn Hız Sınırı & İndeks Amplifikasyon Savunması (AUD17-01):** `indices` listesi 200 elemanla sınırlandırıldı, mükerrer indeksler tekilleştirildi ve tip dönüşümü güvenli hale getirildi.
+2. **State Snapshot Önbellekleme & Hız Sınırı (AUD17-02):** `/api/v1/snapshot/latest` uç noktasına hız sınırı ve `get_state_snapshot()` içine 15 saniyelik blok yüksekliği bazlı önbellek eklendi.
+3. **P2P HTTP Yönlendirme (Redirect) SSRF Koruması (AUD17-03):** `_broadcast_block_to_peers` içinde HTTP 301/302 yönlendirmelerini engelleyen `_NoRedirectHandler` devreye alındı.
+4. **Kompakt Blok Madenci İmza İletimi (AUD17-04):** `/p2p/gossip/compact_block` içinde `public_key` ve `signature` alanları konsensüs motoruna aktarıldı.
+5. **Nginx /p2p/ Proxy Yönlendirmesi (AUD17-05):** `nginx_ssl.conf` ve `nginx.conf` dosyalarına `location /p2p/` bloğu eklendi.
+6. **Validator Stake/Unstake Hız Sınırı (AUD17-06):** `/api/v1/validator/stake` ve `/api/v1/validator/unstake` uç noktalarına IP bazlı hız sınırı eklendi.
+7. **Yetkilendirilmiş Web Push İptali (AUD17-07):** `/api/v1/notifications/unsubscribe` için ECDSA cüzdan imzası veya cihaz `auth` sırrı doğrulaması zorunlu kılındı.

@@ -739,17 +739,35 @@ def api_notifications_subscribe():
 
 @app.route("/api/v1/notifications/unsubscribe", methods=["POST"])
 def api_notifications_unsubscribe():
-    """Removes a push subscription by endpoint."""
+    """Removes a push subscription by endpoint (AUD17-07: Requires ECDSA signature or subscription auth secret)."""
     if not push_service:
         return api_response(False, message="Web Push service not available on this node", status=503)
     if not check_rate_limit("push_unsub", limit=10, window_seconds=60):
         return api_response(False, message="Too many unsubscribe attempts. Please wait.", status=429)
     data = request.get_json(silent=True) or {}
     endpoint = str(data.get("endpoint", "") or "").strip()
-    if not endpoint:
-        return api_response(False, message="Endpoint is required", status=400)
-    push_service.unsubscribe(endpoint)
-    return api_response(True, message="Unsubscribed successfully")
+    if not endpoint or len(endpoint) > 512:
+        return api_response(False, message="Valid endpoint (<= 512 chars) is required", status=400)
+
+    wallet_address = str(data.get("wallet_address", "") or "").strip()
+    public_key = str(data.get("public_key", "") or "").strip()
+    signature = str(data.get("signature", "") or "").strip()
+    timestamp = safe_float(data.get("timestamp")) or 0.0
+    sub_obj = data.get("subscription") if isinstance(data.get("subscription"), dict) else {}
+    keys_obj = sub_obj.get("keys") if isinstance(sub_obj.get("keys"), dict) else {}
+    auth_secret = str(data.get("auth", "") or keys_obj.get("auth", "") or "").strip()
+
+    ok, msg = push_service.unsubscribe_authenticated(
+        endpoint=endpoint,
+        wallet_address=wallet_address,
+        public_key=public_key,
+        signature=signature,
+        timestamp=timestamp,
+        auth_secret=auth_secret,
+    )
+    if not ok:
+        return api_response(False, message=msg, status=401)
+    return api_response(True, message=msg)
 
 
 @app.route("/api/v1/notifications/test-push", methods=["POST"])
@@ -1297,6 +1315,9 @@ def api_get_latest_snapshot():
     Returns a cryptographically audited state root over sorted balances, nonces, and BNS domains.
     Allows new nodes to fast-sync their ledger in seconds and verify only the latest 1,000 blocks.
     """
+    # AUD17-02: Enforce rate limit to prevent heavy state snapshot serialization DoS
+    if not check_rate_limit("snapshot_latest", limit=10, window_seconds=60):
+        return api_response(False, message="Snapshot rate limit exceeded. Please wait.", status=429)
     snapshot = blockchain.get_state_snapshot()
     return api_response(True, message="Verified state snapshot ready.", data=snapshot)
 
@@ -1325,13 +1346,18 @@ def api_p2p_gossip_compact_block():
             return api_response(False, message="Missing transactions for compact block.", data={"missing_indices": missing, "header_hash": header.get("hash")}, status=206)
         return api_response(False, message=msg, status=400)
 
+    # AUD17-04: Forward miner public_key and signature from gossip payload (or header) to consensus engine
+    miner_pub = str(payload.get("public_key", "") or header.get("public_key", "") or "").strip()
+    miner_sig = str(payload.get("signature", "") or header.get("signature", "") or "").strip()
+    reported_hr = safe_float(payload.get("hashrate_hs", 0.0), default=0.0) or 0.0
+
     # Submit reconstructed block to consensus engine
     submit_ok, submit_msg, receipt = blockchain.submit_mined_block(
         block_data=reconstructed_block,
         node_id=str(payload.get("node_id", "") or "P2P-Peer"),
-        public_key="",
-        signature="",
-        reported_hashrate=0.0
+        public_key=miner_pub,
+        signature=miner_sig,
+        reported_hashrate=reported_hr
     )
     if not submit_ok:
         return api_response(False, message=submit_msg, data=receipt, status=400)
@@ -1345,11 +1371,17 @@ def api_p2p_getblocktxn():
     v2.6.0 Compact Block transaction responder.
     Supplies the exact missing transactions requested by a peer node to complete block assembly.
     """
+    # AUD17-01: Rate limit, bound indices count (<= 200), deduplicate, and safely parse integers
+    if not check_rate_limit("p2p_getblocktxn", limit=60, window_seconds=60):
+        return api_response(False, message="Block transaction request rate limit exceeded.", status=429)
+
     payload = request.get_json(silent=True) or {}
     block_hash = str(payload.get("block_hash", "")).strip().lower()
     indices = payload.get("indices", [])
-    if not block_hash or not isinstance(indices, list):
+    if not block_hash or not isinstance(indices, list) or len(indices) == 0:
         return api_response(False, message="Invalid block transaction query.", status=400)
+    if len(indices) > 200:
+        return api_response(False, message="Maximum 200 transaction indices allowed per request.", status=400)
 
     blk_dict = blockchain.get_block_by_index_or_hash(block_hash)
     if not blk_dict:
@@ -1357,9 +1389,19 @@ def api_p2p_getblocktxn():
 
     txs = blk_dict.get("transactions", [])
     requested_txs = []
+    seen_indices = set()
     for idx in indices:
-        if 0 <= int(idx) < len(txs):
-            requested_txs.append({"index": int(idx), "tx": txs[int(idx)]})
+        if isinstance(idx, bool):
+            return api_response(False, message="Invalid transaction index type.", status=400)
+        try:
+            idx_int = int(idx)
+        except (ValueError, TypeError):
+            return api_response(False, message="Invalid transaction index format.", status=400)
+        if idx_int in seen_indices:
+            continue
+        seen_indices.add(idx_int)
+        if 0 <= idx_int < len(txs):
+            requested_txs.append({"index": idx_int, "tx": txs[idx_int]})
 
     return api_response(True, data={"block_hash": block_hash, "transactions": requested_txs})
 
@@ -1537,6 +1579,9 @@ def api_attest_block():
 @app.route("/api/v1/validator/stake", methods=["POST"])
 def api_validator_stake():
     """Lock 1,000+ BCT collateral into VALIDATOR_STAKE_VAULT to become an active consensus validator."""
+    # AUD17-06: Enforce rate limit on validator staking endpoint
+    if not check_rate_limit("validator_stake", limit=15, window_seconds=60):
+        return api_response(False, message="Too many validator stake requests. Please wait.", status=429)
     data = request.get_json(silent=True) or {}
     sender = str(data.get("sender", "") or "").strip()
     amount_raw = data.get("amount")
@@ -1582,6 +1627,9 @@ def api_validator_stake():
 @app.route("/api/v1/validator/unstake", methods=["POST"])
 def api_validator_unstake():
     """Unlock staked BCT collateral from VALIDATOR_STAKE_VAULT back to the validator."""
+    # AUD17-06: Enforce rate limit on validator unstaking endpoint
+    if not check_rate_limit("validator_unstake", limit=15, window_seconds=60):
+        return api_response(False, message="Too many validator unstake requests. Please wait.", status=429)
     data = request.get_json(silent=True) or {}
     sender = str(data.get("sender", "") or "").strip()
     amount_raw = data.get("amount")

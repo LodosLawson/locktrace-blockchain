@@ -22,6 +22,7 @@ import time
 import json
 import sqlite3
 import hashlib
+import secrets
 import logging
 import threading
 import ipaddress
@@ -285,9 +286,9 @@ class PushNotificationService:
                         pass
 
     def unsubscribe(self, endpoint: str) -> bool:
-        """Removes a push subscription by endpoint."""
+        """Removes a push subscription by endpoint (internal dead-endpoint cleanup)."""
         clean_ep = (endpoint or "").strip()
-        if not clean_ep:
+        if not clean_ep or len(clean_ep) > 512:
             return False
         with self.lock:
             conn = None
@@ -300,6 +301,83 @@ class PushNotificationService:
             except Exception as e:
                 logger.error(f"Failed to unsubscribe push: {e}")
                 return False
+            finally:
+                if conn:
+                    try:
+                        conn.close()
+                    except Exception:
+                        pass
+
+    def unsubscribe_authenticated(
+        self,
+        endpoint: str,
+        wallet_address: str = "",
+        public_key: str = "",
+        signature: str = "",
+        timestamp: float = 0.0,
+        auth_secret: str = "",
+    ) -> Tuple[bool, str]:
+        """
+        AUD17-07: Authenticated push unsubscription.
+        Requires either a valid SECP256k1 wallet signature over LOCKTRACE_PUSH_UNSUB
+        or the device's matching Web Push `auth` secret key.
+        """
+        clean_ep = (endpoint or "").strip()
+        if not clean_ep or len(clean_ep) > 512:
+            return False, "Invalid push endpoint."
+
+        clean_addr = (wallet_address or "").strip()
+        clean_pub = (public_key or "").strip()
+        clean_sig = (signature or "").strip()
+        clean_auth = (auth_secret or "").strip()
+
+        sig_verified = False
+        if clean_addr and clean_pub and clean_sig:
+            derived = public_key_to_address(clean_pub)
+            if not derived or derived != clean_addr:
+                return False, "Public key does not match wallet address."
+            now = time.time()
+            try:
+                ts = float(timestamp)
+                if abs(now - ts) > 300:
+                    return False, "Signature timestamp expired (> 300s)."
+            except Exception:
+                return False, "Invalid timestamp."
+            ep_hash = hashlib.sha256(clean_ep.encode("utf-8")).hexdigest()
+            auth_msg = f"LOCKTRACE_PUSH_UNSUB:{clean_addr}:{ep_hash}:{int(ts)}"
+            if not verify_signature(clean_pub, auth_msg, clean_sig):
+                return False, "Invalid ECDSA unsubscribe signature."
+            sig_verified = True
+
+        if not sig_verified and not clean_auth:
+            return False, "Authentication required: provide wallet ECDSA signature or push auth secret."
+
+        with self.lock:
+            conn = None
+            try:
+                conn = sqlite3.connect(self.db_path, timeout=10.0)
+                cur = conn.cursor()
+                cur.execute(
+                    "SELECT wallet_address, auth FROM push_subscriptions WHERE endpoint = ?",
+                    (clean_ep,)
+                )
+                row = cur.fetchone()
+                if not row:
+                    return False, "Subscription not found."
+                db_wallet, db_auth = row[0], row[1]
+                if sig_verified:
+                    if db_wallet != clean_addr:
+                        return False, "Endpoint does not belong to this wallet."
+                else:
+                    if not secrets.compare_digest(str(db_auth), str(clean_auth)):
+                        return False, "Invalid push subscription auth secret."
+
+                cur.execute("DELETE FROM push_subscriptions WHERE endpoint = ?", (clean_ep,))
+                conn.commit()
+                return True, "Unsubscribed successfully."
+            except Exception as e:
+                logger.error(f"Failed in authenticated unsubscribe: {e}")
+                return False, "Database error during unsubscribe."
             finally:
                 if conn:
                     try:

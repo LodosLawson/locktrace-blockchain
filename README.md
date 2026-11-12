@@ -458,7 +458,15 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **BIP-39 Pre-Split NFKD Unicode Normalization (AUD16-06):** Applied NFKD normalization directly to raw mnemonic strings in `core/mnemonic.py` prior to whitespace splitting, fully conforming to BIP-39 specification.
    - **Audit Bundle Privacy Filters & Output XML Parity (AUD16-07):** Filtered `"wallet"` and `".bak"` artifacts from security packages and ensured dynamic `repomix-output_16.xml` bundling.
    - **Universal Protocol SSOT Version Synchronization (AUD16-08):** Harmonized all deployment scripts, launchers, whitepapers, and core packages to v2.8.9.
-19. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+19. **P2P Amplification Defense, Snapshot Memoization & Redirect SSRF Hardening (v2.9.0):**
+   - **P2P getblocktxn Rate-Limit & Index Amplification Guard (AUD17-01):** Added `check_rate_limit`, capped `indices` at 200 items, deduplicated index lookups, and guarded `int(idx)` conversions against HTTP 500 crashes.
+   - **State Snapshot Memoization & Rate-Limit Guard (AUD17-02):** Rate-limited `/api/v1/snapshot/latest` and added a 15-second block-height-keyed cache in `get_state_snapshot()` to prevent full-ledger hashing DoS.
+   - **P2P Gossip HTTP Redirect SSRF Protection (AUD17-03):** Enforced a custom `_NoRedirectHandler` in `_broadcast_block_to_peers` blocking HTTP 301/302 redirects to internal/loopback/metadata addresses.
+   - **Compact Block Miner Signature Forwarding (AUD17-04):** Forwarded `public_key` and `signature` in `/p2p/gossip/compact_block` to `submit_mined_block`.
+   - **Nginx /p2p/ Reverse-Proxy Routing (AUD17-05):** Added dedicated `location /p2p/` proxy blocks with rate-limiting and 2MB body limits in `deploy/nginx_ssl.conf` and `deploy/nginx.conf`.
+   - **Validator Stake & Unstake Rate-Limiting (AUD17-06):** Added per-IP sliding-window rate limits to `/api/v1/validator/stake` and `/api/v1/validator/unstake`.
+   - **Authenticated Web Push Unsubscribe (AUD17-07):** Hardened `/api/v1/notifications/unsubscribe` with `unsubscribe_authenticated`, requiring either an ECDSA wallet signature or the device's Web Push `auth` secret.
+20. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 
