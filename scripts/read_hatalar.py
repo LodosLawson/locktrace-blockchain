@@ -35,7 +35,7 @@ for i, b in enumerate(blocks):
         local_img_path = os.path.join(OUT_DIR, f"image_{img_idx}.jpg")
         try:
             req = urllib.request.Request(img_url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req) as resp, open(local_img_path, "wb") as f:
+            with urllib.request.urlopen(req, timeout=15) as resp, open(local_img_path, "wb") as f:
                 f.write(resp.read())
             print(f"Downloaded Image #{img_idx}: {local_img_path}", flush=True)
         except Exception as e:

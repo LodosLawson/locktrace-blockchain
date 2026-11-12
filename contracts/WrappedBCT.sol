@@ -53,10 +53,43 @@ abstract contract Ownable is Context {
         _;
     }
 
-    function transferOwnership(address newOwner) public virtual onlyOwner {
-        require(newOwner != address(0), "Ownable: zero address");
-        emit OwnershipTransferred(_owner, newOwner);
+    function _transferOwnership(address newOwner) internal virtual {
+        address oldOwner = _owner;
         _owner = newOwner;
+        emit OwnershipTransferred(oldOwner, newOwner);
+    }
+}
+
+/**
+ * @dev Extension of Ownable providing a 2-step ownership transfer mechanism
+ * to prevent irreversible transfer to an accidental wrong/zero address.
+ */
+abstract contract Ownable2Step is Ownable {
+    address private _pendingOwner;
+
+    event OwnershipTransferStarted(address indexed previousOwner, address indexed newOwner);
+
+    constructor(address initialOwner) Ownable(initialOwner) {}
+
+    function pendingOwner() public view virtual returns (address) {
+        return _pendingOwner;
+    }
+
+    function transferOwnership(address newOwner) public virtual onlyOwner {
+        require(newOwner != address(0), "Ownable2Step: zero address");
+        _pendingOwner = newOwner;
+        emit OwnershipTransferStarted(owner(), newOwner);
+    }
+
+    function acceptOwnership() public virtual {
+        address sender = _msgSender();
+        require(pendingOwner() == sender, "Ownable2Step: caller is not the new owner");
+        _transferOwnership(sender);
+    }
+
+    function _transferOwnership(address newOwner) internal virtual override {
+        delete _pendingOwner;
+        super._transferOwnership(newOwner);
     }
 }
 
@@ -95,7 +128,7 @@ abstract contract Pausable is Context {
     }
 }
 
-contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
+contract WrappedBCT is Context, IERC20Metadata, Ownable2Step, Pausable {
     string private constant _name = "Wrapped Blockchain Trace";
     string private constant _symbol = "wBCT";
     uint8 private constant _decimals = 18;
@@ -126,7 +159,7 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
         _;
     }
 
-    constructor(address initialRelayer) Ownable(_msgSender()) {
+    constructor(address initialRelayer) Ownable2Step(_msgSender()) {
         if (initialRelayer != address(0)) {
             isBridgeRelayer[initialRelayer] = true;
             emit BridgeRelayerSet(initialRelayer, true);
@@ -218,10 +251,11 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
         require(bytes(locktraceTxHash).length > 0, "wBCT: Empty L1 transaction hash");
 
         bytes32 canonicalHash = _canonicalizeTxHash(locktraceTxHash);
-        require(!processedL1TxHashes[canonicalHash], "wBCT: L1 transaction already processed");
+        require(!processedL1TxHashes[canonicalHash] && !processedL1Transactions[locktraceTxHash], "wBCT: L1 transaction already processed");
         require(_totalSupply + amount <= MAX_SUPPLY, "wBCT: Max supply exceeded");
 
         processedL1TxHashes[canonicalHash] = true;
+        processedL1Transactions[locktraceTxHash] = true;
         _mint(to, amount);
 
         emit MintedFromBridge(to, amount, locktraceTxHash);

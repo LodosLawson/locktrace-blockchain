@@ -86,6 +86,6 @@ fn locktrace_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(validate_compact_block_json, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_compact_block_json, m)?)?;
     m.add_function(wrap_pyfunction!(is_native_rust_active, m)?)?;
-    m.add("__version__", "2.8.4")?;
+    m.add("__version__", "2.8.5")?;
     Ok(())
 }
