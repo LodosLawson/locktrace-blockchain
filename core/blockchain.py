@@ -3574,6 +3574,12 @@ class Blockchain:
             return
 
         def _worker(endpoints: List[str], payload_bytes: bytes):
+            # AUD17-03: Block HTTP 301/302/307/308 redirects to prevent SSRF bypass to internal/metadata IPs
+            class _NoRedirectHandler(urllib.request.HTTPRedirectHandler):
+                def redirect_request(self, req, fp, code, msg, headers, newurl):
+                    return None
+
+            safe_opener = urllib.request.build_opener(_NoRedirectHandler())
             for ep in endpoints[:25]:
                 if not self._is_safe_peer_endpoint(ep):
                     continue
@@ -3584,7 +3590,7 @@ class Blockchain:
                         headers={"Content-Type": "application/json", "User-Agent": "LockTrace-P2P/1.4"},
                         method="POST",
                     )
-                    with urllib.request.urlopen(req, timeout=2.5):
+                    with safe_opener.open(req, timeout=2.5):
                         pass
                 except Exception:
                     pass
@@ -5392,15 +5398,22 @@ class Blockchain:
         """
         Exports a cryptographically verified snapshot of network state at current block height.
         Allows fast-syncing nodes to verify state root and download only recent 1,000 blocks.
+        AUD17-02: Memoizes snapshot by (height, block_hash, total_transactions, bns_count) with 15s TTL
+        to prevent repeated full-ledger sorting and hashing CPU DoS.
         """
         with self.lock:
             self._load_state()
             tip = self.chain[-1] if self.chain else None
             height = tip.index if tip else 0
             block_hash = tip.hash if tip else ""
-            state_root = self.compute_state_root()
+            cache_key = (height, block_hash, self.total_transactions, len(self.bns_records))
+            now = time.time()
+            cached = getattr(self, "_snapshot_cache", None)
+            if cached and cached.get("key") == cache_key and (now - cached.get("ts", 0.0)) < 15.0:
+                return dict(cached["data"])
 
-            return {
+            state_root = self.compute_state_root()
+            snap_data = {
                 "protocol_version": Config.PROTOCOL_VERSION,
                 "snapshot_height": height,
                 "snapshot_block_hash": block_hash,
@@ -5410,8 +5423,10 @@ class Blockchain:
                 "balances": dict(self.balances),
                 "wallets": dict(self.wallets),
                 "bns_records": dict(self.bns_records),
-                "created_at": time.time(),
+                "created_at": now,
             }
+            self._snapshot_cache = {"key": cache_key, "ts": now, "data": snap_data}
+            return dict(snap_data)
 
     def apply_verified_state_snapshot(self, snapshot_data: dict) -> Tuple[bool, str]:
         """
