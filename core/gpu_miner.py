@@ -176,9 +176,26 @@ class LockTraceMinerEngine:
         try:
             from core.native_bridge import is_rust_accelerated, _RUST_CORE
             if is_rust_accelerated() and _RUST_CORE is not None:
-                ok, nonce, h, hr = _RUST_CORE.solve_pow(prefix, suffix, target_diff, max_n)
-                # Rust scanned 0..max_n. Return immediately (BUG-01: zero redundant recalculations).
-                return bool(ok), int(nonce), str(h), float(hr)
+                # AUD12-01: Support cancellation stop_event by scanning in bounded batches
+                slice_size = 200_000
+                total_scanned = 0
+                last_hashrate = 0.0
+
+                while total_scanned < max_n:
+                    if stop_event and stop_event.is_set():
+                        return False, 0, "", 0.0
+
+                    current_batch = min(slice_size, max_n - total_scanned)
+                    ok, nonce, h, hr = _RUST_CORE.solve_pow(
+                        prefix, suffix, target_diff, current_batch, total_scanned
+                    )
+                    total_scanned += current_batch
+                    last_hashrate = float(hr)
+
+                    if ok:
+                        return True, int(nonce), str(h), last_hashrate
+
+                return False, 0, "", last_hashrate
         except Exception:
             pass
 

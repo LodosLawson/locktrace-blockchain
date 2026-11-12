@@ -68,7 +68,7 @@ if [ -f "/etc/letsencrypt/live/www.locktrace.space/fullchain.pem" ] || [ -f "/et
     echo "  -> Let's Encrypt SSL sertifikaları tespit edildi. deploy/nginx_ssl.conf kuruluyor..."
     sudo cp deploy/nginx_ssl.conf /etc/nginx/sites-available/blockchaint
 else
-    echo "  -> SSL sertifikası bulunamadı. Port 80 HTTP yapılandırması (deploy/nginx.conf) kuruluyor..."
+    echo "  -> SSL sertifikası bulunamadı. Tam özellikli HTTP yapılandırması (deploy/nginx.conf) kuruluyor..."
     sudo cp deploy/nginx.conf /etc/nginx/sites-available/blockchaint
 fi
 sudo ln -sf /etc/nginx/sites-available/blockchaint /etc/nginx/sites-enabled/

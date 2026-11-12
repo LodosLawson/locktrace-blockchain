@@ -43,6 +43,14 @@ impl NativeCompactBlock {
             return Err("Compact block timestamp must be a finite, positive number".to_string());
         }
 
+        // AUD12-06: Strict PoW difficulty boundary checks (1..=64)
+        if self.header.difficulty < 1 || self.header.difficulty > 64 {
+            return Err(format!(
+                "Compact block difficulty ({}) must be in range 1..64",
+                self.header.difficulty
+            ));
+        }
+
         // 2. Maximum transaction and list bounds
         if self.total_transactions > MAX_BLOCK_TRANSACTIONS {
             return Err(format!(
@@ -61,6 +69,32 @@ impl NativeCompactBlock {
                 "Short IDs count ({}) exceeds maximum limit",
                 self.short_ids.len()
             ));
+        }
+
+        // AUD12-06: Consistency invariant: sum of prefilled and short_ids must match total_transactions
+        let total_items = self.prefilled.len() + self.short_ids.len();
+        if total_items != self.total_transactions as usize {
+            return Err(format!(
+                "Sum of prefilled ({}) and short_ids ({}) must match total_transactions ({})",
+                self.prefilled.len(), self.short_ids.len(), self.total_transactions
+            ));
+        }
+
+        // AUD12-06: Index bounds and uniqueness validation for prefilled transactions
+        let mut seen_indices = std::collections::HashSet::with_capacity(self.prefilled.len());
+        for p in &self.prefilled {
+            if p.index >= self.total_transactions {
+                return Err(format!(
+                    "Prefilled transaction index ({}) out of range for total_transactions ({})",
+                    p.index, self.total_transactions
+                ));
+            }
+            if !seen_indices.insert(p.index) {
+                return Err(format!(
+                    "Duplicate prefilled transaction index ({}) in compact block",
+                    p.index
+                ));
+            }
         }
 
         // 3. String field bounding
@@ -159,6 +193,48 @@ mod tests {
             short_ids: vec![],
             total_transactions: 5001,
         };
+        assert!(block.validate().is_err());
+    }
+
+    #[test]
+    fn test_compact_block_aud12_06_invariants() {
+        // 1. Difficulty out of 1..64 range rejected
+        let mut block = NativeCompactBlock {
+            compact_version: 1,
+            header: dummy_header(1700000000.0),
+            prefilled: vec![],
+            short_ids: vec!["abc".to_string()],
+            total_transactions: 1,
+        };
+        block.header.difficulty = 0;
+        assert!(block.validate().is_err());
+        block.header.difficulty = 65;
+        assert!(block.validate().is_err());
+        block.header.difficulty = 4;
+        assert!(block.validate().is_ok());
+
+        // 2. Sum mismatch: total_transactions = 2 but only 1 short_id
+        block.total_transactions = 2;
+        assert!(block.validate().is_err());
+        block.total_transactions = 1;
+        assert!(block.validate().is_ok());
+
+        // 3. Prefilled index out of bounds
+        block.total_transactions = 2;
+        block.prefilled = vec![CompactPrefilledTx {
+            index: 2, // Must be < 2 (0 or 1)
+            raw_json: "{}".to_string(),
+        }];
+        block.short_ids = vec!["abc".to_string()];
+        assert!(block.validate().is_err());
+
+        // 4. Duplicate prefilled index
+        block.total_transactions = 2;
+        block.prefilled = vec![
+            CompactPrefilledTx { index: 0, raw_json: "{}".to_string() },
+            CompactPrefilledTx { index: 0, raw_json: "{}".to_string() },
+        ];
+        block.short_ids = vec![];
         assert!(block.validate().is_err());
     }
 

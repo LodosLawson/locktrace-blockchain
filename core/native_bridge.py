@@ -12,6 +12,7 @@ import re
 import json
 import secrets
 import hashlib
+import threading
 from typing import Tuple, List, Optional
 
 _HAS_NATIVE_RUST = False
@@ -216,7 +217,22 @@ def fast_solve_pow(
         except Exception:
             pass
 
-    from core.gpu_miner import LockTraceMinerEngine
-    miner = LockTraceMinerEngine(preferred_engine="auto")
+    # AUD12-07: Use singleton shared miner engine to eliminate repeated OpenCL ctypes initialization latency
+    miner = get_shared_miner_engine()
     return miner.solve_pow(candidate, target_diff, max_n)
+
+
+_SHARED_MINER = None
+_SHARED_MINER_LOCK = threading.Lock()
+
+
+def get_shared_miner_engine():
+    """Returns singleton instance of LockTraceMinerEngine, eliminating driver re-init overhead."""
+    global _SHARED_MINER
+    if _SHARED_MINER is None:
+        with _SHARED_MINER_LOCK:
+            if _SHARED_MINER is None:
+                from core.gpu_miner import LockTraceMinerEngine
+                _SHARED_MINER = LockTraceMinerEngine(preferred_engine="auto")
+    return _SHARED_MINER
 

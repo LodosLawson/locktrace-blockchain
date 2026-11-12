@@ -41,15 +41,17 @@ fn verify_spv_proof(
 }
 
 #[pyfunction]
+#[pyo3(signature = (prefix, suffix, target_difficulty, max_nonces, start_nonce=0))]
 fn solve_pow(
     py: Python<'_>,
     prefix: &str,
     suffix: &str,
     target_difficulty: u32,
     max_nonces: u64,
+    start_nonce: u64,
 ) -> PyResult<(bool, u64, String, f64)> {
     let res = py.detach(|| {
-        pow::solve_pow(prefix, suffix, target_difficulty, max_nonces)
+        pow::solve_pow(prefix, suffix, target_difficulty, max_nonces, start_nonce)
     });
     Ok(res)
 }
@@ -86,6 +88,6 @@ fn locktrace_rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(validate_compact_block_json, m)?)?;
     m.add_function(wrap_pyfunction!(serialize_compact_block_json, m)?)?;
     m.add_function(wrap_pyfunction!(is_native_rust_active, m)?)?;
-    m.add("__version__", "2.8.5")?;
+    m.add("__version__", "2.8.6")?;
     Ok(())
 }

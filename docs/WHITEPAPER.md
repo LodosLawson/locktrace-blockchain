@@ -1,7 +1,7 @@
-# LockTrace (BCT) Technical Whitepaper — v2.8.5
+# LockTrace (BCT) Technical Whitepaper — v2.8.6
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.8.5 — November 2026*  
+*Version 2.8.6 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
@@ -19,7 +19,7 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.8.5**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+In **Version 2.8.6**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
 1. **Nginx /health Proxy Rate Limiting & Real IP Forwarding (REV11-01):** Enforces `limit_req zone=api burst=20 nodelay;` and forwards `X-Real-IP`, `X-Forwarded-For`, and `X-Forwarded-Proto` headers, neutralizing IP spoofing and rate-limit bypass.
 2. **WrappedBCT Processed L1 Mapping Parity (REV11-02):** Dual-writes and queries `processedL1Transactions` alongside `processedL1TxHashes` during `mintFromBridge`, ensuring public getter calls accurately report processed bridge transfers.
 3. **Thirdweb CLI Secret Masking & Input Validation (REV11-03):** Masks sensitive credentials before writing to log streams and applies strict format, integer, and boundary guards on ERC-1155 claiming.
