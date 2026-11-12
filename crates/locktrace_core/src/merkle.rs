@@ -55,6 +55,13 @@ pub fn verify_spv_proof(
         return false;
     }
 
+    // An empty block has a sentinel root of all zeros; empty blocks contain no transactions.
+    // Also, all-zeros is not a valid transaction hash. Reject immediately to prevent SPV spoofing.
+    let empty_sentinel = "0".repeat(64);
+    if root_clean == empty_sentinel || target_clean == empty_sentinel {
+        return false;
+    }
+
     if proof_steps.is_empty() {
         // In single-transaction blocks, leaf == root (proof path is empty)
         return target_clean == root_clean;
@@ -78,5 +85,35 @@ pub fn verify_spv_proof(
     }
 
     current.eq_ignore_ascii_case(&root_clean)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_empty_block_merkle_root() {
+        let empty_root = compute_merkle_root(&[]).expect("Empty tx list should produce zero root");
+        assert_eq!(empty_root, "0".repeat(64));
+    }
+
+    #[test]
+    fn test_spv_proof_rejects_empty_block_spoofing() {
+        let empty_root = "0".repeat(64);
+        let fake_tx = "0".repeat(64);
+        // An attacker trying to claim an empty block includes a zero transaction with empty proof
+        assert!(!verify_spv_proof(&fake_tx, &empty_root, &[]));
+
+        let real_tx = "a".repeat(64);
+        assert!(!verify_spv_proof(&real_tx, &empty_root, &[]));
+    }
+
+    #[test]
+    fn test_spv_proof_single_tx_block() {
+        let tx = "a".repeat(64);
+        let root = compute_merkle_root(&[tx.clone()]).expect("Failed to compute root");
+        assert_eq!(root, tx);
+        assert!(verify_spv_proof(&tx, &root, &[]));
+    }
 }
 

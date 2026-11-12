@@ -42,7 +42,7 @@ def main():
     print("[*] Uploading bundle in single SCP stream...")
     scp_cmd = [
         "scp", "-i", SSH_KEY,
-        "-o", "StrictHostKeyChecking=no",
+        "-o", "StrictHostKeyChecking=accept-new",
         "-o", "BatchMode=yes",
         "-o", "ConnectTimeout=15",
         tar_path, f"{VPS_HOST}:/tmp/pwa_bundle.tar.gz"
@@ -114,7 +114,7 @@ systemctl is-active blockchaint-relayer.service
 """
     ssh_cmd = [
         "ssh", "-i", SSH_KEY,
-        "-o", "StrictHostKeyChecking=no",
+        "-o", "StrictHostKeyChecking=accept-new",
         "-o", "BatchMode=yes",
         "-o", "ConnectTimeout=15",
         VPS_HOST, remote_script
@@ -126,14 +126,14 @@ systemctl is-active blockchaint-relayer.service
     # Download updated integrity.json to local frontend & templates
     run_cmd([
         "scp", "-i", SSH_KEY,
-        "-o", "StrictHostKeyChecking=no",
+        "-o", "StrictHostKeyChecking=accept-new",
         "-o", "BatchMode=yes",
         "-o", "ConnectTimeout=15",
         f"{VPS_HOST}:/opt/blockchaint/frontend/integrity.json", "frontend/integrity.json"
     ], timeout=30)
     run_cmd([
         "scp", "-i", SSH_KEY,
-        "-o", "StrictHostKeyChecking=no",
+        "-o", "StrictHostKeyChecking=accept-new",
         "-o", "BatchMode=yes",
         "-o", "ConnectTimeout=15",
         f"{VPS_HOST}:/opt/blockchaint/frontend/integrity.json", "templates/integrity.json"

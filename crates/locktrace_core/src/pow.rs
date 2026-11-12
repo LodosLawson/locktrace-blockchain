@@ -11,6 +11,12 @@ pub fn solve_pow(
     target_difficulty: u32,
     max_nonces: u64,
 ) -> (bool, u64, String, f64) {
+    // SHA-256 hex string is exactly 64 characters. Difficulty > 64 is mathematically
+    // impossible and difficulty 0 is invalid. Enforce strict boundary checks against DoS.
+    if target_difficulty == 0 || target_difficulty > 64 {
+        return (false, 0, String::new(), 0.0);
+    }
+
     let t_start = Instant::now();
     let target_prefix = "0".repeat(target_difficulty as usize);
     let found = Arc::new(AtomicBool::new(false));
@@ -64,6 +70,34 @@ pub fn solve_pow(
     match result {
         Some((winning_nonce, winning_hash)) => (true, winning_nonce, winning_hash, hashrate),
         None => (false, 0, String::new(), hashrate),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_pow_boundary_checks() {
+        // Difficulty > 64 must be rejected immediately without scanning
+        let (ok, _, _, _) = solve_pow("header", "footer", 65, 1000);
+        assert!(!ok);
+
+        let (ok, _, _, _) = solve_pow("header", "footer", 1000, 1000);
+        assert!(!ok);
+
+        // Difficulty 0 must be rejected
+        let (ok, _, _, _) = solve_pow("header", "footer", 0, 1000);
+        assert!(!ok);
+    }
+
+    #[test]
+    fn test_pow_valid_solve() {
+        let (ok, nonce, hash, _) = solve_pow("block_", "_end", 1, 10_000);
+        if ok {
+            assert!(hash.starts_with('0'));
+            assert!(nonce < 10_000);
+        }
     }
 }
 

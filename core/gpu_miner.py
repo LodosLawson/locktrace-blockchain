@@ -139,7 +139,12 @@ class LockTraceMinerEngine:
         Executes parallel hashing via Rust Rayon or Python multi-worker pool (LT-GPU-01).
         Returns: (found, winning_nonce, winning_hash, measured_hashrate)
         """
-        target_diff = max(1, int(target_difficulty))
+        try:
+            target_diff = int(target_difficulty)
+            if target_diff < 1 or target_diff > 64:
+                return False, 0, "", 0.0
+        except Exception:
+            return False, 0, "", 0.0
         max_n = max(1, int(max_nonces))
 
         dummy = dict(block_candidate)

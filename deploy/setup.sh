@@ -41,15 +41,18 @@ mkdir -p /opt/blockchaint/data
 if [ ! -f /opt/blockchaint/.env ]; then
     SECRET_HEX=$(python3 -c "import secrets; print(secrets.token_hex(32))")
     ADMIN_HEX=$(python3 -c "import secrets; print(secrets.token_hex(32))")
-    cat <<EOF > /opt/blockchaint/.env
+    (
+        umask 077
+        cat <<EOF > /opt/blockchaint/.env
 BCT_SECRET_KEY=${SECRET_HEX}
 BCT_ADMIN_KEY=${ADMIN_HEX}
 BCT_DEBUG=false
 BCT_LOG_LEVEL=INFO
 EOF
+    )
     chmod 600 /opt/blockchaint/.env
     chown ubuntu:ubuntu /opt/blockchaint/.env
-    echo "  -> Yeni 256-bit kriptografik .env oluşturuldu ve kilitlendi (chmod 600)."
+    echo "  -> Yeni 256-bit kriptografik .env oluşturuldu ve kilitlendi (chmod 600, umask 077)."
 fi
 
 # ── 6. Systemd servisi ──────────────────────────
