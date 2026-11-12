@@ -8,6 +8,7 @@ Engineered with OpenSSL/cryptography (immune to Minerva timing side-channels) wi
 import re
 import hashlib
 import binascii
+import unicodedata
 import warnings
 from typing import Optional
 
@@ -18,6 +19,7 @@ from core.mnemonic import generate_mnemonic, mnemonic_to_private_key, validate_m
 
 SECP256K1_N = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
 HALF_SECP256K1_N = SECP256K1_N // 2
+SECP256K1_ORDER = SECP256K1_N  # AUD18-05: Consolidated SSOT alias for SECP256k1 group order
 
 try:
     from cryptography.hazmat.primitives.asymmetric import ec
@@ -32,15 +34,14 @@ except ImportError:
     from ecdsa.util import sigencode_string, sigdecode_string
 
 
-SECP256K1_ORDER = 0xFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFEBAAEDCE6AF48A03BBFD25E8CD0364141
-
-
 class Wallet:
     """ECDSA + BIP-39 Seed based blockchain wallet (Constant-time OpenSSL SECP256k1)."""
 
     def __init__(self, mnemonic: Optional[str] = None, private_key_hex: Optional[str] = None, passphrase: str = ""):
         if mnemonic:
-            self.mnemonic = " ".join(mnemonic.strip().lower().split())
+            # AUD18-05: Strict NFKD unicode normalization matching BIP-39 specification
+            norm_mnemonic = unicodedata.normalize("NFKD", mnemonic or "")
+            self.mnemonic = " ".join(norm_mnemonic.strip().lower().split())
             pk_hex = mnemonic_to_private_key(self.mnemonic, passphrase=passphrase)
         elif private_key_hex:
             self.mnemonic = ""

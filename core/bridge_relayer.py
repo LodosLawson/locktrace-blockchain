@@ -16,7 +16,6 @@ from decimal import Decimal
 from typing import Dict, Any, Optional
 try:
     from web3 import Web3
-    from web3.middleware import ExtraDataToPOAMiddleware
     HAS_WEB3 = True
 except ImportError:
     Web3 = None
@@ -272,6 +271,11 @@ class BridgeRelayer:
 
     def _mint_on_base(self, to_address: str, amount_wei: int, l1_tx_hash: str) -> Optional[str]:
         try:
+            # AUD18-04: Nonce & gas protection against non-positive amount
+            if amount_wei <= 0:
+                logger.error(f"Invalid amount_wei ({amount_wei}) for mint on Base. Aborting broadcast.")
+                return None
+
             dest = Web3.to_checksum_address(to_address)
             clean_l1_hash = str(l1_tx_hash or "").strip().lower().removeprefix("0x")
 
@@ -313,7 +317,9 @@ class BridgeRelayer:
 
             signed = self.account.sign_transaction(tx)
             raw_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
-            tx_hash_hex = raw_hash.hex()
+            raw_hex = raw_hash.hex()
+            # AUD18-04: Canonical 0x prefix enforcement on EVM transaction hash
+            tx_hash_hex = raw_hex if raw_hex.startswith("0x") else f"0x{raw_hex}"
             logger.info(f"Submitted Base Tx: https://basescan.org/tx/{tx_hash_hex}")
 
             # Wait for receipt
@@ -326,7 +332,6 @@ class BridgeRelayer:
 
         except Exception as e:
             logger.error(f"Error executing mint on Base: {e}")
-            return None
             return None
 
     def _mark_completed(self, bridge_id: str, tx_hash_evm: str):
@@ -397,6 +402,8 @@ class BridgeRelayer:
                 continue
 
             try:
+                # AUD18-04: Configurable API URL for bridge claim calls
+                api_base = os.environ.get("LOCKTRACE_API_URL", "http://127.0.0.1:5000").rstrip("/")
                 req_data = json.dumps({
                     "evm_tx_hash": evm_hash,
                     "bct_address": bct_dest,
@@ -404,7 +411,7 @@ class BridgeRelayer:
                     "evm_sender": evm_sender
                 }).encode("utf-8")
                 req = urllib.request.Request(
-                    "http://127.0.0.1:5000/api/v1/bridge/claim_burn",
+                    f"{api_base}/api/v1/bridge/claim_burn",
                     data=req_data,
                     headers={"Content-Type": "application/json"}
                 )
@@ -421,6 +428,9 @@ class BridgeRelayer:
                             if "daha önce" in msg or "already" in msg:
                                 self._mark_completed(bridge_id, evm_hash)
                                 logger.info(f"Bridge {bridge_id} was already processed on L1. Marked COMPLETED.")
+                            elif any(k in msg.lower() for k in ("confirmation", "confirmations", "pending", "not yet", "reorg security", "network_error", "timeout", "bekleniyor")):
+                                # AUD18-02: Do NOT mark FAILED if awaiting EVM confirmation depth
+                                logger.info(f"Bridge {bridge_id}: Awaiting confirmations ({msg[:120]}). Deferring.")
                             else:
                                 self._mark_failed(bridge_id, msg)
                                 logger.warning(f"Bridge {bridge_id} unlock rejected: {msg}")
@@ -440,8 +450,13 @@ class BridgeRelayer:
                     if "daha önce" in msg or "already" in msg:
                         self._mark_completed(bridge_id, evm_hash)
                     elif http_err.code in (400, 422):
-                        # AUD17B-04: Mark unrecoverable HTTP 400/422 requests as FAILED to prevent queue blockage
-                        self._mark_failed(bridge_id, f"HTTP_{http_err.code}: {msg[:200]}")
+                        # AUD18-02: Do NOT mark FAILED if transaction is waiting for EVM confirmations or temporary network/reorg state
+                        is_pending_conf = any(k in msg.lower() for k in ("confirmation", "confirmations", "pending", "not yet", "reorg security", "network_error", "timeout", "bekleniyor"))
+                        if is_pending_conf:
+                            logger.info(f"Bridge {bridge_id}: EVM tx {evm_hash[:16]} awaiting required confirmations ({msg[:120]}). Deferring.")
+                        else:
+                            # AUD17B-04: Mark genuinely unrecoverable HTTP 400/422 requests as FAILED to prevent queue blockage
+                            self._mark_failed(bridge_id, f"HTTP_{http_err.code}: {msg[:200]}")
                     time.sleep(1.0)
                 except Exception as e:
                     logger.error(f"Failed to process EVM burn {bridge_id}: {e}")

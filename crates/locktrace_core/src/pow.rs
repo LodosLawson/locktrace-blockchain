@@ -73,15 +73,16 @@ pub fn solve_pow(
             Some(s) => s,
             None => return None,
         };
-        let max_bound = start_nonce.saturating_add(effective_max);
-        let chunk_limit = chunk_start.saturating_add(chunk_size).min(max_bound);
-        if chunk_start >= chunk_limit {
+        // AUD18-03: Inclusive range prevents missing u64::MAX and off-by-one boundary bugs
+        let chunk_len = (effective_max.saturating_sub(chunk_offset)).min(chunk_size);
+        if chunk_len == 0 {
             return None;
         }
+        let chunk_end_inclusive = chunk_start + (chunk_len - 1);
         let mut local_count = 0u64;
         let mut nonce_buf = String::with_capacity(32);
 
-        for nonce in chunk_start..chunk_limit {
+        for nonce in chunk_start..=chunk_end_inclusive {
             if found_clone.load(Ordering::Relaxed) {
                 hashes_clone.fetch_add(local_count, Ordering::Relaxed);
                 return None;

@@ -244,7 +244,7 @@ checksum = "65cd87c9a6d60536580b316ad985726104730a5151c99845f2490428ef91240a"
 
 [[package]]
 name = "locktrace_rs"
-version = "2.9.1"
+version = "2.9.2"
 dependencies = [
  "hex",
  "k256",
