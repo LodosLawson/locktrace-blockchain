@@ -48,7 +48,7 @@ def mnemonic_to_private_key(mnemonic: str, passphrase: str = "") -> str:
     if not mnemonic or not isinstance(mnemonic, str):
         raise ValueError("Mnemonic must be a non-empty string.")
 
-    cleaned_mnemonic = " ".join(mnemonic.strip().split())
+    cleaned_mnemonic = " ".join(mnemonic.strip().lower().split())
     if not validate_mnemonic(cleaned_mnemonic):
         raise ValueError("Invalid BIP-39 mnemonic phrase (checksum, word count, or invalid word).")
 

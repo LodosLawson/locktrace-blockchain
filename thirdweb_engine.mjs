@@ -244,16 +244,19 @@ async function runCLI() {
       const payload = JSON.parse(args[1] || "{}");
       const res = await claimERC1155(payload);
       console.log(JSON.stringify({ success: true, data: res }));
+      process.exit(0);
     } else if (command === "status") {
       const txId = args[1];
       if (!txId || !isValidTransactionId(txId)) throw new Error("Valid transaction ID required");
       const res = await getTransactionStatus(txId);
       console.log(JSON.stringify({ success: true, data: res }));
+      process.exit(0);
     } else if (command === "wait-hash") {
       const txId = args[1];
       if (!txId || !isValidTransactionId(txId)) throw new Error("Valid transaction ID required");
       const hash = await waitForTransactionHash(txId);
       console.log(JSON.stringify({ success: true, data: { transactionHash: hash } }));
+      process.exit(0);
     } else if (command === "info") {
       console.log(
         JSON.stringify({
@@ -267,6 +270,7 @@ async function runCLI() {
           },
         })
       );
+      process.exit(0);
     } else {
       console.log(
         JSON.stringify({
@@ -274,6 +278,7 @@ async function runCLI() {
           error: `Unknown command: ${command}. Supported: claim1155, status, wait-hash, info`,
         })
       );
+      process.exit(1);
     }
   } catch (err) {
     const rawMsg = err.message || String(err);

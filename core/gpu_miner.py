@@ -143,12 +143,14 @@ class LockTraceMinerEngine:
         block_candidate: dict,
         target_difficulty: int,
         max_nonces: int = 2_000_000,
-        stop_event: Optional[threading.Event] = None
+        stop_event: Optional[threading.Event] = None,
+        start_nonce: int = 0
     ) -> Tuple[bool, int, str, float]:
         """
         Solves PoW for candidate block.
         Extracts nonce using cryptographically unique runtime sentinel (LT-POW-01 immune).
         Executes parallel hashing via Rust Rayon or Python multi-worker pool (LT-GPU-01).
+        Supports start_nonce to eliminate duplicate search spaces across rounds (AUD14-03).
         Returns: (found, winning_nonce, winning_hash, measured_hashrate)
         """
         try:
@@ -158,6 +160,7 @@ class LockTraceMinerEngine:
         except Exception:
             return False, 0, "", 0.0
         max_n = max(1, int(max_nonces))
+        s_nonce = max(0, int(start_nonce))
 
         dummy = dict(block_candidate)
         sentinel = f"__BCT_NONCE_{secrets.token_hex(16)}__"
@@ -176,16 +179,17 @@ class LockTraceMinerEngine:
         try:
             from core.native_bridge import is_rust_accelerated, _RUST_CORE
             if is_rust_accelerated() and _RUST_CORE is not None:
-                # AUD12-01: Support cancellation stop_event by scanning in bounded batches
+                # AUD12-01 & AUD14-03: Support start_nonce and cancellation stop_event by scanning in bounded batches
                 slice_size = 200_000
-                total_scanned = 0
+                total_scanned = s_nonce
+                max_limit = s_nonce + max_n
                 last_hashrate = 0.0
 
-                while total_scanned < max_n:
+                while total_scanned < max_limit:
                     if stop_event and stop_event.is_set():
                         return False, 0, "", 0.0
 
-                    current_batch = min(slice_size, max_n - total_scanned)
+                    current_batch = min(slice_size, max_limit - total_scanned)
                     ok, nonce, h, hr = _RUST_CORE.solve_pow(
                         prefix, suffix, target_diff, current_batch, total_scanned
                     )
@@ -209,19 +213,24 @@ class LockTraceMinerEngine:
         cpu_workers = max(1, os.cpu_count() or 4)
         chunk_size = 50_000
         num_chunks = (max_n + chunk_size - 1) // chunk_size
+        prefix_bytes = prefix.encode("utf-8")
+        suffix_bytes = suffix.encode("utf-8")
+        base_hasher = hashlib.sha256(prefix_bytes)
 
         def _worker_chunk(chunk_idx: int):
             nonlocal total_hashes
             if found_flag.is_set() or (stop_event and stop_event.is_set()):
                 return
-            base = chunk_idx * chunk_size
-            limit = min(base + chunk_size, max_n)
+            base = s_nonce + chunk_idx * chunk_size
+            limit = min(base + chunk_size, s_nonce + max_n)
             local_count = 0
             for n in range(base, limit):
                 if found_flag.is_set() or (stop_event and stop_event.is_set()):
                     break
-                candidate_str = prefix + str(n) + suffix
-                h = hashlib.sha256(candidate_str.encode("utf-8")).hexdigest()
+                # AUD14-03: Clone pre-computed SHA-256 prefix state to eliminate redundant hashing
+                h_obj = base_hasher.copy()
+                h_obj.update(str(n).encode("ascii") + suffix_bytes)
+                h = h_obj.hexdigest()
                 local_count += 1
                 if h.startswith(target_prefix):
                     with lock:

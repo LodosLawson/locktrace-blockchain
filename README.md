@@ -431,7 +431,16 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Compact Block Invariant & Difficulty Validation (AUD12-06):** Enforced `difficulty` (1..64) range, verified `prefilled.len() + short_ids.len() == total_transactions`, and enforced out-of-bounds and duplicate index rejection on prefilled transactions.
    - **Shared GPU/CPU Miner Engine Singleton (AUD12-07):** Replaced per-call `LockTraceMinerEngine` instantiation with a thread-safe singleton, eliminating repeated OpenCL Ctypes driver initialization overhead.
    - **Nginx HTTP Fallback CSP & Certbot Hardening (AUD12-08):** Configured full modern Web3 CSP headers, rate-limited API proxies, and removed obsolete `X-XSS-Protection` across port 80 HTTP configurations.
-16. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+16. **Production Engine, Runtime Decompression & Web3 Client Hardening (v2.8.7):**
+   - **Thirdweb CLI Clean Process Termination (AUD14-01):** Enforced explicit `process.exit(0)` across all CLI execution branches to immediately release active RPC/WebSocket listeners and prevent 45-second subprocess hangs.
+   - **SECP256k1 Curve Point Single-Pass Decompression (AUD14-02):** Refactored `crates/locktrace_core/src/crypto.rs` to parse `VerifyingKey` once per signature verification, halving cryptographic curve decompression overhead.
+   - **PoW Nonce Offset & SHA-256 Midstate Stream Cloning (AUD14-03):** Introduced `start_nonce` support across mining engines to prevent redundant 0..2M nonce scans, and implemented Python-side `hashlib.sha256.copy()` prefix mid-state reuse.
+   - **Frontend DOM XSS Prevention & Escaped Market Feeds (AUD14-04):** Replaced unescaped attribute interpolation with `sanitizeJsAttr` for post identifiers (`pid`) and strictly sanitized market price change badges (`m.change`) via `escapeHtml`.
+   - **Production Rust Compilation & Systemd Resource Limits (AUD14-05):** Automated Rust native acceleration building via `maturin` in `setup.sh` and configured `LimitNOFILE=65535` / `LimitNPROC=65535` in `blockchain.service`.
+   - **Nginx Wallet Endpoint Request Body & Timeout Bounds (AUD14-06):** Enforced `client_max_body_size 1m;` alongside strict connect/read/send proxy timeouts on `/api/v1/wallet/create`.
+   - **SSH Log Inspector Timeout & Secret Masking (AUD14-07):** Hardened `scripts/test_base_logs.py` with 30s timeout guards and regex-based credential masking.
+   - **Mnemonic Case Normalization (AUD13-01):** Applied BIP-39 case-insensitive lowercasing in `mnemonic_to_private_key` prior to NFKD normalization.
+17. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

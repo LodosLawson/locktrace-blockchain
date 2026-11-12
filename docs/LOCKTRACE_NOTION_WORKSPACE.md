@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.8.6` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.8.7` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -438,4 +438,34 @@ LockTrace v2.8.6 sürümü ile çözülen 8 kritik optimizasyon ve güvenlik bul
 
 8. **Nginx HTTP Fallback CSP & Dağıtım Sertleştirmesi (AUD12-08):**
    - `deploy/nginx.conf` dosyasına tam özellikli Web3 Content-Security-Policy başlıkları, API proxy ve rate limiting eklendi; eski `X-XSS-Protection` başlığı kaldırıldı.
+
+---
+
+## 🛡️ 16. LockTrace v2.8.7: Üretim Motoru, Çalışma Zamanı Ayrıştırma & Web3 İstemci Güvenliği (AUD14)
+
+LockTrace v2.8.7 sürümü ile çözülen 7 yeni güvenlik açığı, mantık hatası ve optimizasyon:
+
+1. **Thirdweb CLI Temiz Süreç Sonlandırması (AUD14-01):**
+   - `thirdweb_engine.mjs` içinde tüm başarılı komut dönüşlerinde açık kalan RPC/WebSocket soketlerinin Node.js sürecini 45 saniye boyunca askıda bırakmasını önlemek amacıyla `process.exit(0)` çağrısı eklendi.
+
+2. **SECP256k1 Eğri Noktası Tekil Ayrıştırma Optimizasyonu (AUD14-02):**
+   - `crates/locktrace_core/src/crypto.rs` modülünde `parse_verifying_key` fonksiyonu kurularak her imza doğrulamasında `VerifyingKey::from_sec1_bytes` çağrısının iki kez yapılması engellendi, kriptografik CPU yükü yarıya indirildi.
+
+3. **PoW Nonce Ofseti & SHA-256 Durum Klonlama (AUD14-03):**
+   - `core/gpu_miner.py` ve `core/native_bridge.py` içinde `start_nonce` parametresi desteği getirilerek aynı saniyede yinelenen 0..2M taramaları ortadan kaldırıldı; Python fallback'te blok başlığı öneki `hashlib.sha256.copy()` ile klonlanarak her nonce için sıfırdan özetleme engellendi.
+
+4. **Frontend DOM XSS Savunması & Piyasa Verisi Kaçışı (AUD14-04):**
+   - `frontend/index.html` ve `scripts/replace_embed.py` içinde `onclick` özniteliklerine aktarılan gönderi kimlikleri (`pid`) `sanitizeJsAttr` ile arındırıldı; canlı piyasa kartlarında `m.change` verisi `escapeHtml` ile sarmalanarak DOM XSS açığı kapatıldı.
+
+5. **Otomatik Rust Derlemesi & Systemd Dosya Sınırları (AUD14-05):**
+   - `deploy/setup.sh` içine `cargo rustc` ve `maturin develop --release` adımları eklenerek VPS sunucusunun saf Python'a düşmesi önlendi; `deploy/blockchain.service` içine `LimitNOFILE=65535` ve `LimitNPROC=65535` direktifleri yerleştirildi.
+
+6. **Nginx Cüzdan Uç Noktası Gövde Sınırı & Zaman Aşımı (AUD14-06):**
+   - `deploy/nginx.conf` ve `deploy/nginx_ssl.conf` içindeki `/api/v1/wallet/create` bloğuna `client_max_body_size 1m;` ve proxy zaman aşımı sınırları (`proxy_connect_timeout 10s; proxy_read_timeout 30s; proxy_send_timeout 30s;`) eklendi.
+
+7. **SSH Günlük Denetleyicisi Zaman Aşımı & Gizli Veri Maskelemesi (AUD14-07):**
+   - `scripts/test_base_logs.py` içine 30 saniye zaman aşımı denetimi (`TimeoutExpired`), özel anahtar ve gizli belirteç maskeleme fonksiyonu (`mask_output`) entegre edildi.
+
+8. **Mnemonic Küçük Harf Normalizasyonu (AUD13-01):**
+   - `core/mnemonic.py` içindeki `mnemonic_to_private_key` fonksiyonunda BIP-39 standartlarına uygun olarak NFKD normalizasyonu öncesi `cleaned_mnemonic = " ".join(mnemonic.strip().lower().split())` uygulanarak büyük/küçük harf duyarsızlığı güvenceye alındı.
 

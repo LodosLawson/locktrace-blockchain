@@ -3,9 +3,10 @@ use k256::ecdsa::{Signature, VerifyingKey};
 use k256::elliptic_curve::scalar::IsHigh;
 use sha2::{Digest, Sha256};
 
-/// Derives canonical uncompressed SECP256k1 public key bytes (64 bytes = X || Y).
-/// Enforces that the point is a valid point on the SECP256k1 curve (LT-CRY-01).
-pub fn normalize_pubkey_bytes(pub_hex: &str) -> Option<[u8; 64]> {
+/// Parses and cryptographically validates a SECP256k1 public key from hex.
+/// Accepts 64-byte raw uncompressed (X || Y), 65-byte uncompressed (0x04 || X || Y),
+/// or 33-byte compressed (0x02/0x03 || X) formats.
+pub fn parse_verifying_key(pub_hex: &str) -> Option<VerifyingKey> {
     let clean = pub_hex.trim().trim_start_matches("0x").trim_start_matches("0X");
     let bytes = hex::decode(clean).ok()?;
     let sec1_bytes = if bytes.len() == 64 {
@@ -22,7 +23,13 @@ pub fn normalize_pubkey_bytes(pub_hex: &str) -> Option<[u8; 64]> {
     };
 
     // Cryptographic curve validation: Verifies point lies on SECP256k1 curve
-    let vk = VerifyingKey::from_sec1_bytes(&sec1_bytes).ok()?;
+    VerifyingKey::from_sec1_bytes(&sec1_bytes).ok()
+}
+
+/// Derives canonical uncompressed SECP256k1 public key bytes (64 bytes = X || Y).
+/// Enforces that the point is a valid point on the SECP256k1 curve (LT-CRY-01).
+pub fn normalize_pubkey_bytes(pub_hex: &str) -> Option<[u8; 64]> {
+    let vk = parse_verifying_key(pub_hex)?;
     let encoded = vk.to_encoded_point(false);
     let raw = encoded.as_bytes();
     if raw.len() == 65 && raw[0] == 0x04 {
@@ -45,20 +52,11 @@ pub fn public_key_to_address(pub_hex: &str) -> Option<String> {
 }
 
 /// Strictly verifies SECP256k1 ECDSA signature over SHA-256 prehash with Low-S enforcement.
+/// AUD14-02: Parses VerifyingKey exactly once, eliminating redundant curve decompression.
 pub fn verify_signature(pub_hex: &str, data: &str, sig_hex: &str) -> bool {
-    let pub_bytes = match normalize_pubkey_bytes(pub_hex) {
-        Some(b) => b,
+    let vk = match parse_verifying_key(pub_hex) {
+        Some(k) => k,
         None => return false,
-    };
-
-    // Build uncompressed SEC1 key (0x04 || X || Y)
-    let mut sec1 = [0u8; 65];
-    sec1[0] = 0x04;
-    sec1[1..].copy_from_slice(&pub_bytes);
-
-    let vk = match VerifyingKey::from_sec1_bytes(&sec1) {
-        Ok(k) => k,
-        Err(_) => return false,
     };
 
     let clean_sig = sig_hex.trim().trim_start_matches("0x").trim_start_matches("0X");
