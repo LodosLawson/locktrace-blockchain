@@ -1,0 +1,74 @@
+{
+  "id": "locktrace-web3-blockchain",
+  "name": "LockTrace Web3 Blockchain",
+  "short_name": "LockTrace",
+  "description": "Minimalist Web3 BCT Blockchain Wallet & Decentralized Platform",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone", "minimal-ui", "window-controls-overlay"],
+  "background_color": "#ffffff",
+  "theme_color": "#131315",
+  "orientation": "portrait-primary",
+  "categories": ["finance", "crypto", "utilities"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "My Wallet",
+      "url": "/#cuzdanim",
+      "description": "View portfolio and balance"
+    },
+    {
+      "name": "LockTrace Space",
+      "url": "/#space",
+      "description": "On-chain thoughts and social feed"
+    },
+    {
+      "name": "Send Crypto",
+      "url": "/#para-gonder",
+      "description": "Instant BCT transfers"
+    },
+    {
+      "name": "Network & Explorer",
+      "url": "/#ag-ve-explorer",
+      "description": "Live blockchain status and explorer"
+    }
+  ]
+}

@@ -102,7 +102,11 @@ self.addEventListener('notificationclick', (event) => {
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
       for (const client of windowClients) {
-        if (client.url.includes(self.location.origin) && 'focus' in client) {
+        let isSameOrigin = false;
+        try {
+          isSameOrigin = (new URL(client.url).origin === self.location.origin);
+        } catch (_e) {}
+        if (isSameOrigin && 'focus' in client) {
           if ('navigate' in client) {
             client.navigate(safeTargetUrl);
           }
