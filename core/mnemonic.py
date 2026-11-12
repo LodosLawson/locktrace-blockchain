@@ -48,12 +48,11 @@ def mnemonic_to_private_key(mnemonic: str, passphrase: str = "") -> str:
     if not mnemonic or not isinstance(mnemonic, str):
         raise ValueError("Mnemonic must be a non-empty string.")
 
-    cleaned_mnemonic = " ".join(mnemonic.strip().lower().split())
-    if not validate_mnemonic(cleaned_mnemonic):
+    # AUD15-05: BIP-39 standard UTF-8 NFKD normalization applied prior to validation and derivation
+    norm_mnemonic = unicodedata.normalize("NFKD", " ".join(mnemonic.strip().lower().split()))
+    if not validate_mnemonic(norm_mnemonic):
         raise ValueError("Invalid BIP-39 mnemonic phrase (checksum, word count, or invalid word).")
 
-    # AUD12-05: BIP-39 standard UTF-8 NFKD normalization for mnemonic and salt
-    norm_mnemonic = unicodedata.normalize("NFKD", cleaned_mnemonic)
     norm_passphrase = unicodedata.normalize("NFKD", passphrase or "")
     salt = unicodedata.normalize("NFKD", "mnemonic" + norm_passphrase).encode("utf-8")
 
@@ -62,8 +61,11 @@ def mnemonic_to_private_key(mnemonic: str, passphrase: str = "") -> str:
 
 
 def validate_mnemonic(mnemonic: str) -> bool:
-    """Validate BIP-39 phrase format (12, 15, 18, 21, 24 words), word existence, and checksum."""
-    words = mnemonic.strip().lower().split()
+    """Validate BIP-39 phrase format (12, 15, 18, 21, 24 words), word existence, and checksum with NFKD normalization."""
+    if not mnemonic or not isinstance(mnemonic, str):
+        return False
+    norm = unicodedata.normalize("NFKD", mnemonic.strip().lower())
+    words = norm.split()
     if len(words) not in (12, 15, 18, 21, 24):
         return False
     if not all(w in WORDS for w in words):
