@@ -104,6 +104,12 @@ def fast_verify_spv_proof(target_hash: str, merkle_root: str, proof_steps: List[
     if not HEX_64_PATTERN.match(t_clean) or not HEX_64_PATTERN.match(r_clean):
         return False
 
+    # Empty blocks have a root of 64 zeros and contain no transactions.
+    # An all-zero hash is also not a valid transaction hash.
+    empty_sentinel = "0" * 64
+    if r_clean == empty_sentinel or t_clean == empty_sentinel:
+        return False
+
     if not proof_steps:
         # In single-transaction blocks, leaf == root (proof path is empty)
         return t_clean == r_clean
@@ -178,7 +184,12 @@ def fast_solve_pow(
     Parallel PoW mining using Rust native multi-threaded engine or CPU/GPU fallback.
     Immune to magic nonce splitting DoS (LT-POW-01) and redundant chunk re-computation (BUG-01).
     """
-    target_diff = max(1, int(target_difficulty))
+    try:
+        target_diff = int(target_difficulty)
+        if target_diff < 1 or target_diff > 64:
+            return False, 0, "", 0.0
+    except Exception:
+        return False, 0, "", 0.0
     max_n = max(1, int(max_nonces))
     if is_rust_accelerated():
         try:

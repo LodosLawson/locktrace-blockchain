@@ -219,11 +219,9 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
 
         bytes32 canonicalHash = _canonicalizeTxHash(locktraceTxHash);
         require(!processedL1TxHashes[canonicalHash], "wBCT: L1 transaction already processed");
-        require(!processedL1Transactions[locktraceTxHash], "wBCT: L1 transaction already processed");
         require(_totalSupply + amount <= MAX_SUPPLY, "wBCT: Max supply exceeded");
 
         processedL1TxHashes[canonicalHash] = true;
-        processedL1Transactions[locktraceTxHash] = true;
         _mint(to, amount);
 
         emit MintedFromBridge(to, amount, locktraceTxHash);
@@ -231,6 +229,23 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
 
     function _isValidHexChar(bytes1 b) private pure returns (bool) {
         return (b >= '0' && b <= '9') || (b >= 'a' && b <= 'f') || (b >= 'A' && b <= 'F');
+    }
+
+    function _toLowerL1Address(string calldata addr) internal pure returns (string memory) {
+        bytes calldata b = bytes(addr);
+        bytes memory lower = new bytes(43);
+        lower[0] = 'B';
+        lower[1] = 'C';
+        lower[2] = 'T';
+        for (uint256 i = 3; i < 43; i++) {
+            bytes1 c = b[i];
+            if (c >= 'A' && c <= 'F') {
+                lower[i] = bytes1(uint8(c) + 32);
+            } else {
+                lower[i] = c;
+            }
+        }
+        return string(lower);
     }
 
     /**
@@ -263,8 +278,9 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable, Pausable {
         }
         require(hasNonZero, "wBCT: Cannot bridge to burn zero address");
 
+        string memory canonicalRecipient = _toLowerL1Address(locktraceRecipient);
         _burn(_msgSender(), amount);
-        emit BurnedToBridge(_msgSender(), amount, locktraceRecipient);
+        emit BurnedToBridge(_msgSender(), amount, canonicalRecipient);
     }
 
     // ── Admin & Governance ───────────────────────────────────────────────────
