@@ -33,8 +33,9 @@ def _mask_text(text: str, secrets: Optional[list] = None) -> str:
             if s and len(str(s)) >= 6:
                 masked = masked.replace(str(s), "***REDACTED***")
     masked = re.sub(r"(bearer\s+)[a-zA-Z0-9_\-\.]+", r"\1***REDACTED***", masked, flags=re.IGNORECASE)
-    # AUD12-02: Automatically redact raw EVM private keys (0x + 64 hex characters)
-    masked = re.sub(r"\b0x[a-fA-F0-9]{64}\b", "0x***REDACTED_PRIVKEY***", masked)
+    # AUD12-02 & AUD16-05: Automatically redact EVM private keys (both 0x/0X-prefixed and raw 64-hex)
+    masked = re.sub(r"\b0[xX][a-fA-F0-9]{64}\b", "0x***REDACTED_PRIVKEY***", masked)
+    masked = re.sub(r"\b[a-fA-F0-9]{64}\b", "***REDACTED_PRIVKEY***", masked)
     return masked
 
 
@@ -76,13 +77,21 @@ class ThirdwebService:
         if self.engine_url:
             env["THIRDWEB_ENGINE_URL"] = self.engine_url
 
-        # AUD12-02: Protect private keys; do not mask public client_id
+        # AUD12-02 & AUD16-05: Protect private keys; mask both raw 64-hex and 0x/0X prefixed forms
         known_secrets = [
             self.secret_key,
             self.server_private_key,
             os.environ.get("THIRDWEB_SECRET_KEY", ""),
             os.environ.get("THIRDWEB_SERVER_PRIVATE_KEY", ""),
         ]
+        for pk in [self.server_private_key, os.environ.get("THIRDWEB_SERVER_PRIVATE_KEY", "")]:
+            if pk and isinstance(pk, str):
+                cleaned = pk.strip()
+                if cleaned.startswith(("0x", "0X")):
+                    raw_hex = cleaned[2:]
+                    known_secrets.extend([raw_hex, f"0x{raw_hex.lower()}", f"0x{raw_hex.upper()}"])
+                elif len(cleaned) == 64:
+                    known_secrets.extend([cleaned, f"0x{cleaned.lower()}", f"0x{cleaned.upper()}"])
 
         try:
             proc = subprocess.run(

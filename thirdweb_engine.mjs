@@ -172,14 +172,16 @@ export async function claimERC1155({
 
   // Fallback: If local server private key is configured
   if (process.env.THIRDWEB_SERVER_PRIVATE_KEY) {
-    // AUD15-07: Normalize 0x prefix for Thirdweb private key to support both raw 64-hex and 0x formats
-    let rawPk = process.env.THIRDWEB_SERVER_PRIVATE_KEY.trim();
-    if (!rawPk.startsWith("0x") && !rawPk.startsWith("0X")) {
-      rawPk = `0x${rawPk}`;
+    // AUD15-07 & AUD16-05: Normalize private key: strip 0x/0X prefix, validate 64 hex chars, ensure lowercase 0x
+    const rawPk = process.env.THIRDWEB_SERVER_PRIVATE_KEY.trim();
+    const cleanPk = rawPk.replace(/^0[xX]/, '');
+    if (!/^[0-9a-fA-F]{64}$/.test(cleanPk)) {
+      throw new Error("Invalid THIRDWEB_SERVER_PRIVATE_KEY format: must be a 64-character hex string");
     }
+    const formattedPk = `0x${cleanPk.toLowerCase()}`;
     const account = privateKeyToAccount({
       client,
-      privateKey: rawPk,
+      privateKey: formattedPk,
     });
 
     const result = await sendTransaction({
@@ -297,7 +299,14 @@ async function runCLI() {
       sanitizedMsg = sanitizedMsg.replaceAll(process.env.THIRDWEB_SECRET_KEY, "***");
     }
     if (process.env.THIRDWEB_SERVER_PRIVATE_KEY && process.env.THIRDWEB_SERVER_PRIVATE_KEY.length >= 8) {
-      sanitizedMsg = sanitizedMsg.replaceAll(process.env.THIRDWEB_SERVER_PRIVATE_KEY, "***");
+      const rawKey = process.env.THIRDWEB_SERVER_PRIVATE_KEY.trim();
+      const strippedKey = rawKey.replace(/^0[xX]/, "");
+      sanitizedMsg = sanitizedMsg.replaceAll(rawKey, "***");
+      if (strippedKey.length >= 8) {
+        sanitizedMsg = sanitizedMsg.replaceAll(strippedKey, "***");
+        sanitizedMsg = sanitizedMsg.replaceAll(`0x${strippedKey.toLowerCase()}`, "***");
+        sanitizedMsg = sanitizedMsg.replaceAll(`0X${strippedKey.toUpperCase()}`, "***");
+      }
     }
 
     console.log(

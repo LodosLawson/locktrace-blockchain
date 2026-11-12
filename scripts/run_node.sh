@@ -4,7 +4,7 @@
 # =====================================================================
 set -e
 
-echo "=== LockTrace Decentralized Node & Web Setup (v2.8.4) ==="
+echo "=== LockTrace Decentralized Node & Web Setup (v2.8.9) ==="
 
 if ! command -v python3 &> /dev/null; then
     echo "Python 3 is required. Please install python3."

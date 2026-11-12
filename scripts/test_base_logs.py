@@ -11,8 +11,10 @@ HOST = os.environ.get("LOCKTRACE_SSH_HOST", "ubuntu@129.151.205.219")
 cmd = """python3 -c "
 import os, sqlite3, json
 try:
-    candidates = ['/opt/blockchaint/blockchain.db', '/opt/blockchaint/data/blockchain.db']
-    db_path = next((p for p in candidates if os.path.exists(p)), candidates[0])
+    # AUD16-02: Prioritize data/blockchain.db and verify non-zero file size to avoid stale 0-byte databases
+    candidates = ['/opt/blockchaint/data/blockchain.db', '/opt/blockchaint/blockchain.db', 'data/blockchain.db', 'blockchain.db']
+    valid = [p for p in candidates if os.path.exists(p) and os.path.getsize(p) > 0]
+    db_path = valid[0] if valid else (next((p for p in candidates if os.path.exists(p)), candidates[0]))
     conn = sqlite3.connect(db_path, timeout=10)
     c = conn.cursor()
     c.execute('SELECT bridge_id, direction, status, bct_address, evm_address, amount_bct, tx_hash_l1, tx_hash_evm, created_at FROM bridge_transactions ORDER BY created_at DESC LIMIT 50')

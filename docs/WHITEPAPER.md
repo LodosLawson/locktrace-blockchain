@@ -1,7 +1,7 @@
-# LockTrace (BCT) Technical Whitepaper — v2.8.8
+# LockTrace (BCT) Technical Whitepaper — v2.8.9
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.8.8 — November 2026*  
+*Version 2.8.9 — November 2026*  
 *LockTrace Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
@@ -19,10 +19,15 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.8.8**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
-1. **Frontend Embedding Text Slicing Bug Fix (AUD15-01):** Sliced directly from `f_idx2` preserving `window.liveMarketPrices =` in `scripts/replace_embed.py` to prevent frontend JS execution breaks.
-2. **Secret Masking Regex Callable & Dual DB Fallback (AUD15-02):** Fixed `scripts/test_base_logs.py` backreference leak using group match callables and multi-path sqlite database discovery.
-3. **Checked Arithmetic Integer Overflow Immunization (AUD15-03):** Immunized `crates/locktrace_core/src/pow.rs` against `u64` arithmetic overflows via `checked_mul`, `checked_add`, and `saturating_add`.
+In **Version 2.8.9**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+1. **High Start-Nonce Rayon Clamping (AUD16-01):** Clamped `max_nonces` in `crates/locktrace_core/src/pow.rs` and bounded 64-bit integer ranges to eliminate empty chunk Rayon iterations and 100% CPU thread exhaustion.
+2. **Prioritized Non-Empty Database Discovery (AUD16-02):** Reordered candidate database paths in `scripts/test_base_logs.py` to prioritize active `/opt/blockchaint/data/blockchain.db` over stale 0-byte databases.
+3. **DOM XSS Attribute Sanitization (AUD16-03):** Replaced `escapeHtml` with `sanitizeJsAttr` across all inline `onclick` event attributes in `scripts/replace_embed.py`, `frontend/index.html`, and `templates/index.html`.
+4. **P2P Compact Block Header & Duplicate ID Defense (AUD16-04):** Enforced non-empty string validation on `CompactHeader` fields (`hash`, `previous_hash`, `merkle_root`, `miner`) and eliminated duplicate transaction IDs via `HashSet` in `crates/locktrace_core/src/compact.rs`.
+5. **Thirdweb 64-Hex Validation & Dual-Prefix Key Redaction (AUD16-05):** Strictly validated 64-hex private keys, ensured lowercase `0x` formatting in `thirdweb_engine.mjs`, and masked both raw 64-hex and `0x`/`0X` prefixed keys in Python log redaction.
+6. **BIP-39 Pre-Split NFKD Unicode Normalization (AUD16-06):** Applied NFKD normalization directly to raw mnemonic strings in `core/mnemonic.py` prior to whitespace splitting, fully conforming to BIP-39 specification.
+7. **Audit Bundle Privacy Filters & Output XML Parity (AUD16-07):** Filtered `"wallet"` and `".bak"` artifacts from security packages and ensured dynamic `repomix-output_16.xml` bundling.
+8. **Universal Protocol SSOT Version Synchronization (AUD16-08):** Harmonized all deployment scripts, launchers, whitepapers, and core packages to v2.8.9.
 4. **Nginx Child Location CSP Inheritance & /integrity.json Parity (AUD15-04):** Re-declared Content-Security-Policy across all sub-locations with custom `add_header` and added explicit `/integrity.json` caching guards in `nginx.conf`.
 5. **Full BIP-39 NFKD Normalization Prior to Validation (AUD15-05):** Enforced Unicode NFKD normalization in both `validate_mnemonic` and `mnemonic_to_private_key` before wordlist verification.
 6. **P2P Compact Block Version, Raw JSON & Short ID Verification (AUD15-06):** Enforced `compact_version == 1`, 64KB raw JSON bounds, and 16-hex character formatting in `crates/locktrace_core/src/compact.rs`.
@@ -424,7 +429,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.8.5 (Completed):** Nginx Health Endpoint Proxy Rate Limiting & Real IP Forwarding (REV11-01), WrappedBCT Mapping Parity (REV11-02), Thirdweb Sensitive Secret Masking (REV11-03), SPV Proof Depth Bounds (REV11-04), WrappedBCT Ownable2Step Governance (REV11-05), Dynamic OpenCL Clamping & HTTP Timeouts (REV11-06).
 - **v2.8.6 (Completed):** PoW Zero-Allocation Leading Byte Checks (AUD12-01), Thirdweb Secret Redaction (AUD12-02), WrappedBCT Gas SSTORE Optimization (AUD12-03), Web Push Length Bounds & Bounded Thread Pools (AUD12-04), Mnemonic BIP-39 NFKD Normalization (AUD12-05), Compact Block Invariant Verification (AUD12-06), Shared Miner Engine Singleton (AUD12-07), Nginx HTTP CSP Hardening (AUD12-08).
 - **v2.8.7 (Completed):** Thirdweb CLI Process Exit Clean Termination (AUD14-01), SECP256k1 Curve Point Single-Pass Decompression (AUD14-02), PoW Nonce Offset & SHA-256 Midstate Stream Cloning (AUD14-03), Frontend DOM XSS Attribute Sanitization & Escaped Market Feeds (AUD14-04), Automated Production Rust maturin Build & Systemd LimitNOFILE (AUD14-05), Nginx Wallet Endpoint Request Body & Timeout Bounds (AUD14-06), SSH Log Inspector Timeout & Credential Masking (AUD14-07), Mnemonic Case Normalization (AUD13-01).
-- **v2.8.8 (Current Production Release):** Frontend Embedding Text Slicing Bug Fix (AUD15-01), Secret Masking Regex Callable & Dual DB Fallback (AUD15-02), Checked Arithmetic Integer Overflow Immunization (AUD15-03), Nginx Child Location CSP Inheritance & /integrity.json Parity (AUD15-04), Full BIP-39 NFKD Normalization Prior to Validation (AUD15-05), P2P Compact Block Version, Raw JSON & Short ID Verification (AUD15-06), Thirdweb 0x Key Normalization & CLI Flag Injection Defense (AUD15-07), Audit Bundle Privacy Filters & Dynamic Protocol SSOT (AUD15-08).
+- **v2.8.8 (Completed):** Frontend Embedding Text Slicing Bug Fix (AUD15-01), Secret Masking Regex Callable & Dual DB Fallback (AUD15-02), Checked Arithmetic Integer Overflow Immunization (AUD15-03), Nginx Child Location CSP Inheritance & /integrity.json Parity (AUD15-04), Full BIP-39 NFKD Normalization Prior to Validation (AUD15-05), P2P Compact Block Version, Raw JSON & Short ID Verification (AUD15-06), Thirdweb 0x Key Normalization & CLI Flag Injection Defense (AUD15-07), Audit Bundle Privacy Filters & Dynamic Protocol SSOT (AUD15-08).
+- **v2.8.9 (Current Production Release):** High Start-Nonce Rayon Clamping (AUD16-01), Prioritized Non-Empty Database Discovery (AUD16-02), DOM XSS Attribute Sanitization (AUD16-03), P2P Compact Block Header & Duplicate ID Defense (AUD16-04), Thirdweb 64-Hex Validation & Dual-Prefix Key Redaction (AUD16-05), BIP-39 Pre-Split NFKD Unicode Normalization (AUD16-06), Audit Bundle Privacy Filters & Output XML Parity (AUD16-07), Universal Protocol SSOT Version Synchronization (AUD16-08).
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---
