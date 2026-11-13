@@ -96,7 +96,7 @@ Blokzincir durumunu JSON dosyaları yerine atomik, yüksek hızlı SQLite Write-
 
 #### Sınıf: `Wallet`
 - `__init__(private_key)`: SECP256k1 eğrisi üzerinde anahtar çifti oluşturur.
-- `_generate_address()`: Public key'i SHA-256 + RIPEMD-160 ile hash'leyip `BCT...` adresine dönüştürür.
+- `_generate_address()`: Public key'i çift SHA-256 (Double SHA-256) ile hash'leyip ilk 40 hex karakterden `BCT...` adresine dönüştürür.
 - `sign(message_bytes)`: İşlem verisini SECP256k1 ECDSA ile imzalar.
 - `verify_signature(public_key, signature, message)`: İmzayı matematiksel olarak doğrular.
 

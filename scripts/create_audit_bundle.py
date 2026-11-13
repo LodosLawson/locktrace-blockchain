@@ -114,7 +114,8 @@ def main():
     }
     excluded_exts = {
         ".pyc", ".pyo", ".pyd", ".db", ".db-wal", ".db-shm",
-        ".key", ".pem", ".crt", ".p12", ".pfx", ".bak"
+        ".key", ".pem", ".crt", ".p12", ".pfx", ".bak",
+        ".svg", ".png", ".ico", ".jpg", ".jpeg", ".pdf"
     }
     excluded_file_markers = {".env", "id_rsa", "ssh-key", "release_signing_key", "wallet", ".bak"}
 
@@ -168,7 +169,7 @@ def main():
                     full_path = os.path.join(test_dir, f)
                     zf.write(full_path, arcname=f"tests/{f}")
 
-        for test_file in ["test_rev11_fixes.py", "test_aud12_fixes.py", "test_aud14_fixes.py", "test_aud15_fixes.py", "test_aud16_fixes.py", "test_aud17_fixes.py", "test_aud17b_fixes.py", "test_aud18_fixes.py"]:
+        for test_file in ["test_rev11_fixes.py", "test_aud12_fixes.py", "test_aud14_fixes.py", "test_aud15_fixes.py", "test_aud16_fixes.py", "test_aud17_fixes.py", "test_aud17b_fixes.py", "test_aud18_fixes.py", "test_aud19_fixes.py"]:
             t_path = os.path.join(ROOT_DIR, "scratch", test_file)
             if os.path.exists(t_path):
                 zf.write(t_path, arcname=f"tests/{test_file}")
@@ -180,7 +181,8 @@ def main():
         shutil.copy2(repomix_xml, os.path.join(OUTPUT_DIR, "repomix-output_17.xml"))
         shutil.copy2(repomix_xml, os.path.join(OUTPUT_DIR, "repomix-output_18.xml"))
         shutil.copy2(repomix_xml, os.path.join(OUTPUT_DIR, "repomix-output_19.xml"))
-        print("[+] Copied repomix-output.xml to output/repomix-output.xml, output/repomix-output_16.xml, output/repomix-output_18.xml & output/repomix-output_19.xml")
+        shutil.copy2(repomix_xml, os.path.join(OUTPUT_DIR, "repomix-output_20.xml"))
+        print("[+] Copied repomix-output.xml to output/repomix-output.xml, output/repomix-output_16..20.xml")
 
     zip_size_mb = os.path.getsize(ZIP_PATH) / (1024 * 1024)
     print(f"[SUCCESS] Security Audit Package generated successfully!")
