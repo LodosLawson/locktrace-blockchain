@@ -6,7 +6,7 @@
   <meta content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"
     name="viewport" />
   <meta content="mobile_tab" name="shell-type" />
-  <title>BlocTag — Layer-1 Blockchain (Developed by LockTrace)</title>
+  <title>LockTrace — Web3 Minimalist Blockchain</title>
 
   <!-- PWA & iOS/Android Standalone Meta Tags -->
   <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
@@ -16,7 +16,7 @@
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
-  <meta name="apple-mobile-web-app-title" content="BlocTag" />
+  <meta name="apple-mobile-web-app-title" content="LockTrace" />
   <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
   <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
   <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
@@ -253,16 +253,16 @@
     <!-- Top & Scrollable Nav Container -->
     <div class="flex flex-col min-h-0 flex-1 overflow-hidden">
       <!-- Brand -->
-      <div class="flex items-center gap-2.5 px-2 py-1 cursor-pointer shrink-0" onclick="switchTab('ana-sayfa')">
+      <div class="flex items-center gap-3 px-2 py-1 cursor-pointer shrink-0" onclick="switchTab('ana-sayfa')">
         <div
-          class="w-8 h-8 rounded-full overflow-hidden border border-primary/30 shadow-sm shrink-0 flex items-center justify-center bg-surface-container p-0.5">
-          <img src="icons/locktrace_logo.png" class="w-full h-full object-contain" alt="BlocTag Logo" />
+          class="w-8 h-8 rounded-full overflow-hidden border border-primary/30 shadow-sm shrink-0 flex items-center justify-center bg-surface-container">
+          <img src="icons/icon.svg" class="w-full h-full object-cover" alt="LockTrace" />
         </div>
         <div class="flex flex-col min-w-0">
           <span
-            class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight text-base tracking-tight">BlocTag</span>
-          <span class="text-[9.5px] font-mono text-on-surface-variant leading-none">Developed by LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[10px] mt-0.5">Mainnet v2.9.4</span>
+            class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight text-base">LockTrace</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[11px]">Mainnet
+            v2.9.4</span>
           <span id="sidebarBrandNodeVal" class="hidden"></span>
         </div>
       </div>
@@ -424,9 +424,7 @@
         </div>
       </div>
 
-      <div class="text-[9.5px] font-mono text-center text-on-surface-variant/80 py-0.5">
-        <span class="font-semibold text-primary">BlocTag</span> &bull; Developed by LockTrace
-      </div>
+
       <!-- Bottom Security & Engine Badge -->
       <button id="btnPwaDesktop"
         class="hidden w-full items-center justify-center gap-2 py-1.5 px-3 rounded-full bg-primary/15 hover:bg-primary/25 text-primary font-label-md text-[11px] transition-all"
@@ -467,8 +465,8 @@
       <div class="flex items-center gap-1.5 shrink-0 min-w-0">
         <div
           class="w-7 h-7 rounded-full overflow-hidden border border-primary/30 shrink-0 cursor-pointer flex items-center justify-center bg-surface-container"
-          onclick="switchTab('ana-sayfa')" title="BlocTag Home">
-          <img src="icons/locktrace_logo.png" class="w-full h-full object-contain p-0.5" alt="BlocTag" />
+          onclick="switchTab('ana-sayfa')" title="LockTrace Home">
+          <img src="icons/icon.svg" class="w-full h-full object-cover" alt="LockTrace" />
         </div>
         <button
           class="flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-outline-variant/30 transition-colors active:scale-95 shrink-0 text-left"
@@ -571,7 +569,7 @@
         <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="desktopNetDot"></span>
         <div class="flex flex-col min-w-0 leading-tight">
           <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold"
-            id="desktopNetLabel">BlocTag Mainnet v2.9.4</span>
+            id="desktopNetLabel">LockTrace Mainnet v2.9.4</span>
           <span class="text-[10px] font-mono text-on-surface-variant truncate max-w-[150px]" id="desktopNetNodeUrl">net:
             <span class="text-primary font-medium" id="desktopNetNodeVal">locktrace.space</span></span>
         </div>
@@ -695,9 +693,10 @@
                   On-Chain Social Protocol • 100% Non-Custodial</span>
               </div>
 
-              <div class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-mono font-semibold mb-2">
-                <span>🛡️ BlocTag Blockchain</span>
-                <span class="text-on-surface-variant">&bull;</span>
+              <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-primary/10 border border-primary/20 text-primary text-[11px] font-mono font-semibold mb-2">
+                <span class="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
+                <span>BlocTag Blockchain</span>
+                <span class="text-on-surface-variant/60">&bull;</span>
                 <span class="text-on-surface-variant">Developed by LockTrace</span>
               </div>
 
