@@ -345,7 +345,7 @@ def build_master_workspace_blocks():
         ),
 
         toggle_block(
-            "🚀 **LockTrace Space — Web3 Sosyal Ağ & Telif Motoru**",
+            "🚀 **BlocTag — Web3 Sosyal Ağ & Telif Motoru**",
             [
                 callout_block("Blokzincir üzerinde sansürlenemez düşünce paylaşımı, telemetri kartları ve içerik üreticisi telif modeli sunar.", emoji="📢", color="blue_background"),
                 bullet_block("**Gönderi Paylaşımı:** 0.05 BCT karşılığı blokzincirde kalıcı mühürlenir."),
@@ -388,7 +388,7 @@ def build_master_workspace_blocks():
         todo_block("Base Mainnet (8453) wBCT Akıllı Sözleşmesi Yayında", checked=True),
         todo_block("Çift Yönlü Köprü (Bridge Relayer & BaseScan Explorer)", checked=True),
         todo_block("BNS (.bct) Merkeziyetsiz Alan Adları & Pazar Yeri", checked=True),
-        todo_block("LockTrace Space (Sosyal Ağ, Telif Modeli, Telemetri Gömüleri)", checked=True),
+        todo_block("BlocTag (Sosyal Ağ, Telif Modeli, Telemetri Gömüleri)", checked=True),
         todo_block("MetaMask Tarzı Web3 İmza Onay Modalı (English)", checked=True),
         todo_block("Kalıcı Yakım ve Kayıp Test Cüzdanları Arz İzolasyonu", checked=True),
         todo_block("Mobil PWA Optimizasyonu (Responsive Adresler & Padding Düzenlemesi)", checked=True),

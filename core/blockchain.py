@@ -870,7 +870,7 @@ class Blockchain:
                           public_key: str = "", signed_payload: str = "",
                           bns_name: str = "") -> Tuple[bool, str, Optional[dict]]:
         """
-        Creates an immutable, on-chain thought/tweet in LockTrace Space.
+        Creates an immutable, on-chain thought/tweet in BlocTag.
         Cost: 0.10 BCT.
         Tokenomics: 80% (0.08 BCT) returns to Treasury (circulating supply deflation),
         20% (0.02 BCT) is validator/miner fee.
@@ -2768,13 +2768,13 @@ class Blockchain:
                               currency: str = "USD", payment_ref: str = "",
                               bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
         """Disabled: Prevents unverified mock coin acquisition."""
-        return False, "Free mock token acquisition is disabled. BCT tokens can be earned on LockTrace Space by sharing thoughts, comments/likes, or node mining.", None
+        return False, "Free mock token acquisition is disabled. BCT tokens can be earned on BlocTag by sharing thoughts, comments/likes, or node mining.", None
 
     def execute_fiat_sale(self, seller_address: str, bct_amount: float,
                           payout_info: str = "", currency: str = "USD",
                           bct_per_usd: float = 100.0) -> Tuple[bool, str, Optional[dict]]:
         """Disabled: Initial welcome grant cannot be dumped for free fiat."""
-        return False, "Direct fiat withdrawal is disabled. BCT balances can be used on the LockTrace Space thought network and for transfers.", None
+        return False, "Direct fiat withdrawal is disabled. BCT balances can be used on the BlocTag thought network and for transfers.", None
 
 
     def get_validator_telemetry(self, wallet_address: str) -> dict:

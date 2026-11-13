@@ -74,7 +74,7 @@ In **Version 2.9.4**, LockTrace establishes sovereign peer-to-peer resilience, u
 3. [Cryptographic Primitives & 10^8 Atomic Unit Accounting](#3-cryptographic-primitives--108-atomic-unit-accounting)
 4. [Dual Hybrid Consensus: 70% PoW Proposer + 30% Validator Quorum](#4-dual-hybrid-consensus-70-pow-proposer--30-validator-quorum)
 5. [Hybrid Time-and-Quota Batch Sequencer](#5-hybrid-time-and-quota-batch-sequencer)
-6. [LockTrace Space: Native On-Chain SocialFi & Creator Royalties](#6-locktrace-space-native-on-chain-socialfi--creator-royalties)
+6. [BlocTag: Native On-Chain SocialFi & Creator Royalties](#6-bloctag-native-on-chain-socialfi--creator-royalties)
 7. [BCT Naming System (BNS): Sovereign `.bct` Identity & Marketplace](#7-bct-naming-system-bns-sovereign-bct-identity--marketplace)
 8. [Tokenomics, Deflationary Mechanics & Supply Invariants](#8-tokenomics-deflationary-mechanics--supply-invariants)
 9. [Cross-Chain Interoperability: 1:1 Base Mainnet wBCT Bridge](#9-cross-chain-interoperability-11-base-mainnet-wbct-bridge)
@@ -244,9 +244,9 @@ When either elapsed time $\Delta t \ge \tau$ or pending count $N \ge Q$ is reach
 
 ---
 
-## 6. LockTrace Space: Native On-Chain SocialFi & Creator Royalties
+## 6. BlocTag: Native On-Chain SocialFi & Creator Royalties
 
-LockTrace Space embeds social interactions directly into the Layer-1 state machine, guaranteeing censorship resistance and creator royalties.
+BlocTag embeds social interactions directly into the Layer-1 state machine, guaranteeing censorship resistance and creator royalties.
 
 ### 6.1 Action Fee & Distribution Schedule
 
@@ -416,7 +416,7 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 
 ## 17. Roadmap & Protocol Evolution
 
-- **v1.0 – v1.6 (Completed):** Mainnet Genesis, 70/30 PoW + Validator Quorum consensus, LockTrace Space SocialFi royalties, `.bct` BNS registry & marketplace, Base Mainnet `wBCT` 1:1 cross-chain bridge, Uniswap v4 liquidity pool.
+- **v1.0 – v1.6 (Completed):** Mainnet Genesis, 70/30 PoW + Validator Quorum consensus, BlocTag SocialFi royalties, `.bct` BNS registry & marketplace, Base Mainnet `wBCT` 1:1 cross-chain bridge, Uniswap v4 liquidity pool.
 - **v1.9 (Completed):** On-chain SHA-256 + IPFS CIDv1 Frontend Release Integrity Shield, Quote-Repost attribution cards, Explorer BNS/wallet full-history indexing, Persistent Mainnet Security Discrepancy Alert System.
 - **v2.2.0 (Completed):** 3-Phase Atomic CAS Non-Blocking Block Producer, $O(1)$ Incremental Delta SQLite WAL Engine, $O(\Delta)$ Multi-Worker Sync, Anti-DDoS Per-Wallet Mempool Quotas, IPv4 `/24` Sybil Subnet Hardening, and Stat-Memoized Integrity Gate.
 - **v2.5.0 (Completed):** Anti-Stall Emergency LWMA Failsafe (120s difficulty relaxation), Priority Replace-By-Fee (RBF) Mempool Admission & Eviction, Constant-Time SECP256k1 Cryptography Engine (OpenSSL C-backed, Minerva mitigation), $O(1)$ Reverse-Cursor Transaction Indexing & Query Scalability.

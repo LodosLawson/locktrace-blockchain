@@ -49,9 +49,9 @@
 
 ---
 
-## 🌌 LockTrace Space: Censorship-Resistant Social Economy
+## 🌌 BlocTag: Censorship-Resistant Social Economy
 
-LockTrace Space embeds social interactions directly into the Layer-1 transaction graph. Thoughts, likes, and comments are decentralized financial interactions where creators receive direct micro-royalties without intermediaries:
+BlocTag embeds social interactions directly into the Layer-1 transaction graph. Thoughts, likes, and comments are decentralized financial interactions where creators receive direct micro-royalties without intermediaries:
 
 - **Publish Post (`space_post`):** Cost is **0.10 BCT** to prevent spam and ensure content permanence. Content is permanently stored across blockchain blocks (80% Treasury pool, 20% fee pool).
 - **Like Royalty (`space_like`):** Cost is **0.01 BCT**. **+0.002 BCT is instantly paid on-chain to the post creator's wallet** as creator royalty (70% Treasury, 10% fee pool).

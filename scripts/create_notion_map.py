@@ -172,7 +172,7 @@ Sistemin en büyük ve en kritik modülüdür. Blok üretimi, madencilik, deflas
    - `accept_bns_offer(handle, offer_id, owner_sig)`: Teklifi kabul eder; kilitli para satıcıya, isim alıcıya geçer.
    - `cancel_bns_offer(handle, offer_id, buyer_sig)`: Teklifi iptal eder; kilitli BCT teklif sahibine anında iade edilir.
    - `get_bns_sales_history()` & `get_bns_analytics()`: Tüm el değiştirmelerin geçmiş kaydını ve fiyat grafiğini sunar.
-4. **LockTrace Space (Sosyal Ağ Modülü):**
+4. **BlocTag (Sosyal Ağ Modülü):**
    - `create_space_post(author, content, signature)`: 0.05 BCT karşılığı kalıcı on-chain gönderi yazar.
    - `like_space_post(post_id, sender_address, signature)`: 0.003 BCT'lik beğeninin **+0.002 BCT'sini içerik sahibine telif olarak öder**.
    - `comment_space_post(post_id, author, text, signature)`: 0.02 BCT'lik yorumun **+0.005 BCT'sini içerik sahibine telif olarak aktarır**.

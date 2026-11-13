@@ -43,7 +43,7 @@ Aşağıdaki modüllerin tamamı sıfırdan geliştirilmiş, güvenlik testlerin
 - [x] **BIP-39 12 Kelime Kurtarma İfadesi (Mnemonic):** Standart 12 kelimelik tohum cümlesi ile deterministik özel anahtar üretimi.
 - [x] **SECP256k1 ECDSA İmzalar:** Hiçbir özel anahtar (private key) sunucuya gönderilmez. Tüm transfer, beğeni, yorum, alan adı alımı ve teklif işlemleri **kullanıcının tarayıcısında (client-side)** imzalanır.
 
-### ✅ C. LockTrace Space (Sansürsüz On-Chain Sosyal Medya & İçerik Ekonomisi)
+### ✅ C. BlocTag (Sansürsüz On-Chain Sosyal Medya & İçerik Ekonomisi)
 - [x] **Zincir Üstü Gönderi Paylaşımı (`space_post` - 0.05 BCT):** Düşünceler doğrudan blokzincir bloklarına yazılır, silinemez ve sansürlenemez.
 - [x] **Doğrudan İçerik Üretici Telifi (Creator Royalties):**
   - **Beğeni (`space_like` - 0.003 BCT):** Beğeni ücretinin **+0.002 BCT'si anında içerik sahibinin cüzdanına** yatar.
@@ -128,7 +128,7 @@ Elimizdeki mevcut altyapı tam fonksiyonel bir Layer-1 seviyesindedir. Bundan so
   - Base ağındaki `wBCT` (`0xA3C743...7254`) için USDC veya ETH paritesinde ilk merkeziyetsiz borsa (DEX) likidite havuzunun açılması ve canlı piyasa fiyatının oluşması.
 - [ ] **Telegram & X Topluluk Botu Entegrasyonu:**
   - Yeni bir `.bct` alan adı alındığında, büyük bir BCT transferi yapıldığında veya yeni bir blok kazıldığında resmi Telegram kanalına (`https://t.me/+zsaG1qkAHZllZGIy`) otomatik bildirim atan **LockTrace Whale & BNS Bot** kurulması.
-- [ ] **LockTrace Space Görsel & Medya Desteği (IPFS):**
+- [ ] **BlocTag Görsel & Medya Desteği (IPFS):**
   - Gönderilerde sadece metin değil, IPFS/Arweave üzerinden merkeziyetsiz görsel ve NFT paylaşımı.
 - [ ] **Çoklu Dil Desteği (TR / EN Dil Seçici):**
   - Arayüzde tek tıkla İngilizce / Türkçe dil geçiş anahtarı.
@@ -157,7 +157,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 ### 🔥 Bizi Rakiplerden Ayıran 7 Güçlü Fark (Unique Selling Points - USP)
 1. **Sadece Token Değil, Kendi Bağımsız Layer-1 Blokzinciri:** LockTrace başka bir ağın üzerinde sıradan bir token değildir; kendi PoW+BFT konsensüsü, kendi gezgini (Explorer), kendi cüzdanı ve kendi sosyal ağı olan bağımsız bir Layer-1 protokolüdür.
-2. **İçerik Üreticisine Anında Kripto Kazandıran Sosyal Ağ (LockTrace Space):** Klasik sosyal medyada beğeni ve yorumlardan platformlar para kazanır. LockTrace Space'te gönderinize gelen **her beğeni ve yorumda anında cüzdanınıza BCT telifi (royalty) yatar.**
+2. **İçerik Üreticisine Anında Kripto Kazandıran Sosyal Ağ (BlocTag):** Klasik sosyal medyada beğeni ve yorumlardan platformlar para kazanır. BlocTag'te gönderinize gelen **her beğeni ve yorumda anında cüzdanınıza BCT telifi (royalty) yatar.**
 3. **Gerçek Deflasyonist Mekanizma (Arz Azaltma):**
   - Her transfer ücretinin **%50'si** Hazine Kasasına kilitlenir.
   - Her `.bct` alan adı kaydının **%80'i** Hazine Kasasına geri döner.
@@ -175,7 +175,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 > **Başlık:** Beğenileriniz Sadece Kalp Değil, Kripto Kazandırsın! ⚡  
 > **Metin:**  
 > Klasik sosyal medyada saatlerinizi harcıyorsunuz ama tüm geliri platformlar alıyor.  
-> **LockTrace Space** ile tanışın: Kendi Layer-1 blokzinciri üzerinde çalışan sansürsüz sosyal ağ!  
+> **BlocTag** ile tanışın: Kendi Layer-1 blokzinciri üzerinde çalışan sansürsüz sosyal ağ!  
 > ✅ Cüzdanını 10 saniyede aç, **1.00 BCT hoş geldin hediyeni** anında al.  
 > ✅ Düşüncelerini paylaş, aldığın her beğeni ve yorumdan **anında cüzdanına BCT telifi** yatsın!  
 > ✅ Kendi `.bct` Web3 alan adını tescille, teklif al, ticaret yap.  
@@ -204,7 +204,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 ### 🎬 Kısa Video / Reels / TikTok / Shorts Senaryo Akışı (30 Saniye)
 1. **0-5 sn (Kanca / Hook):** *"Telefonunuzdan 10 saniyede kendi kripto cüzdanınızı açıp, ilk 1 BCT coininizi ücretsiz alabileceğinizi biliyor muydunuz?"* (Ekranda `locktrace.space` cüzdan oluşturma ve +1.00 BCT bildirim sesi gösterilir).
-2. **5-15 sn (Özellik 1 - Sosyal Ekonomi):** *"Üstelik LockTrace Space'te yazdığınız her gönderiye gelen beğeni ve yorumlar size anında kripto telif geliri kazandırıyor."* (Ekranda bir gönderiye beğeni atılması ve telif sayacının artması gösterilir).
+2. **5-15 sn (Özellik 1 - Sosyal Ekonomi):** *"Üstelik BlocTag'de yazdığınız her gönderiye gelen beğeni ve yorumlar size anında kripto telif geliri kazandırıyor."* (Ekranda bir gönderiye beğeni atılması ve telif sayacının artması gösterilir).
 3. **15-23 sn (Özellik 2 - .bct Alan Adları):** *"Uzun cüzdan adresleriyle uğraşmayın; kendi `@isminiz.bct` alan adınızı alın, teklif verin ve alım-satım yapın."* (BNS Marketplace ve profil ekranı gösterilir).
 4. **23-30 sn (Harekete Geçirici Mesaj / CTA):** *"Bağımsız Layer-1 blokzinciri LockTrace şu an canlıda! Profildeki linkten `locktrace.space`'e girin ve Telegram topluluğumuza katılın!"*
 
