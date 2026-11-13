@@ -1,8 +1,8 @@
 {
   "id": "locktrace-web3-blockchain",
-  "name": "LockTrace Web3 Blockchain",
-  "short_name": "LockTrace",
-  "description": "Minimalist Web3 BCT Blockchain Wallet & Decentralized Platform",
+  "name": "BlocTag Web3 Platform",
+  "short_name": "BlocTag",
+  "description": "BlocTag Minimalist Web3 BCT Blockchain Platform — Developed by LockTrace",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
