@@ -18,12 +18,17 @@ def run_cmd(cmd_list, timeout=90):
     return res.returncode == 0
 
 def main():
+    # F-07: keep CSP script hashes in lock-step with the inline scripts being shipped
+    if subprocess.run([sys.executable, "scripts/sync_csp.py"]).returncode != 0:
+        print("[!] CSP hash sync failed")
+        sys.exit(1)
     tar_path = "pwa_bundle.tar.gz"
     print("[*] Creating compressed tarball...")
     with tarfile.open(tar_path, "w:gz") as tar:
         tar.add("frontend/index.html", arcname="frontend/index.html")
         tar.add("frontend/sw.js", arcname="frontend/sw.js")
         tar.add("frontend/icons", arcname="frontend/icons")
+        tar.add("frontend/vendor", arcname="frontend/vendor")
         if os.path.exists("frontend/favicon.ico"):
             tar.add("frontend/favicon.ico", arcname="frontend/favicon.ico")
         tar.add("templates/index.html", arcname="templates/index.html")
@@ -88,12 +93,15 @@ sudo /opt/blockchaint/venv/bin/pip install -q -r /opt/blockchaint/requirements.t
 
 # 1. Sign Frontend with official Release Key
 cd /opt/blockchaint
-sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.9.3 --key-file /home/ubuntu/.locktrace/release_signing_key.json
+sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.9.4 --key-file /home/ubuntu/.locktrace/release_signing_key.json
 
 # 2. Publish to Nginx document root
 sudo mkdir -p /var/www/locktrace /var/www/locktrace/icons /opt/blockchaint/frontend/icons
 sudo cp -r /tmp/frontend/icons/* /opt/blockchaint/frontend/icons/
 sudo cp -r /tmp/frontend/icons/* /var/www/locktrace/icons/
+sudo mkdir -p /opt/blockchaint/frontend/vendor /var/www/locktrace/vendor
+sudo cp -r /tmp/frontend/vendor/* /opt/blockchaint/frontend/vendor/
+sudo cp -r /tmp/frontend/vendor/* /var/www/locktrace/vendor/
 if [ -f /tmp/frontend/favicon.ico ]; then
     sudo cp /tmp/frontend/favicon.ico /opt/blockchaint/frontend/favicon.ico
     sudo cp /tmp/frontend/favicon.ico /var/www/locktrace/favicon.ico

@@ -37,11 +37,11 @@
     rel="stylesheet" />
 
   <!-- QR Code Scanner Library (SRI Verified) -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"
+  <script src="/vendor/html5-qrcode.min.js"
     integrity="sha384-c9d8RFSL+u3exBOJ4Yp3HUJXS4znl9f+z66d1y54ig+ea249SpqR+w1wyvXz/lk+" crossorigin="anonymous"
     defer></script>
   <!-- Ethers.js v6 for EVM Web3 & Bridge Operations (SRI Verified) -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/ethers/6.13.5/ethers.umd.min.js"
+  <script src="/vendor/ethers.umd.min.js"
     integrity="sha384-NRAZj94DQk3dgtsOZzVYHbYVV1DFkF5QhL5RRxF0ILZLi6OQ7CsMlun748D42JbO"
     crossorigin="anonymous"></script>
 
@@ -262,7 +262,7 @@
           <span
             class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight text-base">LockTrace</span>
           <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[11px]">Mainnet
-            v2.9.3</span>
+            v2.9.4</span>
           <span id="sidebarBrandNodeVal" class="hidden"></span>
         </div>
       </div>
@@ -469,7 +469,7 @@
           <div class="flex flex-col min-w-0 leading-none">
             <span
               class="font-label-sm text-[10px] sm:text-[11px] text-on-surface tracking-wide uppercase font-semibold shrink-0"
-              id="mobileNetLabel">Mainnet v2.9.3</span>
+              id="mobileNetLabel">Mainnet v2.9.4</span>
             <span class="text-[9px] font-mono text-on-surface-variant truncate max-w-[85px] xs:max-w-[110px]"
               id="mobileNetNodeUrl">net: <span class="text-primary font-medium"
                 id="mobileNetNodeVal">locktrace.space</span></span>
@@ -563,7 +563,7 @@
         <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="desktopNetDot"></span>
         <div class="flex flex-col min-w-0 leading-tight">
           <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold"
-            id="desktopNetLabel">LockTrace Mainnet v2.9.3</span>
+            id="desktopNetLabel">LockTrace Mainnet v2.9.4</span>
           <span class="text-[10px] font-mono text-on-surface-variant truncate max-w-[150px]" id="desktopNetNodeUrl">net:
             <span class="text-primary font-medium" id="desktopNetNodeVal">locktrace.space</span></span>
         </div>
@@ -2573,7 +2573,7 @@
               <span>← Cüzdanıma Dön</span>
             </button>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">LockTrace PoS v2.9.3</span>
+              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">LockTrace PoS v2.9.4</span>
             </div>
           </div>
 
@@ -2584,7 +2584,7 @@
                 <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">P2P
                   Decentralized Infrastructure</span>
                 <span
-                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.9.3</span>
+                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.9.4</span>
               </div>
               <h1 class="font-headline-md text-headline-md text-on-surface tracking-tight font-semibold">Düğüm ve
                 Validator Paneli</h1>
@@ -8299,6 +8299,7 @@
 
       return {
         sha256Hex,
+        sha256Bytes,
         derivePublicKeyHex,
         publicKeyToAddress,
         signEcdsaSha256,
@@ -9220,7 +9221,7 @@
           const msg = new Uint8Array(saltBytes.length + 4);
           msg.set(saltBytes);
           new DataView(msg.buffer).setUint32(saltBytes.length, block++, false);
-          const ks = LockTraceCrypto.sha256Bytes ? LockTraceCrypto.sha256Bytes(msg) : new Uint8Array(32);
+          const ks = LockTraceCrypto.sha256Bytes(msg);
           for (let j = 0; j < 32 && (i + j) < ptBytes.length; j++) {
             out[i + j] = ptBytes[i + j] ^ ks[j];
           }
@@ -9246,7 +9247,7 @@
           const msg = new Uint8Array(saltBytes.length + 4);
           msg.set(saltBytes);
           new DataView(msg.buffer).setUint32(saltBytes.length, block++, false);
-          const ks = LockTraceCrypto.sha256Bytes ? LockTraceCrypto.sha256Bytes(msg) : new Uint8Array(32);
+          const ks = LockTraceCrypto.sha256Bytes(msg);
           for (let j = 0; j < 32 && (i + j) < ctBytes.length; j++) {
             out[i + j] = ctBytes[i + j] ^ ks[j];
           }
@@ -9254,7 +9255,16 @@
         const jsonStr = new TextDecoder().decode(out);
         return JSON.parse(jsonStr);
       } catch (_e) {
-        return null;
+        // F-01 migration: legacy envelopes were plain hex(JSON) (zero keystream). Read once, re-encrypted on next save.
+        try {
+          const legacyBytes = new Uint8Array(hexCipher.length / 2);
+          for (let i = 0; i < legacyBytes.length; i++) legacyBytes[i] = parseInt(hexCipher.substr(i * 2, 2), 16);
+          const legacy = JSON.parse(new TextDecoder().decode(legacyBytes));
+          legacy.__legacy = true;
+          return legacy;
+        } catch (_e2) {
+          return null;
+        }
       }
     }
 
@@ -9306,6 +9316,9 @@
           if (dec) {
             if (dec.k) priv = String(dec.k).trim();
             if (dec.m) mnem = String(dec.m).trim();
+            if (dec.__legacy) {
+              setTimeout(() => { if (currentAccount) saveWalletState(currentAccount); }, 100);
+            }
           }
         }
 
@@ -13947,15 +13960,18 @@
         if (btnText) btnText.textContent = 'Registering Bridge Order...';
 
         try {
+          // F-10: prove wallet ownership; the node binds the order to this EVM destination.
+          const orderCanonical = `BRIDGE_ORDER:L1_TO_EVM:${currentAccount.address}:${String(destAddr).toLowerCase()}:${Number(amount).toFixed(8)}:${selectedChain}`;
+          const orderAuth = await buildSignedAuthPayload(orderCanonical);
           const { ok: orderOk, body: orderBody } = await apiFetch('/bridge/order', {
             method: 'POST',
-            body: JSON.stringify({
+            body: JSON.stringify(Object.assign({
               direction: 'L1_TO_EVM',
               bct_address: currentAccount.address,
               evm_address: destAddr,
               amount: amount,
               chain: selectedChain
-            })
+            }, orderAuth))
           });
 
           if (!orderOk || !orderBody.data) {

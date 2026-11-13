@@ -143,6 +143,19 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable2Step, Pausable {
     // Authorized Bridge Relayers
     mapping(address => bool) public isBridgeRelayer;
 
+    // F-06: Mint guardrails (single-relayer trust reduction). Changes are timelocked.
+    uint256 public maxMintPerTx = 1_000_000 * 10 ** 18;
+    uint256 public dailyMintLimit = 5_000_000 * 10 ** 18;
+    uint256 public mintWindowStart;
+    uint256 public mintedInWindow;
+    uint256 public constant LIMIT_CHANGE_DELAY = 2 days;
+    uint256 public pendingMaxMintPerTx;
+    uint256 public pendingDailyMintLimit;
+    uint256 public pendingLimitsEta;
+
+    event MintLimitsProposed(uint256 perTx, uint256 daily, uint256 eta);
+    event MintLimitsUpdated(uint256 perTx, uint256 daily);
+
     // Deduplication mapping: Prevents double-minting of Layer-1 LockTrace transaction hashes
     mapping(bytes32 => bool) public processedL1TxHashes;
 
@@ -280,6 +293,13 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable2Step, Pausable {
         bytes32 canonicalHash = _canonicalizeTxHash(locktraceTxHash);
         require(!processedL1TxHashes[canonicalHash], "wBCT: L1 transaction already processed");
         require(_totalSupply + amount <= MAX_SUPPLY, "wBCT: Max supply exceeded");
+        require(amount <= maxMintPerTx, "wBCT: Exceeds per-transaction mint limit");
+        if (block.timestamp >= mintWindowStart + 1 days) {
+            mintWindowStart = block.timestamp;
+            mintedInWindow = 0;
+        }
+        require(mintedInWindow + amount <= dailyMintLimit, "wBCT: Daily mint limit exceeded");
+        mintedInWindow += amount;
 
         processedL1TxHashes[canonicalHash] = true;
         _mint(to, amount);
@@ -344,6 +364,22 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable2Step, Pausable {
     }
 
     // ── Admin & Governance ───────────────────────────────────────────────────
+    function proposeMintLimits(uint256 perTx, uint256 daily) external onlyOwner {
+        require(perTx > 0 && daily >= perTx, "wBCT: Invalid limits");
+        pendingMaxMintPerTx = perTx;
+        pendingDailyMintLimit = daily;
+        pendingLimitsEta = block.timestamp + LIMIT_CHANGE_DELAY;
+        emit MintLimitsProposed(perTx, daily, pendingLimitsEta);
+    }
+
+    function executeMintLimits() external onlyOwner {
+        require(pendingLimitsEta != 0 && block.timestamp >= pendingLimitsEta, "wBCT: Timelock active");
+        maxMintPerTx = pendingMaxMintPerTx;
+        dailyMintLimit = pendingDailyMintLimit;
+        pendingLimitsEta = 0;
+        emit MintLimitsUpdated(maxMintPerTx, dailyMintLimit);
+    }
+
     function setBridgeRelayer(address relayer, bool active) external onlyOwner {
         require(relayer != address(0), "wBCT: Zero address");
         isBridgeRelayer[relayer] = active;

@@ -36,6 +36,18 @@ DB_PATH = os.environ.get("BCT_DB_PATH", _default_db)
 RELAYER_KEY_PATH = os.environ.get("RELAYER_KEY_PATH", "/opt/blockchaint/relayer_wallet.json")
 CHAIN_ID = 8453  # Base Mainnet
 
+try:
+    from core.bridge import is_transient_bridge_error
+except Exception:  # standalone execution fallback
+    def is_transient_bridge_error(msg: str) -> bool:
+        low = str(msg or "").lower()
+        return any(k in low for k in ("pending", "mempool", "not yet", "confirmation", "reorg security",
+                                      "network_error", "timeout", "rpc", "connect", "insufficient locked balance"))
+
+# F-06: relayer-side mint guardrails (mirrors WrappedBCT.sol maxMintPerTx / dailyMintLimit)
+MAX_MINT_PER_TX_BCT = Decimal(os.environ.get("MAX_MINT_PER_TX_BCT", "1000000"))
+DAILY_MINT_LIMIT_BCT = Decimal(os.environ.get("DAILY_MINT_LIMIT_BCT", "5000000"))
+
 WBCT_ABI = [
     {
         "inputs": [
@@ -185,6 +197,8 @@ class BridgeRelayer:
             logger.error(f"Failed to check relayer balance: {e}")
             return 0
 
+        self._recheck_stalled_locks()
+
         conn = sqlite3.connect(self.db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
         
@@ -238,6 +252,15 @@ class BridgeRelayer:
                 self._mark_failed(bridge_id, "Geçersiz veya sıfır wei tutarı.")
                 continue
 
+            # F-06: per-transaction cap -> human review; rolling 24h cap -> defer
+            if net_amt_dec > MAX_MINT_PER_TX_BCT:
+                logger.error(f"Bridge {bridge_id}: {net_amt_dec} BCT exceeds per-tx mint cap {MAX_MINT_PER_TX_BCT}. HELD for manual review.")
+                self._set_status(bridge_id, "HELD", f"Amount exceeds per-transaction mint cap ({MAX_MINT_PER_TX_BCT} BCT); manual approval required.")
+                continue
+            if self._minted_last_24h() + net_amt_dec > DAILY_MINT_LIMIT_BCT:
+                logger.warning(f"Bridge {bridge_id}: rolling 24h mint cap {DAILY_MINT_LIMIT_BCT} BCT reached. Deferring.")
+                continue
+
             # L1 Finality Verification: Ensure lock transaction is sealed in an attested/deep block
             # AUD17B-05: Ensure check_conn is safely closed in a finally block
             check_conn = None
@@ -248,9 +271,9 @@ class BridgeRelayer:
                 if not tx_row:
                     age = time.time() - float(r["created_at"] or 0)
                     if age > 7200:
-                        # AUD19-01: Mark expired/unsealed locks as FAILED to prevent head-of-line blocking
-                        logger.error(f"Bridge {bridge_id}: L1 lock tx {clean_l1[:16]} not sealed after {int(age)}s. Marking FAILED.")
-                        self._mark_failed(bridge_id, "L1 kilit işlemi 2 saat içinde onaylanmadı; sipariş zaman aşımına uğradı.")
+                        # N-01: park (do NOT fail) so a late-sealed lock is still minted; re-checked every cycle
+                        logger.warning(f"Bridge {bridge_id}: L1 lock tx {clean_l1[:16]} not sealed after {int(age)}s. Parking as STALLED (auto-retry).")
+                        self._set_status(bridge_id, "STALLED", "L1 lock not yet sealed; will auto-resume once confirmed.")
                     else:
                         logger.info(f"Bridge {bridge_id}: L1 lock tx {clean_l1[:16]}... not yet sealed in a block. Deferring mint.")
                     continue
@@ -358,6 +381,45 @@ class BridgeRelayer:
         except Exception as e:
             logger.error(f"Error executing mint on Base: {e}")
             return None
+
+    def _set_status(self, bridge_id: str, status: str, note: str = ""):
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        try:
+            with conn:
+                conn.execute(
+                    "UPDATE bridge_transactions SET status = ?, error_message = ?, updated_at = ? WHERE bridge_id = ?",
+                    (status, str(note)[:255] or None, time.time(), bridge_id))
+        finally:
+            conn.close()
+
+    def _minted_last_24h(self) -> Decimal:
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        try:
+            rows = conn.execute(
+                "SELECT net_amount FROM bridge_transactions WHERE direction = 'L1_TO_EVM' "
+                "AND status = 'COMPLETED' AND updated_at >= ?", (time.time() - 86400,)).fetchall()
+            return sum((Decimal(str(r[0] or 0)) for r in rows), Decimal("0"))
+        finally:
+            conn.close()
+
+    def _recheck_stalled_locks(self):
+        """N-01: resume STALLED orders once their L1 lock tx has been sealed in a block."""
+        conn = sqlite3.connect(self.db_path, timeout=30.0)
+        try:
+            rows = conn.execute(
+                "SELECT bridge_id, tx_hash_l1 FROM bridge_transactions WHERE status = 'STALLED' "
+                "AND direction = 'L1_TO_EVM' AND tx_hash_l1 IS NOT NULL ORDER BY created_at ASC LIMIT 50").fetchall()
+            for bid, h in rows:
+                if conn.execute("SELECT 1 FROM tx_lookup WHERE tx_hash = ?", (h,)).fetchone():
+                    with conn:
+                        conn.execute(
+                            "UPDATE bridge_transactions SET status = 'LOCKED', error_message = NULL, updated_at = ? "
+                            "WHERE bridge_id = ?", (time.time(), bid))
+                    logger.info(f"Bridge {bid}: stalled lock now sealed on L1. Re-queued for mint.")
+        except Exception as e:
+            logger.warning(f"Stalled lock recheck failed: {e}")
+        finally:
+            conn.close()
 
     def _mark_completed(self, bridge_id: str, tx_hash_evm: str):
         conn = sqlite3.connect(self.db_path, timeout=30.0)
@@ -468,7 +530,7 @@ class BridgeRelayer:
                             if "daha önce" in msg or "already" in msg:
                                 self._mark_completed(bridge_id, evm_hash)
                                 logger.info(f"Bridge {bridge_id} was already processed on L1. Marked COMPLETED.")
-                            elif any(k in msg.lower() for k in ("confirmation", "confirmations", "pending", "not yet", "reorg security", "network_error", "timeout", "bekleniyor")):
+                            elif is_transient_bridge_error(msg):
                                 # AUD18-02: Do NOT mark FAILED if awaiting EVM confirmation depth
                                 logger.info(f"Bridge {bridge_id}: Awaiting confirmations ({msg[:120]}). Deferring.")
                             else:
@@ -491,7 +553,7 @@ class BridgeRelayer:
                         self._mark_completed(bridge_id, evm_hash)
                     elif http_err.code in (400, 422):
                         # AUD18-02: Do NOT mark FAILED if transaction is waiting for EVM confirmations or temporary network/reorg state
-                        is_pending_conf = any(k in msg.lower() for k in ("confirmation", "confirmations", "pending", "not yet", "reorg security", "network_error", "timeout", "bekleniyor"))
+                        is_pending_conf = is_transient_bridge_error(msg)
                         if is_pending_conf:
                             logger.info(f"Bridge {bridge_id}: EVM tx {evm_hash[:16]} awaiting required confirmations ({msg[:120]}). Deferring.")
                         else:

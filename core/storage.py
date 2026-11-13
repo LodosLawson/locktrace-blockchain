@@ -88,6 +88,21 @@ class SQLiteStorage:
                 );
             """)
             conn.execute("""
+                CREATE TABLE IF NOT EXISTS attestation_ledger (
+                    miner_address TEXT NOT NULL,
+                    block_index INTEGER NOT NULL,
+                    block_hash TEXT NOT NULL,
+                    PRIMARY KEY (miner_address, block_index, block_hash)
+                );
+            """)
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS slashed_validators (
+                    miner_address TEXT PRIMARY KEY,
+                    data_json TEXT NOT NULL
+                );
+            """)
+            conn.execute("CREATE INDEX IF NOT EXISTS idx_block_att_miner ON block_attestations(block_index, miner_address);")
+            conn.execute("""
                 CREATE TABLE IF NOT EXISTS tx_lookup (
                     tx_hash TEXT PRIMARY KEY,
                     block_index INTEGER NOT NULL,
@@ -607,8 +622,8 @@ class SQLiteStorage:
         try:
             conn.execute("BEGIN IMMEDIATE;")
             existing = conn.execute(
-                "SELECT 1 FROM block_attestations WHERE block_index = ? AND node_id = ?;",
-                (int(block_index), str(node_id)),
+                "SELECT 1 FROM block_attestations WHERE block_index = ? AND (node_id = ? OR miner_address = ?);",
+                (int(block_index), str(node_id), str(miner_address)),
             ).fetchone()
             inserted = False
             if existing is None:
@@ -625,7 +640,7 @@ class SQLiteStorage:
                 conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('state_revision', ?);", (str(next_rev),))
                 inserted = True
             cnt_row = conn.execute(
-                "SELECT COUNT(*) AS cnt FROM block_attestations WHERE block_index = ?;",
+                "SELECT COUNT(DISTINCT miner_address) AS cnt FROM block_attestations WHERE block_index = ?;",
                 (int(block_index),),
             ).fetchone()
             conn.execute("COMMIT;")
@@ -633,6 +648,51 @@ class SQLiteStorage:
         except Exception:
             conn.execute("ROLLBACK;")
             raise
+        finally:
+            conn.close()
+
+    def record_validator_attestation(self, miner_address: str, block_index: int, block_hash: str) -> List[str]:
+        """F-03: Persist every (wallet, height, hash) a validator signed; returns previously signed hashes for that height."""
+        conn = self._connect()
+        try:
+            conn.execute("BEGIN IMMEDIATE;")
+            prev = [r["block_hash"] for r in conn.execute(
+                "SELECT block_hash FROM attestation_ledger WHERE miner_address = ? AND block_index = ?;",
+                (str(miner_address), int(block_index)),
+            ).fetchall()]
+            conn.execute(
+                "INSERT OR IGNORE INTO attestation_ledger (miner_address, block_index, block_hash) VALUES (?, ?, ?);",
+                (str(miner_address), int(block_index), str(block_hash).lower()),
+            )
+            conn.execute("COMMIT;")
+            return prev
+        except Exception:
+            conn.execute("ROLLBACK;")
+            raise
+        finally:
+            conn.close()
+
+    def save_slashed_validator(self, miner_address: str, info: dict) -> None:
+        conn = self._connect()
+        try:
+            with conn:
+                conn.execute(
+                    "INSERT OR REPLACE INTO slashed_validators (miner_address, data_json) VALUES (?, ?);",
+                    (str(miner_address), json.dumps(info)),
+                )
+        finally:
+            conn.close()
+
+    def load_slashed_validators(self) -> Dict[str, dict]:
+        conn = self._connect()
+        try:
+            out: Dict[str, dict] = {}
+            for r in conn.execute("SELECT miner_address, data_json FROM slashed_validators;").fetchall():
+                try:
+                    out[r["miner_address"]] = json.loads(r["data_json"])
+                except Exception:
+                    out[r["miner_address"]] = {"slashed": True}
+            return out
         finally:
             conn.close()
 

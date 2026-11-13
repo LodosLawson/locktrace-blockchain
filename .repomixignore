@@ -18,4 +18,4 @@ scratch/
 node_modules/
 venv/
 target/
-
+frontend/vendor/
