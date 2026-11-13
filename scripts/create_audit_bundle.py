@@ -110,7 +110,7 @@ def main():
     # AUD15-08 & AUD16-07: Strictly exclude sensitive keys, certificates, credentials, backups, and temp files
     excluded_dirs = {
         "__pycache__", ".git", "venv", "env", "node_modules", "target",
-        ".netlify", "backups", "data", "output", ".idea", ".vscode"
+        ".netlify", "backups", "data", "output", ".idea", ".vscode", "vendor"
     }
     excluded_exts = {
         ".pyc", ".pyo", ".pyd", ".db", ".db-wal", ".db-shm",
@@ -169,7 +169,7 @@ def main():
                     full_path = os.path.join(test_dir, f)
                     zf.write(full_path, arcname=f"tests/{f}")
 
-        for test_file in ["test_rev11_fixes.py", "test_aud12_fixes.py", "test_aud14_fixes.py", "test_aud15_fixes.py", "test_aud16_fixes.py", "test_aud17_fixes.py", "test_aud17b_fixes.py", "test_aud18_fixes.py", "test_aud19_fixes.py"]:
+        for test_file in ["test_rev11_fixes.py", "test_aud12_fixes.py", "test_aud14_fixes.py", "test_aud15_fixes.py", "test_aud16_fixes.py", "test_aud17_fixes.py", "test_aud17b_fixes.py", "test_aud18_fixes.py", "test_aud19_fixes.py", "test_aud20_fixes.py"]:
             t_path = os.path.join(ROOT_DIR, "scratch", test_file)
             if os.path.exists(t_path):
                 zf.write(t_path, arcname=f"tests/{test_file}")

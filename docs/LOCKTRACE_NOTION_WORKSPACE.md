@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.9.3` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.9.4` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -569,7 +569,7 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 
 ---
 
-## 🛡️ 22. LockTrace v2.9.3: Köprü Kuyruk Kilit Çözümü, Toz Yakım Sınırı & Repomix Varlık Filtresi (AUD19)
+## 🛡️ 22. LockTrace v2.9.4: Köprü Kuyruk Kilit Çözümü, Toz Yakım Sınırı & Repomix Varlık Filtresi (AUD19)
 
 1. **Köprü Kuyruk Blokajı ve Kilit Çözümü (AUD19-01):** `process_pending_locks` içinde geçersiz 64-hex hash formatı, sıfır/negatif tutarlar ve 2 saat boyunca blokta onaylanmayan kilit işlemleri `FAILED` işaretlenerek `LIMIT 10` baş-sıra tıkanması giderildi.
 2. **Köprü Çekim Decimal Hassasiyeti & 1 wBCT Minimum Yakım (AUD19-02):** `process_pending_burns` içinde `float()` kaldırılarak hassas `Decimal` hesaplamaya geçildi; `WrappedBCT.sol` kontratına `MIN_BURN_AMOUNT = 1 wBCT` anti-toz yakım koruması eklendi.
@@ -578,3 +578,17 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 5. **Yerel Test Düğüm Senkronizasyon Listesi Genişletmesi (AUD19-05):** `scripts/sync_local_node.py` dosyasına `config.py`, `core/wallet.py`, `core/mnemonic.py` ve `core/bridge_relayer.py` eklendi.
 6. **Çift SHA-256 ve Kontrat Parametre Dokümantasyon Uyumu (AUD19-06):** Cüzdan adres türetiminin Double SHA-256 olduğu dokümanlarda netleştirildi ve `docs/LIQUIDITY_AND_BRIDGE_GUIDE.md` içindeki kurucu parametresi `initialRelayer` ile eşitlendi.
 7. **Repomix Base64 Varlık Filtresi & Paket Hafifletmesi (AUD19-07):** `.repomixignore` ve `repomix.config.json` ile ağır SVG/görsel dosyaları XML denetim çıktısından hariç tutuldu; repomix token tüketimi ~84.200 token hafifletildi.
+
+---
+
+## 🛡️ 23. LockTrace v2.9.4: Cüzdan Kasası, Kalıcı Slashing, Sybil-Güvenli Quorum & Köprü Korumaları (F-01 – F-10, N-01)
+
+1. **F-01 Cüzdan Kasası:** `sha256Bytes` dışa aktarıldı; sıfır anahtar akışı (düz metin) yerine fail-closed şifreleme; eski kayıtlar otomatik göç eder.
+2. **F-03 Kalıcı Slashing:** Çifte imza defteri ve slashed validator listesi SQLite'ta saklanır; restart'ta sıfırlanmaz.
+3. **F-04 Sybil Quorum:** Attestation sayımı `node_id` yerine validator cüzdanına göre yapılır.
+4. **F-05 Tam Tutar Eşleşmesi:** 0.0001 BCT toleransı kaldırıldı (8 hane / wei).
+5. **F-06 Mint Limitleri:** Relayer işlem/24 saat limitleri ve kontratta `maxMintPerTx`, `dailyMintLimit`, 2 gün timelock.
+6. **F-07 CSP:** `script-src`'ten `unsafe-inline` ve CDN'ler kaldırıldı; inline scriptler SHA-256 ile sabitlendi; kütüphaneler self-host (SRI).
+7. **F-08 Geçici Durumlar:** pending/mempool/RPC/rezerv hataları artık FAILED yapmaz.
+8. **F-10 İmzalı Emir:** Köprü emri oluşturma cüzdan imzası gerektirir; başkasının emri iade edilmez.
+9. **N-01 Otomatik Devam:** 2 saatte bloğa girmeyen kilitler `STALLED` olur ve onaylanınca otomatik mint edilir.

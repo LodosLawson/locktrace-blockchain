@@ -490,7 +490,17 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Local Test Node Sync List Expansion (AUD19-05):** Added `config.py`, `core/wallet.py`, `core/mnemonic.py`, and `core/bridge_relayer.py` to `scripts/sync_local_node.py`.
    - **Architecture & Constructor Parameter Documentation Alignment (AUD19-06):** Corrected address derivation description to Double SHA-256 and aligned constructor parameter to `initialRelayer` in bridge guides.
    - **Repomix Asset Exclusion & XML Bundle De-bloat (AUD19-07):** Added `.repomixignore` and `repomix.config.json` to filter heavy base64 SVG/raster images, reducing repomix token footprint by 84,200+ tokens.
-23. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+23. **Wallet Vault, Slashing Persistence, Sybil-Safe Quorum, Bridge Guardrails & Hash-Pinned CSP (v2.9.4):**
+   - **F-01:** `LockTraceCrypto.sha256Bytes` exported; device vault no longer degrades to a zero keystream (fail-closed) and legacy plaintext envelopes are migrated and re-encrypted on first load.
+   - **F-03:** Equivocation ledger (`attestation_ledger`) and `slashed_validators` persisted in SQLite; slashing survives node restarts.
+   - **F-04:** Attestation quorum counts distinct validator wallets (not `node_id`), closing the multi-node_id Sybil path.
+   - **F-05:** Bridge lock/burn amounts matched exactly (8-decimals / wei) — the 0.0001 BCT tolerance is gone.
+   - **F-06:** Relayer per-tx and rolling 24h mint caps (`HELD` for review) plus `WrappedBCT.sol` `maxMintPerTx` / `dailyMintLimit` with a 2-day timelocked change process.
+   - **F-07:** `script-src` without `'unsafe-inline'`; inline scripts pinned by SHA-256 (`scripts/sync_csp.py`), `html5-qrcode` and `ethers` self-hosted under `frontend/vendor/` with SRI; unpkg/cdnjs/jsdelivr removed. Residual: Tailwind Play CDN and inline event-handler attributes (`script-src-attr`) pending a build-step migration.
+   - **F-08:** Pending / mempool / confirmation / RPC / vault-reserve conditions are retryable and never mark an order `FAILED` (server returns 409).
+   - **F-10:** `/api/v1/bridge/order` requires a wallet ECDSA signature over `BRIDGE_ORDER:<dir>:<bct>:<evm>:<amount>:<chain>`; an existing L1-lock order is never handed to a different owner/destination.
+   - **N-01:** L1 locks not sealed within 2h are parked as `STALLED` and automatically re-queued once sealed.
+24. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

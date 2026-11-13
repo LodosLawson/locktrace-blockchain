@@ -423,6 +423,11 @@ class Blockchain:
             self._storage = SQLiteStorage(os.path.join(active_dir, "blockchain.db"))
             self._storage_dir_bound = active_dir
             self._loaded_revision = -1
+            try:
+                # F-03: slashing survives restarts
+                self.slashed_validators.update(self._storage.load_slashed_validators())
+            except Exception as _sl_err:
+                logger.warning(f"Could not load persisted slashed validators: {_sl_err}")
         return self._storage
 
     def _init_default_nodes(self):
@@ -3941,25 +3946,28 @@ class Blockchain:
             if val_stake < MIN_VALIDATOR_STAKE:
                 return False, f"Insufficient staked collateral ({val_stake:.2f} BCT). Minimum {MIN_VALIDATOR_STAKE:.2f} BCT must be locked in the validator stake vault to attest blocks.", None
 
-            # Equivocation Detection (Slashing defense: must precede canonical hash filter to punish fork-signers)
-            val_key = f"{clean_miner}:{block_index}"
-            prev_hash = self._attestations_by_validator.get(val_key)
-            if prev_hash and prev_hash.lower() != clean_hash.lower():
-                logger.error(f"[SLASHING] Equivocation detected! Validator {clean_miner} double-attested block #{block_index} ({prev_hash} vs {clean_hash})")
-                self.slashed_validators[clean_miner] = {
+            # Equivocation Detection (F-03: persisted ledger survives restarts; must precede canonical hash filter)
+            storage = self._get_storage()
+            prev_hashes = storage.record_validator_attestation(clean_miner, block_index, clean_hash)
+            conflicting = [h for h in prev_hashes if h.lower() != clean_hash.lower()]
+            if conflicting:
+                logger.error(f"[SLASHING] Equivocation detected! Validator {clean_miner} double-attested block #{block_index} ({conflicting[0]} vs {clean_hash})")
+                slash_info = {
                     "block_index": block_index,
-                    "hash_a": prev_hash,
+                    "hash_a": conflicting[0],
                     "hash_b": clean_hash,
                     "timestamp": time.time(),
                     "slashed": True
                 }
+                self.slashed_validators[clean_miner] = slash_info
+                storage.save_slashed_validator(clean_miner, slash_info)
                 return False, f"Equivocation detected on block #{block_index}! Validator stake has been slashed.", None
+            if clean_miner in self.slashed_validators:
+                return False, "Validator has been slashed for equivocation.", None
 
             target_block = self.chain[block_index]
             if target_block.hash.lower() != clean_hash:
                 return False, "Block hash mismatch against canonical chain! (Fork or corrupted data)", None
-
-            self._attestations_by_validator[val_key] = clean_hash
 
             existing = self.nodes.get(clean_id)
             if existing and existing.get("is_genesis"):
@@ -3967,7 +3975,6 @@ class Blockchain:
             if existing and existing.get("owner_public_key") and existing["owner_public_key"] != clean_pub:
                 return False, "This node_id is registered to another cryptographic key!", None
 
-            storage = self._get_storage()
             inserted, total_att = storage.record_attestation(
                 block_index=block_index,
                 node_id=clean_id,

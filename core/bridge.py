@@ -136,7 +136,7 @@ def verify_evm_burn_receipt(
                 canon_recip = _to_canonical_bct(recip_str)
                 canon_expected = _to_canonical_bct(clean_recipient)
 
-                if canon_recip == canon_expected and abs(amount_bct - expected_amount) < 0.0001:
+                if canon_recip == canon_expected and amount_wei == int((Decimal(str(expected_amount)) * Decimal(10 ** 18)).to_integral_value()):
                     matched_event = {
                         "sender": sender_addr,
                         "amount_bct": amount_bct,
@@ -153,6 +153,19 @@ def verify_evm_burn_receipt(
         ), {}
 
     return True, "Verified", matched_event
+
+_TRANSIENT_BRIDGE_MARKERS = (
+    "pending", "mempool", "not yet", "confirmation", "reorg security",
+    "network_error", "timeout", "timed out", "rpc", "connect",
+    "insufficient locked balance", "bekleniyor",
+)
+
+
+def is_transient_bridge_error(msg: str) -> bool:
+    """F-08: Errors that are retryable (unconfirmed / mempool / RPC / reserve) must never mark an order FAILED."""
+    low = str(msg or "").lower()
+    return any(k in low for k in _TRANSIENT_BRIDGE_MARKERS)
+
 
 BRIDGE_VAULT_ADDRESS = "BCT_BRIDGE_VAULT_000000000000000000000000000000000"
 SUPPORTED_CHAINS = {
@@ -308,7 +321,11 @@ class BridgeManager:
                     (tx_hash_l1,)
                 ).fetchone()
                 if existing:
-                    return {"success": True, "data": dict(existing)}
+                    ex = dict(existing)
+                    if (str(ex.get("bct_address", "")).lower() != clean_bct.lower()
+                            or str(ex.get("evm_address", "")).lower() != clean_evm):
+                        return {"success": False, "error": "This Layer-1 lock transaction is already bound to a different bridge order."}
+                    return {"success": True, "data": ex}
 
         # Generate unique deterministic bridge identifier
         seed_str = f"{direction}:{clean_bct}:{clean_evm}:{amount_bct}:{now}:{os.urandom(8).hex()}"

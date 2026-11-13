@@ -24,7 +24,9 @@
       ".git/**",
       "node_modules/**",
       "venv/**",
-      "target/**"
+      "target/**",
+      "frontend/vendor/**"
     ]
   }
 }
+

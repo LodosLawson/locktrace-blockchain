@@ -45,7 +45,7 @@ from core.wallet import (
 )
 from core.mnemonic import generate_mnemonic, validate_mnemonic
 from core.thirdweb_service import thirdweb_service
-from core.bridge import BridgeManager, BRIDGE_VAULT_ADDRESS, verify_evm_burn_receipt
+from core.bridge import BridgeManager, BRIDGE_VAULT_ADDRESS, verify_evm_burn_receipt, is_transient_bridge_error
 
 bridge_manager = BridgeManager(getattr(Config, "DB_PATH", "blockchain.db"))
 
@@ -332,7 +332,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'unsafe-inline' https://cdn.tailwindcss.com https://fonts.googleapis.com; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-5/Llz7miBXGGNAUrB01LctYuBTO9QiN6M0N1yK1QFY0=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -2816,9 +2816,11 @@ def _verify_l1_bridge_lock_tx(tx_hash_l1: str, expected_sender: str, expected_am
     if expected_sender and sender.lower() != expected_sender.strip().lower():
         return False, "Transaction sender does not match the bridge order BCT wallet address."
 
+    from decimal import Decimal as _D
+    _q = _D("0.00000001")
     actual_amount = float(tx_obj.get("amount") or 0.0)
-    if abs(actual_amount - float(expected_amount)) > 0.0001:
-        return False, f"Locked amount mismatch: expected {expected_amount:.4f} BCT, found {actual_amount:.4f} BCT."
+    if _D(str(actual_amount)).quantize(_q) != _D(str(float(expected_amount))).quantize(_q):
+        return False, f"Locked amount mismatch: expected {expected_amount:.8f} BCT, found {actual_amount:.8f} BCT."
 
     return True, "Verified"
 
@@ -2840,6 +2842,12 @@ def api_bridge_create_order():
     amount_bct = safe_float(payload.get("amount"))
     if amount_bct is None or amount_bct <= 0:
         return api_response(False, message="Invalid transfer amount.", status=400)
+
+    # F-10: orders are bound to the wallet owner's signature (BCT address + EVM destination + amount + chain)
+    order_canonical = f"BRIDGE_ORDER:{direction}:{bct_address}:{evm_address.lower()}:{amount_bct:.8f}:{chain}"
+    ok_auth, auth_status, auth_err, _sig, _pub, _signed = resolve_authenticated_action(payload, bct_address, order_canonical)
+    if not ok_auth:
+        return api_response(False, message=auth_err or "Wallet signature required to create bridge orders.", status=auth_status)
 
     if direction == "L1_TO_EVM" and tx_hash_l1:
         ok_lock, lock_err = _verify_l1_bridge_lock_tx(tx_hash_l1, bct_address, amount_bct)
@@ -3061,6 +3069,9 @@ def api_bridge_claim_burn():
                     "evm_tx_hash": evm_tx_hash,
                     "message": msg
                 }, status=200)
+            elif is_transient_bridge_error(msg):
+                # F-08: pending / mempool / reserve / RPC conditions are retryable, never FAILED
+                return api_response(False, message=msg, status=409)
             else:
                 if bridge_id:
                     with bridge_manager._get_connection() as conn:
