@@ -12,7 +12,7 @@ import re
 from reportlab.lib.pagesizes import A4
 from reportlab.lib import colors
 from reportlab.platypus import (
-    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable, KeepTogether
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, PageBreak, HRFlowable, KeepTogether, Image
 )
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib.units import inch
@@ -48,7 +48,7 @@ class NumberedCanvas(canvas.Canvas):
         # Do not print header on page 1 (cover)
         if self._pageNumber > 1:
             # Running Header
-            self.drawString(54, 800, "LockTrace (BCT) Technical Whitepaper — Protocol Specification v2.9.4")
+            self.drawString(54, 800, "BlocTag (BCT) Technical Whitepaper — Developed by LockTrace — Protocol v2.9.4")
             self.setStrokeColor(colors.HexColor("#E2E8F0"))
             self.setLineWidth(0.5)
             self.line(54, 792, 541, 792)
@@ -57,7 +57,7 @@ class NumberedCanvas(canvas.Canvas):
         self.setStrokeColor(colors.HexColor("#E2E8F0"))
         self.setLineWidth(0.5)
         self.line(54, 45, 541, 45)
-        self.drawString(54, 32, "https://www.locktrace.space | Base Mainnet: 0xA3C743113a41cFd0146917065d4578337Bb77254")
+        self.drawString(54, 32, "https://www.locktrace.space | Base: 0xA3C743113a41cFd0146917065d4578337Bb77254 | X: @bloctag | TG: @LOCKTRACESPACE")
         self.drawRightString(541, 32, f"Page {self._pageNumber} of {page_count}")
         self.restoreState()
 
@@ -230,8 +230,27 @@ def generate_pdf():
 
     story = []
 
-    # Title & Metadata
-    story.append(Paragraph("LockTrace (BCT) Technical Whitepaper", title_style))
+    # Title, Logo & Metadata
+    logo_path = os.path.join(ROOT_DIR, "docs", "locktrace_logo.png")
+    if os.path.exists(logo_path):
+        logo_img = Image(logo_path, width=44, height=44)
+        title_flowables = [
+            Paragraph("BlocTag (BCT) Technical Whitepaper", title_style),
+            Paragraph("<b>Developed by LockTrace</b> &bull; Production Release v2.9.4", subtitle_style),
+        ]
+        header_table = Table([[logo_img, title_flowables]], colWidths=[52, 435])
+        header_table.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('LEFTPADDING', (0,0), (-1,-1), 0),
+            ('RIGHTPADDING', (0,0), (-1,-1), 0),
+            ('TOPPADDING', (0,0), (-1,-1), 0),
+            ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ]))
+        story.append(header_table)
+    else:
+        story.append(Paragraph("BlocTag (BCT) Technical Whitepaper", title_style))
+        story.append(Paragraph("<b>Developed by LockTrace</b> &bull; Production Release v2.9.4", subtitle_style))
+
     story.append(Paragraph(
         "A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain "
         "for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi",
@@ -240,16 +259,20 @@ def generate_pdf():
 
     meta_box = [
         [
-            Paragraph("<b>Protocol Release:</b> v2.9.4 (Production Mainnet)", meta_style),
+            Paragraph("<b>Blockchain Network:</b> BlocTag (BCT Mainnet v2.9.4)", meta_style),
+            Paragraph("<b>Core R&amp;D Architecture:</b> Developed by LockTrace", meta_style)
+        ],
+        [
+            Paragraph("<b>Official Mainnet Explorer:</b> https://www.locktrace.space", meta_style),
             Paragraph("<b>Release Authority:</b> BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080", meta_style)
         ],
         [
-            Paragraph("<b>Official Mainnet:</b> https://www.locktrace.space", meta_style),
-            Paragraph("<b>Bridge Proof-of-Reserve Vault:</b> BCT_BRIDGE_VAULT_000000000000000000000000000000000", meta_style)
+            Paragraph("<b>Social Channels:</b> X: @bloctag | TG: @LOCKTRACESPACE | IG: @bloctag", meta_style),
+            Paragraph("<b>Community Chat:</b> https://t.me/+boFrw-gPj0g5ODEy", meta_style)
         ],
         [
             Paragraph("<b>Base Mainnet wBCT ERC-20:</b> 0xA3C743113a41cFd0146917065d4578337Bb77254", meta_style),
-            Paragraph("<b>Validator Staking Vault:</b> BCT_STAKE_VAULT_00000000000000000000000000000000", meta_style)
+            Paragraph("<b>Bridge Proof-of-Reserve Vault:</b> BCT_BRIDGE_VAULT_000000000000000000000000000000000", meta_style)
         ]
     ]
     t_meta = Table(meta_box, colWidths=[240, 247])
@@ -370,11 +393,15 @@ def generate_pdf():
     doc.build(story, canvasmaker=NumberedCanvas)
     print(f"[SUCCESS] Built PDF: {PDF_OUTPUT_PATH} ({os.path.getsize(PDF_OUTPUT_PATH):,} bytes)")
 
-    # Distribute to all replica locations
+    # Distribute to all replica locations (both LockTrace_Whitepaper.pdf and BlocTag_Whitepaper.pdf)
     targets = [
         os.path.join(ROOT_DIR, "LockTrace_Whitepaper.pdf"),
+        os.path.join(ROOT_DIR, "BlocTag_Whitepaper.pdf"),
+        os.path.join(ROOT_DIR, "docs", "BlocTag_Whitepaper.pdf"),
         os.path.join(ROOT_DIR, "frontend", "LockTrace_Whitepaper.pdf"),
+        os.path.join(ROOT_DIR, "frontend", "BlocTag_Whitepaper.pdf"),
         os.path.join(ROOT_DIR, "frontend", "docs", "LockTrace_Whitepaper.pdf"),
+        os.path.join(ROOT_DIR, "frontend", "docs", "BlocTag_Whitepaper.pdf"),
     ]
     with open(PDF_OUTPUT_PATH, "rb") as f:
         pdf_bytes = f.read()

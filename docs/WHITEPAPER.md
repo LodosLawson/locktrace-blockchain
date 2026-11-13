@@ -1,9 +1,10 @@
-# LockTrace (BCT) Technical Whitepaper — v2.9.4
+# BlocTag (BCT) Technical Whitepaper — v2.9.4
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
 *Version 2.9.4 — November 2026*  
-*LockTrace Core Architecture Team & Decentralized Validator Community*  
-*Official Mainnet:* [https://www.locktrace.space](https://www.locktrace.space)  
+*Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
+*Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
+*Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
 *Genesis Release Authority:* `BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080`  
 *Treasury Vault:* `BCT_HAZINE_0000000000000000000000000000000000000000`  
 *Bridge Proof-of-Reserve Vault:* `BCT_BRIDGE_VAULT_000000000000000000000000000000000`  
@@ -17,7 +18,7 @@
 
 Modern digital communication, identity naming, and financial settlement remain heavily monopolized by centralized platforms that impose unilateral censorship, algorithmic rent-seeking, custodial insolvency risks, and severe latency bottlenecks. Conversely, legacy Layer-1 blockchains suffer from either prohibitive gas fees, sequential execution bottlenecks that freeze user interfaces during block production, or plutocratic validator cartels.
 
-**LockTrace (Ticker: BCT)** introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (LockTrace Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
+**BlocTag (Ticker: BCT)**, developed by LockTrace, introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (BlocTag Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
 In **Version 2.9.4**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
 1. **High Start-Nonce Rayon Clamping (AUD16-01):** Clamped `max_nonces` in `crates/locktrace_core/src/pow.rs` and bounded 64-bit integer ranges to eliminate empty chunk Rayon iterations and 100% CPU thread exhaustion.
