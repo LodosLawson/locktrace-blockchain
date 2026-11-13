@@ -1,7 +1,7 @@
 # =====================================================================
 # LockTrace Decentralized Node & Verified Web Launcher (Windows)
 # =====================================================================
-Write-Host "=== LockTrace Decentralized Node & Web Setup (v2.9.2) ===" -ForegroundColor Cyan
+Write-Host "=== LockTrace Decentralized Node & Web Setup (v2.9.3) ===" -ForegroundColor Cyan
 
 $pyCmd = Get-Command python -ErrorAction SilentlyContinue
 if (!$pyCmd) { $pyCmd = Get-Command py -ErrorAction SilentlyContinue }

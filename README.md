@@ -482,7 +482,15 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **BIP-39 NFKD Unicode Normalization & Consolidated Curve Order (AUD18-05):** Applied strict `unicodedata.normalize("NFKD", ...)` to `self.mnemonic` in `core/wallet.py` and consolidated SECP256k1 order constants.
    - **Nginx Permissions-Policy Child Location Inheritance (AUD18-06):** Preserved `Permissions-Policy` across all child locations (`/node_runner.py`, `/sw.js`, `/integrity.json`, assets) in `deploy/nginx.conf` and `deploy/nginx_ssl.conf`.
    - **Audit Synchronization & v2.9.2 Protocol Bump (AUD18-07):** Synchronized release versions, audit test suites, and XML bundles across the entire repository.
-22. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+22. **Bridge Queue Anti-Deadlock, Anti-Dust Burn & Repomix Asset Optimization (v2.9.3):**
+   - **Bridge Queue Anti-Deadlock (AUD19-01):** Prevented head-of-line blocking in `process_pending_locks` by marking invalid 64-hex hashes, non-positive amounts, and unsealed orders as `FAILED`.
+   - **Decimal Precision & Anti-Dust Burn Limit (AUD19-02):** Replaced `float()` with `Decimal` in `process_pending_burns` to prevent zero fallback bugs, and added `MIN_BURN_AMOUNT = 1 wBCT` in `WrappedBCT.sol`.
+   - **Nginx Single Content-Type Directive (AUD19-03):** Replaced `add_header Content-Type` with `default_type text/x-python;` in `location = /node_runner.py` in `deploy/nginx.conf` and `deploy/nginx_ssl.conf`.
+   - **Whitepaper PDF Generator Robust Header Filter (AUD19-04):** Generalized markdown title filter `*Version ` in `scripts/build_whitepaper_pdf.py`, preventing duplicated version strings in PDF outputs.
+   - **Local Test Node Sync List Expansion (AUD19-05):** Added `config.py`, `core/wallet.py`, `core/mnemonic.py`, and `core/bridge_relayer.py` to `scripts/sync_local_node.py`.
+   - **Architecture & Constructor Parameter Documentation Alignment (AUD19-06):** Corrected address derivation description to Double SHA-256 and aligned constructor parameter to `initialRelayer` in bridge guides.
+   - **Repomix Asset Exclusion & XML Bundle De-bloat (AUD19-07):** Added `.repomixignore` and `repomix.config.json` to filter heavy base64 SVG/raster images, reducing repomix token footprint by 84,200+ tokens.
+23. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

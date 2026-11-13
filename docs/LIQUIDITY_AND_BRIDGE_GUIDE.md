@@ -56,7 +56,7 @@ The verified smart contract is located at [`contracts/WrappedBCT.sol`](../contra
    - Ensure your MetaMask is connected to **Base Mainnet** (Chain ID: `8453`, RPC: `https://mainnet.base.org`).
    - In the contract dropdown, select `WrappedBCT`.
    - Enter constructor parameters:
-     - `initialBridgeAuthority`: Your deployer address or the automated bridge operator address (`0x...`).
+     - `initialRelayer`: Your deployer address or the automated bridge operator address (`0x...`).
    - Click **Deploy** (Estimated Base network fee: $\approx \$0.05$).
 6. Save the deployed contract address (e.g. `0x1234...abcd`).
 

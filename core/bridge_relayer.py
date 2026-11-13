@@ -191,7 +191,7 @@ class BridgeRelayer:
         try:
             rows = conn.execute("""
                 SELECT bridge_id, direction, status, bct_address, evm_address,
-                       net_amount, tx_hash_l1
+                       net_amount, tx_hash_l1, created_at
                 FROM bridge_transactions
                 WHERE status = 'LOCKED'
                   AND direction = 'L1_TO_EVM'
@@ -212,9 +212,31 @@ class BridgeRelayer:
         for r in rows:
             bridge_id = r["bridge_id"]
             evm_dest = r["evm_address"]
-            # AUD17B-06: Direct Decimal parsing without intermediate float64 loss
-            net_amt_dec = Decimal(str(r["net_amount"]))
-            l1_hash = r["tx_hash_l1"]
+            l1_hash = str(r["tx_hash_l1"] or "").strip()
+            clean_l1 = l1_hash.lower().removeprefix("0x")
+
+            # AUD19-01: Validate L1 tx hash format (must be 64 hex characters)
+            if not re.fullmatch(r"[0-9a-f]{64}", clean_l1):
+                logger.error(f"Bridge {bridge_id}: Invalid tx_hash_l1 format ({l1_hash}). Marking FAILED to unblock queue.")
+                self._mark_failed(bridge_id, "Geçersiz L1 işlem özeti formatı (64-hex karakter bekleniyor).")
+                continue
+
+            # AUD17B-06 & AUD19-01: Direct Decimal parsing with non-positive guard
+            try:
+                net_amt_dec = Decimal(str(r["net_amount"]))
+            except Exception:
+                net_amt_dec = Decimal("0")
+
+            if net_amt_dec <= Decimal("0"):
+                logger.error(f"Bridge {bridge_id}: Non-positive net amount ({net_amt_dec}). Marking FAILED to unblock queue.")
+                self._mark_failed(bridge_id, "Geçersiz veya sıfır köprü kilit tutarı.")
+                continue
+
+            amt_wei = int((net_amt_dec * Decimal(10 ** 18)).to_integral_value())
+            if amt_wei <= 0:
+                logger.error(f"Bridge {bridge_id}: amt_wei <= 0 after 18-decimal conversion. Marking FAILED.")
+                self._mark_failed(bridge_id, "Geçersiz veya sıfır wei tutarı.")
+                continue
 
             # L1 Finality Verification: Ensure lock transaction is sealed in an attested/deep block
             # AUD17B-05: Ensure check_conn is safely closed in a finally block
@@ -224,7 +246,13 @@ class BridgeRelayer:
                 check_conn.row_factory = sqlite3.Row
                 tx_row = check_conn.execute("SELECT block_index FROM tx_lookup WHERE tx_hash = ?", (l1_hash,)).fetchone()
                 if not tx_row:
-                    logger.info(f"Bridge {bridge_id}: L1 lock tx {l1_hash[:16]}... not yet sealed in a block. Deferring mint.")
+                    age = time.time() - float(r["created_at"] or 0)
+                    if age > 7200:
+                        # AUD19-01: Mark expired/unsealed locks as FAILED to prevent head-of-line blocking
+                        logger.error(f"Bridge {bridge_id}: L1 lock tx {clean_l1[:16]} not sealed after {int(age)}s. Marking FAILED.")
+                        self._mark_failed(bridge_id, "L1 kilit işlemi 2 saat içinde onaylanmadı; sipariş zaman aşımına uğradı.")
+                    else:
+                        logger.info(f"Bridge {bridge_id}: L1 lock tx {clean_l1[:16]}... not yet sealed in a block. Deferring mint.")
                     continue
                 l1_b_idx = tx_row["block_index"]
                 att_c = check_conn.execute("SELECT COUNT(*) AS c FROM block_attestations WHERE block_index = ?", (l1_b_idx,)).fetchone()["c"]
@@ -252,9 +280,6 @@ class BridgeRelayer:
                 logger.warning(f"Rejecting bridge {bridge_id}: invalid destination or token contract address ({evm_dest})")
                 self._mark_failed(bridge_id, "Geçersiz EVM adresi veya kontrat adresine gönderim yapılamaz.")
                 continue
-
-            # Exact amount in 18 decimals (immune to float64 IEEE-754 drift)
-            amt_wei = int((net_amt_dec * Decimal(10 ** 18)).to_integral_value())
 
             logger.info(f"Minting {net_amt_dec} wBCT to {evm_dest} (L1 Hash: {l1_hash})...")
             tx_evm = self._mint_on_base(evm_dest, amt_wei, l1_hash)
@@ -391,7 +416,22 @@ class BridgeRelayer:
             bct_dest = str(r["bct_address"] or "").strip()
             if bct_dest.upper().startswith("BCT") and len(bct_dest) == 43:
                 bct_dest = "BCT" + bct_dest[3:].lower()
-            amt = float(r["net_amount"] or r["amount_bct"])
+
+            # AUD19-02: Precise Decimal parsing without float IEEE-754 precision loss or zero fallback bugs
+            raw_net = r["net_amount"]
+            raw_gross = r["amount_bct"]
+            val_to_parse = raw_net if (raw_net is not None and str(raw_net).strip() != "") else raw_gross
+            try:
+                amt_dec = Decimal(str(val_to_parse).strip())
+            except Exception:
+                amt_dec = Decimal("0")
+
+            if amt_dec <= Decimal("0"):
+                logger.error(f"Bridge {bridge_id}: Invalid or zero burn net amount ({amt_dec}). Marking FAILED to unblock queue.")
+                self._mark_failed(bridge_id, "Geçersiz veya sıfır köprü çekim tutarı.")
+                continue
+
+            amt = float(amt_dec)
             evm_hash = r["tx_hash_evm"]
             evm_sender = r["evm_address"]
 

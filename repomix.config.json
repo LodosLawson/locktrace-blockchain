@@ -1,0 +1,30 @@
+{
+  "output": {
+    "filePath": "repomix-output.xml",
+    "style": "xml",
+    "removeComments": false,
+    "removeEmptyLines": false
+  },
+  "ignore": {
+    "customPatterns": [
+      "**/*.svg",
+      "**/*.png",
+      "**/*.ico",
+      "**/*.jpg",
+      "**/*.jpeg",
+      "**/*.pdf",
+      "**/*.tar.gz",
+      "**/*.zip",
+      "**/*.exe",
+      "**/*.dll",
+      "**/*.so",
+      "**/*.dylib",
+      "output/**",
+      "scratch/**",
+      ".git/**",
+      "node_modules/**",
+      "venv/**",
+      "target/**"
+    ]
+  }
+}

@@ -1,0 +1,20 @@
+# Repomix Ignore Patterns
+# AUD19-07: Exclude heavy binary / raster base64 SVG assets and archives from security audit XML
+**/*.svg
+**/*.png
+**/*.ico
+**/*.jpg
+**/*.jpeg
+**/*.pdf
+**/*.tar.gz
+**/*.zip
+**/*.exe
+**/*.dll
+**/*.so
+**/*.dylib
+output/
+scratch/
+.git/
+node_modules/
+venv/
+target/

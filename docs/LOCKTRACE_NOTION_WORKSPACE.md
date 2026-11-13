@@ -212,7 +212,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.9.2` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.9.3` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -566,3 +566,15 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 5. **BIP-39 NFKD Unicode Normalizasyonu & Eğri Mertebesi Birleştirmesi (AUD18-05):** `core/wallet.py` içinde `self.mnemonic` için `unicodedata.normalize("NFKD", ...)` uygulandı ve `SECP256K1_ORDER` tekilleştirildi.
 6. **Nginx Permissions-Policy Alt Konum Mirası (AUD18-06):** `nginx.conf` ve `nginx_ssl.conf` içerisindeki tüm alt `location` bloklarına `Permissions-Policy` başlığı eklenerek tarayıcı güvenlik başlığı korundu.
 7. **Denetim Paketi & SSOT Protokol Senkronizasyonu (AUD18-07):** Protokol `v2.9.2` sürümüne yükseltildi, `repomix-output_19.xml` ve `test_aud18_fixes.py` güvenlik paketine dahil edildi.
+
+---
+
+## 🛡️ 22. LockTrace v2.9.3: Köprü Kuyruk Kilit Çözümü, Toz Yakım Sınırı & Repomix Varlık Filtresi (AUD19)
+
+1. **Köprü Kuyruk Blokajı ve Kilit Çözümü (AUD19-01):** `process_pending_locks` içinde geçersiz 64-hex hash formatı, sıfır/negatif tutarlar ve 2 saat boyunca blokta onaylanmayan kilit işlemleri `FAILED` işaretlenerek `LIMIT 10` baş-sıra tıkanması giderildi.
+2. **Köprü Çekim Decimal Hassasiyeti & 1 wBCT Minimum Yakım (AUD19-02):** `process_pending_burns` içinde `float()` kaldırılarak hassas `Decimal` hesaplamaya geçildi; `WrappedBCT.sol` kontratına `MIN_BURN_AMOUNT = 1 wBCT` anti-toz yakım koruması eklendi.
+3. **Nginx Tekil Content-Type Yapılandırması (AUD19-03):** `deploy/nginx.conf` ve `deploy/nginx_ssl.conf` içindeki `/node_runner.py` bloğunda `add_header Content-Type` yerine `default_type text/x-python;` kullanılarak çift başlık sorunu giderildi.
+4. **Whitepaper PDF Üreteci Genel Başlık Filtresi (AUD19-04):** `scripts/build_whitepaper_pdf.py` markdown filtre satırı `*Version ` olarak genişletilerek PDF kapağında mükerrer sürüm yazımı engellendi.
+5. **Yerel Test Düğüm Senkronizasyon Listesi Genişletmesi (AUD19-05):** `scripts/sync_local_node.py` dosyasına `config.py`, `core/wallet.py`, `core/mnemonic.py` ve `core/bridge_relayer.py` eklendi.
+6. **Çift SHA-256 ve Kontrat Parametre Dokümantasyon Uyumu (AUD19-06):** Cüzdan adres türetiminin Double SHA-256 olduğu dokümanlarda netleştirildi ve `docs/LIQUIDITY_AND_BRIDGE_GUIDE.md` içindeki kurucu parametresi `initialRelayer` ile eşitlendi.
+7. **Repomix Base64 Varlık Filtresi & Paket Hafifletmesi (AUD19-07):** `.repomixignore` ve `repomix.config.json` ile ağır SVG/görsel dosyaları XML denetim çıktısından hariç tutuldu; repomix token tüketimi ~84.200 token hafifletildi.

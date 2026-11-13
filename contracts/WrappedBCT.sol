@@ -134,6 +134,7 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable2Step, Pausable {
     uint8 private constant _decimals = 18;
 
     uint256 public constant MAX_SUPPLY = 1_000_000_000_000 * 10 ** 18; // 1 Trillion wBCT
+    uint256 public constant MIN_BURN_AMOUNT = 1 * 10 ** 18;             // 1 wBCT Minimum Burn (AUD19-02 Anti-Dust)
     uint256 private _totalSupply;
 
     mapping(address => uint256) private _balances;
@@ -317,7 +318,7 @@ contract WrappedBCT is Context, IERC20Metadata, Ownable2Step, Pausable {
         uint256 amount,
         string calldata locktraceRecipient
     ) external whenNotPaused {
-        require(amount > 0, "wBCT: Amount must be greater than zero");
+        require(amount >= MIN_BURN_AMOUNT, "wBCT: Amount below minimum burn amount (1 wBCT)");
         bytes calldata rBytes = bytes(locktraceRecipient);
         require(rBytes.length == 43, "wBCT: Invalid LockTrace address length");
         require(
