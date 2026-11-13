@@ -332,7 +332,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-5/Llz7miBXGGNAUrB01LctYuBTO9QiN6M0N1yK1QFY0=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-fUzi84WTJKZyW1wwcsCp8berBixNVkE1XkIrjga/QTM=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1801,7 +1801,7 @@ def api_mine_block():
 
 
 # ══════════════════════════════════════════════════════
-# 🪐 LockTrace Space (On-Chain Decentralized Social Feed)
+# 🪐 BlocTag (On-Chain Decentralized Social Feed)
 # ══════════════════════════════════════════════════════
 
 @app.route("/api/v1/space/feed", methods=["GET"])
@@ -1819,7 +1819,7 @@ def api_space_feed():
 
 @app.route("/api/v1/space/trending_tags", methods=["GET"])
 def api_space_trending_tags():
-    """Returns top trending hashtags (#) and cashtags ($) across LockTrace Space."""
+    """Returns top trending hashtags (#) and cashtags ($) across BlocTag."""
     limit = safe_int(request.args.get("limit", 15), default=15, min_val=1, max_val=50)
     data = blockchain.get_space_trending_tags(top_n=limit)
     return api_response(True, data=data)
