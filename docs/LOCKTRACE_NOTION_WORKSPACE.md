@@ -11,14 +11,16 @@
 
 | Kategori | Detay / Bağlantı | Durum |
 | :--- | :--- | :--- |
-| **Proje Adı** | **LockTrace: Decentralized Layer-1 Blockchain & Sovereign Asset Protocol** | 🟢 Aktif |
-| **Yerel Coin Sembolü** | **BCT** (BlockChain Trace) | 🟢 Mainnet |
+| **Proje Adı** | **BlocTag: Decentralized Layer-1 Blockchain (Developed by LockTrace)** | 🟢 Aktif |
+| **Geliştirici / R&D** | **Developed by LockTrace** | 🟢 Aktif |
+| **Yerel Coin Sembolü** | **BCT** (BlockChain Trace / BlocTag) | 🟢 Mainnet |
 | **Maksimum Arz** | **1,000,000,000,000.00 BCT** (1 Trilyon - Genesis'te Sabitlenmiş, Sıfır Enflasyon) | 🔒 Kilitli |
 | **Canlı Web3 Portalı & DApp** | [https://locktrace.space](https://locktrace.space) | 🟢 Online (Stockholm VPS) |
 | **Base L2 (EVM) Kontratı (wBCT)** | [`0xA3C743113a41cFd0146917065d4578337Bb77254`](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254) | 🟢 Doğrulanmış (BaseScan) |
-| **Resmi Telegram Kanalı** | [https://t.me/+zsaG1qkAHZllZGIy](https://t.me/+zsaG1qkAHZllZGIy) | 🟢 Aktif |
-| **Resmi X (Twitter)** | [@LockTraceSpace](https://x.com/LockTraceSpace) | 🟢 Aktif |
-| **Resmi Instagram** | [@locktracespace](https://www.instagram.com/locktracespace) | 🟢 Aktif |
+| **Resmi X (Twitter)** | [@bloctag](https://x.com/bloctag) | 🟢 Aktif |
+| **Resmi Telegram Duyuru Kanalı** | [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | 🟢 Aktif |
+| **Resmi Telegram Topluluk Grubu** | [https://t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | 🟢 Aktif |
+| **Resmi Instagram** | [@bloctag](https://www.instagram.com/bloctag) | 🟢 Aktif |
 | **GitHub Kaynak Kodu** | [LodosLawson/locktrace-blockchain](https://github.com/LodosLawson/locktrace-blockchain) | 🟢 Açık Kaynak |
 | **Resmi İletişim E-Posta** | `locktracetoken@gmail.com` / `locktracetoken+space@gmail.com` | 🟢 Aktif |
 

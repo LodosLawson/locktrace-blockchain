@@ -1,19 +1,20 @@
-# 🛡️ LockTrace: Decentralized Layer-1 Blockchain & Sovereign Asset Protocol
+# 🛡️ BlocTag: Decentralized Layer-1 Blockchain (Developed by LockTrace)
 
 <p align="center">
-  <img src="frontend/icons/icon-192.png" width="128" height="128" alt="LockTrace Official Logo" />
+  <img src="frontend/icons/locktrace_logo.png" width="128" height="128" alt="BlocTag Logo — Developed by LockTrace" />
 </p>
 
 [![Mainnet Status](https://img.shields.io/badge/Mainnet-Online%20%28Stockholm%29-10b981?style=for-the-badge&logo=oracle)](https://locktrace.space)
 [![Total Supply](https://img.shields.io/badge/Total%20Supply-1%20Trillion%20BCT-2563eb?style=for-the-badge)](https://locktrace.space)
 [![Base Mainnet wBCT](https://img.shields.io/badge/Base%20L2-wBCT%20Bridge-0052ff?style=for-the-badge&logo=coinbase)](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/LodosLawson/locktrace-blockchain)
-[![Telegram](https://img.shields.io/badge/Telegram-Channel-229ED9?style=for-the-badge&logo=telegram)](https://t.me/+zsaG1qkAHZllZGIy)
-[![X / Twitter](https://img.shields.io/badge/X-@LockTraceSpace-000000?style=for-the-badge&logo=x)](https://x.com/LockTraceSpace)
-[![Instagram](https://img.shields.io/badge/Instagram-@locktracespace-E4405F?style=for-the-badge&logo=instagram)](https://www.instagram.com/locktracespace)
+[![X / Twitter](https://img.shields.io/badge/X-@bloctag-000000?style=for-the-badge&logo=x)](https://x.com/bloctag)
+[![Telegram Channel](https://img.shields.io/badge/Telegram-Channel-229ED9?style=for-the-badge&logo=telegram)](https://t.me/LOCKTRACESPACE)
+[![Telegram Community](https://img.shields.io/badge/Telegram-Community-0088cc?style=for-the-badge&logo=telegram)](https://t.me/+boFrw-gPj0g5ODEy)
+[![Instagram](https://img.shields.io/badge/Instagram-@bloctag-E4405F?style=for-the-badge&logo=instagram)](https://www.instagram.com/bloctag)
 [![Official Email](https://img.shields.io/badge/Email-locktracetoken%2Bspace%40gmail.com-EA4335?style=for-the-badge&logo=gmail)](mailto:locktracetoken+space@gmail.com)
 
-LockTrace is an independent, high-performance Layer-1 decentralized blockchain ledger built for sovereign asset custody, instantaneous peer-to-peer settlement, censorship-resistant on-chain social networking, and cross-chain liquidity. Engineered with deterministic macro-monetary rules, BIP-39 mnemonic key derivation, SECP256k1 ECDSA cryptography, hybrid 70% PoW + 30% BFT Quorum consensus, native Name Service (BNS `.bct`), and cryptographically signed on-chain frontend releases.
+**BlocTag** is an independent, high-performance Layer-1 decentralized blockchain ledger **developed by LockTrace** for sovereign asset custody, instantaneous peer-to-peer settlement, censorship-resistant on-chain social networking, and cross-chain liquidity. Engineered with deterministic macro-monetary rules, BIP-39 mnemonic key derivation, SECP256k1 ECDSA cryptography, hybrid 70% PoW + 30% BFT Quorum consensus, native Name Service (BNS `.bct`), and cryptographically signed on-chain frontend releases.
 
 ---
 
@@ -21,9 +22,10 @@ LockTrace is an independent, high-performance Layer-1 decentralized blockchain l
 
 - **Official Web Portal & Web3 DApp:** [https://locktrace.space](https://locktrace.space)
 - **Official Contact & Inquiries:** [`locktracetoken@gmail.com`](mailto:locktracetoken@gmail.com) / [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com)
-- **Telegram Channel:** [https://t.me/+zsaG1qkAHZllZGIy](https://t.me/+zsaG1qkAHZllZGIy)
-- **X (Twitter):** [@LockTraceSpace](https://x.com/LockTraceSpace)
-- **Instagram:** [@locktracespace](https://www.instagram.com/locktracespace)
+- **X (Twitter):** [@bloctag](https://x.com/bloctag)
+- **Telegram Announcements:** [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE)
+- **Telegram Community Chat:** [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy)
+- **Instagram:** [@bloctag](https://www.instagram.com/bloctag)
 - **GitHub Repository:** [LodosLawson/locktrace-blockchain](https://github.com/LodosLawson/locktrace-blockchain)
 - **Base L2 Contract:** [`0xA3C743113a41cFd0146917065d4578337Bb77254`](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254)
 
