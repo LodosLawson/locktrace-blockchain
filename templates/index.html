@@ -6473,10 +6473,10 @@
   <!-- ========================================================================= -->
   <!-- MODAL 1: TRANSACTION DETAILS & SPV MERKLE PROOF                     -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-4" id="tx-modal"
+  <div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4" id="tx-modal"
     onclick="if(event.target===this) closeTxModal();">
     <div
-      class="w-full max-w-[430px] max-h-[90dvh] overflow-y-auto rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl transition-all scale-95 opacity-0 border border-outline-variant/25"
+      class="w-full max-w-[460px] max-h-[92dvh] overflow-y-auto rounded-2xl bg-surface-container p-5 sm:p-6 flex flex-col gap-3.5 shadow-2xl transition-all scale-95 opacity-0 border border-outline-variant/25"
       id="modal-card">
       <div class="flex items-center justify-between">
         <div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center text-primary">
@@ -6492,44 +6492,99 @@
 
       <div class="flex flex-col items-center justify-center py-1 text-center">
         <span class="font-headline-lg text-headline-lg text-on-surface tabular-nums" id="modal-amount">+0.00 BCT</span>
-        <span class="font-label-sm text-label-sm text-primary mt-0.5">Cryptographic On-Chain Record</span>
+        <span class="font-label-sm text-label-sm text-primary mt-0.5" id="modal-subtitle">Cryptographic On-Chain Record</span>
+      </div>
+
+      <!-- Transaction Content / Payload Section (İşlem İçeriği) -->
+      <div id="modalContentBox" class="hidden flex flex-col gap-2 p-3.5 rounded-xl bg-surface-container-lowest border border-primary/25">
+        <!-- Injected dynamically based on tx_type & extra_data -->
       </div>
 
       <div
-        class="flex flex-col gap-2 bg-surface-container-low rounded-xl p-4 font-body-sm text-body-sm border border-outline-variant/15">
+        class="flex flex-col gap-2.5 bg-surface-container-low rounded-xl p-4 font-body-sm text-body-sm border border-outline-variant/15">
         <div class="flex items-center justify-between">
-          <span class="text-on-surface-variant">Status:</span>
-          <div class="flex items-center gap-1.5">
-            <span class="w-2 h-2 rounded-full bg-primary"></span>
-            <span class="text-on-surface font-medium" id="modal-status">Confirmed (On-Chain)</span>
+          <span class="text-on-surface-variant text-xs">Type:</span>
+          <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-mono text-xs font-semibold capitalize" id="modal-type">Transfer</span>
+        </div>
+        <div class="flex items-center justify-between">
+          <span class="text-on-surface-variant text-xs">Status:</span>
+          <div class="flex items-center gap-1.5" id="modal-status-wrap">
+            <span class="w-2 h-2 rounded-full bg-primary" id="modal-status-dot"></span>
+            <span class="text-on-surface font-medium text-xs" id="modal-status">Confirmed (On-Chain)</span>
           </div>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-on-surface-variant">Date:</span>
-          <span class="text-on-surface font-mono text-xs" id="modal-time">--</span>
-        </div>
-        <div class="flex items-center justify-between gap-2">
-          <span class="text-on-surface-variant shrink-0">Counterparty:</span>
-          <span class="text-on-surface font-mono text-xs truncate" id="modal-counterparty">--</span>
-        </div>
-        <div id="modalProfileRow" class="pt-1">
-          <button
-            class="w-full py-2.5 px-3 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 font-label-md text-label-md font-semibold flex items-center justify-center gap-2 transition-all active:scale-95 shadow-sm"
-            id="btnModalViewProfile" onclick="closeTxModal(); openUserProfile(this.dataset.addr);" type="button">
-            <span class="material-symbols-outlined text-[18px]">account_circle</span>
-            <span>View Counterparty On-Chain Profile</span>
-          </button>
+          <span class="text-on-surface-variant text-xs">Block:</span>
+          <span class="text-primary font-mono text-xs cursor-pointer hover:underline font-bold" id="modal-block" title="Blok detayını aç">--</span>
         </div>
         <div class="flex items-center justify-between">
-          <span class="text-on-surface-variant">Network Fee:</span>
+          <span class="text-on-surface-variant text-xs">Date:</span>
+          <span class="text-on-surface font-mono text-xs" id="modal-time">--</span>
+        </div>
+
+        <!-- Sender (From) Row -->
+        <div class="flex items-center justify-between gap-2 pt-1.5 border-t border-outline-variant/10">
+          <span class="text-on-surface-variant shrink-0 text-xs">From:</span>
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-on-surface font-mono text-xs truncate max-w-[190px]" id="modal-sender">--</span>
+            <button type="button" class="text-on-surface-variant hover:text-primary transition p-0.5 shrink-0" id="btnCopySender" onclick="copyText(this.dataset.addr, 'Gönderici kopyalandı!')" title="Adresi Kopyala">
+              <span class="material-symbols-outlined text-[15px]">content_copy</span>
+            </button>
+            <button type="button" class="text-on-surface-variant hover:text-primary transition p-0.5 shrink-0" id="btnProfileSender" onclick="closeTxModal(); openUserProfile(this.dataset.addr);" title="Profili Aç">
+              <span class="material-symbols-outlined text-[15px]">account_circle</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Receiver (To) Row -->
+        <div class="flex items-center justify-between gap-2">
+          <span class="text-on-surface-variant shrink-0 text-xs">To:</span>
+          <div class="flex items-center gap-1.5 min-w-0">
+            <span class="text-on-surface font-mono text-xs truncate max-w-[190px]" id="modal-receiver">--</span>
+            <button type="button" class="text-on-surface-variant hover:text-primary transition p-0.5 shrink-0" id="btnCopyReceiver" onclick="copyText(this.dataset.addr, 'Alıcı kopyalandı!')" title="Adresi Kopyala">
+              <span class="material-symbols-outlined text-[15px]">content_copy</span>
+            </button>
+            <button type="button" class="text-on-surface-variant hover:text-primary transition p-0.5 shrink-0" id="btnProfileReceiver" onclick="closeTxModal(); openUserProfile(this.dataset.addr);" title="Profili Aç">
+              <span class="material-symbols-outlined text-[15px]">account_circle</span>
+            </button>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between">
+          <span class="text-on-surface-variant text-xs">Network Fee:</span>
           <span class="text-on-surface font-mono text-xs" id="modal-fee">0.00 BCT</span>
         </div>
+
+        <div class="flex items-center justify-between" id="modalNonceRow">
+          <span class="text-on-surface-variant text-xs">Account Nonce:</span>
+          <span class="text-on-surface font-mono text-xs" id="modal-nonce">--</span>
+        </div>
+
         <div class="flex items-center justify-between pt-1.5 border-t border-outline-variant/20 gap-2">
-          <span class="text-on-surface-variant shrink-0">Tx Hash:</span>
+          <span class="text-on-surface-variant shrink-0 text-xs">Tx Hash:</span>
           <span class="text-primary font-mono text-[11px] truncate cursor-pointer hover:underline" id="modal-hash"
-            onclick="copyText(this.textContent)" title="Kopyala">--</span>
+            onclick="copyText(this.textContent, 'Tx hash kopyalandı!')" title="Kopyala">--</span>
         </div>
       </div>
+
+      <!-- Raw On-Chain Data Accordion (JSON Payload & Signatures) -->
+      <details class="group rounded-xl bg-surface-container-low border border-outline-variant/15 text-xs font-mono overflow-hidden" id="modalRawPayloadDetails">
+        <summary class="p-3 cursor-pointer text-on-surface-variant hover:text-on-surface flex items-center justify-between select-none transition">
+          <span class="flex items-center gap-1.5 font-sans font-semibold text-xs">
+            <span class="material-symbols-outlined text-[16px] text-primary">data_object</span>
+            <span>Raw On-Chain Payload &amp; Proof</span>
+          </span>
+          <span class="material-symbols-outlined text-[16px] transition-transform group-open:rotate-180">expand_more</span>
+        </summary>
+        <div class="p-3 pt-0 border-t border-outline-variant/10">
+          <div class="flex justify-end mb-1">
+            <button type="button" onclick="copyText(document.getElementById('modalRawJson').textContent, 'Ham JSON kopyalandı!')" class="text-[10px] text-primary hover:underline font-mono flex items-center gap-1">
+              <span class="material-symbols-outlined text-[12px]">content_copy</span> Kopyala
+            </button>
+          </div>
+          <pre class="p-2.5 rounded-lg bg-surface-container-lowest text-[10.5px] text-on-surface-variant overflow-x-auto max-h-48 leading-relaxed select-all" id="modalRawJson">--</pre>
+        </div>
+      </details>
 
       <!-- SPV Merkle Proof Verification Result Box -->
       <div
@@ -10862,6 +10917,16 @@
       syncBodyScrollLock();
     }
 
+    function openTxSpacePost(postId) {
+      closeTxModal();
+      const profileModal = document.getElementById('userProfileModal');
+      if (profileModal && !profileModal.classList.contains('hidden') && typeof openSpacePostFromProfile === 'function') {
+        openSpacePostFromProfile(postId);
+      } else if (typeof openSpacePostDetail === 'function') {
+        openSpacePostDetail(postId);
+      }
+    }
+
     function openTxDetail(tx) {
       selectedModalTx = tx;
       const modal = document.getElementById('tx-modal');
@@ -10885,28 +10950,221 @@
         counterparty: tx.receiver || tx.recipient || '--'
       };
 
-      const txHash = tx.tx_hash || tx.hash || '--';
-      document.getElementById('modal-icon').textContent = meta.icon;
-      document.getElementById('modal-title').textContent = meta.title;
-      const amtEl = document.getElementById('modal-amount');
-      amtEl.textContent = `${meta.sign}${formatBct(meta.displayAmount, 6)} BCT`;
-      amtEl.className = 'font-headline-lg text-headline-lg tabular-nums ' + (meta.isIncoming ? 'text-primary' : 'text-on-surface');
+      const txHash = String(tx.tx_hash || tx.hash || '--');
+      const txType = String(tx.tx_type || tx.type || 'transfer').toLowerCase();
+      const extra = (tx.extra_data && typeof tx.extra_data === 'object') ? tx.extra_data : {};
 
-      document.getElementById('modal-status').textContent = tx.status === 'mempool'
-        ? 'In Mempool (Awaiting PoW Mining)'
-        : (tx.block_index !== undefined && tx.block_index !== null
-          ? `Block #${tx.block_index} (On-Chain)`
-          : 'Confirmed (On-Chain)');
-      document.getElementById('modal-time').textContent = formatFullDate(tx.timestamp);
-      const cpEl = document.getElementById('modal-counterparty');
-      const cpBtn = document.getElementById('btnModalViewProfile');
-      if (cpEl) cpEl.textContent = meta.counterparty || '--';
-      if (cpBtn) {
-        cpBtn.dataset.addr = meta.counterparty || '';
-        cpBtn.style.display = (meta.counterparty && meta.counterparty !== '--') ? 'inline-flex' : 'none';
+      const iconEl = document.getElementById('modal-icon');
+      if (iconEl) iconEl.textContent = meta.icon;
+      const titleEl = document.getElementById('modal-title');
+      if (titleEl) titleEl.textContent = meta.title;
+
+      const amtEl = document.getElementById('modal-amount');
+      if (amtEl) {
+        amtEl.textContent = `${meta.sign}${formatBct(meta.displayAmount, 6)} BCT`;
+        amtEl.className = 'font-headline-lg text-headline-lg tabular-nums ' + (meta.isIncoming ? 'text-primary' : 'text-on-surface');
       }
-      document.getElementById('modal-fee').textContent = `${formatBct(tx.fee || 0, 6)} BCT`;
-      document.getElementById('modal-hash').textContent = txHash;
+
+      const typeEl = document.getElementById('modal-type');
+      if (typeEl) typeEl.textContent = txType.replace(/_/g, ' ');
+
+      const blockIdx = (tx.block_index !== undefined && tx.block_index !== null) ? tx.block_index : null;
+      const isMempool = tx.status === 'mempool' || blockIdx === null;
+
+      const statusEl = document.getElementById('modal-status');
+      const statusDot = document.getElementById('modal-status-dot');
+      if (statusEl) {
+        statusEl.textContent = isMempool ? 'In Mempool (Awaiting PoW Mining)' : 'Confirmed (On-Chain)';
+      }
+      if (statusDot) {
+        statusDot.className = isMempool ? 'w-2 h-2 rounded-full bg-amber-400 animate-pulse' : 'w-2 h-2 rounded-full bg-primary';
+      }
+
+      const blockEl = document.getElementById('modal-block');
+      if (blockEl) {
+        if (blockIdx !== null) {
+          blockEl.textContent = `Block #${blockIdx}`;
+          blockEl.onclick = () => { closeTxModal(); openBlockDetailModal(blockIdx); };
+          blockEl.className = 'text-primary font-mono text-xs cursor-pointer hover:underline font-bold';
+          blockEl.title = 'Blok detayını aç';
+        } else {
+          blockEl.textContent = 'Mempool (Pending)';
+          blockEl.onclick = null;
+          blockEl.className = 'text-amber-400 font-mono text-xs';
+          blockEl.title = '';
+        }
+      }
+
+      const timeEl = document.getElementById('modal-time');
+      if (timeEl) timeEl.textContent = formatFullDate(tx.timestamp);
+
+      const feeEl = document.getElementById('modal-fee');
+      if (feeEl) feeEl.textContent = `${formatBct(tx.fee || 0, 6)} BCT`;
+
+      const hashEl = document.getElementById('modal-hash');
+      if (hashEl) hashEl.textContent = txHash;
+
+      // Sender & Receiver
+      const senderAddr = tx.sender || 'Genesis';
+      const receiverAddr = tx.receiver || tx.recipient || 'Protocol';
+      const senderEl = document.getElementById('modal-sender');
+      const receiverEl = document.getElementById('modal-receiver');
+      if (senderEl) {
+        senderEl.textContent = shortAddr(senderAddr);
+        senderEl.title = senderAddr;
+      }
+      if (receiverEl) {
+        receiverEl.textContent = shortAddr(receiverAddr);
+        receiverEl.title = receiverAddr;
+      }
+
+      const btnCopySender = document.getElementById('btnCopySender');
+      const btnProfileSender = document.getElementById('btnProfileSender');
+      if (btnCopySender) btnCopySender.dataset.addr = senderAddr;
+      if (btnProfileSender) {
+        const canViewSender = senderAddr && !senderAddr.toLowerCase().includes('genesis') && !senderAddr.toLowerCase().includes('vault');
+        btnProfileSender.dataset.addr = senderAddr;
+        btnProfileSender.style.display = canViewSender ? 'inline-flex' : 'none';
+      }
+
+      const btnCopyReceiver = document.getElementById('btnCopyReceiver');
+      const btnProfileReceiver = document.getElementById('btnProfileReceiver');
+      if (btnCopyReceiver) btnCopyReceiver.dataset.addr = receiverAddr;
+      if (btnProfileReceiver) {
+        const canViewReceiver = receiverAddr && !receiverAddr.toLowerCase().includes('protocol') && !receiverAddr.toLowerCase().includes('treasury');
+        btnProfileReceiver.dataset.addr = receiverAddr;
+        btnProfileReceiver.style.display = canViewReceiver ? 'inline-flex' : 'none';
+      }
+
+      // Nonce
+      const nonceEl = document.getElementById('modal-nonce');
+      const nonceRow = document.getElementById('modalNonceRow');
+      if (nonceEl && nonceRow) {
+        if (tx.nonce !== undefined && tx.nonce !== null) {
+          nonceEl.textContent = String(tx.nonce);
+          nonceRow.classList.remove('hidden');
+        } else {
+          nonceRow.classList.add('hidden');
+        }
+      }
+
+      // --- Dedicated On-Chain Content Box (İşlem İçeriği) ---
+      const contentBox = document.getElementById('modalContentBox');
+      if (contentBox) {
+        let contentHtml = '';
+        const postContent = extra.content || tx.content || '';
+        const postId = extra.post_id || tx.post_id || '';
+        const commentId = extra.comment_id || tx.comment_id || '';
+        const domainName = extra.name || extra.domain || '';
+        const memo = extra.memo || extra.note || tx.memo || '';
+
+        if (txType === 'space_post' && (postContent || postId)) {
+          contentHtml = `
+            <div class="flex items-center justify-between pb-1.5 border-b border-outline-variant/15 text-xs">
+              <span class="flex items-center gap-1.5 text-primary font-bold font-mono">
+                <span class="material-symbols-outlined text-[16px]">edit_note</span>
+                <span>Space Post Paylaşımı ${postId ? `<span class="text-on-surface-variant font-normal">#${escapeHtml(String(postId).slice(-8))}</span>` : ''}</span>
+              </span>
+              ${postId ? `<button type="button" onclick="openTxSpacePost('${sanitizeJsAttr(postId)}')" class="text-[11px] text-primary hover:underline flex items-center gap-0.5 font-semibold">Feed'de Aç <span class="material-symbols-outlined text-[13px]">open_in_new</span></button>` : ''}
+            </div>
+            <div class="text-xs sm:text-sm text-on-surface font-sans leading-relaxed whitespace-pre-wrap break-words p-2.5 rounded-lg bg-surface-container-low/80 border border-outline-variant/15">
+              ${postContent ? formatSpaceBodyHtml(postContent) : '<span class="text-on-surface-variant italic">İçerik Kimliği: ' + escapeHtml(postId) + '</span>'}
+            </div>
+            ${extra.bns_name ? `<div class="text-[11px] text-on-surface-variant font-mono">Yazar: <span class="text-secondary font-bold">@${escapeHtml(extra.bns_name)}</span></div>` : ''}
+          `;
+        } else if (txType === 'space_comment' && (postContent || commentId || postId)) {
+          contentHtml = `
+            <div class="flex items-center justify-between pb-1.5 border-b border-outline-variant/15 text-xs">
+              <span class="flex items-center gap-1.5 text-secondary font-bold font-mono">
+                <span class="material-symbols-outlined text-[16px]">chat</span>
+                <span>Space Yorum İçeriği</span>
+              </span>
+              ${postId ? `<button type="button" onclick="openTxSpacePost('${sanitizeJsAttr(postId)}')" class="text-[11px] text-secondary hover:underline flex items-center gap-0.5 font-semibold">Postu Aç <span class="material-symbols-outlined text-[13px]">open_in_new</span></button>` : ''}
+            </div>
+            <div class="text-xs sm:text-sm text-on-surface font-sans leading-relaxed whitespace-pre-wrap break-words p-2.5 rounded-lg bg-surface-container-low/80 border border-outline-variant/15">
+              ${postContent ? formatSpaceBodyHtml(postContent) : '<span class="text-on-surface-variant italic">Yorum Kimliği: ' + escapeHtml(commentId) + '</span>'}
+            </div>
+            ${extra.bns_name ? `<div class="text-[11px] text-on-surface-variant font-mono">Yazar: <span class="text-secondary font-bold">@${escapeHtml(extra.bns_name)}</span></div>` : ''}
+          `;
+        } else if (domainName || txType.startsWith('bns_')) {
+          const bnsAction = extra.action || txType.replace('bns_', '').replace(/_/g, ' ');
+          contentHtml = `
+            <div class="flex items-center justify-between pb-1.5 border-b border-outline-variant/15 text-xs">
+              <span class="flex items-center gap-1.5 text-emerald-400 font-bold font-mono">
+                <span class="material-symbols-outlined text-[16px]">badge</span>
+                <span>BNS Alan Adı (${escapeHtml(bnsAction)})</span>
+              </span>
+              <button type="button" onclick="closeTxModal(); switchTab('bns-pazari');" class="text-[11px] text-emerald-400 hover:underline flex items-center gap-0.5 font-semibold">BNS Pazarı <span class="material-symbols-outlined text-[13px]">arrow_forward</span></button>
+            </div>
+            <div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low/80 border border-outline-variant/15">
+              <div class="flex items-center gap-2">
+                <span class="text-base font-bold text-on-surface font-mono">🏷️ ${escapeHtml(domainName || '--')}</span>
+              </div>
+              ${extra.price ? `<span class="text-xs font-mono font-bold text-primary">${formatBct(extra.price, 2)} BCT</span>` : (extra.cost ? `<span class="text-xs font-mono font-bold text-on-surface-variant">${formatBct(extra.cost, 2)} BCT</span>` : '')}
+            </div>
+            ${extra.to_address ? `<div class="text-[11px] text-on-surface-variant font-mono">Yeni Sahip: <span class="text-on-surface font-bold">${escapeHtml(shortAddr(extra.to_address))}</span></div>` : ''}
+          `;
+        } else if (txType.startsWith('bridge_') || extra.evm_address || extra.chain) {
+          const chainName = extra.chain || 'Base Mainnet';
+          contentHtml = `
+            <div class="flex items-center justify-between pb-1.5 border-b border-outline-variant/15 text-xs">
+              <span class="flex items-center gap-1.5 text-sky-400 font-bold font-mono">
+                <span class="material-symbols-outlined text-[16px]">swap_calls</span>
+                <span>Cross-Chain Bridge (${escapeHtml(chainName)})</span>
+              </span>
+              <button type="button" onclick="closeTxModal(); switchTab('bridge-paneli');" class="text-[11px] text-sky-400 hover:underline flex items-center gap-0.5 font-semibold">Köprü Paneli <span class="material-symbols-outlined text-[13px]">arrow_forward</span></button>
+            </div>
+            <div class="space-y-1.5 p-2.5 rounded-lg bg-surface-container-low/80 border border-outline-variant/15 text-xs font-mono">
+              <div><span class="text-on-surface-variant">EVM Adresi:</span> <span class="text-primary truncate block font-bold">${escapeHtml(extra.evm_address || '--')}</span></div>
+              ${extra.tx_hash_evm ? `<div><span class="text-on-surface-variant">BaseScan:</span> <a href="https://basescan.org/tx/${encodeURIComponent(extra.tx_hash_evm)}" target="_blank" rel="noopener" class="text-secondary hover:underline truncate block">${escapeHtml(extra.tx_hash_evm)}</a></div>` : ''}
+            </div>
+          `;
+        } else if (txType === 'validator_stake' || txType === 'validator_unstake') {
+          contentHtml = `
+            <div class="flex items-center justify-between pb-1.5 border-b border-outline-variant/15 text-xs">
+              <span class="flex items-center gap-1.5 text-primary font-bold font-mono">
+                <span class="material-symbols-outlined text-[16px]">verified_user</span>
+                <span>PoS Validator ${txType === 'validator_stake' ? 'Teminat Yatırma' : 'Stake Çekme'}</span>
+              </span>
+              <button type="button" onclick="closeTxModal(); switchTab('dugum-paneli');" class="text-[11px] text-primary hover:underline flex items-center gap-0.5 font-semibold">Validator Paneli <span class="material-symbols-outlined text-[13px]">arrow_forward</span></button>
+            </div>
+            <div class="p-2.5 rounded-lg bg-surface-container-low/80 border border-outline-variant/15 text-xs font-mono">
+              <div class="text-on-surface-variant">İşlem: <strong class="text-on-surface">${formatBct(tx.amount || 0, 2)} BCT</strong> ${txType === 'validator_stake' ? 'havuza kilitlendi.' : 'havuzdan çekildi.'}</div>
+            </div>
+          `;
+        } else if (memo) {
+          contentHtml = `
+            <div class="flex items-center gap-1.5 pb-1.5 border-b border-outline-variant/15 text-xs text-primary font-bold font-mono">
+              <span class="material-symbols-outlined text-[16px]">notes</span>
+              <span>On-Chain Not / Memo</span>
+            </div>
+            <div class="text-xs sm:text-sm text-on-surface font-sans p-2.5 rounded-lg bg-surface-container-low/80 border border-outline-variant/15">
+              ${escapeHtml(memo)}
+            </div>
+          `;
+        }
+
+        if (contentHtml) {
+          contentBox.innerHTML = contentHtml;
+          contentBox.classList.remove('hidden');
+        } else {
+          contentBox.innerHTML = '';
+          contentBox.classList.add('hidden');
+        }
+      }
+
+      // --- Raw On-Chain Data JSON Inspector ---
+      const rawJsonEl = document.getElementById('modalRawJson');
+      if (rawJsonEl) {
+        try {
+          rawJsonEl.textContent = JSON.stringify(tx, null, 2);
+        } catch (_e) {
+          rawJsonEl.textContent = String(tx);
+        }
+      }
+
+      const rawDetails = document.getElementById('modalRawPayloadDetails');
+      if (rawDetails) rawDetails.removeAttribute('open');
 
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -12663,15 +12921,45 @@
           </div>
           <div class="flex flex-col gap-2">
             <span class="font-label-md text-label-md text-on-surface font-semibold">Transactions in Block (${txs.length})</span>
-            ${txs.map((t, tIdx) => `
-              <div class="p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/10 flex items-center justify-between gap-2 cursor-pointer transition-colors" onclick="closeBlockDetailModal(); openTxDetail(window._currentBlockModalTxs[${tIdx}]);" title="Open Transaction Details">
-                <div class="min-w-0">
-                  <div class="font-mono text-primary truncate">${escapeHtml(t.tx_hash || '')}</div>
-                  <div class="text-on-surface-variant truncate">${escapeHtml(shortAddr(t.sender))} → ${escapeHtml(shortAddr(t.receiver))}</div>
+            ${txs.map((t, tIdx) => {
+              const extra = t.extra_data || {};
+              const postContent = extra.content || t.content || '';
+              const domainName = extra.name || extra.domain || '';
+              const memo = extra.memo || extra.note || t.memo || '';
+              const typeLabel = t.tx_type || t.type || 'transfer';
+
+              return `
+              <div class="p-3 rounded-xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/10 flex flex-col gap-1.5 cursor-pointer transition-colors group" onclick="closeBlockDetailModal(); openTxDetail(window._currentBlockModalTxs[${tIdx}]);" title="İşlem İçeriğini ve Makbuzunu Aç">
+                <div class="flex items-center justify-between gap-2">
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5">
+                      <span class="px-1.5 py-0.2 rounded-full bg-surface-container-high text-primary font-mono text-[9px] uppercase font-bold">${escapeHtml(typeLabel.replace(/_/g, ' '))}</span>
+                      <span class="font-mono text-xs text-primary truncate max-w-[150px] sm:max-w-[200px]">${escapeHtml(t.tx_hash || '')}</span>
+                    </div>
+                    <div class="text-[11px] text-on-surface-variant truncate font-mono mt-0.5">${escapeHtml(shortAddr(t.sender))} → ${escapeHtml(shortAddr(t.receiver || t.recipient))}</div>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <span class="font-mono font-semibold text-xs text-on-surface">${formatBct(t.amount, 4)} BCT</span>
+                    <div class="text-[10px] text-primary group-hover:underline flex items-center justify-end gap-0.5 mt-0.5">
+                      <span>İçeriği Gör</span>
+                      <span class="material-symbols-outlined text-[11px]">arrow_forward</span>
+                    </div>
+                  </div>
                 </div>
-                <span class="font-mono font-semibold text-on-surface shrink-0">${formatBct(t.amount, 4)} BCT</span>
+                ${postContent ? `
+                  <div class="p-2 rounded bg-surface-container-lowest/70 text-[11px] text-on-surface-variant font-sans line-clamp-1 italic border border-outline-variant/10">
+                    📝 "${escapeHtml(postContent)}"
+                  </div>
+                ` : ''}
+                ${domainName ? `
+                  <div class="text-[11px] text-emerald-400 font-mono">🏷️ @${escapeHtml(domainName)}</div>
+                ` : ''}
+                ${memo ? `
+                  <div class="text-[11px] text-on-surface-variant font-sans italic">✉️ ${escapeHtml(memo)}</div>
+                ` : ''}
               </div>
-            `).join('')}
+            `;
+            }).join('')}
           </div>`;
       } catch (_e) {
         bodyEl.innerHTML = '<div class="py-6 text-center text-error">Could not retrieve block data.</div>';
@@ -17304,16 +17592,29 @@
             ${window._profileFilteredTxList.map((tx, idx) => {
               const isSender = tx.sender === currentProfileData.address;
               const txHash = String(tx.tx_hash || tx.hash || '');
+              const extra = tx.extra_data || {};
+              const postContent = extra.content || tx.content || '';
+              const domainName = extra.name || extra.domain || '';
               return `
-                <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/15 hover:border-primary/40 flex items-center justify-between gap-2 cursor-pointer" onclick="openProfileFilteredTxDetail(${idx})">
-                  <div class="flex flex-col min-w-0">
-                    <span class="font-bold text-xs text-on-surface capitalize">${escapeHtml(String(tx.tx_type || 'transfer').replace(/_/g, ' '))}</span>
-                    <span class="font-mono text-[10px] text-on-surface-variant truncate">${escapeHtml(txHash)}</span>
+                <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/15 hover:border-primary/40 flex flex-col gap-1.5 cursor-pointer" onclick="openProfileFilteredTxDetail(${idx})">
+                  <div class="flex items-center justify-between gap-2">
+                    <div class="flex flex-col min-w-0">
+                      <span class="font-bold text-xs text-on-surface capitalize">${escapeHtml(String(tx.tx_type || 'transfer').replace(/_/g, ' '))}</span>
+                      <span class="font-mono text-[10px] text-on-surface-variant truncate">${escapeHtml(txHash)}</span>
+                    </div>
+                    <div class="text-right shrink-0">
+                      <div class="font-mono font-bold text-xs ${isSender ? 'text-on-surface' : 'text-emerald-400'}">${isSender ? '-' : '+'}${formatBct(tx.amount || 0, 4)} BCT</div>
+                      <span class="text-[10px] text-on-surface-variant font-mono">${escapeHtml(formatTimeAgo(tx.timestamp))}</span>
+                    </div>
                   </div>
-                  <div class="text-right shrink-0">
-                    <div class="font-mono font-bold text-xs ${isSender ? 'text-on-surface' : 'text-emerald-400'}">${isSender ? '-' : '+'}${formatBct(tx.amount || 0, 4)} BCT</div>
-                    <span class="text-[10px] text-on-surface-variant font-mono">${escapeHtml(formatTimeAgo(tx.timestamp))}</span>
-                  </div>
+                  ${postContent ? `
+                    <div class="p-1.5 rounded bg-surface-container-lowest text-[11px] text-on-surface-variant font-sans line-clamp-1 italic border border-outline-variant/10">
+                      📝 "${escapeHtml(postContent)}"
+                    </div>
+                  ` : ''}
+                  ${domainName ? `
+                    <div class="text-[11px] text-emerald-400 font-mono">🏷️ @${escapeHtml(domainName)}</div>
+                  ` : ''}
                 </div>
               `;
             }).join('')}
@@ -17611,9 +17912,15 @@
           const isSender = tx.sender === data.address;
           const isFollowReward = Boolean(tx.is_creator_follow_reward || (tx.extra_data && tx.extra_data.target === data.address && tx.sender !== data.address));
           const isRoyalty = Boolean(tx.is_author_royalty || isFollowReward || (tx.extra_data && tx.extra_data.author === data.address && tx.sender !== data.address));
-          const typeLabel = tx.tx_type || 'transfer';
+          const typeLabel = tx.tx_type || tx.type || 'transfer';
           const amt = isFollowReward ? Number(tx.royalty_amount || (tx.extra_data && tx.extra_data.creator_cut) || 0.50) : Number(tx.amount || 0);
           const txHash = String(tx.hash || tx.tx_hash || ('tx_' + idx));
+          const extra = tx.extra_data || {};
+          const postContent = extra.content || tx.content || '';
+          const domainName = extra.name || extra.domain || '';
+          const memo = extra.memo || extra.note || tx.memo || '';
+          const blockNum = (tx.block_index !== undefined && tx.block_index !== null) ? tx.block_index : null;
+
           return `
                 <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 hover:border-primary/40 transition-all flex flex-col gap-2 cursor-pointer group shadow-xs" onclick="openProfileTxDetailByIndex(${idx})">
                   <div class="flex items-center justify-between gap-2">
@@ -17625,6 +17932,7 @@
                         <div class="flex items-center gap-1.5 flex-wrap">
                           <span class="font-bold text-xs text-on-surface capitalize">${escapeHtml(typeLabel.replace(/_/g, ' '))}</span>
                           <span class="px-1.5 py-0.2 rounded-full ${tx.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400' : 'bg-amber-500/10 text-amber-300'} font-mono text-[9px] uppercase font-bold">${escapeHtml(tx.status || 'confirmed')}</span>
+                          ${blockNum !== null ? `<span class="px-1.5 py-0.2 rounded-full bg-surface-container-high text-on-surface-variant font-mono text-[9px]">#${blockNum}</span>` : ''}
                         </div>
                         <span class="font-mono text-[10.5px] text-on-surface-variant truncate">${isSender ? 'To: ' + (tx.receiver || tx.recipient ? shortAddr(tx.receiver || tx.recipient) : 'Protocol') : 'From: ' + (tx.sender ? shortAddr(tx.sender) : 'Genesis')}</span>
                       </div>
@@ -17636,11 +17944,38 @@
                       <span class="text-[10px] text-on-surface-variant font-mono">${escapeHtml(formatTimeAgo(tx.timestamp))}</span>
                     </div>
                   </div>
+
+                  ${postContent ? `
+                    <div class="p-2 rounded-lg bg-surface-container-lowest/80 text-xs text-on-surface-variant font-sans line-clamp-2 border border-outline-variant/10 italic">
+                      📝 "${escapeHtml(postContent)}"
+                    </div>
+                  ` : ''}
+
+                  ${domainName ? `
+                    <div class="flex items-center gap-1.5 px-2 py-1 rounded-md bg-secondary/10 border border-secondary/20 text-secondary text-xs font-mono font-semibold">
+                      <span class="material-symbols-outlined text-[13px]">badge</span>
+                      <span>🏷️ @${escapeHtml(domainName)}</span>
+                      ${extra.action ? `<span class="text-[10px] text-on-surface-variant uppercase">(${escapeHtml(extra.action)})</span>` : ''}
+                    </div>
+                  ` : ''}
+
+                  ${extra.evm_address ? `
+                    <div class="text-[10.5px] font-mono text-sky-400 truncate">
+                      🌉 Base EVM: ${escapeHtml(shortAddr(extra.evm_address))}
+                    </div>
+                  ` : ''}
+
+                  ${memo ? `
+                    <div class="text-xs text-on-surface-variant italic">
+                      ✉️ Memo: ${escapeHtml(memo)}
+                    </div>
+                  ` : ''}
+
                   <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-[10px] font-mono text-on-surface-variant/70">
                     <span class="truncate">Tx: ${escapeHtml(String(txHash).slice(0, 14))}...</span>
-                    <span class="text-primary group-hover:underline flex items-center gap-0.5 shrink-0">
-                      <span>View Receipt</span>
-                      <span class="material-symbols-outlined text-[11px]">arrow_forward</span>
+                    <span class="text-primary group-hover:underline flex items-center gap-0.5 shrink-0 font-semibold">
+                      <span>İşlem İçeriği &amp; Makbuz</span>
+                      <span class="material-symbols-outlined text-[12px]">arrow_forward</span>
                     </span>
                   </div>
                 </div>
