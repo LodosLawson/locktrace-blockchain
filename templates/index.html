@@ -12549,6 +12549,8 @@
           tagBadge = '<span class="bg-cyan-500/15 text-cyan-400 border border-cyan-500/30 px-2 py-0.5 rounded text-[11px] font-semibold font-sans whitespace-nowrap">Validator Staking Vault (PoS)</span>';
         } else if (h.tag_type === 'validator') {
           tagBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[11px] font-medium font-sans whitespace-nowrap">Validator Node</span>';
+        } else if (h.tag_type === 'slashed') {
+          tagBadge = '<span class="bg-rose-500/20 text-rose-400 border border-rose-500/40 px-2 py-0.5 rounded text-[11px] font-bold font-sans whitespace-nowrap inline-flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[13px] text-rose-400" translate="no">gavel</span>Cezalı / Slashed</span>';
         } else if (h.tag_type === 'lost_key_burn') {
           tagBadge = '<span class="bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-semibold font-sans whitespace-nowrap inline-flex items-center gap-1 cursor-help" title="Developer verified: Lost private key test address (Inactive / Locked)"><span class="material-symbols-outlined notranslate text-[13px] text-rose-400" translate="no">local_fire_department</span>Lost Key (Permanent Burn)</span>';
         }
@@ -12727,7 +12729,7 @@
               <div class="min-w-0">
                 <div class="flex items-center gap-1.5">
                   <span class="font-body-sm text-body-sm text-on-surface font-medium font-mono truncate">${escapeHtml(String(b.hash || '').slice(0, 14))}...</span>
-                  <span class="bg-surface-container px-1.5 py-0.5 rounded font-label-sm text-label-sm text-secondary shrink-0">Merkle v${escapeHtml(ver)}</span>
+                  ${b.miner_is_slashed ? '<span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-label-sm text-label-sm font-semibold shrink-0">⛔ Cezalı Madenci</span>' : `<span class="bg-surface-container px-1.5 py-0.5 rounded font-label-sm text-label-sm text-secondary shrink-0">Merkle v${escapeHtml(ver)}</span>`}
                 </div>
                 <span class="font-label-sm text-label-sm text-on-surface-variant block truncate">Root: ${escapeHtml(mRoot ? mRoot.slice(0, 12) + '...' : 'SHA-256')} • ${escapeHtml(formatTimeAgo(b.timestamp))}</span>
               </div>
@@ -13018,6 +13020,11 @@
             <div class="sm:col-span-2"><span class="text-on-surface-variant block text-[10px] uppercase">Merkle Root (SPV Audit Digest)</span><span class="text-secondary break-all">${escapeHtml(b.merkle_root || '--')}</span></div>
             <div class="sm:col-span-2"><span class="text-on-surface-variant block text-[10px] uppercase">Previous Block Hash</span><span class="text-on-surface-variant break-all">${escapeHtml(b.previous_hash)}</span></div>
             <div class="sm:col-span-2"><span class="text-on-surface-variant block text-[10px] uppercase">PoW Proposer &amp; Quorum Attestations</span><span class="text-on-surface">${escapeHtml(vNode.name || b.miner || 'Genesis Validator')} • ${escapeHtml(b.attestations_count || 0)} P2P Node Signatures</span></div>
+            ${(vNode.is_slashed || b.miner_is_slashed) ? `
+            <div class="sm:col-span-2 p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-sans flex items-center gap-2">
+              <span class="material-symbols-outlined notranslate text-base text-rose-400" translate="no">gavel</span>
+              <span><strong>Cezalandırılmış / Slashed Madenci:</strong> Bu bloktaki madenci adresi (<code>${escapeHtml(b.miner)}</code>) çift çekim / kural ihlali nedeniyle kalıcı olarak ihraç edilmiştir (Slashed). Artık blok üretemez ve transfer yapamaz.</span>
+            </div>` : ''}
           </div>
           <div class="flex flex-col gap-2">
             <span class="font-label-md text-label-md text-on-surface font-semibold">Transactions in Block (${txs.length})</span>

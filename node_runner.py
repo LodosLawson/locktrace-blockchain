@@ -219,6 +219,7 @@ TAMPER_WARNING_TEXT = '⛔ "WARNING: This frontend file has been modified or tam
 SLASHED_MALICIOUS_VALIDATORS = {
     "bct3a5f3ce88254c92f1daa43caa96c3bb0e2ca163b",
     "bct35d240a88e37513fdd4f07e93363adb7f24c5b39",
+    "bctdc88fceb46881c318efa5e6ffc333eee931a8fbd",
 }
 
 
@@ -2415,7 +2416,8 @@ class LockTraceNode:
             computed_tx_hashes.append(th or calculate_tx_hash_dict(t))
 
             snd = _normalize_bct_address(str(t.get("sender", ""))).lower()
-            if b_idx > 789 and snd in SLASHED_MALICIOUS_VALIDATORS:
+            rec = _normalize_bct_address(str(t.get("receiver", ""))).lower()
+            if b_idx > 789 and (snd in SLASHED_MALICIOUS_VALIDATORS or rec in SLASHED_MALICIOUS_VALIDATORS):
                 return False
 
             ttype = str(t.get("tx_type", "transfer"))

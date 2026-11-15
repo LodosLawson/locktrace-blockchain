@@ -849,6 +849,9 @@ class Blockchain:
             if clean_sender in self.slashed_validators:
                 return False, "Slashed address cannot initiate transfers.", None
 
+            if clean_receiver in self.slashed_validators:
+                return False, "Transfers to slashed malicious addresses are strictly rejected.", None
+
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid sender address format: '{raw_sender}'", None
 
@@ -3059,6 +3062,8 @@ class Blockchain:
         with self.lock:
             self._load_state()
             clean_sender = normalize_bct_address(sender)
+            if clean_sender in self.slashed_validators:
+                return False, "Slashed address is permanently barred from staking collateral.", None
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid validator wallet address: '{clean_sender}'", None
 
@@ -3131,6 +3136,8 @@ class Blockchain:
         with self.lock:
             self._load_state()
             clean_sender = normalize_bct_address(sender)
+            if clean_sender in self.slashed_validators:
+                return False, "Slashed address has forfeited all staking collateral (100% slashed).", None
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid validator wallet address: '{clean_sender}'", None
 
@@ -4536,6 +4543,9 @@ class Blockchain:
                 if any(clean_addr.lower() == a.lower() for a in LOST_KEY_TEST_WALLETS):
                     tag = "Geliştirici Doğruladı: Private Key Kayıp (Özel Test Adresi)"
                     tag_type = "lost_key_burn"
+                elif clean_addr in self.slashed_validators:
+                    tag = "Cezalı Hesap (Slashed / Dondurulmuş)"
+                    tag_type = "slashed"
                 elif clean_addr == BURN_ADDRESS:
                     tag = "Deflationary Burn Address (Provably Unspendable)"
                     tag_type = "burn"

@@ -147,6 +147,7 @@ class Config:
     SLASHED_MALICIOUS_VALIDATORS = [
         "BCT3a5f3ce88254c92f1daa43caa96c3bb0e2ca163b",
         "BCT35d240a88e37513fdd4f07e93363adb7f24c5b39",
+        "BCTdc88fceb46881c318efa5e6ffc333eee931a8fbd",
     ]
 
     # ── Loglama ───────────────────────────────────────

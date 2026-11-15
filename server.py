@@ -335,7 +335,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-7uuKhVpyob5yOqAEBR7J+TYkS+SdRCR9j184KCo1/xs=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-ysllqTpPKQkb+VMPKo8p59JB7vqza2PdAjG9PwKkLbU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1403,26 +1403,52 @@ def api_explorer_block(query):
     if block:
         node_meta = None
         miner_addr = block.get("miner", "")
-        for _n_id, n in blockchain.nodes.items():
-            if miner_addr and (n.get("miner_address") == miner_addr or n.get("endpoint") == miner_addr or n.get("node_id") == miner_addr):
-                node_meta = {
-                    "node_id": n.get("node_id"),
-                    "name": n.get("name"),
-                    "location": n.get("location"),
-                    "role": n.get("role"),
-                    "version": n.get("version"),
-                    "status": n.get("status", "online"),
-                }
-                break
-        if not node_meta:
+        is_slashed = miner_addr in blockchain.slashed_validators
+        block["miner_is_slashed"] = is_slashed
+        if is_slashed:
             node_meta = {
-                "node_id": "node-stockholm-validator-01",
-                "name": "LockTrace Genesis Validator #1",
-                "location": "Stockholm, Sweden (Oracle Cloud)",
-                "role": "Core PoW Archival Validator",
-                "version": Config.PROTOCOL_VERSION,
-                "status": "online",
+                "node_id": "slashed-malicious-actor",
+                "name": f"⛔ Cezalı Madenci ({miner_addr[:10]}...{miner_addr[-4:]})",
+                "location": "Ağdan İhraç Edildi (Slashed)",
+                "role": "Cezalandırılmış Doğrulayıcı (Kural İhlali / Çift Çekim)",
+                "version": "Slashed",
+                "status": "slashed",
+                "is_slashed": True
             }
+        else:
+            for _n_id, n in blockchain.nodes.items():
+                if miner_addr and (n.get("miner_address") == miner_addr or n.get("endpoint") == miner_addr or n.get("node_id") == miner_addr):
+                    node_meta = {
+                        "node_id": n.get("node_id"),
+                        "name": n.get("name"),
+                        "location": n.get("location"),
+                        "role": n.get("role"),
+                        "version": n.get("version"),
+                        "status": n.get("status", "online"),
+                        "is_slashed": False
+                    }
+                    break
+            if not node_meta:
+                if miner_addr in ("Genesis-Validator", "GENESIS", ""):
+                    node_meta = {
+                        "node_id": "node-stockholm-validator-01",
+                        "name": "LockTrace Genesis Validator #1",
+                        "location": "Stockholm, Sweden (Oracle Cloud)",
+                        "role": "Core PoW Archival Validator",
+                        "version": Config.PROTOCOL_VERSION,
+                        "status": "online",
+                        "is_slashed": False
+                    }
+                else:
+                    node_meta = {
+                        "node_id": "community-miner",
+                        "name": f"Topluluk Madencisi ({miner_addr[:10]}...{miner_addr[-4:]})",
+                        "location": "Community PoW",
+                        "role": "Community Miner",
+                        "version": Config.PROTOCOL_VERSION,
+                        "status": "unknown",
+                        "is_slashed": False
+                    }
         block["validator_node"] = node_meta
         return api_response(True, data=block)
     return api_response(False, message="Block not found", status=404)
@@ -1528,7 +1554,11 @@ def api_latest_blocks():
         # Slice backwards in O(limit) without copying the full chain
         slice_end = max(0, total_blocks - start_idx)
         slice_start = max(0, total_blocks - end_idx)
-        page_blocks = [b.to_dict() for b in reversed(blockchain.chain[slice_start:slice_end])]
+        page_blocks = []
+        for b in reversed(blockchain.chain[slice_start:slice_end]):
+            bd = b.to_dict()
+            bd["miner_is_slashed"] = bool(b.miner and b.miner in blockchain.slashed_validators)
+            page_blocks.append(bd)
 
     return api_response(True, data={
         "blocks": page_blocks,
