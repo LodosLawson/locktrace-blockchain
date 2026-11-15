@@ -8,8 +8,23 @@ wallets, decentralized P2P nodes, and cryptographic validator block attestations
 import json
 import os
 import sqlite3
+import threading
 import time
 from typing import Dict, List, Optional, Tuple
+
+
+class _ReusableConnection(sqlite3.Connection):
+    """Persistent thread-local SQLite WAL connection whose .close() rolls back open transactions without closing the handle."""
+
+    def close(self):
+        try:
+            if self.in_transaction:
+                self.rollback()
+        except Exception:
+            pass
+
+    def force_close(self):
+        super().close()
 
 
 class SQLiteStorage:
@@ -17,17 +32,48 @@ class SQLiteStorage:
 
     def __init__(self, db_path: str):
         self.db_path = db_path
+        self._local = threading.local()
         os.makedirs(os.path.dirname(self.db_path), exist_ok=True)
         self._init_schema()
 
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path, timeout=15.0, isolation_level=None)
+        conn = getattr(self._local, "conn", None)
+        bound_path = getattr(self._local, "db_path", None)
+        if conn is not None and bound_path == self.db_path:
+            try:
+                if conn.in_transaction:
+                    conn.rollback()
+                return conn
+            except Exception:
+                try:
+                    conn.force_close()
+                except Exception:
+                    pass
+                self._local.conn = None
+
+        conn = sqlite3.connect(
+            self.db_path,
+            timeout=15.0,
+            isolation_level=None,
+            factory=_ReusableConnection,
+        )
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA journal_mode=WAL;")
         conn.execute("PRAGMA synchronous=NORMAL;")
         conn.execute("PRAGMA busy_timeout=15000;")
         conn.execute("PRAGMA temp_store=MEMORY;")
+        self._local.conn = conn
+        self._local.db_path = self.db_path
         return conn
+
+    def close_thread_connection(self):
+        conn = getattr(self._local, "conn", None)
+        if conn is not None:
+            try:
+                conn.force_close()
+            except Exception:
+                pass
+            self._local.conn = None
 
     def _init_schema(self):
         conn = self._connect()

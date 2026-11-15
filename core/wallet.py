@@ -160,6 +160,16 @@ def _normalize_uncompressed_pubkey_bytes(public_key_hex: str) -> bytes:
     return raw
 
 
+def normalize_bct_address(addr: str) -> str:
+    """Normalize a 43-char BCT hex address so its 40-char hex suffix is always canonical lowercase (`BCT` + lowercase hex)."""
+    if not addr or not isinstance(addr, str):
+        return ""
+    clean = addr.strip()
+    if len(clean) == 43 and clean[:3].upper() == "BCT" and all(c in "0123456789abcdefABCDEF" for c in clean[3:]):
+        return "BCT" + clean[3:].lower()
+    return clean
+
+
 def public_key_to_address(public_key_hex: str) -> str:
     """Generate and verify deterministic BCT wallet address from public key hex."""
     try:

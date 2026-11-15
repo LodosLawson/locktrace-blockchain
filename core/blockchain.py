@@ -22,7 +22,7 @@ import urllib.parse
 import urllib.request
 from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Dict, Optional, Tuple
-from core.wallet import public_key_to_address, verify_signature
+from core.wallet import public_key_to_address, verify_signature, normalize_bct_address
 from core.storage import SQLiteStorage
 
 logger = logging.getLogger("LockTrace")
@@ -399,6 +399,17 @@ class Blockchain:
         self._confirmed_used_sigs: set = set()
         self._confirmed_rewarded_wallets: set = set()
         self._confirmed_stakes_map: Dict[str, int] = {}
+        self._confirmed_blocks_mined_map: Dict[str, int] = {}
+        self._confirmed_rewards_earned_map: Dict[str, int] = {}
+        self._confirmed_bns_len: int = 0
+        self._confirmed_bns_tip: str = ""
+        self._confirmed_bns_records: Dict[str, dict] = {}
+        self._confirmed_bns_reverse: Dict[str, str] = {}
+        self._confirmed_space_len: int = 0
+        self._confirmed_space_tip: str = ""
+        self._confirmed_space_posts: Dict[str, dict] = {}
+        self._confirmed_follows: Dict[str, List[str]] = {}
+        self._confirmed_following: Dict[str, List[str]] = {}
         self._snapshot_base: Optional[dict] = None
         self._saved_wallet_nonces: Dict[str, Tuple[str, int]] = {}
         self._bns_index_key: Optional[tuple] = None
@@ -488,12 +499,12 @@ class Blockchain:
 
         amt_u = _to_units(tx.amount)
         fee_u = _to_units(tx.fee)
-        rec = tx.receiver
-        snd = tx.sender
+        rec = normalize_bct_address(tx.receiver)
+        snd = normalize_bct_address(tx.sender)
         ttype = tx.tx_type
         extra = tx.extra_data
 
-        if ttype == "bns_accept_offer" and extra and extra.get("seller") and snd == extra.get("seller"):
+        if ttype == "bns_accept_offer" and extra and extra.get("seller") and snd == normalize_bct_address(extra.get("seller")):
             # Canonical bns_accept_offer: sender is the signing seller (clean_owner), receiver is bidder
             if rec:
                 tx_counts[rec] = tx_counts.get(rec, 0) + 1
@@ -536,11 +547,11 @@ class Blockchain:
 
         if extra:
             if ttype in ("space_like", "space_comment"):
-                author = extra.get("author")
+                author = normalize_bct_address(extra.get("author"))
                 if author:
                     units_map[author] = units_map.get(author, 0) + _to_units(extra.get("author_cut", 0.0))
             elif ttype == "space_follow":
-                target = extra.get("target")
+                target = normalize_bct_address(extra.get("target"))
                 if target:
                     units_map[target] = units_map.get(target, 0) + _to_units(extra.get("creator_cut", 0.0))
 
@@ -584,9 +595,14 @@ class Blockchain:
             self._confirmed_used_sigs = set()
             self._confirmed_rewarded_wallets = set()
             self._confirmed_stakes_map = {}
+            self._confirmed_blocks_mined_map = {}
+            self._confirmed_rewards_earned_map = {}
 
         if self._confirmed_indexed_len < len(self.chain):
             for block in self.chain[self._confirmed_indexed_len:]:
+                b_miner = normalize_bct_address(getattr(block, "miner", "") or "")
+                if b_miner:
+                    self._confirmed_blocks_mined_map[b_miner] = self._confirmed_blocks_mined_map.get(b_miner, 0) + 1
                 for tx in block.transactions:
                     self._apply_tx_to_ledger_maps(
                         tx,
@@ -596,10 +612,14 @@ class Blockchain:
                         self._confirmed_used_sigs,
                         self._confirmed_rewarded_wallets,
                     )
-                    if tx.tx_type == "validator_stake" and tx.receiver == VALIDATOR_STAKE_VAULT_ADDRESS and tx.sender:
-                        self._confirmed_stakes_map[tx.sender] = self._confirmed_stakes_map.get(tx.sender, 0) + _to_units(tx.amount)
-                    elif tx.tx_type == "validator_unstake" and tx.sender == VALIDATOR_STAKE_VAULT_ADDRESS and tx.receiver:
-                        self._confirmed_stakes_map[tx.receiver] = max(0, self._confirmed_stakes_map.get(tx.receiver, 0) - _to_units(tx.amount))
+                    norm_snd = normalize_bct_address(tx.sender)
+                    norm_rec = normalize_bct_address(tx.receiver)
+                    if tx.tx_type == "validator_stake" and norm_rec == VALIDATOR_STAKE_VAULT_ADDRESS and norm_snd:
+                        self._confirmed_stakes_map[norm_snd] = self._confirmed_stakes_map.get(norm_snd, 0) + _to_units(tx.amount)
+                    elif tx.tx_type == "validator_unstake" and norm_snd == VALIDATOR_STAKE_VAULT_ADDRESS and norm_rec:
+                        self._confirmed_stakes_map[norm_rec] = max(0, self._confirmed_stakes_map.get(norm_rec, 0) - _to_units(tx.amount))
+                    elif tx.tx_type in ("mining_reward", "validator_reward", "attestation_reward") and norm_rec:
+                        self._confirmed_rewards_earned_map[norm_rec] = self._confirmed_rewards_earned_map.get(norm_rec, 0) + _to_units(tx.amount)
             self._confirmed_indexed_len = len(self.chain)
             self._confirmed_indexed_tip = tip_hash
 
@@ -628,7 +648,7 @@ class Blockchain:
 
     def verify_and_recalc_units(self, address: str) -> int:
         """Calculate exact balance in 10^8 integer atomic units (immune to IEEE-754 float64 drift)."""
-        clean_addr = (address or "").strip()
+        clean_addr = normalize_bct_address(address)
         if not clean_addr:
             return 0
         self._ensure_ledger_index()
@@ -641,7 +661,7 @@ class Blockchain:
     def _verify_actor_signature(self, actor_address: str, payload: str,
                                 signature: str, public_key: str = "") -> Tuple[bool, str]:
         """Cryptographically verify ECDSA signature, enforce Anti-DDoS mempool quotas, and bind public key."""
-        clean_addr = (actor_address or "").strip()
+        clean_addr = normalize_bct_address(actor_address)
         if clean_addr.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT", "GENESIS"):
             return False, "System treasury address cannot be a direct transaction sender."
         if not signature:
@@ -670,7 +690,7 @@ class Blockchain:
             min_fee_val = min((float(getattr(t, "fee", 0.0) or 0.0) for t in self.pending_transactions), default=float("inf"))
             if min_fee_val == float("inf"):
                 return False, "Network mempool is temporarily at capacity under high load. Please retry in a few seconds."
-        sender_pending_count = sum(1 for tx in self.pending_transactions if tx.sender == clean_addr)
+        sender_pending_count = sum(1 for tx in self.pending_transactions if normalize_bct_address(tx.sender) == clean_addr)
         if sender_pending_count >= MAX_PENDING_TX_PER_WALLET:
             return (
                 False,
@@ -688,7 +708,7 @@ class Blockchain:
     def register_wallet(self, address: str, public_key: str, grant_welcome_bonus: bool = True) -> Tuple[bool, str]:
         with self.lock:
             self._load_state()
-            clean_addr = address.strip()
+            clean_addr = normalize_bct_address(address)
             clean_pub = (public_key or "").strip()
 
             if not is_valid_bct_address(clean_addr) or clean_addr.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
@@ -1702,7 +1722,7 @@ class Blockchain:
                 return dict(self.bns_records.get(norm)) if norm in self.bns_records else None
 
             if is_valid_bct_address(clean_raw):
-                addr = clean_raw
+                addr = normalize_bct_address(clean_raw)
                 primary = self.bns_reverse.get(addr, "")
                 all_owned = [name for name, r in self.bns_records.items() if r.get("owner") == addr]
                 if not primary and all_owned:
@@ -1724,7 +1744,7 @@ class Blockchain:
                      public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
         with self.lock:
             self._load_state()
-            clean_owner = owner.strip()
+            clean_owner = normalize_bct_address(owner)
             if not is_valid_bct_address(clean_owner):
                 return False, f"Invalid owner address: '{clean_owner}'", None
 
@@ -1816,8 +1836,8 @@ class Blockchain:
                      signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
         with self.lock:
             self._load_state()
-            clean_from = current_owner.strip()
-            clean_to = to_address.strip()
+            clean_from = normalize_bct_address(current_owner)
+            clean_to = normalize_bct_address(to_address)
             norm = self._normalize_bns_name(name)
 
             if not is_valid_bct_address(clean_from) or not is_valid_bct_address(clean_to):
@@ -1911,7 +1931,7 @@ class Blockchain:
                       signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
         with self.lock:
             self._load_state()
-            clean_owner = owner.strip()
+            clean_owner = normalize_bct_address(owner)
             norm = self._normalize_bns_name(name)
             if norm not in self.bns_records:
                 return False, f"'{norm}' is not registered.", None
@@ -1971,7 +1991,7 @@ class Blockchain:
                 public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
         with self.lock:
             self._load_state()
-            clean_buyer = buyer.strip()
+            clean_buyer = normalize_bct_address(buyer)
             norm = self._normalize_bns_name(name)
             if norm not in self.bns_records:
                 return False, f"'{norm}' is not registered.", None
@@ -2849,7 +2869,7 @@ class Blockchain:
         - Remote node telemetry (if node is running and registered with this wallet)
         - Historical block production & attestation rewards
         """
-        clean = (wallet_address or "").strip()
+        clean = normalize_bct_address(wallet_address)
         if not clean:
             return {"error": "Invalid wallet address"}
 
@@ -2864,20 +2884,15 @@ class Blockchain:
             all_nodes = self.get_nodes()
             matched_node = None
             for n in all_nodes:
-                m_addr = (n.get("miner_address") or "").strip()
-                if m_addr and m_addr.lower() == clean.lower():
+                m_addr = normalize_bct_address(n.get("miner_address") or "")
+                if m_addr and m_addr == clean:
                     matched_node = dict(n)
                     break
 
-            # Calculate total blocks produced & total rewards earned
-            blocks_produced = 0
-            rewards_earned = 0.0
-            for b in self.chain:
-                if (getattr(b, "miner", "") or "").lower() == clean.lower():
-                    blocks_produced += 1
-                for tx in b.transactions:
-                    if tx.receiver.lower() == clean.lower() and tx.tx_type in ("mining_reward", "validator_reward", "attestation_reward"):
-                        rewards_earned += tx.amount
+            # O(1) indexed total blocks produced & total rewards earned
+            self._ensure_ledger_index()
+            blocks_produced = int(self._confirmed_blocks_mined_map.get(clean, 0))
+            rewards_earned = float(Decimal(int(self._confirmed_rewards_earned_map.get(clean, 0))) / Decimal(ATOMIC_UNIT))
 
             node_data = None
             if matched_node:
@@ -2950,16 +2965,16 @@ class Blockchain:
         mempool stake minus any pending unstake (so unstaking revokes validator eligibility
         and reward entitlement immediately in the same millisecond it is requested).
         """
-        clean = (address or "").strip()
+        clean = normalize_bct_address(address)
         if not clean:
             return 0.0
         with self.lock:
             self._ensure_ledger_index()
             staked_u = int(self._confirmed_stakes_map.get(clean, 0))
             for tx in self.pending_transactions:
-                if tx.receiver == VALIDATOR_STAKE_VAULT_ADDRESS and tx.sender == clean and tx.tx_type == "validator_stake":
+                if tx.receiver == VALIDATOR_STAKE_VAULT_ADDRESS and normalize_bct_address(tx.sender) == clean and tx.tx_type == "validator_stake":
                     staked_u += _to_units(tx.amount)
-                elif tx.sender == VALIDATOR_STAKE_VAULT_ADDRESS and tx.receiver == clean and tx.tx_type == "validator_unstake":
+                elif tx.sender == VALIDATOR_STAKE_VAULT_ADDRESS and normalize_bct_address(tx.receiver) == clean and tx.tx_type == "validator_unstake":
                     staked_u -= _to_units(tx.amount)
             staked = float(Decimal(max(0, staked_u)) / Decimal(ATOMIC_UNIT))
             if clean in self.slashed_validators:
@@ -2981,7 +2996,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_sender = (sender or "").strip()
+            clean_sender = normalize_bct_address(sender)
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid validator wallet address: '{clean_sender}'", None
 
@@ -3053,7 +3068,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_sender = (sender or "").strip()
+            clean_sender = normalize_bct_address(sender)
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid validator wallet address: '{clean_sender}'", None
 
@@ -3134,7 +3149,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_recipient = (recipient_address or "").strip()
+            clean_recipient = normalize_bct_address(recipient_address)
             if not is_valid_bct_address(clean_recipient):
                 return False, f"Invalid recipient BCT address: '{clean_recipient}'", None
 
@@ -3445,6 +3460,8 @@ class Blockchain:
         self._sequencer_wakeup.set()
         if self._sequencer_thread and self._sequencer_thread.is_alive():
             self._sequencer_thread.join(timeout=2.0)
+        if self._storage is not None:
+            self._storage.close_thread_connection()
         self._storage = None
 
     def _run_batch_sequencer_loop(self):
@@ -4168,7 +4185,7 @@ class Blockchain:
         """Get mathematically verified balance directly from ledger."""
         with self.lock:
             self._load_state()
-            clean_addr = address.strip()
+            clean_addr = normalize_bct_address(address)
             recalc = self.verify_and_recalc_balance(clean_addr)
             self.balances[clean_addr] = recalc
             return recalc
@@ -4324,7 +4341,7 @@ class Blockchain:
     def get_wallet_transactions(self, address: str) -> list:
         with self.lock:
             self._load_state()
-            clean_addr = str(address or "").strip().lstrip("#").lstrip("@").strip()
+            clean_addr = normalize_bct_address(str(address or "").strip().lstrip("#").lstrip("@").strip())
 
             # Fast O(log N) indexed path: query SQLite tx_lookup index
             storage = self._get_storage()
@@ -4415,7 +4432,7 @@ class Blockchain:
         """Compute exact sequential outgoing transaction nonce for an address from on-chain + pending history."""
         with self.lock:
             self._load_state(sweep_overdue=False)
-            clean_addr = (address or "").strip()
+            clean_addr = normalize_bct_address(address)
             if not clean_addr:
                 return 0
             self._ensure_ledger_index()
@@ -4561,7 +4578,23 @@ class Blockchain:
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False
                 dt = float(current.timestamp) - float(previous.timestamp)
-                req_target = "0" if dt > (TARGET_BLOCK_TIME * 6.0) else base_target
+                req_diff = self.difficulty
+                if dt > (TARGET_BLOCK_TIME * 6.0):
+                    stall_drop = int((dt - (TARGET_BLOCK_TIME * 6.0)) // 60.0) + 1
+                    req_diff = max(1, self.difficulty - stall_drop)
+                elif i >= LWMA_WINDOW:
+                    recent = self.chain[i - LWMA_WINDOW:i]
+                    time_diffs = [
+                        max(0.1, min(float(recent[k].timestamp) - float(recent[k - 1].timestamp), TARGET_BLOCK_TIME * 6.0))
+                        for k in range(1, len(recent))
+                    ]
+                    if time_diffs:
+                        w_sum = sum((idx + 1) * d for idx, d in enumerate(time_diffs))
+                        w_tot = sum(idx + 1 for idx in range(len(time_diffs)))
+                        avg_solve = w_sum / max(1.0, w_tot)
+                        if avg_solve > (TARGET_BLOCK_TIME * 1.8) and self.difficulty > 2:
+                            req_diff = max(2, self.difficulty - 1)
+                req_target = "0" * max(1, req_diff)
                 if not current.hash.startswith(req_target):
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False
@@ -4875,339 +4908,409 @@ class Blockchain:
                 "latest_merkle_root": self.chain[-1].merkle_root if self.chain else "N/A",
             }
 
+    @staticmethod
+    def _apply_tx_to_bns_maps(b_idx, status_lbl: str, tx: Transaction, bns_records: Dict[str, dict], bns_reverse: Dict[str, str]):
+        if tx.tx_type == "bns_register" and tx.extra_data:
+            name = tx.extra_data.get("name")
+            if not name:
+                return
+            owner = normalize_bct_address(tx.extra_data.get("owner", tx.sender))
+            tier = tx.extra_data.get("tier", "")
+            cost = float(tx.extra_data.get("cost", tx.amount))
+            bns_records[name] = {
+                "name": name,
+                "owner": owner,
+                "registered_at": tx.timestamp,
+                "updated_at": tx.timestamp,
+                "tier": tier,
+                "cost": cost,
+                "sale_price": 0.0,
+                "offers": {},
+                "block_index": b_idx,
+                "status": status_lbl,
+                "history": [{
+                    "action": "registered",
+                    "owner": owner,
+                    "cost": cost,
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "block": b_idx
+                }]
+            }
+            if owner not in bns_reverse:
+                bns_reverse[owner] = name
+        elif tx.tx_type == "bns_transfer" and tx.extra_data:
+            name = tx.extra_data.get("name")
+            from_addr = normalize_bct_address(tx.extra_data.get("from_address", tx.sender))
+            to_addr = normalize_bct_address(tx.extra_data.get("to_address", tx.receiver))
+            if name and name in bns_records:
+                rec = bns_records[name]
+                rec["owner"] = to_addr
+                rec["sale_price"] = 0.0
+                rec["updated_at"] = tx.timestamp
+                for _oid, _off in (rec.get("offers") or {}).items():
+                    if isinstance(_off, dict) and _off.get("status") == "active":
+                        _off["status"] = "superseded"
+                        _off["resolved_at"] = tx.timestamp
+                rec["history"].append({
+                    "action": "transferred",
+                    "from": from_addr,
+                    "to": to_addr,
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "block": b_idx
+                })
+                if bns_reverse.get(from_addr) == name:
+                    other = next((n for n, r in bns_records.items() if r.get("owner") == from_addr), "")
+                    if other:
+                        bns_reverse[from_addr] = other
+                    else:
+                        bns_reverse.pop(from_addr, None)
+                if to_addr not in bns_reverse:
+                    bns_reverse[to_addr] = name
+        elif tx.tx_type == "bns_set_price" and tx.extra_data:
+            name = tx.extra_data.get("name")
+            price = float(tx.extra_data.get("price", 0.0))
+            if name and name in bns_records:
+                bns_records[name]["sale_price"] = price
+                bns_records[name]["updated_at"] = tx.timestamp
+                bns_records[name]["history"].append({
+                    "action": "listed_for_sale" if price > 0 else "unlisted",
+                    "price": price,
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "block": b_idx
+                })
+        elif tx.tx_type == "bns_buy" and tx.extra_data:
+            name = tx.extra_data.get("name")
+            buyer = normalize_bct_address(tx.extra_data.get("buyer", tx.sender))
+            seller = normalize_bct_address(tx.extra_data.get("seller", tx.receiver))
+            price = float(tx.extra_data.get("price", tx.amount))
+            if name and name in bns_records:
+                rec = bns_records[name]
+                rec["owner"] = buyer
+                rec["sale_price"] = 0.0
+                rec["updated_at"] = tx.timestamp
+                for _oid, _off in (rec.get("offers") or {}).items():
+                    if isinstance(_off, dict) and _off.get("status") == "active":
+                        _off["status"] = "superseded"
+                        _off["resolved_at"] = tx.timestamp
+                rec["history"].append({
+                    "action": "purchased",
+                    "buyer": buyer,
+                    "seller": seller,
+                    "price": price,
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "block": b_idx
+                })
+                if bns_reverse.get(seller) == name:
+                    other = next((n for n, r in bns_records.items() if r.get("owner") == seller), "")
+                    if other:
+                        bns_reverse[seller] = other
+                    else:
+                        bns_reverse.pop(seller, None)
+                if buyer not in bns_reverse:
+                    bns_reverse[buyer] = name
+        elif tx.tx_type == "bns_set_primary" and tx.extra_data:
+            name = tx.extra_data.get("name")
+            owner = normalize_bct_address(tx.extra_data.get("owner", tx.sender))
+            if name and owner and name in bns_records:
+                rec = bns_records[name]
+                if rec.get("owner") == owner:
+                    rec["updated_at"] = tx.timestamp
+                    rec["history"].append({
+                        "action": "set_primary",
+                        "owner": owner,
+                        "timestamp": tx.timestamp,
+                        "tx_hash": tx.hash(),
+                        "block": b_idx
+                    })
+                    bns_reverse[owner] = name
+        elif tx.tx_type == "bns_offer" and tx.extra_data:
+            name = tx.extra_data.get("name")
+            bidder = normalize_bct_address(tx.extra_data.get("bidder", tx.sender))
+            owner = normalize_bct_address(tx.extra_data.get("owner", tx.receiver))
+            offer_id = tx.extra_data.get("offer_id")
+            amount = float(tx.extra_data.get("amount", 0.0))
+            if name and offer_id and name in bns_records:
+                rec = bns_records[name]
+                if "offers" not in rec or not isinstance(rec["offers"], dict):
+                    rec["offers"] = {}
+                for prev_oid, prev_o in rec["offers"].items():
+                    if isinstance(prev_o, dict) and prev_o.get("bidder") == bidder and prev_o.get("status") == "active":
+                        prev_o["status"] = "superseded"
+                        prev_o["resolved_at"] = tx.timestamp
+                if offer_id not in rec["offers"]:
+                    rec["offers"][offer_id] = {
+                        "offer_id": offer_id,
+                        "name": name,
+                        "bidder": bidder,
+                        "owner": owner,
+                        "amount": amount,
+                        "timestamp": tx.timestamp,
+                        "tx_hash": tx.hash(),
+                        "status": "active"
+                    }
+                rec["history"].append({
+                    "action": "offer_placed",
+                    "bidder": bidder,
+                    "buyer": bidder,
+                    "amount": amount,
+                    "price": amount,
+                    "offer_id": offer_id,
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "block": b_idx
+                })
+        elif tx.tx_type == "bns_accept_offer" and tx.extra_data:
+            name = tx.extra_data.get("name")
+            offer_id = tx.extra_data.get("offer_id")
+            bidder = normalize_bct_address(tx.extra_data.get("bidder", tx.sender))
+            seller = normalize_bct_address(tx.extra_data.get("seller", tx.receiver))
+            amount = float(tx.extra_data.get("amount", tx.amount))
+            if name and name in bns_records:
+                rec = bns_records[name]
+                rec["owner"] = bidder
+                rec["sale_price"] = 0.0
+                rec["updated_at"] = tx.timestamp
+                if "offers" in rec and isinstance(rec["offers"], dict):
+                    if offer_id in rec["offers"]:
+                        rec["offers"][offer_id]["status"] = "accepted"
+                        rec["offers"][offer_id]["resolved_at"] = tx.timestamp
+                    for _oid, _off in rec["offers"].items():
+                        if _oid != offer_id and isinstance(_off, dict) and _off.get("status") == "active":
+                            _off["status"] = "superseded"
+                            _off["resolved_at"] = tx.timestamp
+                rec["history"].append({
+                    "action": "offer_accepted",
+                    "bidder": bidder,
+                    "buyer": bidder,
+                    "seller": seller,
+                    "amount": amount,
+                    "price": amount,
+                    "offer_id": offer_id,
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "block": b_idx
+                })
+                if bns_reverse.get(seller) == name:
+                    other = next((n for n, r in bns_records.items() if r.get("owner") == seller), "")
+                    if other:
+                        bns_reverse[seller] = other
+                    else:
+                        bns_reverse.pop(seller, None)
+                if bidder not in bns_reverse:
+                    bns_reverse[bidder] = name
+        elif tx.tx_type == "bns_cancel_offer" and tx.extra_data:
+            name = tx.extra_data.get("name")
+            offer_id = tx.extra_data.get("offer_id")
+            actor = normalize_bct_address(tx.extra_data.get("actor", tx.sender))
+            status = tx.extra_data.get("status", "cancelled")
+            if name and name in bns_records:
+                rec = bns_records[name]
+                if "offers" in rec and isinstance(rec["offers"], dict) and offer_id in rec["offers"]:
+                    rec["offers"][offer_id]["status"] = status
+                    rec["offers"][offer_id]["resolved_at"] = tx.timestamp
+                rec["history"].append({
+                    "action": f"offer_{status}",
+                    "actor": actor,
+                    "offer_id": offer_id,
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "block": b_idx
+                })
+
     def _load_in_memory_bns_index(self):
-        """Reconstructs BNS (.bct handles) registry & marketplace deterministically with state-key memoization."""
+        """Incremental O(Δ) BNS (.bct handles) registry & marketplace indexer with O(|Mempool|) overlay."""
+        import copy
         tip_hash = self.chain[-1].hash if self.chain else ""
-        mempool_hashes = tuple(tx.hash() for tx in self.pending_transactions)
+        bns_mempool_txs = [tx for tx in self.pending_transactions if tx.tx_type.startswith("bns_")]
+        mempool_hashes = tuple(tx.hash() for tx in bns_mempool_txs)
         bns_key = (len(self.chain), tip_hash, mempool_hashes)
         if self._bns_index_key == bns_key and self.bns_records is not None:
             return
-        # Atomic thread-safe build in local scope (NEW-06 Multi-Thread Race Guard)
-        new_bns_records = {}
-        new_bns_reverse = {}
-        start_chain_idx = 0
-        if self._snapshot_base is not None and self._snapshot_base.get("bns_records"):
-            import copy
-            new_bns_records = copy.deepcopy(self._snapshot_base["bns_records"])
-            for _bname, _brec in new_bns_records.items():
-                _bowner = (_brec or {}).get("owner", "")
-                if _bowner and _bowner not in new_bns_reverse:
-                    new_bns_reverse[_bowner] = _bname
-            start_chain_idx = min(len(self.chain), int(self._snapshot_base.get("chain_len", len(self.chain))))
-        all_sources = [(b.index, "confirmed", tx) for b in self.chain[start_chain_idx:] for tx in b.transactions] + [
-            ("Mempool", "mempool", tx) for tx in self.pending_transactions
-        ]
-        for b_idx, status_lbl, tx in all_sources:
-            if tx.tx_type == "bns_register" and tx.extra_data:
-                name = tx.extra_data.get("name")
-                if not name:
-                    continue
-                owner = tx.extra_data.get("owner", tx.sender)
-                tier = tx.extra_data.get("tier", "")
-                cost = float(tx.extra_data.get("cost", tx.amount))
-                new_bns_records[name] = {
-                    "name": name,
-                    "owner": owner,
-                    "registered_at": tx.timestamp,
-                    "updated_at": tx.timestamp,
-                    "tier": tier,
-                    "cost": cost,
-                    "sale_price": 0.0,
-                    "offers": {},
-                    "block_index": b_idx,
-                    "status": status_lbl,
-                    "history": [{
-                        "action": "registered",
-                        "owner": owner,
-                        "cost": cost,
-                        "timestamp": tx.timestamp,
-                        "tx_hash": tx.hash(),
-                        "block": b_idx
-                    }]
-                }
-                if owner not in new_bns_reverse:
-                    new_bns_reverse[owner] = name
-            elif tx.tx_type == "bns_transfer" and tx.extra_data:
-                name = tx.extra_data.get("name")
-                from_addr = tx.extra_data.get("from_address", tx.sender)
-                to_addr = tx.extra_data.get("to_address", tx.receiver)
-                if name and name in new_bns_records:
-                    rec = new_bns_records[name]
-                    rec["owner"] = to_addr
-                    rec["sale_price"] = 0.0
-                    rec["updated_at"] = tx.timestamp
-                    for _oid, _off in (rec.get("offers") or {}).items():
-                        if isinstance(_off, dict) and _off.get("status") == "active":
-                            _off["status"] = "superseded"
-                            _off["resolved_at"] = tx.timestamp
-                    rec["history"].append({
-                        "action": "transferred",
-                        "from": from_addr,
-                        "to": to_addr,
-                        "timestamp": tx.timestamp,
-                        "tx_hash": tx.hash(),
-                        "block": b_idx
-                    })
-                    if new_bns_reverse.get(from_addr) == name:
-                        other = next((n for n, r in new_bns_records.items() if r.get("owner") == from_addr), "")
-                        if other:
-                            new_bns_reverse[from_addr] = other
-                        else:
-                            new_bns_reverse.pop(from_addr, None)
-                    if to_addr not in new_bns_reverse:
-                        new_bns_reverse[to_addr] = name
-            elif tx.tx_type == "bns_set_price" and tx.extra_data:
-                name = tx.extra_data.get("name")
-                price = float(tx.extra_data.get("price", 0.0))
-                if name and name in new_bns_records:
-                    new_bns_records[name]["sale_price"] = price
-                    new_bns_records[name]["updated_at"] = tx.timestamp
-                    new_bns_records[name]["history"].append({
-                        "action": "listed_for_sale" if price > 0 else "unlisted",
-                        "price": price,
-                        "timestamp": tx.timestamp,
-                        "tx_hash": tx.hash(),
-                        "block": b_idx
-                    })
-            elif tx.tx_type == "bns_buy" and tx.extra_data:
-                name = tx.extra_data.get("name")
-                buyer = tx.extra_data.get("buyer", tx.sender)
-                seller = tx.extra_data.get("seller", tx.receiver)
-                price = float(tx.extra_data.get("price", tx.amount))
-                if name and name in new_bns_records:
-                    rec = new_bns_records[name]
-                    rec["owner"] = buyer
-                    rec["sale_price"] = 0.0
-                    rec["updated_at"] = tx.timestamp
-                    for _oid, _off in (rec.get("offers") or {}).items():
-                        if isinstance(_off, dict) and _off.get("status") == "active":
-                            _off["status"] = "superseded"
-                            _off["resolved_at"] = tx.timestamp
-                    rec["history"].append({
-                        "action": "purchased",
-                        "buyer": buyer,
-                        "seller": seller,
-                        "price": price,
-                        "timestamp": tx.timestamp,
-                        "tx_hash": tx.hash(),
-                        "block": b_idx
-                    })
-                    if new_bns_reverse.get(seller) == name:
-                        other = next((n for n, r in new_bns_records.items() if r.get("owner") == seller), "")
-                        if other:
-                            new_bns_reverse[seller] = other
-                        else:
-                            new_bns_reverse.pop(seller, None)
-                    if buyer not in new_bns_reverse:
-                        new_bns_reverse[buyer] = name
-            elif tx.tx_type == "bns_set_primary" and tx.extra_data:
-                name = tx.extra_data.get("name")
-                owner = tx.extra_data.get("owner", tx.sender)
-                if name and owner and name in new_bns_records:
-                    rec = new_bns_records[name]
-                    if rec.get("owner") == owner:
-                        rec["updated_at"] = tx.timestamp
-                        rec["history"].append({
-                            "action": "set_primary",
-                            "owner": owner,
-                            "timestamp": tx.timestamp,
-                            "tx_hash": tx.hash(),
-                            "block": b_idx
-                        })
-                        new_bns_reverse[owner] = name
-            elif tx.tx_type == "bns_offer" and tx.extra_data:
-                name = tx.extra_data.get("name")
-                bidder = tx.extra_data.get("bidder", tx.sender)
-                owner = tx.extra_data.get("owner", tx.receiver)
-                offer_id = tx.extra_data.get("offer_id")
-                amount = float(tx.extra_data.get("amount", 0.0))
-                if name and offer_id and name in new_bns_records:
-                    rec = new_bns_records[name]
-                    if "offers" not in rec or not isinstance(rec["offers"], dict):
-                        rec["offers"] = {}
-                    # Auto-supersede any previous active offer from the same bidder on this domain
-                    for prev_oid, prev_o in rec["offers"].items():
-                        if isinstance(prev_o, dict) and prev_o.get("bidder") == bidder and prev_o.get("status") == "active":
-                            prev_o["status"] = "superseded"
-                            prev_o["resolved_at"] = tx.timestamp
-                    if offer_id not in rec["offers"]:
-                        rec["offers"][offer_id] = {
-                            "offer_id": offer_id,
-                            "name": name,
-                            "bidder": bidder,
-                            "owner": owner,
-                            "amount": amount,
-                            "timestamp": tx.timestamp,
-                            "tx_hash": tx.hash(),
-                            "status": "active"
-                        }
-                    rec["history"].append({
-                        "action": "offer_placed",
-                        "bidder": bidder,
-                        "buyer": bidder,
-                        "amount": amount,
-                        "price": amount,
-                        "offer_id": offer_id,
-                        "timestamp": tx.timestamp,
-                        "tx_hash": tx.hash(),
-                        "block": b_idx
-                    })
-            elif tx.tx_type == "bns_accept_offer" and tx.extra_data:
-                name = tx.extra_data.get("name")
-                offer_id = tx.extra_data.get("offer_id")
-                bidder = tx.extra_data.get("bidder", tx.sender)
-                seller = tx.extra_data.get("seller", tx.receiver)
-                amount = float(tx.extra_data.get("amount", tx.amount))
-                if name and name in new_bns_records:
-                    rec = new_bns_records[name]
-                    rec["owner"] = bidder
-                    rec["sale_price"] = 0.0
-                    rec["updated_at"] = tx.timestamp
-                    if "offers" in rec and isinstance(rec["offers"], dict):
-                        if offer_id in rec["offers"]:
-                            rec["offers"][offer_id]["status"] = "accepted"
-                            rec["offers"][offer_id]["resolved_at"] = tx.timestamp
-                        for _oid, _off in rec["offers"].items():
-                            if _oid != offer_id and isinstance(_off, dict) and _off.get("status") == "active":
-                                _off["status"] = "superseded"
-                                _off["resolved_at"] = tx.timestamp
-                    rec["history"].append({
-                        "action": "offer_accepted",
-                        "bidder": bidder,
-                        "buyer": bidder,
-                        "seller": seller,
-                        "amount": amount,
-                        "price": amount,
-                        "offer_id": offer_id,
-                        "timestamp": tx.timestamp,
-                        "tx_hash": tx.hash(),
-                        "block": b_idx
-                    })
-                    if new_bns_reverse.get(seller) == name:
-                        other = next((n for n, r in new_bns_records.items() if r.get("owner") == seller), "")
-                        if other:
-                            new_bns_reverse[seller] = other
-                        else:
-                            new_bns_reverse.pop(seller, None)
-                    if bidder not in new_bns_reverse:
-                        new_bns_reverse[bidder] = name
-            elif tx.tx_type == "bns_cancel_offer" and tx.extra_data:
-                name = tx.extra_data.get("name")
-                offer_id = tx.extra_data.get("offer_id")
-                actor = tx.extra_data.get("actor", tx.sender)
-                status = tx.extra_data.get("status", "cancelled")
-                if name and name in new_bns_records:
-                    rec = new_bns_records[name]
-                    if "offers" in rec and isinstance(rec["offers"], dict) and offer_id in rec["offers"]:
-                        rec["offers"][offer_id]["status"] = status
-                        rec["offers"][offer_id]["resolved_at"] = tx.timestamp
-                    rec["history"].append({
-                        "action": f"offer_{status}",
-                        "actor": actor,
-                        "offer_id": offer_id,
-                        "timestamp": tx.timestamp,
-                        "tx_hash": tx.hash(),
-                        "block": b_idx
-                    })
-        self.bns_records = new_bns_records
-        self.bns_reverse = new_bns_reverse
+
+        if (
+            len(self.chain) < self._confirmed_bns_len
+            or (
+                self._confirmed_bns_len > 0
+                and self.chain[self._confirmed_bns_len - 1].hash != self._confirmed_bns_tip
+            )
+        ):
+            self._confirmed_bns_len = 0
+            self._confirmed_bns_tip = ""
+            self._confirmed_bns_records = {}
+            self._confirmed_bns_reverse = {}
+            if self._snapshot_base is not None and self._snapshot_base.get("bns_records"):
+                self._confirmed_bns_records = copy.deepcopy(self._snapshot_base["bns_records"])
+                for _bname, _brec in self._confirmed_bns_records.items():
+                    _bowner = normalize_bct_address((_brec or {}).get("owner", ""))
+                    if _bowner and _bowner not in self._confirmed_bns_reverse:
+                        self._confirmed_bns_reverse[_bowner] = _bname
+                self._confirmed_bns_len = min(len(self.chain), int(self._snapshot_base.get("chain_len", len(self.chain))))
+                self._confirmed_bns_tip = self.chain[self._confirmed_bns_len - 1].hash if self._confirmed_bns_len > 0 else ""
+
+        if self._confirmed_bns_len < len(self.chain):
+            for b in self.chain[self._confirmed_bns_len:]:
+                for tx in b.transactions:
+                    if tx.tx_type.startswith("bns_"):
+                        self._apply_tx_to_bns_maps(b.index, "confirmed", tx, self._confirmed_bns_records, self._confirmed_bns_reverse)
+            self._confirmed_bns_len = len(self.chain)
+            self._confirmed_bns_tip = tip_hash
+
+        if not bns_mempool_txs:
+            self.bns_records = self._confirmed_bns_records
+            self.bns_reverse = self._confirmed_bns_reverse
+        else:
+            new_bns_records = copy.deepcopy(self._confirmed_bns_records)
+            new_bns_reverse = dict(self._confirmed_bns_reverse)
+            for tx in bns_mempool_txs:
+                self._apply_tx_to_bns_maps("Mempool", "mempool", tx, new_bns_records, new_bns_reverse)
+            self.bns_records = new_bns_records
+            self.bns_reverse = new_bns_reverse
         self._bns_index_key = bns_key
 
+    def _apply_tx_to_space_maps(
+        self,
+        b_idx,
+        status_lbl: str,
+        tx: Transaction,
+        space_posts: Dict[str, dict],
+        follows: Dict[str, List[str]],
+        following: Dict[str, List[str]],
+    ):
+        snd = normalize_bct_address(tx.sender)
+        if tx.tx_type == "space_post" and tx.extra_data:
+            pid = tx.extra_data.get("post_id")
+            if pid:
+                if "bns_name" in tx.extra_data:
+                    raw_bns = str(tx.extra_data.get("bns_name") or "").strip().lower()
+                    if raw_bns in ("anonymous", "anon"):
+                        author_bns = "anonymous"
+                    elif raw_bns and self.bns_records.get(raw_bns, {}).get("owner") == snd:
+                        author_bns = raw_bns
+                    else:
+                        author_bns = ""
+                else:
+                    author_bns = self.bns_reverse.get(snd, "")
+                space_posts[pid] = {
+                    "post_id": pid,
+                    "author": snd,
+                    "author_bns": author_bns,
+                    "is_anonymous": (author_bns == "anonymous" or bool(tx.extra_data.get("is_anonymous"))),
+                    "content": tx.extra_data.get("content", ""),
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "block_index": b_idx,
+                    "status": status_lbl,
+                    "likes_count": 0,
+                    "likes": [],
+                    "comments_count": 0,
+                    "comments": [],
+                    "author_earnings": 0.0,
+                }
+        elif tx.tx_type == "space_like" and tx.extra_data:
+            pid = tx.extra_data.get("post_id")
+            liker = snd
+            if pid in space_posts and liker not in space_posts[pid]["likes"]:
+                space_posts[pid]["likes"].append(liker)
+                space_posts[pid]["likes_count"] += 1
+                space_posts[pid]["author_earnings"] = round(
+                    space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.002), 8
+                )
+        elif tx.tx_type == "space_comment" and tx.extra_data:
+            pid = tx.extra_data.get("post_id")
+            if pid in space_posts:
+                if "bns_name" in tx.extra_data:
+                    raw_bns = str(tx.extra_data.get("bns_name") or "").strip().lower()
+                    if raw_bns in ("anonymous", "anon"):
+                        cmt_bns = "anonymous"
+                    elif raw_bns and self.bns_records.get(raw_bns, {}).get("owner") == snd:
+                        cmt_bns = raw_bns
+                    else:
+                        cmt_bns = ""
+                else:
+                    cmt_bns = self.bns_reverse.get(snd, "")
+                cmt = {
+                    "comment_id": tx.extra_data.get("comment_id", f"cmt_{secrets.token_hex(4)}"),
+                    "commenter": snd,
+                    "commenter_bns": cmt_bns,
+                    "is_anonymous": (cmt_bns == "anonymous" or bool(tx.extra_data.get("is_anonymous"))),
+                    "content": tx.extra_data.get("content", ""),
+                    "timestamp": tx.timestamp,
+                    "tx_hash": tx.hash(),
+                    "status": status_lbl,
+                }
+                space_posts[pid]["comments"].append(cmt)
+                space_posts[pid]["comments_count"] += 1
+                space_posts[pid]["author_earnings"] = round(
+                    space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.004), 8
+                )
+        elif tx.tx_type == "space_follow" and tx.extra_data:
+            target = normalize_bct_address(tx.extra_data.get("target"))
+            follower = snd
+            if target and follower:
+                if target not in follows:
+                    follows[target] = []
+                if follower not in follows[target]:
+                    follows[target].append(follower)
+                if follower not in following:
+                    following[follower] = []
+                if target not in following[follower]:
+                    following[follower].append(target)
+
     def _load_in_memory_space_index(self):
-        """Reconstructs Space Posts, Likes, Comments & Follows deterministically with state-key memoization."""
+        """Incremental O(Δ) Space Posts, Likes, Comments & Follows indexer with O(|Mempool|) overlay."""
+        import copy
         tip_hash = self.chain[-1].hash if self.chain else ""
-        mempool_hashes = tuple(tx.hash() for tx in self.pending_transactions)
+        space_mempool_txs = [tx for tx in self.pending_transactions if tx.tx_type.startswith("space_")]
+        mempool_hashes = tuple(tx.hash() for tx in space_mempool_txs)
         space_key = (len(self.chain), tip_hash, mempool_hashes)
         if self._space_index_key == space_key and self.space_posts is not None:
             return
-        new_space_posts = {}
-        new_follows = {}
-        new_following = {}
-        all_sources = [(b.index, "confirmed", tx) for b in self.chain for tx in b.transactions] + [
-            ("Mempool", "mempool", tx) for tx in self.pending_transactions
-        ]
-        for b_idx, status_lbl, tx in all_sources:
-            if tx.tx_type == "space_post" and tx.extra_data:
-                pid = tx.extra_data.get("post_id")
-                if pid:
-                    if "bns_name" in tx.extra_data:
-                        raw_bns = str(tx.extra_data.get("bns_name") or "").strip().lower()
-                        if raw_bns in ("anonymous", "anon"):
-                            author_bns = "anonymous"
-                        elif raw_bns and self.bns_records.get(raw_bns, {}).get("owner") == tx.sender:
-                            author_bns = raw_bns
-                        else:
-                            author_bns = ""
-                    else:
-                        author_bns = self.bns_reverse.get(tx.sender, "")
-                    new_space_posts[pid] = {
-                        "post_id": pid,
-                        "author": tx.sender,
-                        "author_bns": author_bns,
-                        "is_anonymous": (author_bns == "anonymous" or bool(tx.extra_data.get("is_anonymous"))),
-                        "content": tx.extra_data.get("content", ""),
-                        "timestamp": tx.timestamp,
-                        "tx_hash": tx.hash(),
-                        "block_index": b_idx,
-                        "status": status_lbl,
-                        "likes_count": 0,
-                        "likes": [],
-                        "comments_count": 0,
-                        "comments": [],
-                        "author_earnings": 0.0,
-                    }
-            elif tx.tx_type == "space_like" and tx.extra_data:
-                pid = tx.extra_data.get("post_id")
-                liker = tx.sender
-                if pid in new_space_posts and liker not in new_space_posts[pid]["likes"]:
-                    new_space_posts[pid]["likes"].append(liker)
-                    new_space_posts[pid]["likes_count"] += 1
-                    new_space_posts[pid]["author_earnings"] = round(
-                        new_space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.002), 8
-                    )
-            elif tx.tx_type == "space_comment" and tx.extra_data:
-                pid = tx.extra_data.get("post_id")
-                if pid in new_space_posts:
-                    if "bns_name" in tx.extra_data:
-                        raw_bns = str(tx.extra_data.get("bns_name") or "").strip().lower()
-                        if raw_bns in ("anonymous", "anon"):
-                            cmt_bns = "anonymous"
-                        elif raw_bns and self.bns_records.get(raw_bns, {}).get("owner") == tx.sender:
-                            cmt_bns = raw_bns
-                        else:
-                            cmt_bns = ""
-                    else:
-                        cmt_bns = self.bns_reverse.get(tx.sender, "")
-                    cmt = {
-                        "comment_id": tx.extra_data.get("comment_id", f"cmt_{secrets.token_hex(4)}"),
-                        "commenter": tx.sender,
-                        "commenter_bns": cmt_bns,
-                        "is_anonymous": (cmt_bns == "anonymous" or bool(tx.extra_data.get("is_anonymous"))),
-                        "content": tx.extra_data.get("content", ""),
-                        "timestamp": tx.timestamp,
-                        "tx_hash": tx.hash(),
-                        "status": status_lbl,
-                    }
-                    new_space_posts[pid]["comments"].append(cmt)
-                    new_space_posts[pid]["comments_count"] += 1
-                    new_space_posts[pid]["author_earnings"] = round(
-                        new_space_posts[pid]["author_earnings"] + tx.extra_data.get("author_cut", 0.004), 8
-                    )
-            elif tx.tx_type == "space_follow" and tx.extra_data:
-                target = tx.extra_data.get("target")
-                follower = tx.sender
-                if target and follower:
-                    if target not in new_follows:
-                        new_follows[target] = []
-                    if follower not in new_follows[target]:
-                        new_follows[target].append(follower)
-                    if follower not in new_following:
-                        new_following[follower] = []
-                    if target not in new_following[follower]:
-                        new_following[follower].append(target)
-        self.space_posts = new_space_posts
-        self.follows = new_follows
-        self.following = new_following
+
+        if (
+            len(self.chain) < self._confirmed_space_len
+            or (
+                self._confirmed_space_len > 0
+                and self.chain[self._confirmed_space_len - 1].hash != self._confirmed_space_tip
+            )
+        ):
+            self._confirmed_space_len = 0
+            self._confirmed_space_tip = ""
+            self._confirmed_space_posts = {}
+            self._confirmed_follows = {}
+            self._confirmed_following = {}
+
+        if self._confirmed_space_len < len(self.chain):
+            for b in self.chain[self._confirmed_space_len:]:
+                for tx in b.transactions:
+                    if tx.tx_type.startswith("space_"):
+                        self._apply_tx_to_space_maps(
+                            b.index,
+                            "confirmed",
+                            tx,
+                            self._confirmed_space_posts,
+                            self._confirmed_follows,
+                            self._confirmed_following,
+                        )
+            self._confirmed_space_len = len(self.chain)
+            self._confirmed_space_tip = tip_hash
+
+        if not space_mempool_txs:
+            self.space_posts = self._confirmed_space_posts
+            self.follows = self._confirmed_follows
+            self.following = self._confirmed_following
+        else:
+            new_space_posts = copy.deepcopy(self._confirmed_space_posts)
+            new_follows = {k: list(v) for k, v in self._confirmed_follows.items()}
+            new_following = {k: list(v) for k, v in self._confirmed_following.items()}
+            for tx in space_mempool_txs:
+                self._apply_tx_to_space_maps("Mempool", "mempool", tx, new_space_posts, new_follows, new_following)
+            self.space_posts = new_space_posts
+            self.follows = new_follows
+            self.following = new_following
         self._space_index_key = space_key
 
     def _save_state(self, force_json_backup: bool = False):

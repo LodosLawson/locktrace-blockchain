@@ -158,9 +158,10 @@ class LockTraceMinerEngine:
         start_nonce: int = 0
     ) -> tuple:
         dummy = dict(block_candidate)
-        dummy["nonce"] = 888888888888
+        sentinel = f"__LOCKTRACE_NONCE_SENTINEL_{id(dummy)}__"
+        dummy["nonce"] = sentinel
         serialized = json.dumps(dummy, sort_keys=True)
-        parts = serialized.split("888888888888")
+        parts = serialized.split(f'"{sentinel}"')
         if len(parts) != 2:
             return False, 0, "", 0.0
 
@@ -227,6 +228,15 @@ def _is_valid_bct_address(addr: str) -> bool:
     if up in (TREASURY_ADDRESS, "GENESIS_VAULT", BRIDGE_VAULT_ADDRESS):
         return True
     return up.startswith("BCT") and len(clean) == 43 and all(c in "0123456789abcdefABCDEF" for c in clean[3:])
+
+
+def _normalize_bct_address(addr: str) -> str:
+    if not addr or not isinstance(addr, str):
+        return ""
+    clean = addr.strip()
+    if len(clean) == 43 and clean[:3].upper() == "BCT" and all(c in "0123456789abcdefABCDEF" for c in clean[3:]):
+        return "BCT" + clean[3:].lower()
+    return clean
 
 
 def _detect_lan_ip() -> str:
@@ -556,6 +566,7 @@ class LockTraceNode:
         self.chain_by_index: dict = {}
         self.known_peers: dict = {}
         self.used_client_sigs: dict = {}
+        self.local_mempool_by_short_id: dict = {}
         self.local_height = 0
         self.network_height = 0
         self.synced = False
@@ -577,7 +588,7 @@ class LockTraceNode:
         self._p2p_server = None
 
         self.node_id = self._load_or_create_node_id()
-        self.payout_address = wallet.strip() if (wallet and _is_valid_bct_address(wallet)) else ""
+        self.payout_address = _normalize_bct_address(wallet) if (wallet and _is_valid_bct_address(wallet)) else ""
         self.keys = self._init_miner_keys(private_key=private_key)
         self.wallet_address = self.payout_address or self.keys["address"]
         self._load_local_chain()
@@ -1410,12 +1421,12 @@ class LockTraceNode:
 
         # 2. AUTONOMOUS SURVIVAL MODE (Seed & Peers unreachable — keep blockchain alive!)
         if path in ("/api/v1/wallet/create", "/api/v1/wallet/import"):
-            addr = str(payload.get("address", "")).strip()
+            addr = _normalize_bct_address(str(payload.get("address", "")).strip())
             pub = str(payload.get("public_key", "")).strip()
             if addr and pub and PureSecp256k1.public_key_to_address(pub) == addr:
                 bal, nonce, _ = self.local_calc_balance_and_nonce(addr)
                 has_welcome = any(
-                    t.get("receiver") == addr and t.get("tx_type") == "reward"
+                    _normalize_bct_address(t.get("receiver", "")) == addr and t.get("tx_type") == "reward"
                     for b in self.chain_by_index.values()
                     for t in b.get("transactions", [])
                 )
@@ -1441,13 +1452,22 @@ class LockTraceNode:
             return 400, {"success": False, "message": "Invalid public key or wallet address."}
 
         if path == "/api/v1/transaction":
-            sender = str(payload.get("sender", "")).strip()
-            receiver = str(payload.get("receiver", "")).strip()
+            raw_sender = str(payload.get("sender", "")).strip()
+            raw_receiver = str(payload.get("receiver", "")).strip()
+            sender = _normalize_bct_address(raw_sender)
+            receiver = _normalize_bct_address(raw_receiver)
             amount = round(float(payload.get("amount", 0.0)), 8)
             if amount <= 0 or sender == receiver or not _is_valid_bct_address(receiver):
                 return 400, {"success": False, "message": "Invalid recipient address or amount."}
             amt_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
-            variants = [f"{sender}{receiver}{amount}", f"{sender}{receiver}{amt_trim}", f"{sender}{receiver}{amount:.8f}"]
+            variants = [
+                f"{raw_sender}{raw_receiver}{amount}",
+                f"{raw_sender}{raw_receiver}{amt_trim}",
+                f"{raw_sender}{raw_receiver}{amount:.8f}",
+                f"{sender}{receiver}{amount}",
+                f"{sender}{receiver}{amt_trim}",
+                f"{sender}{receiver}{amount:.8f}",
+            ]
             ok, err = self._verify_client_action_sig(payload, sender, variants)
             if not ok:
                 return 403, {"success": False, "message": err}
@@ -2337,17 +2357,40 @@ class LockTraceNode:
         if b_idx < 0 or not b_hash:
             return False
 
+        try:
+            blk_ts = float(blk.get("timestamp", 0.0))
+        except (ValueError, TypeError):
+            return False
+        if b_idx > 0 and blk_ts > (time.time() + 120.0):
+            return False
+
         if calculate_block_hash_dict(blk) != b_hash:
             return False
 
-        target_diff = int(blk.get("difficulty", base_difficulty) or base_difficulty)
-        if b_idx > 0 and not b_hash.startswith("0" * max(1, target_diff)):
+        # SEC-02 Fix: Do NOT blindly trust untrusted "difficulty" < base_difficulty from gossiped JSON.
+        # Only permit reduced difficulty if the block's timestamp genuinely exceeds prev_blk["timestamp"] + 120s.
+        req_diff = int(base_difficulty)
+        with self.chain_lock:
+            if b_idx > 0 and (b_idx - 1) in self.chain_by_index:
+                prev_blk = self.chain_by_index[b_idx - 1]
+                if str(blk.get("previous_hash", "")).lower() != str(prev_blk["hash"]).lower():
+                    return False
+                dt = blk_ts - float(prev_blk.get("timestamp", 0.0))
+                if dt > 120.0:
+                    stall_drop = int((dt - 120.0) // 60.0) + 1
+                    req_diff = max(1, int(base_difficulty) - stall_drop)
+
+        if b_idx > 0 and not b_hash.startswith("0" * max(1, req_diff)):
             return False
 
         txs = blk.get("transactions", [])
         if not isinstance(txs, list) or not txs:
             return False
 
+        system_tx_types = {
+            "genesis", "reward", "mining_reward", "validator_reward",
+            "attestation_reward", "bridge_unlock", "validator_unstake", "frontend_release"
+        }
         reward_total_u = 0
         fee_total_u = 0
         computed_tx_hashes = []
@@ -2372,6 +2415,17 @@ class LockTraceNode:
                 reward_total_u += amt_u
             else:
                 fee_total_u += fee_u
+                if b_idx > 0 and ttype not in system_tx_types:
+                    sig_hex = str(t.get("signature", "")).strip()
+                    if sig_hex.lower().startswith("0x"):
+                        sig_hex = sig_hex[2:]
+                    if len(sig_hex) != 128 or not all(c in "0123456789abcdefABCDEF" for c in sig_hex):
+                        return False
+                    pub_hex = str(t.get("public_key", "") or (t.get("extra_data") or {}).get("public_key", "")).strip()
+                    if pub_hex:
+                        derived = PureSecp256k1.public_key_to_address(pub_hex)
+                        if not derived or derived != _normalize_bct_address(str(t.get("sender", ""))):
+                            return False
 
         max_allowed_reward_u = _to_units(BLOCK_REWARD) + fee_total_u + 100
         if b_idx > 0 and reward_total_u > max_allowed_reward_u:
@@ -2385,11 +2439,6 @@ class LockTraceNode:
             if calc_m != str(blk["merkle_root"]).lower():
                 return False
 
-        with self.chain_lock:
-            if b_idx > 0 and (b_idx - 1) in self.chain_by_index:
-                prev_blk = self.chain_by_index[b_idx - 1]
-                if str(blk.get("previous_hash", "")).lower() != str(prev_blk["hash"]).lower():
-                    return False
         return True
 
     def _verify_and_store_blocks(self, blocks: list, difficulty: int = 3, persist: bool = True) -> bool:
@@ -2415,29 +2464,34 @@ class LockTraceNode:
     def ingest_compact_block(self, compact_data: dict) -> bool:
         """
         v2.6.0 P2P Compact Block Handler.
-        Validates compact block header and reconstructs full block without retransmitting transactions.
+        Validates compact block header and reconstructs full block using local mempool short_ids or embedded tx map.
         """
         header = compact_data.get("header") or {}
         if not isinstance(header, dict) or "hash" not in header or "merkle_root" not in header:
             return False
 
-        target_diff = int(header.get("difficulty", 3))
-        if not str(header.get("hash", "")).startswith("0" * target_diff):
-            return False
-
-        prefilled = {item["index"]: item["tx"] for item in compact_data.get("prefilled_transactions", []) if "index" in item}
-        short_ids = compact_data.get("short_ids", [])
+        prefilled = {int(item["index"]): item["tx"] for item in compact_data.get("prefilled_transactions", []) if "index" in item and "tx" in item}
+        short_ids = list(compact_data.get("short_ids", []) or [])
+        tx_by_sid = dict(compact_data.get("transactions_by_short_id") or {})
         total_txs = int(compact_data.get("total_transactions", len(short_ids) + len(prefilled)))
 
         assembled = []
+        short_cursor = 0
         for i in range(total_txs):
             if i in prefilled:
                 assembled.append(prefilled[i])
+            elif short_cursor < len(short_ids):
+                sid = str(short_ids[short_cursor])
+                short_cursor += 1
+                matched_tx = self.local_mempool_by_short_id.get(sid) or tx_by_sid.get(sid)
+                if not isinstance(matched_tx, dict):
+                    return False  # Missing tx, node will receive full block via regular gossip
+                assembled.append(matched_tx)
             else:
-                return False  # Missing tx, node will receive full block via regular gossip
+                return False
 
         try:
-            calc_merkle = compute_merkle_root([t.get("tx_hash", "") for t in assembled])
+            calc_merkle = compute_merkle_root([t.get("tx_hash", "") or calculate_tx_hash_dict(t) for t in assembled])
         except ValueError:
             return False
         if calc_merkle != header.get("merkle_root", "").lower():
@@ -2661,6 +2715,11 @@ class LockTraceNode:
             return False
 
         txs = tpl["transactions"]
+        for _t in txs:
+            if isinstance(_t, dict) and _t.get("tx_hash"):
+                self.local_mempool_by_short_id[str(_t["tx_hash"])[:16]] = _t
+        if len(self.local_mempool_by_short_id) > 5000:
+            self.local_mempool_by_short_id.clear()
         try:
             computed_merkle = compute_merkle_root([t["tx_hash"] for t in txs])
         except ValueError:
@@ -2735,11 +2794,15 @@ class LockTraceNode:
         txs = block_dict.get("transactions", [])
         prefilled = []
         short_ids = []
+        tx_by_sid = {}
         if txs:
             prefilled.append({"index": 0, "tx": txs[0]})
             for tx in txs[1:]:
-                tx_hash = tx.get("tx_hash", "") or ""
-                short_ids.append(tx_hash[:16])
+                tx_hash = tx.get("tx_hash", "") or calculate_tx_hash_dict(tx)
+                sid = tx_hash[:16]
+                short_ids.append(sid)
+                tx_by_sid[sid] = tx
+                self.local_mempool_by_short_id[sid] = tx
 
         return {
             "compact_version": 1,
@@ -2757,6 +2820,7 @@ class LockTraceNode:
             },
             "prefilled_transactions": prefilled,
             "short_ids": short_ids,
+            "transactions_by_short_id": tx_by_sid,
             "total_transactions": len(txs),
         }
 
