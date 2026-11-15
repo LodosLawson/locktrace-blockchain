@@ -2488,10 +2488,22 @@ class LockTraceNode:
         if not isinstance(header, dict) or "hash" not in header or "merkle_root" not in header:
             return False
 
-        prefilled = {int(item["index"]): item["tx"] for item in compact_data.get("prefilled_transactions", []) if "index" in item and "tx" in item}
+        prefilled = {}
+        for item in (compact_data.get("prefilled_transactions", []) or []):
+            if isinstance(item, dict) and "index" in item and "tx" in item and isinstance(item["tx"], dict):
+                try:
+                    prefilled[int(item["index"])] = item["tx"]
+                except (ValueError, TypeError):
+                    continue
         short_ids = list(compact_data.get("short_ids", []) or [])
         tx_by_sid = dict(compact_data.get("transactions_by_short_id") or {})
-        total_txs = int(compact_data.get("total_transactions", len(short_ids) + len(prefilled)))
+        try:
+            total_txs = int(compact_data.get("total_transactions", len(short_ids) + len(prefilled)))
+        except (ValueError, TypeError):
+            return False
+
+        if total_txs < 1 or total_txs > 500:
+            return False
 
         assembled = []
         short_cursor = 0

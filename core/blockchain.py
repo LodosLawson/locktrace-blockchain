@@ -1692,7 +1692,17 @@ class Blockchain:
             clean = clean[:-4]
         clean = re.sub(r"[^a-z0-9\-]", "", clean).strip("-")
         length = len(clean)
-        if length < 3 or length > 24:
+        try:
+            from config import Config
+            reserved_handles = set(getattr(Config, "RESERVED_BNS_HANDLES", set()))
+        except Exception:
+            reserved_handles = {"treasury", "genesis", "bridge", "vault", "admin", "system", "support", "official", "null", "burn", "validator", "security", "bct", "foundation"}
+
+        if clean in reserved_handles:
+            valid = False
+            tier = "Reserved Protocol System Handle"
+            cost = 0.0
+        elif length < 3 or length > 24:
             valid = False
             tier = "Invalid Length (3-24 chars required)"
             cost = 0.0
@@ -1727,9 +1737,10 @@ class Blockchain:
             pricing = self.get_bns_pricing(name_or_label)
             full_name = pricing["name"]
             if not pricing["valid"]:
+                is_reserved = "Reserved" in pricing.get("tier", "")
                 return {
                     "available": False,
-                    "reason": "Name must be between 3 and 24 characters (lowercase letters, digits, hyphens).",
+                    "reason": f"'{full_name}' is a reserved protocol system handle and cannot be registered." if is_reserved else "Name must be between 3 and 24 characters (lowercase letters, digits, hyphens).",
                     "pricing": pricing
                 }
             if full_name in self.bns_records:
@@ -1789,7 +1800,7 @@ class Blockchain:
 
             pricing = self.get_bns_pricing(name)
             if not pricing["valid"]:
-                return False, "Handle must be 3-24 characters long containing only lowercase letters, digits, or hyphens.", None
+                return False, f"Handle registration error: {pricing.get('tier', 'Invalid handle format')}", None
 
             full_name = pricing["name"]
             if full_name in self.bns_records:
@@ -3024,7 +3035,7 @@ class Blockchain:
             return False
         with self.lock:
             return any(
-                normalize_bct_address(n.get("miner_address", "")) == clean and (n.get("auth_verified") or not n.get("is_genesis"))
+                normalize_bct_address(n.get("miner_address", "")) == clean and (n.get("is_genesis") or n.get("auth_verified"))
                 for n in self.nodes.values()
             )
 
@@ -3619,14 +3630,21 @@ class Blockchain:
         if not self.is_active_validator(clean_miner) or clean_miner in self.slashed_validators:
             return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
 
-        # Anti-Self-Loop Dust Mining Guard: If block only contains self-transfers between miner and accomplice addresses,
-        # or if all user transactions involve the miner with zero genuine third-party transactions, zero the Treasury subsidy!
+        # Anti-Self-Loop & Sybil Dust Mining Guard: If block only contains self-transfers between miner and accomplice addresses,
+        # or transactions involving slashed validators, or zero genuine third-party transactions, zero the Treasury subsidy!
         norm_miner = normalize_bct_address(clean_miner)
+        slashed_set = set(normalize_bct_address(a) for a in self.slashed_validators)
         genuine_txs = [
             tx for tx in pending_txs
-            if normalize_bct_address(tx.sender) != norm_miner and normalize_bct_address(tx.receiver) != norm_miner
+            if normalize_bct_address(tx.sender) != norm_miner
+            and normalize_bct_address(tx.receiver) != norm_miner
+            and normalize_bct_address(tx.sender) not in slashed_set
+            and normalize_bct_address(tx.receiver) not in slashed_set
+            and float(getattr(tx, "amount", 0.0) or 0.0) >= MIN_TRANSACTION
         ]
-        is_self_loop_only = bool(pending_txs) and len(genuine_txs) == 0
+        senders = {normalize_bct_address(tx.sender) for tx in genuine_txs if tx.sender}
+        receivers = {normalize_bct_address(tx.receiver) for tx in genuine_txs if tx.receiver}
+        is_self_loop_only = bool(pending_txs) and (len(genuine_txs) == 0 or (len(senders) <= 1 and len(receivers) <= 1 and senders == receivers))
 
         transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(

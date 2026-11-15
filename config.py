@@ -152,6 +152,13 @@ class Config:
         "BCT4a9207a5be60786264cc0653aba1a8568c91f5a0",
     ]
 
+    # SEC-BNS: Reserved protocol namespaces barred from arbitrary public registration
+    RESERVED_BNS_HANDLES = {
+        "treasury", "genesis", "bridge", "vault", "admin", "system",
+        "support", "official", "null", "burn", "validator", "security",
+        "bct", "foundation"
+    }
+
     # ── Loglama ───────────────────────────────────────
     LOG_LEVEL = os.environ.get("BCT_LOG_LEVEL", "INFO")
     LOG_FILE = os.environ.get("BCT_LOG_FILE", "logs/blockchain.log")
