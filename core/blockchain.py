@@ -282,7 +282,7 @@ class Block:
                  previous_hash: str, timestamp: float = None, nonce: int = 0,
                  miner: str = "", version: int = 2, merkle_root: str = "",
                  attestations_count: int = 0, precomputed_hash: str = "",
-                 finalized: bool = False):
+                 finalized: bool = False, raw_tx_dicts: Optional[List[dict]] = None):
         self.index = index
         self.transactions = transactions
         self.previous_hash = previous_hash
@@ -293,13 +293,12 @@ class Block:
         self.merkle_root = merkle_root or compute_merkle_root([tx.hash() for tx in self.transactions])
         self.attestations_count = int(attestations_count or 0)
         self.finalized = bool(finalized)
+        self._raw_tx_dicts = raw_tx_dicts
         self._cached_dict: Optional[dict] = None
         self.hash = precomputed_hash or self.calculate_hash()
 
-    def calculate_hash(self, precomputed_tx_dicts: Optional[List[dict]] = None) -> str:
-        tx_dicts = precomputed_tx_dicts if precomputed_tx_dicts is not None else [tx.to_dict() for tx in self.transactions]
+    def _hash_payload(self, tx_dicts: List[dict]) -> str:
         if self.version >= 2:
-            # v2 Header: Cryptographically commits merkle_root & miner into PoW hash
             payload = {
                 "index": self.index,
                 "version": self.version,
@@ -311,7 +310,6 @@ class Block:
                 "nonce": self.nonce,
             }
         else:
-            # v1 Legacy Header: Preserves 100% hash validity for historical mainnet blocks 0..N
             payload = {
                 "index": self.index,
                 "transactions": tx_dicts,
@@ -321,6 +319,16 @@ class Block:
             }
         block_data = json.dumps(payload, sort_keys=True)
         return hashlib.sha256(block_data.encode()).hexdigest()
+
+    def calculate_hash(self, precomputed_tx_dicts: Optional[List[dict]] = None) -> str:
+        if precomputed_tx_dicts is not None:
+            return self._hash_payload(precomputed_tx_dicts)
+        h = self._hash_payload([tx.to_dict() for tx in self.transactions])
+        if hasattr(self, "hash") and self.hash and h != self.hash and self._raw_tx_dicts:
+            h_raw = self._hash_payload(self._raw_tx_dicts)
+            if h_raw == self.hash:
+                return h_raw
+        return h
 
     def mine(self, difficulty: int):
         self.merkle_root = compute_merkle_root([tx.hash() for tx in self.transactions])
@@ -5531,6 +5539,7 @@ class Blockchain:
             merkle_root=b_merkle,
             attestations_count=int(b_data.get("attestations_count", 0)),
             precomputed_hash=str(b_data.get("hash", "")),
+            raw_tx_dicts=b_data.get("transactions") if isinstance(b_data.get("transactions"), list) else None,
         )
 
     def _load_state(self, sweep_overdue: bool = True) -> bool:
