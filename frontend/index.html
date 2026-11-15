@@ -6473,7 +6473,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL 1: TRANSACTION DETAILS & SPV MERKLE PROOF                     -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4" id="tx-modal"
+  <div class="fixed inset-0 z-[80] bg-background/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4" id="tx-modal"
     onclick="if(event.target===this) closeTxModal();">
     <div
       class="w-full max-w-[460px] max-h-[92dvh] overflow-y-auto rounded-2xl bg-surface-container p-5 sm:p-6 flex flex-col gap-3.5 shadow-2xl transition-all scale-95 opacity-0 border border-outline-variant/25"
@@ -6610,7 +6610,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL 2: WALLET ADDRESS (RECEIVE / QR) + AES-256-GCM PIN VAULT           -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-md hidden items-center justify-center p-4"
+  <div class="fixed inset-0 z-[80] bg-background/80 backdrop-blur-md hidden items-center justify-center p-4"
     id="receive-modal" onclick="if(event.target===this) closeReceiveModal();">
     <div
       class="w-full max-w-[430px] max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/25">
@@ -6781,7 +6781,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL 3: PIN VAULT UNLOCK (PRE-SIGNING NON-CUSTODIAL)                 -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
+  <div class="fixed inset-0 z-[90] bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
     id="pin-unlock-modal" onclick="if(event.target===this) closePinUnlockModal(false);">
     <div
       class="w-full max-w-[360px] rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl border border-primary/30 text-center">
@@ -6834,7 +6834,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL 5: BLOCK DETAILS & MERKLE ROOT MODAL                      -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-3 md:p-6"
+  <div class="fixed inset-0 z-[80] bg-background/85 backdrop-blur-md hidden items-center justify-center p-3 md:p-6"
     id="block-detail-modal" onclick="if(event.target===this) closeBlockDetailModal();">
     <div
       class="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-container p-5 md:p-7 flex flex-col gap-4 shadow-2xl border border-outline-variant/30">
@@ -6863,7 +6863,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL 6: CAMERA QR CODE SCANNER                                       -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
+  <div class="fixed inset-0 z-[85] bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
     id="qr-scanner-modal" onclick="if(event.target===this) closeQrScannerModal();">
     <div
       class="w-full max-w-sm rounded-2xl bg-surface-container p-5 flex flex-col gap-4 shadow-2xl border border-outline-variant/30">
@@ -7038,7 +7038,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL: BNS REGISTER HANDLE                                               -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
+  <div class="fixed inset-0 z-[80] bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
     id="bnsRegisterModal" onclick="if(event.target===this) closeBnsRegisterModal();">
     <div
       class="w-full max-w-md rounded-2xl bg-surface-container p-5 md:p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/30">
@@ -7100,7 +7100,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL: BNS SET MARKETPLACE PRICE                                         -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
+  <div class="fixed inset-0 z-[80] bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
     id="bnsSetPriceModal" onclick="if(event.target===this) closeBnsSetPriceModal();">
     <div
       class="w-full max-w-md rounded-2xl bg-surface-container p-5 md:p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/30">
@@ -7149,7 +7149,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL: BNS TRANSFER HANDLE OWNERSHIP                                     -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
+  <div class="fixed inset-0 z-[80] bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
     id="bnsTransferModal" onclick="if(event.target===this) closeBnsTransferModal();">
     <div
       class="w-full max-w-md rounded-2xl bg-surface-container p-5 md:p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/30">
@@ -7195,7 +7195,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL: BNS BUY HANDLE FROM MARKETPLACE                                   -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
+  <div class="fixed inset-0 z-[80] bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
     id="bnsBuyModal" onclick="if(event.target===this) closeBnsBuyModal();">
     <div
       class="w-full max-w-md rounded-2xl bg-surface-container p-5 md:p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/30">
@@ -7253,7 +7253,7 @@
   <!-- ========================================================================= -->
   <!-- MODAL: BNS MAKE DOMAIN OFFER / BID                                        -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
+  <div class="fixed inset-0 z-[80] bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
     id="bnsOfferModal" onclick="if(event.target===this) closeBnsOfferModal();">
     <div
       class="w-full max-w-md rounded-2xl bg-surface-container p-5 md:p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/30">
@@ -10928,6 +10928,7 @@
     }
 
     function openTxDetail(tx) {
+      if (typeof applyPwaBackButtonUI === 'function') applyPwaBackButtonUI();
       selectedModalTx = tx;
       const modal = document.getElementById('tx-modal');
       const card = document.getElementById('modal-card');
