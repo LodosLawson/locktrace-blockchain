@@ -220,6 +220,8 @@ SLASHED_MALICIOUS_VALIDATORS = {
     "bct3a5f3ce88254c92f1daa43caa96c3bb0e2ca163b",
     "bct35d240a88e37513fdd4f07e93363adb7f24c5b39",
     "bctdc88fceb46881c318efa5e6ffc333eee931a8fbd",
+    "bcta482e0a97003f22f15afddb234cc8deb93bb1e0a",
+    "bct4a9207a5be60786264cc0653aba1a8568c91f5a0",
 }
 
 
