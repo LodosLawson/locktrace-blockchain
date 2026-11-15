@@ -214,7 +214,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.9.5` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.9.6` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -603,3 +603,11 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 2. **Köprü Relayer & Tekilleştirme:** `process_pending_burns()` on-chain brüt tutar (`amount_bct`) ile eşleştirildi; `tx_hash_l1` büyük/küçük harf duyarsız benzersiz indeksle korundu.
 3. **Konsensüs, Nonce & Replay Koruması:** Mempool çift düşüm hatası, `EQUIVOCATION_SLASH_PERCENT` uygulama hatası, `bns_accept_offer` ve `validator_unstake` nonce/imza replay açıkları ile `execute_validator_stake` makbuz çift sayımı giderildi.
 4. **P2P & Multi-Worker Senkronizasyonu:** `node_runner.py` muhasebe/BNS indeksleri `core/blockchain.py` ile %100 eşitlendi, `PureSecp256k1` Low-S zorunluluğu eklendi, `get_account_nonce()` multi-worker SQLite yenilemesi ve Flask CSP `connect-src` eşitliği sağlandı.
+
+---
+
+## 🛡️ 25. BlocTag / LockTrace v2.9.6: Çok Yönlü Güvenlik Denetimi & İstemci/Konsensüs Sıkılaştırma Paketi
+
+1. **Sıfır-Gözetim (Zero-Custodial) Sunucu Güvenliği:** `/api/v1/wallet/create` ve `/api/v1/wallet/import` uç noktalarındaki gözetimli Path B (sunucu taraflı keygen ve ağ üzerinden private key iletimi) tamamen devre dışı bırakıldı. Sunucu yalnızca istemci cihazda üretilen `address` ve `public_key` kayıtlarını kabul eder.
+2. **Konsensüs Zaman Damgası Monotonluğu & Zorluk Manipülasyon Koruması:** `core/blockchain.py:is_chain_valid` ve `node_runner.py:verify_single_block` fonksiyonlarında ardışık blok zaman damgası artışı (`cur_ts > prev_ts`) ve azami 120 saniyelik gelecek sınırı (`cur_ts <= now + 120s`) zorunlu kılındı. Bu sayede yapay zaman damgasıyla PoW zorluk seviyesinin 1'e düşürülmesi (stall-drop bypass) engellendi.
+3. **İstemci Kasa Şifreleme İyileştirmesi:** `encryptDeviceSecrets` akış şifreleyicisine her şifreleme için `window.crypto.getRandomValues` ile 16-baytlık tekil rastgele IV eklendi; anahtar akışı tekrarı (keystream reuse) önlendi ve geriye dönük uyumluluk korundu.

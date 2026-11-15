@@ -335,7 +335,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-H1WA8GivQc8yqhPJWRRq/iBl5WshQgrsZTjYQH8jrSY=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-qCA0SAzVM+hC/JqfCjDMAGZdOk1gOj2zKPXJ+sCxDDA=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -909,7 +909,7 @@ def api_create_wallet():
     provided_mnemonic = str(data.get("mnemonic", "") or "").strip()
 
     try:
-        # Path A: 100% Zero-Knowledge Client-Side Keygen (mnemonic & private_key never leave browser!)
+        # Zero-Knowledge Non-Custodial Key Registration ONLY (secrets never leave browser/client device)
         if client_address and client_pubkey and not provided_mnemonic:
             if public_key_to_address(client_pubkey) != client_address:
                 return api_response(False, message="Public key does not match wallet address.", status=400)
@@ -924,29 +924,12 @@ def api_create_wallet():
                 }, status=201)
             return api_response(False, message=message, status=400)
 
-        # Path B: Legacy / API Mnemonic Keygen
-        if provided_mnemonic:
-            cleaned = " ".join(provided_mnemonic.lower().split())
-            if not validate_mnemonic(cleaned):
-                return api_response(False, message="Invalid 12-word BIP-39 recovery phrase.", status=400)
-            wallet = Wallet(mnemonic=cleaned)
-        else:
-            wallet = Wallet()
-
-        success, message = blockchain.register_wallet(
-            wallet.address, wallet.get_public_key_hex()
+        # Custodial server-side key generation is strictly disabled for security (LT-SEC-01)
+        return api_response(
+            False,
+            message="Server-side key generation is permanently disabled for security. All wallets must be generated client-side using non-custodial cryptography (address and public_key required).",
+            status=400
         )
-        if success:
-            logger.info(f"Account Created: {wallet.address} (ip={get_client_ip()})")
-            return api_response(True, message=message, data={
-                "address": wallet.address,
-                "mnemonic": wallet.mnemonic,
-                "public_key": wallet.get_public_key_hex(),
-                "private_key": wallet.get_private_key_hex(),
-                "balance": blockchain.get_balance(wallet.address),
-                "nonce": blockchain.get_account_nonce(wallet.address),
-            }, status=201)
-        return api_response(False, message=message, status=400)
     except Exception as e:
         logger.error(f"Account creation exception: {e}")
         return api_response(False, message="An error occurred while creating wallet.", status=500)
@@ -965,7 +948,7 @@ def api_import_wallet():
     private_key_hex = str(data.get("private_key", "") or "").strip()
 
     try:
-        # Path A: 100% Zero-Knowledge Client-Side Import (secrets stay in browser!)
+        # Zero-Knowledge Client-Side Key Import (secrets stay in browser!)
         if client_address and client_pubkey and not mnemonic_phrase and not private_key_hex:
             if public_key_to_address(client_pubkey) != client_address:
                 return api_response(False, message="Public key does not match wallet address.", status=400)
@@ -980,37 +963,15 @@ def api_import_wallet():
                 "nonce": blockchain.get_account_nonce(client_address),
             })
 
-        # Path B: Legacy / API Import
-        if mnemonic_phrase:
-            words = mnemonic_phrase.lower().split()
-            if len(words) != 12:
-                return api_response(False, message="Recovery phrase must consist of exactly 12 words.", status=400)
-            wallet = restore_wallet_from_mnemonic(" ".join(words))
-        elif private_key_hex:
-            clean_pk = private_key_hex.strip()
-            if len(clean_pk) != 64 or not all(c in "0123456789abcdefABCDEF" for c in clean_pk):
-                return api_response(False, message="Private key must be in 64-character hex format.", status=400)
-            wallet = restore_wallet(clean_pk)
-        else:
-            return api_response(False, message="Please enter a 12-word recovery phrase or private key.", status=400)
-
-        allow_bonus = check_rate_limit("wallet_create_min", limit=3, window_seconds=60) and check_rate_limit("wallet_create_hr", limit=10, window_seconds=3600)
-        ok, msg = blockchain.register_wallet(wallet.address, wallet.get_public_key_hex(), grant_welcome_bonus=allow_bonus)
-        if not ok:
-            return api_response(False, message=msg, status=400)
-        bal = blockchain.get_balance(wallet.address)
-
-        return api_response(True, message="Wallet successfully restored!", data={
-            "address": wallet.address,
-            "mnemonic": getattr(wallet, "mnemonic", ""),
-            "public_key": wallet.get_public_key_hex(),
-            "private_key": wallet.get_private_key_hex(),
-            "balance": bal,
-            "nonce": blockchain.get_account_nonce(wallet.address),
-        })
+        # Direct transmission of credentials over network is strictly rejected
+        return api_response(
+            False,
+            message="Direct transmission of private keys or recovery mnemonics to the server is disabled for security. Wallets must be restored client-side on your device (address and public_key required).",
+            status=400
+        )
     except Exception as e:
         logger.warning(f"Wallet restoration failed: {e}")
-        return api_response(False, message="Wallet could not be restored. Please check your key.", status=400)
+        return api_response(False, message="Wallet could not be registered.", status=400)
 
 
 # ── Balance ──────────────────────────────────────────────────

@@ -305,7 +305,7 @@
           <span
             class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight text-base tracking-tight">BlocTag</span>
           <span class="text-[9.5px] font-mono text-on-surface-variant font-medium leading-none">Developed by LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[10px] mt-0.5">Mainnet v2.9.5</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[10px] mt-0.5">Mainnet v2.9.6</span>
           <span id="sidebarBrandNodeVal" class="hidden"></span>
         </div>
       </div>
@@ -518,7 +518,7 @@
           <div class="flex flex-col min-w-0 leading-none">
             <span
               class="font-label-sm text-[10px] sm:text-[11px] text-on-surface tracking-wide uppercase font-semibold shrink-0"
-              id="mobileNetLabel">Mainnet v2.9.5</span>
+              id="mobileNetLabel">Mainnet v2.9.6</span>
             <span class="text-[9px] font-mono text-on-surface-variant truncate max-w-[85px] xs:max-w-[110px]"
               id="mobileNetNodeUrl">net: <span class="text-primary font-medium"
                 id="mobileNetNodeVal">locktrace.space</span></span>
@@ -625,7 +625,7 @@
         <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="desktopNetDot"></span>
         <div class="flex flex-col min-w-0 leading-tight">
           <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold"
-            id="desktopNetLabel">BlocTag Mainnet v2.9.5</span>
+            id="desktopNetLabel">BlocTag Mainnet v2.9.6</span>
           <span class="text-[10px] font-mono text-on-surface-variant truncate max-w-[150px]" id="desktopNetNodeUrl">net:
             <span class="text-primary font-medium" id="desktopNetNodeVal">locktrace.space</span></span>
         </div>
@@ -2672,7 +2672,7 @@
               <span>← Back to Wallet</span>
             </button>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">BlocTag PoS v2.9.5</span>
+              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">BlocTag PoS v2.9.6</span>
             </div>
           </div>
 
@@ -2683,7 +2683,7 @@
                 <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">P2P
                   Decentralized Infrastructure</span>
                 <span
-                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.9.5</span>
+                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.9.6</span>
               </div>
               <h1 class="font-headline-md text-headline-md text-on-surface tracking-tight font-semibold">Node &amp;
                 Validator Hub</h1>
@@ -9547,16 +9547,14 @@
     // =========================================================================
     // 4. WALLET PERSISTENCE, PIN VAULT & NON-CUSTODIAL SIGNING
     // =========================================================================
-    // Cryptographically Bound Device Vault (AES-GCM/Keystream: zero cleartext keys in browser storage)
+    // Cryptographically Bound Device Vault (Per-encryption IV + CSPRNG: zero cleartext keys in browser storage)
     function getDeviceEncryptionKey() {
       let seed = localStorage.getItem('locktrace_device_entropy');
       if (!seed || seed.length < 32) {
-        const entropy = (window.crypto && window.crypto.getRandomValues)
-          ? window.crypto.getRandomValues(new Uint8Array(32))
-          : new Uint8Array(32);
         if (!window.crypto || !window.crypto.getRandomValues) {
-          for (let i = 0; i < 32; i++) entropy[i] = Math.floor(Math.random() * 256);
+          throw new Error('Cryptographically secure CSPRNG (window.crypto) is required');
         }
+        const entropy = window.crypto.getRandomValues(new Uint8Array(32));
         seed = Array.from(entropy).map(b => b.toString(16).padStart(2, '0')).join('');
         localStorage.setItem('locktrace_device_entropy', seed);
       }
@@ -9567,7 +9565,12 @@
       try {
         const devKey = getDeviceEncryptionKey();
         const ptBytes = new TextEncoder().encode(JSON.stringify(secretsObj));
-        const saltBytes = new TextEncoder().encode(devKey + '::locktrace_v2_vault');
+        // Generate random 16-byte IV for each encryption to prevent keystream reuse
+        const ivBytes = (window.crypto && window.crypto.getRandomValues)
+          ? window.crypto.getRandomValues(new Uint8Array(16))
+          : new Uint8Array(16);
+        const ivHex = Array.from(ivBytes).map(b => b.toString(16).padStart(2, '0')).join('');
+        const saltBytes = new TextEncoder().encode(devKey + '::' + ivHex + '::locktrace_v3_vault');
         const out = new Uint8Array(ptBytes.length);
         let block = 0;
         for (let i = 0; i < ptBytes.length; i += 32) {
@@ -9579,7 +9582,9 @@
             out[i + j] = ptBytes[i + j] ^ ks[j];
           }
         }
-        return Array.from(out).map(b => b.toString(16).padStart(2, '0')).join('');
+        const ctHex = Array.from(out).map(b => b.toString(16).padStart(2, '0')).join('');
+        // Format: "v3" + 32-hex-char IV + ciphertext
+        return 'v3' + ivHex + ctHex;
       } catch (_e) {
         return null;
       }
@@ -9587,8 +9592,36 @@
 
     function decryptDeviceSecrets(hexCipher) {
       try {
-        if (!hexCipher || typeof hexCipher !== 'string' || hexCipher.length % 2 !== 0) return null;
+        if (!hexCipher || typeof hexCipher !== 'string') return null;
         const devKey = getDeviceEncryptionKey();
+
+        // Check for v3 format with per-encryption random IV
+        if (hexCipher.startsWith('v3') && hexCipher.length >= 34) {
+          const ivHex = hexCipher.slice(2, 34);
+          const rawCtHex = hexCipher.slice(34);
+          if (rawCtHex.length % 2 !== 0) return null;
+          const ctBytes = new Uint8Array(rawCtHex.length / 2);
+          for (let i = 0; i < ctBytes.length; i++) {
+            ctBytes[i] = parseInt(rawCtHex.substr(i * 2, 2), 16);
+          }
+          const saltBytes = new TextEncoder().encode(devKey + '::' + ivHex + '::locktrace_v3_vault');
+          const out = new Uint8Array(ctBytes.length);
+          let block = 0;
+          for (let i = 0; i < ctBytes.length; i += 32) {
+            const msg = new Uint8Array(saltBytes.length + 4);
+            msg.set(saltBytes);
+            new DataView(msg.buffer).setUint32(saltBytes.length, block++, false);
+            const ks = LockTraceCrypto.sha256Bytes(msg);
+            for (let j = 0; j < 32 && (i + j) < ctBytes.length; j++) {
+              out[i + j] = ctBytes[i + j] ^ ks[j];
+            }
+          }
+          const jsonStr = new TextDecoder().decode(out);
+          return JSON.parse(jsonStr);
+        }
+
+        // Backward compatibility: v2 fallback (no IV prefix)
+        if (hexCipher.length % 2 !== 0) return null;
         const ctBytes = new Uint8Array(hexCipher.length / 2);
         for (let i = 0; i < ctBytes.length; i++) {
           ctBytes[i] = parseInt(hexCipher.substr(i * 2, 2), 16);
@@ -9606,7 +9639,9 @@
           }
         }
         const jsonStr = new TextDecoder().decode(out);
-        return JSON.parse(jsonStr);
+        const parsed = JSON.parse(jsonStr);
+        parsed.__legacy = true;
+        return parsed;
       } catch (_e) {
         // F-01 migration: legacy envelopes were plain hex(JSON) (zero keystream). Read once, re-encrypted on next save.
         try {

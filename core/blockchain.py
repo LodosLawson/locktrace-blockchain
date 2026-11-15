@@ -4577,7 +4577,15 @@ class Blockchain:
                 if current.previous_hash != previous.hash:
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False
-                dt = float(current.timestamp) - float(previous.timestamp)
+                cur_ts = float(current.timestamp)
+                prev_ts = float(previous.timestamp)
+                if cur_ts <= prev_ts:
+                    self._chain_valid_cache = (len(self.chain), tip_hash, False)
+                    return False
+                if cur_ts > (time.time() + 120.0):
+                    self._chain_valid_cache = (len(self.chain), tip_hash, False)
+                    return False
+                dt = cur_ts - prev_ts
                 req_diff = self.difficulty
                 if dt > (TARGET_BLOCK_TIME * 6.0):
                     stall_drop = int((dt - (TARGET_BLOCK_TIME * 6.0)) // 60.0) + 1

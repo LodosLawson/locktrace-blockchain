@@ -52,7 +52,7 @@ logger = logging.getLogger("LockTraceNode")
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.9.5"
+VERSION = "2.9.6"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)
@@ -2376,6 +2376,8 @@ class LockTraceNode:
                 if str(blk.get("previous_hash", "")).lower() != str(prev_blk["hash"]).lower():
                     return False
                 dt = blk_ts - float(prev_blk.get("timestamp", 0.0))
+                if dt <= 0.0:
+                    return False
                 if dt > 120.0:
                     stall_drop = int((dt - 120.0) // 60.0) + 1
                     req_diff = max(1, int(base_difficulty) - stall_drop)

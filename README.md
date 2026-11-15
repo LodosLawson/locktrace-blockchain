@@ -507,7 +507,11 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Bridge Relayer & Deduplication:** `process_pending_burns()` verifies gross `amount_bct` matching on-chain `BurnedToBridge` events; `tx_hash_l1` enforces case-insensitive uniqueness and `/api/v1/bridge/confirm` enforces `L1_TO_EVM` + `PENDING` state.
    - **Consensus & Nonce Hardening:** Fixed mempool spendable balance double-deduction, enforced `Config.EQUIVOCATION_SLASH_PERCENT` in `get_validator_stake()`, preserved validator ECDSA signature and incremented validator nonce on `validator_unstake` and `bns_accept_offer`, and fixed `execute_validator_stake()` receipt double-counting.
    - **Cross-Node P2P & Multi-Worker Sync:** Synchronized `node_runner.py` ledger/BNS accounting with `core/blockchain.py`, enforced Low-S in `PureSecp256k1`, preserved snapshot `bns_records`, and added `_load_state()` in `get_account_nonce()` alongside full CSP `connect-src` parity.
-25. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+25. **Multi-Vector Security Audit Hardening Suite (v2.9.6):**
+   - **Zero-Custodial Server Enforcement:** Disabled custodial Path B in `/api/v1/wallet/create` and `/api/v1/wallet/import`; server unconditionally rejects private keys or mnemonics over network.
+   - **Consensus Timestamp Monotonicity & Anti-Spoofing:** Enforced strict block timestamp monotonicity (`cur_ts > prev_ts`) and future drift bounds (`cur_ts <= now + 120s`) across `core/blockchain.py:is_chain_valid` and `node_runner.py:verify_single_block` to eliminate artificial stall-drop difficulty reduction exploits.
+   - **Client-Side Vault Encryption Hardening:** Hardened `encryptDeviceSecrets` with per-encryption 16-byte random IVs via CSPRNG (`window.crypto.getRandomValues`) to prevent keystream reuse, while preserving seamless backward compatibility migration for existing vaults.
+26. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

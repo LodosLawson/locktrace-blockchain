@@ -1,7 +1,7 @@
-# BlocTag (BCT) Technical Whitepaper — v2.9.5
+# BlocTag (BCT) Technical Whitepaper — v2.9.6
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.9.5 — November 2026*  
+*Version 2.9.6 — November 2026*  
 *Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
@@ -437,7 +437,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.9.2 (Completed):** Web3 v6 Compatibility & POA Middleware Cleanup (AUD18-01), Bridge Confirmation Deferral against Premature FAILED Locks (AUD18-02), Rust PoW Inclusive Range & u64::MAX Boundary Support (AUD18-03), Bridge Relayer 0x Canonical Prefix & Gas Defense (AUD18-04), BIP-39 NFKD Unicode Normalization & Order Consolidation (AUD18-05), Nginx Permissions-Policy Child Location Inheritance (AUD18-06), Audit Packaging & SSOT Protocol Synchronization (AUD18-07).
 - **v2.9.4 (Current Production Release):** Bridge Queue Anti-Deadlock on Invalid/Unsealed Orders (AUD19-01), Bridge Burn Decimal Precision & 1 wBCT Minimum Anti-Dust Limit (AUD19-02), Nginx default_type Content-Type De-duplication (AUD19-03), Whitepaper PDF Generator Universal Header Filter (AUD19-04), Local Node Sync File List Expansion (AUD19-05), Double SHA-256 & Constructor Parameter Doc Parity (AUD19-06), Repomix Configuration & Base64 SVG Asset Filter (AUD19-07).
 - **v2.9.4 (Completed):** Device Vault Fail-Closed Encryption & Legacy Migration (F-01), Persistent Equivocation Slashing (F-03), Wallet-Deduplicated Attestation Quorum (F-04), Exact Bridge Amount Matching (F-05), Relayer/Contract Mint Caps & Timelock (F-06), Hash-Pinned Script CSP with Self-Hosted Libraries (F-07), Retry-Safe Pending Bridge States (F-08), Wallet-Signed Bridge Orders (F-10), Stalled Lock Auto-Resume (N-01).
-- **v2.9.5 (Current Production Release):** Production-Default Frontend Integrity Guard (`BCT_DEV_MODE=false`), Bridge Relayer Gross Burn Amount & Case-Insensitive Deduplication, Mempool Spendable Balance & Validator Slashing Percentage Enforcement, BNS Accept-Offer & Validator Unstake Nonce/Replay Hardening, Cross-Node P2P Ledger/BNS Parity, Multi-Worker SQLite State Sync, Snapshot BNS Persistence, and BlocTag Whitepaper Rebranding.
+- **v2.9.5 (Completed):** Production-Default Frontend Integrity Guard (`BCT_DEV_MODE=false`), Bridge Relayer Gross Burn Amount & Case-Insensitive Deduplication, Mempool Spendable Balance & Validator Slashing Percentage Enforcement, BNS Accept-Offer & Validator Unstake Nonce/Replay Hardening, Cross-Node P2P Ledger/BNS Parity, Multi-Worker SQLite State Sync, Snapshot BNS Persistence, and BlocTag Whitepaper Rebranding.
+- **v2.9.6 (Current Production Release):** Zero-Custodial Server Enforcement (disabling custodial Path B server-side key generation/import), Consensus Timestamp Monotonicity & Anti-Spoofing (eliminating artificial stall-drop difficulty reduction), and Client-Side Device Vault Hardening with per-encryption random IVs via CSPRNG.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---
