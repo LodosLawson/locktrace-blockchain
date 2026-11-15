@@ -4132,78 +4132,15 @@
               </div>
             </div>
 
-            <!-- Card 3: Network Vitals -->
+            <!-- Card 3: Inactive Widget Placeholder -->
             <div
-              class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
-              <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">speed</span>
-                  <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Network Vitals</h2>
-                </div>
-                <div class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></div>
+              class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col items-center justify-center gap-2.5 text-center min-h-[150px]">
+              <div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant/20 flex items-center justify-center text-on-surface-variant/70">
+                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">widgets</span>
               </div>
-              <!-- Gauges Grid -->
-              <div class="grid grid-cols-2 gap-2.5">
-                <!-- Ethereum Gas Gauge -->
-                <div
-                  class="p-3 rounded-xl bg-surface-container-lowest flex flex-col justify-between border border-outline-variant/10">
-                  <div class="flex items-center justify-between text-on-surface-variant mb-1">
-                    <span class="text-[10.5px] font-mono uppercase">Ethereum Gas</span>
-                    <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">local_gas_station</span>
-                  </div>
-                  <div>
-                    <span class="font-mono text-base font-bold text-on-surface" id="vitalEthGasVal">12</span>
-                    <span class="text-[10px] text-on-surface-variant ml-0.5 font-mono">Gwei</span>
-                  </div>
-                  <span class="text-[10px] text-emerald-400 font-medium mt-1">Normal / Cheap</span>
-                </div>
-                <!-- Sentiment Gauge -->
-                <div
-                  class="p-3 rounded-xl bg-surface-container-lowest flex flex-col justify-between border border-outline-variant/10">
-                  <div class="flex items-center justify-between text-on-surface-variant mb-1">
-                    <span class="text-[10.5px] font-mono uppercase">Sentiment</span>
-                    <span class="material-symbols-outlined notranslate text-[15px] text-emerald-400" translate="no">sentiment_satisfied</span>
-                  </div>
-                  <div>
-                    <span class="font-mono text-base font-bold text-emerald-400" id="spaceSentimentScore">72</span>
-                    <span class="text-[10px] text-on-surface-variant ml-0.5 font-mono">/ 100</span>
-                  </div>
-                  <span class="text-[10px] text-emerald-400 font-medium mt-1">Greed / Bullish</span>
-                </div>
-              </div>
-              <!-- L2 Gas Consumption Share Bar -->
-              <div
-                class="flex flex-col gap-1.5 p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10">
-                <div class="flex justify-between items-center text-xs">
-                  <span class="text-[11px] text-on-surface-variant">L2 Gas Consumption Share</span>
-                  <span class="text-[11px] font-mono text-emerald-400 font-semibold">68.4% of blobs</span>
-                </div>
-                <div class="w-full bg-surface-container h-2 rounded-full overflow-hidden flex">
-                  <div class="bg-sky-400 h-full transition-all duration-1000" style="width: 45%" title="Arbitrum: 31%">
-                  </div>
-                  <div class="bg-blue-500 h-full transition-all duration-1000" style="width: 35%" title="Base: 24%">
-                  </div>
-                  <div class="bg-rose-500 h-full transition-all duration-1000" style="width: 20%"
-                    title="Optimism: 13.4%"></div>
-                </div>
-                <div class="flex justify-between font-mono text-[9.5px] text-on-surface-variant pt-0.5">
-                  <span class="text-sky-400">Arbitrum: 31%</span>
-                  <span class="text-blue-400">Base: 24%</span>
-                  <span class="text-rose-400">Optimism: 13.4%</span>
-                </div>
-              </div>
-              <!-- Mini Protocol Footnote -->
-              <div
-                class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-[10px] font-mono text-on-surface-variant">
-                <span>Aether Space Protocol v1.4</span>
-                <div class="flex items-center gap-1.5">
-                  <span class="hover:text-primary cursor-pointer"
-                    onclick="showToast('IPFS Node status: Connected', 'hub')">IPFS Node</span>
-                  <span>•</span>
-                  <span class="hover:text-primary cursor-pointer" onclick="switchTab('guvenlik')">Audit</span>
-                  <span>•</span>
-                  <span class="hover:text-primary cursor-pointer" onclick="switchTab('ag-ve-explorer')">RPC</span>
-                </div>
+              <div class="flex flex-col items-center gap-1">
+                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Şimdilik Aktif Olmayan Widget</h2>
+                <span class="text-[11px] font-mono text-on-surface-variant/75">Bu alan yakında yeni protokol modülü ile aktif edilecektir.</span>
               </div>
             </div>
 
@@ -7585,10 +7522,15 @@
 
         <!-- Identity Row: Handle and Badge (Full Width, below banner, never truncated) -->
         <div class="flex flex-col gap-1 -mt-1">
-          <div class="flex items-center gap-2 flex-wrap">
+          <div class="flex items-center gap-1.5 flex-wrap">
             <span
               class="text-xl sm:text-2xl font-bold font-mono text-emerald-400 break-all select-all tracking-tight leading-tight"
               id="userProfileHandle">@anonymous</span>
+            <span id="userProfileVerifiedIcon" class="material-symbols-outlined notranslate text-primary text-[19px] sm:text-[21px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Doğrulanmış Zincir Üstü Profil (Verified)" translate="no">verified</span>
+            <span id="userProfileValidatorIcon" class="hidden inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-500/15 border border-amber-400/40 text-amber-300 text-[11px] font-mono font-bold shrink-0 select-none shadow-xs" title="Aktif Validator (1,000+ BCT Staked)">
+              <span class="material-symbols-outlined notranslate text-[14px]" style="font-variation-settings: 'FILL' 1;" translate="no">shield</span>
+              <span>Validator</span>
+            </span>
           </div>
           <div class="flex items-center gap-2 flex-wrap mt-0.5">
             <span
@@ -9308,9 +9250,13 @@
                     ${avatarChar}
                   </div>
                   <div class="flex flex-col min-w-0">
-                    <span class="font-mono font-bold text-xs text-on-surface group-hover:text-primary transition-colors truncate">
-                      ${escapeHtml(v.display_name)}
-                    </span>
+                    <div class="flex items-center gap-1 min-w-0">
+                      <span class="font-mono font-bold text-xs text-on-surface group-hover:text-primary transition-colors truncate">
+                        ${escapeHtml(v.display_name)}
+                      </span>
+                      <span class="material-symbols-outlined notranslate text-primary text-[13px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Doğrulanmış Profil" translate="no">verified</span>
+                      ${v.is_validator ? `<span class="material-symbols-outlined notranslate text-amber-400 text-[13px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Aktif Validator (1,000+ BCT Staked)" translate="no">shield</span>` : ''}
+                    </div>
                     <span class="text-[10px] text-on-surface-variant truncate font-mono">
                       ${escapeHtml(subTitle)}
                     </span>
@@ -13368,9 +13314,11 @@
                     ` : (post.author_bns ? `
                       <span class="font-bold text-emerald-400 font-mono text-sm sm:text-[15px] truncate cursor-pointer hover:underline" onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author_bns)}')">@${escapeHtml(post.author_bns)}</span>
                       <span class="material-symbols-outlined notranslate text-primary text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Verified BNS" translate="no">verified</span>
+                      ${post.author_is_validator ? `<span class="material-symbols-outlined notranslate text-amber-400 text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Aktif Validator (1,000+ BCT Staked)" translate="no">shield</span>` : ''}
                     ` : `
                       <span class="font-bold text-on-surface font-mono text-sm truncate cursor-pointer hover:text-primary transition-colors" onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>
                       <span class="material-symbols-outlined notranslate text-primary text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Verified Wallet Address" translate="no">verified</span>
+                      ${post.author_is_validator ? `<span class="material-symbols-outlined notranslate text-amber-400 text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Aktif Validator (1,000+ BCT Staked)" translate="no">shield</span>` : ''}
                     `)}
                     ${(!isAnon && isMine) ? '<span class="px-1.5 py-0.2 rounded bg-primary/20 text-primary text-[10px] font-bold tracking-wider shrink-0 uppercase">You</span>' : ''}
                   </div>
@@ -13813,8 +13761,12 @@
                   ` : (post.author_bns ? `
                     <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[11px] font-bold cursor-pointer hover:underline" onclick="openUserProfile('${sanitizeJsAttr(post.author_bns)}')">@${escapeHtml(post.author_bns)}</span>
                     <span class="font-label-lg text-label-lg text-on-surface font-semibold font-mono truncate cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>
+                    <span class="material-symbols-outlined notranslate text-primary text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Doğrulanmış Profil" translate="no">verified</span>
+                    ${post.author_is_validator ? `<span class="material-symbols-outlined notranslate text-amber-400 text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Aktif Validator (1,000+ BCT Staked)" translate="no">shield</span>` : ''}
                   ` : `
                     <span class="font-label-lg text-label-lg text-on-surface font-semibold font-mono truncate cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(post.author)}')">${escapeHtml(shortAddr(post.author))}</span>
+                    <span class="material-symbols-outlined notranslate text-primary text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Doğrulanmış Profil" translate="no">verified</span>
+                    ${post.author_is_validator ? `<span class="material-symbols-outlined notranslate text-amber-400 text-[15px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Aktif Validator (1,000+ BCT Staked)" translate="no">shield</span>` : ''}
                   `)}
                   <span class="px-2 py-0.5 rounded-full bg-surface-container-high font-label-sm text-label-sm text-secondary shrink-0">${(post.author_bns === 'anonymous' || post.is_anonymous) ? 'Hidden Author' : 'On-Chain Author'}</span>
                 </div>
@@ -13907,8 +13859,12 @@
                       ` : (c.commenter_bns ? `
                         <span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-label-sm text-[11px] font-bold cursor-pointer hover:underline" onclick="openUserProfile('${sanitizeJsAttr(c.commenter_bns)}')">@${escapeHtml(c.commenter_bns)}</span>
                         <span class="font-label-md text-label-md text-on-surface font-semibold font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(c.commenter)}')">${escapeHtml(shortAddr(c.commenter))}</span>
+                        <span class="material-symbols-outlined notranslate text-primary text-[14px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Doğrulanmış Profil" translate="no">verified</span>
+                        ${c.commenter_is_validator ? `<span class="material-symbols-outlined notranslate text-amber-400 text-[14px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Aktif Validator (1,000+ BCT Staked)" translate="no">shield</span>` : ''}
                       ` : `
                         <span class="font-label-md text-label-md text-on-surface font-semibold font-mono cursor-pointer hover:text-primary transition-colors" onclick="openUserProfile('${sanitizeJsAttr(c.commenter)}')">${escapeHtml(shortAddr(c.commenter))}</span>
+                        <span class="material-symbols-outlined notranslate text-primary text-[14px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Doğrulanmış Profil" translate="no">verified</span>
+                        ${c.commenter_is_validator ? `<span class="material-symbols-outlined notranslate text-amber-400 text-[14px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Aktif Validator (1,000+ BCT Staked)" translate="no">shield</span>` : ''}
                       `)}
                       <span class="text-outline text-xs">•</span>
                       <span class="font-label-sm text-label-sm text-on-surface-variant">${escapeHtml(formatTimeAgo(c.timestamp))}</span>
@@ -17391,8 +17347,10 @@
       const addrEl = document.getElementById('userProfileAddress');
       const addrShortEl = document.getElementById('userProfileAddressShort');
       const tagEl = document.getElementById('userProfileTagBadge');
+      const valIconEl = document.getElementById('userProfileValidatorIcon');
       if (topNavTitle) topNavTitle.textContent = displayFallback;
       if (handleEl) handleEl.textContent = displayFallback;
+      if (valIconEl) valIconEl.classList.add('hidden');
       if (addrEl) addrEl.textContent = cleanTarget;
       if (addrShortEl) addrShortEl.textContent = shortAddr(cleanTarget);
       if (tagEl) {
@@ -17855,15 +17813,20 @@
       }
 
       let tagClass = 'bg-surface-container text-on-surface-variant';
+      const isValidatorProfile = Boolean(data.is_validator || data.tag_type === 'validator' || Number(data.staked_amount || 0) >= 1000);
+      const valIconEl = document.getElementById('userProfileValidatorIcon');
+      if (valIconEl) {
+        valIconEl.classList.toggle('hidden', !isValidatorProfile);
+      }
       if (data.tag_type === 'treasury') {
         tagClass = 'bg-primary/10 text-primary border border-primary/20';
         tagEl.title = 'Genesis Treasury Vault (Locked Reserve)';
       } else if (data.tag_type === 'bridge_vault') {
         tagClass = 'bg-secondary/10 text-secondary border border-secondary/20';
         tagEl.title = 'Bridge Vault (Base 1:1 wBCT Collateral)';
-      } else if (data.tag_type === 'validator') {
+      } else if (isValidatorProfile) {
         tagClass = 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20';
-        tagEl.title = 'Validator Node';
+        tagEl.title = 'Active Staked Validator Node (1,000+ BCT)';
       } else if (isLostKey) {
         tagClass = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm cursor-help';
         tagEl.title = data.lost_key_note || 'Developer verified: Lost private key genesis test address (Permanently Inactive)';
@@ -17966,7 +17929,11 @@
                     ${avatarChar}
                   </div>
                   <div class="flex flex-col min-w-0">
-                    <span class="font-mono font-bold text-xs text-on-surface hover:text-emerald-400 truncate">${escapeHtml(label)}</span>
+                    <div class="flex items-center gap-1 min-w-0">
+                      <span class="font-mono font-bold text-xs text-on-surface hover:text-emerald-400 truncate">${escapeHtml(label)}</span>
+                      <span class="material-symbols-outlined notranslate text-primary text-[13px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Doğrulanmış Profil" translate="no">verified</span>
+                      ${f.is_validator ? `<span class="material-symbols-outlined notranslate text-amber-400 text-[13px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Aktif Validator (1,000+ BCT Staked)" translate="no">shield</span>` : ''}
+                    </div>
                     <span class="font-mono text-[10.5px] text-on-surface-variant truncate">${escapeHtml(targetAddr)}</span>
                   </div>
                 </div>
@@ -17997,7 +17964,11 @@
                     ${avatarChar}
                   </div>
                   <div class="flex flex-col min-w-0">
-                    <span class="font-mono font-bold text-xs text-on-surface hover:text-secondary truncate">${escapeHtml(label)}</span>
+                    <div class="flex items-center gap-1 min-w-0">
+                      <span class="font-mono font-bold text-xs text-on-surface hover:text-secondary truncate">${escapeHtml(label)}</span>
+                      <span class="material-symbols-outlined notranslate text-primary text-[13px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Doğrulanmış Profil" translate="no">verified</span>
+                      ${f.is_validator ? `<span class="material-symbols-outlined notranslate text-amber-400 text-[13px] shrink-0 select-none" style="font-variation-settings: 'FILL' 1;" title="Aktif Validator (1,000+ BCT Staked)" translate="no">shield</span>` : ''}
+                    </div>
                     <span class="font-mono text-[10.5px] text-on-surface-variant truncate">${escapeHtml(targetAddr)}</span>
                   </div>
                 </div>

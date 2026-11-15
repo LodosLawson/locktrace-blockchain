@@ -398,6 +398,7 @@ class Blockchain:
         self._confirmed_tx_counts_map: Dict[str, int] = {}
         self._confirmed_used_sigs: set = set()
         self._confirmed_rewarded_wallets: set = set()
+        self._confirmed_stakes_map: Dict[str, int] = {}
         self._snapshot_base: Optional[dict] = None
         self._saved_wallet_nonces: Dict[str, Tuple[str, int]] = {}
         self._bns_index_key: Optional[tuple] = None
@@ -582,6 +583,7 @@ class Blockchain:
             self._confirmed_tx_counts_map = {}
             self._confirmed_used_sigs = set()
             self._confirmed_rewarded_wallets = set()
+            self._confirmed_stakes_map = {}
 
         if self._confirmed_indexed_len < len(self.chain):
             for block in self.chain[self._confirmed_indexed_len:]:
@@ -594,6 +596,10 @@ class Blockchain:
                         self._confirmed_used_sigs,
                         self._confirmed_rewarded_wallets,
                     )
+                    if tx.tx_type == "validator_stake" and tx.receiver == VALIDATOR_STAKE_VAULT_ADDRESS and tx.sender:
+                        self._confirmed_stakes_map[tx.sender] = self._confirmed_stakes_map.get(tx.sender, 0) + _to_units(tx.amount)
+                    elif tx.tx_type == "validator_unstake" and tx.sender == VALIDATOR_STAKE_VAULT_ADDRESS and tx.receiver:
+                        self._confirmed_stakes_map[tx.receiver] = max(0, self._confirmed_stakes_map.get(tx.receiver, 0) - _to_units(tx.amount))
             self._confirmed_indexed_len = len(self.chain)
             self._confirmed_indexed_tip = tip_hash
 
@@ -786,8 +792,10 @@ class Blockchain:
         with self.lock:
             self._load_state()
 
-            clean_sender = sender.strip()
-            clean_receiver = receiver.strip()
+            raw_sender = sender.strip()
+            raw_receiver = receiver.strip()
+            clean_sender = ("BCT" + raw_sender[3:].lower()) if len(raw_sender) == 43 and raw_sender[:3].upper() == "BCT" else raw_sender
+            clean_receiver = ("BCT" + raw_receiver[3:].lower()) if len(raw_receiver) == 43 and raw_receiver[:3].upper() == "BCT" else raw_receiver
 
             if clean_sender == clean_receiver:
                 return False, "Cannot send funds to your own address", None
@@ -796,10 +804,10 @@ class Blockchain:
                 return False, "Reserved system address cannot initiate standard transfers", None
 
             if not is_valid_bct_address(clean_sender):
-                return False, f"Invalid sender address format: '{clean_sender}'", None
+                return False, f"Invalid sender address format: '{raw_sender}'", None
 
             if not is_valid_bct_address(clean_receiver):
-                return False, f"Invalid recipient address format: '{clean_receiver}'. Must be BCT followed by 40 hex characters.", None
+                return False, f"Invalid recipient address format: '{raw_receiver}'. Must be BCT followed by 40 hex characters.", None
 
             if not isinstance(amount, (int, float)) or not math.isfinite(amount) or amount <= 0:
                 return False, "Amount must be a finite positive number", None
@@ -808,8 +816,10 @@ class Blockchain:
             if amount < 0.00000001:
                 return False, "Minimum transfer amount is 0.00000001 BCT", None
 
-            expected_payload = signed_payload or f"{clean_sender}{clean_receiver}{amount}"
+            expected_payload = signed_payload or f"{raw_sender}{raw_receiver}{amount}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_sender, expected_payload, signature, public_key)
+            if not sig_ok and not signed_payload and (raw_sender != clean_sender or raw_receiver != clean_receiver):
+                sig_ok, sig_msg = self._verify_actor_signature(clean_sender, f"{clean_sender}{clean_receiver}{amount}", signature, public_key)
             if not sig_ok:
                 return False, sig_msg, None
 
@@ -828,8 +838,10 @@ class Blockchain:
                     None
                 )
 
-            # Calculate 1% fee returned to treasury
-            fee = round(amount * FEE_PERCENT, 8)
+            # Calculate 1% fee returned to treasury (minimum 0.00000001 BCT atomic unit fee to prevent zero-fee dust spam)
+            fee = max(0.00000001, round(amount * FEE_PERCENT, 8))
+            if amount <= fee:
+                return False, "Transfer amount must exceed the minimum network fee (0.00000001 BCT).", None
             net_amount = round(amount - fee, 8)
 
             tx = Transaction(
@@ -1433,10 +1445,15 @@ class Blockchain:
             self._load_state()
             feed = list(self.space_posts.values())
 
-            # Enrich posts with entity tags
+            # Enrich posts with entity tags and live validator status
             for p in feed:
                 if "entities" not in p:
                     p["entities"] = self.extract_space_entities(p.get("content", ""))
+                is_anon = bool(p.get("is_anonymous") or p.get("author_bns") == "anonymous")
+                p["author_is_validator"] = False if is_anon else (self.get_validator_stake(str(p.get("author", ""))) >= MIN_VALIDATOR_STAKE)
+                for cmt in p.get("comments", []):
+                    c_anon = bool(cmt.get("is_anonymous") or cmt.get("commenter_bns") == "anonymous")
+                    cmt["commenter_is_validator"] = False if c_anon else (self.get_validator_stake(str(cmt.get("commenter", ""))) >= MIN_VALIDATOR_STAKE)
 
             # Filter by tag (#topic, $symbol, or @user)
             if tag:
@@ -1507,7 +1524,14 @@ class Blockchain:
     def get_space_post(self, post_id: str) -> Optional[dict]:
         with self.lock:
             self._load_state()
-            return self.space_posts.get(post_id.strip())
+            p = self.space_posts.get(post_id.strip())
+            if p:
+                is_anon = bool(p.get("is_anonymous") or p.get("author_bns") == "anonymous")
+                p["author_is_validator"] = False if is_anon else (self.get_validator_stake(str(p.get("author", ""))) >= MIN_VALIDATOR_STAKE)
+                for cmt in p.get("comments", []):
+                    c_anon = bool(cmt.get("is_anonymous") or cmt.get("commenter_bns") == "anonymous")
+                    cmt["commenter_is_validator"] = False if c_anon else (self.get_validator_stake(str(cmt.get("commenter", ""))) >= MIN_VALIDATOR_STAKE)
+            return p
 
     def get_suggested_voices(self, viewer_address: str = "", limit: int = 5) -> List[dict]:
         """
@@ -1568,11 +1592,13 @@ class Blockchain:
                     bio = f"BCT Creator • {meta['posts']} Casts" if meta['posts'] > 0 else "BCT On-Chain Account"
                     display_name = short_addr
 
+                is_val = self.get_validator_stake(addr) >= MIN_VALIDATOR_STAKE
                 result.append({
                     "address": addr,
                     "bns_name": bns,
                     "display_name": display_name,
                     "bio": bio,
+                    "is_validator": is_val,
                     "followers_count": len(followers),
                     "is_following": is_following,
                     "posts_count": meta["posts"],
@@ -2636,6 +2662,9 @@ class Blockchain:
             is_lost_key_burn = False
             lost_key_note = ""
 
+            val_stake = self.get_validator_stake(target_address)
+            is_validator = val_stake >= MIN_VALIDATOR_STAKE
+
             if any(target_address.lower() == addr.lower() for addr in LOST_KEY_TEST_WALLETS):
                 tag = "Geliştirici Doğruladı: Private Key Kayıp (Özel Test Adresi)"
                 tag_type = "lost_key_burn"
@@ -2652,8 +2681,8 @@ class Blockchain:
             elif target_address == BRIDGE_VAULT_ADDRESS:
                 tag = "Bridge Vault (Base 1:1 Collateral)"
                 tag_type = "bridge_vault"
-            elif any(n.get("miner_address") == target_address for n in self.nodes.values()):
-                tag = "Validator / Mining Node"
+            elif is_validator:
+                tag = "Active Validator Node" if any(n.get("miner_address") == target_address for n in self.nodes.values()) else "Active Validator (Staked)"
                 tag_type = "validator"
 
             # 3. Owned Handles
@@ -2748,7 +2777,8 @@ class Blockchain:
                 followers_list.append({
                     "address": a,
                     "bns_name": bns,
-                    "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}"
+                    "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}",
+                    "is_validator": self.get_validator_stake(a) >= MIN_VALIDATOR_STAKE
                 })
 
             following_list = []
@@ -2757,13 +2787,16 @@ class Blockchain:
                 following_list.append({
                     "address": a,
                     "bns_name": bns,
-                    "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}"
+                    "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}",
+                    "is_validator": self.get_validator_stake(a) >= MIN_VALIDATOR_STAKE
                 })
 
             profile_res = {
                 "address": target_address,
                 "primary_handle": primary_handle,
                 "balance": balance,
+                "staked_amount": val_stake,
+                "is_validator": is_validator,
                 "holding_percentage": holding_pct,
                 "circulating_percentage": circ_pct,
                 "tag": tag,
@@ -2911,24 +2944,24 @@ class Blockchain:
             }
 
     def get_validator_stake(self, address: str) -> float:
-        """Returns the confirmed on-chain BCT amount locked by the validator in VALIDATOR_STAKE_VAULT."""
+        """
+        Returns the active on-chain BCT amount locked by the validator in VALIDATOR_STAKE_VAULT.
+        Uses the O(1) incremental confirmed stake index (`_confirmed_stakes_map`), plus any
+        mempool stake minus any pending unstake (so unstaking revokes validator eligibility
+        and reward entitlement immediately in the same millisecond it is requested).
+        """
         clean = (address or "").strip()
         if not clean:
             return 0.0
         with self.lock:
             self._ensure_ledger_index()
-            staked = 0.0
-            for b in self.chain:
-                for tx in b.transactions:
-                    if tx.receiver == VALIDATOR_STAKE_VAULT_ADDRESS and tx.sender == clean and tx.tx_type == "validator_stake":
-                        staked += tx.amount
-                    elif tx.sender == VALIDATOR_STAKE_VAULT_ADDRESS and tx.receiver == clean and tx.tx_type == "validator_unstake":
-                        staked -= tx.amount
+            staked_u = int(self._confirmed_stakes_map.get(clean, 0))
             for tx in self.pending_transactions:
                 if tx.receiver == VALIDATOR_STAKE_VAULT_ADDRESS and tx.sender == clean and tx.tx_type == "validator_stake":
-                    staked += tx.amount
+                    staked_u += _to_units(tx.amount)
                 elif tx.sender == VALIDATOR_STAKE_VAULT_ADDRESS and tx.receiver == clean and tx.tx_type == "validator_unstake":
-                    staked -= tx.amount
+                    staked_u -= _to_units(tx.amount)
+            staked = float(Decimal(max(0, staked_u)) / Decimal(ATOMIC_UNIT))
             if clean in self.slashed_validators:
                 try:
                     from config import Config
@@ -3029,6 +3062,9 @@ class Blockchain:
             except (ValueError, TypeError):
                 return False, "Invalid unstake amount.", None
 
+            if any(tx.tx_type == "validator_stake" and tx.sender == clean_sender for tx in self.pending_transactions):
+                return False, "Bekleyen (henüz blokta onaylanmamış) bir stake işleminiz var. Lütfen önce mevcut stake işleminin blokta onaylanmasını bekleyin.", None
+
             cur_staked = self.get_validator_stake(clean_sender)
             if cur_staked < amt:
                 return False, f"Insufficient staked collateral. Current staked: {cur_staked:.4f} BCT (requested: {amt:.4f} BCT).", None
@@ -3073,10 +3109,19 @@ class Blockchain:
             if not ok:
                 return False, msg, None
 
+            rem_staked = self.get_validator_stake(clean_sender)
+            if rem_staked < MIN_VALIDATOR_STAKE:
+                for _nid, n_obj in self.nodes.items():
+                    if not n_obj.get("is_genesis") and str(n_obj.get("miner_address", "")).strip() == clean_sender:
+                        n_obj["role"] = "Peer Node (Unstaked)"
+                        n_obj["is_staked_validator"] = False
+                        n_obj["staked_amount"] = rem_staked
+                self._save_state()
+
             return True, f"Successfully requested unstake of {amt:.2f} BCT.", {
                 "tx_hash": tx.hash(),
                 "unstaked_amount": amt,
-                "remaining_staked": self.get_validator_stake(clean_sender),
+                "remaining_staked": rem_staked,
                 "validator": clean_sender
             }
 
@@ -3219,6 +3264,8 @@ class Blockchain:
                 continue
             m_addr = str(n.get("miner_address", "") or "").strip()
             if not is_valid_bct_address(m_addr) or m_addr == TREASURY_ADDRESS:
+                continue
+            if self.get_validator_stake(m_addr) < MIN_VALIDATOR_STAKE or m_addr in self.slashed_validators:
                 continue
             if (ts - float(n.get("last_seen", 0))) <= ACTIVE_MINER_TTL_SECONDS:
                 host_key = self._extract_node_host_key(n)
@@ -3474,6 +3521,10 @@ class Blockchain:
         if not clean_miner or not is_valid_bct_address(clean_miner) or clean_miner == TREASURY_ADDRESS:
             return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
 
+        # Strict Validator Stake Requirement: Unstaked or slashed wallets NEVER receive block/mining rewards
+        if self.get_validator_stake(clean_miner) < MIN_VALIDATOR_STAKE or clean_miner in self.slashed_validators:
+            return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
+
         transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(
             _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "space_follow", "bns_register", "bns_transfer")
@@ -3724,6 +3775,16 @@ class Blockchain:
             if not is_valid_bct_address(clean_miner) or clean_miner.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
                 return False, "Invalid miner wallet address.", None
 
+            miner_stake = self.get_validator_stake(clean_miner)
+            if miner_stake < MIN_VALIDATOR_STAKE:
+                return (
+                    False,
+                    f"Blok üretmek ve doğrulayıcı ödülü kazanmak için en az {MIN_VALIDATOR_STAKE:,.0f} BCT aktif Validator Stake kilidi gereklidir (Mevcut Stake: {miner_stake:,.2f} BCT).",
+                    None,
+                )
+            if clean_miner in self.slashed_validators:
+                return False, "Slashed validator cannot produce blocks or earn rewards.", None
+
             if node_id and node_id in self.nodes and not self.nodes[node_id].get("is_genesis"):
                 self.nodes[node_id]["last_seen"] = time.time()
 
@@ -3738,6 +3799,17 @@ class Blockchain:
                     "previous_hash": prev_hash,
                     "difficulty": diff,
                 }
+
+            if len(self.chain) >= 10 and len(self.pending_transactions) < GENERAL_TX_BATCH_QUOTA:
+                elapsed_since_tip = time.time() - float(self.chain[-1].timestamp)
+                if elapsed_since_tip < 15.0:
+                    return False, "Awaiting target block interval window (15s).", {
+                        "empty": True,
+                        "cooldown": True,
+                        "block_index": block_index,
+                        "previous_hash": prev_hash,
+                        "difficulty": diff,
+                    }
 
             template_ts = round(time.time(), 3)
             user_txs = list(self.pending_transactions[:100])
@@ -3784,6 +3856,16 @@ class Blockchain:
             if not is_valid_bct_address(clean_miner) or clean_miner.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
                 return False, "Invalid miner wallet address.", None
 
+            miner_stake = self.get_validator_stake(clean_miner)
+            if miner_stake < MIN_VALIDATOR_STAKE:
+                return (
+                    False,
+                    f"Blok göndermek ve doğrulayıcı ödülü kazanmak için en az {MIN_VALIDATOR_STAKE:,.0f} BCT aktif Validator Stake kilidi gereklidir (Mevcut Stake: {miner_stake:,.2f} BCT).",
+                    None,
+                )
+            if clean_miner in self.slashed_validators:
+                return False, "Slashed validator cannot submit blocks or earn rewards.", None
+
             submitted_idx = int(block_data.get("index", -1))
             submitted_hash = str(block_data.get("hash", "") or "").strip().lower()
             submitted_prev = str(block_data.get("previous_hash", "") or "").strip().lower()
@@ -3823,6 +3905,9 @@ class Blockchain:
                 return False, "Block timestamp too far in the future (max 120s drift allowed).", None
             if self.chain and submitted_ts <= self.chain[-1].timestamp:
                 return False, f"Block timestamp must be strictly greater than predecessor block ({self.chain[-1].timestamp:.3f}s vs {submitted_ts:.3f}s).", None
+            if len(self.chain) >= 10 and len(self.pending_transactions) < GENERAL_TX_BATCH_QUOTA:
+                if (submitted_ts - float(self.chain[-1].timestamp)) < 12.0:
+                    return False, f"Block submitted too fast ({submitted_ts - self.chain[-1].timestamp:.1f}s < 12.0s minimum block interval).", None
             if len(self.chain) >= 11:
                 past_window = sorted([b.timestamp for b in self.chain[-11:]])
                 mtp = past_window[len(past_window) // 2]
@@ -4475,7 +4560,9 @@ class Blockchain:
                 if current.previous_hash != previous.hash:
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False
-                if not current.hash.startswith(base_target):
+                dt = float(current.timestamp) - float(previous.timestamp)
+                req_target = "0" if dt > (TARGET_BLOCK_TIME * 6.0) else base_target
+                if not current.hash.startswith(req_target):
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False
                 # CVE-2012-2459 Defense: Block must not contain duplicate transaction hashes
@@ -4644,12 +4731,21 @@ class Blockchain:
             safe_version = self._sanitize_node_field(version, 24)
             safe_height = max(0, min(int(block_height or 0), len(self.chain) + 1000))
 
+            effective_miner = clean_miner or node_info.get("miner_address", "")
+            staked_val = self.get_validator_stake(effective_miner) if effective_miner else 0.0
+            is_staked_val = staked_val >= MIN_VALIDATOR_STAKE
+            resolved_role = safe_role or node_info.get("role", "Peer Node")
+            if not is_staked_val and "validator" in resolved_role.lower():
+                resolved_role = "Peer Node (Unstaked)"
+
             node_info.update({
                 "name": safe_name or node_info.get("name", f"Community Node ({clean_id[:8]})"),
                 "endpoint": safe_endpoint or node_info.get("endpoint", "p2p-client"),
-                "role": safe_role or node_info.get("role", "Peer Node"),
+                "role": resolved_role,
                 "location": safe_location or node_info.get("location", "Global"),
-                "miner_address": clean_miner or node_info.get("miner_address", ""),
+                "miner_address": effective_miner,
+                "staked_amount": staked_val,
+                "is_staked_validator": is_staked_val,
                 "last_seen": time.time(),
                 "status": "online",
                 "version": safe_version or node_info.get("version", PROTOCOL_VERSION),
@@ -4694,6 +4790,15 @@ class Blockchain:
                 copy_n = dict(n)
                 copy_n.pop("owner_public_key", None)
                 copy_n.pop("client_ip", None)
+                if not copy_n.get("is_genesis"):
+                    m_addr = str(copy_n.get("miner_address", "") or "").strip()
+                    staked_amt = self.get_validator_stake(m_addr) if m_addr else 0.0
+                    copy_n["staked_amount"] = staked_amt
+                    copy_n["is_staked_validator"] = staked_amt >= MIN_VALIDATOR_STAKE
+                    if staked_amt < MIN_VALIDATOR_STAKE and "validator" in str(copy_n.get("role", "")).lower():
+                        copy_n["role"] = "Peer Node (Unstaked)"
+                else:
+                    copy_n["is_staked_validator"] = True
                 if not copy_n.get("is_genesis") and (now - copy_n.get("last_seen", 0) > 35):
                     copy_n["status"] = "offline"
                 else:

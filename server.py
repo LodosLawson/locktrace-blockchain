@@ -335,7 +335,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-vmvsvQhngoQjZz2FUmuI82r7urAPLULJMmq7c4S3frQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-H1WA8GivQc8yqhPJWRRq/iBl5WshQgrsZTjYQH8jrSY=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1969,7 +1969,7 @@ def api_validator_get_stake(address):
     clean = str(address or "").strip()
     staked = blockchain.get_validator_stake(clean)
     bal = blockchain.get_balance(clean)
-    is_eligible = (staked >= 1000.0) or (bal >= 1000.0)
+    is_eligible = staked >= 1000.0
     return api_response(True, data={
         "address": clean,
         "staked_amount": staked,
