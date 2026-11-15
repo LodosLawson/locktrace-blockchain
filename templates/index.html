@@ -8793,25 +8793,34 @@
 
       let safe = escapeHtml(text || '');
 
-      // 2. Mentions & Replies: Clickable to view author profile directly (LT-WEB-02 Sanitized)
+      // 2. Mentions & Replies: Clickable to view author profile directly & filter topic
       safe = safe.replace(/@([a-zA-Z0-9_\-\.]+)/g, (match, handle) => {
         const cleanHandle = sanitizeJsAttr(handle);
         const escHandle = escapeHtml(handle);
         const isWalletMention = /^BCT[a-fA-F0-9]{36,44}$/i.test(handle);
         const displayHandle = isWalletMention ? `@${handle.slice(0, 6)}...${handle.slice(-4)}` : `@${escHandle}`;
-        return `<span class="mention-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); openUserProfile('${cleanHandle}')" title="Profilini Gör: @${escHandle}">${escapeHtml(displayHandle)}</span>`;
+        const filterEntity = isWalletMention ? `#${cleanHandle}` : `@${cleanHandle}`;
+        return `<span class="mention-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('${filterEntity}'); openUserProfile('${cleanHandle}');" title="Profili Gör & Konuyu Filtrele: @${escHandle}">${escapeHtml(displayHandle)}</span>`;
       });
 
-      // 3. Hashtags: #topic (supports Turkish & Unicode letters, handles long wallet addresses gracefully without overflowing)
+      // 3. Hashtags: #topic (supports Turkish & Unicode letters; wallet tags open profile & stay as active filter)
       safe = safe.replace(/#([a-zA-Z0-9_ğüşıöçĞÜŞİÖÇ\-]+)/g, (match, tag) => {
         const cleanTag = sanitizeJsAttr(tag);
         const escTag = escapeHtml(tag);
         const isWalletTag = /^BCT[a-fA-F0-9]{36,44}$/i.test(tag);
         if (isWalletTag) {
           const shortTag = `#${tag.slice(0, 6)}...${tag.slice(-4)}`;
-          return `<span class="hashtag-tag inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors shrink-0 shadow-2xs border border-emerald-500/20" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}')" title="Filter wallet #${escTag}"><span class="material-symbols-outlined text-[13px] shrink-0 text-emerald-400">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
+          return `<span class="hashtag-tag inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors shrink-0 shadow-2xs border border-emerald-500/20" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}'); openUserProfile('${cleanTag}');" title="Profili Aç & Konuyu Filtrele: #${escTag}"><span class="material-symbols-outlined text-[13px] shrink-0 text-emerald-400">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
         }
         return `<span class="hashtag-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-400 font-medium hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}')" title="Filter topic #${escTag}">#${escTag}</span>`;
+      });
+
+      // 3.5 Standalone BCT Wallet Addresses in Post: Clickable to open profile & set filter topic
+      safe = safe.replace(/(^|[^a-zA-Z0-9_#@/])(BCT[a-fA-F0-9]{36,44})\b/g, (match, prefix, addr) => {
+        const cleanAddr = sanitizeJsAttr(addr);
+        const escAddr = escapeHtml(addr);
+        const shortTag = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
+        return `${prefix}<span class="wallet-pill inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors border border-emerald-500/20 shadow-2xs" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanAddr}'); openUserProfile('${cleanAddr}');" title="Profili Aç & Konuyu Filtrele: ${escAddr}"><span class="material-symbols-outlined text-[13px] shrink-0 text-emerald-400">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
       });
 
       // 4. Cashtags: $BCT, $ETH, $BTC, etc. (LT-WEB-02 Sanitized)
