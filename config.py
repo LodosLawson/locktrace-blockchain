@@ -40,7 +40,7 @@ if os.path.exists(env_path):
 
 class Config:
     # ── Protokol & Versiyon ───────────────────────────
-    PROTOCOL_VERSION = "2.9.4"
+    PROTOCOL_VERSION = "2.9.5"
     NETWORK_NAME = os.environ.get("BCT_NETWORK", "mainnet")
 
     # ── Anti-Stall & Resilience Parameters (v2.5.0) ───
@@ -134,7 +134,7 @@ class Config:
     HOST = os.environ.get("BCT_HOST", "0.0.0.0")
     PORT = int(os.environ.get("BCT_PORT", "5000"))
     DEBUG = os.environ.get("BCT_DEBUG", "false").lower() == "true"
-    DEV_MODE = os.environ.get("BCT_DEV_MODE", "true").lower() == "true"
+    DEV_MODE = os.environ.get("BCT_DEV_MODE", "false").lower() == "true"
 
     # ── Blockchain Mempool & Limitler ─────────────────
     MIN_TRANSACTION = 0.00000001   # Minimum transfer miktarı

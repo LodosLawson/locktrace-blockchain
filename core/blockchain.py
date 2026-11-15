@@ -398,6 +398,7 @@ class Blockchain:
         self._confirmed_tx_counts_map: Dict[str, int] = {}
         self._confirmed_used_sigs: set = set()
         self._confirmed_rewarded_wallets: set = set()
+        self._snapshot_base: Optional[dict] = None
         self._saved_wallet_nonces: Dict[str, Tuple[str, int]] = {}
         self._bns_index_key: Optional[tuple] = None
         self._space_index_key: Optional[tuple] = None
@@ -491,6 +492,21 @@ class Blockchain:
         ttype = tx.tx_type
         extra = tx.extra_data
 
+        if ttype == "bns_accept_offer" and extra and extra.get("seller") and snd == extra.get("seller"):
+            # Canonical bns_accept_offer: sender is the signing seller (clean_owner), receiver is bidder
+            if rec:
+                tx_counts[rec] = tx_counts.get(rec, 0) + 1
+                units_map[rec] = units_map.get(rec, 0) - amt_u
+            if snd:
+                sender_nonces[snd] = sender_nonces.get(snd, 0) + 1
+                tx_counts[snd] = tx_counts.get(snd, 0) + 1
+                units_map[snd] = units_map.get(snd, 0) + (amt_u - fee_u)
+            if fee_u > 0:
+                units_map[TREASURY_ADDRESS] = units_map.get(TREASURY_ADDRESS, 0) + fee_u
+            if tx.signature:
+                used_sigs.add(tx.signature.strip())
+            return
+
         if rec:
             tx_counts[rec] = tx_counts.get(rec, 0) + 1
             if ttype == "reward":
@@ -510,7 +526,10 @@ class Blockchain:
             units_map[TREASURY_ADDRESS] = units_map.get(TREASURY_ADDRESS, 0) + (amt_u - fee_u)
 
         if snd:
-            sender_nonces[snd] = sender_nonces.get(snd, 0) + 1
+            if ttype == "validator_unstake" and rec and tx.signature and not tx.signature.startswith("UNSTAKE_RELEASE_"):
+                sender_nonces[rec] = sender_nonces.get(rec, 0) + 1
+            else:
+                sender_nonces[snd] = sender_nonces.get(snd, 0) + 1
             tx_counts[snd] = tx_counts.get(snd, 0) + 1
             units_map[snd] = units_map.get(snd, 0) - amt_u
 
@@ -552,8 +571,14 @@ class Blockchain:
         ):
             self._confirmed_indexed_len = 0
             self._confirmed_indexed_tip = ""
-            self._confirmed_units_map = {}
-            self._confirmed_nonces_map = {}
+            if self._snapshot_base is not None:
+                self._confirmed_units_map = dict(self._snapshot_base.get("units", {}))
+                self._confirmed_nonces_map = dict(self._snapshot_base.get("nonces", {}))
+                self._confirmed_indexed_len = min(len(self.chain), int(self._snapshot_base.get("chain_len", len(self.chain))))
+                self._confirmed_indexed_tip = self.chain[self._confirmed_indexed_len - 1].hash if self._confirmed_indexed_len > 0 else ""
+            else:
+                self._confirmed_units_map = {}
+                self._confirmed_nonces_map = {}
             self._confirmed_tx_counts_map = {}
             self._confirmed_used_sigs = set()
             self._confirmed_rewarded_wallets = set()
@@ -795,14 +820,11 @@ class Blockchain:
                     "created_at": time.time()
                 }
 
-            sender_balance = self.verify_and_recalc_balance(clean_sender)
-            pending_out = sum(tx.amount for tx in self.pending_transactions if getattr(tx, "sender", "") == clean_sender)
-            spendable_balance = round(sender_balance - pending_out, 8)
+            spendable_balance = self.verify_and_recalc_balance(clean_sender)
             if spendable_balance < amount:
                 return (
                     False,
-                    f"Insufficient spendable balance. Confirmed: {sender_balance:.8f} BCT, "
-                    f"Pending in mempool: {pending_out:.8f} BCT, Spendable: {spendable_balance:.8f} BCT (attempted: {amount:.8f} BCT)",
+                    f"Insufficient spendable balance. Spendable (mempool-adjusted): {spendable_balance:.8f} BCT (attempted: {amount:.8f} BCT)",
                     None
                 )
 
@@ -1825,6 +1847,10 @@ class Blockchain:
             rec["owner"] = clean_to
             rec["sale_price"] = 0.0
             rec["updated_at"] = tx.timestamp
+            for _oid, _off in (rec.get("offers") or {}).items():
+                if isinstance(_off, dict) and _off.get("status") == "active":
+                    _off["status"] = "superseded"
+                    _off["resolved_at"] = tx.timestamp
             rec["history"].append({
                 "action": "transferred",
                 "from": clean_from,
@@ -1976,6 +2002,10 @@ class Blockchain:
             rec["owner"] = clean_buyer
             rec["sale_price"] = 0.0
             rec["updated_at"] = tx.timestamp
+            for _oid, _off in (rec.get("offers") or {}).items():
+                if isinstance(_off, dict) and _off.get("status") == "active":
+                    _off["status"] = "superseded"
+                    _off["resolved_at"] = tx.timestamp
             rec["history"].append({
                 "action": "purchased",
                 "buyer": clean_buyer,
@@ -2199,6 +2229,8 @@ class Blockchain:
 
             bidder = target_offer.get("bidder", "")
             amount = float(target_offer.get("amount", 0.0))
+            if bidder == clean_owner:
+                return False, "Cannot accept an offer from your own address.", None
 
             expected_payload = signed_payload or f"BNS_ACCEPT_OFFER:{norm}:{clean_owner}:{offer_id}:{bidder}:{amount}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
@@ -2228,8 +2260,8 @@ class Blockchain:
             }
 
             tx = Transaction(
-                sender=bidder,
-                receiver=clean_owner,
+                sender=clean_owner,
+                receiver=bidder,
                 amount=amount,
                 fee=fee,
                 signature=signature,
@@ -2898,7 +2930,13 @@ class Blockchain:
                 elif tx.sender == VALIDATOR_STAKE_VAULT_ADDRESS and tx.receiver == clean and tx.tx_type == "validator_unstake":
                     staked -= tx.amount
             if clean in self.slashed_validators:
-                staked = max(0.0, staked - 1000.0)
+                try:
+                    from config import Config
+                    slash_pct = float(getattr(Config, "EQUIVOCATION_SLASH_PERCENT", 100))
+                except Exception:
+                    slash_pct = 100.0
+                slash_factor = max(0.0, min(1.0, slash_pct / 100.0))
+                staked = max(0.0, round(staked * (1.0 - slash_factor), 8))
             return max(0.0, round(staked, 8))
 
     def execute_validator_stake(self, sender: str, amount_bct: float,
@@ -2923,9 +2961,8 @@ class Blockchain:
                 return False, f"Minimum validator stake is {MIN_VALIDATOR_STAKE:.2f} BCT.", None
 
             bal = self.verify_and_recalc_balance(clean_sender)
-            pending_out = sum(tx.amount for tx in self.pending_transactions if getattr(tx, "sender", "") == clean_sender)
-            if (bal - pending_out) < amt:
-                return False, f"Insufficient balance to stake {amt:.2f} BCT (Available: {bal - pending_out:.4f} BCT).", None
+            if bal < amt:
+                return False, f"Insufficient balance to stake {amt:.2f} BCT (Available: {bal:.4f} BCT).", None
 
             if signed_payload:
                 sig_ok, sig_msg = self._verify_actor_signature(clean_sender, signed_payload, signature, public_key)
@@ -2967,7 +3004,7 @@ class Blockchain:
             if not ok:
                 return False, msg, None
 
-            new_staked = self.get_validator_stake(clean_sender) + amt
+            new_staked = self.get_validator_stake(clean_sender)
             return True, f"Successfully locked {amt:.2f} BCT collateral into Validator Staking Vault!", {
                 "tx_hash": tx.hash(),
                 "staked_amount": amt,
@@ -3028,7 +3065,7 @@ class Blockchain:
                 receiver=clean_sender,
                 amount=amt,
                 fee=0.0,
-                signature=f"UNSTAKE_RELEASE_{int(time.time())}_{clean_sender[:8]}",
+                signature=signature or f"UNSTAKE_RELEASE_{int(time.time())}_{clean_sender[:8]}",
                 tx_type="validator_unstake",
                 extra_data={"staker": clean_sender, "unstaked_at": time.time()}
             )
@@ -3039,7 +3076,7 @@ class Blockchain:
             return True, f"Successfully requested unstake of {amt:.2f} BCT.", {
                 "tx_hash": tx.hash(),
                 "unstaked_amount": amt,
-                "remaining_staked": cur_staked - amt,
+                "remaining_staked": self.get_validator_stake(clean_sender),
                 "validator": clean_sender
             }
 
@@ -4292,6 +4329,7 @@ class Blockchain:
     def get_account_nonce(self, address: str) -> int:
         """Compute exact sequential outgoing transaction nonce for an address from on-chain + pending history."""
         with self.lock:
+            self._load_state(sweep_overdue=False)
             clean_addr = (address or "").strip()
             if not clean_addr:
                 return 0
@@ -4742,7 +4780,16 @@ class Blockchain:
         # Atomic thread-safe build in local scope (NEW-06 Multi-Thread Race Guard)
         new_bns_records = {}
         new_bns_reverse = {}
-        all_sources = [(b.index, "confirmed", tx) for b in self.chain for tx in b.transactions] + [
+        start_chain_idx = 0
+        if self._snapshot_base is not None and self._snapshot_base.get("bns_records"):
+            import copy
+            new_bns_records = copy.deepcopy(self._snapshot_base["bns_records"])
+            for _bname, _brec in new_bns_records.items():
+                _bowner = (_brec or {}).get("owner", "")
+                if _bowner and _bowner not in new_bns_reverse:
+                    new_bns_reverse[_bowner] = _bname
+            start_chain_idx = min(len(self.chain), int(self._snapshot_base.get("chain_len", len(self.chain))))
+        all_sources = [(b.index, "confirmed", tx) for b in self.chain[start_chain_idx:] for tx in b.transactions] + [
             ("Mempool", "mempool", tx) for tx in self.pending_transactions
         ]
         for b_idx, status_lbl, tx in all_sources:
@@ -4784,6 +4831,10 @@ class Blockchain:
                     rec["owner"] = to_addr
                     rec["sale_price"] = 0.0
                     rec["updated_at"] = tx.timestamp
+                    for _oid, _off in (rec.get("offers") or {}).items():
+                        if isinstance(_off, dict) and _off.get("status") == "active":
+                            _off["status"] = "superseded"
+                            _off["resolved_at"] = tx.timestamp
                     rec["history"].append({
                         "action": "transferred",
                         "from": from_addr,
@@ -4823,6 +4874,10 @@ class Blockchain:
                     rec["owner"] = buyer
                     rec["sale_price"] = 0.0
                     rec["updated_at"] = tx.timestamp
+                    for _oid, _off in (rec.get("offers") or {}).items():
+                        if isinstance(_off, dict) and _off.get("status") == "active":
+                            _off["status"] = "superseded"
+                            _off["resolved_at"] = tx.timestamp
                     rec["history"].append({
                         "action": "purchased",
                         "buyer": buyer,
@@ -4903,9 +4958,14 @@ class Blockchain:
                     rec["owner"] = bidder
                     rec["sale_price"] = 0.0
                     rec["updated_at"] = tx.timestamp
-                    if "offers" in rec and isinstance(rec["offers"], dict) and offer_id in rec["offers"]:
-                        rec["offers"][offer_id]["status"] = "accepted"
-                        rec["offers"][offer_id]["resolved_at"] = tx.timestamp
+                    if "offers" in rec and isinstance(rec["offers"], dict):
+                        if offer_id in rec["offers"]:
+                            rec["offers"][offer_id]["status"] = "accepted"
+                            rec["offers"][offer_id]["resolved_at"] = tx.timestamp
+                        for _oid, _off in rec["offers"].items():
+                            if _oid != offer_id and isinstance(_off, dict) and _off.get("status") == "active":
+                                _off["status"] = "superseded"
+                                _off["resolved_at"] = tx.timestamp
                     rec["history"].append({
                         "action": "offer_accepted",
                         "bidder": bidder,
@@ -5464,5 +5524,32 @@ class Blockchain:
             self.wallets = dict(wallets)
             self.bns_records = dict(bns)
             self.total_transactions = int(snapshot_data.get("total_transactions", self.total_transactions))
+
+            snap_units = {k: _to_units(float(v)) for k, v in self.balances.items()}
+            snap_nonces = {k: int(w.get("nonce", 0)) for k, w in self.wallets.items() if isinstance(w, dict)}
+            tip_hash = self.chain[-1].hash if self.chain else ""
+            self._snapshot_base = {
+                "units": dict(snap_units),
+                "nonces": dict(snap_nonces),
+                "bns_records": dict(self.bns_records),
+                "chain_len": len(self.chain),
+            }
+            self._bns_index_key = (
+                len(self.chain),
+                tip_hash,
+                tuple(tx.hash() for tx in self.pending_transactions),
+            )
+            self._confirmed_units_map = dict(snap_units)
+            self._confirmed_nonces_map = dict(snap_nonces)
+            self._confirmed_indexed_len = len(self.chain)
+            self._confirmed_indexed_tip = tip_hash
+            self._unit_balances_map = dict(snap_units)
+            self._sender_nonce_map = dict(snap_nonces)
+            self._ledger_index_key = (
+                self._loaded_revision,
+                len(self.chain),
+                tip_hash,
+                tuple(tx.hash() for tx in self.pending_transactions),
+            )
             self._save_state()
             return True, "Verified state snapshot applied successfully."

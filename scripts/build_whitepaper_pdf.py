@@ -3,7 +3,7 @@
 LockTrace (BCT) Official Whitepaper PDF Generator
 =================================================
 Converts docs/WHITEPAPER.md into a high-fidelity, publication-grade PDF whitepaper
-matching the latest protocol version (v2.9.4).
+matching the latest protocol version (v2.9.5).
 """
 
 import os
@@ -48,7 +48,7 @@ class NumberedCanvas(canvas.Canvas):
         # Do not print header on page 1 (cover)
         if self._pageNumber > 1:
             # Running Header
-            self.drawString(54, 800, "BlocTag (BCT) Technical Whitepaper — Developed by LockTrace — Protocol v2.9.4")
+            self.drawString(54, 800, "BlocTag (BCT) Technical Whitepaper — Developed by LockTrace — Protocol v2.9.5")
             self.setStrokeColor(colors.HexColor("#E2E8F0"))
             self.setLineWidth(0.5)
             self.line(54, 792, 541, 792)
@@ -230,13 +230,13 @@ def generate_pdf():
 
     story = []
 
-    # Title, Logo & Metadata
-    logo_path = os.path.join(ROOT_DIR, "docs", "locktrace_logo.png")
+    # Title, Logo & Metadata (BlocTag Logo)
+    logo_path = os.path.join(ROOT_DIR, "frontend", "icons", "icon-512.png")
     if os.path.exists(logo_path):
         logo_img = Image(logo_path, width=44, height=44)
         title_flowables = [
             Paragraph("BlocTag (BCT) Technical Whitepaper", title_style),
-            Paragraph("<b>Developed by LockTrace</b> &bull; Production Release v2.9.4", subtitle_style),
+            Paragraph("<b>Developed by LockTrace</b> &bull; Production Release v2.9.5", subtitle_style),
         ]
         header_table = Table([[logo_img, title_flowables]], colWidths=[52, 435])
         header_table.setStyle(TableStyle([

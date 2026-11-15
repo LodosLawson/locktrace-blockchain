@@ -10,6 +10,7 @@ WorkingDirectory=/opt/blockchaint
 EnvironmentFile=-/opt/blockchaint/.env
 Environment="PATH=/opt/blockchaint/venv/bin:/usr/bin"
 Environment="BCT_LOG_LEVEL=INFO"
+Environment="BCT_DEV_MODE=false"
 LimitNOFILE=65535
 LimitNPROC=65535
 ExecStart=/opt/blockchaint/venv/bin/gunicorn \

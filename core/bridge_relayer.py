@@ -479,10 +479,10 @@ class BridgeRelayer:
             if bct_dest.upper().startswith("BCT") and len(bct_dest) == 43:
                 bct_dest = "BCT" + bct_dest[3:].lower()
 
-            # AUD19-02: Precise Decimal parsing without float IEEE-754 precision loss or zero fallback bugs
-            raw_net = r["net_amount"]
+            # AUD19-02: Verify against gross on-chain BurnedToBridge amount_bct (1:1 peg with Base event)
             raw_gross = r["amount_bct"]
-            val_to_parse = raw_net if (raw_net is not None and str(raw_net).strip() != "") else raw_gross
+            raw_net = r["net_amount"]
+            val_to_parse = raw_gross if (raw_gross is not None and str(raw_gross).strip() != "") else raw_net
             try:
                 amt_dec = Decimal(str(val_to_parse).strip())
             except Exception:

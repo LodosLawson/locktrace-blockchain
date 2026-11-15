@@ -502,7 +502,12 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **F-08:** Pending / mempool / confirmation / RPC / vault-reserve conditions are retryable and never mark an order `FAILED` (server returns 409).
    - **F-10:** `/api/v1/bridge/order` requires a wallet ECDSA signature over `BRIDGE_ORDER:<dir>:<bct>:<evm>:<amount>:<chain>`; an existing L1-lock order is never handed to a different owner/destination.
    - **N-01:** L1 locks not sealed within 2h are parked as `STALLED` and automatically re-queued once sealed.
-24. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+24. **Consensus, Bridge, Nonce & P2P Parity Hardening (v2.9.5):**
+   - **Production Frontend Integrity:** `BCT_DEV_MODE` defaults to `"false"` across `config.py`, `server.py`, and `deploy/blockchain.service`.
+   - **Bridge Relayer & Deduplication:** `process_pending_burns()` verifies gross `amount_bct` matching on-chain `BurnedToBridge` events; `tx_hash_l1` enforces case-insensitive uniqueness and `/api/v1/bridge/confirm` enforces `L1_TO_EVM` + `PENDING` state.
+   - **Consensus & Nonce Hardening:** Fixed mempool spendable balance double-deduction, enforced `Config.EQUIVOCATION_SLASH_PERCENT` in `get_validator_stake()`, preserved validator ECDSA signature and incremented validator nonce on `validator_unstake` and `bns_accept_offer`, and fixed `execute_validator_stake()` receipt double-counting.
+   - **Cross-Node P2P & Multi-Worker Sync:** Synchronized `node_runner.py` ledger/BNS accounting with `core/blockchain.py`, enforced Low-S in `PureSecp256k1`, preserved snapshot `bns_records`, and added `_load_state()` in `get_account_nonce()` alongside full CSP `connect-src` parity.
+25. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

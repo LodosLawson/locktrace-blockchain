@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.4)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.5)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner (CPU & GPU Accelerated),
 and cryptographically verified decentralized Web Wallet on Linux, macOS, or Windows with
@@ -30,6 +30,7 @@ import hashlib
 import hmac
 import ctypes
 import json
+import logging
 import mimetypes
 import os
 import re
@@ -45,10 +46,13 @@ import webbrowser
 from datetime import datetime, timezone
 from decimal import Decimal, ROUND_HALF_UP
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
+from typing import Optional
+
+logger = logging.getLogger("LockTraceNode")
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.9.4"
+VERSION = "2.9.5"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)
@@ -150,7 +154,8 @@ class LockTraceMinerEngine:
         block_candidate: dict,
         target_difficulty: int,
         max_nonces: int = 1_000_000,
-        stop_event: threading.Event = None
+        stop_event: threading.Event = None,
+        start_nonce: int = 0
     ) -> tuple:
         dummy = dict(block_candidate)
         dummy["nonce"] = 888888888888
@@ -168,12 +173,14 @@ class LockTraceMinerEngine:
         solved_hash = ""
         hashes_computed = 0
 
+        s_nonce = max(0, int(start_nonce))
+        end_nonce = s_nonce + max(1, int(max_nonces))
         batch_size = 100_000
-        for base in range(0, max_nonces, batch_size):
+        for base in range(s_nonce, end_nonce, batch_size):
             if stop_event and stop_event.is_set():
                 break
 
-            limit = min(base + batch_size, max_nonces)
+            limit = min(base + batch_size, end_nonce)
             for n in range(base, limit):
                 candidate_str = prefix + str(n) + suffix
                 h = hashlib.sha256(candidate_str.encode("utf-8")).hexdigest()
@@ -369,7 +376,7 @@ class PureSecp256k1:
 
             r = int(clean_sig[:64], 16)
             s = int(clean_sig[64:], 16)
-            if not (1 <= r < cls.N and 1 <= s < cls.N):
+            if not (1 <= r < cls.N and 1 <= s <= cls.N // 2):
                 return False
 
             z = int.from_bytes(hashlib.sha256(message.encode("utf-8")).digest(), "big") % cls.N
@@ -885,7 +892,14 @@ class LockTraceNode:
         units = 0
         nonce = 0
         exists = clean_addr in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS)
-        fee_bearing = ("transfer", "space_post", "space_like", "space_comment")
+        fee_bearing = (
+            "transfer", "space_post", "space_like", "space_comment", "space_follow",
+            "bns_register", "bns_transfer", "bns_set_price", "bns_buy", "bns_accept_offer"
+        )
+        net_credit_types = (
+            "transfer", "space_post", "bns_register", "bns_buy",
+            "bns_accept_offer", "validator_stake", "validator_unstake"
+        )
 
         with self.chain_lock:
             for idx in sorted(self.chain_by_index.keys()):
@@ -897,22 +911,46 @@ class LockTraceNode:
                     amt_u = _to_units(tx.get("amount", 0.0))
                     fee_u = _to_units(tx.get("fee", 0.0))
                     extra = tx.get("extra_data") or {}
+                    sig_str = str(tx.get("signature", "") or "")
+
+                    if tx_type == "bns_accept_offer" and extra.get("seller") and sender == extra.get("seller"):
+                        if receiver == clean_addr:
+                            exists = True
+                            units -= amt_u
+                        if sender == clean_addr:
+                            exists = True
+                            units += (amt_u - fee_u)
+                            nonce += 1
+                        if clean_addr == TREASURY_ADDRESS and fee_u > 0:
+                            units += fee_u
+                        continue
 
                     if receiver == clean_addr:
                         exists = True
-                        if tx_type in ("transfer", "space_post"):
+                        if tx_type in net_credit_types:
                             units += (amt_u - fee_u)
-                        elif tx_type in ("space_like", "space_comment"):
+                        elif tx_type == "bns_transfer":
+                            if receiver == TREASURY_ADDRESS:
+                                units += (amt_u - fee_u)
+                        elif tx_type in ("space_like", "space_comment", "space_follow"):
                             units += _to_units(extra.get("treasury_cut", 0.0))
                         else:
                             units += amt_u
+                        if tx_type == "validator_unstake" and sig_str and not sig_str.startswith("UNSTAKE_RELEASE_"):
+                            nonce += 1
+                    if tx_type == "bns_transfer" and receiver != TREASURY_ADDRESS and clean_addr == TREASURY_ADDRESS:
+                        units += (amt_u - fee_u)
                     if sender == clean_addr:
                         exists = True
                         units -= amt_u
-                        nonce += 1
+                        if not (tx_type == "validator_unstake" and sig_str and not sig_str.startswith("UNSTAKE_RELEASE_")):
+                            nonce += 1
                     if tx_type in ("space_like", "space_comment") and extra.get("author") == clean_addr:
                         exists = True
                         units += _to_units(extra.get("author_cut", 0.0))
+                    elif tx_type == "space_follow" and extra.get("target") == clean_addr:
+                        exists = True
+                        units += _to_units(extra.get("creator_cut", 0.0))
                     if clean_addr == TREASURY_ADDRESS and tx_type in fee_bearing and fee_u > 0:
                         units += fee_u
 
@@ -1084,18 +1122,21 @@ class LockTraceNode:
 
     def local_holders(self, page: int = 1, limit: int = 10) -> dict:
         """Computes rich list of accounts holding BCT from archival chain."""
-        balances = {}
+        addrs = set()
         with self.chain_lock:
             for blk in self.chain_by_index.values():
                 for tx in blk.get("transactions", []):
-                    s = tx.get("sender", "")
-                    r = tx.get("receiver", "")
-                    amt = float(tx.get("amount", 0.0))
-                    fee = float(tx.get("fee", 0.0))
-                    if s:
-                        balances[s] = balances.get(s, 0.0) - amt - fee
-                    if r:
-                        balances[r] = balances.get(r, 0.0) + amt
+                    for k in (tx.get("sender", ""), tx.get("receiver", "")):
+                        if k and k.startswith("BCT"):
+                            addrs.add(k)
+                    ed = tx.get("extra_data") or {}
+                    for ek in (ed.get("author", ""), ed.get("target", ""), ed.get("bidder", ""), ed.get("seller", "")):
+                        if ek and str(ek).startswith("BCT"):
+                            addrs.add(str(ek))
+        balances = {}
+        for a in addrs:
+            bal, _, _ = self.local_calc_balance_and_nonce(a)
+            balances[a] = bal
 
         records, reverse = self.local_bns_state()
         holders = []
@@ -1172,13 +1213,13 @@ class LockTraceNode:
                         if not name.endswith(".bct"):
                             name = f"{name}.bct"
                         if name in records:
-                            records[name]["sale_price"] = max(0.0, float(ed.get("price_bct", 0.0)))
+                            records[name]["sale_price"] = max(0.0, float(ed.get("price", ed.get("price_bct", 0.0)) or 0.0))
                     elif tt == "bns_buy":
                         name = str(ed.get("name") or "").strip().lower()
                         if not name.endswith(".bct"):
                             name = f"{name}.bct"
-                        buyer = sender
-                        if name in records:
+                        buyer = str(ed.get("buyer") or sender or "").strip()
+                        if name in records and buyer:
                             old_owner = records[name]["owner"]
                             records[name]["owner"] = buyer
                             records[name]["sale_price"] = 0.0
@@ -1188,6 +1229,21 @@ class LockTraceNode:
                                 reverse[old_owner] = remaining[0] if remaining else ""
                             if buyer not in reverse:
                                 reverse[buyer] = name
+                    elif tt == "bns_accept_offer":
+                        name = str(ed.get("name") or "").strip().lower()
+                        if not name.endswith(".bct"):
+                            name = f"{name}.bct"
+                        bidder = str(ed.get("bidder") or tx.get("receiver") or "").strip()
+                        if name in records and bidder:
+                            old_owner = records[name]["owner"]
+                            records[name]["owner"] = bidder
+                            records[name]["sale_price"] = 0.0
+                            records[name]["transfer_count"] = records[name].get("transfer_count", 0) + 1
+                            if reverse.get(old_owner) == name:
+                                remaining = [n for n, r in records.items() if r.get("owner") == old_owner]
+                                reverse[old_owner] = remaining[0] if remaining else ""
+                            if bidder not in reverse:
+                                reverse[bidder] = name
                     elif tt == "bns_set_primary":
                         name = str(ed.get("name") or "").strip().lower()
                         if not name.endswith(".bct"):
@@ -1445,6 +1501,12 @@ class LockTraceNode:
         if path == "/api/v1/space/like":
             liker = str(payload.get("liker", "")).strip()
             pid = str(payload.get("post_id", "")).strip()
+            ok, err = self._verify_client_action_sig(payload, liker, [f"LIKE:{pid}:{liker}", f"{liker}:{pid}"])
+            if not ok:
+                return 403, {"success": False, "message": err}
+            bal, _, _ = self.local_calc_balance_and_nonce(liker)
+            if bal < 0.01:
+                return 400, {"success": False, "message": "At least 0.01 BCT is required to like."}
             posts = self.local_space_posts()
             if pid not in posts:
                 return 404, {"success": False, "message": "Post not found."}
@@ -1468,6 +1530,14 @@ class LockTraceNode:
             commenter = str(payload.get("commenter", "")).strip()
             pid = str(payload.get("post_id", "")).strip()
             content = str(payload.get("content", "")).strip()[:140]
+            if not content:
+                return 400, {"success": False, "message": "Comment content cannot be empty."}
+            ok, err = self._verify_client_action_sig(payload, commenter, [f"COMMENT:{pid}:{commenter}:{content}", f"{commenter}:{pid}:{content}"])
+            if not ok:
+                return 403, {"success": False, "message": err}
+            bal, _, _ = self.local_calc_balance_and_nonce(commenter)
+            if bal < 0.02:
+                return 400, {"success": False, "message": "At least 0.02 BCT is required to comment."}
             posts = self.local_space_posts()
             if pid not in posts:
                 return 404, {"success": False, "message": "Post not found."}
@@ -1493,6 +1563,12 @@ class LockTraceNode:
                 return 400, {"success": False, "message": "Fields 'follower' and 'target' are required."}
             if follower == target:
                 return 400, {"success": False, "message": "You cannot follow your own wallet address."}
+            ok, err = self._verify_client_action_sig(payload, follower, [f"FOLLOW:{follower}:{target}", f"{follower}:{target}"])
+            if not ok:
+                return 403, {"success": False, "message": err}
+            bal, _, _ = self.local_calc_balance_and_nonce(follower)
+            if bal < 1.00:
+                return 400, {"success": False, "message": "At least 1.00 BCT is required to follow."}
             tx = {
                 "sender": follower,
                 "receiver": TREASURY_ADDRESS,
@@ -2010,7 +2086,7 @@ class LockTraceNode:
                     lim = max(1, min(20, int(qs.get("limit", ["5"])[0])))
                     posts_map = node_ref.local_space_posts()
                     authors = {p.get("author") for p in posts_map.values() if p.get("author")}
-                    bns_map = node_ref.local_bns_records()
+                    bns_map, _ = node_ref.local_bns_state()
                     voices = []
                     for a in authors:
                         if a and a != TREASURY_ADDRESS:

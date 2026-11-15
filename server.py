@@ -265,7 +265,9 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
 
     # Path 2: Client-side ECDSA signature (Non-custodial mode)
     if client_sig:
-        pub_hex = client_pub or blockchain.wallets.get(clean_expected, {}).get("public_key", "")
+        with blockchain.lock:
+            blockchain._load_state(sweep_overdue=False)
+            pub_hex = client_pub or blockchain.wallets.get(clean_expected, {}).get("public_key", "")
         if not pub_hex:
             return False, 401, "public_key is required for signature verification.", "", "", ""
 
@@ -337,7 +339,7 @@ def after_request(response):
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
-        "connect-src 'self' https://locktrace.space https://www.locktrace.space https://basescan.org https://mainnet.base.org http://127.0.0.1:* http://localhost:*; "
+        "connect-src 'self' https://locktrace.space https://www.locktrace.space https://basescan.org https://mainnet.base.org https://*.rpc.thirdweb.com https://*.thirdweb.com wss://*.thirdweb.com https://api.coinbase.com https://api.geckoterminal.com https://api.dexscreener.com http://127.0.0.1:* http://localhost:*; "
         "frame-ancestors 'self'; "
         "base-uri 'self'; "
         "form-action 'self';"
@@ -435,7 +437,7 @@ def _inspect_local_frontend_integrity() -> dict:
                 sw_bytes = sf.read().replace(b"\r\n", b"\n")
             actual_sw_sha = hashlib.sha256(sw_bytes).hexdigest()
 
-        dev_mode = Config.DEBUG or getattr(Config, "DEV_MODE", True) or os.environ.get("BCT_DEV_MODE", "true").lower() == "true"
+        dev_mode = Config.DEBUG or getattr(Config, "DEV_MODE", False) or os.environ.get("BCT_DEV_MODE", "false").lower() == "true"
         expected_index_sha = str(manifest.get("index_html_sha256", "")).lower()
         expected_sw_sha = str(manifest.get("sw_js_sha256", "")).lower()
 
@@ -543,7 +545,7 @@ _bootstrap_onchain_frontend_seal()
 
 def is_local_or_lan_request() -> bool:
     """Returns True ONLY if request originates from loopback/LAN or explicit BCT_DEV_MODE."""
-    if Config.DEBUG or getattr(Config, "DEV_MODE", False) or os.environ.get("BCT_DEV_MODE", "true").lower() == "true":
+    if Config.DEBUG or getattr(Config, "DEV_MODE", False) or os.environ.get("BCT_DEV_MODE", "false").lower() == "true":
         return True
     client_ip = (get_client_ip() or "").strip().lower()
     if client_ip in ("127.0.0.1", "::1", "localhost"):
@@ -2735,9 +2737,11 @@ def api_bns_offer_accept():
         return api_response(False, message="Fields 'name', 'owner', and 'offer_id' are required.", status=400)
 
     norm = blockchain._normalize_bns_name(name)
-    rec = blockchain.bns_records.get(norm, {})
-    offers = rec.get("offers", {}) if isinstance(rec, dict) else {}
-    target_offer = offers.get(offer_id, {}) if isinstance(offers, dict) else {}
+    with blockchain.lock:
+        blockchain._load_state(sweep_overdue=False)
+        rec = blockchain.bns_records.get(norm, {})
+        offers = rec.get("offers", {}) if isinstance(rec, dict) else {}
+        target_offer = dict(offers.get(offer_id, {})) if isinstance(offers, dict) and isinstance(offers.get(offer_id), dict) else {}
     bidder = target_offer.get("bidder", "")
     offer_amount = target_offer.get("amount", 0.0)
 
@@ -2803,10 +2807,12 @@ def api_bns_offer_cancel():
         return api_response(False, message="Fields 'name', 'actor', and 'offer_id' are required.", status=400)
 
     norm = blockchain._normalize_bns_name(name)
-    rec = blockchain.bns_records.get(norm, {})
-    owner = rec.get("owner", "") if isinstance(rec, dict) else ""
-    offers = rec.get("offers", {}) if isinstance(rec, dict) else {}
-    target_offer = offers.get(offer_id, {}) if isinstance(offers, dict) else {}
+    with blockchain.lock:
+        blockchain._load_state(sweep_overdue=False)
+        rec = blockchain.bns_records.get(norm, {})
+        owner = rec.get("owner", "") if isinstance(rec, dict) else ""
+        offers = rec.get("offers", {}) if isinstance(rec, dict) else {}
+        target_offer = dict(offers.get(offer_id, {})) if isinstance(offers, dict) and isinstance(offers.get(offer_id), dict) else {}
     bidder = target_offer.get("bidder", "")
 
     canonical_variants = [
@@ -3110,6 +3116,7 @@ def api_bridge_create_order():
     evm_address = str(payload.get("evm_address", "")).strip()
     chain = str(payload.get("chain", "base")).strip()
     tx_hash_l1 = str(payload.get("tx_hash_l1", "")).strip().lower()
+    tx_hash_evm = str(payload.get("tx_hash_evm", "")).strip().lower()
 
     amount_bct = safe_float(payload.get("amount"))
     if amount_bct is None or amount_bct <= 0:
@@ -3132,7 +3139,8 @@ def api_bridge_create_order():
         evm_address=evm_address,
         amount_bct=amount_bct,
         chain=chain,
-        tx_hash_l1=tx_hash_l1
+        tx_hash_l1=tx_hash_l1,
+        tx_hash_evm=tx_hash_evm
     )
 
     if not result.get("success"):
@@ -3227,6 +3235,10 @@ def api_bridge_confirm():
     order = bridge_manager.get_bridge_status(bridge_id)
     if not order:
         return api_response(False, message="Bridge transaction not found.", status=404)
+    if str(order.get("direction", "")).upper() != "L1_TO_EVM":
+        return api_response(False, message="Only L1_TO_EVM orders can be confirmed with an L1 lock hash.", status=400)
+    if str(order.get("status", "")).upper() != "PENDING":
+        return api_response(False, message=f"Bridge order is already {order.get('status')}.", status=400)
 
     ok_lock, lock_err = _verify_l1_bridge_lock_tx(
         tx_hash_l1=tx_hash,

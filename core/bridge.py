@@ -248,6 +248,14 @@ class BridgeManager:
                 ON bridge_transactions (tx_hash_evm)
                 WHERE direction = 'EVM_TO_L1' AND tx_hash_evm IS NOT NULL AND tx_hash_evm != '';
             """)
+            try:
+                conn.execute("""
+                    CREATE UNIQUE INDEX IF NOT EXISTS idx_bridge_unique_l1_lock
+                    ON bridge_transactions (lower(tx_hash_l1))
+                    WHERE direction = 'L1_TO_EVM' AND tx_hash_l1 IS NOT NULL AND tx_hash_l1 != '';
+                """)
+            except sqlite3.IntegrityError:
+                pass
 
     def get_bridge_config(self) -> Dict[str, Any]:
         """Returns public parameters, active contracts, and limits for the bridge."""
@@ -308,7 +316,7 @@ class BridgeManager:
         if tx_hash_evm:
             with self._get_connection() as conn:
                 existing = conn.execute(
-                    "SELECT * FROM bridge_transactions WHERE tx_hash_evm = ? LIMIT 1",
+                    "SELECT * FROM bridge_transactions WHERE lower(tx_hash_evm) = lower(?) LIMIT 1",
                     (tx_hash_evm,)
                 ).fetchone()
                 if existing:
@@ -317,7 +325,7 @@ class BridgeManager:
         if tx_hash_l1:
             with self._get_connection() as conn:
                 existing = conn.execute(
-                    "SELECT * FROM bridge_transactions WHERE tx_hash_l1 = ? LIMIT 1",
+                    "SELECT * FROM bridge_transactions WHERE lower(tx_hash_l1) = lower(?) LIMIT 1",
                     (tx_hash_l1,)
                 ).fetchone()
                 if existing:

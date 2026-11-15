@@ -214,7 +214,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.9.4` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.9.5` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -594,3 +594,12 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 7. **F-08 Geçici Durumlar:** pending/mempool/RPC/rezerv hataları artık FAILED yapmaz.
 8. **F-10 İmzalı Emir:** Köprü emri oluşturma cüzdan imzası gerektirir; başkasının emri iade edilmez.
 9. **N-01 Otomatik Devam:** 2 saatte bloğa girmeyen kilitler `STALLED` olur ve onaylanınca otomatik mint edilir.
+
+---
+
+## 🛡️ 24. BlocTag / LockTrace v2.9.5: Konsensüs, Nonce, Köprü ve P2P Eşitlik Güncellemesi
+
+1. **Üretim Ön-Yüz Bütünlük Koruması:** `BCT_DEV_MODE` varsayılanı `config.py`, `server.py` ve `deploy/blockchain.service` içinde `false` yapıldı.
+2. **Köprü Relayer & Tekilleştirme:** `process_pending_burns()` on-chain brüt tutar (`amount_bct`) ile eşleştirildi; `tx_hash_l1` büyük/küçük harf duyarsız benzersiz indeksle korundu.
+3. **Konsensüs, Nonce & Replay Koruması:** Mempool çift düşüm hatası, `EQUIVOCATION_SLASH_PERCENT` uygulama hatası, `bns_accept_offer` ve `validator_unstake` nonce/imza replay açıkları ile `execute_validator_stake` makbuz çift sayımı giderildi.
+4. **P2P & Multi-Worker Senkronizasyonu:** `node_runner.py` muhasebe/BNS indeksleri `core/blockchain.py` ile %100 eşitlendi, `PureSecp256k1` Low-S zorunluluğu eklendi, `get_account_nonce()` multi-worker SQLite yenilemesi ve Flask CSP `connect-src` eşitliği sağlandı.
