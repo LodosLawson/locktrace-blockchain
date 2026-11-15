@@ -136,6 +136,7 @@ echo "[*] Verifying integrity endpoint..."
 curl -s http://127.0.0.1:5000/api/v1/frontend/integrity | head -c 250
 echo ""
 echo "[*] Checking blockchaint service status..."
+sleep 2
 systemctl is-active blockchaint.service
 systemctl is-active blockchaint-relayer.service
 """
