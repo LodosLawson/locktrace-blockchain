@@ -1,0 +1,62 @@
+name: Deploy to LockTrace Mainnet VPS
+
+on:
+  push:
+    branches:
+      - master
+    paths-ignore:
+      - "frontend/integrity.json"
+      - "templates/integrity.json"
+  workflow_dispatch:
+
+jobs:
+  verify-and-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Run SSOT & CSP parity checks
+        run: |
+          python scripts/sync_docs.py
+          python scripts/sync_csp.py --check
+
+      - name: Configure SSH key
+        env:
+          VPS_SSH_KEY: ${{ secrets.VPS_SSH_KEY }}
+        run: |
+          if [ -z "$VPS_SSH_KEY" ]; then
+            echo "::error::VPS_SSH_KEY secret is not configured in GitHub repository settings."
+            exit 1
+          fi
+          mkdir -p "$HOME/.ssh"
+          printf '%s\n' "$VPS_SSH_KEY" > "$HOME/.ssh/vps.key"
+          chmod 600 "$HOME/.ssh/vps.key"
+
+      - name: Deploy via fast_deploy.py
+        env:
+          LOCKTRACE_SSH_HOST: ${{ secrets.VPS_SSH_HOST || 'ubuntu@129.151.205.219' }}
+        run: |
+          export LOCKTRACE_SSH_KEY="$HOME/.ssh/vps.key"
+          python scripts/fast_deploy.py
+
+      - name: Collect VPS service logs on failure
+        if: failure()
+        env:
+          VPS_SSH_HOST: ${{ secrets.VPS_SSH_HOST || 'ubuntu@129.151.205.219' }}
+        run: |
+          if [ -f "$HOME/.ssh/vps.key" ]; then
+            ssh -i "$HOME/.ssh/vps.key" -o StrictHostKeyChecking=accept-new -o BatchMode=yes -o ConnectTimeout=15 "$VPS_SSH_HOST" \
+              "sudo systemctl status blockchaint.service blockchaint-relayer.service --no-pager || true; echo '--- blockchaint.service ---'; sudo journalctl -u blockchaint.service -n 80 --no-pager || true; echo '--- blockchaint-relayer.service ---'; sudo journalctl -u blockchaint-relayer.service -n 50 --no-pager || true"
+          fi
+
+      - name: Cleanup SSH key
+        if: always()
+        run: rm -f "$HOME/.ssh/vps.key"
