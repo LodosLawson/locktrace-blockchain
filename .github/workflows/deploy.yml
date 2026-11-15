@@ -9,10 +9,15 @@ on:
       - "templates/integrity.json"
   workflow_dispatch:
 
+permissions:
+  contents: read
+
 jobs:
   verify-and-deploy:
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    permissions:
+      contents: read
 
     steps:
       - name: Checkout repository

@@ -12,6 +12,7 @@ Run after ANY edit of frontend/index.html (fast_deploy.py does it automatically)
 """
 import base64
 import hashlib
+from html.parser import HTMLParser
 import os
 import re
 import sys
@@ -21,22 +22,48 @@ INDEXES = ["frontend/index.html", "templates/index.html"]
 TARGETS = ["deploy/nginx.conf", "deploy/nginx_ssl.conf", "frontend/netlify.toml", "server.py"]
 EXTERNAL_SCRIPT_HOSTS = "https://cdn.tailwindcss.com"  # Tailwind Play CDN (no SRI possible; build step is the long-term fix)
 
-INLINE_RE = re.compile(r"<script(?P<attrs>[^>]*)>(?P<body>.*?)</script>", re.S | re.I)
+
+class InlineScriptExtractor(HTMLParser):
+    """
+    Robust HTML parser to extract inline <script> tags for CSP sha256 hashing.
+    Avoids regex-based HTML filtering flagged by CodeQL.
+    """
+    def __init__(self):
+        super().__init__()
+        self.hashes = []
+        self._in_script = False
+        self._current_attrs = {}
+        self._current_body = []
+
+    def handle_starttag(self, tag, attrs):
+        if tag.lower() == "script":
+            self._in_script = True
+            self._current_attrs = {k.lower(): v for k, v in attrs}
+            self._current_body = []
+
+    def handle_endtag(self, tag):
+        if tag.lower() == "script" and self._in_script:
+            self._in_script = False
+            # Exclude external scripts (those with a 'src' attribute)
+            if "src" not in self._current_attrs:
+                script_type = (self._current_attrs.get("type") or "").strip().lower()
+                if script_type in ("", "text/javascript", "module", "application/javascript"):
+                    body = "".join(self._current_body)
+                    digest = base64.b64encode(hashlib.sha256(body.encode("utf-8")).digest()).decode()
+                    self.hashes.append(f"'sha256-{digest}'")
+            self._current_attrs = {}
+            self._current_body = []
+
+    def handle_data(self, data):
+        if self._in_script:
+            self._current_body.append(data)
 
 
 def inline_hashes(path):
     text = open(os.path.join(ROOT, path), encoding="utf-8", newline="").read().replace("\r\n", "\n")
-    hashes = []
-    for m in INLINE_RE.finditer(text):
-        attrs = m.group("attrs")
-        if re.search(r"\bsrc\s*=", attrs, re.I):
-            continue
-        t = re.search(r'type\s*=\s*"([^"]*)"', attrs, re.I)
-        if t and t.group(1).strip().lower() not in ("", "text/javascript", "module", "application/javascript"):
-            continue
-        digest = base64.b64encode(hashlib.sha256(m.group("body").encode("utf-8")).digest()).decode()
-        hashes.append(f"'sha256-{digest}'")
-    return sorted(set(hashes))
+    parser = InlineScriptExtractor()
+    parser.feed(text)
+    return sorted(set(parser.hashes))
 
 
 def build_directive(hashes):
