@@ -335,7 +335,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-V19DxRyI0xv4jVxIZY764G2PPk9g3bn1mj4K4H7RRGU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-vmvsvQhngoQjZz2FUmuI82r7urAPLULJMmq7c4S3frQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1207,8 +1207,10 @@ def api_explorer_search():
     if not q:
         return api_response(False, message="Search query cannot be empty", status=400)
 
+    q_clean = q.lstrip("#").lstrip("@").strip()
+
     # 1. Exact Block lookup (index or full hash)
-    block = blockchain.get_block_by_index_or_hash(q)
+    block = blockchain.get_block_by_index_or_hash(q) or (blockchain.get_block_by_index_or_hash(q_clean) if q_clean else None)
     if block:
         b_txs = []
         participant_addrs = []
@@ -1240,7 +1242,7 @@ def api_explorer_search():
         })
 
     # 2. Exact Transaction lookup (or >=8 char hex tx hash prefix)
-    tx = blockchain.get_tx_by_hash(q)
+    tx = blockchain.get_tx_by_hash(q) or (blockchain.get_tx_by_hash(q_clean) if q_clean else None)
     if tx:
         related_addrs = []
         seen = set()
@@ -1267,7 +1269,7 @@ def api_explorer_search():
         })
 
     # 3. BNS handle lookup (exact `@satoshi` / `satoshi.bct`)
-    clean_handle = q.lstrip("@").lower()
+    clean_handle = (q_clean or q).lower()
     bns_cand = clean_handle if clean_handle.endswith(".bct") else f"{clean_handle}.bct"
     resolved_addr = ""
     matched_bns = ""
@@ -1279,14 +1281,15 @@ def api_explorer_search():
                 resolved_addr = cand_owner
                 matched_bns = bns_cand
 
-    if not resolved_addr and is_valid_bct_address(q):
+    candidate_addr = q_clean if is_valid_bct_address(q_clean) else (q if is_valid_bct_address(q) else "")
+    if not resolved_addr and candidate_addr:
         # Preserve canonical stored casing if found in ledger/wallets, else trimmed input
-        resolved_addr = q
+        resolved_addr = candidate_addr
         with blockchain.lock:
             blockchain._load_state()
-            q_low = q.lower()
+            cand_low = candidate_addr.lower()
             for known in list(blockchain.wallets.keys()) + list(blockchain.bns_reverse.keys()):
-                if known.lower() == q_low:
+                if known.lower() == cand_low:
                     resolved_addr = known
                     break
 
@@ -1315,7 +1318,7 @@ def api_explorer_search():
         })
 
     # 4. Partial BNS handle substring or BCT address prefix match
-    q_low = q.lower()
+    q_low = (q_clean or q).lower()
     matched_addr_handles: Dict[str, str] = {}
     with blockchain.lock:
         blockchain._load_state()
@@ -1327,7 +1330,7 @@ def api_explorer_search():
                         matched_addr_handles[owner] = h_name
                         if len(matched_addr_handles) >= 12:
                             break
-        elif q_low.startswith("bct") and len(q) >= 7:
+        elif q_low.startswith("bct") and len(q_low) >= 7:
             blockchain._ensure_ledger_index()
             cand_pool = set(blockchain.wallets.keys()) | set(blockchain.bns_reverse.keys()) | set(blockchain._tx_counts_map.keys())
             for cand in cand_pool:
@@ -2371,7 +2374,7 @@ def api_get_user_profile(query: str):
     Returns public non-custodial creator profile, social metrics, BNS handles,
     recent posts, and transaction ledger for an address or .bct handle.
     """
-    clean_query = str(query or "").strip()
+    clean_query = str(query or "").strip().lstrip("#").lstrip("@").strip()
     if not clean_query:
         return api_response(False, message="Profile query parameter required", status=400)
 

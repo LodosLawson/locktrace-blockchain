@@ -8760,12 +8760,14 @@
     }
 
     function shortAddr(addr) {
-      const s = String(addr || '').trim();
+      let s = String(addr || '').trim();
       if (!s) return '--';
-      if (s === 'BCT_TREASURY_VAULT') return 'Treasury Vault';
-      if (s === 'GENESIS' || s === 'GENESIS_VAULT') return 'Genesis Vault';
-      if (s.length <= 14) return s;
-      return s.slice(0, 7) + '...' + s.slice(-4);
+      const hasHash = s.startsWith('#');
+      if (hasHash) s = s.slice(1);
+      if (s === 'BCT_TREASURY_VAULT') return (hasHash ? '#' : '') + 'Treasury Vault';
+      if (s === 'GENESIS' || s === 'GENESIS_VAULT') return (hasHash ? '#' : '') + 'Genesis Vault';
+      if (s.length <= 14) return (hasHash ? '#' : '') + s;
+      return (hasHash ? '#' : '') + s.slice(0, 6) + '...' + s.slice(-4);
     }
 
     function formatBct(val, maxDec = 4) {
@@ -11542,24 +11544,24 @@
         return false;
       }
 
-      const cleanVal = val.trim();
+      const cleanVal = val.replace(/^[#@]+/, '').trim();
       const isStandardBct = /^BCT[0-9a-fA-F]{40}$/i.test(cleanVal);
       const isSpecialBct = cleanVal === 'BCT_HAZINE_0000000000000000000000000000000000000000' || cleanVal.startsWith('BCT_BRIDGE_VAULT');
       if (isStandardBct || isSpecialBct) {
         badge.textContent = '✓ Valid BCT Address';
         badge.className = 'font-label-sm text-label-sm text-primary font-mono';
         if (resCard) resCard.classList.add('hidden');
-        lastResolvedBnsRecipient = val;
+        lastResolvedBnsRecipient = cleanVal;
         return true;
       }
 
-      if (val.includes('.') || !val.startsWith('BCT')) {
+      if (cleanVal.includes('.') || !cleanVal.startsWith('BCT')) {
         badge.textContent = 'Resolving handle...';
         badge.className = 'font-label-sm text-label-sm text-amber-400 font-mono';
         if (bnsLookupTimer) clearTimeout(bnsLookupTimer);
         bnsLookupTimer = setTimeout(async () => {
           try {
-            const stripped = val.startsWith('@') ? val.slice(1).trim() : val.trim();
+            const stripped = cleanVal;
             const clean = stripped.endsWith('.bct') ? stripped : (stripped + '.bct');
             const res = await apiFetch('/bns/lookup/' + encodeURIComponent(clean));
             if (res.ok && res.body && res.body.data && res.body.data.owner) {
@@ -13289,10 +13291,12 @@
 
       // 2. Filter by Search Query
       if (spaceSearchQuery) {
+        const rawSpaceQuery = spaceSearchQuery.replace(/^[#@]+/, '').trim();
         list = list.filter(p =>
           String(p.content || '').toLowerCase().includes(spaceSearchQuery) ||
-          String(p.author || '').toLowerCase().includes(spaceSearchQuery) ||
-          String(p.author_bns || '').toLowerCase().includes(spaceSearchQuery)
+          (rawSpaceQuery && String(p.content || '').toLowerCase().includes(rawSpaceQuery)) ||
+          (rawSpaceQuery && String(p.author || '').toLowerCase().includes(rawSpaceQuery)) ||
+          (rawSpaceQuery && String(p.author_bns || '').toLowerCase().includes(rawSpaceQuery))
         );
       }
 
@@ -17356,6 +17360,8 @@
 
       const raw = String(addressOrHandle || '').trim();
       if (!raw) return;
+      const cleanTarget = raw.replace(/^[#@]+/, '').trim();
+      if (!cleanTarget) return;
 
       // Reset search bar & states cleanly on profile open
       window._profileAllTxs = [];
@@ -17379,7 +17385,7 @@
       modal.scrollTop = 0;
 
       // Initial loading state
-      const displayFallback = raw.startsWith('@') ? raw : (raw.endsWith('.bct') ? '@' + raw : shortAddr(raw));
+      const displayFallback = cleanTarget.startsWith('@') ? cleanTarget : (cleanTarget.endsWith('.bct') ? '@' + cleanTarget : shortAddr(cleanTarget));
       const topNavTitle = document.getElementById('userProfileTopNavTitle');
       const handleEl = document.getElementById('userProfileHandle');
       const addrEl = document.getElementById('userProfileAddress');
@@ -17387,8 +17393,8 @@
       const tagEl = document.getElementById('userProfileTagBadge');
       if (topNavTitle) topNavTitle.textContent = displayFallback;
       if (handleEl) handleEl.textContent = displayFallback;
-      if (addrEl) addrEl.textContent = raw;
-      if (addrShortEl) addrShortEl.textContent = shortAddr(raw);
+      if (addrEl) addrEl.textContent = cleanTarget;
+      if (addrShortEl) addrShortEl.textContent = shortAddr(cleanTarget);
       if (tagEl) {
         tagEl.textContent = 'Loading profile...';
         tagEl.className = 'px-2 py-0.5 rounded-full text-[11px] font-semibold bg-surface-container text-on-surface-variant font-sans';
@@ -17422,7 +17428,7 @@
       });
 
       try {
-        const { ok, body } = await apiFetch(`/profile/${encodeURIComponent(raw)}`);
+        const { ok, body } = await apiFetch(`/profile/${encodeURIComponent(cleanTarget)}`);
         if (!ok || !body.data) {
           showToast(body.message || 'Profile not found', 'warning', true);
           closeUserProfile(true);
@@ -17577,6 +17583,7 @@
 
     function filterUserProfileContent(rawQuery) {
       const q = String(rawQuery || '').trim().toLowerCase();
+      const cleanQ = q.replace(/^[#@]+/, '').trim();
       const res = document.getElementById('profileSearchResultsView');
       const meta = document.getElementById('profileSearchMeta');
       const clr = document.getElementById('btnProfileSearchClear');
@@ -17608,15 +17615,24 @@
 
       const mPosts = posts.filter(p => {
         const hay = `${p.content || ''} ${p.post_id || ''} ${p.tx_hash || ''} ${p.block_index ?? ''}`.toLowerCase();
-        return hay.includes(q);
+        return hay.includes(q) || (cleanQ && hay.includes(cleanQ));
       });
-      const mFollowers = followers.filter(f => `${f.bns_name || ''} ${f.address || ''}`.toLowerCase().includes(q));
-      const mFollowing = following.filter(f => `${f.bns_name || ''} ${f.address || ''}`.toLowerCase().includes(q));
-      const mHandles = handles.filter(h => `${h.name || ''} ${h.tier || ''}`.toLowerCase().includes(q));
+      const mFollowers = followers.filter(f => {
+        const fHay = `${f.bns_name || ''} ${f.address || ''}`.toLowerCase();
+        return fHay.includes(q) || (cleanQ && fHay.includes(cleanQ));
+      });
+      const mFollowing = following.filter(f => {
+        const fHay = `${f.bns_name || ''} ${f.address || ''}`.toLowerCase();
+        return fHay.includes(q) || (cleanQ && fHay.includes(cleanQ));
+      });
+      const mHandles = handles.filter(h => {
+        const hHay = `${h.name || ''} ${h.tier || ''}`.toLowerCase();
+        return hHay.includes(q) || (cleanQ && hHay.includes(cleanQ));
+      });
       const mTxs = txs.filter(tx => {
         const extra = tx.extra_data ? JSON.stringify(tx.extra_data) : '';
         const hay = `${tx.tx_hash || tx.hash || ''} ${tx.tx_type || ''} ${tx.sender || ''} ${tx.receiver || tx.recipient || ''} ${tx.amount ?? ''} ${tx.block_index ?? ''} ${extra}`.toLowerCase();
-        return hay.includes(q);
+        return hay.includes(q) || (cleanQ && hay.includes(cleanQ));
       });
       window._profileFilteredTxList = mTxs.slice(0, 50);
 

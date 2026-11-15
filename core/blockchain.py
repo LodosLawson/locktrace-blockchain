@@ -1666,9 +1666,8 @@ class Blockchain:
     def bns_lookup(self, query: str) -> Optional[dict]:
         with self.lock:
             self._load_state()
-            clean = (query or "").strip().lower()
-            if clean.startswith("@"):
-                clean = clean[1:]
+            clean_raw = (query or "").strip().lstrip("#").lstrip("@").strip()
+            clean = clean_raw.lower()
             if clean.endswith(".bct"):
                 rec = self.bns_records.get(clean)
                 if rec:
@@ -1676,8 +1675,8 @@ class Blockchain:
                 norm = self._normalize_bns_name(clean)
                 return dict(self.bns_records.get(norm)) if norm in self.bns_records else None
 
-            if is_valid_bct_address(query.strip()):
-                addr = query.strip()
+            if is_valid_bct_address(clean_raw):
+                addr = clean_raw
                 primary = self.bns_reverse.get(addr, "")
                 all_owned = [name for name, r in self.bns_records.items() if r.get("owner") == addr]
                 if not primary and all_owned:
@@ -2593,9 +2592,10 @@ class Blockchain:
             if not raw:
                 return None
 
-            clean_cache_key = raw.lower()
-            if clean_cache_key.startswith("@"):
-                clean_cache_key = clean_cache_key[1:]
+            clean_raw = raw.lstrip("#").lstrip("@").strip()
+            if not clean_raw:
+                return None
+            clean_cache_key = clean_raw.lower()
 
             now = time.time()
             cached = self._profile_cache.get(clean_cache_key)
@@ -2613,11 +2613,11 @@ class Blockchain:
             if bns_cand in self.bns_records:
                 target_address = self.bns_records[bns_cand].get("owner", "")
                 primary_handle = self.bns_reverse.get(target_address, bns_cand)
-            elif is_valid_bct_address(raw):
-                target_address = raw
+            elif is_valid_bct_address(clean_raw):
+                target_address = clean_raw
                 primary_handle = self.bns_reverse.get(target_address, "")
-            elif is_valid_bct_address(raw.upper()):
-                target_address = raw.upper()
+            elif is_valid_bct_address(clean_raw.upper()):
+                target_address = clean_raw.upper()
                 primary_handle = self.bns_reverse.get(target_address, "")
             else:
                 norm = self._normalize_bns_name(clean)
@@ -4239,7 +4239,7 @@ class Blockchain:
     def get_wallet_transactions(self, address: str) -> list:
         with self.lock:
             self._load_state()
-            clean_addr = address.strip()
+            clean_addr = str(address or "").strip().lstrip("#").lstrip("@").strip()
 
             # Fast O(log N) indexed path: query SQLite tx_lookup index
             storage = self._get_storage()
