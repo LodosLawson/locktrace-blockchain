@@ -8857,8 +8857,15 @@
         text = (text.slice(0, quoteMatch.index) + text.slice(quoteMatch.index + quoteMatch[0].length)).trim();
       }
 
-      // 1. External URLs (AUD-01: Extracted from raw text BEFORE escaping to prevent link corruption & entity mangling)
-      const urlPlaceholders = [];
+      // Placeholder system to prevent recursive multi-tagging on wallet addresses
+      const placeholders = [];
+      function savePlaceholder(html) {
+        const ph = `\uE000BCT_PH_${placeholders.length}\uE000`;
+        placeholders.push({ placeholder: ph, html });
+        return ph;
+      }
+
+      // 1. External URLs (AUD-01: Extracted from raw text BEFORE escaping to prevent link corruption)
       text = text.replace(/(https?:\/\/[^\s<>"'`]+)/gi, (match) => {
         let urlStr = match;
         let trailing = '';
@@ -8872,9 +8879,7 @@
           const safeHref = escapeHtml(parsed.href);
           const safeDisplay = escapeHtml(urlStr);
           const linkHtml = `<a href="${safeHref}" target="_blank" rel="noopener noreferrer nofollow" class="text-primary hover:underline inline-flex items-center gap-0.5 break-all" onclick="event.stopPropagation();">${safeDisplay}</a>`;
-          const placeholder = `\uE000BCT_URL_${urlPlaceholders.length}\uE000`;
-          urlPlaceholders.push({ placeholder, html: linkHtml });
-          return placeholder + trailing;
+          return savePlaceholder(linkHtml) + trailing;
         } catch (_) {
           return match;
         }
@@ -8886,53 +8891,58 @@
       safe = safe.replace(/@([a-zA-Z0-9_\-\.]+)/g, (match, handle) => {
         const cleanHandle = sanitizeJsAttr(handle);
         const escHandle = escapeHtml(handle);
-        const isWalletMention = /^BCT[a-fA-F0-9]{36,44}$/i.test(handle) || /^BCT[a-fA-F0-9]{3,10}(?:\.\.\.|…)[a-fA-F0-9]{3,10}$/i.test(handle);
-        const displayHandle = isWalletMention && handle.length > 14 ? `@${handle.slice(0, 6)}...${handle.slice(-4)}` : `@${escHandle}`;
-        const filterEntity = isWalletMention ? `#${cleanHandle}` : `@${cleanHandle}`;
-        return `<span class="mention-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('${filterEntity}'); openUserProfile('${cleanHandle}');" title="View Profile & Filter: @${escHandle}">${escapeHtml(displayHandle)}</span>`;
+        const isWallet = /^BCT[a-fA-F0-9]{36,44}$/i.test(handle) || /^BCT[a-fA-F0-9]{3,10}(?:\.\.\.|…)[a-fA-F0-9]{3,10}$/i.test(handle);
+        const displayHandle = isWallet && handle.length > 14 ? `@${handle.slice(0, 6)}...${handle.slice(-4)}` : `@${escHandle}`;
+        const filterEntity = isWallet ? `#${cleanHandle}` : `@${cleanHandle}`;
+        const html = `<span class="mention-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('${filterEntity}'); openUserProfile('${cleanHandle}');" title="View Profile &amp; Filter: @${escHandle}">${escapeHtml(displayHandle)}</span>`;
+        return savePlaceholder(html);
       });
 
-      // 3. Hashtags: #topic (supports Turkish & Unicode letters; wallet tags open profile & stay as active filter)
+      // 3. Hashtags: #topic (supports Unicode letters; wallet tags open profile & stay as active filter)
       safe = safe.replace(/#([a-zA-Z0-9_\-\u00C0-\u017F]+)/g, (match, tag) => {
         const cleanTag = sanitizeJsAttr(tag);
         const escTag = escapeHtml(tag);
         const isWalletTag = /^BCT[a-fA-F0-9]{36,44}$/i.test(tag) || /^BCT[a-fA-F0-9]{3,10}(?:\.\.\.|…)[a-fA-F0-9]{3,10}$/i.test(tag);
         if (isWalletTag) {
           const shortTag = tag.length > 14 ? `#${tag.slice(0, 6)}...${tag.slice(-4)}` : `#${tag}`;
-          return `<span class="hashtag-tag inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors shrink-0 shadow-2xs border border-emerald-500/20" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}'); openUserProfile('${cleanTag}');" title="View Profile & Filter: #${escTag}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
+          const html = `<span class="hashtag-tag inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors shrink-0 shadow-2xs border border-emerald-500/20" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}'); openUserProfile('${cleanTag}');" title="View Profile &amp; Filter: #${escTag}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
+          return savePlaceholder(html);
         }
-        return `<span class="hashtag-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-400 font-medium hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}')" title="Filter topic #${escTag}">#${escTag}</span>`;
+        const html = `<span class="hashtag-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-400 font-medium hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}')" title="Filter topic #${escTag}">#${escTag}</span>`;
+        return savePlaceholder(html);
       });
 
-      // 3.5 Standalone BCT Wallet Addresses in Post: Clickable to open profile & set filter topic
-      // Full 36-44 char addresses
+      // 4. Standalone Full BCT Wallets (36-44 chars)
       safe = safe.replace(/(^|[^a-zA-Z0-9_#@/])(BCT[a-fA-F0-9]{36,44})\b/g, (match, prefix, addr) => {
         const cleanAddr = sanitizeJsAttr(addr);
         const escAddr = escapeHtml(addr);
         const shortTag = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
-        return `${prefix}<span class="wallet-pill inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors border border-emerald-500/20 shadow-2xs" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanAddr}'); openUserProfile('${cleanAddr}');" title="View Profile & Filter: ${escAddr}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
+        const html = `<span class="wallet-pill inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors border border-emerald-500/20 shadow-2xs" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanAddr}'); openUserProfile('${cleanAddr}');" title="View Profile &amp; Filter: ${escAddr}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
+        return prefix + savePlaceholder(html);
       });
 
-      // Shortened addresses like BCT3fec...1572 or BCTd8b8...3eb9
+      // 5. Standalone Shortened BCT Wallets (e.g. BCT3fec...1572 or BCTd8b8…3eb9)
       safe = safe.replace(/(^|[^a-zA-Z0-9_#@/])(BCT[a-fA-F0-9]{3,8}(?:\.\.\.|…)[a-fA-F0-9]{3,8})(?=[^a-zA-Z0-9_]|$)/g, (match, prefix, addr) => {
         const cleanAddr = sanitizeJsAttr(addr);
         const escAddr = escapeHtml(addr);
-        return `${prefix}<span class="wallet-pill inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors border border-emerald-500/20 shadow-2xs" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanAddr}'); openUserProfile('${cleanAddr}');" title="View Profile & Filter: ${escAddr}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(addr)}</span></span>`;
+        const html = `<span class="wallet-pill inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors border border-emerald-500/20 shadow-2xs" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanAddr}'); openUserProfile('${cleanAddr}');" title="View Profile &amp; Filter: ${escAddr}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(addr)}</span></span>`;
+        return prefix + savePlaceholder(html);
       });
 
-      // 4. Cashtags: $BCT, $ETH, $BTC, etc. (LT-WEB-02 Sanitized)
+      // 6. Cashtags ($BCT, $BTC, etc.)
       safe = safe.replace(/\$([a-zA-Z0-9_]{2,10})\b/g, (match, sym) => {
         const s = sanitizeJsAttr(sym).toUpperCase();
         const escSym = escapeHtml(sym.toUpperCase());
-        return `<span class="cashtag-tag inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-secondary/10 text-secondary font-mono font-semibold hover:bg-secondary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('$${s}')" title="Filter symbol $${escSym}">$${escSym}</span>`;
+        const html = `<span class="cashtag-tag inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-secondary/10 text-secondary font-mono font-semibold hover:bg-secondary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('$${s}')" title="Filter symbol $${escSym}">$${escSym}</span>`;
+        return savePlaceholder(html);
       });
 
-      // 5. Restore sanitized URL links (AUD-01: Function-based replaceAll prevents $ regex substitution corruption)
-      for (const item of urlPlaceholders) {
+      // 7. Restore all placeholders in exact order (prevents attribute corruption)
+      for (const item of placeholders) {
         safe = safe.replaceAll(item.placeholder, () => item.html);
       }
 
-      // 6. Line breaks
+      // 8. Line breaks
       safe = safe.replace(/\n/g, '<br/>');
 
       return safe ? (quoteCardHtml ? `${safe}<br/>${quoteCardHtml}` : safe) : quoteCardHtml;
