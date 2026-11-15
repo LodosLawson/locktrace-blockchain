@@ -9,18 +9,18 @@
   <title>BlocTag — Web3 Platform (Developed by LockTrace)</title>
 
   <!-- PWA & iOS/Android Standalone Meta Tags -->
-  <link rel="icon" type="image/svg+xml" href="icons/icon.svg" />
-  <link rel="icon" type="image/png" sizes="32x32" href="icons/icon-32.png" />
-  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/icons/icon-32.png" />
+  <link rel="manifest" href="/manifest.json" />
   <meta name="theme-color" content="#131315" />
   <meta name="mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-capable" content="yes" />
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
   <meta name="apple-mobile-web-app-title" content="BlocTag" />
-  <link rel="apple-touch-icon" href="icons/apple-touch-icon.png" />
-  <link rel="apple-touch-icon" sizes="180x180" href="icons/apple-touch-icon.png" />
-  <link rel="apple-touch-icon" sizes="192x192" href="icons/icon-192.png" />
-  <link rel="apple-touch-icon" sizes="512x512" href="icons/icon-512.png" />
+  <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="180x180" href="/icons/apple-touch-icon.png" />
+  <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
+  <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
 
   <!-- Canonical Apex to WWW Redirect (Preserves Deep-Link Hash & Wallet Storage Origin) -->
   <script>
@@ -256,7 +256,7 @@
       <div class="flex items-center gap-2.5 px-2 py-1 cursor-pointer shrink-0" onclick="switchTab('ana-sayfa')">
         <div
           class="w-8 h-8 rounded-full overflow-hidden border border-primary/30 shadow-sm shrink-0 flex items-center justify-center bg-surface-container">
-          <img src="icons/icon.svg" class="w-full h-full object-cover" alt="BlocTag Logo" />
+          <img src="/icons/icon.svg" class="w-full h-full object-cover" alt="BlocTag Logo" />
         </div>
         <div class="flex flex-col min-w-0">
           <span
@@ -466,7 +466,7 @@
         <div
           class="w-7 h-7 rounded-full overflow-hidden border border-primary/30 shrink-0 cursor-pointer flex items-center justify-center bg-surface-container"
           onclick="switchTab('ana-sayfa')" title="BlocTag (Developed by LockTrace)">
-          <img src="icons/icon.svg" class="w-full h-full object-cover" alt="BlocTag" />
+          <img src="/icons/icon.svg" class="w-full h-full object-cover" alt="BlocTag" />
         </div>
         <button
           class="flex items-center gap-1.5 bg-surface-container-low hover:bg-surface-container px-2 sm:px-2.5 py-0.5 sm:py-1 rounded-full border border-outline-variant/30 transition-colors active:scale-95 shrink-0 text-left"
@@ -531,6 +531,12 @@
           <span class="material-symbols-outlined text-[16px]">qr_code_2</span>
         </button>
 
+        <!-- Quick Profile Shortcut -->
+        <button aria-label="My Profile"
+          class="w-7 h-7 rounded-full bg-surface-container-high hover:bg-surface-variant flex items-center justify-center shrink-0 cursor-pointer text-primary active:scale-95 transition-all border border-primary/25"
+          onclick="openMyUserProfile()" title="My On-Chain Profile" type="button">
+          <span class="material-symbols-outlined text-[16px]">person</span>
+        </button>
         <!-- Menu Drawer Toggle -->
         <button aria-label="Navigation Menu"
           class="w-7 h-7 rounded-full bg-surface-container-high hover:bg-surface-variant flex items-center justify-center shrink-0 cursor-pointer text-on-surface active:scale-95 transition-all border border-outline-variant/20"
@@ -550,10 +556,17 @@
         </button>
         <h1 class="font-headline-sm text-headline-sm text-on-surface tracking-tight truncate">Space Post Details</h1>
       </div>
-      <button aria-label="Profile" class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0"
-        onclick="openReceiveModal()" type="button">
-        <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
-      </button>
+      <div class="flex items-center gap-2 shrink-0">
+        <button aria-label="Share Post"
+          class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant border border-outline-variant/25 flex items-center justify-center shrink-0 text-on-surface cursor-pointer active:scale-95 transition-all"
+          onclick="if (activeDetailPostId) openPostShareModal(activeDetailPostId, event)" title="Share Post" type="button">
+          <span class="material-symbols-outlined text-[17px]">ios_share</span>
+        </button>
+        <button aria-label="My Profile" class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 cursor-pointer active:scale-95 transition-all"
+          onclick="openMyUserProfile()" title="My On-Chain Profile" type="button">
+          <span class="material-symbols-outlined text-on-primary text-[18px]">person</span>
+        </button>
+      </div>
     </div>
   </header>
 
@@ -623,9 +636,9 @@
         onclick="openReceiveModal()" title="Hızlı Cüzdan QR Kodu" type="button">
         <span class="material-symbols-outlined text-[18px]">qr_code_2</span>
       </button>
-      <button aria-label="Wallet Details &amp; QR"
+      <button aria-label="My On-Chain Profile"
         class="w-8 h-8 rounded-full bg-primary flex items-center justify-center shrink-0 cursor-pointer hover:opacity-90 transition-opacity shadow-sm"
-        onclick="openReceiveModal()" type="button">
+        onclick="openMyUserProfile()" title="Open My On-Chain Profile" type="button">
         <span class="material-symbols-outlined text-on-primary text-[18px]" id="desktopVaultAvatarIcon">person</span>
       </button>
     </div>
@@ -1200,6 +1213,28 @@
       <div id="tab-cuzdanim" class="tab-content active flex-col w-full items-center">
         <div class="flex flex-col w-full max-w-[640px] md:max-w-4xl lg:max-w-5xl mx-auto px-margin md:px-6 pb-space-lg">
 
+          <!-- Top Profile Avatar Shortcut Bar -->
+          <div id="walletTopProfileBar" onclick="openMyUserProfile()"
+            class="mt-1 mb-2 px-3.5 py-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/20 hover:border-primary/40 flex items-center justify-between gap-3 cursor-pointer transition-all active:scale-[0.99] shadow-xs group">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div id="walletTopAvatarBox"
+                class="w-9 h-9 rounded-full bg-gradient-to-br from-primary/25 via-emerald-500/20 to-surface-container-highest ring-1 ring-primary/40 flex items-center justify-center shrink-0 text-primary font-mono font-bold text-sm shadow-xs">
+                <span id="walletTopAvatarChar" class="material-symbols-outlined text-[19px]">person</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1.5 min-w-0">
+                  <span id="walletTopProfileName" class="text-xs sm:text-sm font-bold text-on-surface truncate font-mono">My Profile</span>
+                  <span class="material-symbols-outlined text-primary text-[14px] shrink-0" style="font-variation-settings: 'FILL' 1;">verified</span>
+                </div>
+                <span id="walletTopProfileSub" class="text-[10.5px] text-on-surface-variant font-mono truncate">View on-chain identity, posts &amp; activity</span>
+              </div>
+            </div>
+            <div class="flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 group-hover:bg-primary group-hover:text-on-primary text-primary text-[11px] font-semibold shrink-0 transition-colors">
+              <span>Profile</span>
+              <span class="material-symbols-outlined text-[14px]">chevron_right</span>
+            </div>
+          </div>
+
           <!-- Hero Balance Section -->
           <div class="flex flex-col items-center justify-center pt-space-sm pb-space-md text-center">
             <div class="flex items-center gap-space-xs mb-1">
@@ -1239,25 +1274,19 @@
             </div>
           </div>
 
-          <!-- Primary 3-Button Action Row (Send + Receive + Profile) -->
-          <div class="grid grid-cols-3 gap-2 mb-3">
+          <!-- Primary 2-Button Action Row (Send + Receive) -->
+          <div class="grid grid-cols-2 gap-3 mb-4">
             <button
-              class="flex items-center justify-center gap-1.5 h-12 bg-primary-container text-on-primary-container rounded-2xl font-label-md text-label-md active:scale-[0.98] transition-all shadow-sm font-semibold hover:brightness-105"
+              class="flex items-center justify-center gap-2 h-12 bg-primary-container text-on-primary-container rounded-2xl font-label-md text-label-md active:scale-[0.98] transition-all shadow-sm font-semibold hover:brightness-105 cursor-pointer"
               onclick="switchTab('para-gonder')" type="button">
-              <span class="material-symbols-outlined text-[19px]">arrow_upward</span>
+              <span class="material-symbols-outlined text-[20px]">arrow_upward</span>
               <span>Send</span>
             </button>
             <button
-              class="flex items-center justify-center gap-1.5 h-12 bg-surface-container-high text-on-surface rounded-2xl font-label-md text-label-md active:scale-[0.98] transition-all font-semibold hover:bg-surface-variant border border-outline-variant/20"
+              class="flex items-center justify-center gap-2 h-12 bg-surface-container-high text-on-surface rounded-2xl font-label-md text-label-md active:scale-[0.98] transition-all font-semibold hover:bg-surface-variant border border-outline-variant/20 cursor-pointer"
               onclick="openReceiveModal()" type="button">
-              <span class="material-symbols-outlined text-[19px]">arrow_downward</span>
+              <span class="material-symbols-outlined text-[20px]">arrow_downward</span>
               <span>Receive</span>
-            </button>
-            <button
-              class="flex items-center justify-center gap-1.5 h-12 bg-surface-container-high text-emerald-400 rounded-2xl font-label-md text-label-md active:scale-[0.98] transition-all font-semibold hover:bg-surface-variant border border-emerald-500/25"
-              onclick="openMyUserProfile()" type="button" title="View your public on-chain creator profile">
-              <span class="material-symbols-outlined text-[19px]">account_circle</span>
-              <span>My Profile</span>
             </button>
           </div>
 
@@ -1267,21 +1296,19 @@
           <div id="walletValidatorGatewayCard" onclick="switchTab('dugum-paneli')"
             class="mb-4 p-4 rounded-2xl bg-gradient-to-r from-surface-container via-surface-container-high to-surface-container border border-primary/25 hover:border-primary/50 shadow-sm cursor-pointer transition-all active:scale-[0.99] group min-w-0 overflow-hidden">
             <div class="flex items-center justify-between gap-3 min-w-0">
-              <div class="flex items-center gap-3 min-w-0">
+              <div class="flex items-center gap-3 min-w-0 flex-1">
                 <div
                   class="w-10 h-10 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0 border border-primary/30 group-hover:bg-primary group-hover:text-on-primary transition-colors">
                   <span class="material-symbols-outlined text-[22px]">verified_user</span>
                 </div>
-                <div class="min-w-0 flex flex-col">
-                  <div class="flex items-center gap-1.5 flex-wrap">
-                    <span class="font-bold text-xs sm:text-sm text-on-surface truncate">PoS Validator &amp; Düğüm
-                      Paneli</span>
+                <div class="min-w-0 flex-1 flex flex-col">
+                  <div class="flex items-center justify-between gap-2 min-w-0">
+                    <span class="font-bold text-xs sm:text-sm text-on-surface leading-snug truncate">PoS Validator &amp; Düğüm Paneli</span>
                     <span id="hubValidatorBadge"
                       class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[9px] font-bold uppercase tracking-wider shrink-0">Gözlemci</span>
                   </div>
                   <div class="flex items-center gap-2 text-[11px] text-on-surface-variant mt-0.5 min-w-0">
-                    <span id="hubStakeSummaryLabel" class="truncate font-mono">1.000 BCT Staking &amp; Düğüm
-                      Telemetrisi</span>
+                    <span id="hubStakeSummaryLabel" class="truncate font-mono">1.000 BCT Staking &amp; Düğüm Telemetrisi</span>
                   </div>
                 </div>
               </div>
@@ -2129,16 +2156,28 @@
               </div>
               <input autocomplete="off"
                 class="w-full bg-transparent font-body-sm text-body-sm text-on-surface placeholder:text-outline focus:outline-none pr-2 font-mono"
-                id="explorerSearchInput" placeholder="Search Tx Hash, Block #, or BCT Wallet Address..."
+                id="explorerSearchInput" oninput="if(!this.value.trim() && window._activeExplorerSearchQuery) clearExplorerSearch();"
+                placeholder="Search Tx Hash, Block #, .bct Name, or BCT Address..."
                 spellcheck="false" type="text" />
               <button
-                class="bg-primary text-on-primary px-3.5 py-2 rounded-lg font-label-md text-label-md font-semibold flex items-center gap-1 shrink-0 active:scale-95 transition-transform"
+                class="hidden px-2 py-1.5 mr-1 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface-variant text-xs font-semibold items-center gap-1 shrink-0 cursor-pointer transition-colors"
+                id="explorerSearchClearBtn" onclick="clearExplorerSearch()" title="Clear search" type="button">
+                <span class="material-symbols-outlined text-[15px]">close</span>
+              </button>
+              <button
+                class="bg-primary text-on-primary px-3.5 py-2 rounded-lg font-label-md text-label-md font-semibold flex items-center gap-1 shrink-0 active:scale-95 transition-transform cursor-pointer"
                 id="explorerSearchBtn" type="submit">
                 <span>Search</span>
                 <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
               </button>
             </form>
           </section>
+
+          <!-- Strictly Scoped Explorer Search Results View (Hidden until search is active) -->
+          <div id="explorerFilteredResultsView" class="hidden flex-col gap-4 mb-space-lg"></div>
+
+          <!-- Global Explorer Content Wrapper (Hidden while scoped search results are active) -->
+          <div id="explorerDefaultContent" class="flex flex-col flex-1 w-full">
 
           <!-- Official System Wallets & Contracts Quick Link Banner -->
           <section class="mb-space-lg">
@@ -2567,6 +2606,8 @@
               </div>
             </div>
           </footer>
+
+          </div> <!-- /#explorerDefaultContent -->
 
         </div>
       </div>
@@ -4154,16 +4195,27 @@
 
         <!-- 5B: SPACE POST DETAILS & COMMENTS STACK VIEW (Exact Stitch Screen F) -->
         <div id="spacePostDetailView" class="hidden flex-col w-full max-w-[600px] mx-auto px-1 sm:px-2 md:px-0 pb-28">
-          <!-- Desktop Back Bar (Mobile uses #mobileHeaderPostDetail) -->
-          <div class="hidden md:flex items-center gap-2 mb-4">
+          <!-- Desktop Back & Share Bar (Mobile uses #mobileHeaderPostDetail) -->
+          <div class="hidden md:flex items-center justify-between gap-2 mb-4">
+            <div class="flex items-center gap-2">
+              <button
+                class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors cursor-pointer"
+                onclick="closeSpacePostDetail()" type="button">
+                <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+                <span>Back</span>
+              </button>
+              <span class="font-headline-sm text-headline-sm text-on-surface ml-1">Space Post Details</span>
+            </div>
             <button
-              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface font-label-md text-label-md transition-colors"
-              onclick="closeSpacePostDetail()" type="button">
-              <span class="material-symbols-outlined text-[18px]">arrow_back</span>
-              <span>Back to Space Feed</span>
+              class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/25 font-label-md text-label-md font-semibold transition-all cursor-pointer active:scale-95"
+              onclick="if (activeDetailPostId) openPostShareModal(activeDetailPostId, event)" type="button">
+              <span class="material-symbols-outlined text-[16px]">ios_share</span>
+              <span>Share Post</span>
             </button>
-            <span class="font-headline-sm text-headline-sm text-on-surface ml-1">Space Post Details</span>
           </div>
+
+          <!-- Dedicated On-Chain Gateway Banner (Visible when opened from shared URL) -->
+          <div id="sharedPostGatewayBanner" class="hidden mb-4"></div>
 
           <div class="flex flex-col space-y-space-md" id="spacePostDetailBody">
             <!-- Populated dynamically by openSpacePostDetail(postId) -->
@@ -6129,10 +6181,10 @@
   <!-- MODAL: MOBILE ALL-SERVICES & NAVIGATION MENU DRAWER                       -->
   <!-- ========================================================================= -->
   <div
-    class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm hidden items-end sm:items-center justify-center transition-all opacity-0"
+    class="fixed inset-0 z-50 bg-background/85 backdrop-blur-sm hidden items-end sm:items-center justify-center transition-all opacity-0 overscroll-none touch-none"
     id="mobileMenuModal" onclick="if(event.target===this) closeMobileMenuModal();">
     <div
-      class="w-full max-w-lg bg-surface-container rounded-t-3xl sm:rounded-3xl border border-outline-variant/20 p-5 pb-safe flex flex-col gap-4 shadow-2xl max-h-[85vh] overflow-y-auto no-scrollbar transform translate-y-full sm:translate-y-0 transition-transform duration-200"
+      class="w-full max-w-lg bg-surface-container rounded-t-3xl sm:rounded-3xl border border-outline-variant/20 p-5 pb-safe flex flex-col gap-4 shadow-2xl max-h-[85dvh] overflow-y-auto overscroll-contain touch-pan-y no-scrollbar transform translate-y-full sm:translate-y-0 transition-transform duration-200"
       id="mobileMenuDrawerCard">
       <!-- Sheet Handle & Header -->
       <div class="flex flex-col gap-2">
@@ -7371,34 +7423,67 @@
 
   <!-- MODAL: USER & CREATOR PROFILE (NON-CUSTODIAL ON-CHAIN LEDGER)             -->
   <!-- ========================================================================= -->
+  <!-- ========================================================================= -->
+  <!-- FULL-PAGE SCREEN: ON-CHAIN USER PROFILE VIEW                              -->
+  <!-- ========================================================================= -->
   <div
-    class="fixed inset-0 z-50 bg-background/85 backdrop-blur-md hidden items-start sm:items-center justify-center p-3 sm:p-4 pt-12 sm:pt-16 md:pt-20 pb-28 sm:pb-16 overflow-y-auto overflow-x-hidden overscroll-contain"
-    id="userProfileModal" onclick="if(event.target===this) closeUserProfile();">
+    class="fixed inset-0 z-50 bg-surface hidden flex-col overflow-y-auto overflow-x-hidden overscroll-contain transition-opacity duration-150 opacity-0"
+    id="userProfileModal">
+    <!-- Sticky Top Page Bar -->
+    <div class="sticky top-0 z-30 bg-surface/95 backdrop-blur-xl border-b border-outline-variant/20 pt-safe">
+      <div class="w-full max-w-3xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
+        <button
+          class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold transition-all active:scale-95 cursor-pointer border border-outline-variant/20 shrink-0"
+          onclick="closeUserProfile()" type="button" title="Back">
+          <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+          <span>Back</span>
+        </button>
+        <div class="flex flex-col items-center min-w-0">
+          <span class="text-xs font-bold text-on-surface truncate font-mono" id="userProfileTopNavTitle">On-Chain Profile</span>
+          <span class="text-[10px] text-on-surface-variant font-mono truncate">BlocTag Public Identity</span>
+        </div>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button
+            class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-all active:scale-95 cursor-pointer border border-outline-variant/20"
+            onclick="toggleProfileSearch()" type="button" title="Search within this profile">
+            <span class="material-symbols-outlined text-[18px]">search</span>
+          </button>
+          <button
+            class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary text-xs font-semibold transition-all active:scale-95 cursor-pointer border border-primary/25"
+            onclick="shareUserProfile()" type="button" title="Share Profile">
+            <span class="material-symbols-outlined text-[16px]">ios_share</span>
+            <span class="hidden sm:inline">Share</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
     <div
-      class="w-full max-w-2xl max-h-[82dvh] sm:max-h-[85dvh] overflow-y-auto overflow-x-hidden rounded-3xl bg-surface-container flex flex-col shadow-2xl border border-outline-variant/30 transition-all scale-95 opacity-0 mt-2 sm:my-auto mx-auto"
+      class="w-full max-w-3xl mx-auto bg-surface flex flex-col flex-1 transition-all duration-150 translate-y-2 opacity-0 pb-20 sm:px-4 sm:pt-4"
       id="userProfileModalCard">
-      <!-- Header Banner with Gradient -->
+      <!-- Header Banner with Gradient (items-start prevents badge/avatar overlap) -->
       <div
-        class="h-20 sm:h-28 bg-gradient-to-r from-primary/25 via-surface-container-high to-secondary/25 relative rounded-t-3xl p-3 sm:p-4 flex justify-between items-center gap-2">
+        class="h-24 sm:h-28 bg-gradient-to-r from-primary/25 via-surface-container-high to-secondary/25 relative rounded-b-3xl sm:rounded-3xl p-3.5 sm:p-4 flex justify-between items-start gap-2 border-b sm:border border-outline-variant/15">
         <span
-          class="px-2.5 py-1 rounded-full bg-surface-container/90 backdrop-blur-md text-[11px] font-mono text-on-surface flex items-center gap-1.5 border border-outline-variant/20 shadow-sm">
+          class="px-2.5 py-1 rounded-full bg-surface-container/90 backdrop-blur-md text-[11px] font-mono text-on-surface flex items-center gap-1.5 border border-outline-variant/20 shadow-sm shrink-0">
           <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
           <span>BlocTag Identity</span>
         </span>
         <button
-          class="w-9 h-9 sm:w-8 sm:h-8 min-w-[36px] min-h-[36px] rounded-full bg-surface-container/90 backdrop-blur-md hover:bg-surface-variant text-on-surface flex items-center justify-center transition-colors shadow-sm cursor-pointer active:scale-90 z-20"
-          onclick="closeUserProfile()" type="button" title="Close Profile">
-          <span class="material-symbols-outlined text-[20px] sm:text-[18px]">close</span>
+          class="px-2.5 py-1 rounded-full bg-surface-container/90 backdrop-blur-md hover:bg-surface-variant text-on-surface-variant hover:text-primary text-[11px] font-semibold flex items-center gap-1 transition-colors shadow-sm cursor-pointer active:scale-95 z-20 border border-outline-variant/20 shrink-0"
+          onclick="profileInspectExplorer()" type="button" title="Inspect this address in Chain Explorer">
+          <span class="material-symbols-outlined text-[14px]">travel_explore</span>
+          <span>Explorer</span>
         </button>
       </div>
 
       <!-- Profile Avatar & Identity Section -->
       <div class="px-3.5 sm:px-6 pb-6 pt-0 flex flex-col gap-3.5">
-        <!-- Top Row: Avatar & Action Buttons (Mobile-First Protected Header) -->
+        <!-- Top Row: Avatar & Action Buttons (Mobile-First Protected Header, Zero Overlap) -->
         <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
-          <!-- Avatar protruding half into the banner -->
+          <!-- Avatar cleanly anchored to bottom edge of banner -->
           <div
-            class="-mt-10 sm:-mt-12 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-surface-container-highest border-4 border-surface-container flex items-center justify-center shadow-xl text-primary shrink-0 relative overflow-hidden z-10 self-start"
+            class="-mt-7 sm:-mt-9 w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-surface-container-highest border-4 border-surface flex items-center justify-center shadow-xl text-primary shrink-0 relative overflow-hidden z-10 self-start"
             id="userProfileAvatarBox">
             <span class="material-symbols-outlined text-[36px] sm:text-[42px]" id="userProfileAvatarIcon">person</span>
           </div>
@@ -7425,7 +7510,12 @@
             </button>
             <button
               class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-semibold text-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
-              onclick="profileInspectExplorer()" type="button" title="Search in Explorer">
+              id="btnProfileShareAction" onclick="shareUserProfile()" type="button" title="Share Profile Link">
+              <span class="material-symbols-outlined text-[15px]">ios_share</span>
+            </button>
+            <button
+              class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-semibold text-xs flex items-center justify-center transition-all cursor-pointer shrink-0"
+              id="btnProfileSearchToggle" onclick="toggleProfileSearch()" type="button" title="Search within this user's posts, followers, handles &amp; transactions">
               <span class="material-symbols-outlined text-[15px]">search</span>
             </button>
           </div>
@@ -7537,6 +7627,36 @@
           </div>
         </div>
 
+        <!-- Collapsible In-Profile Universal Search Bar -->
+        <div id="profileSearchContainer" class="hidden flex-col gap-2.5 pt-1">
+          <div
+            class="flex items-center gap-2 bg-surface-container-low rounded-2xl p-1.5 border border-primary/30 focus-within:border-primary shadow-xs">
+            <span class="material-symbols-outlined text-primary text-[19px] pl-2 shrink-0">search</span>
+            <input autocomplete="off"
+              class="w-full bg-transparent text-xs sm:text-sm text-on-surface placeholder:text-outline focus:outline-none font-mono"
+              id="profileSearchInput" oninput="filterUserProfileContent(this.value)"
+              placeholder="Search thoughts, followers, following, handles, tx hashes..." spellcheck="false" type="text" />
+            <button
+              class="hidden px-2 py-1 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface-variant text-[11px] font-semibold items-center gap-0.5 cursor-pointer shrink-0"
+              id="btnProfileSearchClear" onclick="clearProfileSearch()" type="button" title="Clear search">
+              <span class="material-symbols-outlined text-[14px]">close</span>
+              <span>Clear</span>
+            </button>
+            <button
+              class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary hover:text-on-primary text-primary text-[11px] font-semibold flex items-center gap-1 transition-colors cursor-pointer shrink-0 border border-outline-variant/20"
+              onclick="profileInspectExplorer()" type="button" title="Open address in full Chain Explorer">
+              <span class="material-symbols-outlined text-[14px]">travel_explore</span>
+              <span class="hidden sm:inline">Explorer</span>
+            </button>
+          </div>
+          <div id="profileSearchMeta" class="hidden text-[11px] text-on-surface-variant font-mono px-1"></div>
+        </div>
+
+        <!-- Unified Live Filtered Search Results (Shown when search query is non-empty) -->
+        <div id="profileSearchResultsView" class="hidden flex-col gap-3 pt-1"></div>
+
+        <!-- Standard Sub Tabs + Sub Tab Views (Hidden while profile search query active) -->
+        <div id="profileNormalSubTabsWrapper" class="flex flex-col gap-3">
         <!-- Sub Tabs (Posts, Followers, Following, Handles, Transactions) -->
         <div
           class="flex items-center gap-1.5 sm:gap-2 border-b border-outline-variant/20 pt-2 overflow-x-auto no-scrollbar">
@@ -7599,6 +7719,7 @@
             <!-- Populated dynamically -->
           </div>
         </div>
+        </div> <!-- /#profileNormalSubTabsWrapper -->
       </div>
     </div>
   </div>
@@ -7729,6 +7850,95 @@
   </div>
   </div>
   </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: EXTERNAL SPACE POST SHARE & ON-CHAIN GATEWAY                       -->
+  <!-- ========================================================================= -->
+  <div
+    class="fixed inset-0 z-[75] bg-background/85 backdrop-blur-md hidden items-end sm:items-center justify-center p-0 sm:p-4 transition-all opacity-0 overscroll-none touch-none"
+    id="postShareModal" onclick="if(event.target===this) closePostShareModal();">
+    <div
+      class="w-full max-w-md bg-surface-container rounded-t-3xl sm:rounded-3xl border border-outline-variant/25 p-5 pb-safe flex flex-col gap-4 shadow-2xl max-h-[88dvh] overflow-y-auto overscroll-contain touch-pan-y transform translate-y-6 sm:translate-y-0 sm:scale-95 transition-all duration-200"
+      id="postShareModalCard">
+      <div class="flex items-center justify-between gap-2">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined text-[20px]">ios_share</span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <h3 class="font-headline-sm text-base font-bold text-on-surface leading-tight">Share On-Chain Post</h3>
+            <span class="text-[11px] text-on-surface-variant font-mono truncate" id="postShareMetaLabel">Verified on LockTrace Ledger</span>
+          </div>
+        </div>
+        <button
+          class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-colors cursor-pointer shrink-0"
+          onclick="closePostShareModal()" type="button" title="Close">
+          <span class="material-symbols-outlined text-[18px]">close</span>
+        </button>
+      </div>
+
+      <!-- Post Excerpt Preview -->
+      <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col gap-1.5">
+        <div class="flex items-center justify-between text-[11px] text-on-surface-variant font-mono">
+          <span id="postShareAuthorLabel" class="font-bold text-primary truncate">@anonymous</span>
+          <span id="postShareBlockBadge" class="px-2 py-0.5 rounded-full bg-surface-container text-[10px]">Block #--</span>
+        </div>
+        <p id="postShareSnippet" class="text-xs sm:text-sm text-on-surface line-clamp-3 leading-relaxed break-words">...</p>
+      </div>
+
+      <!-- Share Link Copy Box -->
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-semibold uppercase tracking-wider text-on-surface-variant" for="postShareUrlInput">Direct Blockchain Post Link</label>
+        <div class="flex items-center gap-2 bg-surface-container-low rounded-xl p-1.5 border border-outline-variant/20">
+          <input id="postShareUrlInput" readonly type="text"
+            class="w-full bg-transparent text-xs font-mono text-primary px-2 focus:outline-none select-all truncate" />
+          <button type="button" onclick="copySharePostLink()"
+            class="px-3 py-1.5 rounded-lg bg-primary text-on-primary text-xs font-bold flex items-center gap-1 shrink-0 active:scale-95 transition-transform cursor-pointer">
+            <span class="material-symbols-outlined text-[15px]">content_copy</span>
+            <span>Copy</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- External Social & System Share Actions -->
+      <div class="grid grid-cols-2 sm:grid-cols-4 gap-2">
+        <button type="button" onclick="triggerNativePostShare()"
+          class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border border-primary/25 text-xs font-bold transition-all active:scale-95 cursor-pointer">
+          <span class="material-symbols-outlined text-[16px]">share</span>
+          <span>Share App</span>
+        </button>
+        <a id="postShareXLink" target="_blank" rel="noopener noreferrer"
+          class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface border border-outline-variant/20 text-xs font-semibold transition-all active:scale-95">
+          <span class="font-mono font-bold">𝕏</span>
+          <span>Post</span>
+        </a>
+        <a id="postShareTelegramLink" target="_blank" rel="noopener noreferrer"
+          class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/25 text-xs font-semibold transition-all active:scale-95">
+          <span class="material-symbols-outlined text-[16px]">send</span>
+          <span>Telegram</span>
+        </a>
+        <a id="postShareWhatsAppLink" target="_blank" rel="noopener noreferrer"
+          class="flex items-center justify-center gap-1.5 py-2.5 px-3 rounded-xl bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/25 text-xs font-semibold transition-all active:scale-95">
+          <span class="material-symbols-outlined text-[16px]">chat</span>
+          <span>WhatsApp</span>
+        </a>
+      </div>
+
+      <!-- Inspect Full Post / Block -->
+      <div class="grid grid-cols-2 gap-2 pt-1 border-t border-outline-variant/15">
+        <button type="button" id="btnPostShareOpenPage"
+          class="py-2.5 px-3 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer">
+          <span class="material-symbols-outlined text-[16px] text-primary">open_in_new</span>
+          <span>View Post Page</span>
+        </button>
+        <button type="button" id="btnPostShareInspectBlock"
+          class="py-2.5 px-3 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 transition-all active:scale-95 cursor-pointer">
+          <span class="material-symbols-outlined text-[16px] text-secondary">deployed_code</span>
+          <span>Inspect Block</span>
+        </button>
+      </div>
+    </div>
   </div>
 
   <!-- ========================================================================= -->
@@ -9420,11 +9630,31 @@
       const deskVaultLabel = document.getElementById('desktopVaultLabel');
       const mobAvatarIcon = document.getElementById('mobileVaultAvatarIcon');
       const deskAvatarIcon = document.getElementById('desktopVaultAvatarIcon');
+      const topAvatarChar = document.getElementById('walletTopAvatarChar');
+      const topProfileName = document.getElementById('walletTopProfileName');
+      const topProfileSub = document.getElementById('walletTopProfileSub');
 
       if (currentAccount && currentAccount.address) {
         const sAddr = shortAddr(currentAccount.address);
         if (mobAddr) mobAddr.textContent = sAddr;
         if (deskAddr) deskAddr.textContent = sAddr;
+
+        const handleName = (typeof currentBnsHandle === 'string' && currentBnsHandle)
+          ? currentBnsHandle
+          : ((Array.isArray(bnsMyHandlesCache) && bnsMyHandlesCache.length) ? (bnsMyHandlesCache[0].name || bnsMyHandlesCache[0] || '') : '');
+        if (topAvatarChar) {
+          const ch = (handleName || currentAccount.address.replace(/^BCT/i, '') || 'B').replace(/^@/, '')[0].toUpperCase();
+          topAvatarChar.className = 'font-mono font-bold text-sm text-primary';
+          topAvatarChar.textContent = ch;
+        }
+        if (topProfileName) {
+          topProfileName.textContent = handleName ? '@' + handleName : sAddr;
+        }
+        if (topProfileSub) {
+          topProfileSub.textContent = handleName
+            ? `${sAddr} · View profile, posts & activity`
+            : 'Public Profile · Posts, followers & ledger';
+        }
 
         // Check if currently active wallet is a Node / Validator Wallet
         checkAndSyncNodeWalletStatus();
@@ -9453,6 +9683,12 @@
       } else {
         if (mobAddr) mobAddr.textContent = 'Open Wallet';
         if (deskAddr) deskAddr.textContent = 'No Wallet Selected';
+        if (topAvatarChar) {
+          topAvatarChar.className = 'material-symbols-outlined text-[19px]';
+          topAvatarChar.textContent = 'person';
+        }
+        if (topProfileName) topProfileName.textContent = 'My Profile';
+        if (topProfileSub) topProfileSub.textContent = 'Create or import wallet to view your profile';
         if (compAuthor) compAuthor.textContent = 'No Wallet Selected';
         if (compSub) compSub.textContent = '· Guest';
         if (spaceAlert) {
@@ -10559,6 +10795,73 @@
       if (list[idx]) openTxDetail(list[idx]);
     }
 
+    // Global iOS-safe Background Scroll Lock for Modals & Overlays
+    const MODAL_SCROLL_LOCK_IDS = [
+      'mobileMenuModal', 'tx-modal', 'receive-modal', 'pin-unlock-modal',
+      'ios-pwa-modal', 'block-detail-modal', 'qr-scanner-modal', 'network-security-modal',
+      'bnsRegisterModal', 'bnsSetPriceModal', 'bnsTransferModal', 'bnsBuyModal',
+      'bnsOfferModal', 'quickComposeModal', 'spaceSettingsModal', 'userProfileModal',
+      'web3TxConfirmModal', 'notificationModal', 'postShareModal'
+    ];
+
+    function syncBodyScrollLock() {
+      const anyOpen = MODAL_SCROLL_LOCK_IDS.some(id => {
+        const el = document.getElementById(id);
+        return el && !el.classList.contains('hidden');
+      });
+      const html = document.documentElement;
+      const body = document.body;
+      if (!html || !body) return;
+
+      if (anyOpen) {
+        if (!window._isBodyScrollLocked) {
+          window._lockedScrollY = window.scrollY || window.pageYOffset || html.scrollTop || 0;
+          window._isBodyScrollLocked = true;
+          html.style.overflow = 'hidden';
+          html.style.overscrollBehavior = 'none';
+          body.style.overflow = 'hidden';
+          body.style.overscrollBehavior = 'none';
+          body.style.position = 'fixed';
+          body.style.top = `-${window._lockedScrollY}px`;
+          body.style.left = '0';
+          body.style.right = '0';
+          body.style.width = '100%';
+        }
+      } else if (window._isBodyScrollLocked) {
+        const restoreY = Number(window._lockedScrollY || 0);
+        window._isBodyScrollLocked = false;
+        html.style.overflow = '';
+        html.style.overscrollBehavior = '';
+        body.style.overflow = '';
+        body.style.overscrollBehavior = '';
+        body.style.position = '';
+        body.style.top = '';
+        body.style.left = '';
+        body.style.right = '';
+        body.style.width = '';
+        try {
+          window.scrollTo({ top: restoreY, left: 0, behavior: 'instant' });
+        } catch (_e) {
+          window.scrollTo(0, restoreY);
+        }
+      }
+    }
+
+    function initModalScrollLockObserver() {
+      if (window._modalScrollObserverInitialized || typeof MutationObserver === 'undefined') return;
+      window._modalScrollObserverInitialized = true;
+      const obs = new MutationObserver(() => {
+        syncBodyScrollLock();
+      });
+      MODAL_SCROLL_LOCK_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          obs.observe(el, { attributes: true, attributeFilter: ['class'] });
+        }
+      });
+      syncBodyScrollLock();
+    }
+
     function openTxDetail(tx) {
       selectedModalTx = tx;
       const modal = document.getElementById('tx-modal');
@@ -10607,6 +10910,7 @@
 
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      syncBodyScrollLock();
       requestAnimationFrame(() => {
         card.classList.remove('scale-95', 'opacity-0');
         card.classList.add('scale-100', 'opacity-100');
@@ -10622,6 +10926,7 @@
       setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        syncBodyScrollLock();
       }, 150);
     }
 
@@ -10679,6 +10984,7 @@
       if (modal) {
         modal.classList.remove('hidden');
         modal.classList.add('flex');
+        syncBodyScrollLock();
       }
     }
 
@@ -10687,6 +10993,7 @@
       if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        syncBodyScrollLock();
       }
       const revealBox = document.getElementById('privateKeyRevealContainer');
       const label = document.getElementById('revealKeyLabel');
@@ -10703,6 +11010,7 @@
       if (!modal || !card) return;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      syncBodyScrollLock();
       requestAnimationFrame(() => {
         modal.classList.remove('opacity-0');
         card.classList.remove('translate-y-full');
@@ -10718,6 +11026,7 @@
       setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        syncBodyScrollLock();
       }, 200);
     }
 
@@ -12073,30 +12382,247 @@
       }).join('');
     }
 
+    function clearExplorerSearch() {
+      window._activeExplorerSearchQuery = '';
+      window._explorerFilteredTxList = [];
+      const input = document.getElementById('explorerSearchInput');
+      if (input) input.value = '';
+      const clearBtn = document.getElementById('explorerSearchClearBtn');
+      if (clearBtn) {
+        clearBtn.classList.add('hidden');
+        clearBtn.classList.remove('flex');
+      }
+      const resView = document.getElementById('explorerFilteredResultsView');
+      if (resView) {
+        resView.classList.add('hidden');
+        resView.classList.remove('flex');
+        resView.innerHTML = '';
+      }
+      const defContent = document.getElementById('explorerDefaultContent');
+      if (defContent) defContent.classList.remove('hidden');
+    }
+
+    function openExplorerFilteredTx(idx) {
+      if (Array.isArray(window._explorerFilteredTxList) && window._explorerFilteredTxList[idx]) {
+        openTxDetail(window._explorerFilteredTxList[idx]);
+      }
+    }
+
+    function renderExplorerFilteredResults(data, query) {
+      const resView = document.getElementById('explorerFilteredResultsView');
+      const defContent = document.getElementById('explorerDefaultContent');
+      if (!resView) return;
+
+      if (defContent) defContent.classList.add('hidden');
+      resView.classList.remove('hidden');
+      resView.classList.add('flex');
+
+      const accounts = Array.isArray(data.matched_accounts) ? data.matched_accounts : [];
+      const txs = Array.isArray(data.matched_transactions) ? data.matched_transactions : [];
+      const blocks = Array.isArray(data.matched_blocks) ? data.matched_blocks : [];
+      const totalTx = Number(data.total_tx_count ?? txs.length);
+      const totalBlocks = Number(data.total_block_count ?? blocks.length);
+      window._explorerFilteredTxList = txs;
+
+      const typeBadgeMap = {
+        address: 'Account / Address Match',
+        transaction: 'Transaction Match',
+        block: 'Block Match'
+      };
+      const matchLabel = typeBadgeMap[data.type] || 'Ledger Search';
+
+      const accountsHtml = accounts.length ? `
+        <section class="flex flex-col gap-2">
+          <div class="flex items-center justify-between px-1">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-primary">account_circle</span>
+              <span>Matched Account${accounts.length > 1 ? 's' : ''} (${accounts.length})</span>
+            </h3>
+          </div>
+          <div class="grid grid-cols-1 gap-2.5">
+            ${accounts.map(acct => {
+              const handleTxt = acct.handle ? `@${acct.handle}` : '';
+              const avatarCh = (acct.handle || acct.address || 'B').replace(/^@/, '')[0].toUpperCase();
+              return `
+                <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/20 hover:border-primary/40 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-full bg-gradient-to-br from-primary/25 to-emerald-500/20 border border-primary/30 flex items-center justify-center font-mono font-bold text-primary shrink-0">
+                      ${escapeHtml(avatarCh)}
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        ${handleTxt ? `<span class="font-mono font-bold text-sm text-emerald-400">${escapeHtml(handleTxt)}</span>` : ''}
+                        <span class="px-2 py-0.5 rounded-full bg-surface-container text-[10px] font-mono text-on-surface-variant">${escapeHtml(acct.role || 'On-Chain Account')}</span>
+                      </div>
+                      <span class="font-mono text-xs text-primary break-all select-all mt-0.5">${escapeHtml(acct.address)}</span>
+                      <div class="flex items-center gap-3 text-[11px] text-on-surface-variant font-mono mt-1 flex-wrap">
+                        <span>Balance: <strong class="text-on-surface">${formatBct(acct.balance || 0, 4)} BCT</strong> (${escapeHtml(acct.supply_pct ?? 0)}%)</span>
+                        <span>•</span>
+                        <span>${escapeHtml(acct.transaction_count ?? 0)} Txs</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                    <button type="button" onclick="openUserProfile('${sanitizeJsAttr(acct.address)}', 'txs')"
+                      class="px-3 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold flex items-center gap-1 hover:brightness-105 active:scale-95 transition-all cursor-pointer">
+                      <span>Open Profile</span>
+                      <span class="material-symbols-outlined text-[15px]">arrow_forward</span>
+                    </button>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      ` : '';
+
+      const txsHtml = `
+        <section class="flex flex-col gap-2">
+          <div class="flex items-center justify-between px-1">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-amber-300">receipt_long</span>
+              <span>Related Transactions (${totalTx}${totalTx > txs.length ? `, showing ${txs.length}` : ''})</span>
+            </h3>
+          </div>
+          ${txs.length ? `
+            <div class="flex flex-col gap-2">
+              ${txs.map((tx, idx) => {
+                const txHash = String(tx.tx_hash || tx.hash || '--');
+                const tType = String(tx.tx_type || 'transfer').replace(/_/g, ' ');
+                const statusTxt = tx.status === 'mempool' ? 'Mempool' : (tx.block_index !== undefined && tx.block_index !== null ? `Block #${tx.block_index}` : 'Confirmed');
+                const rcpt = tx.receiver || tx.recipient || 'Protocol';
+                return `
+                  <div onclick="openExplorerFilteredTx(${idx})"
+                    class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 hover:border-primary/40 transition-all cursor-pointer flex flex-col gap-1.5 group">
+                    <div class="flex items-center justify-between gap-2">
+                      <div class="flex items-center gap-2 min-w-0">
+                        <span class="px-2 py-0.5 rounded-full bg-surface-container text-[10px] font-bold text-primary uppercase font-mono shrink-0">${escapeHtml(tType)}</span>
+                        <span class="px-2 py-0.5 rounded-full ${tx.status === 'mempool' ? 'bg-amber-500/15 text-amber-300' : 'bg-emerald-500/15 text-emerald-400'} text-[10px] font-mono font-bold shrink-0">${escapeHtml(statusTxt)}</span>
+                      </div>
+                      <span class="font-mono font-bold text-xs sm:text-sm text-on-surface shrink-0">${formatBct(tx.amount || 0, 4)} BCT</span>
+                    </div>
+                    <div class="flex items-center justify-between gap-2 text-[11px] font-mono text-on-surface-variant">
+                      <span class="truncate">${escapeHtml(shortAddr(tx.sender || 'Genesis'))} → ${escapeHtml(shortAddr(rcpt))}</span>
+                      <span class="shrink-0">${escapeHtml(formatTimeAgo(tx.timestamp))}</span>
+                    </div>
+                    <div class="flex items-center justify-between text-[10.5px] font-mono text-outline pt-1 border-t border-outline-variant/10">
+                      <span class="truncate">Tx: ${escapeHtml(txHash)}</span>
+                      <span class="text-primary group-hover:underline shrink-0 ml-2">Receipt →</span>
+                    </div>
+                  </div>
+                `;
+              }).join('')}
+            </div>
+          ` : '<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/10 text-xs text-on-surface-variant text-center">No transactions matched this query.</div>'}
+        </section>
+      `;
+
+      const blocksHtml = `
+        <section class="flex flex-col gap-2">
+          <div class="flex items-center justify-between px-1">
+            <h3 class="text-xs font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+              <span class="material-symbols-outlined text-[16px] text-secondary">deployed_code</span>
+              <span>Related Blocks (${totalBlocks}${totalBlocks > blocks.length ? `, showing ${blocks.length}` : ''})</span>
+            </h3>
+          </div>
+          ${blocks.length ? `
+            <div class="flex flex-col gap-2">
+              ${blocks.map(blk => `
+                <div onclick="openBlockDetailModal(${Number(blk.index)})"
+                  class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 hover:border-secondary/40 transition-all cursor-pointer flex items-center justify-between gap-3">
+                  <div class="flex flex-col min-w-0">
+                    <div class="flex items-center gap-2 flex-wrap">
+                      <span class="font-mono font-bold text-sm text-secondary">Block #${escapeHtml(blk.index)}</span>
+                      <span class="px-2 py-0.5 rounded-full bg-surface-container text-[10px] font-mono text-on-surface-variant">${escapeHtml(blk.transaction_count ?? 0)} Txs</span>
+                      ${blk.match_reason ? `<span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-mono uppercase">${escapeHtml(blk.match_reason)}</span>` : ''}
+                    </div>
+                    <span class="font-mono text-[10.5px] text-on-surface-variant truncate mt-0.5">Hash: ${escapeHtml(blk.hash || '--')}</span>
+                    <span class="font-mono text-[10.5px] text-outline truncate">Miner: ${escapeHtml(shortAddr(blk.miner || 'Genesis'))} • ${escapeHtml(formatTimeAgo(blk.timestamp))}</span>
+                  </div>
+                  <span class="material-symbols-outlined text-[18px] text-secondary shrink-0">chevron_right</span>
+                </div>
+              `).join('')}
+            </div>
+          ` : '<div class="p-4 rounded-xl bg-surface-container-low border border-outline-variant/10 text-xs text-on-surface-variant text-center">No confirmed blocks matched this query.</div>'}
+        </section>
+      `;
+
+      resView.innerHTML = `
+        <div class="p-3 sm:p-4 rounded-2xl bg-primary/10 border border-primary/25 flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <div class="flex flex-col min-w-0">
+            <span class="text-[10.5px] uppercase tracking-wider font-bold text-primary font-mono">${escapeHtml(matchLabel)}</span>
+            <span class="text-xs sm:text-sm text-on-surface font-mono font-semibold truncate">Filtered results for: ${escapeHtml(query)}</span>
+          </div>
+          <button type="button" onclick="clearExplorerSearch()"
+            class="self-start sm:self-auto px-3 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold border border-outline-variant/25 flex items-center gap-1 shrink-0 cursor-pointer active:scale-95 transition-all">
+            <span class="material-symbols-outlined text-[15px]">filter_alt_off</span>
+            <span>Clear Filter</span>
+          </button>
+        </div>
+        ${accountsHtml}
+        ${txsHtml}
+        ${blocksHtml}
+      `;
+    }
+
     async function triggerExplorerSearch() {
       const input = document.getElementById('explorerSearchInput');
       const q = String(input ? input.value : '').trim();
       if (!q) {
-        showToast('Enter Block #, Tx Hash, or BCT Address to search', 'search');
+        clearExplorerSearch();
+        showToast('Enter Block #, Tx Hash, .bct Name, or BCT Address to search', 'search');
         return;
       }
+
+      window._activeExplorerSearchQuery = q;
+      const clearBtn = document.getElementById('explorerSearchClearBtn');
+      if (clearBtn) {
+        clearBtn.classList.remove('hidden');
+        clearBtn.classList.add('flex');
+      }
+      const resView = document.getElementById('explorerFilteredResultsView');
+      const defContent = document.getElementById('explorerDefaultContent');
+      if (defContent) defContent.classList.add('hidden');
+      if (resView) {
+        resView.classList.remove('hidden');
+        resView.classList.add('flex');
+        resView.innerHTML = `
+          <div class="p-6 rounded-2xl bg-surface-container-low border border-outline-variant/20 text-center text-xs text-on-surface-variant font-mono">
+            Searching blockchain records for <span class="text-primary font-bold">${escapeHtml(q)}</span>...
+          </div>
+        `;
+      }
+
       try {
         const { ok, body } = await apiFetch('/explorer/search?q=' + encodeURIComponent(q));
         if (!ok || !body.data) {
-          showToast(body.message || 'No record found', 'warning', true);
+          if (resView) {
+            resView.innerHTML = `
+              <div class="p-5 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col items-center gap-3 text-center">
+                <span class="material-symbols-outlined text-[28px] text-amber-300">search_off</span>
+                <div class="text-xs sm:text-sm text-on-surface font-semibold">${escapeHtml((body && body.message) || 'No record found matching "' + q + '".')}</div>
+                <button type="button" onclick="clearExplorerSearch()"
+                  class="px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold border border-outline-variant/25 cursor-pointer">
+                  Clear Search &amp; Show Explorer
+                </button>
+              </div>
+            `;
+          }
           return;
         }
-        const { type, result } = body.data;
-        if (type === 'block') {
-          openBlockDetailModal(result.index);
-        } else if (type === 'transaction') {
-          openTxDetail(result);
-        } else if (type === 'address') {
-          showToast(`Adres bulundu: ${shortAddr(result.address)} (${result.transaction_count || 0} işlem, ${formatBct(result.balance, 4)} BCT)`, 'account_balance_wallet');
-          await openUserProfile(result.address, 'txs');
-        }
+        renderExplorerFilteredResults(body.data, q);
       } catch (_e) {
-        showToast('Connection error during search', 'error', true);
+        if (resView) {
+          resView.innerHTML = `
+            <div class="p-5 rounded-2xl bg-surface-container-low border border-error/25 flex flex-col items-center gap-3 text-center">
+              <div class="text-xs text-error font-semibold">Connection error during explorer search.</div>
+              <button type="button" onclick="clearExplorerSearch()"
+                class="px-4 py-2 rounded-xl bg-surface-container-high text-on-surface text-xs font-semibold cursor-pointer">
+                Return to Explorer
+              </button>
+            </div>
+          `;
+        }
       }
     }
 
@@ -12444,9 +12970,9 @@
                 </div>
               </div>
 
-              <!-- Top-Right Action: Details Menu Button -->
+              <!-- Top-Right Action: External Share & Options Menu Button -->
               <div class="flex items-center gap-1 shrink-0">
-                <button aria-label="Post Details" class="text-on-surface-variant hover:text-on-surface p-1.5 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 cursor-pointer" onclick="openSpacePostDetail('${pid}')" type="button">
+                <button aria-label="Share Post &amp; Options" title="Share post or inspect on-chain details" class="text-on-surface-variant hover:text-primary p-1.5 rounded-full hover:bg-surface-container-high transition-colors active:scale-95 cursor-pointer" onclick="event.stopPropagation(); openPostShareModal('${pid}', event)" type="button">
                   <span class="material-symbols-outlined text-[20px]">more_horiz</span>
                 </button>
               </div>
@@ -12503,8 +13029,174 @@
       }).join('');
     }
 
+    let _activeSharePostId = null;
+
+    function _populatePostShareModalFields(post, postId) {
+      const shareUrl = `${window.location.origin}/post/${encodeURIComponent(postId)}`;
+      const authorLabel = post && (post.is_anonymous || post.author_bns === 'anonymous')
+        ? 'Anonymous Author'
+        : (post && post.author_bns ? `@${post.author_bns}` : (post && post.author ? shortAddr(post.author) : 'BlocTag Creator'));
+      const blockBadge = post && post.block_index !== undefined && post.block_index !== null
+        ? `Block #${post.block_index}`
+        : 'Mempool / Pending';
+      const snippet = post && post.content ? String(post.content) : `Viewing on-chain post ${postId} on LockTrace Space.`;
+
+      const aEl = document.getElementById('postShareAuthorLabel');
+      const bEl = document.getElementById('postShareBlockBadge');
+      const sEl = document.getElementById('postShareSnippet');
+      const mEl = document.getElementById('postShareMetaLabel');
+      const urlEl = document.getElementById('postShareUrlInput');
+      if (aEl) aEl.textContent = authorLabel;
+      if (bEl) bEl.textContent = blockBadge;
+      if (sEl) sEl.textContent = snippet;
+      if (mEl) mEl.textContent = post && post.tx_hash ? `Tx: ${String(post.tx_hash).slice(0, 14)}...` : 'Verified on LockTrace Ledger';
+      if (urlEl) urlEl.value = shareUrl;
+
+      const shareText = `${authorLabel} on BlocTag ($BCT): "${snippet.slice(0, 110)}${snippet.length > 110 ? '...' : ''}"`;
+      const xEl = document.getElementById('postShareXLink');
+      const tgEl = document.getElementById('postShareTelegramLink');
+      const waEl = document.getElementById('postShareWhatsAppLink');
+      if (xEl) xEl.href = `https://twitter.com/intent/tweet?text=${encodeURIComponent(shareText)}&url=${encodeURIComponent(shareUrl)}`;
+      if (tgEl) tgEl.href = `https://t.me/share/url?url=${encodeURIComponent(shareUrl)}&text=${encodeURIComponent(shareText)}`;
+      if (waEl) waEl.href = `https://wa.me/?text=${encodeURIComponent(shareText + ' ' + shareUrl)}`;
+
+      const openBtn = document.getElementById('btnPostShareOpenPage');
+      if (openBtn) {
+        openBtn.onclick = () => {
+          closePostShareModal(true);
+          window._sharedPostEntryId = postId;
+          try {
+            window.history.pushState(null, '', '/post/' + encodeURIComponent(postId));
+          } catch (_e) { }
+          openSpacePostDetail(postId);
+        };
+      }
+      const blkBtn = document.getElementById('btnPostShareInspectBlock');
+      if (blkBtn) {
+        const hasBlk = post && post.block_index !== undefined && post.block_index !== null;
+        blkBtn.disabled = !hasBlk;
+        blkBtn.classList.toggle('opacity-40', !hasBlk);
+        blkBtn.onclick = () => {
+          if (!hasBlk) {
+            showToast('Post is awaiting block confirmation', 'hourglass_top');
+            return;
+          }
+          closePostShareModal(true);
+          openBlockDetailModal(post.block_index);
+        };
+      }
+    }
+
+    function openPostShareModal(postId, event) {
+      if (event) event.stopPropagation();
+      if (!postId) return;
+      _activeSharePostId = postId;
+
+      let post = spacePostsCache.find(p => p.post_id === postId);
+      if (!post && currentProfileData && Array.isArray(currentProfileData.recent_posts)) {
+        post = currentProfileData.recent_posts.find(p => p.post_id === postId);
+        if (post) spacePostsCache.unshift(post);
+      }
+
+      _populatePostShareModalFields(post || null, postId);
+
+      const modal = document.getElementById('postShareModal');
+      const card = document.getElementById('postShareModalCard');
+      if (!modal || !card) return;
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      syncBodyScrollLock();
+      requestAnimationFrame(() => {
+        modal.classList.remove('opacity-0');
+        card.classList.remove('translate-y-6', 'sm:scale-95');
+      });
+
+      if (!post) {
+        apiFetch('/space/post/' + encodeURIComponent(postId)).then(({ ok, body }) => {
+          if (ok && body && body.data && _activeSharePostId === postId) {
+            const loaded = body.data;
+            const idx = spacePostsCache.findIndex(p => p.post_id === postId);
+            if (idx >= 0) spacePostsCache[idx] = loaded;
+            else spacePostsCache.unshift(loaded);
+            _populatePostShareModalFields(loaded, postId);
+          }
+        }).catch(() => { });
+      }
+    }
+
+    function closePostShareModal(immediate = false) {
+      const modal = document.getElementById('postShareModal');
+      const card = document.getElementById('postShareModalCard');
+      if (!modal || !card) return;
+      if (immediate) {
+        modal.classList.add('hidden', 'opacity-0');
+        modal.classList.remove('flex');
+        card.classList.add('translate-y-6', 'sm:scale-95');
+        syncBodyScrollLock();
+        return;
+      }
+      modal.classList.add('opacity-0');
+      card.classList.add('translate-y-6', 'sm:scale-95');
+      setTimeout(() => {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        syncBodyScrollLock();
+      }, 180);
+    }
+
+    function copySharePostLink() {
+      const inp = document.getElementById('postShareUrlInput');
+      if (inp && inp.value) {
+        copyText(inp.value, 'Shareable blockchain post link copied!');
+      }
+    }
+
+    async function triggerNativePostShare() {
+      const inp = document.getElementById('postShareUrlInput');
+      const snip = document.getElementById('postShareSnippet');
+      const url = inp ? inp.value : window.location.href;
+      const text = snip ? snip.textContent : 'View this verified post on BlocTag ($BCT)';
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'BlocTag ($BCT) On-Chain Post',
+            text: text.slice(0, 140),
+            url
+          });
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+      copyText(url, 'Share link copied to clipboard!');
+    }
+
+    function openSpacePostFromProfile(postId) {
+      if (!postId) return;
+      const profileAddr = currentProfileData && currentProfileData.address ? currentProfileData.address : '';
+      if (currentProfileData && Array.isArray(currentProfileData.recent_posts)) {
+        const found = currentProfileData.recent_posts.find(p => p.post_id === postId);
+        if (found) {
+          const existingIdx = spacePostsCache.findIndex(p => p.post_id === postId);
+          if (existingIdx >= 0) spacePostsCache[existingIdx] = Object.assign({}, spacePostsCache[existingIdx], found);
+          else spacePostsCache.unshift(found);
+        }
+      }
+      closeUserProfile(true);
+      window._returnToProfileAddress = profileAddr;
+      openSpacePostDetail(postId);
+    }
+
     function openSpacePostDetail(postId) {
+      if (!postId) return;
+      const spaceTab = document.getElementById('tab-space');
+      if (spaceTab && !spaceTab.classList.contains('active')) {
+        switchTab('space', false, false);
+      }
+
       activeDetailPostId = postId;
+      window._loadingDetailPostId = postId;
+
       const feedView = document.getElementById('spaceFeedMainView');
       const detailView = document.getElementById('spacePostDetailView');
       const hdrDefault = document.getElementById('mobileHeaderDefault');
@@ -12526,9 +13218,12 @@
       renderSpacePostDetailContent(postId);
       window.scrollTo(0, 0);
 
-      // Fetch fresh comments & earnings in background
+      // Fetch fresh post payload, comments & royalties from blockchain node
       apiFetch('/space/post/' + encodeURIComponent(postId)).then(({ ok, body }) => {
-        if (ok && body.data) {
+        if (window._loadingDetailPostId === postId) {
+          window._loadingDetailPostId = null;
+        }
+        if (ok && body && body.data) {
           const updated = body.data;
           const idx = spacePostsCache.findIndex(p => p.post_id === postId);
           if (idx >= 0) {
@@ -12536,21 +13231,34 @@
           } else {
             spacePostsCache.unshift(updated);
           }
+        }
+        if (activeDetailPostId === postId) {
+          renderSpacePostDetailContent(postId);
+        }
+      }).catch(() => {
+        if (window._loadingDetailPostId === postId) {
+          window._loadingDetailPostId = null;
           if (activeDetailPostId === postId) {
             renderSpacePostDetailContent(postId);
           }
         }
-      }).catch(() => { });
+      });
     }
 
     function resetSpaceDetailChrome() {
       activeDetailPostId = null;
+      window._loadingDetailPostId = null;
       const feedView = document.getElementById('spaceFeedMainView');
       const detailView = document.getElementById('spacePostDetailView');
       const hdrDefault = document.getElementById('mobileHeaderDefault');
       const hdrDetail = document.getElementById('mobileHeaderPostDetail');
       const mobNav = document.getElementById('mobile-nav');
+      const gwBanner = document.getElementById('sharedPostGatewayBanner');
 
+      if (gwBanner) {
+        gwBanner.classList.add('hidden');
+        gwBanner.innerHTML = '';
+      }
       if (detailView) {
         detailView.classList.add('hidden');
         detailView.classList.remove('flex');
@@ -12566,15 +13274,51 @@
 
     function closeSpacePostDetail() {
       resetSpaceDetailChrome();
+      window._sharedPostEntryId = null;
+      if (
+        window.location.pathname.startsWith('/post/') ||
+        window.location.pathname.startsWith('/p/') ||
+        window.location.search.includes('post=') ||
+        (window.location.hash || '').startsWith('#post-')
+      ) {
+        try {
+          window.history.replaceState(null, '', '/#space');
+        } catch (_e) { }
+      }
+      if (window._returnToProfileAddress) {
+        const backAddr = window._returnToProfileAddress;
+        window._returnToProfileAddress = '';
+        openUserProfile(backAddr, 'posts');
+        return;
+      }
       renderSpacePosts();
     }
 
     function renderSpacePostDetailContent(postId) {
       const container = document.getElementById('spacePostDetailBody');
+      const gwBanner = document.getElementById('sharedPostGatewayBanner');
       if (!container) return;
       const post = spacePostsCache.find(p => p.post_id === postId);
       if (!post) {
-        container.innerHTML = '<div class="p-6 text-center text-on-surface-variant bg-surface-container-low rounded-xl">Post not found.</div>';
+        if (gwBanner) gwBanner.classList.add('hidden');
+        if (window._loadingDetailPostId === postId) {
+          container.innerHTML = `
+            <div class="p-8 text-center text-on-surface-variant bg-surface-container rounded-2xl border border-outline-variant/15 flex flex-col items-center gap-2.5">
+              <span class="material-symbols-outlined text-[28px] text-primary animate-spin">sync</span>
+              <span class="text-xs font-mono">Fetching on-chain post <strong class="text-primary">${escapeHtml(postId)}</strong> from LockTrace ledger...</span>
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div class="p-6 text-center text-on-surface-variant bg-surface-container-low rounded-2xl border border-outline-variant/15 flex flex-col items-center gap-3">
+              <span class="material-symbols-outlined text-[28px] text-amber-300">search_off</span>
+              <span class="text-xs sm:text-sm text-on-surface font-semibold">On-chain post could not be found.</span>
+              <button type="button" onclick="closeSpacePostDetail()" class="px-4 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer">
+                Return to Space Feed
+              </button>
+            </div>
+          `;
+        }
         return;
       }
 
@@ -12585,10 +13329,59 @@
       const earned = Number(post.author_earnings || 0);
       const pid = sanitizeJsAttr(post.post_id);
 
+      if (gwBanner) {
+        if (window._sharedPostEntryId && window._sharedPostEntryId === postId) {
+          gwBanner.classList.remove('hidden');
+          gwBanner.innerHTML = `
+            <div class="p-4 rounded-2xl bg-gradient-to-br from-primary/15 via-surface-container to-secondary/10 border border-primary/30 shadow-md flex flex-col gap-3">
+              <div class="flex items-start justify-between gap-2">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-9 h-9 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                    <span class="material-symbols-outlined text-[20px]">verified</span>
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-xs sm:text-sm font-bold text-on-surface">Verified On-Chain BlocTag Post</span>
+                    <span class="text-[11px] text-on-surface-variant font-mono truncate">Block #${escapeHtml(post.block_index ?? '--')} • Tx: ${escapeHtml(String(post.tx_hash || '--').slice(0, 14))}...</span>
+                  </div>
+                </div>
+                <button type="button" onclick="openPostShareModal('${pid}', event)"
+                  class="px-2.5 py-1 rounded-full bg-surface-container-high hover:bg-surface-variant text-primary text-[11px] font-bold flex items-center gap-1 shrink-0 cursor-pointer">
+                  <span class="material-symbols-outlined text-[14px]">ios_share</span>
+                  <span>Share</span>
+                </button>
+              </div>
+              <p class="text-xs text-on-surface-variant leading-relaxed">
+                This permanent post is fetched directly from the LockTrace blockchain. Explore the full Space feed or join on-chain.
+              </p>
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="closeSpacePostDetail()"
+                  class="px-3 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold flex items-center gap-1 hover:brightness-105 active:scale-95 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined text-[15px]">forum</span>
+                  <span>Explore Space Feed</span>
+                </button>
+                <button type="button" onclick="window._sharedPostEntryId=null; window._returnToProfileAddress=''; resetSpaceDetailChrome(); switchTab('yeni-cuzdan')"
+                  class="px-3 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-variant text-emerald-400 border border-emerald-500/25 text-xs font-semibold flex items-center gap-1 cursor-pointer">
+                  <span class="material-symbols-outlined text-[15px]">account_balance_wallet</span>
+                  <span>Create Wallet (+1 BCT)</span>
+                </button>
+                <button type="button" onclick="window._sharedPostEntryId=null; window._returnToProfileAddress=''; resetSpaceDetailChrome(); switchTab('ag-ve-explorer')"
+                  class="px-3 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface border border-outline-variant/20 text-xs font-semibold flex items-center gap-1 cursor-pointer">
+                  <span class="material-symbols-outlined text-[15px]">explore</span>
+                  <span>Chain Explorer</span>
+                </button>
+              </div>
+            </div>
+          `;
+        } else {
+          gwBanner.classList.add('hidden');
+          gwBanner.innerHTML = '';
+        }
+      }
+
       container.innerHTML = `
         <!-- Expanded Main Post Card (Exact Stitch Screen F) -->
         <article class="bg-surface-container rounded-2xl p-space-md space-y-space-md border border-outline-variant/15">
-          <div class="flex items-center justify-between">
+          <div class="flex items-center justify-between gap-2">
             <div class="flex items-center space-x-3 min-w-0">
               <div class="relative shrink-0 cursor-pointer hover:scale-105 transition" onclick="openUserProfile('${sanitizeJsAttr(post.author)}')" title="View profile">
                 <div class="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center ring-2 ring-primary/40">
@@ -12615,6 +13408,10 @@
                 </div>
               </div>
             </div>
+            <button type="button" onclick="openPostShareModal('${pid}', event)" aria-label="Share Post" title="Share this on-chain post"
+              class="w-9 h-9 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface-variant hover:text-primary flex items-center justify-center shrink-0 transition-colors cursor-pointer active:scale-95">
+              <span class="material-symbols-outlined text-[19px]">more_horiz</span>
+            </button>
           </div>
 
           <div class="space-y-3">
@@ -13048,6 +13845,10 @@
 
     // Global Modal & Overlay Dismissal Helper
     function closeTopmostActiveModal() {
+      if (!document.getElementById('postShareModal')?.classList.contains('hidden')) {
+        if (typeof closePostShareModal === 'function') closePostShareModal();
+        return true;
+      }
       if (!document.getElementById('network-security-modal')?.classList.contains('hidden')) {
         closeNetworkSecurityModal();
         return true;
@@ -15658,6 +16459,7 @@
     }
 
     function initApp() {
+      initModalScrollLockObserver();
       loadRpcSettings();
       updateRpcBadgeUI();
       setupPwaHandlers();
@@ -15666,7 +16468,9 @@
       syncWalletHeaderUI();
       updateVaultControlsUI();
       renderBalanceFigures(currentAccount ? currentAccount.balance : 0);
-      fetchAndSyncMyBnsHandles();
+      fetchAndSyncMyBnsHandles().then(() => {
+        if (typeof syncWalletHeaderUI === 'function') syncWalletHeaderUI();
+      });
 
       initNotificationSystem();
       if (currentAccount && currentAccount.address) {
@@ -15681,9 +16485,25 @@
       refreshExplorerData();
       refreshSystemWalletsData();
 
-      const hashTab = (window.location.hash || '').replace(/^#/, '').trim();
-      const initialTab = hashTab || (currentAccount && currentAccount.address ? 'cuzdanim' : 'ana-sayfa');
+      const urlParams = new URLSearchParams(window.location.search || '');
+      const cleanPath = (window.location.pathname || '').replace(/\/+$/, '');
+      const pathPostMatch = cleanPath.match(/^\/(?:post|p)\/([^/]+)$/);
+      const hashRaw = (window.location.hash || '').replace(/^#/, '').trim();
+      const sharedPostId = pathPostMatch
+        ? decodeURIComponent(pathPostMatch[1])
+        : (urlParams.get('post') ? urlParams.get('post').trim() : (hashRaw.startsWith('post-') ? hashRaw.slice(5).trim() : ''));
+      const sharedProfileId = urlParams.get('profile') ? urlParams.get('profile').trim() : '';
+
+      const hashTab = hashRaw.startsWith('post-') ? 'space' : hashRaw;
+      const initialTab = sharedPostId ? 'space' : (hashTab || (currentAccount && currentAccount.address ? 'cuzdanim' : 'ana-sayfa'));
       switchTab(initialTab, false);
+
+      if (sharedPostId) {
+        window._sharedPostEntryId = sharedPostId;
+        openSpacePostDetail(sharedPostId);
+      } else if (sharedProfileId) {
+        setTimeout(() => { openUserProfile(sharedProfileId); }, 120);
+      }
 
       // Pause background polling when tab is hidden (prevents iOS WebKit battery/memory crashes)
       let isPollActive = false;
@@ -16125,16 +16945,36 @@
       const raw = String(addressOrHandle || '').trim();
       if (!raw) return;
 
-      // Ensure modal and card start scrolled to the top on mobile
+      // Reset search bar & states cleanly on profile open
+      window._profileAllTxs = [];
+      window._profileFilteredTxList = [];
+      const searchBox = document.getElementById('profileSearchContainer');
+      const searchInput = document.getElementById('profileSearchInput');
+      const searchRes = document.getElementById('profileSearchResultsView');
+      const searchMeta = document.getElementById('profileSearchMeta');
+      const searchClear = document.getElementById('btnProfileSearchClear');
+      const normalTabs = document.getElementById('profileNormalSubTabsWrapper');
+      const searchBtn = document.getElementById('btnProfileSearchToggle');
+      if (searchBox) searchBox.classList.add('hidden');
+      if (searchInput) searchInput.value = '';
+      if (searchRes) { searchRes.classList.add('hidden'); searchRes.innerHTML = ''; }
+      if (searchMeta) { searchMeta.classList.add('hidden'); searchMeta.textContent = ''; }
+      if (searchClear) { searchClear.classList.add('hidden'); searchClear.classList.remove('flex'); }
+      if (normalTabs) normalTabs.classList.remove('hidden');
+      if (searchBtn) searchBtn.classList.remove('bg-primary', 'text-on-primary');
+
+      // Ensure full-page profile always starts at top
       modal.scrollTop = 0;
-      card.scrollTop = 0;
 
       // Initial loading state
+      const displayFallback = raw.startsWith('@') ? raw : (raw.endsWith('.bct') ? '@' + raw : shortAddr(raw));
+      const topNavTitle = document.getElementById('userProfileTopNavTitle');
       const handleEl = document.getElementById('userProfileHandle');
       const addrEl = document.getElementById('userProfileAddress');
       const addrShortEl = document.getElementById('userProfileAddressShort');
       const tagEl = document.getElementById('userProfileTagBadge');
-      if (handleEl) handleEl.textContent = raw.startsWith('@') ? raw : (raw.endsWith('.bct') ? '@' + raw : shortAddr(raw));
+      if (topNavTitle) topNavTitle.textContent = displayFallback;
+      if (handleEl) handleEl.textContent = displayFallback;
       if (addrEl) addrEl.textContent = raw;
       if (addrShortEl) addrShortEl.textContent = shortAddr(raw);
       if (tagEl) {
@@ -16156,47 +16996,65 @@
       document.getElementById('profileSubViewHandles').innerHTML = '';
       document.getElementById('profileSubViewTxs').innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs">Loading ledger transactions...</div>';
 
+      if (typeof applyPwaBackButtonUI === 'function') applyPwaBackButtonUI();
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      syncBodyScrollLock();
       modal.scrollTop = 0;
-      card.scrollTop = 0;
 
       requestAnimationFrame(() => {
-        card.classList.remove('scale-95', 'opacity-0');
-        card.classList.add('scale-100', 'opacity-100');
+        modal.classList.remove('opacity-0');
+        card.classList.remove('translate-y-2', 'opacity-0');
+        card.classList.add('translate-y-0', 'opacity-100');
         modal.scrollTop = 0;
-        card.scrollTop = 0;
       });
 
       try {
         const { ok, body } = await apiFetch(`/profile/${encodeURIComponent(raw)}`);
         if (!ok || !body.data) {
           showToast(body.message || 'Profile not found', 'warning', true);
-          closeUserProfile();
+          closeUserProfile(true);
           return;
         }
 
         currentProfileData = body.data;
         renderUserProfileData(currentProfileData, initialTab);
-        if (card) card.scrollTop = 0;
-        if (modal) modal.scrollTop = 0;
+        modal.scrollTop = 0;
       } catch (err) {
         showToast('Failed to load profile', 'error', true);
-        closeUserProfile();
+        closeUserProfile(true);
       }
     }
 
-    function closeUserProfile() {
+    function closeUserProfile(immediate = false) {
       const modal = document.getElementById('userProfileModal');
       const card = document.getElementById('userProfileModalCard');
       if (!modal || !card) return;
-      card.classList.remove('scale-100', 'opacity-100');
-      card.classList.add('scale-95', 'opacity-0');
-      if (closeProfileTimeout) clearTimeout(closeProfileTimeout);
+      if (closeProfileTimeout) {
+        clearTimeout(closeProfileTimeout);
+        closeProfileTimeout = null;
+      }
+      if ((window.location.search || '').includes('profile=')) {
+        try {
+          window.history.replaceState(null, '', window.location.pathname + window.location.hash);
+        } catch (_e) { }
+      }
+      if (immediate) {
+        modal.classList.add('hidden', 'opacity-0');
+        modal.classList.remove('flex');
+        card.classList.remove('translate-y-0', 'opacity-100');
+        card.classList.add('translate-y-2', 'opacity-0');
+        syncBodyScrollLock();
+        return;
+      }
+      modal.classList.add('opacity-0');
+      card.classList.remove('translate-y-0', 'opacity-100');
+      card.classList.add('translate-y-2', 'opacity-0');
       closeProfileTimeout = setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
         closeProfileTimeout = null;
+        syncBodyScrollLock();
       }, 150);
     }
 
@@ -16214,7 +17072,7 @@
     function profileSendCrypto() {
       if (!currentProfileData || !currentProfileData.address) return;
       const targetAddr = currentProfileData.address;
-      closeUserProfile();
+      closeUserProfile(true);
       switchTab('para-gonder');
       const input = document.getElementById('sendRecipientInput');
       if (input) {
@@ -16232,9 +17090,237 @@
     function profileInspectExplorer() {
       if (!currentProfileData || !currentProfileData.address) return;
       const addr = currentProfileData.address;
-      closeUserProfile();
+      closeUserProfile(true);
       switchTab('ag-ve-explorer');
       inspectHolderAddress(addr);
+    }
+
+    async function shareUserProfile() {
+      if (!currentProfileData || !currentProfileData.address) return;
+      const param = currentProfileData.primary_bns || currentProfileData.address;
+      const url = `${window.location.origin}/?profile=${encodeURIComponent(param)}`;
+      const label = currentProfileData.primary_bns ? `@${currentProfileData.primary_bns}` : shortAddr(currentProfileData.address);
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: `${label} — BlocTag On-Chain Profile`,
+            text: `Explore ${label}'s on-chain thoughts, holdings, and transactions on LockTrace Blockchain`,
+            url
+          });
+          return;
+        } catch (err) {
+          if (err && err.name === 'AbortError') return;
+        }
+      }
+      copyText(url, 'Profile link copied to clipboard!');
+    }
+
+    function toggleProfileSearch() {
+      const container = document.getElementById('profileSearchContainer');
+      const inp = document.getElementById('profileSearchInput');
+      const toggleBtn = document.getElementById('btnProfileSearchToggle');
+      if (!container) return;
+      const opening = container.classList.contains('hidden');
+      if (opening) {
+        container.classList.remove('hidden');
+        container.classList.add('flex');
+        if (toggleBtn) toggleBtn.classList.add('bg-primary', 'text-on-primary');
+        if (inp) setTimeout(() => inp.focus(), 50);
+      } else {
+        container.classList.add('hidden');
+        container.classList.remove('flex');
+        if (toggleBtn) toggleBtn.classList.remove('bg-primary', 'text-on-primary');
+        clearProfileSearch();
+      }
+    }
+
+    function clearProfileSearch() {
+      const inp = document.getElementById('profileSearchInput');
+      const res = document.getElementById('profileSearchResultsView');
+      const meta = document.getElementById('profileSearchMeta');
+      const clr = document.getElementById('btnProfileSearchClear');
+      const normal = document.getElementById('profileNormalSubTabsWrapper');
+      if (inp) inp.value = '';
+      if (res) {
+        res.classList.add('hidden');
+        res.classList.remove('flex');
+        res.innerHTML = '';
+      }
+      if (meta) {
+        meta.classList.add('hidden');
+        meta.textContent = '';
+      }
+      if (clr) {
+        clr.classList.add('hidden');
+        clr.classList.remove('flex');
+      }
+      if (normal) normal.classList.remove('hidden');
+    }
+
+    function openProfileFilteredTxDetail(idx) {
+      if (Array.isArray(window._profileFilteredTxList) && window._profileFilteredTxList[idx]) {
+        openTxDetail(window._profileFilteredTxList[idx]);
+      }
+    }
+
+    function filterUserProfileContent(rawQuery) {
+      const q = String(rawQuery || '').trim().toLowerCase();
+      const res = document.getElementById('profileSearchResultsView');
+      const meta = document.getElementById('profileSearchMeta');
+      const clr = document.getElementById('btnProfileSearchClear');
+      const normal = document.getElementById('profileNormalSubTabsWrapper');
+      if (!res || !currentProfileData) return;
+
+      if (!q) {
+        res.classList.add('hidden');
+        res.classList.remove('flex');
+        res.innerHTML = '';
+        if (meta) { meta.classList.add('hidden'); meta.textContent = ''; }
+        if (clr) { clr.classList.add('hidden'); clr.classList.remove('flex'); }
+        if (normal) normal.classList.remove('hidden');
+        return;
+      }
+
+      if (clr) { clr.classList.remove('hidden'); clr.classList.add('flex'); }
+      if (normal) normal.classList.add('hidden');
+      res.classList.remove('hidden');
+      res.classList.add('flex');
+
+      const posts = Array.isArray(currentProfileData.recent_posts) ? currentProfileData.recent_posts : [];
+      const followers = Array.isArray(currentProfileData.followers) ? currentProfileData.followers : [];
+      const following = Array.isArray(currentProfileData.following) ? currentProfileData.following : [];
+      const handles = Array.isArray(currentProfileData.owned_handles) ? currentProfileData.owned_handles : [];
+      const txs = Array.isArray(window._profileAllTxs) && window._profileAllTxs.length
+        ? window._profileAllTxs
+        : (Array.isArray(currentProfileData.recent_transactions) ? currentProfileData.recent_transactions : []);
+
+      const mPosts = posts.filter(p => {
+        const hay = `${p.content || ''} ${p.post_id || ''} ${p.tx_hash || ''} ${p.block_index ?? ''}`.toLowerCase();
+        return hay.includes(q);
+      });
+      const mFollowers = followers.filter(f => `${f.bns_name || ''} ${f.address || ''}`.toLowerCase().includes(q));
+      const mFollowing = following.filter(f => `${f.bns_name || ''} ${f.address || ''}`.toLowerCase().includes(q));
+      const mHandles = handles.filter(h => `${h.name || ''} ${h.tier || ''}`.toLowerCase().includes(q));
+      const mTxs = txs.filter(tx => {
+        const extra = tx.extra_data ? JSON.stringify(tx.extra_data) : '';
+        const hay = `${tx.tx_hash || tx.hash || ''} ${tx.tx_type || ''} ${tx.sender || ''} ${tx.receiver || tx.recipient || ''} ${tx.amount ?? ''} ${tx.block_index ?? ''} ${extra}`.toLowerCase();
+        return hay.includes(q);
+      });
+      window._profileFilteredTxList = mTxs.slice(0, 50);
+
+      const totalMatches = mPosts.length + mFollowers.length + mFollowing.length + mHandles.length + mTxs.length;
+      if (meta) {
+        meta.classList.remove('hidden');
+        meta.textContent = `${totalMatches} match${totalMatches === 1 ? '' : 'es'} across Thoughts (${mPosts.length}), Followers (${mFollowers.length}), Following (${mFollowing.length}), Handles (${mHandles.length}), Ledger (${mTxs.length})`;
+      }
+
+      if (totalMatches === 0) {
+        res.innerHTML = `
+          <div class="py-8 px-4 rounded-2xl bg-surface-container-low border border-outline-variant/15 text-center flex flex-col items-center gap-2">
+            <span class="material-symbols-outlined text-[24px] text-outline">search_off</span>
+            <span class="text-xs text-on-surface-variant">No profile activity matched "<strong class="text-on-surface">${escapeHtml(rawQuery)}</strong>".</span>
+          </div>
+        `;
+        return;
+      }
+
+      const sections = [];
+      if (mPosts.length) {
+        sections.push(`
+          <div class="flex flex-col gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-primary font-mono px-1">Thoughts / Posts (${mPosts.length})</span>
+            ${mPosts.map(p => {
+              const pid = sanitizeJsAttr(p.post_id);
+              return `
+                <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/15 hover:border-primary/40 transition cursor-pointer" onclick="openSpacePostFromProfile('${pid}')">
+                  <div class="flex items-center justify-between text-[11px] text-on-surface-variant mb-1 font-mono">
+                    <span>Block #${escapeHtml(p.block_index ?? '--')}</span>
+                    <span>${escapeHtml(formatTimeAgo(p.timestamp))}</span>
+                  </div>
+                  <p class="text-xs sm:text-sm text-on-surface line-clamp-3">${formatSpaceBodyHtml(p.content)}</p>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `);
+      }
+      if (mHandles.length) {
+        sections.push(`
+          <div class="flex flex-col gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400 font-mono px-1">BNS Handles (${mHandles.length})</span>
+            ${mHandles.map(h => `
+              <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/15 flex items-center justify-between">
+                <span class="font-mono font-bold text-xs sm:text-sm text-emerald-400">@${escapeHtml(h.name)}</span>
+                <span class="text-[10px] font-mono uppercase px-2 py-0.5 rounded bg-surface-container text-on-surface-variant">${escapeHtml(h.tier || 'std')}</span>
+              </div>
+            `).join('')}
+          </div>
+        `);
+      }
+      if (mFollowers.length) {
+        sections.push(`
+          <div class="flex flex-col gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-emerald-400 font-mono px-1">Followers (${mFollowers.length})</span>
+            ${mFollowers.map(f => {
+              const addr = (f.address || '').trim();
+              const lbl = f.bns_name ? `@${f.bns_name}` : shortAddr(addr);
+              return `
+                <div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/15 hover:border-emerald-400/40 flex items-center justify-between cursor-pointer" onclick="openUserProfile('${sanitizeJsAttr(addr)}')">
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface truncate">${escapeHtml(lbl)}</span>
+                    <span class="font-mono text-[10px] text-on-surface-variant truncate">${escapeHtml(addr)}</span>
+                  </div>
+                  <span class="material-symbols-outlined text-[16px] text-emerald-400 shrink-0">arrow_forward</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `);
+      }
+      if (mFollowing.length) {
+        sections.push(`
+          <div class="flex flex-col gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-secondary font-mono px-1">Following (${mFollowing.length})</span>
+            ${mFollowing.map(f => {
+              const addr = (f.address || '').trim();
+              const lbl = f.bns_name ? `@${f.bns_name}` : shortAddr(addr);
+              return `
+                <div class="p-2.5 rounded-xl bg-surface-container-low border border-outline-variant/15 hover:border-secondary/40 flex items-center justify-between cursor-pointer" onclick="openUserProfile('${sanitizeJsAttr(addr)}')">
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-mono font-bold text-xs text-on-surface truncate">${escapeHtml(lbl)}</span>
+                    <span class="font-mono text-[10px] text-on-surface-variant truncate">${escapeHtml(addr)}</span>
+                  </div>
+                  <span class="material-symbols-outlined text-[16px] text-secondary shrink-0">arrow_forward</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `);
+      }
+      if (window._profileFilteredTxList.length) {
+        sections.push(`
+          <div class="flex flex-col gap-2">
+            <span class="text-[11px] font-bold uppercase tracking-wider text-amber-300 font-mono px-1">Ledger Activity (${mTxs.length})</span>
+            ${window._profileFilteredTxList.map((tx, idx) => {
+              const isSender = tx.sender === currentProfileData.address;
+              const txHash = String(tx.tx_hash || tx.hash || '');
+              return `
+                <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/15 hover:border-primary/40 flex items-center justify-between gap-2 cursor-pointer" onclick="openProfileFilteredTxDetail(${idx})">
+                  <div class="flex flex-col min-w-0">
+                    <span class="font-bold text-xs text-on-surface capitalize">${escapeHtml(String(tx.tx_type || 'transfer').replace(/_/g, ' '))}</span>
+                    <span class="font-mono text-[10px] text-on-surface-variant truncate">${escapeHtml(txHash)}</span>
+                  </div>
+                  <div class="text-right shrink-0">
+                    <div class="font-mono font-bold text-xs ${isSender ? 'text-on-surface' : 'text-emerald-400'}">${isSender ? '-' : '+'}${formatBct(tx.amount || 0, 4)} BCT</div>
+                    <span class="text-[10px] text-on-surface-variant font-mono">${escapeHtml(formatTimeAgo(tx.timestamp))}</span>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        `);
+      }
+      res.innerHTML = sections.join('');
     }
 
     function switchProfileSubTab(tab) {
@@ -16406,7 +17492,7 @@
         viewPosts.innerHTML = posts.map(p => {
           const pid = sanitizeJsAttr(p.post_id);
           return `
-            <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition cursor-pointer" onclick="closeUserProfile(); openSpacePostDetail('${pid}')">
+            <div class="p-3.5 rounded-xl bg-surface-container-low border border-outline-variant/10 hover:bg-surface-container/60 transition cursor-pointer" onclick="openSpacePostFromProfile('${pid}')">
               <div class="flex items-center justify-between text-xs text-on-surface-variant mb-1">
                 <span class="font-mono">Block #${escapeHtml(p.block_index ?? '--')}</span>
                 <span>${escapeHtml(formatTimeAgo(p.timestamp))}</span>
@@ -16564,6 +17650,11 @@
         `;
       };
 
+      const topNavTitle = document.getElementById('userProfileTopNavTitle');
+      if (topNavTitle) {
+        topNavTitle.textContent = data.primary_bns ? '@' + data.primary_bns : shortAddr(data.address || '');
+      }
+      window._profileAllTxs = Array.isArray(txs) ? txs : [];
       renderTxsList(txs);
 
       // Asynchronously fetch complete wallet history if needed
@@ -16571,9 +17662,14 @@
         apiFetch(`/transactions/${encodeURIComponent(data.address)}`).then(({ ok, body }) => {
           if (ok && body && body.data && Array.isArray(body.data.transactions)) {
             const allTxs = body.data.transactions;
+            window._profileAllTxs = allTxs;
             if (allTxs.length > txs.length) {
               if (countTxs) countTxs.textContent = String(allTxs.length);
               renderTxsList(allTxs);
+            }
+            const activeSearchVal = document.getElementById('profileSearchInput')?.value?.trim() || '';
+            if (activeSearchVal && currentProfileData && currentProfileData.address === data.address) {
+              filterUserProfileContent(activeSearchVal);
             }
           }
         }).catch(() => { });

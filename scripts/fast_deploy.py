@@ -4,17 +4,23 @@ import subprocess
 import sys
 import tarfile
 
+WORKSPACE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+WORKSPACE_KEY = os.path.join(WORKSPACE_DIR, ".keys", "vps.key")
 DEFAULT_KEY = os.path.join(os.path.expanduser("~"), "Downloads", "ssh-key-2026-11-02.key")
-SSH_KEY = os.environ.get("LOCKTRACE_SSH_KEY", DEFAULT_KEY if os.path.exists(DEFAULT_KEY) else "deploy/id_rsa")
+
+if os.path.exists(WORKSPACE_KEY):
+    SSH_KEY = os.environ.get("LOCKTRACE_SSH_KEY", WORKSPACE_KEY)
+elif os.path.exists(DEFAULT_KEY):
+    SSH_KEY = os.environ.get("LOCKTRACE_SSH_KEY", DEFAULT_KEY)
+else:
+    SSH_KEY = os.environ.get("LOCKTRACE_SSH_KEY", "deploy/id_rsa")
+
 VPS_HOST = os.environ.get("LOCKTRACE_SSH_HOST", "ubuntu@129.151.205.219")
 
-def run_cmd(cmd_list, timeout=90):
+def run_cmd(cmd_list, timeout=120):
     print(f"[*] Running: {' '.join(cmd_list[:6])}...")
-    res = subprocess.run(cmd_list, capture_output=True, text=True, timeout=timeout)
-    if res.stdout:
-        print("STDOUT:", res.stdout.strip())
-    if res.stderr:
-        print("STDERR:", res.stderr.strip())
+    sys.stdout.flush()
+    res = subprocess.run(cmd_list, timeout=timeout)
     return res.returncode == 0
 
 def main():
@@ -43,7 +49,15 @@ def main():
         tar.add("deploy", arcname="deploy")
         tar.add("scripts/sign_frontend.py", arcname="scripts/sign_frontend.py")
         if os.path.isdir("crates"):
-            tar.add("crates", arcname="crates")
+            def crates_filter(tarinfo):
+                p = tarinfo.name.replace("\\", "/")
+                if "/target" in p or p.endswith("/target") or p == "crates/target":
+                    return None
+                return tarinfo
+            tar.add("crates", arcname="crates", filter=crates_filter)
+
+    bundle_mb = round(os.path.getsize(tar_path) / (1024 * 1024), 2)
+    print(f"[+] Bundle ready: {bundle_mb} MB (optimized)")
 
     print("[*] Uploading bundle in single SCP stream...")
     scp_cmd = [

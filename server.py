@@ -1,3 +1,4 @@
+from __future__ import annotations
 """
 BlockChainT - Hardened & Transparent API Server
 ===============================================
@@ -17,7 +18,7 @@ import secrets
 import threading
 from collections import deque
 from datetime import datetime, timezone
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Dict, Set, List, Any
 
 from flask import Flask, request, jsonify, render_template, g, send_file, send_from_directory, Response
 from flask_cors import CORS
@@ -332,7 +333,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-j0+iigePFvYgIm7KkrayCRpSylAArGvNYTgkOEI3LOo=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-SA2ZFTsFLDW+Y+B5DC5CPNumSaOIYxnZJNFZxBcCnqM=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -630,6 +631,12 @@ def serve_whitepaper_pdf():
 @app.route("/", methods=["GET"])
 @app.route("/index.html", methods=["GET"])
 def index_page():
+    return _serve_verified_frontend_response()
+
+
+@app.route("/post/<post_id>", methods=["GET"])
+@app.route("/p/<post_id>", methods=["GET"])
+def shared_post_page(post_id: str):
     return _serve_verified_frontend_response()
 
 
@@ -1103,54 +1110,319 @@ def api_transaction():
 
 
 # ── Universal Explorer Endpoints ─────────────────────────────
+def _explorer_account_role(addr: str) -> Tuple[str, bool]:
+    """Return human-readable role label and system-vault flag for an address."""
+    from core.blockchain import BURN_ADDRESS, LOST_KEY_TEST_WALLETS
+    if addr == BURN_ADDRESS:
+        return "Protocol Burn Vault", True
+    if addr in (TREASURY_ADDRESS, "GENESIS_VAULT"):
+        return "Genesis Treasury Vault", True
+    if addr == BRIDGE_VAULT_ADDRESS:
+        return "W-BCT Bridge Lock Vault", True
+    if addr == VALIDATOR_STAKE_VAULT_ADDRESS:
+        return "PoS Validator Stake Vault", True
+    if addr in LOST_KEY_TEST_WALLETS:
+        return "Burned Test Wallet", True
+    return "On-Chain Account", False
+
+
+def _build_explorer_account_summary(addr: str, primary_handle: str = "", preloaded_history: list = None) -> dict:
+    """Build normalized account summary object for strict Explorer search results."""
+    bal = blockchain.get_balance(addr)
+    pct = round((bal / TOTAL_SUPPLY * 100), 4) if TOTAL_SUPPLY > 0 else 0.0
+    history = preloaded_history if preloaded_history is not None else blockchain.get_wallet_transactions(addr)
+    with blockchain.lock:
+        blockchain._load_state()
+        blockchain._ensure_ledger_index()
+        all_handles = [h for h, rec in blockchain.bns_records.items() if rec.get("owner") == addr]
+        rev = blockchain.bns_reverse.get(addr, "")
+        indexed_tx_cnt = int(blockchain._tx_counts_map.get(addr, 0) or 0)
+    handle = primary_handle or rev or (all_handles[0] if all_handles else "")
+    tx_count = max(len(history), indexed_tx_cnt)
+    role, is_system_vault = _explorer_account_role(addr)
+    return {
+        "address": addr,
+        "handle": handle,
+        "all_handles": all_handles,
+        "balance": bal,
+        "supply_pct": pct,
+        "transaction_count": tx_count,
+        "role": role,
+        "is_system_vault": is_system_vault,
+    }
+
+
+def _block_summary_from_obj(blk, match_reason: str = "") -> dict:
+    """Build compact block metadata dict for Explorer search result listings."""
+    return {
+        "index": blk.index,
+        "version": blk.version,
+        "hash": blk.hash,
+        "previous_hash": blk.previous_hash,
+        "merkle_root": blk.merkle_root,
+        "timestamp": blk.timestamp,
+        "nonce": blk.nonce,
+        "miner": blk.miner,
+        "attestations_count": getattr(blk, "attestations_count", 0),
+        "finalized": getattr(blk, "finalized", False),
+        "transaction_count": len(blk.transactions),
+        "match_reason": match_reason,
+    }
+
+
+def _collect_blocks_for_addresses_and_txs(target_addrs: set, txs: list, limit: int = 50) -> Tuple[list, int]:
+    """Collect distinct blocks that were mined by target_addrs or contain matched transactions."""
+    reasons_by_idx: Dict[int, Set[str]] = {}
+    for tx in txs:
+        bidx = tx.get("block_index")
+        if bidx is not None:
+            reasons_by_idx.setdefault(int(bidx), set()).add("tx")
+
+    with blockchain.lock:
+        blockchain._load_state()
+        chain_len = len(blockchain.chain)
+        if target_addrs:
+            for blk in blockchain.chain:
+                if blk.miner in target_addrs:
+                    reasons_by_idx.setdefault(blk.index, set()).add("mined")
+
+        sorted_indices = sorted((i for i in reasons_by_idx.keys() if 0 <= i < chain_len), reverse=True)
+        total_count = len(sorted_indices)
+        summaries = []
+        for idx in sorted_indices[:limit]:
+            blk = blockchain.chain[idx]
+            reasons = sorted(reasons_by_idx[idx])
+            summaries.append(_block_summary_from_obj(blk, match_reason="+".join(reasons)))
+    return summaries, total_count
+
+
 @app.route("/api/v1/explorer/search", methods=["GET"])
 def api_explorer_search():
-    """Universal search across Blocks, Transactions, and Addresses."""
+    """Universal search across Blocks, Transactions, BNS Handles, and Addresses."""
     if not check_rate_limit("explorer_search", limit=45, window_seconds=60):
         return api_response(False, message="Too many search requests. Please wait.", status=429)
     q = request.args.get("q", "").strip()[:128]
     if not q:
         return api_response(False, message="Search query cannot be empty", status=400)
 
+    # 1. Exact Block lookup (index or full hash)
     block = blockchain.get_block_by_index_or_hash(q)
     if block:
-        return api_response(True, data={"type": "block", "result": block})
+        b_txs = []
+        participant_addrs = []
+        seen_addrs = set()
+        if block.get("miner") and is_valid_bct_address(block["miner"]):
+            seen_addrs.add(block["miner"])
+            participant_addrs.append(block["miner"])
+        for raw_tx in block.get("transactions", []):
+            tx_copy = dict(raw_tx)
+            tx_copy["block_index"] = block.get("index")
+            tx_copy["block_hash"] = block.get("hash")
+            tx_copy["status"] = "confirmed"
+            b_txs.append(tx_copy)
+            for key in ("sender", "receiver", "recipient"):
+                cand = tx_copy.get(key)
+                if cand and is_valid_bct_address(cand) and cand not in seen_addrs and len(participant_addrs) < 15:
+                    seen_addrs.add(cand)
+                    participant_addrs.append(cand)
+        matched_accounts = [_build_explorer_account_summary(a) for a in participant_addrs]
+        return api_response(True, data={
+            "type": "block",
+            "query": q,
+            "result": block,
+            "matched_accounts": matched_accounts,
+            "matched_transactions": b_txs,
+            "matched_blocks": [block],
+            "total_tx_count": len(b_txs),
+            "total_block_count": 1,
+        })
 
+    # 2. Exact Transaction lookup (or >=8 char hex tx hash prefix)
     tx = blockchain.get_tx_by_hash(q)
     if tx:
-        return api_response(True, data={"type": "transaction", "result": tx})
+        related_addrs = []
+        seen = set()
+        for key in ("sender", "receiver", "recipient"):
+            cand = tx.get(key)
+            if cand and is_valid_bct_address(cand) and cand not in seen:
+                seen.add(cand)
+                related_addrs.append(cand)
+        matched_accounts = [_build_explorer_account_summary(a) for a in related_addrs]
+        matched_blocks = []
+        if tx.get("block_index") is not None:
+            blk = blockchain.get_block_by_index_or_hash(str(tx["block_index"]))
+            if blk:
+                matched_blocks.append(blk)
+        return api_response(True, data={
+            "type": "transaction",
+            "query": q,
+            "result": tx,
+            "matched_accounts": matched_accounts,
+            "matched_transactions": [tx],
+            "matched_blocks": matched_blocks,
+            "total_tx_count": 1,
+            "total_block_count": len(matched_blocks),
+        })
 
-    # BNS handle resolution in explorer search (e.g. @satoshi, satoshi.bct)
+    # 3. BNS handle lookup (exact `@satoshi` / `satoshi.bct`)
     clean_handle = q.lstrip("@").lower()
     bns_cand = clean_handle if clean_handle.endswith(".bct") else f"{clean_handle}.bct"
-    if bns_cand in blockchain.bns_records:
-        resolved_addr = blockchain.bns_records[bns_cand].get("owner", "")
-        if resolved_addr and is_valid_bct_address(resolved_addr):
-            bal = blockchain.get_balance(resolved_addr)
-            history = blockchain.get_wallet_transactions(resolved_addr)
-            return api_response(True, data={
-                "type": "address",
-                "result": {
-                    "address": resolved_addr,
-                    "handle": bns_cand,
-                    "balance": bal,
-                    "transaction_count": len(history),
-                    "transactions": history[:50],
-                },
-            })
+    resolved_addr = ""
+    matched_bns = ""
+    with blockchain.lock:
+        blockchain._load_state()
+        if bns_cand in blockchain.bns_records:
+            cand_owner = blockchain.bns_records[bns_cand].get("owner", "")
+            if cand_owner and is_valid_bct_address(cand_owner):
+                resolved_addr = cand_owner
+                matched_bns = bns_cand
 
-    if is_valid_bct_address(q):
-        bal = blockchain.get_balance(q)
-        history = blockchain.get_wallet_transactions(q)
+    if not resolved_addr and is_valid_bct_address(q):
+        # Preserve canonical stored casing if found in ledger/wallets, else trimmed input
+        resolved_addr = q
+        with blockchain.lock:
+            blockchain._load_state()
+            q_low = q.lower()
+            for known in list(blockchain.wallets.keys()) + list(blockchain.bns_reverse.keys()):
+                if known.lower() == q_low:
+                    resolved_addr = known
+                    break
+
+    if resolved_addr:
+        history = blockchain.get_wallet_transactions(resolved_addr)
+        acct = _build_explorer_account_summary(resolved_addr, primary_handle=matched_bns, preloaded_history=history)
+        blocks_list, total_blocks = _collect_blocks_for_addresses_and_txs({resolved_addr}, history, limit=50)
         return api_response(True, data={
             "type": "address",
+            "query": q,
             "result": {
-                "address": q,
-                "balance": bal,
-                "transaction_count": len(history),
-                "transactions": history[:50],
+                "address": acct["address"],
+                "handle": acct["handle"],
+                "all_handles": acct["all_handles"],
+                "balance": acct["balance"],
+                "supply_pct": acct["supply_pct"],
+                "role": acct["role"],
+                "transaction_count": acct["transaction_count"],
+                "transactions": history[:100],
             },
+            "matched_accounts": [acct],
+            "matched_transactions": history[:100],
+            "matched_blocks": blocks_list,
+            "total_tx_count": acct["transaction_count"],
+            "total_block_count": total_blocks,
         })
+
+    # 4. Partial BNS handle substring or BCT address prefix match
+    q_low = q.lower()
+    matched_addr_handles: Dict[str, str] = {}
+    with blockchain.lock:
+        blockchain._load_state()
+        if len(clean_handle) >= 2 and not q_low.startswith("bct"):
+            for h_name, rec in blockchain.bns_records.items():
+                if clean_handle in h_name.lower():
+                    owner = rec.get("owner", "")
+                    if owner and is_valid_bct_address(owner) and owner not in matched_addr_handles:
+                        matched_addr_handles[owner] = h_name
+                        if len(matched_addr_handles) >= 12:
+                            break
+        elif q_low.startswith("bct") and len(q) >= 7:
+            blockchain._ensure_ledger_index()
+            cand_pool = set(blockchain.wallets.keys()) | set(blockchain.bns_reverse.keys()) | set(blockchain._tx_counts_map.keys())
+            for cand in cand_pool:
+                if cand.lower().startswith(q_low) and is_valid_bct_address(cand):
+                    matched_addr_handles[cand] = blockchain.bns_reverse.get(cand, "")
+                    if len(matched_addr_handles) >= 12:
+                        break
+
+    if matched_addr_handles:
+        accounts = []
+        combined_txs = []
+        seen_hashes = set()
+        for idx, (m_addr, m_handle) in enumerate(matched_addr_handles.items()):
+            h_list = blockchain.get_wallet_transactions(m_addr)
+            accounts.append(_build_explorer_account_summary(m_addr, primary_handle=m_handle, preloaded_history=h_list))
+            if idx < 5:
+                for t in h_list[:40]:
+                    th = t.get("tx_hash") or t.get("hash") or ""
+                    if th and th in seen_hashes:
+                        continue
+                    if th:
+                        seen_hashes.add(th)
+                    combined_txs.append(t)
+        combined_txs.sort(key=lambda t: float(t.get("timestamp") or 0), reverse=True)
+        blocks_list, total_blocks = _collect_blocks_for_addresses_and_txs(set(matched_addr_handles.keys()), combined_txs, limit=40)
+        primary = accounts[0]
+        primary_history = blockchain.get_wallet_transactions(primary["address"])
+        return api_response(True, data={
+            "type": "address",
+            "query": q,
+            "result": {
+                "address": primary["address"],
+                "handle": primary["handle"],
+                "all_handles": primary["all_handles"],
+                "balance": primary["balance"],
+                "supply_pct": primary["supply_pct"],
+                "role": primary["role"],
+                "transaction_count": primary["transaction_count"],
+                "transactions": primary_history[:100],
+            },
+            "matched_accounts": accounts,
+            "matched_transactions": combined_txs[:100],
+            "matched_blocks": blocks_list,
+            "total_tx_count": len(combined_txs),
+            "total_block_count": total_blocks,
+        })
+
+    # 5. Partial hex Transaction Hash prefix (>= 8 hex chars)
+    if len(q) >= 8 and all(c in "0123456789abcdefABCDEF" for c in q):
+        prefix_matches = []
+        prefix_addrs = []
+        seen_pa = set()
+        prefix_blocks = {}
+        with blockchain.lock:
+            blockchain._load_state()
+            for pending in reversed(blockchain.pending_transactions):
+                if pending.hash().lower().startswith(q_low):
+                    td = pending.to_dict()
+                    td["block_index"] = None
+                    td["block_hash"] = "MEMPOOL"
+                    td["status"] = "mempool"
+                    prefix_matches.append(td)
+                    if len(prefix_matches) >= 20:
+                        break
+            if len(prefix_matches) < 20:
+                for blk in reversed(blockchain.chain):
+                    for btx in blk.transactions:
+                        if btx.hash().lower().startswith(q_low):
+                            td = btx.to_dict()
+                            td["block_index"] = blk.index
+                            td["block_hash"] = blk.hash
+                            td["status"] = "confirmed"
+                            prefix_matches.append(td)
+                            prefix_blocks[blk.index] = _block_summary_from_obj(blk, match_reason="tx")
+                            if len(prefix_matches) >= 20:
+                                break
+                    if len(prefix_matches) >= 20:
+                        break
+        if prefix_matches:
+            for mtx in prefix_matches:
+                for k in ("sender", "receiver", "recipient"):
+                    c_addr = mtx.get(k)
+                    if c_addr and is_valid_bct_address(c_addr) and c_addr not in seen_pa and len(prefix_addrs) < 15:
+                        seen_pa.add(c_addr)
+                        prefix_addrs.append(c_addr)
+            matched_accounts = [_build_explorer_account_summary(a) for a in prefix_addrs]
+            sorted_blks = [prefix_blocks[idx] for idx in sorted(prefix_blocks.keys(), reverse=True)]
+            return api_response(True, data={
+                "type": "transaction",
+                "query": q,
+                "result": prefix_matches[0],
+                "matched_accounts": matched_accounts,
+                "matched_transactions": prefix_matches,
+                "matched_blocks": sorted_blks,
+                "total_tx_count": len(prefix_matches),
+                "total_block_count": len(sorted_blks),
+            })
 
     return api_response(False, message="No block, transaction, or wallet found matching search criteria.", status=404)
 
