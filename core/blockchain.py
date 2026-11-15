@@ -620,6 +620,13 @@ class Blockchain:
                         self._confirmed_stakes_map[norm_rec] = max(0, self._confirmed_stakes_map.get(norm_rec, 0) - _to_units(tx.amount))
                     elif tx.tx_type in ("mining_reward", "validator_reward", "attestation_reward") and norm_rec:
                         self._confirmed_rewards_earned_map[norm_rec] = self._confirmed_rewards_earned_map.get(norm_rec, 0) + _to_units(tx.amount)
+            vault_total = self._confirmed_units_map.get(VALIDATOR_STAKE_VAULT_ADDRESS, 0)
+            if vault_total <= 0:
+                self._confirmed_stakes_map.clear()
+            else:
+                for k, v in list(self._confirmed_stakes_map.items()):
+                    if v > vault_total:
+                        self._confirmed_stakes_map[k] = vault_total
             self._confirmed_indexed_len = len(self.chain)
             self._confirmed_indexed_tip = tip_hash
 
@@ -1470,10 +1477,10 @@ class Blockchain:
                 if "entities" not in p:
                     p["entities"] = self.extract_space_entities(p.get("content", ""))
                 is_anon = bool(p.get("is_anonymous") or p.get("author_bns") == "anonymous")
-                p["author_is_validator"] = False if is_anon else (self.get_validator_stake(str(p.get("author", ""))) >= MIN_VALIDATOR_STAKE)
+                p["author_is_validator"] = False if is_anon else self.is_active_validator(str(p.get("author", "")))
                 for cmt in p.get("comments", []):
                     c_anon = bool(cmt.get("is_anonymous") or cmt.get("commenter_bns") == "anonymous")
-                    cmt["commenter_is_validator"] = False if c_anon else (self.get_validator_stake(str(cmt.get("commenter", ""))) >= MIN_VALIDATOR_STAKE)
+                    cmt["commenter_is_validator"] = False if c_anon else self.is_active_validator(str(cmt.get("commenter", "")))
 
             # Filter by tag (#topic, $symbol, or @user)
             if tag:
@@ -1547,10 +1554,10 @@ class Blockchain:
             p = self.space_posts.get(post_id.strip())
             if p:
                 is_anon = bool(p.get("is_anonymous") or p.get("author_bns") == "anonymous")
-                p["author_is_validator"] = False if is_anon else (self.get_validator_stake(str(p.get("author", ""))) >= MIN_VALIDATOR_STAKE)
+                p["author_is_validator"] = False if is_anon else self.is_active_validator(str(p.get("author", "")))
                 for cmt in p.get("comments", []):
                     c_anon = bool(cmt.get("is_anonymous") or cmt.get("commenter_bns") == "anonymous")
-                    cmt["commenter_is_validator"] = False if c_anon else (self.get_validator_stake(str(cmt.get("commenter", ""))) >= MIN_VALIDATOR_STAKE)
+                    cmt["commenter_is_validator"] = False if c_anon else self.is_active_validator(str(cmt.get("commenter", "")))
             return p
 
     def get_suggested_voices(self, viewer_address: str = "", limit: int = 5) -> List[dict]:
@@ -1612,7 +1619,7 @@ class Blockchain:
                     bio = f"BCT Creator • {meta['posts']} Casts" if meta['posts'] > 0 else "BCT On-Chain Account"
                     display_name = short_addr
 
-                is_val = self.get_validator_stake(addr) >= MIN_VALIDATOR_STAKE
+                is_val = self.is_active_validator(addr)
                 result.append({
                     "address": addr,
                     "bns_name": bns,
@@ -2683,7 +2690,7 @@ class Blockchain:
             lost_key_note = ""
 
             val_stake = self.get_validator_stake(target_address)
-            is_validator = val_stake >= MIN_VALIDATOR_STAKE
+            is_validator = self.is_active_validator(target_address)
 
             if any(target_address.lower() == addr.lower() for addr in LOST_KEY_TEST_WALLETS):
                 tag = "Geliştirici Doğruladı: Private Key Kayıp (Özel Test Adresi)"
@@ -2702,8 +2709,11 @@ class Blockchain:
                 tag = "Bridge Vault (Base 1:1 Collateral)"
                 tag_type = "bridge_vault"
             elif is_validator:
-                tag = "Active Validator Node" if any(n.get("miner_address") == target_address for n in self.nodes.values()) else "Active Validator (Staked)"
+                tag = "Active Validator Node"
                 tag_type = "validator"
+            elif val_stake >= MIN_VALIDATOR_STAKE:
+                tag = "Validator Staker (Collateral Locked)"
+                tag_type = "staker"
 
             # 3. Owned Handles
             owned_handles = []
@@ -2798,7 +2808,7 @@ class Blockchain:
                     "address": a,
                     "bns_name": bns,
                     "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}",
-                    "is_validator": self.get_validator_stake(a) >= MIN_VALIDATOR_STAKE
+                    "is_validator": self.is_active_validator(a)
                 })
 
             following_list = []
@@ -2808,7 +2818,7 @@ class Blockchain:
                     "address": a,
                     "bns_name": bns,
                     "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}",
-                    "is_validator": self.get_validator_stake(a) >= MIN_VALIDATOR_STAKE
+                    "is_validator": self.is_active_validator(a)
                 })
 
             profile_res = {
@@ -2958,19 +2968,39 @@ class Blockchain:
                 "estimated_apr_percent": est_apr_pct
             }
 
+    def is_active_validator(self, address: str) -> bool:
+        """
+        Returns True if the address has locked >= MIN_VALIDATOR_STAKE in VALIDATOR_STAKE_VAULT
+        and is an active registered node or committee validator.
+        """
+        clean = normalize_bct_address(address)
+        if not clean or clean in self.slashed_validators:
+            return False
+        staked = self.get_validator_stake(clean)
+        if staked < MIN_VALIDATOR_STAKE:
+            return False
+        with self.lock:
+            return any(
+                normalize_bct_address(n.get("miner_address", "")) == clean and (n.get("auth_verified") or not n.get("is_genesis"))
+                for n in self.nodes.values()
+            )
+
     def get_validator_stake(self, address: str) -> float:
         """
         Returns the active on-chain BCT amount locked by the validator in VALIDATOR_STAKE_VAULT.
-        Uses the O(1) incremental confirmed stake index (`_confirmed_stakes_map`), plus any
-        mempool stake minus any pending unstake (so unstaking revokes validator eligibility
-        and reward entitlement immediately in the same millisecond it is requested).
+        Uses the O(1) incremental confirmed stake index (`_confirmed_stakes_map`), bounded by
+        the confirmed balance of VALIDATOR_STAKE_VAULT, plus any mempool stake minus any pending unstake.
         """
         clean = normalize_bct_address(address)
         if not clean:
             return 0.0
         with self.lock:
             self._ensure_ledger_index()
-            staked_u = int(self._confirmed_stakes_map.get(clean, 0))
+            vault_units = int(self._confirmed_units_map.get(VALIDATOR_STAKE_VAULT_ADDRESS, 0))
+            if vault_units <= 0:
+                staked_u = 0
+            else:
+                staked_u = min(int(self._confirmed_stakes_map.get(clean, 0)), vault_units)
             for tx in self.pending_transactions:
                 if tx.receiver == VALIDATOR_STAKE_VAULT_ADDRESS and normalize_bct_address(tx.sender) == clean and tx.tx_type == "validator_stake":
                     staked_u += _to_units(tx.amount)

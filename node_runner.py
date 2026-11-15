@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.5)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.6)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner (CPU & GPU Accelerated),
 and cryptographically verified decentralized Web Wallet on Linux, macOS, or Windows with
