@@ -8115,6 +8115,90 @@
     </div>
   </div>
 
+  <!-- ========================================================================= -->
+  <!-- MODAL: INSTANT PUSH & NOTIFICATION OPT-IN PROMPT POPUP                    -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-[85] bg-background/80 backdrop-blur-md hidden items-center justify-center p-4 transition-all opacity-0"
+    id="pushPromptModal" onclick="if(event.target===this) closePushPromptModal(true);">
+    <div
+      class="w-full max-w-[440px] rounded-3xl bg-surface-container border border-primary/25 p-5 sm:p-6 flex flex-col gap-4 shadow-2xl transition-all scale-95 opacity-0 relative"
+      id="pushPromptModalCard">
+      
+      <!-- Close Button -->
+      <button
+        class="absolute top-4 right-4 w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface flex items-center justify-center transition-colors cursor-pointer"
+        onclick="closePushPromptModal(true)" type="button" aria-label="Kapat">
+        <span class="material-symbols-outlined text-[18px]">close</span>
+      </button>
+
+      <!-- Animated Icon Header -->
+      <div class="flex flex-col items-center justify-center text-center pt-2">
+        <div class="relative flex items-center justify-center mb-3">
+          <div class="w-16 h-16 rounded-3xl bg-primary/15 border border-primary/30 flex items-center justify-center text-primary shadow-lg shadow-primary/10">
+            <span class="material-symbols-outlined text-[32px] animate-pulse">notifications_active</span>
+          </div>
+          <div class="absolute -top-1 -right-1 w-5 h-5 rounded-full bg-rose-500 border-2 border-surface-container flex items-center justify-center">
+            <span class="w-2 h-2 rounded-full bg-white animate-ping"></span>
+          </div>
+        </div>
+        <h3 class="font-headline-sm text-lg sm:text-xl font-bold text-on-surface">Anlık Bildirimleri Açın</h3>
+        <p class="text-xs sm:text-sm text-on-surface-variant mt-1 max-w-[340px] leading-relaxed">
+          Cüzdanınıza BCT transferleri ulaştığında ve Space gönderileriniz etkileşim aldığında kilit ekranında anında haberdar olun.
+        </p>
+      </div>
+
+      <!-- Key Benefits List -->
+      <div class="flex flex-col gap-2 p-3 sm:p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/15 text-left">
+        <div class="flex items-start gap-2.5">
+          <div class="w-7 h-7 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-[16px]">payments</span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-semibold text-on-surface">Gelen BCT Transferleri</span>
+            <span class="text-[11px] text-on-surface-variant leading-tight">Cüzdanınıza coin veya madencilik ödülü geldiğinde anında uyarı alın.</span>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-2.5 pt-1 border-t border-outline-variant/10">
+          <div class="w-7 h-7 rounded-xl bg-rose-500/15 text-rose-400 flex items-center justify-center shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-[16px]">favorite</span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-semibold text-on-surface">Beğeni &amp; Yazar Telifleri</span>
+            <span class="text-[11px] text-on-surface-variant leading-tight">Paylaşımlarınız beğenildiğinde telif gelirlerinizi anında görün.</span>
+          </div>
+        </div>
+
+        <div class="flex items-start gap-2.5 pt-1 border-t border-outline-variant/10">
+          <div class="w-7 h-7 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0 mt-0.5">
+            <span class="material-symbols-outlined text-[16px]">forum</span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-semibold text-on-surface">Yorumlar &amp; Bahsetmeler</span>
+            <span class="text-[11px] text-on-surface-variant leading-tight">Postlarınıza yorum yapıldığında veya sizden bahsedildiğinde haberdar olun.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="flex flex-col gap-2 pt-1">
+        <button
+          class="w-full py-3 px-4 rounded-xl bg-gradient-to-r from-primary to-emerald-400 text-on-primary font-semibold text-sm flex items-center justify-center gap-2 hover:brightness-110 active:scale-95 transition-all shadow-md shadow-primary/20 cursor-pointer"
+          id="btnPushPromptEnable" onclick="acceptPushPromptAction()" type="button">
+          <span class="material-symbols-outlined text-[18px]">notifications_active</span>
+          <span>Bildirimleri Şimdi Aç</span>
+        </button>
+        <button
+          class="w-full py-2.5 px-4 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface-variant hover:text-on-surface text-xs font-medium transition-all active:scale-95 cursor-pointer"
+          onclick="closePushPromptModal(true)" type="button">
+          Daha Sonra Hatırlat
+        </button>
+      </div>
+
+    </div>
+  </div>
+
+
   <!-- FLOATING INSTANT ALERT TOAST (Desktop top-right / Mobile top-center) -->
   <div
     class="fixed top-16 md:top-20 left-1/2 -translate-x-1/2 md:left-auto md:right-6 md:translate-x-0 z-[80] pointer-events-none transition-all duration-300 transform -translate-y-12 opacity-0 hidden flex flex-col gap-2 max-w-[92vw] sm:max-w-sm"
@@ -9666,10 +9750,14 @@
         const safePayload = sanitizeForStorage(acc);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(safePayload));
         fetchAndSyncMyBnsHandles();
-        if (acc.address && typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          const pk = (sessionUnlockedKeys && sessionUnlockedKeys.private_key) || acc.private_key;
-          if (pk) {
-            registerDevicePushSubscription(pk, false);
+        if (acc.address && typeof Notification !== 'undefined') {
+          if (Notification.permission === 'granted') {
+            const pk = (sessionUnlockedKeys && sessionUnlockedKeys.private_key) || acc.private_key;
+            if (pk) {
+              registerDevicePushSubscription(pk, false);
+            }
+          } else if (Notification.permission === 'default') {
+            checkAndShowPushPrompt(1200);
           }
         }
       } else {
@@ -10865,7 +10953,7 @@
       'ios-pwa-modal', 'block-detail-modal', 'qr-scanner-modal', 'network-security-modal',
       'bnsRegisterModal', 'bnsSetPriceModal', 'bnsTransferModal', 'bnsBuyModal',
       'bnsOfferModal', 'quickComposeModal', 'spaceSettingsModal', 'userProfileModal',
-      'web3TxConfirmModal', 'notificationModal', 'postShareModal'
+      'web3TxConfirmModal', 'notificationModal', 'postShareModal', 'pushPromptModal'
     ];
 
     function syncBodyScrollLock() {
@@ -11804,6 +11892,7 @@
         renderBalanceFigures(currentAccount.balance);
         showToast(ok ? 'Your new wallet is ready! (+1.00 BCT Bonus)' : 'Local wallet created (Offline mode)', 'celebration');
         switchTab('cuzdanim');
+        checkAndShowPushPrompt(1500);
       } catch (_e) {
         showToast('Error occurred while creating wallet', 'error', true);
       } finally {
@@ -12079,6 +12168,7 @@
         renderBalanceFigures(currentAccount.balance);
         showToast('Wallet restored successfully! (Zero-Knowledge Verified)', 'verified_user');
         switchTab('cuzdanim');
+        checkAndShowPushPrompt(1500);
       } catch (_e) {
         showToast('Could not verify key. Please check your credentials.', 'error', true);
       } finally {
@@ -16777,6 +16867,7 @@
           registerDevicePushSubscription(null, false);
         }
       }
+      checkAndShowPushPrompt(2500);
 
       loadTradeConfig();
       verifyFrontendIntegrityState();
@@ -18299,7 +18390,90 @@
       setTimeout(() => {
         modal.classList.remove('flex');
         modal.classList.add('hidden');
+      }
+
+    const PUSH_PROMPT_SNOOZE_KEY = 'locktrace_push_prompt_snoozed_v1';
+
+    function openPushPromptModal() {
+      const modal = document.getElementById('pushPromptModal');
+      const card = document.getElementById('pushPromptModalCard');
+      if (!modal || !card) return;
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      void modal.offsetWidth;
+      modal.classList.remove('opacity-0');
+      modal.classList.add('opacity-100');
+
+      card.classList.remove('scale-95', 'opacity-0');
+      card.classList.add('scale-100', 'opacity-100');
+      if (typeof syncBodyScrollLock === 'function') syncBodyScrollLock();
+    }
+
+    function closePushPromptModal(snooze = false) {
+      const modal = document.getElementById('pushPromptModal');
+      const card = document.getElementById('pushPromptModalCard');
+      if (!modal || !card) return;
+
+      if (snooze) {
+        try {
+          // Ertele: 24 saat boyunca tekrar modal acilmaz
+          localStorage.setItem(PUSH_PROMPT_SNOOZE_KEY, String(Date.now() + 24 * 60 * 60 * 1000));
+        } catch (_e) {}
+      }
+
+      card.classList.remove('scale-100', 'opacity-100');
+      card.classList.add('scale-95', 'opacity-0');
+
+      modal.classList.remove('opacity-100');
+      modal.classList.add('opacity-0');
+
+      setTimeout(() => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+        if (typeof syncBodyScrollLock === 'function') syncBodyScrollLock();
       }, 200);
+    }
+
+    async function acceptPushPromptAction() {
+      const btn = document.getElementById('btnPushPromptEnable');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined text-[18px] animate-spin">refresh</span><span>İzin İsteniyor...</span>';
+      }
+      try {
+        await requestNotificationPermissionAction();
+      } finally {
+        closePushPromptModal(false);
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = '<span class="material-symbols-outlined text-[18px]">notifications_active</span><span>Bildirimleri Şimdi Aç</span>';
+        }
+      }
+    }
+
+    function checkAndShowPushPrompt(delayMs = 0) {
+      if (!('Notification' in window)) return;
+      if (Notification.permission !== 'default') return;
+
+      try {
+        const snoozeUntil = Number(localStorage.getItem(PUSH_PROMPT_SNOOZE_KEY) || 0);
+        if (snoozeUntil && Date.now() < snoozeUntil) {
+          return;
+        }
+      } catch (_e) {}
+
+      if (delayMs > 0) {
+        setTimeout(() => {
+          if (Notification.permission === 'default') {
+            openPushPromptModal();
+          }
+        }, delayMs);
+      } else {
+        openPushPromptModal();
+      }
+    }
+, 200);
     }
 
     function playNotificationChime() {
@@ -18814,15 +18988,66 @@
               const shouldAlert = !isAlreadySeen && (seenTxs.size > 0);
               seenTxs.add(txHash);
               if (!isAlreadyInCache) {
+                const txType = tx.type || tx.tx_type || 'transfer';
+                let notifCategory = 'transfer';
+                let notifTitle = `💸 +${formatBct(info.displayAmount, 4)} BCT Transfer Alındı!`;
+                let notifBody = `${shortAddr(info.counterparty)} hesabınıza bakiye transfer etti.`;
+                let notifIcon = info.icon || 'arrow_downward';
+                let notifAction = '#cuzdanim';
+
+                if (txType === 'space_like' || (info.isRoyalty && txType !== 'space_comment' && !info.isFollowReward)) {
+                  notifCategory = 'space';
+                  notifTitle = '❤️ Gönderiniz Beğenildi!';
+                  notifBody = `${shortAddr(info.counterparty)} Space gönderinizi beğendi (+${formatBct(info.displayAmount, 4)} BCT Telif Geliri).`;
+                  notifIcon = 'favorite';
+                  notifAction = '#space';
+                } else if (txType === 'space_comment') {
+                  notifCategory = 'space';
+                  notifTitle = '💬 Gönderinize Yorum Yapıldı!';
+                  notifBody = `${shortAddr(info.counterparty)} gönderinize yeni bir yorum bıraktı (+${formatBct(info.displayAmount, 4)} BCT Telif).`;
+                  notifIcon = 'chat_bubble';
+                  notifAction = '#space';
+                } else if (info.isFollowReward || txType === 'space_follow') {
+                  notifCategory = 'space';
+                  notifTitle = '🤝 Yeni Bir Takipçiniz Var!';
+                  notifBody = `${shortAddr(info.counterparty)} profilinizi takip etti (+${formatBct(info.displayAmount, 4)} BCT Takipçi Ödülü).`;
+                  notifIcon = 'person_add';
+                  notifAction = '#space';
+                } else if (txType === 'bns_buy') {
+                  notifCategory = 'transfer';
+                  notifTitle = '🏷️ BNS Alan Adı Satıldı!';
+                  notifBody = `${shortAddr(info.counterparty)} alan adınızı satın aldı (+${formatBct(info.displayAmount, 4)} BCT).`;
+                  notifIcon = 'domain';
+                  notifAction = '#cuzdanim';
+                } else if (txType === 'mining_reward') {
+                  notifCategory = 'system';
+                  notifTitle = '⛏️ Blok Madencilik Ödülü!';
+                  notifBody = `+${formatBct(info.displayAmount, 4)} BCT PoW madencilik ödülü cüzdanınıza yansıdı.`;
+                  notifIcon = 'memory';
+                  notifAction = '#cuzdanim';
+                } else if (txType === 'validator_reward' || txType === 'attestation_reward') {
+                  notifCategory = 'system';
+                  notifTitle = '🛡️ Validatör Quorum Ödülü!';
+                  notifBody = `+${formatBct(info.displayAmount, 4)} BCT PoS konsensüs ödülü cüzdanınıza yansıdı.`;
+                  notifIcon = 'verified_user';
+                  notifAction = '#cuzdanim';
+                } else if (txType === 'reward' || txType === 'welcome_bonus' || (String(tx.sender || '').startsWith('bct_hazine_') && Number(info.displayAmount) === 1)) {
+                  notifCategory = 'transfer';
+                  notifTitle = '🎁 Hoş Geldin Bonusu Alındı!';
+                  notifBody = `+${formatBct(info.displayAmount, 4)} BCT BlocTag ağa katılım ödülü cüzdanınıza tanımlandı.`;
+                  notifIcon = 'redeem';
+                  notifAction = '#cuzdanim';
+                }
+
                 addNotification({
                   id: notifId,
-                  category: 'transfer',
-                  title: `🎉 +${formatBct(info.displayAmount, 4)} BCT Alındı!`,
-                  body: `${info.title} (${shortAddr(info.counterparty)}) hesabınıza ulaştı.`,
-                  icon: info.icon || 'arrow_downward',
+                  category: notifCategory,
+                  title: notifTitle,
+                  body: notifBody,
+                  icon: notifIcon,
                   time: Number(tx.timestamp || Date.now() / 1000) * 1000,
                   read: isAlreadySeen,
-                  actionUrl: '#cuzdanim'
+                  actionUrl: notifAction
                 }, shouldAlert);
               }
             } else {
@@ -18845,8 +19070,30 @@
             const isAlreadyInCache = notificationsCache.some(n => n.id === notifId);
             const isAlreadySeen = seenPosts.has(post.id);
 
+            // Also check if someone commented on my post
             if (post.author === myAddr) {
               seenPosts.add(post.id);
+              if (Array.isArray(post.comments) && post.comments.length > 0) {
+                post.comments.forEach((cmt, idx) => {
+                  const cmtId = 'cmt-' + post.id + '-' + (cmt.id || idx);
+                  if (cmt.author && cmt.author !== myAddr && !seenPosts.has(cmtId)) {
+                    seenPosts.add(cmtId);
+                    if (!notificationsCache.some(n => n.id === cmtId)) {
+                      const cmtAuthor = cmt.bns_name ? `@${cmt.bns_name}` : shortAddr(cmt.author);
+                      addNotification({
+                        id: cmtId,
+                        category: 'space',
+                        title: '💬 Gönderinize Yeni Yorum!',
+                        body: `${cmtAuthor}: "${String(cmt.content || '').slice(0, 60)}..."`,
+                        icon: 'chat_bubble',
+                        time: Number(cmt.timestamp || Date.now() / 1000) * 1000,
+                        read: isAlreadySeen,
+                        actionUrl: '#space'
+                      }, !isAlreadySeen && (seenPosts.size > 0));
+                    }
+                  }
+                });
+              }
               return;
             }
 
@@ -18861,9 +19108,9 @@
                 addNotification({
                   id: notifId,
                   category: 'space',
-                  title: "💬 Space'te Etiketlendiniz!",
+                  title: "📢 Space'te Sizden Bahsedildi!",
                   body: `${authorName} gönderisinde sizden bahsetti: "${content.slice(0, 60)}..."`,
-                  icon: 'forum',
+                  icon: 'alternate_email',
                   time: Number(post.timestamp || Date.now() / 1000) * 1000,
                   read: isAlreadySeen,
                   actionUrl: '#space'
@@ -18876,6 +19123,7 @@
           saveSeenSpacePosts();
         }
       } catch (_e) { }
+    } catch (_e) { }
     }
 
     document.addEventListener('DOMContentLoaded', initApp);
