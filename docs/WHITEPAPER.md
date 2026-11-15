@@ -232,7 +232,12 @@ Nodes failing either criterion are pruned from quorum payout calculation.
 
 ### 4.3 Staking Vault & Non-Custodial Slashing Mechanism
 Validators lock collateral via a 100% non-custodial transaction to `BCT_STAKE_VAULT_...`. Unstaking requires an explicit withdrawal request with a 24-hour unbonding cooldown.
-- **Equivocation Slashing:** If a validator signs two conflicting block proposals or attestations at the identical block height, any node can submit cryptographic proof of double-signing, triggering an on-chain **50% stake slash** ($500.0\text{ BCT}$ permanently burned to `BCT0000000000000000000000000000000000000000`) and immediate committee eviction.
+- **Equivocation Slashing:** If a validator signs two conflicting block proposals or attestations at the identical block height, any node can submit cryptographic proof of double-signing, triggering an on-chain **100% stake slash** ($1,000.0\text{ BCT}$ permanently burned to `BCT0000000000000000000000000000000000000000`) and permanent protocol blacklisting.
+- **Anti-Dust Spam & Self-Loop Subsidy Siphoning Defense:**
+  - Mandatory minimum transfer amount: $0.01\text{ BCT}$. Micro-dust transactions ($< 0.01\text{ BCT}$) are unconditionally rejected from the mempool.
+  - Mandatory minimum network transfer fee: $0.001\text{ BCT}$ (zero-fee transfers are rejected; $1\%$ fee with $0.001\text{ BCT}$ floor).
+  - Anti-Self-Loop Mining Subsidy Guard: If a candidate block contains only self-transfers between the miner and addresses within their own cluster, the Treasury block subsidy is automatically zeroed ($0.00\text{ BCT}$), eliminating economic incentives for self-dust mining.
+  - Active Validator Node Authorization: Only authenticated, registered consensus nodes (`auth_verified = True`) with active collateral $\ge 1,000\text{ BCT}$ are eligible to propose blocks and receive consensus rewards. Slashed actors are permanently barred from mining templates, block submission, and reward distribution.
 
 ---
 

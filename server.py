@@ -335,7 +335,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-VEMzeKi5ihK7TNM5oIF4izvhtHPu0gQ/UBcsruTm1fA=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-7uuKhVpyob5yOqAEBR7J+TYkS+SdRCR9j184KCo1/xs=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1022,6 +1022,9 @@ def api_transaction():
     amount = safe_float(amount_raw)
     if amount is None or amount <= 0:
         return api_response(False, message="A valid and positive amount must be entered.", status=400)
+
+    if amount < Config.MIN_TRANSACTION:
+        return api_response(False, message=f"Minimum transfer limit is {Config.MIN_TRANSACTION} BCT to prevent network dust spam.", status=400)
 
     if amount > Config.MAX_TRANSACTION:
         return api_response(False, message=f"Maximum single transfer limit is {Config.MAX_TRANSACTION:,.0f} BCT.", status=400)

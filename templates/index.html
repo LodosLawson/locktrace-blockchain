@@ -17859,6 +17859,9 @@
       } else if (data.tag_type === 'staker') {
         tagClass = 'bg-amber-500/10 text-amber-300 border border-amber-500/20';
         tagEl.title = 'Validator Staker (Collateral Locked in Vault)';
+      } else if (data.tag_type === 'slashed') {
+        tagClass = 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-sm font-bold';
+        tagEl.title = 'Protokol kurallarını ihlal ettiği veya haksız çekim yaptığı için cezalandırılmış (slashed) cüzdan';
       } else if (isLostKey) {
         tagClass = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm cursor-help';
         tagEl.title = data.lost_key_note || 'Developer verified: Lost private key genesis test address (Permanently Inactive)';

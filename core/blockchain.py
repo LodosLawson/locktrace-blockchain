@@ -439,6 +439,22 @@ class Blockchain:
             try:
                 # F-03: slashing survives restarts
                 self.slashed_validators.update(self._storage.load_slashed_validators())
+                from config import Config
+                seed_slashed = getattr(Config, "SLASHED_MALICIOUS_VALIDATORS", [])
+                for s_addr in seed_slashed:
+                    norm_s = normalize_bct_address(s_addr)
+                    if norm_s and norm_s not in self.slashed_validators:
+                        slash_info = {
+                            "block_index": 749,
+                            "reason": "Equivocation, double-unstake exploit in block 749, and dust-mining Treasury drain attempt.",
+                            "timestamp": 1794751023.0,
+                            "slashed": True
+                        }
+                        self.slashed_validators[norm_s] = slash_info
+                        try:
+                            self._storage.save_slashed_validator(norm_s, slash_info)
+                        except Exception:
+                            pass
             except Exception as _sl_err:
                 logger.warning(f"Could not load persisted slashed validators: {_sl_err}")
         return self._storage
@@ -830,6 +846,9 @@ class Blockchain:
             if clean_sender.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT", "GENESIS"):
                 return False, "Reserved system address cannot initiate standard transfers", None
 
+            if clean_sender in self.slashed_validators:
+                return False, "Slashed address cannot initiate transfers.", None
+
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid sender address format: '{raw_sender}'", None
 
@@ -840,8 +859,16 @@ class Blockchain:
                 return False, "Amount must be a finite positive number", None
 
             amount = round(float(amount), 8)
-            if amount < 0.00000001:
-                return False, "Minimum transfer amount is 0.00000001 BCT", None
+            try:
+                from config import Config
+                min_tx = float(getattr(Config, "MIN_TRANSACTION", 0.01))
+                min_fee = float(getattr(Config, "MIN_TRANSFER_FEE", 0.001))
+            except Exception:
+                min_tx = 0.01
+                min_fee = 0.001
+
+            if amount < min_tx:
+                return False, f"Minimum transfer amount is {min_tx} BCT to prevent network dust spam.", None
 
             expected_payload = signed_payload or f"{raw_sender}{raw_receiver}{amount}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_sender, expected_payload, signature, public_key)
@@ -865,10 +892,10 @@ class Blockchain:
                     None
                 )
 
-            # Calculate 1% fee returned to treasury (minimum 0.00000001 BCT atomic unit fee to prevent zero-fee dust spam)
-            fee = max(0.00000001, round(amount * FEE_PERCENT, 8))
+            # Calculate 1% fee returned to treasury (minimum min_fee BCT to prevent zero-fee dust spam)
+            fee = max(min_fee, round(amount * FEE_PERCENT, 8))
             if amount <= fee:
-                return False, "Transfer amount must exceed the minimum network fee (0.00000001 BCT).", None
+                return False, f"Transfer amount must exceed the minimum network fee ({min_fee} BCT).", None
             net_amount = round(amount - fee, 8)
 
             tx = Transaction(
@@ -2692,7 +2719,12 @@ class Blockchain:
             val_stake = self.get_validator_stake(target_address)
             is_validator = self.is_active_validator(target_address)
 
-            if any(target_address.lower() == addr.lower() for addr in LOST_KEY_TEST_WALLETS):
+            if target_address in self.slashed_validators:
+                tag = "Cezalı / Slashed Validator (Çift Çekim / Kural İhlali)"
+                tag_type = "slashed"
+                is_validator = False
+                val_stake = 0.0
+            elif any(target_address.lower() == addr.lower() for addr in LOST_KEY_TEST_WALLETS):
                 tag = "Geliştirici Doğruladı: Private Key Kayıp (Özel Test Adresi)"
                 tag_type = "lost_key_burn"
                 is_lost_key_burn = True
@@ -3568,9 +3600,18 @@ class Blockchain:
         if not clean_miner or not is_valid_bct_address(clean_miner) or clean_miner == TREASURY_ADDRESS:
             return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
 
-        # Strict Validator Stake Requirement: Unstaked or slashed wallets NEVER receive block/mining rewards
-        if self.get_validator_stake(clean_miner) < MIN_VALIDATOR_STAKE or clean_miner in self.slashed_validators:
+        # Strict Validator Stake & Active Node Requirement: Unstaked, inactive or slashed wallets NEVER receive block/mining rewards
+        if not self.is_active_validator(clean_miner) or clean_miner in self.slashed_validators:
             return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
+
+        # Anti-Self-Loop Dust Mining Guard: If block only contains self-transfers between miner and accomplice addresses,
+        # or if all user transactions involve the miner with zero genuine third-party transactions, zero the Treasury subsidy!
+        norm_miner = normalize_bct_address(clean_miner)
+        genuine_txs = [
+            tx for tx in pending_txs
+            if normalize_bct_address(tx.sender) != norm_miner and normalize_bct_address(tx.receiver) != norm_miner
+        ]
+        is_self_loop_only = bool(pending_txs) and len(genuine_txs) == 0
 
         transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(
@@ -3580,7 +3621,7 @@ class Blockchain:
 
         treasury_units = self.verify_and_recalc_units(TREASURY_ADDRESS)
         subsidy_target_u = _to_units(BLOCK_REWARD)
-        subsidy_u = subsidy_target_u if treasury_units >= subsidy_target_u else 0
+        subsidy_u = subsidy_target_u if (treasury_units >= subsidy_target_u and not is_self_loop_only) else 0
         total_pool_u = subsidy_u + miner_fee_cut_u
 
         if total_pool_u <= 0:
@@ -3822,15 +3863,15 @@ class Blockchain:
             if not is_valid_bct_address(clean_miner) or clean_miner.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
                 return False, "Invalid miner wallet address.", None
 
-            miner_stake = self.get_validator_stake(clean_miner)
-            if miner_stake < MIN_VALIDATOR_STAKE:
+            if clean_miner in self.slashed_validators:
+                return False, "Slashed validator address cannot produce blocks or earn rewards.", None
+
+            if not self.is_active_validator(clean_miner):
                 return (
                     False,
-                    f"Blok üretmek ve doğrulayıcı ödülü kazanmak için en az {MIN_VALIDATOR_STAKE:,.0f} BCT aktif Validator Stake kilidi gereklidir (Mevcut Stake: {miner_stake:,.2f} BCT).",
+                    f"Blok üretmek ve doğrulayıcı ödülü kazanmak için en az {MIN_VALIDATOR_STAKE:,.0f} BCT aktif Validator Stake kilidi ve doğrulanmış aktif bir Validator Düğümü (auth_verified) gereklidir.",
                     None,
                 )
-            if clean_miner in self.slashed_validators:
-                return False, "Slashed validator cannot produce blocks or earn rewards.", None
 
             if node_id and node_id in self.nodes and not self.nodes[node_id].get("is_genesis"):
                 self.nodes[node_id]["last_seen"] = time.time()
@@ -3847,10 +3888,10 @@ class Blockchain:
                     "difficulty": diff,
                 }
 
-            if len(self.chain) >= 10 and len(self.pending_transactions) < GENERAL_TX_BATCH_QUOTA:
+            if len(self.chain) >= 10:
                 elapsed_since_tip = time.time() - float(self.chain[-1].timestamp)
-                if elapsed_since_tip < 15.0:
-                    return False, "Awaiting target block interval window (15s).", {
+                if elapsed_since_tip < 20.0 and len(self.pending_transactions) < GENERAL_TX_BATCH_QUOTA:
+                    return False, f"Awaiting target block interval window (20s). Elapsed: {elapsed_since_tip:.1f}s.", {
                         "empty": True,
                         "cooldown": True,
                         "block_index": block_index,
@@ -3903,15 +3944,15 @@ class Blockchain:
             if not is_valid_bct_address(clean_miner) or clean_miner.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
                 return False, "Invalid miner wallet address.", None
 
-            miner_stake = self.get_validator_stake(clean_miner)
-            if miner_stake < MIN_VALIDATOR_STAKE:
+            if clean_miner in self.slashed_validators:
+                return False, "Slashed validator address cannot submit blocks or earn rewards.", None
+
+            if not self.is_active_validator(clean_miner):
                 return (
                     False,
-                    f"Blok göndermek ve doğrulayıcı ödülü kazanmak için en az {MIN_VALIDATOR_STAKE:,.0f} BCT aktif Validator Stake kilidi gereklidir (Mevcut Stake: {miner_stake:,.2f} BCT).",
+                    f"Yalnızca doğrulanmış ve ağda aktif olan bir Validator Düğümü (>= {MIN_VALIDATOR_STAKE:,.0f} BCT kilitli teminata sahip ve auth_verified) blok gönderebilir ve konsensüs ödülü kazanabilir.",
                     None,
                 )
-            if clean_miner in self.slashed_validators:
-                return False, "Slashed validator cannot submit blocks or earn rewards.", None
 
             submitted_idx = int(block_data.get("index", -1))
             submitted_hash = str(block_data.get("hash", "") or "").strip().lower()

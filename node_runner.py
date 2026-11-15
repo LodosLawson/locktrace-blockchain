@@ -215,6 +215,12 @@ RELEASE_AUTHORITY_PUBKEY = (
 
 TAMPER_WARNING_TEXT = '⛔ "WARNING: This frontend file has been modified or tampered with! Execution blocked."'
 
+# Slashed malicious actor blacklist (Equivocation & Dust-Mining Exploitation)
+SLASHED_MALICIOUS_VALIDATORS = {
+    "bct3a5f3ce88254c92f1daa43caa96c3bb0e2ca163b",
+    "bct35d240a88e37513fdd4f07e93363adb7f24c5b39",
+}
+
 
 def _to_units(val: float) -> int:
     return int((Decimal(str(val)) * ATOMIC_UNIT).to_integral_value(rounding=ROUND_HALF_UP))
@@ -2364,6 +2370,10 @@ class LockTraceNode:
         if b_idx > 0 and blk_ts > (time.time() + 120.0):
             return False
 
+        miner_addr = _normalize_bct_address(str(blk.get("miner", ""))).lower()
+        if b_idx > 789 and miner_addr in SLASHED_MALICIOUS_VALIDATORS:
+            return False
+
         if calculate_block_hash_dict(blk) != b_hash:
             return False
 
@@ -2403,6 +2413,10 @@ class LockTraceNode:
             if th and calculate_tx_hash_dict(t) != th:
                 return False
             computed_tx_hashes.append(th or calculate_tx_hash_dict(t))
+
+            snd = _normalize_bct_address(str(t.get("sender", ""))).lower()
+            if b_idx > 789 and snd in SLASHED_MALICIOUS_VALIDATORS:
+                return False
 
             ttype = str(t.get("tx_type", "transfer"))
             amt_u = _to_units(float(t.get("amount", 0.0)))

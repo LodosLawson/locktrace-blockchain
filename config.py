@@ -137,10 +137,17 @@ class Config:
     DEV_MODE = os.environ.get("BCT_DEV_MODE", "false").lower() == "true"
 
     # ── Blockchain Mempool & Limitler ─────────────────
-    MIN_TRANSACTION = 0.00000001   # Minimum transfer miktarı
+    MIN_TRANSACTION = 0.01          # Minimum transfer miktarı (dust-spam engelleme)
+    MIN_TRANSFER_FEE = 0.001        # Minimum transfer işlem ücreti (sıfır-ücret sömürü koruması)
     MAX_TRANSACTION = 1_000_000    # Maksimum tek seferde transfer
     MAX_PENDING_TX = 5000          # Maksimum bekleyen işlem
     AUTO_MINE = True               # Otomatik madencilik
+
+    # ── Cezalandırılmış / Yasaklı Zararlı Hesaplar (Slashing) ──
+    SLASHED_MALICIOUS_VALIDATORS = [
+        "BCT3a5f3ce88254c92f1daa43caa96c3bb0e2ca163b",
+        "BCT35d240a88e37513fdd4f07e93363adb7f24c5b39",
+    ]
 
     # ── Loglama ───────────────────────────────────────
     LOG_LEVEL = os.environ.get("BCT_LOG_LEVEL", "INFO")
