@@ -846,12 +846,6 @@ class Blockchain:
             if clean_sender.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT", "GENESIS"):
                 return False, "Reserved system address cannot initiate standard transfers", None
 
-            if clean_sender in self.slashed_validators:
-                return False, "Slashed address cannot initiate transfers.", None
-
-            if clean_receiver in self.slashed_validators:
-                return False, "Transfers to slashed malicious addresses are strictly rejected.", None
-
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid sender address format: '{raw_sender}'", None
 
@@ -2718,15 +2712,19 @@ class Blockchain:
             tag_type = "user"
             is_lost_key_burn = False
             lost_key_note = ""
+            is_slashed = False
+            slashed_note = ""
 
             val_stake = self.get_validator_stake(target_address)
             is_validator = self.is_active_validator(target_address)
 
             if target_address in self.slashed_validators:
-                tag = "Cezalı / Slashed Validator (Çift Çekim / Kural İhlali)"
+                tag = "İşaretli / Slashed Hesap (Kural İhlali)"
                 tag_type = "slashed"
                 is_validator = False
                 val_stake = 0.0
+                is_slashed = True
+                slashed_note = "Bu hesap geçmişte protokol kurallarını ihlal ettiği (çift çekim / yetkisiz blok üretimi) için sistem tarafından işaretlenmiştir. Doğrulayıcı (validator) hakları kalıcı olarak iptal edilmiştir. Hesap bakiyesi dondurulmamıştır ve standart transfer yapabilir."
             elif any(target_address.lower() == addr.lower() for addr in LOST_KEY_TEST_WALLETS):
                 tag = "Geliştirici Doğruladı: Private Key Kayıp (Özel Test Adresi)"
                 tag_type = "lost_key_burn"
@@ -2866,6 +2864,8 @@ class Blockchain:
                 "circulating_percentage": circ_pct,
                 "tag": tag,
                 "tag_type": tag_type,
+                "is_slashed": is_slashed,
+                "slashed_note": slashed_note,
                 "is_lost_key_burn": is_lost_key_burn,
                 "lost_key_note": lost_key_note,
                 "total_tx_count": total_tx_count,
@@ -4544,7 +4544,7 @@ class Blockchain:
                     tag = "Geliştirici Doğruladı: Private Key Kayıp (Özel Test Adresi)"
                     tag_type = "lost_key_burn"
                 elif clean_addr in self.slashed_validators:
-                    tag = "Cezalı Hesap (Slashed / Dondurulmuş)"
+                    tag = "İşaretli Hesap (Slashed Validator)"
                     tag_type = "slashed"
                 elif clean_addr == BURN_ADDRESS:
                     tag = "Deflationary Burn Address (Provably Unspendable)"

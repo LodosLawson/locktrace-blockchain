@@ -12550,7 +12550,7 @@
         } else if (h.tag_type === 'validator') {
           tagBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[11px] font-medium font-sans whitespace-nowrap">Validator Node</span>';
         } else if (h.tag_type === 'slashed') {
-          tagBadge = '<span class="bg-rose-500/20 text-rose-400 border border-rose-500/40 px-2 py-0.5 rounded text-[11px] font-bold font-sans whitespace-nowrap inline-flex items-center gap-1"><span class="material-symbols-outlined notranslate text-[13px] text-rose-400" translate="no">gavel</span>Cezalı / Slashed</span>';
+          tagBadge = '<span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-[11px] font-bold font-sans whitespace-nowrap inline-flex items-center gap-1" title="Geçmiş protokol ihlali nedeniyle işaretlenmiş hesap (Doğrulayıcı yetkisi iptal)"><span class="material-symbols-outlined notranslate text-[13px] text-amber-400" translate="no">flag</span>İşaretli / Slashed</span>';
         } else if (h.tag_type === 'lost_key_burn') {
           tagBadge = '<span class="bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-semibold font-sans whitespace-nowrap inline-flex items-center gap-1 cursor-help" title="Developer verified: Lost private key test address (Inactive / Locked)"><span class="material-symbols-outlined notranslate text-[13px] text-rose-400" translate="no">local_fire_department</span>Lost Key (Permanent Burn)</span>';
         }
@@ -17866,9 +17866,9 @@
       } else if (data.tag_type === 'staker') {
         tagClass = 'bg-amber-500/10 text-amber-300 border border-amber-500/20';
         tagEl.title = 'Validator Staker (Collateral Locked in Vault)';
-      } else if (data.tag_type === 'slashed') {
-        tagClass = 'bg-rose-500/20 text-rose-400 border border-rose-500/40 shadow-sm font-bold';
-        tagEl.title = 'Protokol kurallarını ihlal ettiği veya haksız çekim yaptığı için cezalandırılmış (slashed) cüzdan';
+      } else if (data.tag_type === 'slashed' || data.is_slashed) {
+        tagClass = 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm font-bold';
+        tagEl.title = data.slashed_note || 'Protokol kurallarını ihlal ettiği için işaretlenmiş hesap (Doğrulayıcı yetkisi iptal edilmiştir. Normal transfer yapabilir.)';
       } else if (isLostKey) {
         tagClass = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm cursor-help';
         tagEl.title = data.lost_key_note || 'Developer verified: Lost private key genesis test address (Permanently Inactive)';

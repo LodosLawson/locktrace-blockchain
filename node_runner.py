@@ -2417,8 +2417,6 @@ class LockTraceNode:
 
             snd = _normalize_bct_address(str(t.get("sender", ""))).lower()
             rec = _normalize_bct_address(str(t.get("receiver", ""))).lower()
-            if b_idx > 789 and (snd in SLASHED_MALICIOUS_VALIDATORS or rec in SLASHED_MALICIOUS_VALIDATORS):
-                return False
 
             ttype = str(t.get("tx_type", "transfer"))
             amt_u = _to_units(float(t.get("amount", 0.0)))
