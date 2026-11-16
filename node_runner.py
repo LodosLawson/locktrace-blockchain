@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.9)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.10.0)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner (CPU & GPU Accelerated),
 and cryptographically verified decentralized Web Wallet on Linux, macOS, or Windows with
@@ -53,7 +53,7 @@ logger = logging.getLogger("LockTraceNode")
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.9.9"
+VERSION = "2.10.0"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)

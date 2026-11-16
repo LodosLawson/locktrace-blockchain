@@ -214,7 +214,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.9.9` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.10.0` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -643,3 +643,21 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 1. **Profil Takip Butonu Durum Sıfırlaması (`btnProfileFollow.disabled`):** Bir kullanıcı takip edildikten sonra buton `disabled = true` yapılıyordu ve başka bir profile geçildiğinde DOM elementi disabled kalmaya devam ettiği için tıklama olayları fırlatılamıyordu. `openUserProfile` ve `renderUserProfileData` fonksiyonlarında `btnProfileFollow.disabled = false` sıfırlaması getirilerek ardışık takip engeli kaldırıldı.
 2. **Web3 Modal Zamanlayıcı ve Çakışma Yönetimi:** `web3ModalTimer` takibi ve `clearTimeout` çağrıları eklenerek modal kapanma animasyonlarının ardışık açılan modalları gizlemesi önlendi; ayrıca eşzamanlı çift imzalama koruması (`isFollowInProgress`) eklendi.
 3. **P2P Node Runner Kanonik İmza Doğrulama Paritesi:** `node_runner.py` üzerindeki imza varyantlarına küçük harfli `follow:follower:target` eklenerek Flask API ile P2P düğüm doğrulaması %100 uyumlu hale getirildi.
+
+---
+
+## 🛡️ 29. BlocTag / LockTrace v2.10.0: Bağımsız Para Al (Receive BCT) Widget'ı, Canlı Ödeme Radarı & Profil Gezinme Yığını
+
+1. **Özel Para Kabul Etme (Receive BCT) Widget'ı (`#receive-bct-modal`):**
+   - Cüzdan Receive butonuna tıklandığında açılan ve yukarı taşma yapan karmaşık Güvenlik/Kasa penceresi yerine tamamen ayrık, kompakt ve modern bir **Receive BCT** modalı geliştirildi.
+   - Hassas özel anahtarlar, tohum kelimeler, PIN şifreleme ve cüzdan kapatma gibi ayarlar bu modalden tamamen temizlenerek bağımsız `#vault-modal`'a taşındı.
+   - Widget içerisine yüksek çözünürlüklü QR kod, tek tıkla kopyalama butonu, birincil `.bct` handle rozeti ve `max-h-[92vh]` mobil taşma koruması yerleştirildi.
+
+2. **Mempool & Blok Canlı Ödeme Radarı (Live Payment Radar):**
+   - Kullanıcı Receive penceresini açık tuttuğunda arka planda `startReceivePaymentRadar()` periyodik dinleyicisi çalışarak cüzdana gelen transferleri eşzamanlı takip eder.
+   - Gelen bir ödeme algılandığında yeşil canlı animasyon kutusu belirerek gelen BCT miktarını gösterir, cüzdan bakiyesini anında günceller ve kullanıcıya bildirim verir.
+
+3. **Profil Gezinme Geçmiş Yığını & Doğrudan Kapatma Butonu:**
+   - Bir kullanıcı profilinden başka bir takipçinin/takip edilenin profiline geçildiğinde zincirleme geçişleri hafızada tutan `userProfileHistoryStack` mimarisi kuruldu.
+   - Sol üstteki `Back` butonu (`navigateBackUserProfile()`) artık profili tamamen kapatmak yerine kullanıcının gezindiği profiller arasında adım adım geriye dönmesini sağlar.
+   - Sağ üst başlık çubuğuna doğrudan tek tıkla profili tamamen kapatan bir kapatma butonu (`closeUserProfileDirectly()`) eklendi. PWA donanım geri tuşları bu yığınla tam uyumlu hale getirildi.

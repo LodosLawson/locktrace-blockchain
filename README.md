@@ -524,7 +524,11 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Profile Follow Button State Reset:** Explicitly reset `btnProfileFollow.disabled = false` in `renderUserProfileData` and `openUserProfile`, preventing the button from becoming unclickable when navigating to subsequent creator profiles after following a creator.
    - **Modal Lifecycle & Timer Hardening:** Implemented `web3ModalTimer` tracking with `clearTimeout` to prevent race conditions from closing new signature modals prematurely, and added `isFollowInProgress` concurrency guard.
    - **Signature Verification Parity:** Synchronized P2P node runner verification variants to recognize lowercase `follow:follower:target` alongside uppercase payloads.
-29. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+29. **Dedicated Receive BCT Widget, Live Payment Radar & Profile History Stack (v2.10.0):**
+   - **Dedicated Receive BCT Widget:** Separated payment reception from security/vault settings; introduced `#receive-bct-modal` with high-res QR code, one-click copy, and zero vertical overflow.
+   - **Live On-Chain Payment Radar:** Added real-time polling listener displaying pulse status and instant animated alerts upon incoming mempool/block transactions.
+   - **Profile Navigation History Stack & Immediate Close:** Implemented `userProfileHistoryStack` with `navigateBackUserProfile()` for sequential step-by-step back navigation across profiles, and added a top-right direct close button (`closeUserProfileDirectly()`).
+30. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

@@ -6,8 +6,8 @@ The following versions of LockTrace are actively supported with security patches
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 2.9.x (v2.9.9+) | :white_check_mark: | **Current Active Mainnet Release** (Multi-Follow Action & Web3 Lifecycle Hardened) |
-| 2.9.0 - 2.9.8  | :white_check_mark: | Supported (Upgrade Recommended to v2.9.9) |
+| 2.10.x (v2.10.0+) | :white_check_mark: | **Current Active Mainnet Release** (Dedicated Receive Widget, Live Radar & Profile Stack Hardened) |
+| 2.9.x   | :white_check_mark: | Supported (Upgrade Recommended to v2.10.0) |
 | 2.8.x   | :white_check_mark: | Legacy Consensus Supported |
 | < 2.8.0 | :x:                | Deprecated (Upgrade Mandatory) |
 

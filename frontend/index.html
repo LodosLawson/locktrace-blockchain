@@ -6365,8 +6365,21 @@
           <div class="flex items-center gap-2.5">
             <span class="material-symbols-outlined notranslate text-secondary text-[19px]" translate="no">qr_code_2</span>
             <div class="flex flex-col">
-              <span class="text-xs font-semibold text-on-surface">Receive &amp; QR Address</span>
-              <span class="text-[10px] text-on-surface-variant">View your public key &amp; barcode</span>
+              <span class="text-xs font-semibold text-on-surface">Receive BCT &amp; QR</span>
+              <span class="text-[10px] text-on-surface-variant">Scan QR code or share public address</span>
+            </div>
+          </div>
+          <span class="material-symbols-outlined notranslate text-on-surface-variant text-[16px]" translate="no">chevron_right</span>
+        </button>
+
+        <button
+          class="w-full p-2.5 rounded-xl hover:bg-surface-container-high flex items-center justify-between text-left transition-colors"
+          onclick="closeMobileMenuModal(); openWalletVaultModal();" type="button">
+          <div class="flex items-center gap-2.5">
+            <span class="material-symbols-outlined notranslate text-primary text-[19px]" translate="no">shield</span>
+            <div class="flex flex-col">
+              <span class="text-xs font-semibold text-on-surface">PIN Vault &amp; Key Backup</span>
+              <span class="text-[10px] text-on-surface-variant">View private key &amp; PIN encryption</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant text-[16px]" translate="no">chevron_right</span>
@@ -6555,41 +6568,119 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL 2: WALLET ADDRESS (RECEIVE / QR) + AES-256-GCM PIN VAULT           -->
+  <!-- MODAL: DEDICATED RECEIVE BCT & ON-CHAIN LIVE RADAR WIDGET                 -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-[80] bg-background/80 backdrop-blur-md hidden items-center justify-center p-4"
-    id="receive-modal" onclick="if(event.target===this) closeReceiveModal();">
+  <div class="fixed inset-0 z-[80] bg-background/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4"
+    id="receive-bct-modal" onclick="if(event.target===this) closeReceiveModal();">
     <div
-      class="w-full max-w-[430px] max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/25">
-      <div class="flex items-center justify-between">
-        <div class="flex items-center gap-2">
-          <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">qr_code_2</span>
-          <span class="font-headline-sm text-headline-sm text-on-surface">My Wallet &amp; Security Vault</span>
+      class="w-full max-w-[420px] max-h-[92vh] overflow-y-auto rounded-3xl bg-surface-container p-5 sm:p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/30 transition-all scale-100">
+      
+      <!-- Header -->
+      <div class="flex items-center justify-between pb-1 border-b border-outline-variant/15">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">qr_code_2</span>
+          </div>
+          <div class="flex flex-col">
+            <h3 class="text-sm sm:text-base font-bold text-on-surface leading-tight">Receive BlocTag (BCT)</h3>
+            <span class="text-[11px] text-on-surface-variant font-mono">Layer-1 Sovereign Transfer</span>
+          </div>
         </div>
         <button
-          class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface flex items-center justify-center transition-colors"
-          onclick="closeReceiveModal()" type="button">
+          class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface flex items-center justify-center transition-colors cursor-pointer"
+          onclick="closeReceiveModal()" type="button" title="Close">
           <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
         </button>
       </div>
 
-      <div class="flex flex-col items-center justify-center gap-2.5 py-1">
-        <div class="w-40 h-40 rounded-2xl bg-white p-2.5 flex items-center justify-center shadow-md" id="qrContainer">
-          <img alt="BCT QR Code" class="w-full h-full object-contain" id="qrImage" />
+      <!-- Handle / Primary Identity Badge if available -->
+      <div id="receiveBnsBadge" class="hidden items-center justify-center gap-1.5 py-1 px-3 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-mono font-bold self-center">
+        <span class="material-symbols-outlined notranslate text-[14px]" translate="no">verified</span>
+        <span id="receiveBnsHandleText">@user.bct</span>
+      </div>
+
+      <!-- High-Quality QR Code Box (No Overflow) -->
+      <div class="flex flex-col items-center justify-center gap-2 py-1">
+        <div class="p-3 bg-white rounded-2xl shadow-lg border border-outline-variant/10 flex items-center justify-center relative group">
+          <img alt="BCT Receive QR Code" class="w-48 h-48 sm:w-52 sm:h-52 object-contain select-none" id="receiveQrImage" />
         </div>
-        <div class="flex items-center gap-2 font-label-sm text-label-sm text-on-surface-variant">
-          <span>Account Nonce: <strong class="text-primary font-mono" id="modalAccountNonce">0</strong></span>
-          <span>•</span>
-          <span>Non-Custodial ECDSA</span>
+        <span class="text-[11px] text-on-surface-variant text-center font-sans">Scan with any BCT mobile wallet or camera</span>
+      </div>
+
+      <!-- Address Display with 1-Click Copy -->
+      <div class="flex flex-col gap-1.5">
+        <label class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider px-1">Your Public Address</label>
+        <div class="p-2.5 sm:p-3 bg-surface-container-low rounded-2xl border border-outline-variant/25 flex items-center justify-between gap-2 shadow-inner">
+          <span class="text-xs sm:text-sm font-mono text-on-surface font-medium truncate select-all" id="receiveAddressText">BCT...</span>
+          <button
+            class="px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-bold text-xs flex items-center gap-1 transition-all active:scale-95 shadow-sm shrink-0 cursor-pointer"
+            id="btnCopyReceiveAddr" onclick="copyReceiveAddress()" type="button">
+            <span class="material-symbols-outlined notranslate text-[15px]" id="copyReceiveAddrIcon" translate="no">content_copy</span>
+            <span id="copyReceiveAddrLabel">Copy</span>
+          </button>
         </div>
+      </div>
+
+      <!-- Live On-Chain Payment Radar (Mempool & Block Detector) -->
+      <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-2" id="receivePaymentRadarBox">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2">
+            <span class="relative flex h-2.5 w-2.5">
+              <span class="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span class="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500"></span>
+            </span>
+            <span class="text-xs font-semibold text-on-surface">Payment Radar</span>
+          </div>
+          <span class="text-[10px] font-mono text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-full border border-emerald-500/20 font-bold">LIVE LISTENER</span>
+        </div>
+        <p class="text-[11px] text-on-surface-variant leading-relaxed" id="receiveRadarStatusText">
+          Listening on-chain for incoming transactions. When sent, payment will appear here automatically.
+        </p>
+        <div id="receiveIncomingPaymentAlert" class="hidden p-2.5 rounded-xl bg-emerald-500/15 border border-emerald-500/30 flex items-center gap-2 text-emerald-400 text-xs font-bold animate-bounce">
+          <span class="material-symbols-outlined notranslate text-[18px]" translate="no">check_circle</span>
+          <span id="receiveIncomingPaymentMsg">Payment detected! Balance updated.</span>
+        </div>
+      </div>
+
+      <!-- Quick Tips -->
+      <div class="flex items-center justify-between text-[11px] text-on-surface-variant px-1 font-mono">
+        <span>Network: <strong>LockTrace Mainnet</strong></span>
+        <span>Speed: <strong>Instant PoW P2P</strong></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2: WALLET SECURITY & AES-256-GCM PIN VAULT SETTINGS                 -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-[80] bg-background/80 backdrop-blur-md hidden items-center justify-center p-4"
+    id="vault-modal" onclick="if(event.target===this) closeWalletVaultModal();">
+    <div
+      class="w-full max-w-[430px] max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/25">
+      <div class="flex items-center justify-between">
+        <div class="flex items-center gap-2">
+          <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">shield_lock</span>
+          <span class="font-headline-sm text-headline-sm text-on-surface">Wallet Security &amp; Vault</span>
+        </div>
+        <button
+          class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface flex items-center justify-center transition-colors"
+          onclick="closeWalletVaultModal()" type="button">
+          <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
+        </button>
       </div>
 
       <div
         class="p-3 bg-surface-container-low rounded-xl flex items-center justify-between border border-outline-variant/20 gap-2">
-        <span class="text-xs font-mono text-on-surface truncate" id="modalReceiveAddress">BCT...</span>
+        <div class="flex flex-col min-w-0">
+          <span class="text-[10px] text-on-surface-variant font-mono">Wallet Address</span>
+          <span class="text-xs font-mono text-on-surface truncate" id="modalReceiveAddress">BCT...</span>
+        </div>
         <button
-          class="px-3 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-semibold shrink-0"
+          class="px-3 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-semibold shrink-0 cursor-pointer"
           onclick="copyCurrentAddress()" type="button">
+          Copy
+        </button>
+      </div>
           Copy
         </button>
       </div>
@@ -6717,7 +6808,7 @@
         </button>
         <button
           class="flex-1 h-[44px] rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-label-md font-semibold transition-colors"
-          onclick="closeReceiveModal()" type="button">
+          onclick="closeWalletVaultModal()" type="button">
           Done
         </button>
       </div>
@@ -7427,7 +7518,7 @@
       <div class="w-full max-w-3xl mx-auto px-3 sm:px-6 h-14 flex items-center justify-between gap-2">
         <button
           class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface text-xs font-semibold transition-all active:scale-95 cursor-pointer border border-outline-variant/20 shrink-0"
-          onclick="closeUserProfile()" type="button" title="Back">
+          onclick="navigateBackUserProfile()" id="btnUserProfileBackNav" type="button" title="Go Back">
           <span class="material-symbols-outlined notranslate text-[18px]" translate="no">arrow_back</span>
           <span>Back</span>
         </button>
@@ -7437,15 +7528,20 @@
         </div>
         <div class="flex items-center gap-1.5 shrink-0">
           <button
-            class="w-9 h-9 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-all active:scale-95 cursor-pointer border border-outline-variant/20"
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface flex items-center justify-center transition-all active:scale-95 cursor-pointer border border-outline-variant/20"
             onclick="toggleProfileSearch()" type="button" title="Search within this profile">
-            <span class="material-symbols-outlined notranslate text-[18px]" translate="no">search</span>
+            <span class="material-symbols-outlined notranslate text-[17px] sm:text-[18px]" translate="no">search</span>
           </button>
           <button
             class="flex items-center gap-1 px-2.5 py-1.5 rounded-full bg-primary/15 hover:bg-primary/25 text-primary text-xs font-semibold transition-all active:scale-95 cursor-pointer border border-primary/25"
             onclick="shareUserProfile()" type="button" title="Share Profile">
             <span class="material-symbols-outlined notranslate text-[16px]" translate="no">ios_share</span>
             <span class="hidden sm:inline">Share</span>
+          </button>
+          <button
+            class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container hover:bg-error/20 hover:text-error text-on-surface-variant flex items-center justify-center transition-all active:scale-95 cursor-pointer border border-outline-variant/20"
+            onclick="closeUserProfileDirectly()" type="button" title="Close Profile View">
+            <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
           </button>
         </div>
       </div>
@@ -9985,7 +10081,7 @@
 
     async function toggleVaultLockState() {
       if (!currentAccount || !currentAccount.vaultEncrypted) {
-        openReceiveModal();
+        openWalletVaultModal();
         return;
       }
       if (sessionUnlockedKeys) {
@@ -10005,7 +10101,7 @@
         return;
       }
       if (!currentAccount.vaultEncrypted) {
-        openReceiveModal();
+        openWalletVaultModal();
         return;
       }
       toggleVaultLockState();
@@ -11351,22 +11447,150 @@
       }
     }
 
-    // Receive / Vault Modal
+    // ── Dedicated Receive BCT Modal & Live On-Chain Radar ────────────────────────
+    let receivePaymentRadarTimer = null;
+    let receiveInitialRadarBal = 0;
+
     function openReceiveModal() {
       if (!currentAccount || !currentAccount.address) {
         switchTab('yeni-cuzdan');
         showToast('Please create or import your wallet first', 'account_balance_wallet');
         return;
       }
-      const modal = document.getElementById('receive-modal');
-      const addrEl = document.getElementById('modalReceiveAddress');
-      const qrImg = document.getElementById('qrImage');
-      const nonceEl = document.getElementById('modalAccountNonce');
+
+      const modal = document.getElementById('receive-bct-modal');
+      const addrEl = document.getElementById('receiveAddressText');
+      const qrImg = document.getElementById('receiveQrImage');
+      const bnsBadge = document.getElementById('receiveBnsBadge');
+      const bnsText = document.getElementById('receiveBnsHandleText');
+      const incomingAlert = document.getElementById('receiveIncomingPaymentAlert');
+      const copyBtn = document.getElementById('btnCopyReceiveAddr');
+      const copyIcon = document.getElementById('copyReceiveAddrIcon');
+      const copyLabel = document.getElementById('copyReceiveAddrLabel');
+
       if (addrEl) addrEl.textContent = currentAccount.address;
-      if (nonceEl) nonceEl.textContent = String(currentAccount.nonce || 0);
-      if (qrImg) {
-        qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=220x220&margin=8&data=' + encodeURIComponent(currentAccount.address);
+      if (copyLabel) copyLabel.textContent = 'Copy';
+      if (copyIcon) copyIcon.textContent = 'content_copy';
+      if (copyBtn) {
+        copyBtn.className = 'px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-bold text-xs flex items-center gap-1 transition-all active:scale-95 shadow-sm shrink-0 cursor-pointer';
       }
+
+      if (bnsBadge && bnsText) {
+        if (currentAccount.primary_handle || currentAccount.handle) {
+          const h = (currentAccount.primary_handle || currentAccount.handle).replace(/^@+/, '');
+          bnsText.textContent = '@' + h;
+          bnsBadge.classList.remove('hidden');
+          bnsBadge.classList.add('flex');
+        } else {
+          bnsBadge.classList.add('hidden');
+          bnsBadge.classList.remove('flex');
+        }
+      }
+
+      if (qrImg) {
+        qrImg.src = 'https://api.qrserver.com/v1/create-qr-code/?size=260x260&margin=8&data=' + encodeURIComponent(currentAccount.address);
+      }
+
+      if (incomingAlert) {
+        incomingAlert.classList.add('hidden');
+        incomingAlert.classList.remove('flex');
+      }
+
+      if (typeof applyPwaBackButtonUI === 'function') applyPwaBackButtonUI();
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+        syncBodyScrollLock();
+      }
+
+      // Start live on-chain payment radar
+      startReceivePaymentRadar();
+    }
+
+    function closeReceiveModal() {
+      stopReceivePaymentRadar();
+      const modal = document.getElementById('receive-bct-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+        syncBodyScrollLock();
+      }
+    }
+
+    async function copyReceiveAddress() {
+      if (!currentAccount || !currentAccount.address) return;
+      await copyText(currentAccount.address, 'Wallet address copied to clipboard!');
+      const copyLabel = document.getElementById('copyReceiveAddrLabel');
+      const copyIcon = document.getElementById('copyReceiveAddrIcon');
+      const copyBtn = document.getElementById('btnCopyReceiveAddr');
+      if (copyLabel) copyLabel.textContent = 'Copied!';
+      if (copyIcon) copyIcon.textContent = 'done';
+      if (copyBtn) {
+        copyBtn.className = 'px-3.5 py-1.5 rounded-xl bg-emerald-500 text-white font-bold text-xs flex items-center gap-1 transition-all shadow-sm shrink-0 cursor-pointer';
+      }
+      setTimeout(() => {
+        if (copyLabel) copyLabel.textContent = 'Copy';
+        if (copyIcon) copyIcon.textContent = 'content_copy';
+        if (copyBtn) {
+          copyBtn.className = 'px-3.5 py-1.5 rounded-xl bg-primary hover:bg-primary/90 text-on-primary font-bold text-xs flex items-center gap-1 transition-all active:scale-95 shadow-sm shrink-0 cursor-pointer';
+        }
+      }, 2500);
+    }
+
+    function startReceivePaymentRadar() {
+      stopReceivePaymentRadar();
+      if (!currentAccount || !currentAccount.address) return;
+      receiveInitialRadarBal = Number(currentAccount.balance || 0);
+
+      const statusEl = document.getElementById('receiveRadarStatusText');
+      if (statusEl) {
+        statusEl.textContent = 'Listening on-chain for incoming transactions. When sent, payment will appear here automatically.';
+      }
+
+      receivePaymentRadarTimer = setInterval(async () => {
+        if (!currentAccount || !currentAccount.address) return;
+        try {
+          const res = await apiFetch('/balance/' + encodeURIComponent(currentAccount.address));
+          if (res.ok && res.body && res.body.data && typeof res.body.data.balance === 'number') {
+            const newBal = Number(res.body.data.balance);
+            if (newBal > receiveInitialRadarBal + 0.00001) {
+              const diff = (newBal - receiveInitialRadarBal).toFixed(4);
+              receiveInitialRadarBal = newBal;
+              currentAccount.balance = newBal;
+              if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+              if (typeof refreshWalletBalances === 'function') refreshWalletBalances();
+
+              const alertBox = document.getElementById('receiveIncomingPaymentAlert');
+              const alertMsg = document.getElementById('receiveIncomingPaymentMsg');
+              if (alertBox && alertMsg) {
+                alertMsg.textContent = `🎉 Received +${diff} BCT on-chain! Balance updated to ${newBal.toFixed(4)} BCT.`;
+                alertBox.classList.remove('hidden');
+                alertBox.classList.add('flex');
+              }
+              showToast(`Incoming payment of +${diff} BCT confirmed on-chain!`, 'check_circle');
+            }
+          }
+        } catch (_e) { }
+      }, 3500);
+    }
+
+    function stopReceivePaymentRadar() {
+      if (receivePaymentRadarTimer) {
+        clearInterval(receivePaymentRadarTimer);
+        receivePaymentRadarTimer = null;
+      }
+    }
+
+    // ── Dedicated Security & Vault Modal ────────────────────────────────────────
+    function openWalletVaultModal() {
+      if (!currentAccount || !currentAccount.address) {
+        switchTab('yeni-cuzdan');
+        showToast('Please create or import your wallet first', 'account_balance_wallet');
+        return;
+      }
+      const modal = document.getElementById('vault-modal');
+      const addrEl = document.getElementById('modalReceiveAddress');
+      if (addrEl) addrEl.textContent = currentAccount.address;
       updateVaultControlsUI();
       if (typeof applyPwaBackButtonUI === 'function') applyPwaBackButtonUI();
       if (modal) {
@@ -11376,8 +11600,8 @@
       }
     }
 
-    function closeReceiveModal() {
-      const modal = document.getElementById('receive-modal');
+    function closeWalletVaultModal() {
+      const modal = document.getElementById('vault-modal');
       if (modal) {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
@@ -11482,12 +11706,14 @@
       updateVaultControlsUI();
       renderBalanceFigures(0);
       closeReceiveModal();
+      closeWalletVaultModal();
       switchTab('yeni-cuzdan');
       showToast('Wallet disconnected', 'logout');
     }
 
     function switchOrDisconnectWallet() {
       closeReceiveModal();
+      closeWalletVaultModal();
       switchTab('yeni-cuzdan');
     }
 
@@ -14308,8 +14534,12 @@
         closeTxModal();
         return true;
       }
-      if (!document.getElementById('receive-modal')?.classList.contains('hidden')) {
+      if (!document.getElementById('receive-bct-modal')?.classList.contains('hidden')) {
         closeReceiveModal();
+        return true;
+      }
+      if (!document.getElementById('vault-modal')?.classList.contains('hidden')) {
+        closeWalletVaultModal();
         return true;
       }
       if (!document.getElementById('block-detail-modal')?.classList.contains('hidden')) {
@@ -14325,8 +14555,8 @@
         return true;
       }
       if (!document.getElementById('userProfileModal')?.classList.contains('hidden')) {
-        if (typeof closeUserProfile === 'function') closeUserProfile();
-        else if (typeof closeUserProfileModal === 'function') closeUserProfileModal();
+        if (typeof navigateBackUserProfile === 'function') navigateBackUserProfile();
+        else if (typeof closeUserProfile === 'function') closeUserProfile();
         return true;
       }
       if (!document.getElementById('bnsOfferModal')?.classList.contains('hidden')) {
@@ -17363,6 +17593,7 @@
     let currentProfileData = null;
     let currentProfileSubTab = 'posts';
     let closeProfileTimeout = null;
+    let userProfileHistoryStack = [];
 
     function openMyUserProfile() {
       if (currentAccount && currentAccount.address) {
@@ -17373,7 +17604,23 @@
       }
     }
 
-    async function openUserProfile(addressOrHandle, initialTab = 'posts') {
+    function closeUserProfileDirectly() {
+      userProfileHistoryStack = [];
+      closeUserProfile();
+    }
+
+    function navigateBackUserProfile() {
+      if (userProfileHistoryStack && userProfileHistoryStack.length > 0) {
+        const prevTarget = userProfileHistoryStack.pop();
+        if (prevTarget) {
+          openUserProfile(prevTarget, 'posts', true);
+          return;
+        }
+      }
+      closeUserProfile();
+    }
+
+    async function openUserProfile(addressOrHandle, initialTab = 'posts', isBackNav = false) {
       if (closeProfileTimeout) {
         clearTimeout(closeProfileTimeout);
         closeProfileTimeout = null;
@@ -17386,6 +17633,17 @@
       if (!raw) return;
       const cleanTarget = raw.replace(/^[#@]+/, '').trim();
       if (!cleanTarget) return;
+
+      // Track profile navigation stack for step-by-step back navigation
+      if (!isBackNav && currentProfileData && currentProfileData.address) {
+        const curAddr = String(currentProfileData.address).toLowerCase();
+        const nextTarget = String(cleanTarget).toLowerCase();
+        if (curAddr !== nextTarget && !curAddr.includes(nextTarget) && !nextTarget.includes(curAddr)) {
+          if (!userProfileHistoryStack.includes(currentProfileData.address)) {
+            userProfileHistoryStack.push(currentProfileData.address);
+          }
+        }
+      }
 
       // Reset search bar & states cleanly on profile open
       window._profileAllTxs = [];
@@ -17479,6 +17737,7 @@
     }
 
     function closeUserProfile(immediate = false) {
+      userProfileHistoryStack = [];
       const modal = document.getElementById('userProfileModal');
       const card = document.getElementById('userProfileModalCard');
       if (!modal || !card) return;
