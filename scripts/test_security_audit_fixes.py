@@ -28,9 +28,10 @@ bc.nodes["test-unauth-node"] = {
     "auth_verified": False,
     "is_genesis": False,
 }
-# Even if staked >= 1000, if not auth_verified, is_active_validator must return False!
+from core.blockchain import VALIDATOR_STAKE_VAULT_ADDRESS
+bc._ensure_ledger_index()
 bc._confirmed_stakes_map[test_addr] = 1000 * 100_000_000
-bc._confirmed_units_map["BCT9999999999999999999999999999999999999999"] = 10000 * 100_000_000
+bc._confirmed_units_map[VALIDATOR_STAKE_VAULT_ADDRESS] = 10000 * 100_000_000
 is_val_unauth = bc.is_active_validator(test_addr)
 print(f"Unauthenticated node is_active_validator: {is_val_unauth} (Expected: False)")
 assert not is_val_unauth, "Unauthenticated peer node should NOT be an active validator!"
@@ -149,5 +150,99 @@ bc._apply_tx_to_ledger_maps(malformed_tx, units_map, nonces, tx_counts, used_sig
 assert units_map["BCT1111111111111111111111111111111111111111"] == 1000
 assert units_map["BCT2222222222222222222222222222222222222222"] == 500
 print("BNS accept offer fail-closed accounting guard verified! (Passed)")
+
+print("\n=== 9. Testing Anti-Whale MAX_TRANSACTION & MIN_TRANSACTION Enforcement ===")
+w_sender = Wallet()
+w_rec = Wallet()
+bc.register_wallet(w_sender.address, w_sender.get_public_key_hex(), grant_welcome_bonus=False)
+bc.register_wallet(w_rec.address, w_rec.get_public_key_hex(), grant_welcome_bonus=False)
+# Give sender enough balance for testing
+bc.balances[w_sender.address] = 5_000_000.0
+bc._confirmed_units_map[w_sender.address] = 5_000_000 * 100_000_000
+
+# 9.1 Dust transfer (< 0.01) must fail
+sig_dust = w_sender.sign(f"{w_sender.address}{w_rec.address}0.005")
+ok_dust, msg_dust, _ = bc.create_transaction(w_sender.address, w_rec.address, 0.005, sig_dust, w_sender.get_public_key_hex())
+assert not ok_dust and "Minimum transfer" in msg_dust, f"Dust transfer should fail: {msg_dust}"
+print("Core MIN_TRANSACTION dust rejection verified! (Passed)")
+
+# 9.2 Whale transfer exceeding MAX_TRANSACTION (1,000,000 BCT, ~6.7% of circulating supply) must fail
+sig_whale = w_sender.sign(f"{w_sender.address}{w_rec.address}1000001.0")
+ok_whale, msg_whale, _ = bc.create_transaction(w_sender.address, w_rec.address, 1_000_001.0, sig_whale, w_sender.get_public_key_hex())
+assert not ok_whale and "Maximum single transfer limit" in msg_whale, f"Whale transfer should fail: {msg_whale}"
+print("Core MAX_TRANSACTION anti-whale limit verified! (Passed)")
+
+# Clean up test balances
+del bc.balances[w_sender.address]
+del bc._confirmed_units_map[w_sender.address]
+
+print("\n=== 10. Testing Validator Concurrent Unstake Mutex & Zero-Amount Rejection ===")
+w_val = Wallet()
+bc.register_wallet(w_val.address, w_val.get_public_key_hex(), grant_welcome_bonus=False)
+bc._ensure_ledger_index()
+bc._confirmed_stakes_map[w_val.address] = 2000 * 100_000_000
+bc._confirmed_units_map[VALIDATOR_STAKE_VAULT_ADDRESS] = 10000 * 100_000_000
+
+# 10.1 Zero unstake must fail
+ok_zero, msg_zero, _ = bc.execute_validator_unstake(w_val.address, 0.0, "sig", w_val.get_public_key_hex())
+assert not ok_zero and "greater than zero" in msg_zero, f"Zero unstake should fail: {msg_zero}"
+print("Zero-amount unstake rejected! (Passed)")
+
+# 10.2 First valid unstake queues in pending_transactions
+sig_un1 = w_val.sign(f"VALIDATOR_UNSTAKE:{w_val.address}:500.0")
+ok_un1, msg_un1, _ = bc.execute_validator_unstake(w_val.address, 500.0, sig_un1, w_val.get_public_key_hex())
+assert ok_un1, f"First unstake should succeed: {msg_un1}"
+
+# 10.3 Second concurrent unstake while first is pending MUST be rejected
+sig_un2 = w_val.sign(f"VALIDATOR_UNSTAKE:{w_val.address}:500.0")
+ok_un2, msg_un2, _ = bc.execute_validator_unstake(w_val.address, 500.0, sig_un2, w_val.get_public_key_hex())
+assert not ok_un2 and "Bekleyen" in msg_un2, f"Concurrent unstake should fail: {msg_un2}"
+print("Concurrent validator unstake mutex verified! (Passed)")
+
+# Clean up pending
+bc.pending_transactions = [tx for tx in bc.pending_transactions if tx.extra_data.get("staker") != w_val.address]
+del bc._confirmed_stakes_map[w_val.address]
+
+print("\n=== 11. Testing node_runner.py BNS Accept Offer Parity ===")
+from node_runner import LockTraceNode
+import os
+test_data_dir = os.path.abspath("./test_node_data")
+os.makedirs(test_data_dir, exist_ok=True)
+lnode = LockTraceNode(miner_engine="python", enable_web=False, data_dir=test_data_dir)
+# Construct a fake block with a malformed bns_accept_offer (missing seller)
+fake_blk = {
+    "index": 999999,
+    "transactions": [{
+        "sender": "BCT1111111111111111111111111111111111111111",
+        "receiver": "BCT2222222222222222222222222222222222222222",
+        "amount": 100.0,
+        "fee": 1.0,
+        "tx_type": "bns_accept_offer",
+        "extra_data": {} # Missing seller!
+    }]
+}
+lnode.chain_by_index[999999] = fake_blk
+bal_rec, _, _ = lnode.local_calc_balance_and_nonce("BCT2222222222222222222222222222222222222222")
+assert bal_rec == 0.0, f"Malformed bns_accept_offer must NOT credit receiver in node_runner! Got: {bal_rec}"
+del lnode.chain_by_index[999999]
+print("node_runner bns_accept_offer parity verified! (Passed)")
+
+print("\n=== 12. Testing node_runner.py Transaction Limit Checks ===")
+code_dust, resp_dust = lnode.handle_decentralized_write("/api/v1/transaction", {
+    "sender": "BCT1111111111111111111111111111111111111111",
+    "receiver": "BCT2222222222222222222222222222222222222222",
+    "amount": 0.005,
+    "signature": "sig"
+})
+assert code_dust == 400 and "Minimum transfer limit" in resp_dust.get("message", ""), f"node_runner dust failed: {resp_dust}"
+
+code_whale, resp_whale = lnode.handle_decentralized_write("/api/v1/transaction", {
+    "sender": "BCT1111111111111111111111111111111111111111",
+    "receiver": "BCT2222222222222222222222222222222222222222",
+    "amount": 1_000_001.0,
+    "signature": "sig"
+})
+assert code_whale == 400 and "Maximum single transfer limit" in resp_whale.get("message", ""), f"node_runner whale failed: {resp_whale}"
+print("node_runner MIN_TRANSACTION & MAX_TRANSACTION verified! (Passed)")
 
 print("\nALL SECURITY AUDIT VERIFICATIONS PASSED SUCCESSFULLY!")

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.6)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.7)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner (CPU & GPU Accelerated),
 and cryptographically verified decentralized Web Wallet on Linux, macOS, or Windows with
@@ -53,7 +53,7 @@ logger = logging.getLogger("LockTraceNode")
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.9.6"
+VERSION = "2.9.7"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)
@@ -946,7 +946,7 @@ class LockTraceNode:
         )
         net_credit_types = (
             "transfer", "space_post", "bns_register", "bns_buy",
-            "bns_accept_offer", "validator_stake", "validator_unstake"
+            "validator_stake", "validator_unstake"
         )
 
         with self.chain_lock:
@@ -961,16 +961,17 @@ class LockTraceNode:
                     extra = tx.get("extra_data") or {}
                     sig_str = str(tx.get("signature", "") or "")
 
-                    if tx_type == "bns_accept_offer" and extra.get("seller") and sender == extra.get("seller"):
-                        if receiver == clean_addr:
-                            exists = True
-                            units -= amt_u
-                        if sender == clean_addr:
-                            exists = True
-                            units += (amt_u - fee_u)
-                            nonce += 1
-                        if clean_addr == TREASURY_ADDRESS and fee_u > 0:
-                            units += fee_u
+                    if tx_type == "bns_accept_offer":
+                        if extra and extra.get("seller") and sender == extra.get("seller"):
+                            if receiver == clean_addr:
+                                exists = True
+                                units -= amt_u
+                            if sender == clean_addr:
+                                exists = True
+                                units += (amt_u - fee_u)
+                                nonce += 1
+                            if clean_addr == TREASURY_ADDRESS and fee_u > 0:
+                                units += fee_u
                         continue
 
                     if receiver == clean_addr:
@@ -1494,7 +1495,14 @@ class LockTraceNode:
             sender = _normalize_bct_address(raw_sender)
             receiver = _normalize_bct_address(raw_receiver)
             amount = round(float(payload.get("amount", 0.0)), 8)
-            if amount <= 0 or sender == receiver or not _is_valid_bct_address(receiver):
+            min_tx = 0.01
+            max_tx = 1_000_000.0
+            min_fee = 0.001
+            if amount < min_tx:
+                return 400, {"success": False, "message": f"Minimum transfer limit is {min_tx} BCT to prevent network dust spam."}
+            if amount > max_tx:
+                return 400, {"success": False, "message": f"Maximum single transfer limit is {max_tx:,.0f} BCT (Anti-Whale limit: <= 10% circulating supply)."}
+            if sender == receiver or not _is_valid_bct_address(receiver):
                 return 400, {"success": False, "message": "Invalid recipient address or amount."}
             amt_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
             variants = [
@@ -1511,7 +1519,9 @@ class LockTraceNode:
             bal, _, _ = self.local_calc_balance_and_nonce(sender)
             if bal < amount:
                 return 400, {"success": False, "message": f"Insufficient balance ({bal:.4f} BCT)."}
-            fee = round(amount * 0.01, 8)
+            fee = max(min_fee, round(amount * 0.01, 8))
+            if amount <= fee:
+                return 400, {"success": False, "message": f"Transfer amount must exceed network fee ({min_fee} BCT)."}
             tx = {
                 "sender": sender,
                 "receiver": receiver,
@@ -2452,6 +2462,8 @@ class LockTraceNode:
             amt_u = _to_units(float(t.get("amount", 0.0)))
             fee_u = _to_units(float(t.get("fee", 0.0)))
             if amt_u < 0 or fee_u < 0:
+                return False
+            if ttype == "transfer" and amt_u > _to_units(1_000_000.0):
                 return False
             if b_idx > 0 and ttype == "genesis":
                 return False

@@ -511,7 +511,12 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Zero-Custodial Server Enforcement:** Disabled custodial Path B in `/api/v1/wallet/create` and `/api/v1/wallet/import`; server unconditionally rejects private keys or mnemonics over network.
    - **Consensus Timestamp Monotonicity & Anti-Spoofing:** Enforced strict block timestamp monotonicity (`cur_ts > prev_ts`) and future drift bounds (`cur_ts <= now + 120s`) across `core/blockchain.py:is_chain_valid` and `node_runner.py:verify_single_block` to eliminate artificial stall-drop difficulty reduction exploits.
    - **Client-Side Vault Encryption Hardening:** Hardened `encryptDeviceSecrets` with per-encryption 16-byte random IVs via CSPRNG (`window.crypto.getRandomValues`) to prevent keystream reuse, while preserving seamless backward compatibility migration for existing vaults.
-26. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+26. **Anti-Whale Transfer Limits & Validator Concurrency Hardening (v2.9.7):**
+   - **Anti-Whale Transfer Ceiling:** Enforced `MAX_TRANSACTION = 1_000_000` BCT (<10% of circulating supply) and `MIN_TRANSACTION = 0.01` BCT across both `core/blockchain.py:create_transaction` and `node_runner.py:handle_decentralized_write`.
+   - **Zero-Fee Dust Spam Mitigation:** Enforced `MIN_TRANSFER_FEE = 0.001` BCT in P2P decentralized node transfer processing, barring sub-dust zero-fee transactions.
+   - **Validator Stake/Unstake Concurrency Mutex:** Enforced mempool mutex rejecting concurrent unstake/stake transactions until pending ones are sealed into a block, and barred `amt <= 0` in `execute_validator_unstake`.
+   - **Accounting & BNS Trade Parity:** Synchronized `node_runner.py:local_calc_balance_and_nonce` with `core/blockchain.py` by removing `bns_accept_offer` from `net_credit_types` and enforcing fail-closed seller checks. Synchronized SocialFi fee tokenomics in `config.py`.
+27. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

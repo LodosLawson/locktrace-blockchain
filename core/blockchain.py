@@ -869,12 +869,17 @@ class Blockchain:
                 from config import Config
                 min_tx = float(getattr(Config, "MIN_TRANSACTION", 0.01))
                 min_fee = float(getattr(Config, "MIN_TRANSFER_FEE", 0.001))
+                max_tx = float(getattr(Config, "MAX_TRANSACTION", 1_000_000.0))
             except Exception:
                 min_tx = 0.01
                 min_fee = 0.001
+                max_tx = 1_000_000.0
 
             if amount < min_tx:
                 return False, f"Minimum transfer amount is {min_tx} BCT to prevent network dust spam.", None
+
+            if amount > max_tx:
+                return False, f"Maximum single transfer limit is {max_tx:,.0f} BCT (Anti-Whale limit: <= 10% circulating supply).", None
 
             expected_payload = signed_payload or f"{raw_sender}{raw_receiver}{amount}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_sender, expected_payload, signature, public_key)
@@ -2065,8 +2070,8 @@ class Blockchain:
             if not sig_ok:
                 return False, sig_msg, None
 
-            # Standard 1% network trade fee
-            fee = round(sale_price * 0.01, 8)
+            # Standard 1% network trade fee (minimum 0.001 BCT fee)
+            fee = max(0.001, round(sale_price * 0.01, 8))
             net_amount = round(sale_price - fee, 8)
 
             extra_data = {
@@ -3096,6 +3101,11 @@ class Blockchain:
             if amt < MIN_VALIDATOR_STAKE:
                 return False, f"Minimum validator stake is {MIN_VALIDATOR_STAKE:.2f} BCT.", None
 
+            if any(tx.tx_type == "validator_unstake" and normalize_bct_address(tx.receiver) == clean_sender for tx in self.pending_transactions):
+                return False, "Bekleyen (henüz blokta onaylanmamış) bir unstake işleminiz var. Lütfen önce mevcut unstake işleminin blokta onaylanmasını bekleyin.", None
+            if any(tx.tx_type == "validator_stake" and normalize_bct_address(tx.sender) == clean_sender for tx in self.pending_transactions):
+                return False, "Bekleyen bir stake işleminiz zaten havuzda. Lütfen önce mevcut işlemin blokta onaylanmasını bekleyin.", None
+
             bal = self.verify_and_recalc_balance(clean_sender)
             if bal < amt:
                 return False, f"Insufficient balance to stake {amt:.2f} BCT (Available: {bal:.4f} BCT).", None
@@ -3167,8 +3177,13 @@ class Blockchain:
             except (ValueError, TypeError):
                 return False, "Invalid unstake amount.", None
 
-            if any(tx.tx_type == "validator_stake" and tx.sender == clean_sender for tx in self.pending_transactions):
+            if amt <= 0:
+                return False, "Unstake amount must be greater than zero.", None
+
+            if any(tx.tx_type == "validator_stake" and normalize_bct_address(tx.sender) == clean_sender for tx in self.pending_transactions):
                 return False, "Bekleyen (henüz blokta onaylanmamış) bir stake işleminiz var. Lütfen önce mevcut stake işleminin blokta onaylanmasını bekleyin.", None
+            if any(tx.tx_type == "validator_unstake" and normalize_bct_address(tx.receiver) == clean_sender for tx in self.pending_transactions):
+                return False, "Bekleyen (henüz blokta onaylanmamış) bir unstake işleminiz zaten havuzda. Lütfen önce mevcut işlemin blokta onaylanmasını bekleyin.", None
 
             cur_staked = self.get_validator_stake(clean_sender)
             if cur_staked < amt:

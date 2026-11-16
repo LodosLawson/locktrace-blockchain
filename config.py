@@ -40,7 +40,7 @@ if os.path.exists(env_path):
 
 class Config:
     # ── Protokol & Versiyon ───────────────────────────
-    PROTOCOL_VERSION = "2.9.6"
+    PROTOCOL_VERSION = "2.9.7"
     NETWORK_NAME = os.environ.get("BCT_NETWORK", "mainnet")
 
     # ── Anti-Stall & Resilience Parameters (v2.5.0) ───
@@ -69,10 +69,10 @@ class Config:
     THIRDWEB_DEFAULT_CHAIN = os.environ.get("THIRDWEB_DEFAULT_CHAIN", "base-sepolia")
 
     # ── Tokenomik & SocialFi Ücretleri (BCT) ───────────
-    SPACE_POST_FEE = 0.10       # 100% Burn to BURN_ADDRESS
-    SPACE_LIKE_FEE = 0.01       # 80% Creator, 20% Burn
-    SPACE_COMMENT_FEE = 0.02    # 50% Creator, 50% Burn
-    SPACE_FOLLOW_FEE = 1.00     # 80% Creator, 20% Burn
+    SPACE_POST_FEE = 0.10       # 80% Treasury reserve, 20% Validator/Miner fee
+    SPACE_LIKE_FEE = 0.01       # 20% Creator royalty, 70% Treasury reserve, 10% Validator fee
+    SPACE_COMMENT_FEE = 0.02    # 20% Creator royalty, 70% Treasury reserve, 10% Validator fee
+    SPACE_FOLLOW_FEE = 1.00     # 50% Creator, 30% Miner/Validator pool, 20% Treasury reserve
 
     # ── BNS Alan Adı Kayıt Ücretleri (100% Burn) ──────
     BNS_FEES = {

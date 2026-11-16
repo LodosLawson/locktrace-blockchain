@@ -214,7 +214,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.9.6` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.9.7` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -616,3 +616,13 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 6. **Arayüz Dokümantasyon & Güvenlik Politikası Sürüm Eşitlemesi (v2.9.6):** `frontend/index.html` ve `templates/index.html` üzerinde kalan tüm eski `v2.8.4` etiketleri (`Master Docs`, `Technical Whitepaper`, `Security Policy`, `Integrity Shield`) güncel aktif sürüm `v2.9.6` ile eşitlendi ve SHA-256 CSP özetleri senkronize edildi.
 7. **Toz (Dust) İşlem Spamı & Sıfır Ücret Sömürüsü Engellendi:** Minimum transfer tutarı 0.01 BCT, taban işlem ücreti 0.001 BCT olarak sabitlendi. Saldırganın 0.00000001 BCT gibi sıfır masraflı mikro işlemlerle mempool'u tetikleyip blok üretme taktiği kalıcı olarak engellendi.
 8. **Kendi Kendine İşlem Atarak Hazine Sübvansiyonu Çekme (Self-Loop Dust Mining) Engellendi & Saldırgan Kalıcı Slashed Edildi:** Yalnızca madencinin kendi adresleri arasında dönen işlemleri içeren bloklarda Hazine blok sübvansiyonu (0.05 BCT) otomatik olarak 0.00 BCT'ye düşürüldü. Ayrıca blok 749'da çift unstake ve sahte toz madenciliği yapan `BCT3a5f3ce88254c92f1daa43caa96c3bb0e2ca163b` ve işbirlikçi adresi kalıcı olarak `slashed_validators` listesine eklendi ve tüm blok üretim / ödül yetkileri iptal edildi.
+
+---
+
+## 🛡️ 26. BlocTag / LockTrace v2.9.7: Balina Transfer Tavanı, Validator Eşzamanlılık Koruması & P2P Eşitlemesi
+
+1. **Anti-Whale Transfer Tavanı (Maksimum %10 Dolaşımdaki Arz):** `MAX_TRANSACTION = 1_000_000` BCT (dolaşımdaki ~14.89M BCT arzın <%10'u) ve `MIN_TRANSACTION = 0.01` BCT limitleri hem `core/blockchain.py:create_transaction` hem de `node_runner.py:handle_decentralized_write` katmanlarında zorunlu kılındı.
+2. **Sıfır Ücretli Toz Spam Koruması:** `node_runner.py` transfer işlemcisinde `MIN_TRANSFER_FEE = 0.001` BCT tabanı ve `amount > fee` şartı zorunlu tutularak, mikro transferlerle sıfır ücretli blok üretim sömürüsü tamamen engellendi.
+3. **Validator Stake / Unstake Eşzamanlılık Mutex'i:** `execute_validator_unstake` ve `execute_validator_stake` fonksiyonlarında bekleyen işlem kontrolü çift yönlü sıkılaştırıldı; mempool'da bekleyen bir stake veya unstake varken yeni işlem açılması engellendi ve pozitif olmayan (`amt <= 0`) unstake talepleri reddedildi.
+4. **P2P Muhasebe & BNS Kabul Paritesi:** `node_runner.py:local_calc_balance_and_nonce` fonksiyonundan `bns_accept_offer` kaldırıldı ve satıcı ekstra verisi doğrulaması `core/blockchain.py` ile %100 birebir eşitlendi.
+5. **Tokenomik & Sosyal Ücret Belirtimi Eşitlemesi:** `config.py` içerisindeki eski/hatalı yorum satırları güncellenerek konsensüs kurallarıyla (Beğeni: %20 Yazar, %70 Hazine, %10 Doğrulayıcı; Yorum: %20 Yazar, %70 Hazine, %10 Doğrulayıcı) tam uyumlu hale getirildi.
