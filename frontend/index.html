@@ -266,6 +266,572 @@
       }
     }
 
+    /* =========================================================================
+       MOBILE LANDSCAPE ORIENTATION & NOTCH ADAPTIVE ENGINE
+       Seamless UI optimization when a mobile device is rotated horizontally.
+       ========================================================================= */
+    .pl-safe {
+      padding-left: env(safe-area-inset-left, 0px);
+    }
+    .pr-safe {
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+    .px-safe {
+      padding-left: env(safe-area-inset-left, 0px);
+      padding-right: env(safe-area-inset-right, 0px);
+    }
+
+    @media (orientation: landscape) and (max-height: 550px), (max-height: 500px) and (min-aspect-ratio: 13/9) {
+      /* 1. Ensure Desktop Sidebar and Desktop Header stay hidden on mobile landscape */
+      aside#desktopSidebar,
+      header#desktopTopHeader,
+      aside.md\:flex,
+      header.md\:flex {
+        display: none !important;
+      }
+
+      /* 2. Reset desktop left offset (256px) so content spans the full width */
+      .md\:pl-64,
+      div.md\:pl-64 {
+        padding-left: 0 !important;
+        margin-left: 0 !important;
+      }
+
+      /* 3. Force show Mobile Top Header with compact height and safe horizontal padding */
+      #mobileTopHeader,
+      header.md\:hidden#mobileTopHeader {
+        display: block !important;
+        position: fixed !important;
+        top: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 50 !important;
+        padding-left: env(safe-area-inset-left, 0px) !important;
+        padding-right: env(safe-area-inset-right, 0px) !important;
+      }
+
+      #mobileHeaderDefault {
+        height: 42px !important;
+        padding-left: max(8px, env(safe-area-inset-left, 0px)) !important;
+        padding-right: max(8px, env(safe-area-inset-right, 0px)) !important;
+        gap: 6px !important;
+      }
+
+      #mobileHeaderPostDetail {
+        height: 42px !important;
+        padding-left: max(8px, env(safe-area-inset-left, 0px)) !important;
+        padding-right: max(8px, env(safe-area-inset-right, 0px)) !important;
+      }
+
+      #mobileHeaderDefault button {
+        height: 28px !important;
+        padding-top: 2px !important;
+        padding-bottom: 2px !important;
+      }
+
+      #mobileHeaderDefault .w-7.h-7 {
+        width: 28px !important;
+        height: 28px !important;
+      }
+
+      /* 4. Force show Mobile Bottom Nav with compact height and centered container */
+      #mobile-nav,
+      nav.md\:hidden#mobile-nav {
+        display: block !important;
+        position: fixed !important;
+        bottom: 0 !important;
+        left: 0 !important;
+        right: 0 !important;
+        width: 100% !important;
+        z-index: 40 !important;
+        padding-left: env(safe-area-inset-left, 0px) !important;
+        padding-right: env(safe-area-inset-right, 0px) !important;
+      }
+
+      #mobile-nav > div {
+        height: 42px !important;
+        max-width: 640px !important;
+        margin-left: auto !important;
+        margin-right: auto !important;
+        padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+        padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
+      }
+
+      .mobile-nav-btn {
+        height: 40px !important;
+        gap: 0px !important;
+      }
+
+      .mobile-nav-btn span.material-symbols-outlined {
+        font-size: 20px !important;
+      }
+
+      /* 5. Main content padding offset for mobile landscape */
+      .mobile-main-offset {
+        padding-top: calc(44px + env(safe-area-inset-top, 0px)) !important;
+        padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+        padding-left: max(16px, env(safe-area-inset-left, 0px)) !important;
+        padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
+      }
+
+      /* 6. Floating Action Button (Space FAB) adjustment */
+      aside.fixed.bottom-\[74px\],
+      aside.fixed:has(#fab-compose) {
+        bottom: calc(46px + env(safe-area-inset-bottom, 0px)) !important;
+        right: max(14px, env(safe-area-inset-right, 0px)) !important;
+      }
+
+      #fab-compose {
+        width: 42px !important;
+        height: 42px !important;
+        padding: 8px !important;
+      }
+
+      /* 7. Toast position adjustment */
+      #toast {
+        bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+      }
+
+      /* 8. Modals & Drawers: Ultra-responsive landscape scaling */
+      #mobileMenuModal,
+      #tx-modal,
+      #receive-bct-modal,
+      #vault-modal,
+      #pin-unlock-modal,
+      #ios-pwa-modal,
+      #block-detail-modal,
+      #qr-scanner-modal,
+      #network-security-modal,
+      #bnsRegisterModal,
+      #bnsSetPriceModal,
+      #bnsTransferModal,
+      #bnsBuyModal,
+      #bnsOfferModal,
+      #quickComposeModal,
+      #spaceSettingsModal,
+      #web3TxConfirmModal,
+      #postShareModal,
+      #notificationModal,
+      #pushPromptModal {
+        padding: 6px max(12px, env(safe-area-inset-right, 0px)) 6px max(12px, env(safe-area-inset-left, 0px)) !important;
+        align-items: center !important;
+        justify-content: center !important;
+      }
+
+      /* Modal card bodies in landscape */
+      #mobileMenuDrawerCard,
+      #modal-card,
+      #receive-bct-modal > div,
+      #vault-modal > div,
+      #pin-unlock-modal > div,
+      #ios-pwa-modal > div,
+      #block-detail-modal > div,
+      #qr-scanner-modal > div,
+      #network-security-modal > div,
+      #bnsRegisterModal > div,
+      #bnsSetPriceModal > div,
+      #bnsTransferModal > div,
+      #bnsBuyModal > div,
+      #bnsOfferModal > div,
+      #quickComposeModalCard,
+      #spaceSettingsModal > div,
+      #web3TxConfirmCard,
+      #postShareModalCard,
+      #notificationModal > div,
+      #pushPromptModal > div {
+        max-height: 94dvh !important;
+        overflow-y: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+        padding: 12px 16px !important;
+        gap: 8px !important;
+        border-radius: 20px !important;
+      }
+
+      /* Navigation menu drawer grid in landscape (3 columns for wide space) */
+      #mobileMenuDrawerCard {
+        max-width: 620px !important;
+        border-radius: 20px !important;
+      }
+
+      #mobileMenuDrawerCard .grid-cols-2 {
+        grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+        gap: 6px !important;
+      }
+
+      #mobileMenuDrawerCard .w-12.h-1\.5 {
+        display: none !important;
+      }
+
+      /* Receive BCT Modal QR code in landscape */
+      #receiveQrImage {
+        width: 110px !important;
+        height: 110px !important;
+      }
+
+      #receive-bct-modal .w-48.h-48,
+      #receive-bct-modal .w-52.h-52 {
+        width: 110px !important;
+        height: 110px !important;
+      }
+
+      /* QR Scanner modal in landscape */
+      #qr-reader,
+      #qr-scanner-modal .aspect-square {
+        max-height: 160px !important;
+        max-width: 220px !important;
+        margin: 0 auto !important;
+        aspect-ratio: 4 / 3 !important;
+      }
+
+      /* PIN Unlock modal in landscape */
+      #pin-unlock-modal .w-12.h-12 {
+        width: 36px !important;
+        height: 36px !important;
+      }
+
+      #pin-unlock-modal .w-12.h-12 span {
+        font-size: 18px !important;
+      }
+
+      #pin-unlock-modal p {
+        display: none !important;
+      }
+
+      #pinUnlockInput {
+        padding: 6px 12px !important;
+        font-size: 16px !important;
+      }
+
+      #pin-unlock-modal button {
+        height: 36px !important;
+      }
+
+      /* Web3 Signature Confirm Card in landscape */
+      #web3TxConfirmCard {
+        max-width: 520px !important;
+      }
+
+      #web3TxConfirmCard .p-4,
+      #web3TxConfirmCard .p-5,
+      #web3TxConfirmCard .p-3\.5 {
+        padding: 8px 12px !important;
+      }
+
+      /* Quick Compose Modal in landscape */
+      #quickComposeModalCard textarea {
+        height: 70px !important;
+        min-height: 60px !important;
+      }
+
+      /* User Profile Modal in landscape */
+      #userProfileModal .sticky.top-0 {
+        padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+        padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
+      }
+
+      #userProfileModal .sticky.top-0 > div {
+        height: 42px !important;
+      }
+
+      /* Wallet Balance Hero section compact in landscape */
+      #tab-cuzdanim .text-3xl,
+      #tab-cuzdanim .text-4xl,
+      #tab-cuzdanim .text-5xl {
+        font-size: 26px !important;
+        line-height: 30px !important;
+      }
+
+      #tab-cuzdanim .pt-space-sm {
+        padding-top: 2px !important;
+      }
+
+      #tab-cuzdanim .pb-space-md {
+        padding-bottom: 6px !important;
+      }
+
+      #walletTopProfileBar {
+        margin-top: 2px !important;
+        margin-bottom: 4px !important;
+        padding: 6px 10px !important;
+      }
+
+      /* Send / Receive buttons in landscape */
+      #tab-cuzdanim .grid.grid-cols-2.gap-3.mb-4 {
+        margin-bottom: 8px !important;
+      }
+
+      #tab-cuzdanim .grid.grid-cols-2.gap-3.mb-4 button {
+        height: 38px !important;
+      }
+    }
+
+    /* Fallback / class-based override for devices toggled via JS */
+    html.is-mobile-landscape aside#desktopSidebar,
+    html.is-mobile-landscape header#desktopTopHeader,
+    html.is-mobile-landscape aside.md\:flex,
+    html.is-mobile-landscape header.md\:flex {
+      display: none !important;
+    }
+
+    html.is-mobile-landscape .md\:pl-64,
+    html.is-mobile-landscape div.md\:pl-64 {
+      padding-left: 0 !important;
+      margin-left: 0 !important;
+    }
+
+    html.is-mobile-landscape #mobileTopHeader,
+    html.is-mobile-landscape header.md\:hidden#mobileTopHeader {
+      display: block !important;
+      position: fixed !important;
+      top: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      z-index: 50 !important;
+      padding-left: env(safe-area-inset-left, 0px) !important;
+      padding-right: env(safe-area-inset-right, 0px) !important;
+    }
+
+    html.is-mobile-landscape #mobileHeaderDefault {
+      height: 42px !important;
+      padding-left: max(8px, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(8px, env(safe-area-inset-right, 0px)) !important;
+      gap: 6px !important;
+    }
+
+    html.is-mobile-landscape #mobileHeaderPostDetail {
+      height: 42px !important;
+      padding-left: max(8px, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(8px, env(safe-area-inset-right, 0px)) !important;
+    }
+
+    html.is-mobile-landscape #mobileHeaderDefault button {
+      height: 28px !important;
+      padding-top: 2px !important;
+      padding-bottom: 2px !important;
+    }
+
+    html.is-mobile-landscape #mobileHeaderDefault .w-7.h-7 {
+      width: 28px !important;
+      height: 28px !important;
+    }
+
+    html.is-mobile-landscape #mobile-nav,
+    html.is-mobile-landscape nav.md\:hidden#mobile-nav {
+      display: block !important;
+      position: fixed !important;
+      bottom: 0 !important;
+      left: 0 !important;
+      right: 0 !important;
+      width: 100% !important;
+      z-index: 40 !important;
+      padding-left: env(safe-area-inset-left, 0px) !important;
+      padding-right: env(safe-area-inset-right, 0px) !important;
+    }
+
+    html.is-mobile-landscape #mobile-nav > div {
+      height: 42px !important;
+      max-width: 640px !important;
+      margin-left: auto !important;
+      margin-right: auto !important;
+      padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
+    }
+
+    html.is-mobile-landscape .mobile-nav-btn {
+      height: 40px !important;
+      gap: 0px !important;
+    }
+
+    html.is-mobile-landscape .mobile-nav-btn span.material-symbols-outlined {
+      font-size: 20px !important;
+    }
+
+    html.is-mobile-landscape .mobile-main-offset {
+      padding-top: calc(44px + env(safe-area-inset-top, 0px)) !important;
+      padding-bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+      padding-left: max(16px, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
+    }
+
+    html.is-mobile-landscape aside.fixed.bottom-\[74px\],
+    html.is-mobile-landscape aside.fixed:has(#fab-compose) {
+      bottom: calc(46px + env(safe-area-inset-bottom, 0px)) !important;
+      right: max(14px, env(safe-area-inset-right, 0px)) !important;
+    }
+
+    html.is-mobile-landscape #fab-compose {
+      width: 42px !important;
+      height: 42px !important;
+      padding: 8px !important;
+    }
+
+    html.is-mobile-landscape #toast {
+      bottom: calc(48px + env(safe-area-inset-bottom, 0px)) !important;
+    }
+
+    html.is-mobile-landscape #mobileMenuModal,
+    html.is-mobile-landscape #tx-modal,
+    html.is-mobile-landscape #receive-bct-modal,
+    html.is-mobile-landscape #vault-modal,
+    html.is-mobile-landscape #pin-unlock-modal,
+    html.is-mobile-landscape #ios-pwa-modal,
+    html.is-mobile-landscape #block-detail-modal,
+    html.is-mobile-landscape #qr-scanner-modal,
+    html.is-mobile-landscape #network-security-modal,
+    html.is-mobile-landscape #bnsRegisterModal,
+    html.is-mobile-landscape #bnsSetPriceModal,
+    html.is-mobile-landscape #bnsTransferModal,
+    html.is-mobile-landscape #bnsBuyModal,
+    html.is-mobile-landscape #bnsOfferModal,
+    html.is-mobile-landscape #quickComposeModal,
+    html.is-mobile-landscape #spaceSettingsModal,
+    html.is-mobile-landscape #web3TxConfirmModal,
+    html.is-mobile-landscape #postShareModal,
+    html.is-mobile-landscape #notificationModal,
+    html.is-mobile-landscape #pushPromptModal {
+      padding: 6px max(12px, env(safe-area-inset-right, 0px)) 6px max(12px, env(safe-area-inset-left, 0px)) !important;
+      align-items: center !important;
+      justify-content: center !important;
+    }
+
+    html.is-mobile-landscape #mobileMenuDrawerCard,
+    html.is-mobile-landscape #modal-card,
+    html.is-mobile-landscape #receive-bct-modal > div,
+    html.is-mobile-landscape #vault-modal > div,
+    html.is-mobile-landscape #pin-unlock-modal > div,
+    html.is-mobile-landscape #ios-pwa-modal > div,
+    html.is-mobile-landscape #block-detail-modal > div,
+    html.is-mobile-landscape #qr-scanner-modal > div,
+    html.is-mobile-landscape #network-security-modal > div,
+    html.is-mobile-landscape #bnsRegisterModal > div,
+    html.is-mobile-landscape #bnsSetPriceModal > div,
+    html.is-mobile-landscape #bnsTransferModal > div,
+    html.is-mobile-landscape #bnsBuyModal > div,
+    html.is-mobile-landscape #bnsOfferModal > div,
+    html.is-mobile-landscape #quickComposeModalCard,
+    html.is-mobile-landscape #spaceSettingsModal > div,
+    html.is-mobile-landscape #web3TxConfirmCard,
+    html.is-mobile-landscape #postShareModalCard,
+    html.is-mobile-landscape #notificationModal > div,
+    html.is-mobile-landscape #pushPromptModal > div {
+      max-height: 94dvh !important;
+      overflow-y: auto !important;
+      -webkit-overflow-scrolling: touch !important;
+      padding: 12px 16px !important;
+      gap: 8px !important;
+      border-radius: 20px !important;
+    }
+
+    html.is-mobile-landscape #mobileMenuDrawerCard {
+      max-width: 620px !important;
+      border-radius: 20px !important;
+    }
+
+    html.is-mobile-landscape #mobileMenuDrawerCard .grid-cols-2 {
+      grid-template-columns: repeat(3, minmax(0, 1fr)) !important;
+      gap: 6px !important;
+    }
+
+    html.is-mobile-landscape #mobileMenuDrawerCard .w-12.h-1\.5 {
+      display: none !important;
+    }
+
+    html.is-mobile-landscape #receiveQrImage {
+      width: 110px !important;
+      height: 110px !important;
+    }
+
+    html.is-mobile-landscape #receive-bct-modal .w-48.h-48,
+    html.is-mobile-landscape #receive-bct-modal .w-52.h-52 {
+      width: 110px !important;
+      height: 110px !important;
+    }
+
+    html.is-mobile-landscape #qr-reader,
+    html.is-mobile-landscape #qr-scanner-modal .aspect-square {
+      max-height: 160px !important;
+      max-width: 220px !important;
+      margin: 0 auto !important;
+      aspect-ratio: 4 / 3 !important;
+    }
+
+    html.is-mobile-landscape #pin-unlock-modal .w-12.h-12 {
+      width: 36px !important;
+      height: 36px !important;
+    }
+
+    html.is-mobile-landscape #pin-unlock-modal .w-12.h-12 span {
+      font-size: 18px !important;
+    }
+
+    html.is-mobile-landscape #pin-unlock-modal p {
+      display: none !important;
+    }
+
+    html.is-mobile-landscape #pinUnlockInput {
+      padding: 6px 12px !important;
+      font-size: 16px !important;
+    }
+
+    html.is-mobile-landscape #pin-unlock-modal button {
+      height: 36px !important;
+    }
+
+    html.is-mobile-landscape #web3TxConfirmCard {
+      max-width: 520px !important;
+    }
+
+    html.is-mobile-landscape #web3TxConfirmCard .p-4,
+    html.is-mobile-landscape #web3TxConfirmCard .p-5,
+    html.is-mobile-landscape #web3TxConfirmCard .p-3\.5 {
+      padding: 8px 12px !important;
+    }
+
+    html.is-mobile-landscape #quickComposeModalCard textarea {
+      height: 70px !important;
+      min-height: 60px !important;
+    }
+
+    html.is-mobile-landscape #userProfileModal .sticky.top-0 {
+      padding-left: max(12px, env(safe-area-inset-left, 0px)) !important;
+      padding-right: max(12px, env(safe-area-inset-right, 0px)) !important;
+    }
+
+    html.is-mobile-landscape #userProfileModal .sticky.top-0 > div {
+      height: 42px !important;
+    }
+
+    html.is-mobile-landscape #tab-cuzdanim .text-3xl,
+    html.is-mobile-landscape #tab-cuzdanim .text-4xl,
+    html.is-mobile-landscape #tab-cuzdanim .text-5xl {
+      font-size: 26px !important;
+      line-height: 30px !important;
+    }
+
+    html.is-mobile-landscape #tab-cuzdanim .pt-space-sm {
+      padding-top: 2px !important;
+    }
+
+    html.is-mobile-landscape #tab-cuzdanim .pb-space-md {
+      padding-bottom: 6px !important;
+    }
+
+    html.is-mobile-landscape #walletTopProfileBar {
+      margin-top: 2px !important;
+      margin-bottom: 4px !important;
+      padding: 6px 10px !important;
+    }
+
+    html.is-mobile-landscape #tab-cuzdanim .grid.grid-cols-2.gap-3.mb-4 {
+      margin-bottom: 8px !important;
+    }
+
+    html.is-mobile-landscape #tab-cuzdanim .grid.grid-cols-2.gap-3.mb-4 button {
+      height: 38px !important;
+    }
+
     .no-scrollbar::-webkit-scrollbar {
       display: none;
     }
@@ -292,6 +858,7 @@
   <!-- DESKTOP & TABLET SIDEBAR (>= 768px — Stitch Shell)                        -->
   <!-- ========================================================================= -->
   <aside
+    id="desktopSidebar"
     class="hidden md:flex fixed left-0 top-0 h-screen max-h-screen w-64 bg-surface-container-low/95 backdrop-blur-2xl z-50 flex-col justify-between py-3.5 px-3 border-r border-outline-variant/20 overflow-hidden">
     <!-- Top & Scrollable Nav Container -->
     <div class="flex flex-col min-h-0 flex-1 overflow-hidden">
@@ -611,6 +1178,7 @@
   <!-- DESKTOP TOP HEADER (>= 768px — Harmonized Stitch Shell)                   -->
   <!-- ========================================================================= -->
   <header
+    id="desktopTopHeader"
     class="hidden md:flex fixed top-0 left-64 right-0 h-16 bg-surface/80 backdrop-blur-xl border-b border-outline-variant/15 z-40 items-center justify-between px-8">
     <div class="flex items-center gap-3">
       <button
@@ -6818,7 +7386,7 @@
   <div class="fixed inset-0 z-[90] bg-background/85 backdrop-blur-md hidden items-center justify-center p-4"
     id="pin-unlock-modal" onclick="if(event.target===this) closePinUnlockModal(false);">
     <div
-      class="w-full max-w-[360px] rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl border border-primary/30 text-center">
+      class="w-full max-w-[360px] max-h-[94dvh] overflow-y-auto rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl border border-primary/30 text-center">
       <div class="w-12 h-12 rounded-full bg-primary/15 text-primary flex items-center justify-center mx-auto">
         <span class="material-symbols-outlined notranslate text-[24px]" translate="no">lock_open</span>
       </div>
@@ -7819,7 +8387,7 @@
     class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4 select-none"
     id="web3TxConfirmModal" onclick="if(event.target===this) closeWeb3TxModal();">
     <div
-      class="w-full max-w-[420px] rounded-3xl bg-[#181a1f] border border-[#2b2f38] text-white shadow-2xl flex flex-col overflow-hidden transition-all scale-95 opacity-0 duration-200"
+      class="w-full max-w-[420px] max-h-[94dvh] overflow-y-auto rounded-3xl bg-[#181a1f] border border-[#2b2f38] text-white shadow-2xl flex flex-col transition-all scale-95 opacity-0 duration-200"
       id="web3TxConfirmCard">
       <!-- Modal Top Navigation Bar -->
       <div class="px-4 sm:px-5 py-3.5 bg-[#1e2026] border-b border-[#2b2f38] flex items-center justify-between">
@@ -17124,7 +17692,37 @@
       }
     }
 
+    // =========================================================================
+    // MOBILE LANDSCAPE ORIENTATION & NOTCH ADAPTIVE ENGINE
+    // Detects phone rotation and dynamically adjusts layout classes and viewport safe areas
+    // =========================================================================
+    function syncMobileLandscapeState() {
+      try {
+        const isLandscape =
+          (window.matchMedia && window.matchMedia('(orientation: landscape) and (max-height: 550px)').matches) ||
+          (window.innerHeight <= 520 && window.innerWidth > window.innerHeight);
+
+        document.documentElement.classList.toggle('is-mobile-landscape', !!isLandscape);
+
+        // Adjust active open modal max-height if needed
+        const activeModalCard = document.querySelector('.fixed.inset-0.flex:not(.hidden) > div, .fixed.inset-0:not(.hidden) > div');
+        if (activeModalCard && isLandscape) {
+          activeModalCard.style.maxHeight = '94dvh';
+        }
+      } catch (_e) {}
+    }
+
+    function initMobileLandscapeOptimization() {
+      syncMobileLandscapeState();
+      window.addEventListener('resize', syncMobileLandscapeState, { passive: true });
+      window.addEventListener('orientationchange', () => {
+        setTimeout(syncMobileLandscapeState, 50);
+        setTimeout(syncMobileLandscapeState, 250);
+      }, { passive: true });
+    }
+
     function initApp() {
+      initMobileLandscapeOptimization();
       initModalScrollLockObserver();
       loadRpcSettings();
       updateRpcBadgeUI();
