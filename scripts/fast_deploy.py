@@ -107,7 +107,8 @@ sudo /opt/blockchaint/venv/bin/pip install -q -r /opt/blockchaint/requirements.t
 
 # 1. Sign Frontend with official Release Key
 cd /opt/blockchaint
-sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version 2.9.7 --key-file /home/ubuntu/.locktrace/release_signing_key.json
+VER=$(sudo /opt/blockchaint/venv/bin/python3 -c "import config; print(config.Config.PROTOCOL_VERSION)")
+sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version "$VER" --key-file /home/ubuntu/.locktrace/release_signing_key.json
 
 # 2. Publish to Nginx document root
 sudo mkdir -p /var/www/locktrace /var/www/locktrace/icons /opt/blockchaint/frontend/icons
@@ -124,7 +125,7 @@ sudo cp /opt/blockchaint/frontend/index.html /var/www/locktrace/index.html
 sudo cp /opt/blockchaint/frontend/sw.js /var/www/locktrace/sw.js
 sudo cp /opt/blockchaint/frontend/integrity.json /var/www/locktrace/integrity.json
 sudo cp /opt/blockchaint/frontend/integrity.json /opt/blockchaint/templates/integrity.json
-sudo chown -R www-data:www-data /var/www/locktrace
+sudo chown -R www-data:www-data /var/www/locktrace /opt/blockchaint/frontend
 
 # 3. Restart Services
 sudo systemctl restart blockchaint.service
