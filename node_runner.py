@@ -29,6 +29,7 @@ import argparse
 import hashlib
 import hmac
 import ctypes
+import ipaddress
 import json
 import logging
 import mimetypes
@@ -485,7 +486,7 @@ def calculate_block_hash_dict(blk: dict) -> str:
             "index": int(blk["index"]),
             "version": ver,
             "merkle_root": str(blk["merkle_root"]),
-            "miner": str(blk.get("miner", "Genesis-Validator")),
+            "miner": str(blk.get("miner") or ""),
             "transactions": blk["transactions"],
             "previous_hash": str(blk["previous_hash"]),
             "timestamp": blk["timestamp"],
@@ -874,7 +875,34 @@ class LockTraceNode:
         bind_ip = "127.0.0.1" if self.host == "127.0.0.1" else self.lan_ip
         return f"http://{bind_ip}:{self.port}"
 
+    @staticmethod
+    def _is_safe_peer_endpoint(url: str) -> bool:
+        """SSRF guard: allows public HTTP/HTTPS peer endpoints (blocks loopback, link-local, private IPs)."""
+        if not url or not isinstance(url, str):
+            return False
+        try:
+            parsed = urllib.parse.urlparse(url.strip())
+            if parsed.scheme not in ("http", "https") or not parsed.hostname:
+                return False
+            allow_local = os.environ.get("ALLOW_LOCAL_PEERS", "0") == "1"
+            host = parsed.hostname
+            if host in ("localhost", "127.0.0.1", "::1"):
+                return allow_local
+            infos = socket.getaddrinfo(host, parsed.port or 80, proto=socket.IPPROTO_TCP)
+            for info in infos:
+                ip_obj = ipaddress.ip_address(info[4][0])
+                if ip_obj.is_loopback or ip_obj.is_link_local or ip_obj.is_multicast or ip_obj.is_unspecified:
+                    if not (allow_local and ip_obj.is_loopback):
+                        return False
+                if ip_obj.is_private and not allow_local:
+                    return False
+            return True
+        except Exception:
+            return False
+
     def request(self, endpoint: str, data: dict = None, method: str = "GET", base_url: str = "", timeout: float = 8.0) -> dict:
+        if base_url and not self._is_safe_peer_endpoint(base_url):
+            return {"success": False, "message": "Peer endpoint blocked by SSRF defense", "_blocked": True}
         target_base = (base_url or self.seed_url).rstrip("/")
         url = f"{target_base}{endpoint}"
         body = json.dumps(data).encode("utf-8") if data is not None else None
@@ -2618,7 +2646,8 @@ class LockTraceNode:
                 nid = p.get("node_id")
                 ep = str(p.get("endpoint", "") or "").rstrip("/")
                 if nid and nid != self.node_id and ep.startswith("http") and "local-only" not in ep:
-                    self.known_peers[nid] = p
+                    if self._is_safe_peer_endpoint(ep):
+                        self.known_peers[nid] = p
 
     def sync_state_snapshot(self) -> bool:
         """

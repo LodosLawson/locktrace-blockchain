@@ -518,7 +518,7 @@ class Blockchain:
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
             "bns_accept_offer"
         }
-        net_credit_types = {"transfer", "space_post", "bns_register", "bns_buy", "bns_accept_offer", "validator_stake", "validator_unstake"}
+        net_credit_types = {"transfer", "space_post", "bns_register", "bns_buy", "validator_stake", "validator_unstake"}
         social_treasury_types = {"space_like", "space_comment", "space_follow"}
 
         amt_u = _to_units(tx.amount)
@@ -528,19 +528,20 @@ class Blockchain:
         ttype = tx.tx_type
         extra = tx.extra_data
 
-        if ttype == "bns_accept_offer" and extra and extra.get("seller") and snd == normalize_bct_address(extra.get("seller")):
-            # Canonical bns_accept_offer: sender is the signing seller (clean_owner), receiver is bidder
-            if rec:
-                tx_counts[rec] = tx_counts.get(rec, 0) + 1
-                units_map[rec] = units_map.get(rec, 0) - amt_u
-            if snd:
-                sender_nonces[snd] = sender_nonces.get(snd, 0) + 1
-                tx_counts[snd] = tx_counts.get(snd, 0) + 1
-                units_map[snd] = units_map.get(snd, 0) + (amt_u - fee_u)
-            if fee_u > 0:
-                units_map[TREASURY_ADDRESS] = units_map.get(TREASURY_ADDRESS, 0) + fee_u
-            if tx.signature:
-                used_sigs.add(tx.signature.strip())
+        if ttype == "bns_accept_offer":
+            if extra and extra.get("seller") and snd == normalize_bct_address(extra.get("seller")):
+                # Canonical bns_accept_offer: sender is the signing seller (clean_owner), receiver is bidder
+                if rec:
+                    tx_counts[rec] = tx_counts.get(rec, 0) + 1
+                    units_map[rec] = units_map.get(rec, 0) - amt_u
+                if snd:
+                    sender_nonces[snd] = sender_nonces.get(snd, 0) + 1
+                    tx_counts[snd] = tx_counts.get(snd, 0) + 1
+                    units_map[snd] = units_map.get(snd, 0) + (amt_u - fee_u)
+                if fee_u > 0:
+                    units_map[TREASURY_ADDRESS] = units_map.get(TREASURY_ADDRESS, 0) + fee_u
+                if tx.signature:
+                    used_sigs.add(tx.signature.strip())
             return
 
         if rec:
@@ -2734,10 +2735,11 @@ class Blockchain:
             is_slashed = False
             slashed_note = ""
 
-            val_stake = self.get_validator_stake(target_address)
-            is_validator = self.is_active_validator(target_address)
+            norm_target = normalize_bct_address(target_address)
+            val_stake = self.get_validator_stake(norm_target)
+            is_validator = self.is_active_validator(norm_target)
 
-            if target_address in self.slashed_validators:
+            if norm_target in self.slashed_validators:
                 tag = "İşaretli / Slashed Hesap (Kural İhlali)"
                 tag_type = "slashed"
                 is_validator = False
@@ -3365,7 +3367,7 @@ class Blockchain:
         for _nid, n in self.nodes.items():
             if n.get("is_genesis"):
                 continue
-            m_addr = str(n.get("miner_address", "") or "").strip()
+            m_addr = normalize_bct_address(str(n.get("miner_address", "") or "").strip())
             if not is_valid_bct_address(m_addr) or m_addr == TREASURY_ADDRESS:
                 continue
             if self.get_validator_stake(m_addr) < MIN_VALIDATOR_STAKE or m_addr in self.slashed_validators:
@@ -3386,12 +3388,12 @@ class Blockchain:
         and Sybil deduplication across both wallet address and physical host/IP.
         """
         ts = now or time.time()
-        clean_exclude = (exclude_miner or "").strip()
+        clean_exclude = normalize_bct_address(exclude_miner)
         candidates = []
         for _nid, n in self.nodes.items():
             if n.get("is_genesis"):
                 continue
-            m_addr = str(n.get("miner_address", "") or "").strip()
+            m_addr = normalize_bct_address(str(n.get("miner_address", "") or "").strip())
             if not is_valid_bct_address(m_addr) or m_addr in (TREASURY_ADDRESS, clean_exclude):
                 continue
             # Fake Uptime Guard (LT-01 Hardening): Active heartbeat within 180s
@@ -3622,7 +3624,7 @@ class Blockchain:
         - 70% to Block Producer (`mining_reward`) + 30% split equally across verified active peer validators (`validator_reward`).
         - 100% to Block Producer if no other eligible peer validators are online.
         """
-        clean_miner = (miner_address or "").strip()
+        clean_miner = normalize_bct_address(miner_address)
         if not clean_miner or not is_valid_bct_address(clean_miner) or clean_miner == TREASURY_ADDRESS:
             return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
 
@@ -3823,7 +3825,7 @@ class Blockchain:
         with self._mining_lock:
             with self.lock:
                 self._load_state(sweep_overdue=False)
-                clean_miner = (miner_address or "").strip()
+                clean_miner = normalize_bct_address(miner_address)
                 if require_pending and not self.pending_transactions:
                     return None
                 if not self.pending_transactions and not (clean_miner and is_valid_bct_address(clean_miner)):
@@ -3892,7 +3894,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state(sweep_overdue=False)
-            clean_miner = (miner_address or "").strip()
+            clean_miner = normalize_bct_address(miner_address)
             if not is_valid_bct_address(clean_miner) or clean_miner.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
                 return False, "Invalid miner wallet address.", None
 
@@ -3973,7 +3975,7 @@ class Blockchain:
             if not isinstance(block_data, dict):
                 return False, "Invalid block data.", None
 
-            clean_miner = str(block_data.get("miner", "") or "").strip()
+            clean_miner = normalize_bct_address(str(block_data.get("miner", "") or "").strip())
             if not is_valid_bct_address(clean_miner) or clean_miner.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
                 return False, "Invalid miner wallet address.", None
 
@@ -4164,12 +4166,14 @@ class Blockchain:
         with self.lock:
             self._load_state()
             clean_id = re.sub(r"[^a-zA-Z0-9._-]", "", (node_id or "").strip())[:64]
-            clean_miner = (miner_address or "").strip()
+            clean_miner = normalize_bct_address(miner_address)
             clean_pub = (public_key or "").strip()
             clean_hash = (block_hash or "").strip().lower()
 
             if not clean_id or not is_valid_bct_address(clean_miner) or clean_miner == TREASURY_ADDRESS:
                 return False, "Invalid node ID or wallet address.", None
+            if clean_miner in self.slashed_validators:
+                return False, "Validator has been slashed and cannot attest blocks.", None
             if not clean_pub or not signature:
                 return False, "Validator signature missing.", None
             if public_key_to_address(clean_pub) != clean_miner:
@@ -4557,7 +4561,7 @@ class Blockchain:
 
             holders = []
             for addr in all_addrs:
-                clean_addr = addr.strip()
+                clean_addr = normalize_bct_address(addr)
                 if not clean_addr or clean_addr in ("GENESIS_VAULT", "GENESIS"):
                     continue
                 bal = round(self._unit_balances_map.get(clean_addr, 0) / ATOMIC_UNIT, 8)
@@ -4829,7 +4833,7 @@ class Blockchain:
                 self._get_storage().save_nodes_only(self.nodes)
                 return dict(existing)
 
-            clean_miner = (miner_address or "").strip()
+            clean_miner = normalize_bct_address(miner_address)
             if clean_miner and not is_valid_bct_address(clean_miner):
                 clean_miner = ""
 
@@ -4840,9 +4844,12 @@ class Blockchain:
             if clean_pub and signature and ts_str:
                 try:
                     if abs(time.time() - float(ts_str)) <= 600:
-                        auth_msg = f"NODE:{clean_id}:{clean_miner}:{ts_str}"
-                        if verify_signature(clean_pub, auth_msg, signature):
-                            auth_ok = True
+                        derived_miner = public_key_to_address(clean_pub)
+                        # Cryptographic binding: signer public key MUST match miner_address if specified!
+                        if not clean_miner or derived_miner == clean_miner:
+                            auth_msg = f"NODE:{clean_id}:{clean_miner}:{ts_str}"
+                            if verify_signature(clean_pub, auth_msg, signature):
+                                auth_ok = True
                 except Exception:
                     pass
 

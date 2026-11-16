@@ -90,3 +90,75 @@ pub fn batch_verify_signatures(items: &[(String, String, String)]) -> Vec<bool> 
         .collect()
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Well-known SECP256k1 test vector generator point G (uncompressed 65-byte)
+    const G_UNCOMPRESSED_65: &str = "0479be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8";
+    // Generator point G in raw 64-byte format (without 0x04)
+    const G_RAW_64: &str = "79be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798483ada7726a3c4655da4fbfc0e1108a8fd17b448a68554199c47d08ffb10d4b8";
+    // Generator point G in compressed 33-byte format (starts with 02 because Y is even)
+    const G_COMPRESSED_33: &str = "0279be667ef9dcbbac55a06295ce870b07029bfcdb2dce28d959f2815b16f81798";
+
+    #[test]
+    fn test_invalid_pubkey_rejections() {
+        assert!(parse_verifying_key("").is_none());
+        assert!(parse_verifying_key("not_hex").is_none());
+        assert!(parse_verifying_key("0x123").is_none()); // Odd length
+        assert!(parse_verifying_key("00".repeat(32).as_str()).is_none()); // 32 bytes invalid
+        // 64 bytes of zeroes is not a point on SECP256k1 curve (y^2 != x^3 + 7)
+        assert!(parse_verifying_key(&"00".repeat(64)).is_none());
+    }
+
+    #[test]
+    fn test_parse_verifying_key_formats() {
+        // Uncompressed 65 bytes
+        assert!(parse_verifying_key(G_UNCOMPRESSED_65).is_some());
+        // With 0x prefix
+        assert!(parse_verifying_key(&format!("0x{}", G_UNCOMPRESSED_65)).is_some());
+        // With 0X prefix
+        assert!(parse_verifying_key(&format!("0X{}", G_UNCOMPRESSED_65)).is_some());
+        // Raw 64 bytes
+        assert!(parse_verifying_key(G_RAW_64).is_some());
+        // Compressed 33 bytes
+        assert!(parse_verifying_key(G_COMPRESSED_33).is_some());
+    }
+
+    #[test]
+    fn test_address_derivation_consistency() {
+        let addr_from_raw = public_key_to_address(G_RAW_64).expect("Raw 64-byte derivation failed");
+        let addr_from_uncomp = public_key_to_address(G_UNCOMPRESSED_65).expect("Uncompressed 65-byte derivation failed");
+        let addr_from_comp = public_key_to_address(G_COMPRESSED_33).expect("Compressed 33-byte derivation failed");
+
+        // Canonical BCT address format: "BCT" + 40 hex characters = 43 chars
+        assert_eq!(addr_from_raw.len(), 43);
+        assert!(addr_from_raw.starts_with("BCT"));
+
+        // Invariant: Compressed and uncompressed formats of the same curve point MUST derive identical BCT addresses
+        assert_eq!(addr_from_raw, addr_from_uncomp);
+        assert_eq!(addr_from_raw, addr_from_comp);
+    }
+
+    #[test]
+    fn test_signature_verification_bounds() {
+        // Invalid signature length rejected
+        assert!(!verify_signature(G_RAW_64, "hello", "1234"));
+        // 63-byte signature rejected
+        assert!(!verify_signature(G_RAW_64, "hello", &"aa".repeat(63)));
+        // Non-hex signature rejected
+        assert!(!verify_signature(G_RAW_64, "hello", &"zz".repeat(64)));
+        // Invalid public key rejected immediately
+        assert!(!verify_signature("invalid_key", "hello", &"aa".repeat(64)));
+
+        // Batch verification handles empty list and maintains parity
+        assert_eq!(batch_verify_signatures(&[]), Vec::<bool>::new());
+        let items = vec![
+            (G_RAW_64.to_string(), "msg".to_string(), "00".repeat(64)),
+            ("invalid".to_string(), "msg".to_string(), "00".repeat(64)),
+        ];
+        let batch_results = batch_verify_signatures(&items);
+        assert_eq!(batch_results, vec![false, false]);
+    }
+}
+
