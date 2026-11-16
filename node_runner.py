@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.8)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.9)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner (CPU & GPU Accelerated),
 and cryptographically verified decentralized Web Wallet on Linux, macOS, or Windows with
@@ -53,7 +53,7 @@ logger = logging.getLogger("LockTraceNode")
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.9.8"
+VERSION = "2.9.9"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)
@@ -1631,7 +1631,7 @@ class LockTraceNode:
                 return 400, {"success": False, "message": "Fields 'follower' and 'target' are required."}
             if follower == target:
                 return 400, {"success": False, "message": "You cannot follow your own wallet address."}
-            ok, err = self._verify_client_action_sig(payload, follower, [f"FOLLOW:{follower}:{target}", f"{follower}:{target}"])
+            ok, err = self._verify_client_action_sig(payload, follower, [f"follow:{follower}:{target}", f"FOLLOW:{follower}:{target}", f"{follower}:{target}"])
             if not ok:
                 return 403, {"success": False, "message": err}
             bal, _, _ = self.local_calc_balance_and_nonce(follower)

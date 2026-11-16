@@ -520,7 +520,11 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Mempool Overlay Deduping:** Hardened `_ensure_ledger_index` to prune transactions whose signatures are already confirmed in blocks, eliminating race-condition double debits when users send transactions.
    - **Zero-Floor Wallet Balance Clamp:** Mathematically clamped user wallet balances to `max(0, ...)` across `core/blockchain.py:verify_and_recalc_units`, `verify_and_recalc_balance`, `get_balance`, and `node_runner.py:local_calc_balance_and_nonce` to eliminate any float64 drift or negative display.
    - **Wallet Analytics & UI Formatting Hardening:** Corrected `computeWalletAnalytics` outflow calculation by removing double-counted fees (`sentAmt = amt`), clamped frontend balance renderers (`Math.max(0, bal)`), and guarded `formatBct` against `-0.00` representations.
-28. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+28. **Space Social Multi-Follow & Web3 Action Re-Enablement (v2.9.9):**
+   - **Profile Follow Button State Reset:** Explicitly reset `btnProfileFollow.disabled = false` in `renderUserProfileData` and `openUserProfile`, preventing the button from becoming unclickable when navigating to subsequent creator profiles after following a creator.
+   - **Modal Lifecycle & Timer Hardening:** Implemented `web3ModalTimer` tracking with `clearTimeout` to prevent race conditions from closing new signature modals prematurely, and added `isFollowInProgress` concurrency guard.
+   - **Signature Verification Parity:** Synchronized P2P node runner verification variants to recognize lowercase `follow:follower:target` alongside uppercase payloads.
+29. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

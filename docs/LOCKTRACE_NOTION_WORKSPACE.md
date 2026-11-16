@@ -214,7 +214,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.9.8` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.9.9` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -635,3 +635,11 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 2. **Matematiksel Sıfır Tabanı Sınırlayıcısı (Zero-Floor Balance Clamp):** Kullanıcı cüzdan bakiyelerinin hiçbir koşulda negatif olamayacağı (`max(0, ...)`) `verify_and_recalc_units`, `verify_and_recalc_balance`, `get_balance` ve `node_runner.py:local_calc_balance_and_nonce` katmanlarında garantiye alındı.
 3. **Cüzdan Finansal Analitiği Düzeltmesi (Giden Akış):** `computeWalletAnalytics` fonksiyonundaki çift ücret toplama hatası (`sentAmt = amt + fee`) düzeltildi (`sentAmt = amt`), böylece giden transferlerin net nakit akışını yapay olarak eksiye düşürmesi engellendi.
 4. **Ön Yüz Bakiye Formatlama Güvenliği:** `renderBalanceFigures` fonksiyonunda `Math.max(0, bal)` uygulanarak ve `formatBct` fonksiyonunda `-0.00` gösteriminin önüne geçilerek cüzdan kartında ve işlem listesinde eksi miktar yazma sorunu kalıcı olarak çözüldü.
+
+---
+
+## 🛡️ 28. BlocTag / LockTrace v2.9.9: Space Social Çoklu Takip & Web3 İşlem Yaşam Döngüsü
+
+1. **Profil Takip Butonu Durum Sıfırlaması (`btnProfileFollow.disabled`):** Bir kullanıcı takip edildikten sonra buton `disabled = true` yapılıyordu ve başka bir profile geçildiğinde DOM elementi disabled kalmaya devam ettiği için tıklama olayları fırlatılamıyordu. `openUserProfile` ve `renderUserProfileData` fonksiyonlarında `btnProfileFollow.disabled = false` sıfırlaması getirilerek ardışık takip engeli kaldırıldı.
+2. **Web3 Modal Zamanlayıcı ve Çakışma Yönetimi:** `web3ModalTimer` takibi ve `clearTimeout` çağrıları eklenerek modal kapanma animasyonlarının ardışık açılan modalları gizlemesi önlendi; ayrıca eşzamanlı çift imzalama koruması (`isFollowInProgress`) eklendi.
+3. **P2P Node Runner Kanonik İmza Doğrulama Paritesi:** `node_runner.py` üzerindeki imza varyantlarına küçük harfli `follow:follower:target` eklenerek Flask API ile P2P düğüm doğrulaması %100 uyumlu hale getirildi.

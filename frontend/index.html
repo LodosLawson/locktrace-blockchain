@@ -9144,8 +9144,13 @@
 
     // ── MetaMask-Style Non-Custodial Signature Confirmation Modal ────────────────
     let web3ModalResolver = null;
+    let web3ModalTimer = null;
 
     function promptWeb3FollowModal({ targetAddress, targetName, avatarChar }) {
+      if (web3ModalTimer) {
+        clearTimeout(web3ModalTimer);
+        web3ModalTimer = null;
+      }
       return new Promise((resolve) => {
         web3ModalResolver = resolve;
         const modal = document.getElementById('web3TxConfirmModal');
@@ -9173,14 +9178,19 @@
     }
 
     function closeWeb3TxModal() {
+      if (web3ModalTimer) {
+        clearTimeout(web3ModalTimer);
+        web3ModalTimer = null;
+      }
       const modal = document.getElementById('web3TxConfirmModal');
       const card = document.getElementById('web3TxConfirmCard');
       if (!modal || !card) return;
       card.classList.remove('scale-100', 'opacity-100');
       card.classList.add('scale-95', 'opacity-0');
-      setTimeout(() => {
+      web3ModalTimer = setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        web3ModalTimer = null;
       }, 150);
       if (web3ModalResolver) {
         web3ModalResolver(false);
@@ -9193,17 +9203,22 @@
     }
 
     function executeWeb3Tx() {
+      if (web3ModalTimer) {
+        clearTimeout(web3ModalTimer);
+        web3ModalTimer = null;
+      }
       const modal = document.getElementById('web3TxConfirmModal');
       const card = document.getElementById('web3TxConfirmCard');
       if (card) {
         card.classList.remove('scale-100', 'opacity-100');
         card.classList.add('scale-95', 'opacity-0');
       }
-      setTimeout(() => {
+      web3ModalTimer = setTimeout(() => {
         if (modal) {
           modal.classList.add('hidden');
           modal.classList.remove('flex');
         }
+        web3ModalTimer = null;
       }, 150);
       if (web3ModalResolver) {
         web3ModalResolver(true);
@@ -9277,6 +9292,10 @@
 
     async function followVoiceOnChain(btn, targetAddress, bnsName) {
       if (!btn) return;
+      if (window.isFollowInProgress) {
+        showToast('A follow transaction is already in progress. Please wait...', 'info');
+        return;
+      }
       if (!currentAccount || !currentAccount.address) {
         showToast('Please connect your wallet to follow creators', 'account_balance_wallet', true);
         switchTab('yeni-cuzdan');
@@ -9291,13 +9310,19 @@
       const targetLabel = bnsName ? ('@' + bnsName) : (targetAddress.slice(0, 6) + '...' + targetAddress.slice(-4));
 
       // Open Beautiful MetaMask-Style Signature Modal (in English)
-      const confirmed = await promptWeb3FollowModal({
-        targetAddress: targetAddress,
-        targetName: targetLabel,
-        avatarChar: (bnsName || targetAddress || 'B').replace('@', '')[0].toUpperCase()
-      });
+      let confirmed = false;
+      try {
+        confirmed = await promptWeb3FollowModal({
+          targetAddress: targetAddress,
+          targetName: targetLabel,
+          avatarChar: (bnsName || targetAddress || 'B').replace('@', '')[0].toUpperCase()
+        });
+      } catch (_modalErr) {
+        confirmed = false;
+      }
       if (!confirmed) return;
 
+      window.isFollowInProgress = true;
       const origText = btn.innerHTML;
       btn.disabled = true;
       btn.innerHTML = `<span class="material-symbols-outlined notranslate text-[13px] animate-spin" translate="no">sync</span><span>Signing...</span>`;
@@ -9328,6 +9353,7 @@
 
         if (resp && resp.ok) {
           showToast(`Successfully followed ${targetLabel}! 1.00 BCT sealed on-chain.`, 'check_circle');
+          btn.disabled = false;
           btn.innerHTML = '<span class="material-symbols-outlined notranslate text-[14px]" translate="no">done</span><span>Following</span>';
           btn.className = 'px-3 py-1 rounded-full bg-primary/20 text-primary border border-primary/40 text-[11px] font-bold shrink-0 cursor-default';
           btn.onclick = null;
@@ -9350,6 +9376,8 @@
         showToast('Transaction error: ' + err.message, 'error', true);
         btn.disabled = false;
         btn.innerHTML = origText;
+      } finally {
+        window.isFollowInProgress = false;
       }
     }
 
@@ -17404,6 +17432,14 @@
       document.getElementById('userProfileTotalCmts').textContent = '0 comments';
       document.getElementById('userProfileRoyalties').textContent = '0.00 BCT';
 
+      const btnProfileFollowInit = document.getElementById('btnProfileFollow');
+      if (btnProfileFollowInit) {
+        btnProfileFollowInit.disabled = true;
+        btnProfileFollowInit.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-surface-container-high text-on-surface-variant font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-sm cursor-default';
+        btnProfileFollowInit.innerHTML = '<span class="material-symbols-outlined notranslate text-[15px] animate-spin" translate="no">sync</span><span>Loading...</span>';
+        btnProfileFollowInit.onclick = null;
+      }
+
       document.getElementById('profileSubViewPosts').innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs">Loading on-chain thoughts...</div>';
       const fvLoad = document.getElementById('profileSubViewFollowers');
       if (fvLoad) fvLoad.innerHTML = '<div class="py-8 text-center text-on-surface-variant text-xs">Loading followers...</div>';
@@ -17920,14 +17956,17 @@
         const isAlreadyFollowing = Boolean(currentAccount && currentAccount.address && followers.some(f => f.address && f.address.toLowerCase() === currentAccount.address.toLowerCase()));
 
         if (isSelf) {
+          btnProfileFollow.disabled = true;
           btnProfileFollow.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-surface-container-high text-on-surface-variant font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-sm cursor-default';
           btnProfileFollow.innerHTML = '<span class="material-symbols-outlined notranslate text-[15px]" translate="no">person</span><span>Your Account</span>';
           btnProfileFollow.onclick = null;
         } else if (isAlreadyFollowing) {
+          btnProfileFollow.disabled = false;
           btnProfileFollow.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary/20 text-primary border border-primary/40 font-semibold text-[11px] sm:text-xs flex items-center justify-center gap-1 shadow-sm cursor-default';
           btnProfileFollow.innerHTML = '<span class="material-symbols-outlined notranslate text-[15px]" translate="no">done</span><span>Following</span>';
           btnProfileFollow.onclick = null;
         } else {
+          btnProfileFollow.disabled = false;
           btnProfileFollow.className = 'px-3 sm:px-4 py-1.5 sm:py-2 rounded-full bg-primary hover:bg-primary/90 text-on-primary font-bold text-[11px] sm:text-xs flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer';
           btnProfileFollow.innerHTML = '<span class="material-symbols-outlined notranslate text-[15px]" translate="no">person_add</span><span>Follow (1.00 BCT)</span>';
           btnProfileFollow.onclick = profileFollowClicked;
