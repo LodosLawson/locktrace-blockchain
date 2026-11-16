@@ -528,7 +528,10 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Dedicated Receive BCT Widget:** Separated payment reception from security/vault settings; introduced `#receive-bct-modal` with high-res QR code, one-click copy, and zero vertical overflow.
    - **Live On-Chain Payment Radar:** Added real-time polling listener displaying pulse status and instant animated alerts upon incoming mempool/block transactions.
    - **Profile Navigation History Stack & Immediate Close:** Implemented `userProfileHistoryStack` with `navigateBackUserProfile()` for sequential step-by-step back navigation across profiles, and added a top-right direct close button (`closeUserProfileDirectly()`).
-30. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+30. **Wallet Security & Vault Modal Mobile Layout Alignment (v2.10.1):**
+   - **DOM Structure Parity & Clean Stacking:** Removed orphaned duplicated closing tags in `#vault-modal` that caused premature container closure and horizontal flex-row card displacement.
+   - **Mobile Viewport Optimization:** Enforced `hidden flex-col items-center justify-center` and fluid `p-4 sm:p-6` styling to guarantee clean vertical card stacking across narrow mobile screens.
+31. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

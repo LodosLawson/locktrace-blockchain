@@ -6653,10 +6653,10 @@
   <!-- ========================================================================= -->
   <!-- MODAL 2: WALLET SECURITY & AES-256-GCM PIN VAULT SETTINGS                 -->
   <!-- ========================================================================= -->
-  <div class="fixed inset-0 z-[80] bg-background/80 backdrop-blur-md hidden items-center justify-center p-4"
+  <div class="fixed inset-0 z-[80] bg-background/80 backdrop-blur-md hidden flex-col items-center justify-center p-3 sm:p-4"
     id="vault-modal" onclick="if(event.target===this) closeWalletVaultModal();">
     <div
-      class="w-full max-w-[430px] max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/25">
+      class="w-full max-w-[430px] max-h-[90vh] overflow-y-auto rounded-2xl bg-surface-container p-4 sm:p-6 flex flex-col gap-4 shadow-2xl border border-outline-variant/25">
       <div class="flex items-center justify-between">
         <div class="flex items-center gap-2">
           <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">shield_lock</span>
@@ -6678,9 +6678,6 @@
         <button
           class="px-3 py-1.5 rounded-full bg-primary-container text-on-primary-container font-label-sm text-label-sm font-semibold shrink-0 cursor-pointer"
           onclick="copyCurrentAddress()" type="button">
-          Copy
-        </button>
-      </div>
           Copy
         </button>
       </div>

@@ -214,7 +214,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.10.0` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.10.1` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
 | **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -661,3 +661,15 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - Bir kullanıcı profilinden başka bir takipçinin/takip edilenin profiline geçildiğinde zincirleme geçişleri hafızada tutan `userProfileHistoryStack` mimarisi kuruldu.
    - Sol üstteki `Back` butonu (`navigateBackUserProfile()`) artık profili tamamen kapatmak yerine kullanıcının gezindiği profiller arasında adım adım geriye dönmesini sağlar.
    - Sağ üst başlık çubuğuna doğrudan tek tıkla profili tamamen kapatan bir kapatma butonu (`closeUserProfileDirectly()`) eklendi. PWA donanım geri tuşları bu yığınla tam uyumlu hale getirildi.
+
+---
+
+## 🛡️ 30. BlocTag / LockTrace v2.10.1: Cüzdan Güvenliği & Kasa (Vault Modal) Mobil Düzen Çakışması Giderimi & Parite
+
+1. **DOM Kapatma Etiketleri ve Hiyerarşi Düzenlemesi:**
+   - `#vault-modal` içerisindeki adres kopyalama bloğunda yer alan mükerrer/artık `Copy </button> </div>` etiketleri ayıklandı.
+   - Bu artık kapanış etiketinin modal kart konteynerini erken kapatarak altındaki Kasa (PIN Encrypted Vault) ve PWA Geri Tuşu (PWA Back Button) bileşenlerini doğrudan dış flex konteynerine taşıması ve yatay satırda (`flex-row`) yan yana çakışarak ekrandan taşması sorunu kökten giderildi.
+2. **Mobil Görünüm ve Dikey Yığın İzolasyonu:**
+   - `#vault-modal` dış kapsayıcısına `hidden flex-col items-center justify-center` ve iç kartına mobil uyumlu `p-4 sm:p-6` dolguları uygulanarak, dar mobil ekranlarda dahi tüm kartların tek sütun halinde kusursuz dikey hizalanması sağlandı.
+3. **Frontend & Şablon Paritesi:**
+   - `frontend/index.html` ve `templates/index.html` dosyaları %100 pariteye getirilerek CSP bütünlük imzaları (`scripts/sync_csp.py`) senkronize edildi.

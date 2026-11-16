@@ -1,7 +1,7 @@
-# BlocTag (BCT) Technical Whitepaper — v2.10.0
+# BlocTag (BCT) Technical Whitepaper — v2.10.1
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.10.0 — November 2026*  
+*Version 2.10.1 — November 2026*  
 *Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
@@ -20,7 +20,8 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **BlocTag (Ticker: BCT)**, developed by LockTrace, introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (BlocTag Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.10.0**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+In **Version 2.10.1**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+0. **Wallet Security & Vault Modal Mobile Alignment (v2.10.1):** Resolved DOM tree hierarchy clash in `#vault-modal` caused by duplicate closing tags, and enforced clean `flex-col` stacking on narrow mobile viewports.
 0. **Dedicated Receive BCT Widget, Live Payment Radar & Profile History Stack (v2.10.0):** Dedicated `#receive-bct-modal` widget removing all sensitive private key / PIN controls from payment reception, integrated live mempool/block payment radar, and implemented `userProfileHistoryStack` with one-step back navigation and direct close controls.
 1. **Space Social Multi-Follow & Web3 Action Re-Enablement (v2.9.9):** Explicitly reset `btnProfileFollow.disabled = false` in `renderUserProfileData` and `openUserProfile`, preventing the button from becoming unclickable when navigating to subsequent creator profiles after following a creator. Implemented `web3ModalTimer` tracking with `clearTimeout` and `isFollowInProgress` concurrency guard. Synchronized P2P node runner verification variants for lowercase `follow:follower:target` signatures.
 1. **Wallet Negative Balance & Mempool Deduping Hardening (v2.9.8):** Confirmed-chain signature deduping in `_ensure_ledger_index` and `get_wallet_transactions` to eliminate duplicate debit race conditions. Enforced mathematical zero-floor balance clamping (`max(0, ...)`) across `core/blockchain.py`, `node_runner.py`, and frontend wallet views.
@@ -454,7 +455,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.9.7 (Completed):** Anti-Whale Transfer Ceiling (`MAX_TRANSACTION = 1_000_000` BCT, <10% circulating supply ceiling), Zero-Fee Dust Spam Mitigation (`MIN_TRANSFER_FEE = 0.001` BCT), Validator Stake/Unstake Concurrency Mutex and positive amount enforcement, and P2P `node_runner.py` accounting parity on `bns_accept_offer`.
 - **v2.9.8 (Completed):** Wallet Negative Balance & Mempool Deduping Hardening, zero-floor balance mathematical clamp (`max(0, ...)`), wallet analytics outflow double-fee fix, and frontend non-negative formatting parity.
 - **v2.9.9 (Completed):** Space Social Multi-Follow & Web3 Action Re-Enablement (`btnProfileFollow.disabled` lifecycle reset across creator navigation, `web3ModalTimer` race condition elimination, `isFollowInProgress` guard, and P2P signature canonical parity).
-- **v2.10.0 (Current Production Release):** Dedicated Receive BCT Widget (`#receive-bct-modal`), Live Payment Radar with on-chain polling, and Profile Navigation History Stack (`userProfileHistoryStack`, `navigateBackUserProfile`, `closeUserProfileDirectly`).
+- **v2.10.0 (Completed):** Dedicated Receive BCT Widget (`#receive-bct-modal`), Live Payment Radar with on-chain polling, and Profile Navigation History Stack (`userProfileHistoryStack`, `navigateBackUserProfile`, `closeUserProfileDirectly`).
+- **v2.10.1 (Current Production Release):** Wallet Security & Vault Modal Mobile Alignment, DOM hierarchy parity, and responsive single-column mobile stacking.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---
