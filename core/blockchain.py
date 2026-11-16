@@ -668,8 +668,15 @@ class Blockchain:
             tx_counts = dict(self._confirmed_tx_counts_map)
             used_sigs = set(self._confirmed_used_sigs)
             rewarded = set(self._confirmed_rewarded_wallets)
+            clean_pending = []
             for tx in self.pending_transactions:
+                sig = (tx.signature or "").strip()
+                if sig and sig in self._confirmed_used_sigs:
+                    continue  # Already sealed in confirmed block; skip to prevent duplicate debit
+                clean_pending.append(tx)
                 self._apply_tx_to_ledger_maps(tx, units_map, sender_nonces, tx_counts, used_sigs, rewarded)
+            if len(clean_pending) != len(self.pending_transactions):
+                self.pending_transactions = clean_pending
             self._unit_balances_map = units_map
             self._sender_nonce_map = sender_nonces
             self._tx_counts_map = tx_counts
@@ -684,11 +691,14 @@ class Blockchain:
         if not clean_addr:
             return 0
         self._ensure_ledger_index()
-        return self._unit_balances_map.get(clean_addr, 0)
+        raw_u = self._unit_balances_map.get(clean_addr, 0)
+        if clean_addr not in ("GENESIS_VAULT", "GENESIS"):
+            return max(0, raw_u)
+        return raw_u
 
     def verify_and_recalc_balance(self, address: str) -> float:
         """Calculate mathematically exact balance from immutable on-chain history."""
-        return round(self.verify_and_recalc_units(address) / ATOMIC_UNIT, 8)
+        return max(0.0, round(self.verify_and_recalc_units(address) / ATOMIC_UNIT, 8))
 
     def _verify_actor_signature(self, actor_address: str, payload: str,
                                 signature: str, public_key: str = "") -> Tuple[bool, str]:
@@ -4309,7 +4319,7 @@ class Blockchain:
         with self.lock:
             self._load_state()
             clean_addr = normalize_bct_address(address)
-            recalc = self.verify_and_recalc_balance(clean_addr)
+            recalc = max(0.0, self.verify_and_recalc_balance(clean_addr))
             self.balances[clean_addr] = recalc
             return recalc
 
@@ -4521,9 +4531,23 @@ class Blockchain:
                                 tx_dict["royalty_amount"] = tx.extra_data.get("creator_cut", 0.50)
                             confirmed_txs.append(tx_dict)
 
-            # Mempool pending transactions
+            # Mempool pending transactions (exclude any already confirmed on-chain)
+            confirmed_sigs = {
+                (ctx.get("signature") or "").strip()
+                for ctx in confirmed_txs
+                if ctx.get("signature")
+            }
+            confirmed_hashes = {
+                (ctx.get("tx_hash") or ctx.get("hash") or "").strip()
+                for ctx in confirmed_txs
+            }
+
             pending_txs = []
             for tx in self.pending_transactions:
+                tx_sig = (tx.signature or "").strip()
+                tx_h = (tx.hash() or "").strip()
+                if (tx_sig and tx_sig in confirmed_sigs) or (tx_h and tx_h in confirmed_hashes):
+                    continue  # Already present in confirmed list
                 is_author_royalty = (
                     tx.tx_type in ("space_like", "space_comment")
                     and bool(tx.extra_data)

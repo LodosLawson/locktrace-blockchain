@@ -1,7 +1,7 @@
-# BlocTag (BCT) Technical Whitepaper — v2.9.7
+# BlocTag (BCT) Technical Whitepaper — v2.9.8
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.9.7 — November 2026*  
+*Version 2.9.8 — November 2026*  
 *Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
@@ -20,8 +20,9 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **BlocTag (Ticker: BCT)**, developed by LockTrace, introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (BlocTag Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.9.7**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
-0. **Anti-Whale Transfer Ceiling & Validator Concurrency Hardening (v2.9.7):** Enforced `MAX_TRANSACTION = 1_000_000` BCT (<10% circulating supply ceiling) and `MIN_TRANSACTION = 0.01` BCT across both `core/blockchain.py:create_transaction` and `node_runner.py:handle_decentralized_write`. Mitigated zero-fee dust spam with `MIN_TRANSFER_FEE = 0.001` BCT. Hardened `execute_validator_unstake` and `execute_validator_stake` with mempool concurrency mutexes and non-positive unstake guards. Synchronized `node_runner.py` with `core/blockchain.py` on `bns_accept_offer` accounting.
+In **Version 2.9.8**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+0. **Wallet Negative Balance & Mempool Deduping Hardening (v2.9.8):** Confirmed-chain signature deduping in `_ensure_ledger_index` and `get_wallet_transactions` to eliminate duplicate debit race conditions. Enforced mathematical zero-floor balance clamping (`max(0, ...)`) across `core/blockchain.py`, `node_runner.py`, and frontend wallet views.
+1. **Anti-Whale Transfer Ceiling & Validator Concurrency Hardening (v2.9.7):** Enforced `MAX_TRANSACTION = 1_000_000` BCT (<10% circulating supply ceiling) and `MIN_TRANSACTION = 0.01` BCT across both `core/blockchain.py:create_transaction` and `node_runner.py:handle_decentralized_write`. Mitigated zero-fee dust spam with `MIN_TRANSFER_FEE = 0.001` BCT. Hardened `execute_validator_unstake` and `execute_validator_stake` with mempool concurrency mutexes and non-positive unstake guards. Synchronized `node_runner.py` with `core/blockchain.py` on `bns_accept_offer` accounting.
 1. **Zero-Custodial Server Enforcement (LT-SEC-01):** Server-side key generation and cleartext mnemonic/private-key reception (legacy Path B) permanently disabled; 100% Zero-Knowledge client-side key generation enforced.
 2. **Consensus Timestamp Monotonicity & Anti-Spoofing (LT-SEC-02):** Strict block timestamp monotonicity (`cur_ts > prev_ts`) and future drift bounds (`cur_ts <= now + 120s`) enforced in `is_chain_valid` and `verify_single_block` to eliminate artificial stall-drop difficulty reduction exploits.
 3. **Client-Side Vault Encryption Hardening (LT-SEC-03):** Hardened device vault encryption with per-encryption 16-byte random IVs via CSPRNG (`window.crypto.getRandomValues`) to prevent keystream reuse while maintaining backward-compatible migration.
@@ -448,7 +449,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.9.4 (Completed):** Device Vault Fail-Closed Encryption & Legacy Migration (F-01), Persistent Equivocation Slashing (F-03), Wallet-Deduplicated Attestation Quorum (F-04), Exact Bridge Amount Matching (F-05), Relayer/Contract Mint Caps & Timelock (F-06), Hash-Pinned Script CSP with Self-Hosted Libraries (F-07), Retry-Safe Pending Bridge States (F-08), Wallet-Signed Bridge Orders (F-10), Stalled Lock Auto-Resume (N-01).
 - **v2.9.5 (Completed):** Production-Default Frontend Integrity Guard (`BCT_DEV_MODE=false`), Bridge Relayer Gross Burn Amount & Case-Insensitive Deduplication, Mempool Spendable Balance & Validator Slashing Percentage Enforcement, BNS Accept-Offer & Validator Unstake Nonce/Replay Hardening, Cross-Node P2P Ledger/BNS Parity, Multi-Worker SQLite State Sync, Snapshot BNS Persistence, and BlocTag Whitepaper Rebranding.
 - **v2.9.6 (Completed):** Zero-Custodial Server Enforcement (disabling custodial Path B server-side key generation/import), Consensus Timestamp Monotonicity & Anti-Spoofing (eliminating artificial stall-drop difficulty reduction), and Client-Side Device Vault Hardening with per-encryption random IVs via CSPRNG.
-- **v2.9.7 (Current Production Release):** Anti-Whale Transfer Ceiling (`MAX_TRANSACTION = 1_000_000` BCT, <10% circulating supply ceiling), Zero-Fee Dust Spam Mitigation (`MIN_TRANSFER_FEE = 0.001` BCT), Validator Stake/Unstake Concurrency Mutex and positive amount enforcement, and P2P `node_runner.py` accounting parity on `bns_accept_offer`.
+- **v2.9.7 (Completed):** Anti-Whale Transfer Ceiling (`MAX_TRANSACTION = 1_000_000` BCT, <10% circulating supply ceiling), Zero-Fee Dust Spam Mitigation (`MIN_TRANSFER_FEE = 0.001` BCT), Validator Stake/Unstake Concurrency Mutex and positive amount enforcement, and P2P `node_runner.py` accounting parity on `bns_accept_offer`.
+- **v2.9.8 (Current Production Release):** Wallet Negative Balance & Mempool Deduping Hardening, zero-floor balance mathematical clamp (`max(0, ...)`), wallet analytics outflow double-fee fix, and frontend non-negative formatting parity.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---

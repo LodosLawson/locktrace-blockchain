@@ -8707,8 +8707,8 @@
     }
 
     function formatBct(val, maxDec = 4) {
-      const num = Number(val || 0);
-      if (!Number.isFinite(num)) return '0.00';
+      let num = Number(val || 0);
+      if (!Number.isFinite(num) || Math.abs(num) < 1e-9) return '0.00';
       return num.toLocaleString('en-US', {
         minimumFractionDigits: 2,
         maximumFractionDigits: maxDec
@@ -10337,7 +10337,7 @@
     }
 
     function renderBalanceFigures(balanceVal) {
-      const bal = Number(balanceVal || 0);
+      const bal = Math.max(0, Number(balanceVal || 0));
       const cardBal = document.getElementById('cardBalance');
       const cardBalUsd = document.getElementById('cardBalanceUsd');
       const cardBalPer = document.getElementById('cardBalancePricePerBct');
@@ -10499,7 +10499,7 @@
 
       const totalOut = (isIncoming && (txType === 'transfer' || txType === 'bns_buy' || txType === 'bns_accept_offer'))
         ? Math.max(0, Number((amountNum - Number(tx.fee || 0)).toFixed(8)))
-        : amountNum;
+        : Math.max(0, amountNum);
 
       return {
         title,
@@ -10616,6 +10616,8 @@
       container.innerHTML = filtered.slice(0, 40).map((tx, idx) => {
         const meta = classifyPersonalTx(tx, myAddr);
         const amtClass = meta.isIncoming ? 'text-primary' : 'text-on-surface';
+        const displayAmt = Math.abs(meta.displayAmount);
+        const signPrefix = displayAmt > 0 ? meta.sign : '';
         return `
           <div class="tx-item p-3.5 rounded-xl bg-surface-container-low hover:bg-surface-container active:bg-surface-container transition-colors flex items-center justify-between cursor-pointer border border-outline-variant/10" onclick="openPersonalTxByIndex(${idx})">
             <div class="flex items-center gap-3 min-w-0">
@@ -10628,7 +10630,7 @@
               </div>
             </div>
             <div class="flex flex-col items-end shrink-0 ml-2">
-              <span class="font-body-md text-body-md ${amtClass} font-semibold tabular-nums">${meta.sign}${formatBct(meta.displayAmount, 4)} BCT</span>
+              <span class="font-body-md text-body-md ${amtClass} font-semibold tabular-nums">${signPrefix}${formatBct(displayAmt, 4)} BCT</span>
               <div class="flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full ${tx.status === 'mempool' ? 'bg-secondary animate-pulse' : 'bg-primary'}"></span>
                 <span class="font-label-sm text-label-sm ${tx.status === 'mempool' ? 'text-secondary' : 'text-on-surface-variant'}">${tx.status === 'mempool' ? 'Mempool (PoW)' : 'Confirmed'}</span>
@@ -10707,7 +10709,7 @@
             runningDelta += amt;
           }
         } else if (isOutgoing) {
-          const sentAmt = amt + fee;
+          const sentAmt = amt; // In LockTrace, fee is deducted inside transfer amt (net = amt - fee, sender pays amt)
           outflowTotal += sentAmt;
           outflowCount++;
           runningDelta -= sentAmt;
@@ -11059,7 +11061,9 @@
 
       const amtEl = document.getElementById('modal-amount');
       if (amtEl) {
-        amtEl.textContent = `${meta.sign}${formatBct(meta.displayAmount, 6)} BCT`;
+        const dAmt = Math.abs(meta.displayAmount);
+        const sPre = dAmt > 0 ? meta.sign : '';
+        amtEl.textContent = `${sPre}${formatBct(dAmt, 6)} BCT`;
         amtEl.className = 'font-headline-lg text-headline-lg tabular-nums ' + (meta.isIncoming ? 'text-primary' : 'text-on-surface');
       }
 

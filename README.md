@@ -516,7 +516,11 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Zero-Fee Dust Spam Mitigation:** Enforced `MIN_TRANSFER_FEE = 0.001` BCT in P2P decentralized node transfer processing, barring sub-dust zero-fee transactions.
    - **Validator Stake/Unstake Concurrency Mutex:** Enforced mempool mutex rejecting concurrent unstake/stake transactions until pending ones are sealed into a block, and barred `amt <= 0` in `execute_validator_unstake`.
    - **Accounting & BNS Trade Parity:** Synchronized `node_runner.py:local_calc_balance_and_nonce` with `core/blockchain.py` by removing `bns_accept_offer` from `net_credit_types` and enforcing fail-closed seller checks. Synchronized SocialFi fee tokenomics in `config.py`.
-27. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+27. **Wallet Negative Balance & Mempool Double-Debit Prevention (v2.9.8):**
+   - **Mempool Overlay Deduping:** Hardened `_ensure_ledger_index` to prune transactions whose signatures are already confirmed in blocks, eliminating race-condition double debits when users send transactions.
+   - **Zero-Floor Wallet Balance Clamp:** Mathematically clamped user wallet balances to `max(0, ...)` across `core/blockchain.py:verify_and_recalc_units`, `verify_and_recalc_balance`, `get_balance`, and `node_runner.py:local_calc_balance_and_nonce` to eliminate any float64 drift or negative display.
+   - **Wallet Analytics & UI Formatting Hardening:** Corrected `computeWalletAnalytics` outflow calculation by removing double-counted fees (`sentAmt = amt`), clamped frontend balance renderers (`Math.max(0, bal)`), and guarded `formatBct` against `-0.00` representations.
+28. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.7)
+LockTrace Blockchain - Decentralized P2P Validator, PoW Miner & Verified Web Server (v2.9.8)
 ============================================================================================
 Run your own independent archival validator, Proof-of-Work miner (CPU & GPU Accelerated),
 and cryptographically verified decentralized Web Wallet on Linux, macOS, or Windows with
@@ -53,7 +53,7 @@ logger = logging.getLogger("LockTraceNode")
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.9.7"
+VERSION = "2.9.8"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)
@@ -1003,7 +1003,8 @@ class LockTraceNode:
                     if clean_addr == TREASURY_ADDRESS and tx_type in fee_bearing and fee_u > 0:
                         units += fee_u
 
-        return round(units / ATOMIC_UNIT, 8), nonce, exists
+        bal = max(0.0, round(units / ATOMIC_UNIT, 8)) if clean_addr not in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS) else round(units / ATOMIC_UNIT, 8)
+        return bal, nonce, exists
 
     def local_wallet_transactions(self, address: str, limit: int = 100) -> list:
         clean_addr = (address or "").strip()
@@ -1967,6 +1968,7 @@ class LockTraceNode:
                         self._send_json(200, up_bal)
                         return
                     bal, nonce, exists = node_ref.local_calc_balance_and_nonce(addr)
+                    bal = max(0.0, float(bal)) if addr not in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS) else float(bal)
                     self._send_json(200, {
                         "success": True,
                         "data": {"address": addr, "balance": bal, "nonce": nonce, "exists": exists},

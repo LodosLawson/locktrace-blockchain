@@ -6,8 +6,8 @@ The following versions of LockTrace are actively supported with security patches
 
 | Version | Supported          | Status |
 | ------- | ------------------ | ------ |
-| 2.9.x (v2.9.7+) | :white_check_mark: | **Current Active Mainnet Release** (Anti-Whale & Validator Concurrency Hardened) |
-| 2.9.0 - 2.9.6  | :white_check_mark: | Supported (Upgrade Recommended to v2.9.7) |
+| 2.9.x (v2.9.8+) | :white_check_mark: | **Current Active Mainnet Release** (Wallet Balance & Mempool Dedup Hardened) |
+| 2.9.0 - 2.9.7  | :white_check_mark: | Supported (Upgrade Recommended to v2.9.8) |
 | 2.8.x   | :white_check_mark: | Legacy Consensus Supported |
 | < 2.8.0 | :x:                | Deprecated (Upgrade Mandatory) |
 
