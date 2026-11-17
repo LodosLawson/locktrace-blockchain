@@ -20466,7 +20466,6 @@
       }
     }
 
-    async 
     function setStakingAmount(amt) {
       const inp = document.getElementById('inputCustomStakeAmt');
       if (inp) {
@@ -20504,7 +20503,7 @@
           badgeEl.textContent = 'Min. 100 BCT Gerekli';
           badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30';
         }
-        if (descEl) descEl.innerHTML = '⚠️ Staking ödül havuzuna katılabilmek için minimum kilitlenebilir miktar <strong>100 BCT</strong>'dir.';
+        if (descEl) descEl.innerHTML = "⚠️ Staking ödül havuzuna katılabilmek için minimum kilitlenebilir miktar <strong>100 BCT</strong>'dir.";
         if (dailyEl) dailyEl.textContent = '0.00 BCT / gün';
         if (monthlyEl) monthlyEl.textContent = '0.00 BCT / ay';
         if (aprEl) aprEl.textContent = '0% APR';
@@ -20552,7 +20551,7 @@
       }
     }
 
-    function executeValidatorStake(amountBct) {
+    async function executeValidatorStake(amountBct) {
       if (!currentAccount || !currentAccount.address) {
         showToast('Please connect or import a wallet first!', 'warning');
         return;
