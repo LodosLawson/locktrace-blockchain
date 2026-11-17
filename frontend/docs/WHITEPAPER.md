@@ -80,7 +80,7 @@ In **Version 2.10.1**, LockTrace establishes sovereign peer-to-peer resilience, 
 1. [Introduction & Architectural Motivation](#1-introduction--architectural-motivation)
 2. [v2.7.0 High-Concurrency Engine: 3-Phase Atomic CAS & O(1) Delta WAL](#2-v270-high-concurrency-engine-3-phase-atomic-cas--o1-delta-wal)
 3. [Cryptographic Primitives & 10^8 Atomic Unit Accounting](#3-cryptographic-primitives--108-atomic-unit-accounting)
-4. [Dual Hybrid Consensus: 70% PoW Proposer + 30% Validator Quorum](#4-dual-hybrid-consensus-70-pow-proposer--30-validator-quorum)
+4. [Tri-Tier Hybrid Consensus: 50% PoW Proposer + 40% Validator Quorum + 10% Observer Stakers](#4-tri-tier-hybrid-consensus-50-pow-proposer--40-validator-quorum--10-observer-stakers)
 5. [Hybrid Time-and-Quota Batch Sequencer](#5-hybrid-time-and-quota-batch-sequencer)
 6. [BlocTag: Native On-Chain SocialFi & Creator Royalties](#6-bloctag-native-on-chain-socialfi--creator-royalties)
 7. [BCT Naming System (BNS): Sovereign `.bct` Identity & Marketplace](#7-bct-naming-system-bns-sovereign-bct-identity--marketplace)
@@ -164,7 +164,7 @@ In naive implementations, reaching a batch threshold inside a user's HTTP reques
 LockTrace v2.7.0 separates transaction admission from block sealing via a strict 3-phase protocol:
 1. **Phase 1 — Canonical Snapshot:** Under `self.lock`, the sequencer captures:
    $$\text{Snapshot} = \left(h_{\text{expected}} = |\mathcal{C}|,\; H_{\text{prev}} = \mathcal{C}[-1].\text{hash},\; \mathcal{P} = \{\text{tx.hash}() \mid \text{tx} \in \text{Mempool}\}\right)$$
-   along with deterministic 70/30 reward transactions.
+   along with deterministic 50/40/10 reward transactions.
 2. **Phase 2 — Lock-Free Proof-of-Work:** Guarded by `self._mining_lock` (preventing redundant local PoW threads) but **outside `self.lock`**, the worker searches for a nonce satisfying $\text{SHA256}(\text{Header}) < \text{Target}(D)$ using OpenCL GPU vectorization or multi-threaded CPU. During this entire window, HTTP workers process reads and new transactions with zero lock wait.
 3. **Phase 3 — Atomic CAS Commit & Fork Guard:** Upon solving the puzzle, the worker re-acquires `self.lock`, synchronizes with SQLite WAL, and evaluates the Compare-And-Swap invariant:
    $$\text{CommitAllowed} \iff \left(|\mathcal{C}| == h_{\text{expected}}\right) \land \left(\mathcal{C}[-1].\text{hash} == H_{\text{prev}}\right) \land \left(\mathcal{P} \subseteq \text{Mempool}_{\text{live}}\right)$$
@@ -218,7 +218,7 @@ Floating-point arithmetic is strictly prohibited in consensus validation, balanc
 
 ---
 
-## 4. Dual Hybrid Consensus: 70% PoW Proposer + 30% Validator Quorum
+## 4. Tri-Tier Hybrid Consensus: 50% PoW Proposer + 40% Validator Quorum + 10% Observer Stakers
 
 LockTrace implements a hybrid consensus model that balances the decentralized permissionlessness of Proof-of-Work with the high-speed finality checkpoints of an active validator quorum.
 
@@ -338,7 +338,7 @@ Rather than transmitting full transaction bodies across the P2P gossip network, 
 $$K_{\text{short}} = \text{SHA256}(\text{HeaderBytes} \parallel \text{nonce})[0..15]$$
 A compact block message transmits:
 1. Canonical Block Header (112 bytes).
-2. Prefilled Transactions (Coinbase, 70/30 reward distributions, system transactions).
+2. Prefilled Transactions (Coinbase, 50/40/10 reward distributions, system transactions).
 3. Vector of 16-character Short Transaction IDs for all user transactions in the Merkle tree.
 
 ### 10.2 Reconstruction & Roundtrip Efficiency
@@ -429,7 +429,7 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 
 ## 17. Roadmap & Protocol Evolution
 
-- **v1.0 – v1.6 (Completed):** Mainnet Genesis, 70/30 PoW + Validator Quorum consensus, BlocTag SocialFi royalties, `.bct` BNS registry & marketplace, Base Mainnet `wBCT` 1:1 cross-chain bridge, Uniswap v4 liquidity pool.
+- **v1.0 – v1.6 (Completed):** Mainnet Genesis, Tri-Tier 50/40/10 PoW + Validator Quorum + Observer Staking consensus, BlocTag SocialFi royalties, `.bct` BNS registry & marketplace, Base Mainnet `wBCT` 1:1 cross-chain bridge, Uniswap v4 liquidity pool.
 - **v1.9 (Completed):** On-chain SHA-256 + IPFS CIDv1 Frontend Release Integrity Shield, Quote-Repost attribution cards, Explorer BNS/wallet full-history indexing, Persistent Mainnet Security Discrepancy Alert System.
 - **v2.2.0 (Completed):** 3-Phase Atomic CAS Non-Blocking Block Producer, $O(1)$ Incremental Delta SQLite WAL Engine, $O(\Delta)$ Multi-Worker Sync, Anti-DDoS Per-Wallet Mempool Quotas, IPv4 `/24` Sybil Subnet Hardening, and Stat-Memoized Integrity Gate.
 - **v2.5.0 (Completed):** Anti-Stall Emergency LWMA Failsafe (120s difficulty relaxation), Priority Replace-By-Fee (RBF) Mempool Admission & Eviction, Constant-Time SECP256k1 Cryptography Engine (OpenSSL C-backed, Minerva mitigation), $O(1)$ Reverse-Cursor Transaction Indexing & Query Scalability.

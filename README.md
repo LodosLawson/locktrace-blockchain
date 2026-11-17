@@ -14,7 +14,7 @@
 [![Instagram](https://img.shields.io/badge/Instagram-@bloctag-E4405F?style=for-the-badge&logo=instagram)](https://www.instagram.com/bloctag)
 [![Official Email](https://img.shields.io/badge/Email-locktracetoken%2Bspace%40gmail.com-EA4335?style=for-the-badge&logo=gmail)](mailto:locktracetoken+space@gmail.com)
 
-**BlocTag** is an independent, high-performance Layer-1 decentralized blockchain ledger **developed by LockTrace** for sovereign asset custody, instantaneous peer-to-peer settlement, censorship-resistant on-chain social networking, and cross-chain liquidity. Engineered with deterministic macro-monetary rules, BIP-39 mnemonic key derivation, SECP256k1 ECDSA cryptography, hybrid 70% PoW + 30% BFT Quorum consensus, native Name Service (BNS `.bct`), and cryptographically signed on-chain frontend releases.
+**BlocTag** is an independent, high-performance Layer-1 decentralized blockchain ledger **developed by LockTrace** for sovereign asset custody, instantaneous peer-to-peer settlement, censorship-resistant on-chain social networking, and cross-chain liquidity. Engineered with deterministic macro-monetary rules, BIP-39 mnemonic key derivation, SECP256k1 ECDSA cryptography, tri-tier hybrid 50% PoW + 40% BFT Quorum + 10% Observer Stakers consensus, native Name Service (BNS `.bct`), and cryptographically signed on-chain frontend releases.
 
 ---
 
@@ -42,9 +42,9 @@
 | **Validator Staking Vault** | `BCT_STAKE_VAULT_00000000000000000000000000000000` | Holds 1,000.00 BCT PoS validator collateral qualifying for 30% Quorum Pool. |
 | **Provable Burn Address** | `BCT0000000000000000000000000000000000000000` | Deflationary burn address (effectively provable lost key sink). |
 | **Welcome Grant** | **1.00 BCT** automated protocol grant | Granted directly from Treasury Vault to every newly generated wallet address. |
-| **Transaction Fee** | **1.0%** automated protocol fee | **50% permanently locked to Treasury** (deflationary supply reduction). Remaining 50% split **70% to Block Proposer/Miner** and **30% to Validator Quorum**. |
+| **Transaction Fee** | **1.0%** automated protocol fee | **50% permanently locked to Treasury** (deflationary supply reduction). Remaining 50% split **50% to Block Proposer/Miner**, **40% to Validator Quorum**, and **10% to Observer Stakers Pool**. |
 | **Key Derivation** | **BIP-39 Mnemonic** + ECDSA SECP256k1 | 12-word seed phrase + 256-bit private key. |
-| **Consensus Engine** | **Hybrid 70% PoW + 30% BFT Quorum** | Dynamic SHA-256 target difficulty + validator multi-signature confirmation. |
+| **Consensus Engine** | **Tri-Tier Hybrid 50% PoW + 40% Quorum + 10% Observer** | Dynamic SHA-256 target difficulty + validator multi-signature confirmation. |
 | **EVM Bridge (Base L2)**| **Wrapped BCT (wBCT)** | ERC-20 token on Base Mainnet (`0xA3C743113a41cFd0146917065d4578337Bb77254`), 1:1 backed. |
 
 ---
@@ -90,7 +90,7 @@ LockTrace features a native on-chain domain and identity protocol that maps huma
 
 **Tokenomics Breakdown:**
 - **🏦 80% Returns to Protocol Treasury Pool:** 80% of paid registration fees return directly into the Protocol Treasury Vault pool (Hazine havuzuna geri aktarım, yakım değil), replenishing the ecosystem reserves.
-- **⚡ 20% Returned to Active Participants:** 20% flows to active PoW miners (70%) and Quorum validators (30%) as transaction fee rewards.
+- **⚡ 20% Returned to Active Participants:** 20% flows to active PoW miners (50%), Quorum validators (40%), and Observer stakers (10%) as transaction fee rewards.
 - **Peer-to-Peer Marketplace & Bidding System:** Handles can be transferred, listed for sale, or bid on via decentralized non-custodial offers in BCT coins.
 
 ---
@@ -103,7 +103,7 @@ LockTrace v2.4.0 features an on-chain **Validator Staking Vault** that empowers 
 * **Vault Address:** `BCT_STAKE_VAULT_00000000000000000000000000000000`
 * **Collateral Threshold:** Exactly **$1{,}000.00\text{ BCT}$** locked per validator address.
 * **Non-Custodial Cryptographic Security:** Staking operations are executed entirely client-side using deterministic SECP256k1 ECDSA signatures (`VALIDATOR_STAKE:<sender>:<amount>:<nonce>`).
-* **Consensus Split:** Every 20-second block rewards are divided into **70% to winning PoW Miner / Block Proposer** and **30% pro-rata to Active Staked Quorum Validators**.
+* **Consensus Split:** Every 20-second block rewards are divided into **50% to winning PoW Miner / Block Proposer**, **40% to Active Staked Quorum Validators**, and **10% pro-rata to Observer Stakers (100 - 100,000 BCT)**.
 
 ### 📈 Emission Math & APR Economic Projections
 1. **Cadence:** Block interval $T = 20.0\text{s} \implies 4{,}320\text{ blocks/day} \implies 1{,}576{,}800\text{ blocks/year}$.

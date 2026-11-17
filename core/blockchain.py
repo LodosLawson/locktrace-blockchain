@@ -61,9 +61,14 @@ FEE_PERCENT = 0.01                       # 1%
 MINER_FEE_SHARE = 0.50                   # 50% of the 1% fee allocated to block/validator reward pool
 TREASURY_FEE_SHARE = 0.50                # 50% returned to Treasury Vault
 BLOCK_REWARD = 0.05                      # 0.05 BCT fixed block subsidy from treasury
-PROPOSER_REWARD_SHARE = getattr(Config, "REWARD_MINER_PERCENT", 70) / 100.0   # 70% of reward pool to winning PoW block producer
-VALIDATOR_POOL_SHARE = getattr(Config, "REWARD_VALIDATOR_PERCENT", 30) / 100.0 # 30% of reward pool shared equally among active verified peer validators
-MIN_VALIDATOR_STAKE = getattr(Config, "MIN_VALIDATOR_STAKE", 1000.0)          # 1000 BCT required for validator reward pool
+PROPOSER_REWARD_SHARE = getattr(Config, "REWARD_MINER_PERCENT", 50) / 100.0   # 50% of reward pool to winning PoW block producer
+VALIDATOR_POOL_SHARE = getattr(Config, "REWARD_VALIDATOR_PERCENT", 40) / 100.0 # 40% of reward pool shared equally among active verified peer validators
+OBSERVER_POOL_SHARE = getattr(Config, "REWARD_OBSERVER_PERCENT", 10) / 100.0   # 10% of reward pool shared pro-rata among passive observer stakers
+MIN_OBSERVER_STAKE = getattr(Config, "MIN_OBSERVER_STAKE", 100.0)             # 100 BCT min required for passive observer staking pool
+MAX_OBSERVER_STAKE = getattr(Config, "MAX_OBSERVER_STAKE", 100000.0)          # 100,000 BCT max allowed per observer stake
+MIN_VALIDATOR_STAKE = getattr(Config, "MIN_VALIDATOR_STAKE", 1000.0)          # 1000 BCT required for active validator node
+MIN_TRANSACTION = float(getattr(Config, "MIN_TRANSACTION", 0.01))             # Minimum transfer amount
+MAX_TRANSACTION = float(getattr(Config, "MAX_TRANSACTION", 1_000_000.0))       # Maximum single transfer amount
 TARGET_BLOCK_TIME = getattr(Config, "TARGET_BLOCK_TIME", 20.0)                 # 20 seconds target block time
 LWMA_WINDOW = getattr(Config, "LWMA_WINDOW", 20)                              # 20 blocks window for difficulty adjustment
 MEMPOOL_MINER_WINDOW_SECONDS = 15.0      # Priority window for external PoW miners before fallback sealing
@@ -643,7 +648,7 @@ class Blockchain:
                         self._confirmed_stakes_map[norm_snd] = self._confirmed_stakes_map.get(norm_snd, 0) + _to_units(tx.amount)
                     elif tx.tx_type == "validator_unstake" and norm_snd == VALIDATOR_STAKE_VAULT_ADDRESS and norm_rec:
                         self._confirmed_stakes_map[norm_rec] = max(0, self._confirmed_stakes_map.get(norm_rec, 0) - _to_units(tx.amount))
-                    elif tx.tx_type in ("mining_reward", "validator_reward", "attestation_reward") and norm_rec:
+                    elif tx.tx_type in ("mining_reward", "validator_reward", "attestation_reward", "observer_reward") and norm_rec:
                         self._confirmed_rewards_earned_map[norm_rec] = self._confirmed_rewards_earned_map.get(norm_rec, 0) + _to_units(tx.amount)
             vault_total = self._confirmed_units_map.get(VALIDATOR_STAKE_VAULT_ADDRESS, 0)
             if vault_total <= 0:
@@ -3039,6 +3044,80 @@ class Blockchain:
                 "estimated_apr_percent": est_apr_pct
             }
 
+    def get_all_stakers(self) -> List[dict]:
+        """
+        Returns all wallets that have locked BCT collateral in VALIDATOR_STAKE_VAULT,
+        categorized into Active Consensus Validators, Inactive Validators, and Passive Observers.
+        """
+        with self.lock:
+            self._ensure_ledger_index()
+            now = time.time()
+            all_nodes = self.get_nodes()
+            nodes_by_wallet = {}
+            for n in all_nodes:
+                m_addr = normalize_bct_address(n.get("miner_address") or "")
+                if m_addr:
+                    nodes_by_wallet[m_addr] = n
+
+            stakers: List[dict] = []
+            vault_u = int(self._confirmed_units_map.get(VALIDATOR_STAKE_VAULT_ADDRESS, 0))
+            if vault_u <= 0:
+                return []
+
+            for addr, raw_u in self._confirmed_stakes_map.items():
+                clean_addr = normalize_bct_address(addr)
+                if not clean_addr or raw_u <= 0:
+                    continue
+                staked_bct = float(Decimal(min(raw_u, vault_u)) / Decimal(ATOMIC_UNIT))
+                if staked_bct < float(MIN_OBSERVER_STAKE):
+                    continue
+
+                is_slashed = clean_addr in self.slashed_validators
+                matched_node = nodes_by_wallet.get(clean_addr)
+                is_active_val = False
+                node_id = ""
+                blocks_attested = 0
+
+                if matched_node and not is_slashed:
+                    is_active_val = bool(matched_node.get("is_genesis") or (matched_node.get("auth_verified") and (now - float(matched_node.get("last_seen", 0))) <= 180.0))
+                    node_id = matched_node.get("node_id", "")
+                    blocks_attested = int(matched_node.get("blocks_attested", 0))
+
+                if is_slashed:
+                    tier = "slashed"
+                    role_title = "Cezalandırılmış (Slashed)"
+                    pool_share = "%0 (Donduruldu)"
+                elif is_active_val and staked_bct >= MIN_VALIDATOR_STAKE:
+                    tier = "active_validator"
+                    role_title = "Aktif Doğrulayıcı (Validator Quorum)"
+                    pool_share = "%40 Düğüm Havuzu"
+                elif staked_bct >= MIN_VALIDATOR_STAKE:
+                    tier = "inactive_validator"
+                    role_title = "Çevrimdışı Validator (Düğüm Bekleniyor)"
+                    pool_share = "%10 Gözlemci Havuzu (Düğüm açılınca %40)"
+                else:
+                    tier = "observer"
+                    role_title = "Pasif Gözlemci (Observer Staker)"
+                    pool_share = "%10 Gözlemci Havuzu"
+
+                rewards_earned = float(Decimal(int(self._confirmed_rewards_earned_map.get(clean_addr, 0))) / Decimal(ATOMIC_UNIT))
+
+                stakers.append({
+                    "address": clean_addr,
+                    "staked_amount": round(staked_bct, 4),
+                    "tier": tier,
+                    "role_title": role_title,
+                    "pool_share": pool_share,
+                    "rewards_earned": round(rewards_earned, 6),
+                    "blocks_attested": blocks_attested,
+                    "node_id": node_id,
+                    "is_active_validator": is_active_val and staked_bct >= MIN_VALIDATOR_STAKE,
+                    "is_slashed": is_slashed,
+                })
+
+            stakers.sort(key=lambda x: (-x["staked_amount"], x["address"]))
+            return stakers
+
     def is_active_validator(self, address: str) -> bool:
         """
         Returns True if the address has locked >= MIN_VALIDATOR_STAKE in VALIDATOR_STAKE_VAULT
@@ -3108,8 +3187,10 @@ class Blockchain:
             except (ValueError, TypeError):
                 return False, "Invalid stake amount.", None
 
-            if amt < MIN_VALIDATOR_STAKE:
-                return False, f"Minimum validator stake is {MIN_VALIDATOR_STAKE:.2f} BCT.", None
+            if amt < MIN_OBSERVER_STAKE:
+                return False, f"Minimum stake amount is {MIN_OBSERVER_STAKE:.2f} BCT (Observer pool). Active validator quorum requires >= {MIN_VALIDATOR_STAKE:.2f} BCT.", None
+            if amt > MAX_OBSERVER_STAKE:
+                return False, f"Maximum stake amount is {MAX_OBSERVER_STAKE:,.2f} BCT.", None
 
             if any(tx.tx_type == "validator_unstake" and normalize_bct_address(tx.receiver) == clean_sender for tx in self.pending_transactions):
                 return False, "Bekleyen (henüz blokta onaylanmamış) bir unstake işleminiz var. Lütfen önce mevcut unstake işleminin blokta onaylanmasını bekleyin.", None
@@ -3456,6 +3537,37 @@ class Blockchain:
                 break
         return deduped
 
+    def get_eligible_observers(self, exclude_addrs: Optional[set] = None) -> List[Tuple[str, int]]:
+        """
+        Returns list of eligible observer stakers (address, staked_units) who have locked
+        between MIN_OBSERVER_STAKE (100 BCT) and MAX_OBSERVER_STAKE (100,000 BCT) in VALIDATOR_STAKE_VAULT,
+        excluding active consensus node operators and slashed addresses.
+        Observers participate in the 10% Observer Staking Pool pro-rata to their locked stake.
+        """
+        excludes = exclude_addrs or set()
+        clean_excludes = {normalize_bct_address(a) for a in excludes if a}
+        clean_excludes.add(TREASURY_ADDRESS)
+        clean_excludes.add(VALIDATOR_STAKE_VAULT_ADDRESS)
+        for s in self.slashed_validators:
+            clean_excludes.add(normalize_bct_address(s))
+
+        with self.lock:
+            self._ensure_ledger_index()
+            eligible: List[Tuple[str, int]] = []
+            min_u = _to_units(MIN_OBSERVER_STAKE)
+            max_u = _to_units(MAX_OBSERVER_STAKE)
+            for addr, raw_staked_u in self._confirmed_stakes_map.items():
+                clean_addr = normalize_bct_address(addr)
+                if not clean_addr or clean_addr in clean_excludes:
+                    continue
+                capped_u = min(max(0, raw_staked_u), max_u)
+                if capped_u >= min_u:
+                    eligible.append((clean_addr, capped_u))
+
+            # Sort deterministically by staked units desc, then address
+            eligible.sort(key=lambda x: (-x[1], x[0]))
+            return eligible[:100]
+
     def get_current_difficulty(self) -> int:
         """
         Adaptive PoW Difficulty using LWMA (Linearly Weighted Moving Average).
@@ -3689,35 +3801,47 @@ class Blockchain:
 
         det_ts = round(float(fixed_timestamp if fixed_timestamp is not None else time.time()), 3)
         validators = self.get_eligible_validators(exclude_miner=clean_miner, block_index=block_index, now=det_ts)
+        active_validator_addrs = {normalize_bct_address(v["miner_address"]) for v in validators}
+        active_validator_addrs.add(clean_miner)
+
+        # 3-Tier Staking & Observer Quorum: Query passive observer stakers (100 - 100,000 BCT)
+        observers = self.get_eligible_observers(exclude_addrs=active_validator_addrs)
 
         reward_txs: List[Transaction] = []
         validators_breakdown: List[dict] = []
+        observers_breakdown: List[dict] = []
 
+        # Tier 3: 10% Observer Stakers Pool (Pro-rata to locked stake)
+        actual_obs_total_u = 0
+        if observers and total_pool_u >= 100:
+            obs_pool_u = (total_pool_u * 10) // 100
+            total_obs_stake_u = sum(stk_u for _, stk_u in observers)
+            if total_obs_stake_u > 0:
+                for o_addr, o_stake_u in observers:
+                    o_cut_u = (obs_pool_u * o_stake_u) // total_obs_stake_u
+                    if o_cut_u > 0:
+                        obs_amt = float(Decimal(o_cut_u) / Decimal(ATOMIC_UNIT))
+                        reward_txs.append(
+                            Transaction(
+                                sender=TREASURY_ADDRESS,
+                                receiver=o_addr,
+                                amount=obs_amt,
+                                fee=0.0,
+                                signature=f"observer_stake_reward_block_{block_index}_{o_addr[:8]}",
+                                timestamp=det_ts,
+                                tx_type="observer_reward",
+                                extra_data={"staked_bct": float(Decimal(o_stake_u) / Decimal(ATOMIC_UNIT)), "proposer": clean_miner},
+                            )
+                        )
+                        actual_obs_total_u += o_cut_u
+                        observers_breakdown.append({"address": o_addr, "reward": obs_amt})
+
+        # Tier 2: 40% Active Attesting Validator Quorum Pool (Equally split among online attested nodes)
+        actual_val_total_u = 0
         if validators and total_pool_u >= 100:
-            val_pool_u = (total_pool_u * 30) // 100
+            val_pool_u = (total_pool_u * 40) // 100
             per_val_u = val_pool_u // len(validators)
             actual_val_total_u = per_val_u * len(validators)
-            proposer_u = total_pool_u - actual_val_total_u
-        else:
-            proposer_u = total_pool_u
-            per_val_u = 0
-            actual_val_total_u = 0
-
-        if proposer_u > 0:
-            proposer_amt = float(Decimal(proposer_u) / Decimal(ATOMIC_UNIT))
-            reward_txs.append(
-                Transaction(
-                    sender=TREASURY_ADDRESS,
-                    receiver=clean_miner,
-                    amount=proposer_amt,
-                    fee=0.0,
-                    signature=f"coinbase_pow_reward_block_{block_index}",
-                    timestamp=det_ts,
-                    tx_type="mining_reward",
-                )
-            )
-
-        if per_val_u > 0:
             val_amt = float(Decimal(per_val_u) / Decimal(ATOMIC_UNIT))
             for v_node in validators:
                 v_addr = v_node["miner_address"].strip()
@@ -3736,11 +3860,29 @@ class Blockchain:
                 )
                 validators_breakdown.append({"node_id": v_nid, "miner_address": v_addr, "reward": val_amt})
 
+        # Tier 1: 50% PoW Block Producer (Proposer) + Any unallocated Validator/Observer pool remainder
+        proposer_u = total_pool_u - (actual_val_total_u + actual_obs_total_u)
+        if proposer_u > 0:
+            proposer_amt = float(Decimal(proposer_u) / Decimal(ATOMIC_UNIT))
+            reward_txs.append(
+                Transaction(
+                    sender=TREASURY_ADDRESS,
+                    receiver=clean_miner,
+                    amount=proposer_amt,
+                    fee=0.0,
+                    signature=f"coinbase_pow_reward_block_{block_index}",
+                    timestamp=det_ts,
+                    tx_type="mining_reward",
+                )
+            )
+
         breakdown = {
             "total_reward": float(Decimal(total_pool_u) / Decimal(ATOMIC_UNIT)),
             "proposer_reward": float(Decimal(proposer_u) / Decimal(ATOMIC_UNIT)),
             "validator_pool_reward": float(Decimal(actual_val_total_u) / Decimal(ATOMIC_UNIT)),
             "validators_rewarded": validators_breakdown,
+            "observer_pool_reward": float(Decimal(actual_obs_total_u) / Decimal(ATOMIC_UNIT)),
+            "observers_rewarded": observers_breakdown,
         }
         return reward_txs, breakdown
 
@@ -3839,6 +3981,44 @@ class Blockchain:
         body = json.dumps({"block": block_dict, "network_height": len(self.chain)}).encode("utf-8")
         threading.Thread(target=_worker, args=(peers, body), daemon=True).start()
 
+    def _filter_valid_mempool_transactions_for_block(self) -> List[Transaction]:
+        """
+        Filters mempool transactions to ensure solvency and strict consensus rules:
+        - Drops any validator_unstake transactions if receiver has insufficient confirmed stake
+          or if VALIDATOR_STAKE_VAULT has insufficient confirmed balance.
+        - Automatically evicts invalid transactions from self.pending_transactions.
+        """
+        self._ensure_ledger_index()
+        vault_u = int(self._confirmed_units_map.get(VALIDATOR_STAKE_VAULT_ADDRESS, 0))
+        available_stakes = dict(self._confirmed_stakes_map)
+
+        valid_txs: List[Transaction] = []
+        evict_hashes = set()
+        for tx in self.pending_transactions:
+            if tx.tx_type == "validator_unstake":
+                rec = normalize_bct_address(tx.receiver)
+                snd = normalize_bct_address(tx.sender)
+                amt_u = _to_units(tx.amount)
+                if snd != VALIDATOR_STAKE_VAULT_ADDRESS or not rec:
+                    evict_hashes.add(tx.hash())
+                    continue
+                user_staked = available_stakes.get(rec, 0)
+                if amt_u <= 0 or amt_u > user_staked or amt_u > vault_u:
+                    logger.warning(
+                        f"[CONSENSUS GUARD] Evicting invalid unstake: {rec} requested {tx.amount} BCT "
+                        f"but confirmed staked is {user_staked / ATOMIC_UNIT:.4f} BCT, vault has {vault_u / ATOMIC_UNIT:.4f} BCT"
+                    )
+                    evict_hashes.add(tx.hash())
+                    continue
+                available_stakes[rec] -= amt_u
+                vault_u -= amt_u
+            valid_txs.append(tx)
+
+        if evict_hashes:
+            self.pending_transactions = [t for t in self.pending_transactions if t.hash() not in evict_hashes]
+
+        return valid_txs
+
     def _mine_block(self, miner_address: str = "", require_pending: bool = False) -> Optional[Block]:
         """
         3-Phase Atomic Compare-And-Swap (CAS) Block Producer:
@@ -3858,7 +4038,7 @@ class Blockchain:
 
                 expected_idx = len(self.chain)
                 expected_prev = self.chain[-1].hash if self.chain else "0" * 64
-                packaged_user_txs = list(self.pending_transactions)
+                packaged_user_txs = self._filter_valid_mempool_transactions_for_block()
                 packaged_user_hashes = {tx.hash() for tx in packaged_user_txs}
                 block_txs = list(packaged_user_txs)
                 reward_txs, breakdown = self._build_reward_transactions(block_txs, clean_miner, expected_idx)
@@ -3960,7 +4140,7 @@ class Blockchain:
                     }
 
             template_ts = round(time.time(), 3)
-            user_txs = list(self.pending_transactions[:100])
+            user_txs = list(self._filter_valid_mempool_transactions_for_block()[:100])
             reward_txs, breakdown = self._build_reward_transactions(
                 user_txs, clean_miner, block_index, fixed_timestamp=template_ts
             )
@@ -4090,7 +4270,7 @@ class Blockchain:
                     extra_data=t_dict.get("extra_data"),
                 )
                 h = tx_obj.hash()
-                if t_type in ("mining_reward", "validator_reward"):
+                if t_type in ("mining_reward", "validator_reward", "observer_reward"):
                     submitted_reward_hashes.append(h)
                 else:
                     if h not in mempool_by_hash or h in seen_user_hashes:
@@ -4100,6 +4280,23 @@ class Blockchain:
 
             if not matched_user_txs:
                 return False, "Block must contain at least 1 valid mempool transaction.", None
+
+            # Strict Solvency Guard: Validate that validator_unstake does not exceed confirmed stake or vault balance
+            self._ensure_ledger_index()
+            vault_u_check = int(self._confirmed_units_map.get(VALIDATOR_STAKE_VAULT_ADDRESS, 0))
+            stakes_check = dict(self._confirmed_stakes_map)
+            for m_tx in matched_user_txs:
+                if m_tx.tx_type == "validator_unstake":
+                    rec = normalize_bct_address(m_tx.receiver)
+                    snd = normalize_bct_address(m_tx.sender)
+                    amt_u = _to_units(m_tx.amount)
+                    if snd != VALIDATOR_STAKE_VAULT_ADDRESS or not rec:
+                        return False, "Block contains malformed validator_unstake transaction!", None
+                    staked_u = stakes_check.get(rec, 0)
+                    if amt_u <= 0 or amt_u > staked_u or amt_u > vault_u_check:
+                        return False, f"Block contains invalid validator_unstake: {rec} exceeds confirmed stake or vault balance!", None
+                    stakes_check[rec] -= amt_u
+                    vault_u_check -= amt_u
 
             expected_reward_txs, breakdown = self._build_reward_transactions(
                 matched_user_txs, clean_miner, expected_idx, fixed_timestamp=submitted_ts

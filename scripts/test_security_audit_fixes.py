@@ -1,12 +1,16 @@
 import sys
 import time
 import secrets
+import tempfile
+import shutil
 sys.path.insert(0, '.')
 from core.blockchain import Blockchain, Transaction, normalize_bct_address
 from config import Config
 
+_test_temp_dir = tempfile.mkdtemp(prefix="locktrace_audit_test_")
+print(f"Running tests in isolated directory: {_test_temp_dir}")
 print("=== 1. Testing BNS Reserved Namespace Protection ===")
-bc = Blockchain()
+bc = Blockchain(auto_mine=False, data_dir=_test_temp_dir)
 for name in ["treasury", "genesis", "bridge", "vault", "admin", "system", "bct", "foundation"]:
     pricing = bc.get_bns_pricing(name)
     avail = bc.bns_check_available(name)
@@ -246,3 +250,10 @@ assert code_whale == 400 and "Maximum single transfer limit" in resp_whale.get("
 print("node_runner MIN_TRANSACTION & MAX_TRANSACTION verified! (Passed)")
 
 print("\nALL SECURITY AUDIT VERIFICATIONS PASSED SUCCESSFULLY!")
+
+try:
+    shutil.rmtree(_test_temp_dir, ignore_errors=True)
+    if os.path.exists("./test_node_data"):
+        shutil.rmtree("./test_node_data", ignore_errors=True)
+except Exception:
+    pass

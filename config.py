@@ -40,7 +40,7 @@ if os.path.exists(env_path):
 
 class Config:
     # ── Protokol & Versiyon ───────────────────────────
-    PROTOCOL_VERSION = "2.10.1"
+    PROTOCOL_VERSION = "2.11.0"
     NETWORK_NAME = os.environ.get("BCT_NETWORK", "mainnet")
 
     # ── Anti-Stall & Resilience Parameters (v2.5.0) ───
@@ -81,13 +81,16 @@ class Config:
         5: 10.0     # 5+ karakter (örn: trace.bct)
     }
 
-    # ── Konsensüs & Blok Ödülü Dağılımı ───────────────
-    REWARD_MINER_PERCENT = 70       # %70 PoW madencisine
-    REWARD_VALIDATOR_PERCENT = 30   # %30 aktif tasdikleyici (validator) havuzuna
+    # ── Konsensüs & Blok Ödülü Dağılımı (3 Kademeli Model) ──
+    REWARD_MINER_PERCENT = 50       # %50 PoW bloğunu bulan madenciye (Proposer)
+    REWARD_VALIDATOR_PERCENT = 40   # %40 aktif doğrulayıcı düğüm havuzuna (Düğüm çalıştıran Validator Quorum)
+    REWARD_OBSERVER_PERCENT = 10    # %10 pasif teminat kitleyen gözlemcilere (Observer Staking Pool)
     BASE_BLOCK_REWARD = 50.0        # Başlangıç blok ödülü
 
-    # ── Sybil Koruması & Validator Teminatı (Stake) ───
-    MIN_VALIDATOR_STAKE = 1000.0    # Validator olmak ve %30 ödülden pay almak için min bakiye/stake
+    # ── Sybil Koruması & Staking Kademeleri (Stake Limits) ───
+    MIN_OBSERVER_STAKE = 100.0      # Pasif gözlemci staking alt limiti (Min 100 BCT)
+    MAX_OBSERVER_STAKE = 100_000.0  # Pasif gözlemci staking üst limiti (Max 100.000 BCT)
+    MIN_VALIDATOR_STAKE = 1000.0    # Aktif Validator Düğümü olmak için gereken min bakiye/stake
     EQUIVOCATION_SLASH_PERCENT = 100 # Çift imza / çelişkili blok tasdikinde %100 slashing
 
     # ── Dinamik Zorluk (LWMA) & Hedef Blok Süresi ─────

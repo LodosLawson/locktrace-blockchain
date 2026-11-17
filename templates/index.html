@@ -3361,22 +3361,30 @@
 
             <!-- Staking Action Buttons -->
             <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-              <p class="text-xs text-on-surface-variant max-w-md">
-                Lock 1,000 BCT collateral to participate in Option A quorum consensus and earn <span class="text-secondary font-bold">30% Quorum Attestation Rewards</span> every block. Staking transactions are signed client-side with 100% non-custodial ECDSA.
-              </p>
-              <div class="flex items-center gap-2.5 shrink-0">
-                <button id="btnExecuteStake" onclick="executeValidatorStake(1000)"
-                  class="px-4 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary/90 transition-all active:scale-95 shadow-sm flex items-center gap-1.5"
-                  type="button">
-                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">lock</span>
-                  <span>1.000 BCT Kilitle (Stake)</span>
-                </button>
-                <button id="btnExecuteUnstake" onclick="executeValidatorUnstake(1000)"
-                  class="px-3.5 py-2.5 rounded-xl bg-surface-container-high text-on-surface font-semibold text-xs hover:bg-surface-container-highest transition-all active:scale-95 border border-outline-variant/30 flex items-center gap-1.5"
-                  type="button">
-                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">lock_open</span>
-                  <span>Unstake Collateral</span>
-                </button>
+              <div class="flex flex-col gap-2 w-full pt-2">
+                <p class="text-xs text-on-surface-variant leading-relaxed">
+                  <strong>3 Kademeli Konsensüs & Staking Modeli:</strong> Minimum <span class="text-primary font-bold">100 BCT</span> ile <span class="text-primary font-bold">100.000 BCT</span> arası kilitleyin. Düğüm (node) çalıştıran aktif doğrulayıcılar <span class="text-emerald-400 font-bold">%40 Quorum Havuzundan</span>, düğüm çalıştırmadan sadece coin kilitleyen pasif staker'lar ise <span class="text-primary font-bold">%10 Gözlemci Havuzundan</span> kilitledikleri miktar oranında pay alır! (PoW blok üreticisi %50 alır).
+                </p>
+                <div class="flex flex-wrap items-center gap-2.5 mt-2">
+                  <div class="relative flex-1 min-w-[140px] max-w-[220px]">
+                    <input id="inputCustomStakeAmt" type="number" min="100" max="100000" step="100" value="1000"
+                      class="w-full bg-surface-container-high text-on-surface px-3 py-2 rounded-xl text-xs font-mono font-bold border border-outline-variant/30 focus:outline-none focus:border-primary"
+                      placeholder="Miktar (BCT)" />
+                    <span class="absolute right-2.5 top-2 text-[10px] text-on-surface-variant font-mono">BCT</span>
+                  </div>
+                  <button id="btnExecuteStake" onclick="executeValidatorStake(document.getElementById('inputCustomStakeAmt')?.value || 1000)"
+                    class="px-4 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary/90 transition-all active:scale-95 shadow-sm flex items-center gap-1.5"
+                    type="button">
+                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">lock</span>
+                    <span>Teminat Kilitle (Stake)</span>
+                  </button>
+                  <button id="btnExecuteUnstake" onclick="executeValidatorUnstake(document.getElementById('inputCustomStakeAmt')?.value || 1000)"
+                    class="px-3.5 py-2.5 rounded-xl bg-surface-container-high text-on-surface font-semibold text-xs hover:bg-surface-container-highest transition-all active:scale-95 border border-outline-variant/30 flex items-center gap-1.5"
+                    type="button">
+                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">lock_open</span>
+                    <span>Unstake</span>
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -10887,6 +10895,9 @@
       // Always reset Space Detail Stack Header & restore mobile nav when switching main tabs
       if (target !== 'space' || activeDetailPostId !== null) {
         resetSpaceDetailChrome();
+      }
+      if (target === 'ag-ve-explorer' || target === 'dugum-paneli') {
+        if (typeof loadStakingParticipantsUI === 'function') loadStakingParticipantsUI();
       }
 
       document.querySelectorAll('.tab-content').forEach((el) => {
@@ -20390,8 +20401,12 @@
         return;
       }
       const amt = Number(amountBct || 1000);
-      if (isNaN(amt) || amt < 1000) {
-        showToast('Minimum validator collateral is 1,000 BCT.', 'warning');
+      if (isNaN(amt) || amt < 100) {
+        showToast('Minimum stake collateral is 100 BCT (Observer pool). Active validator quorum requires 1,000 BCT.', 'warning');
+        return;
+      }
+      if (amt > 100000) {
+        showToast('Maximum single stake limit is 100,000 BCT.', 'warning');
         return;
       }
       const curBal = Number(currentAccount.balance || 0);
@@ -20637,7 +20652,80 @@
       checkAndSyncNodeWalletStatus();
     }
 
-  </script>
+  
+    async function loadStakingParticipantsUI() {
+      try {
+        const res = await fetch('/api/v1/staking/participants');
+        const json = await res.json();
+        if (!json.success || !json.data) return;
+        const d = json.data;
+
+        const renderRows = (stakers) => {
+          if (!stakers || stakers.length === 0) {
+            return `<tr><td colspan="5" class="py-6 text-center text-on-surface-variant text-xs font-sans">Henüz kilitli teminat bulunmuyor.</td></tr>`;
+          }
+          return stakers.map((s) => {
+            let badgeColor = "bg-primary/10 text-primary border-primary/20";
+            let tierLabel = "Gözlemci (%10)";
+            if (s.tier === "active_validator") {
+              badgeColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
+              tierLabel = "Aktif Validator (%40)";
+            } else if (s.tier === "inactive_validator") {
+              badgeColor = "bg-amber-500/10 text-amber-400 border-amber-500/20";
+              tierLabel = "Çevrimdışı Validator (%10)";
+            } else if (s.tier === "slashed") {
+              badgeColor = "bg-rose-500/10 text-rose-400 border-rose-500/20";
+              tierLabel = "Cezalı (Slashed)";
+            }
+            return `
+              <tr class="border-b border-outline-variant/10 hover:bg-surface-container-high/40 transition-colors">
+                <td class="py-3 px-3 font-mono text-xs text-on-surface select-all flex items-center gap-1.5">
+                  <span class="material-symbols-outlined notranslate text-[14px] text-primary/70">account_balance_wallet</span>
+                  <span title="${s.address}">${s.address.slice(0, 10)}...${s.address.slice(-6)}</span>
+                </td>
+                <td class="py-3 px-3 font-mono text-xs font-semibold text-primary text-right">${Number(s.staked_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} BCT</td>
+                <td class="py-3 px-3 text-center">
+                  <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badgeColor}">${tierLabel}</span>
+                </td>
+                <td class="py-3 px-3 text-center text-xs text-on-surface-variant font-mono">${s.pool_share}</td>
+                <td class="py-3 px-3 font-mono text-xs text-secondary text-right font-semibold">${Number(s.rewards_earned).toFixed(4)} BCT</td>
+              </tr>
+            `;
+          }).join('');
+        };
+
+        const nodeEl = document.getElementById('stakingParticipantsTableBody');
+        if (nodeEl) nodeEl.innerHTML = renderRows(d.stakers);
+
+        const expEl = document.getElementById('explorerStakingParticipantsTableBody');
+        if (expEl) expEl.innerHTML = renderRows(d.stakers);
+
+        const totalStakedEl = document.getElementById('statTotalStakedBCT');
+        if (totalStakedEl) totalStakedEl.textContent = Number(d.total_staked_bct).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' BCT';
+        const activeValsEl = document.getElementById('statActiveValidatorsCount');
+        if (activeValsEl) activeValsEl.textContent = d.active_validators_count;
+        const observersEl = document.getElementById('statObserversCount');
+        if (observersEl) observersEl.textContent = d.observers_count;
+      } catch (err) {
+        console.error('Error loading staking participants:', err);
+      }
+    }
+
+    // Auto-refresh stakers when navigating or refreshing
+    const _orig_refreshValidatorStakeUI = typeof refreshValidatorStakeUI === 'function' ? refreshValidatorStakeUI : null;
+    refreshValidatorStakeUI = function() {
+      if (_orig_refreshValidatorStakeUI) _orig_refreshValidatorStakeUI();
+      loadStakingParticipantsUI();
+    };
+
+    // Load stakers on DOMContentLoaded
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadStakingParticipantsUI);
+    } else {
+      setTimeout(loadStakingParticipantsUI, 200);
+    }
+
+</script>
 </body>
 
 </html>

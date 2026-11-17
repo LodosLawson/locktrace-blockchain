@@ -1975,6 +1975,33 @@ def api_validator_get_stake(address):
     })
 
 
+@app.route("/api/v1/staking/participants", methods=["GET"])
+@app.route("/api/v1/validator/stakes", methods=["GET"])
+def api_staking_participants():
+    """Returns full registry of active validators and passive observer stakers."""
+    if not check_rate_limit("staking_participants", limit=60, window_seconds=60):
+        return api_response(False, message="Too many requests. Please wait.", status=429)
+
+    stakers = blockchain.get_all_stakers()
+    active_validators = [s for s in stakers if s["tier"] == "active_validator"]
+    observers = [s for s in stakers if s["tier"] == "observer"]
+    inactive_vals = [s for s in stakers if s["tier"] == "inactive_validator"]
+    slashed = [s for s in stakers if s["tier"] == "slashed"]
+    total_staked = sum(s["staked_amount"] for s in stakers if not s["is_slashed"])
+
+    return api_response(True, data={
+        "total_stakers": len(stakers),
+        "total_staked_bct": round(total_staked, 4),
+        "active_validators_count": len(active_validators),
+        "inactive_validators_count": len(inactive_vals),
+        "observers_count": len(observers),
+        "slashed_count": len(slashed),
+        "model": "50% PoW Proposer / 40% Active Validator Quorum / 10% Observer Pool",
+        "stakers": stakers,
+        "stake_vault_address": VALIDATOR_STAKE_VAULT_ADDRESS,
+    }, status=200)
+
+
 # ── Mining, PoW Block Templates & Multi-Node Reward Endpoints ─
 @app.route("/api/v1/mining/job", methods=["GET"])
 def api_mining_job():
