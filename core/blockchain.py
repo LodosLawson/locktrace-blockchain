@@ -3776,28 +3776,29 @@ class Blockchain:
     ) -> Tuple[List[Transaction], dict]:
         """
         Deterministically computes atomic-unit-exact block rewards from Treasury Vault + Fee Pool:
-        - 70% to Block Producer (`mining_reward`) + 30% split equally across verified active peer validators (`validator_reward`).
-        - 100% to Block Producer if no other eligible peer validators are online.
+        - 50% to Block Producer (`mining_reward`) if valid active proposer.
+        - 40% to Active Validator Quorum (`validator_reward`) split equally across verified peer nodes.
+        - 10% to Observer Stakers Pool (`observer_reward`) pro-rata to locked collateral.
+        - When block is mined by background sequencer ("Genesis-Validator"), observer & validator pools are still distributed;
+          the 50% proposer portion remains unminted in Treasury.
         """
-        clean_miner = normalize_bct_address(miner_address)
-        if not clean_miner or not is_valid_bct_address(clean_miner) or clean_miner == TREASURY_ADDRESS:
-            return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
-
-        # Strict Validator Stake & Active Node Requirement: Unstaked, inactive or slashed wallets NEVER receive block/mining rewards
-        if not self.is_active_validator(clean_miner) or clean_miner in self.slashed_validators:
-            return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
+        clean_miner = normalize_bct_address(miner_address) if miner_address else ""
+        is_miner_eligible = bool(
+            clean_miner
+            and is_valid_bct_address(clean_miner)
+            and clean_miner != TREASURY_ADDRESS
+            and clean_miner not in self.slashed_validators
+        )
 
         # Anti-Self-Loop & Sybil Dust Mining Guard: If block only contains self-transfers between miner and accomplice addresses,
         # or transactions involving slashed validators, or zero genuine third-party transactions, zero the Treasury subsidy!
-        norm_miner = normalize_bct_address(clean_miner)
         slashed_set = set(normalize_bct_address(a) for a in self.slashed_validators)
         genuine_txs = [
             tx for tx in pending_txs
-            if normalize_bct_address(tx.sender) != norm_miner
-            and normalize_bct_address(tx.receiver) != norm_miner
+            if (not clean_miner or (normalize_bct_address(tx.sender) != clean_miner and normalize_bct_address(tx.receiver) != clean_miner))
             and normalize_bct_address(tx.sender) not in slashed_set
             and normalize_bct_address(tx.receiver) not in slashed_set
-            and float(getattr(tx, "amount", 0.0) or 0.0) >= MIN_TRANSACTION
+            and (float(getattr(tx, "amount", 0.0) or 0.0) >= MIN_TRANSACTION or float(getattr(tx, "fee", 0.0) or 0.0) > 0)
         ]
         senders = {normalize_bct_address(tx.sender) for tx in genuine_txs if tx.sender}
         receivers = {normalize_bct_address(tx.receiver) for tx in genuine_txs if tx.receiver}
@@ -3815,12 +3816,13 @@ class Blockchain:
         total_pool_u = subsidy_u + miner_fee_cut_u
 
         if total_pool_u <= 0:
-            return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": []}
+            return [], {"total_reward": 0.0, "proposer_reward": 0.0, "validator_pool_reward": 0.0, "validators_rewarded": [], "observer_pool_reward": 0.0, "observers_rewarded": []}
 
         det_ts = round(float(fixed_timestamp if fixed_timestamp is not None else time.time()), 3)
         validators = self.get_eligible_validators(exclude_miner=clean_miner, block_index=block_index, now=det_ts)
         active_validator_addrs = {normalize_bct_address(v["miner_address"]) for v in validators}
-        active_validator_addrs.add(clean_miner)
+        if clean_miner and self.is_active_validator(clean_miner):
+            active_validator_addrs.add(clean_miner)
 
         # 3-Tier Staking & Observer Quorum: Query passive observer stakers (100 - 100,000 BCT)
         # Active validators' excess stake above 1,000 BCT also participates pro-rata in the 10% Observer pool!
@@ -3849,7 +3851,7 @@ class Blockchain:
                                 signature=f"observer_stake_reward_block_{block_index}_{o_addr[:8]}",
                                 timestamp=det_ts,
                                 tx_type="observer_reward",
-                                extra_data={"staked_bct": float(Decimal(o_stake_u) / Decimal(ATOMIC_UNIT)), "proposer": clean_miner},
+                                extra_data={"staked_bct": float(Decimal(o_stake_u) / Decimal(ATOMIC_UNIT)), "proposer": clean_miner or "Genesis-Validator"},
                             )
                         )
                         actual_obs_total_u += o_cut_u
@@ -3874,14 +3876,14 @@ class Blockchain:
                         signature=f"validator_quorum_reward_block_{block_index}_{v_nid}",
                         timestamp=det_ts,
                         tx_type="validator_reward",
-                        extra_data={"node_id": v_nid, "proposer": clean_miner},
+                        extra_data={"node_id": v_nid, "proposer": clean_miner or "Genesis-Validator"},
                     )
                 )
                 validators_breakdown.append({"node_id": v_nid, "miner_address": v_addr, "reward": val_amt})
 
         # Tier 1: 50% PoW Block Producer (Proposer) + Any unallocated Validator/Observer pool remainder
         proposer_u = total_pool_u - (actual_val_total_u + actual_obs_total_u)
-        if proposer_u > 0:
+        if proposer_u > 0 and is_miner_eligible:
             proposer_amt = float(Decimal(proposer_u) / Decimal(ATOMIC_UNIT))
             reward_txs.append(
                 Transaction(
@@ -3897,7 +3899,7 @@ class Blockchain:
 
         breakdown = {
             "total_reward": float(Decimal(total_pool_u) / Decimal(ATOMIC_UNIT)),
-            "proposer_reward": float(Decimal(proposer_u) / Decimal(ATOMIC_UNIT)),
+            "proposer_reward": float(Decimal(proposer_u if is_miner_eligible else 0) / Decimal(ATOMIC_UNIT)),
             "validator_pool_reward": float(Decimal(actual_val_total_u) / Decimal(ATOMIC_UNIT)),
             "validators_rewarded": validators_breakdown,
             "observer_pool_reward": float(Decimal(actual_obs_total_u) / Decimal(ATOMIC_UNIT)),
