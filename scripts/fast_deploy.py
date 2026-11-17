@@ -67,7 +67,7 @@ def main():
         "-o", "ConnectTimeout=15",
         tar_path, f"{VPS_HOST}:/tmp/pwa_bundle.tar.gz"
     ]
-    if not run_cmd(scp_cmd, timeout=60):
+    if not run_cmd(scp_cmd, timeout=180):
         print("[!] SCP bundle failed")
         sys.exit(1)
 
