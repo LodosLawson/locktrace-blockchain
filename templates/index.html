@@ -3316,127 +3316,198 @@
 
           <!-- 1,000 BCT Validator Staking Vault Card (v2.9.7 PoS Collateral) -->
           <div id="validatorStakingVaultCard"
-            class="p-5 sm:p-6 rounded-3xl bg-surface-container border border-primary/30 shadow-md flex flex-col gap-4 mb-6">
-            <div
-              class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-3 border-b border-outline-variant/15">
-              <div class="flex items-center gap-3">
-                <div
-                  class="w-11 h-11 rounded-2xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0 border border-amber-500/30 shadow-xs">
-                  <span class="material-symbols-outlined notranslate text-[24px]" translate="no">lock_open</span>
+            class="p-5 sm:p-7 rounded-3xl bg-surface-container border border-primary/30 shadow-lg flex flex-col gap-6 mb-8">
+            
+            <!-- Vault Header & Identity -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-outline-variant/20">
+              <div class="flex items-center gap-3.5">
+                <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-primary/20 via-primary/10 to-transparent text-primary flex items-center justify-center shrink-0 border border-primary/30 shadow-inner">
+                  <span class="material-symbols-outlined notranslate text-[26px]" translate="no">lock_clock</span>
                 </div>
-                <div>
-                  <div class="flex items-center gap-2">
-                    <h3 class="font-headline-sm text-base sm:text-lg font-bold text-on-surface">1.000 BCT Validator
-                      Collateral Vault (PoS Staking)</h3>
-                    <span id="validatorVaultBadge"
-                      class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase tracking-wider">Unstaked</span>
+                <div class="flex flex-col">
+                  <div class="flex items-center gap-2 flex-wrap">
+                    <h3 class="font-headline-sm text-base sm:text-lg font-bold text-on-surface">LockTrace Akıllı Staking &amp; Doğrulayıcı Kasası</h3>
+                    <span id="validatorVaultBadge" class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-[10px] font-mono font-bold uppercase tracking-wider border border-outline-variant/30">Durum Belirleniyor</span>
                   </div>
-                  <span class="text-xs font-mono text-on-surface-variant break-all">Kasa: <span
-                      class="text-primary font-bold">BCT_STAKE_VAULT_00000000000000000000000000000000</span></span>
+                  <div class="flex items-center gap-2 mt-1 text-xs text-on-surface-variant flex-wrap">
+                    <span class="font-mono text-[11px] truncate select-all">Kasa: <strong class="text-primary font-mono">BCT_STAKE_VAULT_00000000000000000000000000000000</strong></span>
+                    <button type="button" onclick="copyToClipboard('BCT_STAKE_VAULT_00000000000000000000000000000000'); showToast('Staking vault adresi kopyalandı!')" class="p-1 hover:text-primary transition-colors" title="Adresi Kopyala">
+                      <span class="material-symbols-outlined notranslate text-[14px]">content_copy</span>
+                    </button>
+                  </div>
                 </div>
               </div>
-              <div class="flex items-center gap-2">
-                <button onclick="refreshValidatorStakeUI()"
-                  class="p-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs border border-outline-variant/30 transition-all active:scale-95"
-                  type="button" title="Refresh Staking Status">
-                  <span class="material-symbols-outlined notranslate text-[16px] text-primary" translate="no">sync</span>
+              <div class="flex items-center gap-2 self-start sm:self-auto">
+                <button onclick="refreshValidatorStakeUI()" class="px-3 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold border border-outline-variant/30 flex items-center gap-1.5 transition-all shadow-xs" type="button">
+                  <span class="material-symbols-outlined notranslate text-[15px]">refresh</span>
+                  <span>Yenile</span>
                 </button>
               </div>
             </div>
 
-            <!-- Staking Progress Bar & Explanations -->
-            <div class="flex flex-col gap-2">
-              <div class="flex items-center justify-between text-xs">
-                <span class="text-on-surface-variant font-mono">Locked Stake / Required Threshold:</span>
-                <span id="validatorStakeProgressText" class="font-mono font-bold text-primary">0.00 / 1.000.00 BCT
-                  (%0)</span>
+            <!-- Kullanıcının Mevcut Staking Pozisyonu (My Position) -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between">
+                <span class="text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px] text-primary">account_balance_wallet</span> Kilitli Teminatınız
+                </span>
+                <span id="operatorStakeStatus" class="text-lg font-bold font-mono text-primary mt-1">0.00 BCT</span>
+                <span id="operatorStakeSubtitle" class="text-[10px] text-on-surface-variant">Min. 100 BCT Gözlemci / 1.000 BCT Düğüm</span>
               </div>
-              <div
-                class="w-full h-3 rounded-full bg-surface-container-lowest border border-outline-variant/20 overflow-hidden">
-                <div id="validatorStakeProgressBar"
-                  class="h-full bg-gradient-to-r from-primary via-emerald-400 to-emerald-500 rounded-full transition-all duration-500"
-                  style="width: 0%;"></div>
+              <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between">
+                <span class="text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px] text-secondary">military_tech</span> Konsensüs Rolünüz
+                </span>
+                <span id="operatorConsensusRole" class="text-xs font-bold font-mono text-on-surface mt-1 truncate">Teminat Bulunmuyor</span>
+                <span class="text-[10px] text-on-surface-variant">Protokol Kademesi</span>
+              </div>
+              <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between">
+                <span class="text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px] text-emerald-400">dns</span> Düğüm (Node) Durumu
+                </span>
+                <span id="operatorNodeLinkStatus" class="text-xs font-bold text-on-surface mt-1 truncate">Düğüm Bağlı Değil</span>
+                <span class="text-[10px] text-on-surface-variant">1.000+ BCT ile %40 Havuzu</span>
+              </div>
+              <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between">
+                <span class="text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
+                  <span class="material-symbols-outlined text-[14px] text-amber-400">savings</span> Toplam Kazanılan Ödül
+                </span>
+                <span id="operatorRewardsEarned" class="text-lg font-bold font-mono text-secondary mt-1">0.0000 BCT</span>
+                <span class="text-[10px] text-on-surface-variant">Cüzdanınıza yansıtılan ödüller</span>
               </div>
             </div>
 
-            <!-- Staking Action Buttons -->
-            <div class="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 pt-2">
-              <div class="flex flex-col gap-2 w-full pt-2">
-                <p class="text-xs text-on-surface-variant leading-relaxed">
-                  <strong>3 Kademeli Konsensüs & Staking Modeli:</strong> Minimum <span class="text-primary font-bold">100 BCT</span> ile <span class="text-primary font-bold">100.000 BCT</span> arası kilitleyin. Düğüm (node) çalıştıran aktif doğrulayıcılar <span class="text-emerald-400 font-bold">%40 Quorum Havuzundan</span>, düğüm çalıştırmadan sadece coin kilitleyen pasif staker'lar ise <span class="text-primary font-bold">%10 Gözlemci Havuzundan</span> kilitledikleri miktar oranında pay alır! (PoW blok üreticisi %50 alır).
-                </p>
-                <div class="flex flex-wrap items-center gap-2.5 mt-2">
-                  <div class="relative flex-1 min-w-[140px] max-w-[220px]">
-                    <input id="inputCustomStakeAmt" type="number" min="100" max="100000" step="100" value="1000"
-                      class="w-full bg-surface-container-high text-on-surface px-3 py-2 rounded-xl text-xs font-mono font-bold border border-outline-variant/30 focus:outline-none focus:border-primary"
-                      placeholder="Miktar (BCT)" />
-                    <span class="absolute right-2.5 top-2 text-[10px] text-on-surface-variant font-mono">BCT</span>
+            <!-- Akıllı Staking Giriş Alanı & Hızlı Seçim Butonları -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-4">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <div>
+                  <h4 class="text-xs font-bold uppercase tracking-wider text-on-surface font-mono flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-primary text-[16px]">tune</span>
+                    <span>Teminat Miktarı Belirleyin (Min 100 BCT — Max 100.000 BCT)</span>
+                  </h4>
+                  <p class="text-[11px] text-on-surface-variant">Kilitlediğiniz miktara göre sistem rolünüzü ve ödül havuzu payınızı otomatik belirler.</p>
+                </div>
+                <div class="text-xs font-mono text-on-surface-variant">
+                  Cüzdan Bakiyesi: <strong id="lblWalletAvailBalance" class="text-primary font-bold">0.00 BCT</strong>
+                </div>
+              </div>
+
+              <!-- Hızlı Seçim Butonları -->
+              <div class="flex flex-wrap items-center gap-2">
+                <button type="button" onclick="setStakingAmount(100)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">100 BCT</button>
+                <button type="button" onclick="setStakingAmount(500)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">500 BCT</button>
+                <button type="button" onclick="setStakingAmount(1000)" class="px-3 py-1.5 rounded-xl bg-primary/15 text-primary border border-primary/30 text-xs font-mono font-bold transition-all shadow-xs">1.000 BCT (Validator)</button>
+                <button type="button" onclick="setStakingAmount(5000)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">5.000 BCT</button>
+                <button type="button" onclick="setStakingAmount(10000)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">10.000 BCT</button>
+                <button type="button" onclick="setStakingMaxAmount()" class="px-2.5 py-1.5 rounded-xl bg-surface-container-highest hover:bg-primary/30 text-xs font-mono font-bold transition-all ml-auto">MAKSİMUM</button>
+              </div>
+
+              <!-- Miktar Giriş Kutusu & Aksiyon Butonları -->
+              <div class="flex flex-col sm:flex-row items-stretch gap-3">
+                <div class="relative flex-1">
+                  <input id="inputCustomStakeAmt" type="number" min="100" max="100000" step="50" value="1000" oninput="updateSmartStakingPreview()"
+                    class="w-full bg-surface-container-high text-on-surface px-4 py-3 rounded-2xl text-base font-mono font-bold border border-outline-variant/30 focus:outline-none focus:border-primary shadow-inner"
+                    placeholder="Miktar Giriniz (Min. 100 BCT)" />
+                  <span class="absolute right-4 top-3.5 text-xs text-on-surface-variant font-mono font-bold">BCT</span>
+                </div>
+                <button id="btnExecuteStake" onclick="executeValidatorStake(document.getElementById('inputCustomStakeAmt')?.value || 1000)"
+                  class="px-5 py-3 rounded-2xl bg-primary text-on-primary font-bold text-xs hover:bg-primary/90 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 shrink-0"
+                  type="button">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">lock</span>
+                  <span>Teminat Kilitle (Stake)</span>
+                </button>
+                <button id="btnExecuteUnstake" onclick="executeValidatorUnstake(document.getElementById('inputCustomStakeAmt')?.value || 1000)"
+                  class="px-4 py-3 rounded-2xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold text-xs border border-outline-variant/30 transition-all active:scale-95 flex items-center justify-center gap-1.5 shrink-0"
+                  type="button">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">lock_open</span>
+                  <span>Teminat Çöz (Unstake)</span>
+                </button>
+              </div>
+
+              <!-- Dinamik Otomatik Tanıma & Canlı Simülatör Kartı -->
+              <div id="smartTierDetectionCard" class="p-4 rounded-2xl bg-surface-container border border-outline-variant/25 transition-all flex flex-col gap-3">
+                <div class="flex items-center justify-between gap-2 flex-wrap">
+                  <div class="flex items-center gap-2">
+                    <span id="smartTierBadgeIcon" class="material-symbols-outlined text-primary text-[20px]">verified</span>
+                    <strong id="smartTierTitle" class="text-xs sm:text-sm font-bold text-on-surface">1.000 BCT — Doğrulayıcı Seviyesi Teminat</strong>
                   </div>
-                  <button id="btnExecuteStake" onclick="executeValidatorStake(document.getElementById('inputCustomStakeAmt')?.value || 1000)"
-                    class="px-4 py-2.5 rounded-xl bg-primary text-on-primary font-semibold text-xs hover:bg-primary/90 transition-all active:scale-95 shadow-sm flex items-center gap-1.5"
-                    type="button">
-                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">lock</span>
-                    <span>Teminat Kilitle (Stake)</span>
-                  </button>
-                  <button id="btnExecuteUnstake" onclick="executeValidatorUnstake(document.getElementById('inputCustomStakeAmt')?.value || 1000)"
-                    class="px-3.5 py-2.5 rounded-xl bg-surface-container-high text-on-surface font-semibold text-xs hover:bg-surface-container-highest transition-all active:scale-95 border border-outline-variant/30 flex items-center gap-1.5"
-                    type="button">
-                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">lock_open</span>
-                    <span>Unstake</span>
-                  </button>
+                  <span id="smartTierPoolBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-primary/15 text-primary border border-primary/30">%40 veya %10 Havuz</span>
                 </div>
+
+                <!-- Otomatik Tanıma Açıklaması -->
+                <p id="smartTierDescription" class="text-xs text-on-surface-variant leading-relaxed">
+                  <strong>Akıllı Otomatik Tanıma:</strong> 1.000 BCT veya üzeri kilitlediğinizde iki seçenek devreye girer:<br>
+                  • <span class="text-emerald-400 font-semibold">1. Durum (Düğüm Çalıştırırsanız):</span> Bilgisayar veya sunucunuzda <code class="font-mono text-on-surface bg-surface-container-highest px-1 rounded">python node_runner.py</code> açık olduğunda sistem düğümünüzü otomatik tanır ve doğrudan <strong class="text-emerald-400 font-bold">%40 Aktif Doğrulayıcı Quorum Havuzuna</strong> dahil eder.<br>
+                  • <span class="text-primary font-semibold">2. Durum (Düğüm Çalıştırmazsanız):</span> Düğüm kurmasanız bile kilitli paranız boşa gitmez; otomatik olarak <strong class="text-primary font-bold">%10 Gözlemci Havuzundan</strong> pasif getiri kazanmaya devam edersiniz!
+                </p>
+
+                <!-- Canlı Getiri Simülatörü Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-outline-variant/15 text-xs font-mono">
+                  <div class="flex flex-col p-2.5 rounded-xl bg-surface-container-high/60">
+                    <span class="text-[10px] text-on-surface-variant font-sans">Günlük Tahmini Getiri</span>
+                    <strong id="valEstimatedDailyLabel" class="text-primary font-bold text-sm mt-0.5">~1.62 BCT / gün</strong>
+                    <span class="text-[9px] text-on-surface-variant/80 font-sans">Havuz yoğunluğuna göre</span>
+                  </div>
+                  <div class="flex flex-col p-2.5 rounded-xl bg-surface-container-high/60">
+                    <span class="text-[10px] text-on-surface-variant font-sans">Aylık Tahmini Getiri</span>
+                    <strong id="valEstimatedMonthlyLabel" class="text-secondary font-bold text-sm mt-0.5">~48.60 BCT / ay</strong>
+                    <span class="text-[9px] text-on-surface-variant/80 font-sans">30 günlük döngü</span>
+                  </div>
+                  <div class="flex flex-col p-2.5 rounded-xl bg-surface-container-high/60">
+                    <span class="text-[10px] text-on-surface-variant font-sans">Yıllık Getiri &amp; APR Oranı</span>
+                    <strong id="valEstimatedAprLabel" class="text-emerald-400 font-bold text-sm mt-0.5">~59.1% APR</strong>
+                    <span class="text-[9px] text-on-surface-variant/80 font-sans">Bileşik olmayan teminat getirisi</span>
+                  </div>
+                </div>
+              </div>
+
+            </div>
+
+            <!-- 3 Kademeli Konsensüs Modeli Bilgilendirme Bannerı -->
+            <div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-on-surface-variant">
+              <div class="flex items-center gap-2.5">
+                <span class="material-symbols-outlined text-secondary text-[22px] shrink-0">info</span>
+                <span class="leading-relaxed">
+                  <strong>Konsensüs Ödül Dağılımı:</strong> Her blokta üretilen toplam ödül havuzunun <strong class="text-on-surface">%50'si PoW Bloğunu Bulan Madenciye</strong>, <strong class="text-emerald-400 font-bold">%40'ı Aktif Düğüm Doğrulayıcılarına</strong>, <strong class="text-primary font-bold">%10'u ise Gözlemci Staker'lara</strong> kilitli coin oranlarına göre paylaştırılır.
+                </span>
               </div>
             </div>
 
-            <!-- Staking Yield & Reward Model Breakdown (v2.9.7) -->
-            <div
-              class="mt-2 p-4 rounded-2xl bg-surface-container-low border border-primary/20 flex flex-col gap-3 min-w-0 overflow-hidden">
-              <div
-                class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-2 border-b border-outline-variant/15">
-                <div class="flex items-center gap-2">
-                  <span class="material-symbols-outlined notranslate text-secondary text-[20px]" translate="no">payments</span>
-                  <span class="font-bold text-xs sm:text-sm text-on-surface">1,000 BCT Staking Yield Model (Getiri /
-                    APR)</span>
+            <!-- Staking Katılımcıları & Canlı Defter Tablosu -->
+            <div class="flex flex-col w-full bg-surface-container-low rounded-2xl border border-outline-variant/20 p-4 sm:p-5 shadow-sm">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
+                <div>
+                  <h3 class="text-sm font-bold text-on-surface flex items-center gap-2">
+                    <span class="material-symbols-outlined notranslate text-primary text-[18px]">group_work</span>
+                    <span>Staking &amp; Doğrulayıcı Havuzu Katılımcıları</span>
+                  </h3>
+                  <p class="text-[11px] text-on-surface-variant">Ağda aktif teminat kilitleyen doğrulayıcılar ve gözlemciler listesi</p>
                 </div>
-                <span
-                  class="px-2 py-0.5 rounded-full bg-secondary/15 text-secondary font-mono text-[10px] font-bold self-start sm:self-auto">Hedef:
-                  20s Block (4,320 Blocks/day)</span>
-              </div>
-              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
-                <div
-                  class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col min-w-0">
-                  <span class="text-[10px] text-on-surface-variant uppercase font-sans">Per-Block Pool</span>
-                  <span class="font-bold text-primary mt-0.5 truncate">0.015 BCT</span>
-                  <span class="text-[9px] text-on-surface-variant/80 font-sans truncate">%30 Hazine + Fee</span>
-                </div>
-                <div
-                  class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col min-w-0">
-                  <span class="text-[10px] text-on-surface-variant uppercase font-sans">Daily Total Pool</span>
-                  <span class="font-bold text-secondary mt-0.5 truncate">~64.8 BCT</span>
-                  <span class="text-[9px] text-on-surface-variant/80 font-sans truncate">4,320 Blocks / day</span>
-                </div>
-                <div
-                  class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col min-w-0">
-                  <span class="text-[10px] text-on-surface-variant uppercase font-sans">Annual Total Pool</span>
-                  <span class="font-bold text-amber-400 mt-0.5 truncate">~23.652 BCT</span>
-                  <span class="text-[9px] text-on-surface-variant/80 font-sans truncate">Total Validator Pool</span>
-                </div>
-                <div
-                  class="p-2.5 rounded-xl bg-surface-container border border-outline-variant/15 flex flex-col min-w-0">
-                  <span class="text-[10px] text-on-surface-variant uppercase font-sans">Estimated Per Validator</span>
-                  <span class="font-bold text-emerald-400 mt-0.5 truncate" id="valEstimatedAprLabel">~%236.5 APR</span>
-                  <span class="text-[9px] text-on-surface-variant/80 font-sans truncate"
-                    id="valEstimatedDailyLabel">~6.48 BCT / day</span>
+                <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
+                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Toplam Kilitli: <strong id="statTotalStakedBCT" class="text-primary font-bold">0.00 BCT</strong></span>
+                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Aktif Düğüm: <strong id="statActiveValidatorsCount" class="text-emerald-400 font-bold">0</strong></span>
+                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Gözlemci: <strong id="statObserversCount" class="text-primary font-bold">0</strong></span>
                 </div>
               </div>
-              <p class="text-[11px] text-on-surface-variant leading-relaxed">
-                💡 <strong class="text-on-surface">How Are Rewards Calculated?</strong> A new block is produced every 20 seconds (~4,320 blocks/day). 30% of the block subsidy (0.015 BCT) plus 30% of all transaction fees are allocated to the Validator Pool and shared equally among online validators with 1,000 BCT locked collateral.
-              </p>
+              <div class="overflow-x-auto w-full">
+                <table class="w-full text-left border-collapse">
+                  <thead>
+                    <tr class="border-b border-outline-variant/20 text-[11px] uppercase tracking-wider text-on-surface-variant font-mono">
+                      <th class="py-2.5 px-3">Cüzdan Adresi</th>
+                      <th class="py-2.5 px-3 text-right">Kilitli Miktar</th>
+                      <th class="py-2.5 px-3 text-center">Statü / Kategori</th>
+                      <th class="py-2.5 px-3 text-center">Ödül Havuzu Payı</th>
+                      <th class="py-2.5 px-3 text-right">Kazanılan Ödül</th>
+                    </tr>
+                  </thead>
+                  <tbody id="stakingParticipantsTableBody">
+                    <tr><td colspan="5" class="py-6 text-center text-on-surface-variant text-xs font-sans">Katılımcı verileri yükleniyor...</td></tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
 
           </div>
-
-
 
           <!-- Remote Node Telemetry Box (Track your CMD node remotely from locktrace.space) -->
           <div id="hubRemoteNodeBox"
@@ -20395,7 +20466,93 @@
       }
     }
 
-    async function executeValidatorStake(amountBct) {
+    async 
+    function setStakingAmount(amt) {
+      const inp = document.getElementById('inputCustomStakeAmt');
+      if (inp) {
+        inp.value = amt;
+        updateSmartStakingPreview();
+      }
+    }
+
+    function setStakingMaxAmount() {
+      const curBal = Number(currentAccount?.balance || 0);
+      const safeMax = Math.min(100000, Math.floor(curBal));
+      const inp = document.getElementById('inputCustomStakeAmt');
+      if (inp) {
+        inp.value = Math.max(100, safeMax);
+        updateSmartStakingPreview();
+      }
+    }
+
+    function updateSmartStakingPreview() {
+      const inp = document.getElementById('inputCustomStakeAmt');
+      const amt = Number(inp?.value || 0);
+
+      const titleEl = document.getElementById('smartTierTitle');
+      const iconEl = document.getElementById('smartTierBadgeIcon');
+      const badgeEl = document.getElementById('smartTierPoolBadge');
+      const descEl = document.getElementById('smartTierDescription');
+      const dailyEl = document.getElementById('valEstimatedDailyLabel');
+      const monthlyEl = document.getElementById('valEstimatedMonthlyLabel');
+      const aprEl = document.getElementById('valEstimatedAprLabel');
+
+      if (amt < 100) {
+        if (titleEl) titleEl.textContent = `${amt} BCT — Yetersiz Teminat Miktarı`;
+        if (iconEl) iconEl.textContent = 'warning';
+        if (badgeEl) {
+          badgeEl.textContent = 'Min. 100 BCT Gerekli';
+          badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30';
+        }
+        if (descEl) descEl.innerHTML = '⚠️ Staking ödül havuzuna katılabilmek için minimum kilitlenebilir miktar <strong>100 BCT</strong>'dir.';
+        if (dailyEl) dailyEl.textContent = '0.00 BCT / gün';
+        if (monthlyEl) monthlyEl.textContent = '0.00 BCT / ay';
+        if (aprEl) aprEl.textContent = '0% APR';
+        return;
+      }
+
+      if (amt >= 100 && amt < 1000) {
+        // Observer Staker Tier (10% pool)
+        if (titleEl) titleEl.textContent = `${Number(amt).toLocaleString()} BCT — Pasif Gözlemci Staking (Observer)`;
+        if (iconEl) iconEl.textContent = 'visibility';
+        if (badgeEl) {
+          badgeEl.textContent = '%10 Gözlemci Havuzu';
+          badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-primary/15 text-primary border border-primary/30';
+        }
+        if (descEl) descEl.innerHTML = `
+          <strong>Pasif Gözlemci Modeli (%10 Havuz):</strong><br>
+          • <strong>Düğüm (Node) Gerekmez:</strong> Sunucuda hiçbir yazılım çalıştırmanıza gerek yoktur. Sadece coin kilitleyerek teminat sağlarsınız.<br>
+          • <strong>Otomatik Ödül:</strong> Her blokta oluşan sübvansiyon ve transfer ücretlerinin %10'u, kilitlediğiniz BCT oranında (pro-rata) cüzdanınıza yansıtılır.<br>
+          • <em>İpucu:</em> İleride miktarınızı 1.000 BCT'ye tamamlayıp bir düğüm çalıştırırsanız, statünüz otomatik olarak <strong>%40 Doğrulayıcı Havuzuna</strong> yükselecektir!
+        `;
+        // Daily est: 4320 blk/day * 0.05 BCT * 10% = 21.6 BCT pool / day
+        const estDaily = ((amt / 5000) * 21.6) / 2;
+        if (dailyEl) dailyEl.textContent = `~${estDaily.toFixed(3)} BCT / gün`;
+        if (monthlyEl) monthlyEl.textContent = `~${(estDaily * 30).toFixed(2)} BCT / ay`;
+        const estApr = Math.min(45, Math.max(12, (estDaily * 365 / amt) * 100));
+        if (aprEl) aprEl.textContent = `~${estApr.toFixed(1)}% APR`;
+      } else {
+        // >= 1000 BCT (Validator or Observer)
+        if (titleEl) titleEl.textContent = `${Number(amt).toLocaleString()} BCT — Doğrulayıcı Seviyesi Teminat`;
+        if (iconEl) iconEl.textContent = 'verified_user';
+        if (badgeEl) {
+          badgeEl.textContent = 'Düğüm ile %40 / Düğümsüz %10';
+          badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
+        }
+        if (descEl) descEl.innerHTML = `
+          <strong>Akıllı Çift Kademeli Tanıma (1.000+ BCT):</strong><br>
+          • 🟢 <strong>1. Durum (Node Çalıştırdığınızda):</strong> Bilgisayar veya VPS sunucunuzda <code class="font-mono text-on-surface bg-surface-container-highest px-1.5 py-0.5 rounded">python node_runner.py</code> çalıştırdığınız an sistem düğümünüzü otomatik tanır ve doğrudan <strong class="text-emerald-400 font-bold">%40 Aktif Doğrulayıcı Quorum Havuzuna</strong> alır.<br>
+          • 🔵 <strong>2. Durum (Node Çalıştırmadığınızda):</strong> Düğüm çalıştırmasanız dahi paranız kesinlikle boşta beklemez; sistem sizi otomatik olarak <strong class="text-primary font-bold">%10 Gözlemci Havuzuna</strong> dahil eder ve pasif staking ödülünüzü vermeye devam eder!
+        `;
+        // Daily est: 4320 blk/day * 0.05 BCT * 40% = 86.4 BCT pool / day
+        const estDaily = (86.4 / 2);
+        if (dailyEl) dailyEl.textContent = `~${(estDaily / (amt >= 5000 ? 1 : 2)).toFixed(2)} BCT / gün`;
+        if (monthlyEl) monthlyEl.textContent = `~${(estDaily * 15).toFixed(2)} BCT / ay`;
+        if (aprEl) aprEl.textContent = `~58.4% APR (Düğüm ile)`;
+      }
+    }
+
+    function executeValidatorStake(amountBct) {
       if (!currentAccount || !currentAccount.address) {
         showToast('Please connect or import a wallet first!', 'warning');
         return;
