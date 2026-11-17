@@ -36,6 +36,9 @@ from core.blockchain import (
     is_valid_bct_address,
     verify_frontend_manifest,
     VALIDATOR_STAKE_VAULT_ADDRESS,
+    MIN_OBSERVER_STAKE,
+    MAX_OBSERVER_STAKE,
+    MIN_VALIDATOR_STAKE,
 )
 from core.wallet import (
     Wallet,
@@ -335,7 +338,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-mP+AihAVVLuifgfhKQMTfS4hPkNVR+9i1ykR6CuWGVM=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-JhZPl6BnsgDH2Mzt1GiwbpxveI9b6JQHyfMsY3fNaHo=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1860,8 +1863,18 @@ def api_validator_stake():
 
     if not sender or amount_raw is None:
         return api_response(False, message="Sender and amount are required.", status=400)
-    if amount < 1000.0:
-        return api_response(False, message="Minimum validator stake is 1000.00 BCT.", status=400)
+    if amount < MIN_OBSERVER_STAKE:
+        return api_response(
+            False,
+            message=f"Minimum kilitlenebilir teminat {MIN_OBSERVER_STAKE:.2f} BCT'dir (%10 Gözlemci havuzu). Aktif Validator düğüm havuzu (%40) için en az {MIN_VALIDATOR_STAKE:.2f} BCT gereklidir.",
+            status=400
+        )
+    if amount > MAX_OBSERVER_STAKE:
+        return api_response(
+            False,
+            message=f"Tek seferde maksimum kilitlenebilir teminat {MAX_OBSERVER_STAKE:,.2f} BCT'dir.",
+            status=400
+        )
 
     amount = round(amount, 8)
     amt_str_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
@@ -1963,14 +1976,19 @@ def api_validator_get_stake(address):
     clean = str(address or "").strip()
     staked = blockchain.get_validator_stake(clean)
     bal = blockchain.get_balance(clean)
-    is_eligible = staked >= 1000.0
+    is_eligible_val = staked >= MIN_VALIDATOR_STAKE
+    is_eligible_obs = staked >= MIN_OBSERVER_STAKE
     return api_response(True, data={
         "address": clean,
         "staked_amount": staked,
         "wallet_balance": bal,
-        "min_required_stake": 1000.0,
-        "is_eligible_validator": is_eligible,
-        "is_vault_staked": staked >= 1000.0,
+        "min_observer_stake": MIN_OBSERVER_STAKE,
+        "min_validator_stake": MIN_VALIDATOR_STAKE,
+        "max_stake": MAX_OBSERVER_STAKE,
+        "is_eligible": is_eligible_val or is_eligible_obs,
+        "is_eligible_validator": is_eligible_val,
+        "is_eligible_observer": is_eligible_obs,
+        "is_vault_staked": staked >= MIN_OBSERVER_STAKE,
         "stake_vault_address": VALIDATOR_STAKE_VAULT_ADDRESS,
     })
 

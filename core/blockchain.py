@@ -3090,7 +3090,11 @@ class Blockchain:
                 elif is_active_val and staked_bct >= MIN_VALIDATOR_STAKE:
                     tier = "active_validator"
                     role_title = "Aktif Doğrulayıcı (Validator Quorum)"
-                    pool_share = "%40 Düğüm Havuzu"
+                    if staked_bct > MIN_VALIDATOR_STAKE:
+                        excess = staked_bct - MIN_VALIDATOR_STAKE
+                        pool_share = f"%40 Düğüm (1.000 BCT) + %10 Gözlemci ({excess:,.0f} BCT)"
+                    else:
+                        pool_share = "%40 Düğüm Havuzu"
                 elif staked_bct >= MIN_VALIDATOR_STAKE:
                     tier = "inactive_validator"
                     role_title = "Çevrimdışı Validator (Düğüm Bekleniyor)"
@@ -3537,32 +3541,46 @@ class Blockchain:
                 break
         return deduped
 
-    def get_eligible_observers(self, exclude_addrs: Optional[set] = None) -> List[Tuple[str, int]]:
+    def get_eligible_observers(self, active_validator_addrs: Optional[set] = None, exclude_addrs: Optional[set] = None) -> List[Tuple[str, int]]:
         """
-        Returns list of eligible observer stakers (address, staked_units) who have locked
-        between MIN_OBSERVER_STAKE (100 BCT) and MAX_OBSERVER_STAKE (100,000 BCT) in VALIDATOR_STAKE_VAULT,
-        excluding active consensus node operators and slashed addresses.
-        Observers participate in the 10% Observer Staking Pool pro-rata to their locked stake.
+        Returns list of eligible observer stakers (address, staked_units) who participate
+        in the 10% Observer Staking Pool pro-rata to their locked stake.
+        - Passive stakers: their entire stake between MIN_OBSERVER_STAKE (100 BCT) and MAX_OBSERVER_STAKE (100,000 BCT) is counted.
+        - Active validators: 1,000 BCT is locked for the 40% Validator Quorum pool; any excess stake above 1,000 BCT
+          (e.g. 100 BCT when 1,100 BCT is staked) automatically participates in the 10% Observer pool!
+        - Slashed addresses and protocol system vaults are excluded.
         """
-        excludes = exclude_addrs or set()
-        clean_excludes = {normalize_bct_address(a) for a in excludes if a}
-        clean_excludes.add(TREASURY_ADDRESS)
-        clean_excludes.add(VALIDATOR_STAKE_VAULT_ADDRESS)
+        active_vals = {normalize_bct_address(a) for a in (active_validator_addrs or set()) if a}
+        excludes = {normalize_bct_address(a) for a in (exclude_addrs or set()) if a}
+        excludes.add(TREASURY_ADDRESS)
+        excludes.add(VALIDATOR_STAKE_VAULT_ADDRESS)
         for s in self.slashed_validators:
-            clean_excludes.add(normalize_bct_address(s))
+            excludes.add(normalize_bct_address(s))
 
         with self.lock:
             self._ensure_ledger_index()
             eligible: List[Tuple[str, int]] = []
             min_u = _to_units(MIN_OBSERVER_STAKE)
             max_u = _to_units(MAX_OBSERVER_STAKE)
+            val_threshold_u = _to_units(MIN_VALIDATOR_STAKE)
+
             for addr, raw_staked_u in self._confirmed_stakes_map.items():
                 clean_addr = normalize_bct_address(addr)
-                if not clean_addr or clean_addr in clean_excludes:
+                if not clean_addr or clean_addr in excludes:
                     continue
-                capped_u = min(max(0, raw_staked_u), max_u)
-                if capped_u >= min_u:
-                    eligible.append((clean_addr, capped_u))
+
+                if clean_addr in active_vals:
+                    # Active validator node: 1,000 BCT powers the 40% node quorum;
+                    # excess stake above 1,000 BCT flows into the 10% observer pool!
+                    excess_u = max(0, raw_staked_u - val_threshold_u)
+                    capped_u = min(excess_u, max_u)
+                    if capped_u >= min_u:
+                        eligible.append((clean_addr, capped_u))
+                else:
+                    # Passive staker or offline validator: entire stake participates in 10% pool
+                    capped_u = min(max(0, raw_staked_u), max_u)
+                    if capped_u >= min_u:
+                        eligible.append((clean_addr, capped_u))
 
             # Sort deterministically by staked units desc, then address
             eligible.sort(key=lambda x: (-x[1], x[0]))
@@ -3805,7 +3823,8 @@ class Blockchain:
         active_validator_addrs.add(clean_miner)
 
         # 3-Tier Staking & Observer Quorum: Query passive observer stakers (100 - 100,000 BCT)
-        observers = self.get_eligible_observers(exclude_addrs=active_validator_addrs)
+        # Active validators' excess stake above 1,000 BCT also participates pro-rata in the 10% Observer pool!
+        observers = self.get_eligible_observers(active_validator_addrs=active_validator_addrs)
 
         reward_txs: List[Transaction] = []
         validators_breakdown: List[dict] = []

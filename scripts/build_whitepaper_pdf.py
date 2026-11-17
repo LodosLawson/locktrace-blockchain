@@ -48,7 +48,7 @@ class NumberedCanvas(canvas.Canvas):
         # Do not print header on page 1 (cover)
         if self._pageNumber > 1:
             # Running Header
-            self.drawString(54, 800, "BlocTag (BCT) Technical Whitepaper — Developed by LockTrace — Protocol v2.9.7")
+            self.drawString(54, 800, "BlocTag (BCT) Technical Whitepaper — Developed by LockTrace — Protocol v2.11.0")
             self.setStrokeColor(colors.HexColor("#E2E8F0"))
             self.setLineWidth(0.5)
             self.line(54, 792, 541, 792)
@@ -57,7 +57,7 @@ class NumberedCanvas(canvas.Canvas):
         self.setStrokeColor(colors.HexColor("#E2E8F0"))
         self.setLineWidth(0.5)
         self.line(54, 45, 541, 45)
-        self.drawString(54, 32, "https://www.locktrace.space | Base: 0xA3C743113a41cFd0146917065d4578337Bb77254 | X: @bloctag | TG: @LOCKTRACESPACE")
+        self.drawString(54, 32, "LockTrace (BCT) Official Whitepaper — Protocol v2.11.0 | locktrace.space")
         self.drawRightString(541, 32, f"Page {self._pageNumber} of {page_count}")
         self.restoreState()
 
