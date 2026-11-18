@@ -10,8 +10,8 @@ pragma solidity ^0.8.20;
  *         - Zero blacklists / account freezing mechanisms.
  *         - Zero buy/sell transaction taxes (0% transfer fee).
  *         - Zero artificial minting caps (100% 1:1 liquidity mobility for any verified Layer-1 lock amount).
- *         - Native Multi-Relayer Quorum Consensus (`requiredApprovals` M-of-N relayer attestation) to eliminate
- *           single-private-key compromise risk without restricting legitimate user or liquidity bridge volume.
+ *         - Native Multi-Relayer Quorum Consensus (`requiredApprovals` M-of-N relayer attestation) with
+ *           auto-synchronizing quorum bounds and live active-relayer vote verification.
  *         - Strict Separation of Duties: Governance Owner != Bridge Relayer (`onlyBridgeRelayer`).
  *         - Future-Proof Layer-1 Address Validation (`strictL1AddressCheck` configurable if L1 address format upgrades).
  */
@@ -93,6 +93,7 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
 
     uint256 public constant MAX_SUPPLY = 1_000_000_000_000 * 10 ** 18; // 1 Trillion wBCT Maximum Hard Cap
     uint256 public constant MIN_BURN_AMOUNT = 1 * 10 ** 18;             // 1 wBCT Minimum Burn to Bridge (Anti-Dust)
+    uint256 public constant MAX_RELAYERS = 32;                          // Bounded relayer set for gas-safe quorum evaluation
     uint256 private _totalSupply;
 
     mapping(address => uint256) private _balances;
@@ -101,8 +102,8 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     // ── Separation of Duties & Multi-Relayer Quorum Consensus ────────────────
     // Eliminates single-key compromise risk without imposing artificial volume limits.
     // When requiredApprovals == 1, a single authorized relayer executes the mint immediately.
-    // When requiredApprovals > 1 (M-of-N mode), M distinct authorized relayers must attest to the
-    // exact same (to, amount, canonicalL1TxHash) payload before tokens are minted.
+    // When requiredApprovals > 1 (M-of-N mode), M distinct currently-active relayers must attest
+    // to the exact same (to, amount, canonicalL1TxHash) payload before tokens are minted.
     mapping(address => bool) public isBridgeRelayer;
     uint256 public activeRelayerCount;
     uint256 public requiredApprovals;
@@ -111,6 +112,7 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     // payloadHash = keccak256(abi.encode(to, amount, canonicalL1TxHash))
     mapping(bytes32 => uint256) public payloadApprovalCount;
     mapping(bytes32 => mapping(address => bool)) public hasRelayerApproved;
+    mapping(bytes32 => address[]) private _payloadApprovers;
 
     // ── Future-Proof Layer-1 Address Format Validation Mode ──────────────────
     bool public strictL1AddressCheck = true;
@@ -237,8 +239,9 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
      * @notice Mints wBCT to recipient after a verified lock of native BCT on Layer-1.
      * @dev Supports M-of-N Multi-Relayer Quorum Consensus without artificial amount caps:
      *      - If `requiredApprovals == 1`, mints immediately in a single transaction.
-     *      - If `requiredApprovals > 1`, records the caller relayer's attestation and mints
-     *        automatically as soon as the M-th distinct authorized relayer attests the exact same payload.
+     *      - If `requiredApprovals > 1`, records the caller relayer's attestation and counts only
+     *        currently-active relayers (`isBridgeRelayer[approver] == true`), so any prior vote
+     *        cast by a subsequently revoked relayer is automatically excluded.
      * @param to Destination EVM address receiving wBCT.
      * @param amount Amount of wBCT in 18-decimal wei (1 BCT = 10^18 wei).
      * @param locktraceTxHash Hash of the Layer-1 bridge_lock transaction.
@@ -261,13 +264,24 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
         require(!hasRelayerApproved[payloadHash][_msgSender()], "wBCT: Relayer already attested this L1 tx");
 
         hasRelayerApproved[payloadHash][_msgSender()] = true;
-        uint256 approvals = payloadApprovalCount[payloadHash] + 1;
-        payloadApprovalCount[payloadHash] = approvals;
+        _payloadApprovers[payloadHash].push(_msgSender());
 
-        emit BridgeMintAttested(canonicalHash, _msgSender(), to, amount, approvals, requiredApprovals);
+        // Count only currently-active authorized relayers (invalidates stale votes from revoked relayers)
+        address[] storage approvers = _payloadApprovers[payloadHash];
+        uint256 len = approvers.length;
+        uint256 activeApprovals = 0;
+        for (uint256 i = 0; i < len; i++) {
+            if (isBridgeRelayer[approvers[i]]) {
+                activeApprovals += 1;
+            }
+        }
+        payloadApprovalCount[payloadHash] = activeApprovals;
 
-        if (approvals >= requiredApprovals && activeRelayerCount >= requiredApprovals) {
+        emit BridgeMintAttested(canonicalHash, _msgSender(), to, amount, activeApprovals, requiredApprovals);
+
+        if (activeApprovals >= requiredApprovals) {
             processedL1TxHashes[canonicalHash] = true;
+            delete _payloadApprovers[payloadHash];
             _mint(to, amount);
             emit MintedFromBridge(to, amount, locktraceTxHash);
         }
@@ -323,9 +337,9 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     // ── Admin Governance (Owner / Multisig Only) ─────────────────────────────
 
     /**
-     * @notice Grants or revokes bridge relayer authorization.
-     * @dev Revoking a compromised relayer immediately blocks it from calling `mintFromBridge`
-     *      without requiring any pause mechanism on the contract.
+     * @notice Grants or revokes bridge relayer authorization and automatically synchronizes
+     *         `requiredApprovals` downward if `activeRelayerCount` drops below the current quorum.
+     * @dev Ensures removing a compromised relayer in an emergency never deadlocks the bridge.
      */
     function setBridgeRelayer(address relayer, bool active) external onlyOwner {
         require(relayer != address(0), "wBCT: Zero address");
@@ -334,9 +348,15 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
 
         isBridgeRelayer[relayer] = active;
         if (active) {
+            require(activeRelayerCount < MAX_RELAYERS, "wBCT: Maximum relayer limit reached");
             activeRelayerCount += 1;
         } else {
             activeRelayerCount -= 1;
+            if (activeRelayerCount > 0 && requiredApprovals > activeRelayerCount) {
+                uint256 oldQuorum = requiredApprovals;
+                requiredApprovals = activeRelayerCount;
+                emit RequiredApprovalsUpdated(oldQuorum, requiredApprovals);
+            }
         }
         emit BridgeRelayerSet(relayer, active, activeRelayerCount);
     }
