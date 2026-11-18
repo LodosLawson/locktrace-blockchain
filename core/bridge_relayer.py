@@ -25,14 +25,13 @@ logger = logging.getLogger("LockTrace.Relayer")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
 BASE_RPC_URL = os.environ.get("BASE_RPC_URL", "https://mainnet.base.org")
-WBCT_CONTRACT = os.environ.get("WBCT_CONTRACT_ADDRESS", "0xA3C743113a41cFd0146917065d4578337Bb77254")
-# AUD17B-06: Prioritize active data/blockchain.db over bare root paths
-_default_db = "/opt/blockchaint/data/blockchain.db" if os.path.exists("/opt/blockchaint/data/blockchain.db") else (
-    "/opt/blockchaint/blockchain.db" if os.path.exists("/opt/blockchaint/blockchain.db") else (
-        "data/blockchain.db" if os.path.exists("data/blockchain.db") else "blockchain.db"
-    )
+WBCT_CONTRACT = os.environ.get("WBCT_CONTRACT_ADDRESS", "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28")
+_default_bridge_db = "/opt/blockchaint/blockchain.db" if os.path.exists("/opt/blockchaint/blockchain.db") else "blockchain.db"
+_default_chain_db = "/opt/blockchaint/data/blockchain.db" if os.path.exists("/opt/blockchaint/data/blockchain.db") else (
+    "data/blockchain.db" if os.path.exists("data/blockchain.db") else _default_bridge_db
 )
-DB_PATH = os.environ.get("BCT_DB_PATH", _default_db)
+DB_PATH = os.environ.get("BCT_DB_PATH", _default_bridge_db)
+CHAIN_DB_PATH = os.environ.get("BCT_CHAIN_DB_PATH", _default_chain_db)
 RELAYER_KEY_PATH = os.environ.get("RELAYER_KEY_PATH", "/opt/blockchaint/relayer_wallet.json")
 CHAIN_ID = 8453  # Base Mainnet
 
@@ -44,9 +43,9 @@ except Exception:  # standalone execution fallback
         return any(k in low for k in ("pending", "mempool", "not yet", "confirmation", "reorg security",
                                       "network_error", "timeout", "rpc", "connect", "insufficient locked balance"))
 
-# F-06: relayer-side mint guardrails (mirrors WrappedBCT.sol maxMintPerTx / dailyMintLimit)
-MAX_MINT_PER_TX_BCT = Decimal(os.environ.get("MAX_MINT_PER_TX_BCT", "1000000"))
-DAILY_MINT_LIMIT_BCT = Decimal(os.environ.get("DAILY_MINT_LIMIT_BCT", "5000000"))
+# Limit-free 1:1 asset-backed bridge ceilings (1 Billion BCT per tx / day, matching MAX_BRIDGE_AMOUNT)
+MAX_MINT_PER_TX_BCT = Decimal(os.environ.get("MAX_MINT_PER_TX_BCT", "1000000000"))
+DAILY_MINT_LIMIT_BCT = Decimal(os.environ.get("DAILY_MINT_LIMIT_BCT", "1000000000"))
 
 WBCT_ABI = [
     {
@@ -95,8 +94,9 @@ WBCT_ABI = [
 
 
 class BridgeRelayer:
-    def __init__(self, db_path: str = DB_PATH, key_path: str = RELAYER_KEY_PATH):
+    def __init__(self, db_path: str = DB_PATH, key_path: str = RELAYER_KEY_PATH, chain_db_path: str = CHAIN_DB_PATH):
         self.db_path = db_path
+        self.chain_db_path = chain_db_path if os.path.exists(chain_db_path) else db_path
         self.key_path = key_path
         if not HAS_WEB3:
             self.w3 = None
@@ -186,11 +186,11 @@ class BridgeRelayer:
         # Check relayer ETH balance on Base Mainnet first
         try:
             bal_wei = self.w3.eth.get_balance(self.account.address)
-            if bal_wei < self.w3.to_wei(0.00005, "ether"):
+            if bal_wei < self.w3.to_wei(0.000001, "ether"):
                 bal_eth = float(self.w3.from_wei(bal_wei, "ether"))
                 logger.warning(
                     f"Relayer has low ETH balance ({bal_eth:.8f} ETH). "
-                    f"Base gas requires ~0.0001 ETH. Please fund {self.account.address} with Base ETH to resume automatic minting."
+                    f"Base gas requires ~0.000001 ETH. Please fund {self.account.address} with Base ETH to resume automatic minting."
                 )
                 return 0
         except Exception as e:
@@ -265,7 +265,7 @@ class BridgeRelayer:
             # AUD17B-05: Ensure check_conn is safely closed in a finally block
             check_conn = None
             try:
-                check_conn = sqlite3.connect(self.db_path, timeout=10.0)
+                check_conn = sqlite3.connect(self.chain_db_path, timeout=10.0)
                 check_conn.row_factory = sqlite3.Row
                 tx_row = check_conn.execute("SELECT block_index FROM tx_lookup WHERE tx_hash = ?", (l1_hash,)).fetchone()
                 if not tx_row:
@@ -405,12 +405,13 @@ class BridgeRelayer:
     def _recheck_stalled_locks(self):
         """N-01: resume STALLED orders once their L1 lock tx has been sealed in a block."""
         conn = sqlite3.connect(self.db_path, timeout=30.0)
+        chain_conn = sqlite3.connect(self.chain_db_path, timeout=10.0)
         try:
             rows = conn.execute(
                 "SELECT bridge_id, tx_hash_l1 FROM bridge_transactions WHERE status = 'STALLED' "
                 "AND direction = 'L1_TO_EVM' AND tx_hash_l1 IS NOT NULL ORDER BY created_at ASC LIMIT 50").fetchall()
             for bid, h in rows:
-                if conn.execute("SELECT 1 FROM tx_lookup WHERE tx_hash = ?", (h,)).fetchone():
+                if chain_conn.execute("SELECT 1 FROM tx_lookup WHERE tx_hash = ?", (h,)).fetchone():
                     with conn:
                         conn.execute(
                             "UPDATE bridge_transactions SET status = 'LOCKED', error_message = NULL, updated_at = ? "
@@ -419,6 +420,7 @@ class BridgeRelayer:
         except Exception as e:
             logger.warning(f"Stalled lock recheck failed: {e}")
         finally:
+            chain_conn.close()
             conn.close()
 
     def _mark_completed(self, bridge_id: str, tx_hash_evm: str):

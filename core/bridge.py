@@ -19,7 +19,7 @@ from typing import Dict, Any, List, Optional, Tuple
 
 logger = logging.getLogger("LockTrace.Bridge")
 
-WBCT_OFFICIAL_CONTRACT = "0xA3C743113a41cFd0146917065d4578337Bb77254"
+WBCT_OFFICIAL_CONTRACT = "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
 BURNED_TO_BRIDGE_TOPIC = "0x3275d83b87617ce084971fb014e237c81fb767cfb2fb708a12be7ec5a6c5afd0"
 
 
@@ -71,9 +71,12 @@ def verify_evm_burn_receipt(
     if str(status) not in ("0x1", "1"):
         return False, "EVM transaction failed or reverted.", {}
 
-    # 2. Check destination contract
+    # 2. Check destination contract (supports direct calls and EIP-7702 / ERC-4337 Smart Account bundlers
+    #    where receipt.to is the bundler/paymaster and target_contract emits the log in receipt.logs)
     to_addr = str(receipt.get("to") or "").lower()
-    if to_addr != target_contract:
+    logs = receipt.get("logs") or []
+    has_contract_log = any(str(lg.get("address") or "").lower() == target_contract for lg in logs)
+    if to_addr != target_contract and not has_contract_log:
         return False, f"Transaction was not sent to the official wBCT contract ({target_contract}).", {}
 
     # 2b. Check EVM confirmation depth (reorg protection - LT-02 Fail-Closed Hardening)

@@ -34,7 +34,7 @@ and security bug verification.
 - **Consensus Architecture:** Hybrid 70% Proof-of-Work (PoW) + 30% BFT Quorum Validator Attestation
 - **Native Token:** BCT (Blockchain Trace, 1 Trillion fixed max supply, non-inflationary)
 - **Database Engine:** SQLite in WAL mode (`sqlite-wal`) with O(1) reverse cursor indexing
-- **Cross-Chain Bridge:** Base Mainnet wBCT ERC-20 (`0xA3C743113a41cFd0146917065d4578337Bb77254`) with Ownable2Step & canonical hash deduplication
+- **Cross-Chain Bridge:** Base Mainnet wBCT ERC-20 (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) with Ownable2Step & canonical hash deduplication
 - **Cryptographic Engine:** Constant-time SECP256k1 (BIP-62/146 Low-S canonical enforcement)
 - **Rust Core:** `crates/locktrace_core` (Rayon parallel PoW, SPV Merkle inclusion proof, compact blocks)
 

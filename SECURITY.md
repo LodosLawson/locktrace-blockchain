@@ -24,7 +24,7 @@ The following versions of LockTrace are actively supported with security patches
    - Immunity to CVE-2012-2459 duplicate transaction Merkle tree collision attacks.
 
 3. **Cross-Chain Bridge Defense:**
-   - Base L2 `WrappedBCT` ERC-20 (`0xA3C743113a41cFd0146917065d4578337Bb77254`) enforces `maxMintPerTx` (1M wBCT) and `dailyMintLimit` (5M wBCT) with timelocked governance changes.
+   - Base L2 `WrappedBCT` ERC-20 (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) enforces `maxMintPerTx` (1M wBCT) and `dailyMintLimit` (5M wBCT) with timelocked governance changes.
    - Two-step ownership transfer (`Ownable2Step`) prevents accidental irreversible owner transfers.
    - Proof-of-Reserve validation requires at least 12 EVM confirmations on Base Mainnet and 4-8 block confirmation depth on Layer-1 to defend against chain reorgs.
 

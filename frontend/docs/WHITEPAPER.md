@@ -10,7 +10,7 @@
 *Bridge Proof-of-Reserve Vault:* `BCT_BRIDGE_VAULT_000000000000000000000000000000000`  
 *Validator Staking Vault:* `BCT_STAKE_VAULT_00000000000000000000000000000000`  
 *Provable Burn Address:* `BCT0000000000000000000000000000000000000000`  
-*Base Mainnet wBCT ERC-20:* `0xA3C743113a41cFd0146917065d4578337Bb77254`
+*Base Mainnet wBCT ERC-20:* `0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`
 
 ---
 
@@ -316,7 +316,7 @@ New wallet creation bonus ($1.00\text{ BCT}$) is disbursed directly from the Tre
 
 ## 9. Cross-Chain Interoperability: 1:1 Base Mainnet wBCT Bridge
 
-LockTrace connects to Ethereum Layer-2 via a decentralized 1:1 asset bridge to the Base Mainnet Wrapped BCT contract (`0xA3C743113a41cFd0146917065d4578337Bb77254`).
+LockTrace connects to Ethereum Layer-2 via a decentralized 1:1 asset bridge to the Base Mainnet Wrapped BCT contract (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`).
 
 ### 9.1 Bridge Proof-of-Reserve Invariant
 $$\text{Supply}_{\text{wBCT}}(\text{Base}) \equiv \text{Balance}_{\text{native}}(\text{BCT\_BRIDGE\_VAULT\_...})$$

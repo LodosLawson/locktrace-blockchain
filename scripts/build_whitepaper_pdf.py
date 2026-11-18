@@ -271,7 +271,7 @@ def generate_pdf():
             Paragraph("<b>Community Chat:</b> https://t.me/+boFrw-gPj0g5ODEy", meta_style)
         ],
         [
-            Paragraph("<b>Base Mainnet wBCT ERC-20:</b> 0xA3C743113a41cFd0146917065d4578337Bb77254", meta_style),
+            Paragraph("<b>Base Mainnet wBCT ERC-20:</b> 0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28", meta_style),
             Paragraph("<b>Bridge Proof-of-Reserve Vault:</b> BCT_BRIDGE_VAULT_000000000000000000000000000000000", meta_style)
         ]
     ]

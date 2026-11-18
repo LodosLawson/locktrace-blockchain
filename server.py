@@ -338,7 +338,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-JhZPl6BnsgDH2Mzt1GiwbpxveI9b6JQHyfMsY3fNaHo=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-OFtSJff8YWasRteR+atc9QC7NX2FxbIF4WZYF05Ame0=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -846,7 +846,7 @@ _market_price_cache = {
     "last_fetched": 0.0,
     "dex": "Uniswap (Base)",
     "pair": "0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe",
-    "token": "0xA3C743113a41cFd0146917065d4578337Bb77254"
+    "token": "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
 }
 
 
@@ -877,7 +877,7 @@ def api_market_price():
         if not fetched_ok:
             try:
                 import urllib.request, json
-                ds_url = "https://api.dexscreener.com/latest/dex/tokens/0xA3C743113a41cFd0146917065d4578337Bb77254"
+                ds_url = "https://api.dexscreener.com/latest/dex/tokens/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
                 req_ds = urllib.request.Request(ds_url, headers={"User-Agent": "LockTrace/2.8"})
                 with urllib.request.urlopen(req_ds, timeout=3.5) as resp_ds:
                     ds_data = json.loads(resp_ds.read().decode())
@@ -3222,7 +3222,7 @@ def api_bridge_base_transactions():
     else:
         raw_txs = bridge_manager.get_all_transactions(limit=limit)
 
-    contract_addr = getattr(bridge_manager, "wbct_contract", "0xA3C743113a41cFd0146917065d4578337Bb77254")
+    contract_addr = getattr(bridge_manager, "wbct_contract", "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28")
     formatted_txs = []
 
     for tx in raw_txs:

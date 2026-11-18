@@ -16,7 +16,7 @@
 | **Yerel Coin Sembolü** | **BCT** (BlockChain Trace / BlocTag) | 🟢 Mainnet |
 | **Maksimum Arz** | **1,000,000,000,000.00 BCT** (1 Trilyon - Genesis'te Sabitlenmiş, Sıfır Enflasyon) | 🔒 Kilitli |
 | **Canlı Web3 Portalı & DApp** | [https://locktrace.space](https://locktrace.space) | 🟢 Online (Stockholm VPS) |
-| **Base L2 (EVM) Kontratı (wBCT)** | [`0xA3C743113a41cFd0146917065d4578337Bb77254`](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254) | 🟢 Doğrulanmış (BaseScan) |
+| **Base L2 (EVM) Kontratı (wBCT)** | [`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`](https://basescan.org/token/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28) | 🟢 Doğrulanmış (BaseScan) |
 | **Resmi X (Twitter)** | [@bloctag](https://x.com/bloctag) | 🟢 Aktif |
 | **Resmi Telegram Duyuru Kanalı** | [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | 🟢 Aktif |
 | **Resmi Telegram Topluluk Grubu** | [https://t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | 🟢 Aktif |

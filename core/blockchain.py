@@ -893,7 +893,10 @@ class Blockchain:
             if amount < min_tx:
                 return False, f"Minimum transfer amount is {min_tx} BCT to prevent network dust spam.", None
 
-            if amount > max_tx:
+            if clean_receiver == BRIDGE_VAULT_ADDRESS:
+                if amount > 1_000_000_000.0:
+                    return False, "Maximum bridge lock amount is 1,000,000,000 BCT.", None
+            elif amount > max_tx:
                 return False, f"Maximum single transfer limit is {max_tx:,.0f} BCT (Anti-Whale limit: <= 10% circulating supply).", None
 
             expected_payload = signed_payload or f"{raw_sender}{raw_receiver}{amount}"

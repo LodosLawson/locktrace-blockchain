@@ -296,7 +296,7 @@ def build_master_workspace_blocks():
                 ["**Yerel Coin Sembolü**", "**BCT** (BlockChain Trace)", "⚡ L1 Bağımsız Katman"],
                 ["**Maksimum Arz**", "**1,000,000,000,000.00 BCT** (1 Trilyon Capped)", "🔒 Genesis'te Sabitlendi"],
                 ["**Canlı Web3 DApp**", "[https://locktrace.space](https://locktrace.space)", "📱 Mobil PWA & Desktop"],
-                ["**Base L2 Kontratı (wBCT)**", "[0xA3C743113a41cFd0146917065d4578337Bb77254](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254)", "🔵 Base Mainnet (8453) 1:1 Peg"],
+                ["**Base L2 Kontratı (wBCT)**", "[0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28](https://basescan.org/token/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28)", "🔵 Base Mainnet (8453) 1:1 Peg"],
                 ["**Base EVM Dead Adresi**", "[0x000000000000000000000000000000000000dEaD](https://basescan.org/address/0x000000000000000000000000000000000000dEaD)", "🔥 Kalıcı EVM Yakım Kasası"],
                 ["**L1 Sıfır Yakım Adresi**", "`BCT0000000000000000000000000000000000000000`", "🔥 Matematiksel Sıfır (Key Yok)"],
                 ["**GitHub Kaynak Kodu**", "[LodosLawson/locktrace-blockchain](https://github.com/LodosLawson/locktrace-blockchain)", "🐙 Açık Kaynak Repository"],

@@ -6,7 +6,7 @@
 
 [![Mainnet Status](https://img.shields.io/badge/Mainnet-Online%20%28Stockholm%29-10b981?style=for-the-badge&logo=oracle)](https://locktrace.space)
 [![Total Supply](https://img.shields.io/badge/Total%20Supply-1%20Trillion%20BCT-2563eb?style=for-the-badge)](https://locktrace.space)
-[![Base Mainnet wBCT](https://img.shields.io/badge/Base%20L2-wBCT%20Bridge-0052ff?style=for-the-badge&logo=coinbase)](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254)
+[![Base Mainnet wBCT](https://img.shields.io/badge/Base%20L2-wBCT%20Bridge-0052ff?style=for-the-badge&logo=coinbase)](https://basescan.org/token/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/LodosLawson/locktrace-blockchain)
 [![X / Twitter](https://img.shields.io/badge/X-@bloctag-000000?style=for-the-badge&logo=x)](https://x.com/bloctag)
 [![Telegram Channel](https://img.shields.io/badge/Telegram-Channel-229ED9?style=for-the-badge&logo=telegram)](https://t.me/LOCKTRACESPACE)
@@ -27,7 +27,7 @@
 - **Telegram Community Chat:** [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy)
 - **Instagram:** [@bloctag](https://www.instagram.com/bloctag)
 - **GitHub Repository:** [LodosLawson/locktrace-blockchain](https://github.com/LodosLawson/locktrace-blockchain)
-- **Base L2 Contract:** [`0xA3C743113a41cFd0146917065d4578337Bb77254`](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254)
+- **Base L2 Contract:** [`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`](https://basescan.org/token/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28)
 
 ---
 
@@ -45,7 +45,7 @@
 | **Transaction Fee** | **1.0%** automated protocol fee | **50% permanently locked to Treasury** (deflationary supply reduction). Remaining 50% split **50% to Block Proposer/Miner**, **40% to Validator Quorum**, and **10% to Observer Stakers Pool**. |
 | **Key Derivation** | **BIP-39 Mnemonic** + ECDSA SECP256k1 | 12-word seed phrase + 256-bit private key. |
 | **Consensus Engine** | **Tri-Tier Hybrid 50% PoW + 40% Quorum + 10% Observer** | Dynamic SHA-256 target difficulty + validator multi-signature confirmation. |
-| **EVM Bridge (Base L2)**| **Wrapped BCT (wBCT)** | ERC-20 token on Base Mainnet (`0xA3C743113a41cFd0146917065d4578337Bb77254`), 1:1 backed. |
+| **EVM Bridge (Base L2)**| **Wrapped BCT (wBCT)** | ERC-20 token on Base Mainnet (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`), 1:1 backed. |
 
 ---
 
@@ -140,7 +140,7 @@ Built directly into the **My Wallet** interface, the v2.4.0 **Financial Analytic
 
 LockTrace features a native, non-custodial cross-chain bridge architecture linking the native Layer-1 network with Ethereum Layer-2 (Base Mainnet):
 
-- **Wrapped BCT Contract (Base):** [`0xA3C743113a41cFd0146917065d4578337Bb77254`](https://basescan.org/token/0xA3C743113a41cFd0146917065d4578337Bb77254)
+- **Wrapped BCT Contract (Base):** [`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`](https://basescan.org/token/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28)
 - **Collateral Vault (L1):** `BCT_BRIDGE_VAULT_0000000000000000000000000000000`
 - **Bridge-In (L1 &rarr; Base L2):** Native BCT is locked into the verifiable L1 bridge vault. The bridge relayer oracles verify finality and mint the exact 1:1 equivalent wBCT on Base.
 - **Bridge-Out (Base L2 &rarr; L1):** User calls `burn()` on the wBCT ERC-20 contract. The relayer verifies the burn transaction on Base and releases the equivalent native BCT from the L1 bridge vault.
