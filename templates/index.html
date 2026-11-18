@@ -1781,7 +1781,7 @@
                   <span class="material-symbols-outlined notranslate text-[15px] text-emerald-400" translate="no">code</span>
                   <span>GitHub</span>
                 </a>
-                <a href="https://dexscreener.com/base/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe"
+                <a href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
                   target="_blank" rel="noopener noreferrer"
                   class="px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-emerald-400 transition-all flex items-center gap-1.5 text-xs font-semibold border border-emerald-500/20 shadow-xs">
                   <span class="material-symbols-outlined notranslate text-[15px]" translate="no">monitoring</span>
@@ -3787,7 +3787,7 @@
                 <span class="text-[11px] font-mono uppercase">Bridge Collateral</span>
                 <span class="material-symbols-outlined notranslate text-[16px] text-secondary" translate="no">lock</span>
               </div>
-              <span class="font-mono text-lg font-bold text-secondary" id="sysMetricBridgeLocked">85.09M BCT</span>
+              <span class="font-mono text-lg font-bold text-secondary" id="sysMetricBridgeLocked">0.00 BCT</span>
               <span class="text-[10px] text-on-surface-variant mt-1">1:1 Backing Base wBCT</span>
             </div>
             <div
@@ -3806,7 +3806,7 @@
                 <span class="material-symbols-outlined notranslate text-[16px] text-primary" translate="no">verified</span>
               </div>
               <span class="font-mono text-lg font-bold text-primary">PoW + Quorum</span>
-              <span class="text-[10px] text-primary/80 mt-1">70% Miner / 30% Validator</span>
+              <span class="text-[10px] text-primary/80 mt-1">50% Miner / 40% Validator / 10% Observer</span>
             </div>
           </div>
 
@@ -3835,7 +3835,7 @@
                       + EIP-2612</span>
                   </div>
                   <div>
-                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Wrapped BCT (wBCT) Smart Contract
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Wrapped BlocTag (wBCT) Smart Contract
                     </h3>
                     <p class="text-body-sm text-on-surface-variant mt-0.5">
                       Audited multi-chain token enabling BCT utility, Uniswap v3 liquidity, and DeFi interoperability on
@@ -3869,7 +3869,7 @@
                     <span>Uniswap v3 Pool</span>
                     <span class="material-symbols-outlined notranslate text-[13px]" translate="no">currency_exchange</span>
                   </a>
-                  <a href="https://dexscreener.com/base/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe"
+                  <a href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
                     target="_blank" rel="noopener noreferrer"
                     class="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-emerald-400 font-medium flex items-center gap-1 transition-colors">
                     <span>DexScreener</span>
@@ -3964,9 +3964,9 @@
                 <div
                   class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
                   <span
-                    class="font-mono text-xs text-on-surface select-all truncate">BCT_BRIDGE_VAULT_COLLATERAL_LOCK_000000</span>
+                    class="font-mono text-xs text-on-surface select-all truncate">BCT_BRIDGE_VAULT_000000000000000000000000000000000</span>
                   <button type="button"
-                    onclick="copyToClipboard('BCT_BRIDGE_VAULT_COLLATERAL_LOCK_000000'); showToast('Bridge vault address copied!')"
+                    onclick="copyToClipboard('BCT_BRIDGE_VAULT_000000000000000000000000000000000'); showToast('Bridge vault address copied!')"
                     class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0"
                     title="Copy Address">
                     <span class="material-symbols-outlined notranslate text-[16px]" translate="no">content_copy</span>
@@ -3975,9 +3975,9 @@
 
                 <div class="flex items-center justify-between pt-1 border-t border-outline-variant/10 text-xs">
                   <span class="text-on-surface-variant">Locked Collateral: <strong class="text-secondary font-mono"
-                      id="sysValBridgeVaultBal">85,091,883.63 BCT</strong></span>
+                      id="sysValBridgeVaultBal">0.00000000 BCT</strong></span>
                   <button type="button"
-                    onclick="switchTab('ag-ve-explorer'); setTimeout(() => { const inp = document.getElementById('explorerSearchInput'); if (inp) { inp.value = 'BCT_BRIDGE_VAULT_COLLATERAL_LOCK_000000'; triggerExplorerSearch(); } }, 150);"
+                    onclick="switchTab('ag-ve-explorer'); setTimeout(() => { const inp = document.getElementById('explorerSearchInput'); if (inp) { inp.value = 'BCT_BRIDGE_VAULT_000000000000000000000000000000000'; triggerExplorerSearch(); } }, 150);"
                     class="text-primary hover:underline flex items-center gap-0.5">
                     <span>Explorer</span>
                     <span class="material-symbols-outlined notranslate text-[13px]" translate="no">arrow_forward</span>
@@ -5940,14 +5940,14 @@
                   </div>
                   <div class="flex items-baseline gap-2 mt-0.5">
                     <span class="text-xl sm:text-2xl font-bold font-mono text-emerald-400"
-                      id="wbctDexPriceDisplay">$0.0000000046</span>
+                      id="wbctDexPriceDisplay">$0.0100</span>
                     <span class="text-xs font-medium text-on-surface-variant font-mono">USD &bull; wBCT / USDC</span>
                   </div>
                 </div>
               </div>
 
               <div class="flex items-center gap-2 self-end sm:self-auto">
-                <a href="https://dexscreener.com/base/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe"
+                <a href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
                   target="_blank" rel="noopener noreferrer"
                   class="px-3.5 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/30 text-on-surface font-semibold text-xs flex items-center gap-1.5 transition-all shadow-sm"
                   title="View on DexScreener">
@@ -5982,7 +5982,7 @@
                 </div>
                 <div class="flex items-center gap-2">
                   <a id="chartDirectLink"
-                    href="https://dexscreener.com/base/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe"
+                    href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
                     target="_blank" rel="noopener noreferrer"
                     class="text-xs text-outline hover:text-on-surface flex items-center gap-0.5"
                     title="Full Screen External">
@@ -11069,7 +11069,7 @@
           if (treasuryBal && d.treasury_formatted) treasuryBal.textContent = d.treasury_formatted + ' BCT';
           const stakeVaultBal = document.getElementById('sysValStakeVaultBal');
           if (stakeVaultBal && d.validator_stake_vault_formatted) stakeVaultBal.textContent = d.validator_stake_vault_formatted + ' BCT';
-          if (metricBridge && d.bridge_vault_locked) metricBridge.textContent = (d.bridge_vault_locked / 1000000).toFixed(2) + 'M BCT';
+          if (metricBridge && d.bridge_vault_locked !== undefined) metricBridge.textContent = d.bridge_vault_locked >= 1000000 ? (d.bridge_vault_locked / 1000000).toFixed(2) + 'M BCT' : formatBct(d.bridge_vault_locked, 2) + ' BCT';
           if (metricTreasury && d.treasury_balance) metricTreasury.textContent = (d.treasury_balance / 1000000000).toFixed(2) + 'B BCT';
           if (lostKeyBalEl && d.lost_key_test_wallets_formatted) lostKeyBalEl.textContent = d.lost_key_test_wallets_formatted + ' BCT';
           if (burnEl && d.burn_address_formatted) burnEl.textContent = d.burn_address_formatted + ' BCT';
@@ -11136,7 +11136,7 @@
       const chipBal = document.getElementById('chipBctBalance');
       const spaceBadge = document.getElementById('spaceUserBalBadge');
       const nonceEl = document.getElementById('modalAccountNonce');
-      const activePrice = (typeof currentWbctPriceUsd === 'number' && currentWbctPriceUsd > 0) ? currentWbctPriceUsd : 0.000000003938765;
+      const activePrice = (typeof currentWbctPriceUsd === 'number' && currentWbctPriceUsd > 0) ? currentWbctPriceUsd : 0.01;
 
       if (isBalanceHidden) {
         if (cardBal) cardBal.textContent = '••••••';
@@ -15877,13 +15877,20 @@
     }
 
     async function addWbctToMetaMask() {
-      if (typeof window.ethereum === 'undefined') {
+      const provider = typeof getEvmProvider === 'function' ? getEvmProvider() : window.ethereum;
+      if (!provider) {
         showToast('MetaMask or EVM Web3 wallet not detected in your browser.', 'error');
         return;
       }
       try {
+        try {
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: '0x2105' }],
+          });
+        } catch (_switchErr) { }
         const addr = (bridgeConfig && bridgeConfig.wbct_contract_address) ? bridgeConfig.wbct_contract_address : '0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28';
-        const wasAdded = await window.ethereum.request({
+        const wasAdded = await provider.request({
           method: 'wallet_watchAsset',
           params: {
             type: 'ERC20',
@@ -15896,7 +15903,7 @@
           },
         });
         if (wasAdded) {
-          showToast('wBCT successfully added to your wallet!', 'success');
+          showToast('Wrapped BlocTag (wBCT) successfully added to your wallet!', 'success');
         }
       } catch (error) {
         console.error('Failed to add token to wallet:', error);
@@ -15920,33 +15927,37 @@
       }
     }
 
+    let currentActiveDexPair = '0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28';
+
     function setChartSource(src) {
       const iframe = document.getElementById('dexChartIframe');
       if (!iframe) return;
       const dexBtn = document.getElementById('btnChartSrcDex');
       const geckoBtn = document.getElementById('btnChartSrcGecko');
       const link = document.getElementById('chartDirectLink');
+      const pairOrToken = currentActiveDexPair || '0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28';
 
       if (src === 'dexscreener') {
-        iframe.src = 'https://dexscreener.com/base/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe?embed=1&theme=dark';
+        iframe.src = `https://dexscreener.com/base/${pairOrToken}?embed=1&theme=dark`;
         if (dexBtn) dexBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
         if (geckoBtn) geckoBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-medium text-on-surface-variant hover:text-on-surface';
-        if (link) link.href = 'https://dexscreener.com/base/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe';
+        if (link) link.href = `https://dexscreener.com/base/${pairOrToken}`;
       } else {
-        iframe.src = 'https://www.geckoterminal.com/base/pools/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe?embed=1&info=0&swaps=0';
+        iframe.src = `https://www.geckoterminal.com/base/pools/${pairOrToken}?embed=1&info=0&swaps=0`;
         if (geckoBtn) geckoBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-semibold bg-primary/20 text-primary border border-primary/30';
         if (dexBtn) dexBtn.className = 'px-2.5 py-1 rounded-lg text-xs font-medium text-on-surface-variant hover:text-on-surface';
-        if (link) link.href = 'https://www.geckoterminal.com/base/pools/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe';
+        if (link) link.href = `https://www.geckoterminal.com/base/pools/${pairOrToken}`;
       }
     }
 
-    let currentWbctPriceUsd = 0.000000003938765;
+    let currentWbctPriceUsd = 0.01;
 
     async function pollDexPriceLive() {
       // 1. Try server cached route first (CSP & CORS safe, fast)
       try {
         const srv = await apiFetch('/market/price');
         if (srv && srv.ok && srv.body && srv.body.data && srv.body.data.price_usd) {
+          if (srv.body.data.pair) currentActiveDexPair = srv.body.data.pair;
           const p = Number(srv.body.data.price_usd);
           if (p > 0) {
             currentWbctPriceUsd = p;
@@ -15956,38 +15967,39 @@
         }
       } catch (_e) { }
 
-      // 2. Direct browser GeckoTerminal Pool API
-      try {
-        const resp = await fetch('https://api.geckoterminal.com/api/v2/networks/base/pools/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe', {
-          headers: { 'Accept': 'application/json' }
-        });
-        if (resp.ok) {
-          const data = await resp.json();
-          const pStr = data && data.data && data.data.attributes && data.data.attributes.base_token_price_usd;
-          if (pStr) {
-            const pNum = Number(pStr);
-            if (pNum > 0) {
-              currentWbctPriceUsd = pNum;
-              applyLiveWbctPrice(pNum);
-              return;
-            }
-          }
-        }
-      } catch (_e) { }
-
-      // 3. Direct browser DexScreener API fallback
+      // 2. Direct browser DexScreener Token API for Wrapped BlocTag (0xCa61...EB28)
       try {
         const resp = await fetch('https://api.dexscreener.com/latest/dex/tokens/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28');
         if (resp.ok) {
           const data = await resp.json();
           if (data && data.pairs && data.pairs.length > 0) {
-            const activePair = data.pairs.find(p => p.pairAddress && p.pairAddress.toLowerCase() === '0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe'.toLowerCase()) || data.pairs[0];
+            const activePair = data.pairs.find(p => p.chainId === 'base' && p.priceUsd) || data.pairs[0];
+            if (activePair && activePair.pairAddress) currentActiveDexPair = activePair.pairAddress;
             if (activePair && activePair.priceUsd) {
               const pNum = Number(activePair.priceUsd);
               if (pNum > 0) {
                 currentWbctPriceUsd = pNum;
                 applyLiveWbctPrice(pNum);
+                return;
               }
+            }
+          }
+        }
+      } catch (_e) { }
+
+      // 3. Direct browser GeckoTerminal Token API fallback
+      try {
+        const resp = await fetch('https://api.geckoterminal.com/api/v2/networks/base/tokens/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28', {
+          headers: { 'Accept': 'application/json' }
+        });
+        if (resp.ok) {
+          const data = await resp.json();
+          const pStr = data && data.data && data.data.attributes && data.data.attributes.price_usd;
+          if (pStr) {
+            const pNum = Number(pStr);
+            if (pNum > 0) {
+              currentWbctPriceUsd = pNum;
+              applyLiveWbctPrice(pNum);
             }
           }
         }

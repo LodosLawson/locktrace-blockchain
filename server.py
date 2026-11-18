@@ -338,11 +338,11 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-OFtSJff8YWasRteR+atc9QC7NX2FxbIF4WZYF05Ame0=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-pz1qWTr6bLigtQElosrUOR/PLFJNwdXGiKbhHK1YOvI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
-        "connect-src 'self' https://locktrace.space https://www.locktrace.space https://basescan.org https://mainnet.base.org https://*.rpc.thirdweb.com https://*.thirdweb.com wss://*.thirdweb.com https://api.coinbase.com https://api.geckoterminal.com https://api.dexscreener.com http://127.0.0.1:* http://localhost:*; "
+        "connect-src 'self' https://bloctag.space https://www.bloctag.space https://locktrace.space https://www.locktrace.space https://basescan.org https://mainnet.base.org https://*.rpc.thirdweb.com https://*.thirdweb.com wss://*.thirdweb.com https://api.coinbase.com https://api.geckoterminal.com https://api.dexscreener.com http://127.0.0.1:* http://localhost:*; "
         "frame-ancestors 'self'; "
         "base-uri 'self'; "
         "form-action 'self';"
@@ -842,10 +842,10 @@ def api_stats():
 
 # ── Live / Cached DEX & Uniswap Market Price ───────────────────
 _market_price_cache = {
-    "price_usd": 0.000000003938765,
+    "price_usd": float(getattr(Config, "BCT_PRICE_USD", 0.01)),
     "last_fetched": 0.0,
     "dex": "Uniswap (Base)",
-    "pair": "0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe",
+    "pair": "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28",
     "token": "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
 }
 
@@ -857,36 +857,46 @@ def api_market_price():
     now = time.time()
     if (now - _market_price_cache.get("last_fetched", 0.0)) > 30.0:
         fetched_ok = False
-        # 1. Primary source: GeckoTerminal Pool API for wBCT/USDC
+        token_addr = getattr(Config, "WBCT_CONTRACT_ADDRESS", "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28")
+        # 1. Primary source: DexScreener Token API (automatically discovers active Base pool & pairAddress)
         try:
             import urllib.request, json
-            url = "https://api.geckoterminal.com/api/v2/networks/base/pools/0x9e26d6d8ccfe86c713da982cce3c29023e8ce281b20955dc34b97d64854ba3fe"
-            req = urllib.request.Request(url, headers={"User-Agent": "LockTrace/2.8"})
-            with urllib.request.urlopen(req, timeout=3.5) as resp:
-                data = json.loads(resp.read().decode())
-                p_usd = float(data.get("data", {}).get("attributes", {}).get("base_token_price_usd", 0.0) or 0.0)
-                if p_usd > 0:
-                    _market_price_cache["price_usd"] = p_usd
-                    _market_price_cache["last_fetched"] = now
-                    _market_price_cache["dex"] = data.get("data", {}).get("attributes", {}).get("dex", "Uniswap (Base)")
-                    fetched_ok = True
+            ds_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_addr}"
+            req_ds = urllib.request.Request(ds_url, headers={"User-Agent": "LockTrace/2.11"})
+            with urllib.request.urlopen(req_ds, timeout=3.5) as resp_ds:
+                ds_data = json.loads(resp_ds.read().decode())
+                pairs = [p for p in (ds_data.get("pairs") or []) if p.get("chainId") == "base" and p.get("priceUsd")]
+                if not pairs:
+                    pairs = [p for p in (ds_data.get("pairs") or []) if p.get("priceUsd")]
+                if pairs:
+                    p_usd = float(pairs[0]["priceUsd"])
+                    if p_usd > 0:
+                        _market_price_cache["price_usd"] = p_usd
+                        _market_price_cache["pair"] = pairs[0].get("pairAddress") or token_addr
+                        _market_price_cache["dex"] = pairs[0].get("dexId", "Uniswap (Base)")
+                        _market_price_cache["last_fetched"] = now
+                        fetched_ok = True
         except Exception:
             pass
 
-        # 2. Secondary fallback: DexScreener Token API
+        # 2. Secondary fallback: GeckoTerminal Token API for Base
         if not fetched_ok:
             try:
                 import urllib.request, json
-                ds_url = "https://api.dexscreener.com/latest/dex/tokens/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
-                req_ds = urllib.request.Request(ds_url, headers={"User-Agent": "LockTrace/2.8"})
-                with urllib.request.urlopen(req_ds, timeout=3.5) as resp_ds:
-                    ds_data = json.loads(resp_ds.read().decode())
-                    pairs = ds_data.get("pairs") or []
-                    if pairs and pairs[0].get("priceUsd"):
-                        _market_price_cache["price_usd"] = float(pairs[0]["priceUsd"])
+                url = f"https://api.geckoterminal.com/api/v2/networks/base/tokens/{token_addr}"
+                req = urllib.request.Request(url, headers={"User-Agent": "LockTrace/2.11"})
+                with urllib.request.urlopen(req, timeout=3.5) as resp:
+                    data = json.loads(resp.read().decode())
+                    p_usd = float(data.get("data", {}).get("attributes", {}).get("price_usd", 0.0) or 0.0)
+                    if p_usd > 0:
+                        _market_price_cache["price_usd"] = p_usd
                         _market_price_cache["last_fetched"] = now
+                        fetched_ok = True
             except Exception:
                 pass
+
+        if not fetched_ok:
+            _market_price_cache["last_fetched"] = now
 
     return api_response(True, data=_market_price_cache)
 

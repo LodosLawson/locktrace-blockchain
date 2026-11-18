@@ -5282,7 +5282,7 @@ class Blockchain:
                 "online_peer_miners": len(active_miners),
                 "verified_validators": len(eligible_vals),
                 "network_hashrate_hs": network_hashrate,
-                "reward_model": "70% PoW Proposer / 30% Active Validator Quorum",
+                "reward_model": "50% PoW Proposer / 40% Active Validator Quorum / 10% Observer Staking Pool",
                 "difficulty": self.get_current_difficulty(),
                 "storage_engine": "sqlite-wal",
                 "chain_valid": self.is_chain_valid(),
