@@ -6,7 +6,7 @@ pragma solidity ^0.8.20;
  * @author BlocTag Engineering Team
  * @notice Official 1:1 cross-chain ERC-20 token for native BlocTag (BCT).
  *         Audit-Hardened, Limit-Free & Radar-Optimized Architecture:
- *         - Zero transfer pausing (ERC-20 transfer/transferFrom can NEVER be paused -> 100% Honeypot-Free).
+ *         - Zero pausing mechanisms anywhere in the contract (100% Unstoppable & Honeypot-Free).
  *         - Zero blacklists / account freezing mechanisms.
  *         - Zero buy/sell transaction taxes (0% transfer fee).
  *         - Zero artificial minting caps (100% 1:1 liquidity mobility for any verified Layer-1 lock amount).
@@ -112,10 +112,7 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     mapping(bytes32 => uint256) public payloadApprovalCount;
     mapping(bytes32 => mapping(address => bool)) public hasRelayerApproved;
 
-    // ── Bridge-Only Emergency Circuit Breaker & Address Validation Mode ──────
-    // NOTE: `bridgePaused` affects ONLY bridge mint/burn operations.
-    // Standard ERC-20 `transfer` and `transferFrom` are NEVER pausable.
-    bool public bridgePaused = false;
+    // ── Future-Proof Layer-1 Address Format Validation Mode ──────────────────
     bool public strictL1AddressCheck = true;
 
     // ── Anti-Double-Mint: Layer-1 Transaction Hash Deduplication ─────────────
@@ -132,7 +129,6 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
         uint256 currentApprovals,
         uint256 requiredApprovals
     );
-    event BridgePausedSet(bool paused);
     event StrictL1AddressCheckSet(bool strict);
 
     /**
@@ -150,11 +146,6 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
             isBridgeRelayer[_msgSender()],
             "wBCT: Caller is not an authorized bridge relayer"
         );
-        _;
-    }
-
-    modifier whenBridgeNotPaused() {
-        require(!bridgePaused, "wBCT: Bridge operations are currently paused");
         _;
     }
 
@@ -192,7 +183,7 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
         return _balances[account];
     }
 
-    // ── Pure Decentralized Transfers (UNPAUSABLE - 100% HONEYPOT FREE) ───────
+    // ── Pure Decentralized Transfers (100% UNSTOPPABLE & HONEYPOT FREE) ──────
     function transfer(address to, uint256 value) public override returns (bool) {
         _transfer(_msgSender(), to, value);
         return true;
@@ -256,7 +247,7 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
         address to,
         uint256 amount,
         string calldata locktraceTxHash
-    ) external onlyBridgeRelayer whenBridgeNotPaused {
+    ) external onlyBridgeRelayer {
         require(to != address(0), "wBCT: Cannot mint to zero address");
         require(to != address(this), "wBCT: Cannot mint to token contract");
         require(amount > 0, "wBCT: Amount must be greater than zero");
@@ -275,7 +266,7 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
 
         emit BridgeMintAttested(canonicalHash, _msgSender(), to, amount, approvals, requiredApprovals);
 
-        if (approvals >= requiredApprovals) {
+        if (approvals >= requiredApprovals && activeRelayerCount >= requiredApprovals) {
             processedL1TxHashes[canonicalHash] = true;
             _mint(to, amount);
             emit MintedFromBridge(to, amount, locktraceTxHash);
@@ -284,13 +275,14 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
 
     /**
      * @notice Burns wBCT on EVM to release native BCT back to the user's address on Layer-1.
+     * @dev Completely unstoppable: users can always burn their wBCT to exit back to Layer-1.
      * @param amount Amount of wBCT to burn (minimum 1 wBCT).
      * @param locktraceRecipient Destination Layer-1 address (default: 43-char BCT... format).
      */
     function burnToBridge(
         uint256 amount,
         string calldata locktraceRecipient
-    ) external whenBridgeNotPaused {
+    ) external {
         require(amount >= MIN_BURN_AMOUNT, "wBCT: Amount below minimum burn amount (1 wBCT)");
         bytes calldata rBytes = bytes(locktraceRecipient);
 
@@ -331,7 +323,9 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     // ── Admin Governance (Owner / Multisig Only) ─────────────────────────────
 
     /**
-     * @notice Grants or revokes bridge relayer authorization while maintaining valid quorum bounds.
+     * @notice Grants or revokes bridge relayer authorization.
+     * @dev Revoking a compromised relayer immediately blocks it from calling `mintFromBridge`
+     *      without requiring any pause mechanism on the contract.
      */
     function setBridgeRelayer(address relayer, bool active) external onlyOwner {
         require(relayer != address(0), "wBCT: Zero address");
@@ -342,7 +336,6 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
         if (active) {
             activeRelayerCount += 1;
         } else {
-            require(activeRelayerCount > requiredApprovals, "wBCT: Lower requiredApprovals before removing relayer");
             activeRelayerCount -= 1;
         }
         emit BridgeRelayerSet(relayer, active, activeRelayerCount);
@@ -357,15 +350,6 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
         uint256 oldQuorum = requiredApprovals;
         requiredApprovals = newQuorum;
         emit RequiredApprovalsUpdated(oldQuorum, newQuorum);
-    }
-
-    /**
-     * @notice Emergency circuit breaker for bridge mint/burn ONLY.
-     *         Does NOT affect standard ERC-20 transfers or DEX trading.
-     */
-    function setBridgePaused(bool paused) external onlyOwner {
-        bridgePaused = paused;
-        emit BridgePausedSet(paused);
     }
 
     /**
