@@ -5,11 +5,14 @@ pragma solidity ^0.8.20;
  * @title Wrapped BlocTag (wBCT)
  * @author BlocTag Engineering Team
  * @notice Official 1:1 cross-chain ERC-20 token for native BlocTag (BCT).
- *         Fully decentralized & radar-optimized:
- *         - Zero transfer pausing (Trading can never be disabled by owner -> 100% Honeypot-Free).
- *         - Zero blacklists / freezing mechanisms.
+ *         Audit-Hardened & Radar-Optimized Architecture:
+ *         - Zero transfer pausing (ERC-20 transfer/transferFrom can NEVER be paused -> 100% Honeypot-Free).
+ *         - Zero blacklists / account freezing mechanisms.
  *         - Zero buy/sell transaction taxes (0% transfer fee).
- *         - Strictly bounded bridge minting backed by Layer-1 proof-of-reserve hashes.
+ *         - Strict Separation of Duties: Governance Owner != Bridge Relayer (`onlyBridgeRelayer`).
+ *         - On-Chain Mint Rate Limiting (`maxMintPerTx` & 24h rolling `dailyMintLimit`) with 48-hour Timelock.
+ *         - Isolated Bridge Circuit Breaker (`bridgePaused` halts only bridge mint/burn in emergencies without affecting ERC-20 transfers).
+ *         - Future-Proof Layer-1 Address Validation (`strictL1AddressCheck` configurable if L1 address format upgrades).
  */
 
 interface IERC20 {
@@ -37,7 +40,8 @@ abstract contract Context {
 }
 
 /**
- * @dev 2-step ownership transfer to prevent accidental assignment to zero/wrong address.
+ * @dev 2-step ownership transfer (OpenZeppelin Ownable2Step pattern) to prevent accidental
+ *      assignment to an inactive, wrong, or zero address. Recommended to be held by a Multisig (e.g. Safe).
  */
 abstract contract Ownable2Step is Context {
     address private _owner;
@@ -54,6 +58,10 @@ abstract contract Ownable2Step is Context {
 
     function owner() public view virtual returns (address) {
         return _owner;
+    }
+
+    function pendingOwner() public view virtual returns (address) {
+        return _pendingOwner;
     }
 
     modifier onlyOwner() {
@@ -83,40 +91,76 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     uint8 private constant _decimals = 18;
 
     uint256 public constant MAX_SUPPLY = 1_000_000_000_000 * 10 ** 18; // 1 Trillion wBCT Maximum Hard Cap
-    uint256 public constant MIN_BURN_AMOUNT = 1 * 10 ** 18;             // 1 wBCT Minimum Burn to Bridge
+    uint256 public constant MIN_BURN_AMOUNT = 1 * 10 ** 18;             // 1 wBCT Minimum Burn to Bridge (Anti-Dust)
     uint256 private _totalSupply;
 
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    // Authorized Bridge Relayers
+    // ── Separation of Duties: Bridge Relayer Authorization ───────────────────
+    // Owner manages governance ONLY; only explicitly authorized relayers can mint.
     mapping(address => bool) public isBridgeRelayer;
 
-    // Anti-Double-Mint: Prevents processing the same Layer-1 LockTrace transaction hash multiple times
+    // ── On-Chain Mint Rate Limits & 48-Hour Timelock (Mitigates Key Compromise) ──
+    uint256 public maxMintPerTx = 1_000_000 * 10 ** 18;   // 1M wBCT max per single bridge mint
+    uint256 public dailyMintLimit = 5_000_000 * 10 ** 18; // 5M wBCT max per rolling 24h window
+    uint256 public mintWindowStart;
+    uint256 public mintedInWindow;
+
+    uint256 public constant LIMIT_CHANGE_DELAY = 2 days;
+    uint256 public pendingMaxMintPerTx;
+    uint256 public pendingDailyMintLimit;
+    uint256 public pendingLimitsEta;
+
+    // ── Bridge-Only Emergency Circuit Breaker & Address Validation Mode ──────
+    // NOTE: `bridgePaused` affects ONLY bridge mint/burn operations.
+    // Standard ERC-20 `transfer` and `transferFrom` are NEVER pausable.
+    bool public bridgePaused = false;
+    bool public strictL1AddressCheck = true;
+
+    // ── Anti-Double-Mint: Layer-1 Transaction Hash Deduplication ─────────────
     mapping(bytes32 => bool) public processedL1TxHashes;
 
-    // Events
+    // ── Events ───────────────────────────────────────────────────────────────
     event BridgeRelayerSet(address indexed relayer, bool active);
+    event BridgePausedSet(bool paused);
+    event StrictL1AddressCheckSet(bool strict);
+    event MintLimitsProposed(uint256 perTx, uint256 daily, uint256 eta);
+    event MintLimitsUpdated(uint256 perTx, uint256 daily);
+    event MintLimitsCancelled();
+
+    /**
+     * @dev Note on indexing: `recipient` and `sender` are indexed for fast topic filtering.
+     *      `locktraceTxHash` and `locktraceRecipient` are intentionally unindexed `string` fields
+     *      because Solidity hashes `indexed string` parameters into irreversible keccak256 topics,
+     *      which would prevent off-chain bridge relayers from decoding the raw L1 address/txHash.
+     */
     event MintedFromBridge(address indexed recipient, uint256 amount, string locktraceTxHash);
     event BurnedToBridge(address indexed sender, uint256 amount, string locktraceRecipient);
 
-    modifier onlyBridgeOrOwner() {
+    // ── Modifiers ────────────────────────────────────────────────────────────
+    modifier onlyBridgeRelayer() {
         require(
-            _msgSender() == owner() || isBridgeRelayer[_msgSender()],
-            "wBCT: Caller is neither owner nor authorized bridge relayer"
+            isBridgeRelayer[_msgSender()],
+            "wBCT: Caller is not an authorized bridge relayer"
         );
+        _;
+    }
+
+    modifier whenBridgeNotPaused() {
+        require(!bridgePaused, "wBCT: Bridge operations are currently paused");
         _;
     }
 
     /**
      * @notice Initializes the Wrapped BlocTag contract.
-     * @param initialRelayer The address of the automated bridge relayer bot (e.g. 0x7007...).
+     * @param initialRelayer The address of the automated bridge relayer bot (must be distinct from zero address).
      */
     constructor(address initialRelayer) Ownable2Step(_msgSender()) {
-        if (initialRelayer != address(0)) {
-            isBridgeRelayer[initialRelayer] = true;
-            emit BridgeRelayerSet(initialRelayer, true);
-        }
+        require(initialRelayer != address(0), "wBCT: Initial relayer cannot be zero address");
+        isBridgeRelayer[initialRelayer] = true;
+        mintWindowStart = block.timestamp;
+        emit BridgeRelayerSet(initialRelayer, true);
     }
 
     // ── ERC20 Metadata ───────────────────────────────────────────────────────
@@ -140,7 +184,7 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
         return _balances[account];
     }
 
-    // ── Pure Decentralized Transfers (UNPAUSABLE - HONEYPOT FREE) ────────────
+    // ── Pure Decentralized Transfers (UNPAUSABLE - 100% HONEYPOT FREE) ───────
     function transfer(address to, uint256 value) public override returns (bool) {
         _transfer(_msgSender(), to, value);
         return true;
@@ -164,33 +208,61 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     // ── Bridge Operations (Lock & Mint / Burn & Unlock) ──────────────────────
 
     /**
-     * @notice Backward-compatible public getter for processedL1Transactions(string).
-     * @dev Canonicalizes the hash (0x prefix immune) and reads from processedL1TxHashes.
+     * @notice Non-reverting public getter for processedL1Transactions(string).
+     * @dev Canonicalizes the hash (casing and 0x-prefix immune) and reads from processedL1TxHashes.
+     *      Safely returns false if the input string is not a valid 64-byte hex string.
      */
     function processedL1Transactions(string calldata txHashStr) external view returns (bool) {
-        bytes32 canonicalHash = _canonicalizeTxHash(txHashStr);
-        return processedL1TxHashes[canonicalHash];
+        bytes calldata b = bytes(txHashStr);
+        uint256 start = 0;
+        if (b.length == 66 && b[0] == '0' && (b[1] == 'x' || b[1] == 'X')) {
+            start = 2;
+        } else if (b.length != 64) {
+            return false;
+        }
+        bytes memory canonical = new bytes(32);
+        for (uint256 i = 0; i < 32; i++) {
+            bytes1 hiC = b[start + i * 2];
+            bytes1 loC = b[start + i * 2 + 1];
+            if (!_isValidHexChar(hiC) || !_isValidHexChar(loC)) {
+                return false;
+            }
+            uint8 hi = _fromHexChar(hiC);
+            uint8 lo = _fromHexChar(loC);
+            canonical[i] = bytes1((hi << 4) | lo);
+        }
+        return processedL1TxHashes[bytes32(canonical)];
     }
 
     /**
-     * @notice Mints wBCT to recipient after a verified lock of native BCT on LockTrace Layer-1.
-     * @dev Strictly idempotent: checks processedL1TxHashes to guarantee zero double-minting.
+     * @notice Mints wBCT to recipient after a verified lock of native BCT on Layer-1.
+     * @dev Strictly idempotent and rate-limited (`maxMintPerTx` and `dailyMintLimit`).
+     *      Callable ONLY by an authorized bridge relayer (`onlyBridgeRelayer`).
      * @param to Destination EVM address receiving wBCT.
      * @param amount Amount of wBCT in 18-decimal wei.
-     * @param locktraceTxHash Hash of the LockTrace Layer-1 bridge_lock transaction.
+     * @param locktraceTxHash Hash of the Layer-1 bridge_lock transaction.
      */
     function mintFromBridge(
         address to,
         uint256 amount,
         string calldata locktraceTxHash
-    ) external onlyBridgeOrOwner {
+    ) external onlyBridgeRelayer whenBridgeNotPaused {
         require(to != address(0), "wBCT: Cannot mint to zero address");
+        require(to != address(this), "wBCT: Cannot mint to token contract");
         require(amount > 0, "wBCT: Amount must be greater than zero");
         require(bytes(locktraceTxHash).length > 0, "wBCT: Empty L1 transaction hash");
 
         bytes32 canonicalHash = _canonicalizeTxHash(locktraceTxHash);
         require(!processedL1TxHashes[canonicalHash], "wBCT: L1 transaction already processed");
         require(_totalSupply + amount <= MAX_SUPPLY, "wBCT: Max supply exceeded");
+        require(amount <= maxMintPerTx, "wBCT: Exceeds per-transaction mint limit");
+
+        if (block.timestamp >= mintWindowStart + 1 days) {
+            mintWindowStart = block.timestamp;
+            mintedInWindow = 0;
+        }
+        require(mintedInWindow + amount <= dailyMintLimit, "wBCT: Daily mint limit exceeded");
+        mintedInWindow += amount;
 
         processedL1TxHashes[canonicalHash] = true;
         _mint(to, amount);
@@ -199,44 +271,112 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     }
 
     /**
-     * @notice Burns wBCT on EVM to release native BCT back to the user's address on LockTrace Layer-1.
-     * @param amount Amount of wBCT to burn.
-     * @param locktraceRecipient Destination 43-character BCT address (e.g., BCT...).
+     * @notice Burns wBCT on EVM to release native BCT back to the user's address on Layer-1.
+     * @param amount Amount of wBCT to burn (minimum 1 wBCT).
+     * @param locktraceRecipient Destination Layer-1 address (default: 43-char BCT... format).
      */
     function burnToBridge(
         uint256 amount,
         string calldata locktraceRecipient
-    ) external {
+    ) external whenBridgeNotPaused {
         require(amount >= MIN_BURN_AMOUNT, "wBCT: Amount below minimum burn amount (1 wBCT)");
         bytes calldata rBytes = bytes(locktraceRecipient);
-        require(rBytes.length == 43, "wBCT: Invalid LockTrace address length");
-        require(
-            rBytes[0] == 'B' &&
-            rBytes[1] == 'C' &&
-            rBytes[2] == 'T',
-            "wBCT: Must start with BCT prefix"
-        );
 
-        bool hasNonZero = false;
-        for (uint256 i = 3; i < 43; i++) {
-            bytes1 b = rBytes[i];
-            require(_isValidHexChar(b), "wBCT: Address must contain valid hex characters");
-            if (b != '0') {
-                hasNonZero = true;
+        if (strictL1AddressCheck) {
+            require(rBytes.length == 43, "wBCT: Invalid LockTrace address length");
+            require(
+                rBytes[0] == 'B' &&
+                rBytes[1] == 'C' &&
+                rBytes[2] == 'T',
+                "wBCT: Must start with BCT prefix"
+            );
+
+            bool hasNonZero = false;
+            for (uint256 i = 3; i < 43; i++) {
+                bytes1 b = rBytes[i];
+                require(_isValidHexChar(b), "wBCT: Address must contain valid hex characters");
+                if (b != '0') {
+                    hasNonZero = true;
+                }
             }
-        }
-        require(hasNonZero, "wBCT: Cannot bridge to burn zero address");
+            require(hasNonZero, "wBCT: Cannot bridge to burn zero address");
 
-        string memory canonicalRecipient = _toLowerL1Address(locktraceRecipient);
-        _burn(_msgSender(), amount);
-        emit BurnedToBridge(_msgSender(), amount, canonicalRecipient);
+            string memory canonicalRecipient = _toLowerL1Address(locktraceRecipient);
+            _burn(_msgSender(), amount);
+            emit BurnedToBridge(_msgSender(), amount, canonicalRecipient);
+        } else {
+            // Flexible validation mode if Layer-1 upgrades address format in a future protocol version
+            require(rBytes.length >= 4 && rBytes.length <= 128, "wBCT: Invalid L1 recipient length");
+            for (uint256 i = 0; i < rBytes.length; i++) {
+                bytes1 b = rBytes[i];
+                require(b >= 0x21 && b <= 0x7E, "wBCT: Recipient contains invalid ASCII characters");
+            }
+            _burn(_msgSender(), amount);
+            emit BurnedToBridge(_msgSender(), amount, locktraceRecipient);
+        }
     }
 
-    // ── Admin Governance ─────────────────────────────────────────────────────
+    // ── Admin Governance (Owner / Multisig Only) ─────────────────────────────
+
+    /**
+     * @notice Grants or revokes bridge relayer authorization.
+     */
     function setBridgeRelayer(address relayer, bool active) external onlyOwner {
         require(relayer != address(0), "wBCT: Zero address");
         isBridgeRelayer[relayer] = active;
         emit BridgeRelayerSet(relayer, active);
+    }
+
+    /**
+     * @notice Emergency circuit breaker for bridge mint/burn ONLY.
+     *         Does NOT affect standard ERC-20 transfers or DEX trading.
+     */
+    function setBridgePaused(bool paused) external onlyOwner {
+        bridgePaused = paused;
+        emit BridgePausedSet(paused);
+    }
+
+    /**
+     * @notice Toggles strict 43-char 'BCT' hex validation vs flexible ASCII validation
+     *         to ensure future L1 address format upgrades never lock bridge burns.
+     */
+    function setStrictL1AddressCheck(bool strict) external onlyOwner {
+        strictL1AddressCheck = strict;
+        emit StrictL1AddressCheckSet(strict);
+    }
+
+    /**
+     * @notice Proposes new bridge mint limits subject to a mandatory 48-hour timelock.
+     */
+    function proposeMintLimits(uint256 perTx, uint256 daily) external onlyOwner {
+        require(perTx > 0 && daily >= perTx, "wBCT: Invalid limits");
+        require(daily <= MAX_SUPPLY, "wBCT: Daily limit exceeds max supply");
+        pendingMaxMintPerTx = perTx;
+        pendingDailyMintLimit = daily;
+        pendingLimitsEta = block.timestamp + LIMIT_CHANGE_DELAY;
+        emit MintLimitsProposed(perTx, daily, pendingLimitsEta);
+    }
+
+    /**
+     * @notice Executes previously proposed mint limits after the 48-hour timelock expires.
+     */
+    function executeMintLimits() external onlyOwner {
+        require(pendingLimitsEta != 0 && block.timestamp >= pendingLimitsEta, "wBCT: Timelock active");
+        maxMintPerTx = pendingMaxMintPerTx;
+        dailyMintLimit = pendingDailyMintLimit;
+        pendingLimitsEta = 0;
+        emit MintLimitsUpdated(maxMintPerTx, dailyMintLimit);
+    }
+
+    /**
+     * @notice Cancels a pending mint limit change proposal.
+     */
+    function cancelMintLimitsProposal() external onlyOwner {
+        require(pendingLimitsEta != 0, "wBCT: No pending proposal");
+        pendingLimitsEta = 0;
+        delete pendingMaxMintPerTx;
+        delete pendingDailyMintLimit;
+        emit MintLimitsCancelled();
     }
 
     // ── Internal Helpers ─────────────────────────────────────────────────────
