@@ -129,7 +129,7 @@ class Config:
     # ── CORS ──────────────────────────────────────────
     CORS_ORIGINS = os.environ.get(
         "BCT_CORS_ORIGINS",
-        "https://locktrace.space,https://www.locktrace.space,https://spectacular-brioche-aafb73.netlify.app,http://localhost:3000,http://localhost:5000,http://127.0.0.1:5000"
+        "https://bloctag.space,https://www.bloctag.space,https://locktrace.space,https://www.locktrace.space,https://spectacular-brioche-aafb73.netlify.app,http://localhost:3000,http://localhost:5000,http://127.0.0.1:5000"
     ).split(",")
 
     # ── Sunucu & Veritabanı ───────────────────────────
