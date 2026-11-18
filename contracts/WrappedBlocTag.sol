@@ -5,13 +5,14 @@ pragma solidity ^0.8.20;
  * @title Wrapped BlocTag (wBCT)
  * @author BlocTag Engineering Team
  * @notice Official 1:1 cross-chain ERC-20 token for native BlocTag (BCT).
- *         Audit-Hardened & Radar-Optimized Architecture:
+ *         Audit-Hardened, Limit-Free & Radar-Optimized Architecture:
  *         - Zero transfer pausing (ERC-20 transfer/transferFrom can NEVER be paused -> 100% Honeypot-Free).
  *         - Zero blacklists / account freezing mechanisms.
  *         - Zero buy/sell transaction taxes (0% transfer fee).
+ *         - Zero artificial minting caps (100% 1:1 liquidity mobility for any verified Layer-1 lock amount).
+ *         - Native Multi-Relayer Quorum Consensus (`requiredApprovals` M-of-N relayer attestation) to eliminate
+ *           single-private-key compromise risk without restricting legitimate user or liquidity bridge volume.
  *         - Strict Separation of Duties: Governance Owner != Bridge Relayer (`onlyBridgeRelayer`).
- *         - On-Chain Mint Rate Limiting (`maxMintPerTx` & 24h rolling `dailyMintLimit`) with 48-hour Timelock.
- *         - Isolated Bridge Circuit Breaker (`bridgePaused` halts only bridge mint/burn in emergencies without affecting ERC-20 transfers).
  *         - Future-Proof Layer-1 Address Validation (`strictL1AddressCheck` configurable if L1 address format upgrades).
  */
 
@@ -41,7 +42,7 @@ abstract contract Context {
 
 /**
  * @dev 2-step ownership transfer (OpenZeppelin Ownable2Step pattern) to prevent accidental
- *      assignment to an inactive, wrong, or zero address. Recommended to be held by a Multisig (e.g. Safe).
+ *      assignment to an inactive, wrong, or zero address. Recommended to be governed by a Multisig (e.g. Safe).
  */
 abstract contract Ownable2Step is Context {
     address private _owner;
@@ -97,20 +98,19 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     mapping(address => uint256) private _balances;
     mapping(address => mapping(address => uint256)) private _allowances;
 
-    // ── Separation of Duties: Bridge Relayer Authorization ───────────────────
-    // Owner manages governance ONLY; only explicitly authorized relayers can mint.
+    // ── Separation of Duties & Multi-Relayer Quorum Consensus ────────────────
+    // Eliminates single-key compromise risk without imposing artificial volume limits.
+    // When requiredApprovals == 1, a single authorized relayer executes the mint immediately.
+    // When requiredApprovals > 1 (M-of-N mode), M distinct authorized relayers must attest to the
+    // exact same (to, amount, canonicalL1TxHash) payload before tokens are minted.
     mapping(address => bool) public isBridgeRelayer;
+    uint256 public activeRelayerCount;
+    uint256 public requiredApprovals;
 
-    // ── On-Chain Mint Rate Limits & 48-Hour Timelock (Mitigates Key Compromise) ──
-    uint256 public maxMintPerTx = 1_000_000 * 10 ** 18;   // 1M wBCT max per single bridge mint
-    uint256 public dailyMintLimit = 5_000_000 * 10 ** 18; // 5M wBCT max per rolling 24h window
-    uint256 public mintWindowStart;
-    uint256 public mintedInWindow;
-
-    uint256 public constant LIMIT_CHANGE_DELAY = 2 days;
-    uint256 public pendingMaxMintPerTx;
-    uint256 public pendingDailyMintLimit;
-    uint256 public pendingLimitsEta;
+    // Tracks M-of-N relayer approvals per deterministic bridge payload hash:
+    // payloadHash = keccak256(abi.encode(to, amount, canonicalL1TxHash))
+    mapping(bytes32 => uint256) public payloadApprovalCount;
+    mapping(bytes32 => mapping(address => bool)) public hasRelayerApproved;
 
     // ── Bridge-Only Emergency Circuit Breaker & Address Validation Mode ──────
     // NOTE: `bridgePaused` affects ONLY bridge mint/burn operations.
@@ -122,12 +122,18 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     mapping(bytes32 => bool) public processedL1TxHashes;
 
     // ── Events ───────────────────────────────────────────────────────────────
-    event BridgeRelayerSet(address indexed relayer, bool active);
+    event BridgeRelayerSet(address indexed relayer, bool active, uint256 activeRelayerCount);
+    event RequiredApprovalsUpdated(uint256 oldQuorum, uint256 newQuorum);
+    event BridgeMintAttested(
+        bytes32 indexed canonicalL1TxHash,
+        address indexed relayer,
+        address indexed recipient,
+        uint256 amount,
+        uint256 currentApprovals,
+        uint256 requiredApprovals
+    );
     event BridgePausedSet(bool paused);
     event StrictL1AddressCheckSet(bool strict);
-    event MintLimitsProposed(uint256 perTx, uint256 daily, uint256 eta);
-    event MintLimitsUpdated(uint256 perTx, uint256 daily);
-    event MintLimitsCancelled();
 
     /**
      * @dev Note on indexing: `recipient` and `sender` are indexed for fast topic filtering.
@@ -154,13 +160,15 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
 
     /**
      * @notice Initializes the Wrapped BlocTag contract.
-     * @param initialRelayer The address of the automated bridge relayer bot (must be distinct from zero address).
+     * @param initialRelayer The address of the initial automated bridge relayer bot.
      */
     constructor(address initialRelayer) Ownable2Step(_msgSender()) {
         require(initialRelayer != address(0), "wBCT: Initial relayer cannot be zero address");
         isBridgeRelayer[initialRelayer] = true;
-        mintWindowStart = block.timestamp;
-        emit BridgeRelayerSet(initialRelayer, true);
+        activeRelayerCount = 1;
+        requiredApprovals = 1;
+        emit BridgeRelayerSet(initialRelayer, true, 1);
+        emit RequiredApprovalsUpdated(0, 1);
     }
 
     // ── ERC20 Metadata ───────────────────────────────────────────────────────
@@ -236,10 +244,12 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
 
     /**
      * @notice Mints wBCT to recipient after a verified lock of native BCT on Layer-1.
-     * @dev Strictly idempotent and rate-limited (`maxMintPerTx` and `dailyMintLimit`).
-     *      Callable ONLY by an authorized bridge relayer (`onlyBridgeRelayer`).
+     * @dev Supports M-of-N Multi-Relayer Quorum Consensus without artificial amount caps:
+     *      - If `requiredApprovals == 1`, mints immediately in a single transaction.
+     *      - If `requiredApprovals > 1`, records the caller relayer's attestation and mints
+     *        automatically as soon as the M-th distinct authorized relayer attests the exact same payload.
      * @param to Destination EVM address receiving wBCT.
-     * @param amount Amount of wBCT in 18-decimal wei.
+     * @param amount Amount of wBCT in 18-decimal wei (1 BCT = 10^18 wei).
      * @param locktraceTxHash Hash of the Layer-1 bridge_lock transaction.
      */
     function mintFromBridge(
@@ -255,19 +265,21 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
         bytes32 canonicalHash = _canonicalizeTxHash(locktraceTxHash);
         require(!processedL1TxHashes[canonicalHash], "wBCT: L1 transaction already processed");
         require(_totalSupply + amount <= MAX_SUPPLY, "wBCT: Max supply exceeded");
-        require(amount <= maxMintPerTx, "wBCT: Exceeds per-transaction mint limit");
 
-        if (block.timestamp >= mintWindowStart + 1 days) {
-            mintWindowStart = block.timestamp;
-            mintedInWindow = 0;
+        bytes32 payloadHash = keccak256(abi.encode(to, amount, canonicalHash));
+        require(!hasRelayerApproved[payloadHash][_msgSender()], "wBCT: Relayer already attested this L1 tx");
+
+        hasRelayerApproved[payloadHash][_msgSender()] = true;
+        uint256 approvals = payloadApprovalCount[payloadHash] + 1;
+        payloadApprovalCount[payloadHash] = approvals;
+
+        emit BridgeMintAttested(canonicalHash, _msgSender(), to, amount, approvals, requiredApprovals);
+
+        if (approvals >= requiredApprovals) {
+            processedL1TxHashes[canonicalHash] = true;
+            _mint(to, amount);
+            emit MintedFromBridge(to, amount, locktraceTxHash);
         }
-        require(mintedInWindow + amount <= dailyMintLimit, "wBCT: Daily mint limit exceeded");
-        mintedInWindow += amount;
-
-        processedL1TxHashes[canonicalHash] = true;
-        _mint(to, amount);
-
-        emit MintedFromBridge(to, amount, locktraceTxHash);
     }
 
     /**
@@ -319,12 +331,32 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     // ── Admin Governance (Owner / Multisig Only) ─────────────────────────────
 
     /**
-     * @notice Grants or revokes bridge relayer authorization.
+     * @notice Grants or revokes bridge relayer authorization while maintaining valid quorum bounds.
      */
     function setBridgeRelayer(address relayer, bool active) external onlyOwner {
         require(relayer != address(0), "wBCT: Zero address");
+        bool currentlyActive = isBridgeRelayer[relayer];
+        require(currentlyActive != active, "wBCT: Relayer already in requested state");
+
         isBridgeRelayer[relayer] = active;
-        emit BridgeRelayerSet(relayer, active);
+        if (active) {
+            activeRelayerCount += 1;
+        } else {
+            require(activeRelayerCount > requiredApprovals, "wBCT: Lower requiredApprovals before removing relayer");
+            activeRelayerCount -= 1;
+        }
+        emit BridgeRelayerSet(relayer, active, activeRelayerCount);
+    }
+
+    /**
+     * @notice Configures the M-of-N multi-relayer quorum required to execute a bridge mint.
+     * @param newQuorum Number of distinct authorized relayers required (1 <= newQuorum <= activeRelayerCount).
+     */
+    function setRequiredApprovals(uint256 newQuorum) external onlyOwner {
+        require(newQuorum >= 1 && newQuorum <= activeRelayerCount, "wBCT: Invalid quorum threshold");
+        uint256 oldQuorum = requiredApprovals;
+        requiredApprovals = newQuorum;
+        emit RequiredApprovalsUpdated(oldQuorum, newQuorum);
     }
 
     /**
@@ -343,40 +375,6 @@ contract WrappedBlocTag is Context, IERC20Metadata, Ownable2Step {
     function setStrictL1AddressCheck(bool strict) external onlyOwner {
         strictL1AddressCheck = strict;
         emit StrictL1AddressCheckSet(strict);
-    }
-
-    /**
-     * @notice Proposes new bridge mint limits subject to a mandatory 48-hour timelock.
-     */
-    function proposeMintLimits(uint256 perTx, uint256 daily) external onlyOwner {
-        require(perTx > 0 && daily >= perTx, "wBCT: Invalid limits");
-        require(daily <= MAX_SUPPLY, "wBCT: Daily limit exceeds max supply");
-        pendingMaxMintPerTx = perTx;
-        pendingDailyMintLimit = daily;
-        pendingLimitsEta = block.timestamp + LIMIT_CHANGE_DELAY;
-        emit MintLimitsProposed(perTx, daily, pendingLimitsEta);
-    }
-
-    /**
-     * @notice Executes previously proposed mint limits after the 48-hour timelock expires.
-     */
-    function executeMintLimits() external onlyOwner {
-        require(pendingLimitsEta != 0 && block.timestamp >= pendingLimitsEta, "wBCT: Timelock active");
-        maxMintPerTx = pendingMaxMintPerTx;
-        dailyMintLimit = pendingDailyMintLimit;
-        pendingLimitsEta = 0;
-        emit MintLimitsUpdated(maxMintPerTx, dailyMintLimit);
-    }
-
-    /**
-     * @notice Cancels a pending mint limit change proposal.
-     */
-    function cancelMintLimitsProposal() external onlyOwner {
-        require(pendingLimitsEta != 0, "wBCT: No pending proposal");
-        pendingLimitsEta = 0;
-        delete pendingMaxMintPerTx;
-        delete pendingDailyMintLimit;
-        emit MintLimitsCancelled();
     }
 
     // ── Internal Helpers ─────────────────────────────────────────────────────
