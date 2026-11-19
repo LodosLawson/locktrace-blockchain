@@ -25,7 +25,16 @@ logger = logging.getLogger("LockTrace.Relayer")
 logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(name)s: %(message)s")
 
 BASE_RPC_URL = os.environ.get("BASE_RPC_URL", "https://mainnet.base.org")
-WBCT_CONTRACT = os.environ.get("WBCT_CONTRACT_ADDRESS", "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28")
+_DEPRECATED_WBCT = {
+    "0xa3c743113a41cfd0146917065d4578337bb77254",
+    "0x5e5d957b240c9e4a51613f58c6c242b710519b41",
+}
+_raw_wbct_env = os.environ.get("WBCT_CONTRACT_ADDRESS", "").strip()
+WBCT_CONTRACT = (
+    "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
+    if (not _raw_wbct_env or _raw_wbct_env.lower() in _DEPRECATED_WBCT)
+    else _raw_wbct_env
+)
 _default_bridge_db = "/opt/blockchaint/blockchain.db" if os.path.exists("/opt/blockchaint/blockchain.db") else "blockchain.db"
 _default_chain_db = "/opt/blockchaint/data/blockchain.db" if os.path.exists("/opt/blockchaint/data/blockchain.db") else (
     "data/blockchain.db" if os.path.exists("data/blockchain.db") else _default_bridge_db
@@ -232,7 +241,7 @@ class BridgeRelayer:
             # AUD19-01: Validate L1 tx hash format (must be 64 hex characters)
             if not re.fullmatch(r"[0-9a-f]{64}", clean_l1):
                 logger.error(f"Bridge {bridge_id}: Invalid tx_hash_l1 format ({l1_hash}). Marking FAILED to unblock queue.")
-                self._mark_failed(bridge_id, "Geçersiz L1 işlem özeti formatı (64-hex karakter bekleniyor).")
+                self._mark_failed(bridge_id, "Invalid L1 transaction hash format (64 hex characters expected).")
                 continue
 
             # AUD17B-06 & AUD19-01: Direct Decimal parsing with non-positive guard
@@ -243,13 +252,13 @@ class BridgeRelayer:
 
             if net_amt_dec <= Decimal("0"):
                 logger.error(f"Bridge {bridge_id}: Non-positive net amount ({net_amt_dec}). Marking FAILED to unblock queue.")
-                self._mark_failed(bridge_id, "Geçersiz veya sıfır köprü kilit tutarı.")
+                self._mark_failed(bridge_id, "Invalid or non-positive bridge lock amount.")
                 continue
 
             amt_wei = int((net_amt_dec * Decimal(10 ** 18)).to_integral_value())
             if amt_wei <= 0:
                 logger.error(f"Bridge {bridge_id}: amt_wei <= 0 after 18-decimal conversion. Marking FAILED.")
-                self._mark_failed(bridge_id, "Geçersiz veya sıfır wei tutarı.")
+                self._mark_failed(bridge_id, "Invalid or zero wei amount after conversion.")
                 continue
 
             # F-06: per-transaction cap -> human review; rolling 24h cap -> defer
@@ -284,9 +293,9 @@ class BridgeRelayer:
                 depth = tip_b - l1_b_idx
 
                 # LT-02 Hardening: Verified L1 block inclusion & finality guard
-                is_finalized = (att_c >= 1 and depth >= 1) or depth >= 1 or (tip_b >= l1_b_idx)
+                is_finalized = (tip_b >= l1_b_idx)
                 if not is_finalized:
-                    logger.info(f"Bridge {bridge_id}: Block #{l1_b_idx} awaiting full L1 finality (attestations: {att_c}/2, depth: {depth}/8). Deferring mint.")
+                    logger.info(f"Bridge {bridge_id}: Block #{l1_b_idx} awaiting L1 block inclusion (attestations: {att_c}, depth: {depth}). Deferring mint.")
                     continue
             except Exception as _f_err:
                 logger.warning(f"Could not verify L1 finality for {bridge_id}: {_f_err}. Deferring mint.")
@@ -301,7 +310,7 @@ class BridgeRelayer:
             # Validate destination
             if not Web3.is_address(evm_dest) or evm_dest.lower() == WBCT_CONTRACT.lower():
                 logger.warning(f"Rejecting bridge {bridge_id}: invalid destination or token contract address ({evm_dest})")
-                self._mark_failed(bridge_id, "Geçersiz EVM adresi veya kontrat adresine gönderim yapılamaz.")
+                self._mark_failed(bridge_id, "Invalid EVM destination address or cannot mint to token contract address.")
                 continue
 
             logger.info(f"Minting {net_amt_dec} wBCT to {evm_dest} (L1 Hash: {l1_hash})...")
@@ -493,7 +502,7 @@ class BridgeRelayer:
 
             if amt_dec <= Decimal("0"):
                 logger.error(f"Bridge {bridge_id}: Invalid or zero burn net amount ({amt_dec}). Marking FAILED to unblock queue.")
-                self._mark_failed(bridge_id, "Geçersiz veya sıfır köprü çekim tutarı.")
+                self._mark_failed(bridge_id, "Invalid or zero bridge withdrawal amount.")
                 continue
 
             amt = float(amt_dec)

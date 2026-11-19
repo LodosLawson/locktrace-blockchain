@@ -125,7 +125,7 @@ Elimizdeki mevcut altyapı tam fonksiyonel bir Layer-1 seviyesindedir. Bundan so
 
 ### 📌 Faz 1: Kısa Vadeli Hedefler (Topluluk & Likidite Büyümesi)
 - [ ] **Base L2 (Uniswap / Aerodrome) Likidite Havuzu (DEX Pool):**
-  - Base ağındaki `wBCT` (`0xA3C743...7254`) için USDC veya ETH paritesinde ilk merkeziyetsiz borsa (DEX) likidite havuzunun açılması ve canlı piyasa fiyatının oluşması.
+  - Base ağındaki `wBCT` (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) için USDC veya ETH paritesinde ilk merkeziyetsiz borsa (DEX) likidite havuzunun açılması ve canlı piyasa fiyatının oluşması.
 - [ ] **Telegram & X Topluluk Botu Entegrasyonu:**
   - Yeni bir `.bct` alan adı alındığında, büyük bir BCT transferi yapıldığında veya yeni bir blok kazıldığında resmi Telegram kanalına (`https://t.me/+zsaG1qkAHZllZGIy`) otomatik bildirim atan **LockTrace Whale & BNS Bot** kurulması.
 - [ ] **BlocTag Görsel & Medya Desteği (IPFS):**
@@ -214,9 +214,9 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.10.1` | Rust Core Acceleration, Multi-Layer Bridge Hardening, Compact Relay, State Snapshot Fast Sync, GPU Mining |
-| **Konsensüs** | `pow-v2-merkle-quorum` | %70 SHA-256 PoW + %30 ECDSA Validator Quorum |
-| **Validator Teminatı** | `1.000,0 BCT` | %30 Quorum ve Blok Tasdikleme Havuzu için kilitli stake |
+| **Ağ Sürümü** | `v2.11.0` | Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
+| **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
 | **BNS Kayıt Dağılımı** | `%80 / %20` | %80 Hazine Havuzuna Dönüş (Arz Azaltma), %20 Madenci & Validator |
 | **BNS Pazar Yeri Komisyonu** | `%2.0` | İkincil satışlarda ve kabul edilen tekliflerde %2 protokol ücreti |
@@ -673,3 +673,15 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - `#vault-modal` dış kapsayıcısına `hidden flex-col items-center justify-center` ve iç kartına mobil uyumlu `p-4 sm:p-6` dolguları uygulanarak, dar mobil ekranlarda dahi tüm kartların tek sütun halinde kusursuz dikey hizalanması sağlandı.
 3. **Frontend & Şablon Paritesi:**
    - `frontend/index.html` ve `templates/index.html` dosyaları %100 pariteye getirilerek CSP bütünlük imzaları (`scripts/sync_csp.py`) senkronize edildi.
+
+---
+
+## 🛡️ 31. BlocTag / LockTrace v2.11.0: Base L2 WrappedBlocTag, MetaMask SDK Doğrudan İmza & Tam İngilizce Arayüz Paritesi
+
+1. **Base L2 WrappedBlocTag (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) & Uniswap v4 Entegrasyonu:**
+   - Çoklu Relayer Quorum onayı (`requiredApprovals`), sıfır vergi/kara liste/durdurma garantisi ve canlı Uniswap v4 havuz telemetrisi devreye alındı.
+2. **MetaMask SDK Doğrudan İmza (In-App Browser Yönlendirmesiz) & EIP-6963 Çoklu Cüzdan:**
+   - Kendi sunucumuzdan SRI doğrulamalı olarak sunulan `@metamask/sdk` IIFE paketi (Proxy private-field alıcı bağlamı düzeltmesiyle) entegre edildi; mobilde kullanıcı tarayıcıdan ayrılmadan doğrudan MetaMask imza ekranıyla `burnToBridge` işlemini onaylar.
+   - Köprü `MAX` butonu (`setBridgeMaxAmount`) her iki yön (L1 → L2 ve L2 → L1) için aktif edildi.
+3. **Tam İngilizce UI & Sürüm (`v2.11.0`) Senkronizasyonu:**
+   - Tüm arayüz, köprü, staking ve bildirim mesajları İngilizceye çevrildi; `config.py`, `node_runner.py`, `package.json`, `frontend/index.html`, `README.md` ve `WHITEPAPER.md` `v2.11.0` sürümünde eşitlendi.

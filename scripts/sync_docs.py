@@ -50,6 +50,24 @@ def verify_and_sync():
     assert f"{Config.BNS_FEES[3]:.2f}\\text{{ BCT}}" in wp, "WHITEPAPER.md 3-letter BNS fee mismatch!"
     assert f"{Config.MIN_VALIDATOR_STAKE:,.1f}" in wp or "1{,}000.0" in wp, "WHITEPAPER.md MIN_VALIDATOR_STAKE mismatch!"
 
+    # Verify SSOT PROTOCOL_VERSION & wBCT contract parity across all core files & docs
+    ver = Config.PROTOCOL_VERSION
+    wbct = Config.WBCT_CONTRACT_ADDRESS
+    for rel_file in [
+        "node_runner.py",
+        "package.json",
+        "frontend/index.html",
+        "templates/index.html",
+        "README.md",
+        "docs/WHITEPAPER.md",
+        "frontend/docs/WHITEPAPER.md",
+        "docs/LOCKTRACE_NOTION_WORKSPACE.md",
+    ]:
+        content = open(os.path.join(ROOT, rel_file), "r", encoding="utf-8").read()
+        assert ver in content, f"{rel_file} is missing current PROTOCOL_VERSION ({ver})!"
+        if rel_file not in ("node_runner.py", "package.json"):
+            assert wbct.lower() in content.lower(), f"{rel_file} is missing current WBCT_CONTRACT_ADDRESS ({wbct})!"
+
     print("\n[SUCCESS] All documentation matches config.py with 100% precision!")
 
 if __name__ == "__main__":

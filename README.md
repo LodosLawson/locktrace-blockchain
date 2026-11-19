@@ -531,7 +531,11 @@ curl -s "https://locktrace.space/api/v1/nodes"
 30. **Wallet Security & Vault Modal Mobile Layout Alignment (v2.10.1):**
    - **DOM Structure Parity & Clean Stacking:** Removed orphaned duplicated closing tags in `#vault-modal` that caused premature container closure and horizontal flex-row card displacement.
    - **Mobile Viewport Optimization:** Enforced `hidden flex-col items-center justify-center` and fluid `p-4 sm:p-6` styling to guarantee clean vertical card stacking across narrow mobile screens.
-31. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+31. **Base L2 WrappedBlocTag v2.11.0 & Direct Native MetaMask SDK Signing (v2.11.0):**
+   - **Audit-Hardened WrappedBlocTag (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`):** Multi-relayer quorum consensus (`requiredApprovals`), zero transfer taxes/blacklists/pauses, and live Uniswap v4 pool telemetry.
+   - **Direct Native Mobile & Desktop Signing:** Integrated self-hosted SRI-verified MetaMask SDK IIFE (with Proxy private-field receiver forwarding) and EIP-6963 multi-wallet discovery, opening MetaMask's native transaction signing screen directly without redirecting users to MetaMask's in-app browser.
+   - **Full English UI & SSOT Version Parity:** Unified all frontend UI, staking, explorer, and bridge flows in English and synchronized `v2.11.0` across all protocol components.
+32. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

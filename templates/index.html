@@ -46,7 +46,7 @@
     crossorigin="anonymous"></script>
   <!-- MetaMask SDK (Standalone Browser IIFE for Direct Native Mobile Signing, SRI Verified) -->
   <script src="/vendor/metamask-sdk.js"
-    integrity="sha384-OI1osw1fDe5X05uv5wm58G4bMMUC0mZdcp0iSmMUUq1vu5NZJjDnU/dVEUgYTg0F"
+    integrity="sha384-lMOClogLeJV29+7Xuxn30zEfCGVZtL2yU1aK/hDVo6+gcTtEp/1tjG23q4GSmqnl"
     crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
@@ -876,7 +876,7 @@
           <span
             class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight text-base tracking-tight">BlocTag</span>
           <span class="text-[9.5px] font-mono text-on-surface-variant font-medium leading-none">Developed by LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[10px] mt-0.5">Mainnet v2.9.7</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[10px] mt-0.5">Mainnet v2.11.0</span>
           <span id="sidebarBrandNodeVal" class="hidden"></span>
         </div>
       </div>
@@ -1089,7 +1089,7 @@
           <div class="flex flex-col min-w-0 leading-none">
             <span
               class="font-label-sm text-[10px] sm:text-[11px] text-on-surface tracking-wide uppercase font-semibold shrink-0"
-              id="mobileNetLabel">Mainnet v2.9.7</span>
+              id="mobileNetLabel">Mainnet v2.11.0</span>
             <span class="text-[9px] font-mono text-on-surface-variant truncate max-w-[85px] xs:max-w-[110px]"
               id="mobileNetNodeUrl">net: <span class="text-primary font-medium"
                 id="mobileNetNodeVal">locktrace.space</span></span>
@@ -1191,7 +1191,7 @@
         <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="desktopNetDot"></span>
         <div class="flex flex-col min-w-0 leading-tight">
           <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold"
-            id="desktopNetLabel">BlocTag Mainnet v2.9.7</span>
+            id="desktopNetLabel">BlocTag Mainnet v2.11.0</span>
           <span class="text-[10px] font-mono text-on-surface-variant truncate max-w-[150px]" id="desktopNetNodeUrl">net:
             <span class="text-primary font-medium" id="desktopNetNodeVal">locktrace.space</span></span>
         </div>
@@ -1516,12 +1516,13 @@
               <div class="p-6 rounded-2xl bg-surface-container border border-outline-variant/20 flex flex-col gap-2.5">
                 <div class="flex items-center gap-2 text-primary">
                   <span class="material-symbols-outlined notranslate text-[24px]" translate="no">memory</span>
-                  <span class="font-headline-sm text-headline-sm font-semibold text-on-surface">1. Hybrid 70% PoW + 30%
-                    Quorum</span>
+                  <span class="font-headline-sm text-headline-sm font-semibold text-on-surface">1. Tri-Tier 50/40/10
+                    Hybrid Consensus</span>
                 </div>
                 <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
-                  Block production uses CPU-friendly Proof-of-Work that anyone can run at home. 70% of each block reward
-                  goes to the PoW proposer, while 30% is split equally among active P2P validating nodes (Quorum).
+                  Block production uses CPU-friendly Proof-of-Work that anyone can run at home. 50% of each block reward
+                  goes to the PoW proposer, 40% is shared among active P2P validating nodes (Quorum), and 10% goes to
+                  passive Observer stakers.
                 </p>
               </div>
 
@@ -1616,8 +1617,8 @@
                 <h4 class="font-headline-sm text-headline-sm text-on-surface font-medium">Run a Node &amp; Earn Rewards
                 </h4>
                 <p class="font-body-sm text-body-sm text-on-surface-variant">
-                  Launch a node on your computer with a single command; earn 70% PoW block rewards or 30% Quorum
-                  validator distribution.
+                  Launch a node on your computer with a single command; earn 50% PoW block rewards, 40% Quorum
+                  validator distribution, or 10% passive Observer staking yield.
                 </p>
               </div>
             </div>
@@ -1729,7 +1730,7 @@
                     <span class="text-emerald-400 font-bold">Sourcify Match</span>
                   </div>
                   <div class="flex items-center justify-between gap-1 font-mono text-[11px] text-on-surface">
-                    <span class="truncate">0xA3C743...7254</span>
+                    <span class="truncate">0xCa6152...EB28</span>
                     <div class="flex items-center gap-1 shrink-0">
                       <button type="button"
                         onclick="copyToClipboard('0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28'); showToast('wBCT contract address copied!')"
@@ -2386,7 +2387,7 @@
                 </div>
                 <div class="flex flex-col text-left">
                   <span class="font-label-lg text-label-lg font-medium text-on-surface leading-tight">PoW Node</span>
-                  <span class="font-label-sm text-label-sm text-on-surface-variant leading-tight">70/30 Rewards</span>
+                  <span class="font-label-sm text-label-sm text-on-surface-variant leading-tight">50/40/10 Rewards</span>
                 </div>
               </button>
             </div>
@@ -2469,9 +2470,9 @@
               <div class="flex items-center justify-between px-0.5">
                 <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1 font-mono">
                   <span class="material-symbols-outlined text-[13px] text-primary">history</span>
-                  <span>Son Gönderilenler / Hızlı Transfer</span>
+                  <span>Recent Recipients / Quick Transfer</span>
                 </span>
-                <span class="text-[9px] text-outline font-mono">Dokun ve Seç</span>
+                <span class="text-[9px] text-outline font-mono">Tap to Select</span>
               </div>
               <div id="recentRecipientsList" class="flex items-center gap-2 overflow-x-auto pb-0.5 pt-0.5 no-scrollbar">
                 <!-- Dynamically populated chips -->
@@ -3125,7 +3126,7 @@
                 </div>
                 <div>
                   <div class="flex items-center gap-1.5 flex-wrap text-xs">
-                    <span class="text-on-surface-variant font-medium">Base Relayer Adresi:</span>
+                    <span class="text-on-surface-variant font-medium">Base Relayer Address:</span>
                     <a id="explorerRelayerAddressLink" href="https://basescan.org/address/0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3" target="_blank"
                       rel="noopener noreferrer" class="font-mono text-primary font-semibold hover:underline inline-flex items-center gap-0.5">
                       <span id="explorerRelayerAddressText">0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3</span>
@@ -3134,17 +3135,17 @@
                   </div>
                   <div class="text-[11px] text-on-surface-variant flex items-center gap-1.5 mt-0.5">
                     <span id="explorerRelayerStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>Güncel Gaz Bakiyesi:</span>
-                    <span id="explorerRelayerBalance" class="font-mono font-bold text-emerald-400">Yükleniyor...</span>
-                    <span id="explorerRelayerStatusBadge" class="ml-1 px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold">Aktif</span>
+                    <span>Live Gas Balance:</span>
+                    <span id="explorerRelayerBalance" class="font-mono font-bold text-emerald-400">Loading...</span>
+                    <span id="explorerRelayerStatusBadge" class="ml-1 px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold">Active</span>
                   </div>
                 </div>
               </div>
               <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                <button type="button" onclick="refreshRelayerBalance(true); showToast('Relayer bakiyesi güncellendi');"
+                <button type="button" onclick="refreshRelayerBalance(true); showToast('Relayer gas balance refreshed');"
                   class="px-2.5 py-1 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center gap-1 border border-outline-variant/20 transition-all text-xs font-semibold active:scale-95">
                   <span class="material-symbols-outlined notranslate text-[13px] text-primary" translate="no">refresh</span>
-                  <span>Bakiyeyi Kontrol Et</span>
+                  <span>Check Balance</span>
                 </button>
               </div>
             </div>
@@ -3284,7 +3285,7 @@
               <span>← Back to Wallet</span>
             </button>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">BlocTag PoS v2.9.7</span>
+              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">BlocTag PoS v2.11.0</span>
             </div>
           </div>
 
@@ -3295,7 +3296,7 @@
                 <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">P2P
                   Decentralized Infrastructure</span>
                 <span
-                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.9.7</span>
+                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.11.0</span>
               </div>
               <h1 class="font-headline-md text-headline-md text-on-surface tracking-tight font-semibold">Node &amp;
                 Validator Hub</h1>
@@ -3345,7 +3346,7 @@
             <!-- Stake & Validator Quorum Status Row -->
             <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
               <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
-                <span class="text-[10px] font-mono uppercase text-on-surface-variant">Teminat / Stake Durumu</span>
+                <span class="text-[10px] font-mono uppercase text-on-surface-variant">Collateral / Stake Status</span>
                 <span class="font-bold font-mono text-on-surface mt-1" id="operatorStakeStatus">-- BCT</span>
                 <span class="text-[10px] text-on-surface-variant/80 mt-0.5" id="operatorStakeSubtitle">Threshold: 1,000
                   BCT</span>
@@ -3357,14 +3358,14 @@
               </div>
               <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col">
                 <span class="text-[10px] font-mono uppercase text-on-surface-variant">Reward Entitlement</span>
-                <span class="font-bold text-secondary mt-1">%50 Blok / %40 Doğrulayıcı / %10 Gözlemci</span>
-                <span class="text-[10px] text-on-surface-variant/80 mt-0.5">Otomatik Zincir İçi Dağıtım</span>
+                <span class="font-bold text-secondary mt-1">50% Block / 40% Validator / 10% Observer</span>
+                <span class="text-[10px] text-on-surface-variant/80 mt-0.5">Automated On-Chain Settlement</span>
               </div>
             </div>
           </div>
 
 
-          <!-- 1,000 BCT Validator Staking Vault Card (v2.9.7 PoS Collateral) -->
+          <!-- 1,000 BCT Validator Staking Vault Card (v2.11.0 PoS Collateral) -->
           <div id="validatorStakingVaultCard"
             class="p-5 sm:p-7 rounded-3xl bg-surface-container border border-primary/30 shadow-lg flex flex-col gap-6 mb-8 overflow-hidden max-w-full">
             
@@ -3376,14 +3377,14 @@
                 </div>
                 <div class="flex flex-col min-w-0 max-w-full">
                   <div class="flex items-center gap-2 flex-wrap">
-                    <h3 class="font-headline-sm text-sm sm:text-base md:text-lg font-bold text-on-surface truncate">LockTrace Akıllı Staking &amp; Doğrulayıcı Kasası</h3>
-                    <span id="validatorVaultBadge" class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-[10px] font-mono font-bold uppercase tracking-wider border border-outline-variant/30">Durum Belirleniyor</span>
+                    <h3 class="font-headline-sm text-sm sm:text-base md:text-lg font-bold text-on-surface truncate">LockTrace Smart Staking &amp; Validator Vault</h3>
+                    <span id="validatorVaultBadge" class="px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant text-[10px] font-mono font-bold uppercase tracking-wider border border-outline-variant/30">Checking Status</span>
                   </div>
                   <div class="flex items-center gap-2 mt-1 text-xs text-on-surface-variant flex-wrap min-w-0 max-w-full">
                     <span class="font-mono text-[11px] select-all truncate max-w-[210px] sm:max-w-none">
-                      Kasa: <strong class="text-primary font-mono hidden sm:inline">BCT_STAKE_VAULT_00000000000000000000000000000000</strong><strong class="text-primary font-mono sm:hidden">BCT_STAKE_VAULT_...0000</strong>
+                      Vault: <strong class="text-primary font-mono hidden sm:inline">BCT_STAKE_VAULT_00000000000000000000000000000000</strong><strong class="text-primary font-mono sm:hidden">BCT_STAKE_VAULT_...0000</strong>
                     </span>
-                    <button type="button" onclick="copyToClipboard('BCT_STAKE_VAULT_00000000000000000000000000000000'); showToast('Staking vault adresi kopyalandı!')" class="p-1 hover:text-primary transition-colors shrink-0" title="Adresi Kopyala">
+                    <button type="button" onclick="copyToClipboard('BCT_STAKE_VAULT_00000000000000000000000000000000'); showToast('Staking vault address copied!')" class="p-1 hover:text-primary transition-colors shrink-0" title="Copy Address">
                       <span class="material-symbols-outlined notranslate text-[14px]">content_copy</span>
                     </button>
                   </div>
@@ -3392,168 +3393,168 @@
               <div class="flex items-center gap-2 self-start sm:self-auto">
                 <button onclick="refreshValidatorStakeUI()" class="px-3 py-1.5 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold border border-outline-variant/30 flex items-center gap-1.5 transition-all shadow-xs" type="button">
                   <span class="material-symbols-outlined notranslate text-[15px]">refresh</span>
-                  <span>Yenile</span>
+                  <span>Refresh</span>
                 </button>
               </div>
             </div>
 
-            <!-- Kullanıcının Mevcut Staking Pozisyonu (My Position) -->
+            <!-- User Active Staking Position -->
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between">
                 <span class="text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[14px] text-primary">account_balance_wallet</span> Kilitli Teminatınız
+                  <span class="material-symbols-outlined text-[14px] text-primary">account_balance_wallet</span> Your Locked Collateral
                 </span>
                 <span id="operatorStakeStatus" class="text-lg font-bold font-mono text-primary mt-1">0.00 BCT</span>
-                <span id="operatorStakeSubtitle" class="text-[10px] text-on-surface-variant">Min. 100 BCT Gözlemci / 1.000 BCT Düğüm</span>
+                <span id="operatorStakeSubtitle" class="text-[10px] text-on-surface-variant">Min. 100 BCT Observer / 1,000 BCT Node</span>
               </div>
               <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between">
                 <span class="text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[14px] text-secondary">military_tech</span> Konsensüs Rolünüz
+                  <span class="material-symbols-outlined text-[14px] text-secondary">military_tech</span> Consensus Role
                 </span>
-                <span id="operatorConsensusRole" class="text-xs font-bold font-mono text-on-surface mt-1 truncate">Teminat Bulunmuyor</span>
-                <span class="text-[10px] text-on-surface-variant">Protokol Kademesi</span>
+                <span id="operatorConsensusRole" class="text-xs font-bold font-mono text-on-surface mt-1 truncate">No Active Stake</span>
+                <span class="text-[10px] text-on-surface-variant">Protocol Tier</span>
               </div>
               <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between">
                 <span class="text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[14px] text-emerald-400">dns</span> Düğüm (Node) Durumu
+                  <span class="material-symbols-outlined text-[14px] text-emerald-400">dns</span> Node Runner Status
                 </span>
-                <span id="operatorNodeLinkStatus" class="text-xs font-bold text-on-surface mt-1 truncate">Düğüm Bağlı Değil</span>
-                <span class="text-[10px] text-on-surface-variant">1.000+ BCT ile %40 Havuzu</span>
+                <span id="operatorNodeLinkStatus" class="text-xs font-bold text-on-surface mt-1 truncate">Node Not Linked</span>
+                <span class="text-[10px] text-on-surface-variant">40% Pool with 1,000+ BCT</span>
               </div>
               <div class="p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col justify-between">
                 <span class="text-[11px] font-medium text-on-surface-variant flex items-center gap-1">
-                  <span class="material-symbols-outlined text-[14px] text-amber-400">savings</span> Toplam Kazanılan Ödül
+                  <span class="material-symbols-outlined text-[14px] text-amber-400">savings</span> Total Rewards Earned
                 </span>
                 <span id="operatorRewardsEarned" class="text-lg font-bold font-mono text-secondary mt-1">0.0000 BCT</span>
-                <span class="text-[10px] text-on-surface-variant">Cüzdanınıza yansıtılan ödüller</span>
+                <span class="text-[10px] text-on-surface-variant">Credited directly to your wallet</span>
               </div>
             </div>
 
-            <!-- Akıllı Staking Giriş Alanı & Hızlı Seçim Butonları -->
+            <!-- Smart Staking Input & Quick Presets -->
             <div class="p-4 sm:p-5 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-4">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                 <div>
                   <h4 class="text-xs font-bold uppercase tracking-wider text-on-surface font-mono flex items-center gap-1.5">
                     <span class="material-symbols-outlined text-primary text-[16px]">tune</span>
-                    <span>Teminat Miktarı Belirleyin (Min 100 BCT — Max 100.000 BCT)</span>
+                    <span>Select Collateral Amount (Min 100 BCT — Max 100,000 BCT)</span>
                   </h4>
-                  <p class="text-[11px] text-on-surface-variant">Kilitlediğiniz miktara göre sistem rolünüzü ve ödül havuzu payınızı otomatik belirler.</p>
+                  <p class="text-[11px] text-on-surface-variant">Automatically assigns your consensus tier and reward pool share based on locked collateral.</p>
                 </div>
                 <div class="text-xs font-mono text-on-surface-variant">
-                  Cüzdan Bakiyesi: <strong id="lblWalletAvailBalance" class="text-primary font-bold">0.00 BCT</strong>
+                  Wallet Balance: <strong id="lblWalletAvailBalance" class="text-primary font-bold">0.00 BCT</strong>
                 </div>
               </div>
 
-              <!-- Hızlı Seçim Butonları -->
+              <!-- Quick Preset Buttons -->
               <div class="flex flex-wrap items-center gap-2">
                 <button type="button" onclick="setStakingAmount(100)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">100 BCT</button>
                 <button type="button" onclick="setStakingAmount(500)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">500 BCT</button>
-                <button type="button" onclick="setStakingAmount(1000)" class="px-3 py-1.5 rounded-xl bg-primary/15 text-primary border border-primary/30 text-xs font-mono font-bold transition-all shadow-xs">1.000 BCT (Validator)</button>
-                <button type="button" onclick="setStakingAmount(5000)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">5.000 BCT</button>
-                <button type="button" onclick="setStakingAmount(10000)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">10.000 BCT</button>
-                <button type="button" onclick="setStakingMaxAmount()" class="px-2.5 py-1.5 rounded-xl bg-surface-container-highest hover:bg-primary/30 text-xs font-mono font-bold transition-all ml-auto">MAKSİMUM</button>
+                <button type="button" onclick="setStakingAmount(1000)" class="px-3 py-1.5 rounded-xl bg-primary/15 text-primary border border-primary/30 text-xs font-mono font-bold transition-all shadow-xs">1,000 BCT (Validator)</button>
+                <button type="button" onclick="setStakingAmount(5000)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">5,000 BCT</button>
+                <button type="button" onclick="setStakingAmount(10000)" class="px-2.5 py-1.5 rounded-xl bg-surface-container-high hover:bg-primary/20 hover:text-primary text-xs font-mono font-semibold transition-all">10,000 BCT</button>
+                <button type="button" onclick="setStakingMaxAmount()" class="px-2.5 py-1.5 rounded-xl bg-surface-container-highest hover:bg-primary/30 text-xs font-mono font-bold transition-all ml-auto">MAX</button>
               </div>
 
-              <!-- Miktar Giriş Kutusu & Aksiyon Butonları -->
+              <!-- Amount Input Box & Action Buttons -->
               <div class="flex flex-col sm:flex-row items-stretch gap-3">
                 <div class="relative flex-1">
                   <input id="inputCustomStakeAmt" type="number" min="100" max="100000" step="50" value="1000" oninput="updateSmartStakingPreview()"
                     class="w-full bg-surface-container-high text-on-surface px-4 py-3 rounded-2xl text-base font-mono font-bold border border-outline-variant/30 focus:outline-none focus:border-primary shadow-inner"
-                    placeholder="Miktar Giriniz (Min. 100 BCT)" />
+                    placeholder="Enter Amount (Min. 100 BCT)" />
                   <span class="absolute right-4 top-3.5 text-xs text-on-surface-variant font-mono font-bold">BCT</span>
                 </div>
                 <button id="btnExecuteStake" onclick="executeValidatorStake(document.getElementById('inputCustomStakeAmt')?.value || 1000)"
                   class="px-5 py-3 rounded-2xl bg-primary text-on-primary font-bold text-xs hover:bg-primary/90 transition-all active:scale-95 shadow-md flex items-center justify-center gap-2 shrink-0"
                   type="button">
                   <span class="material-symbols-outlined notranslate text-[18px]" translate="no">lock</span>
-                  <span>Teminat Kilitle (Stake)</span>
+                  <span>Lock Collateral (Stake)</span>
                 </button>
                 <button id="btnExecuteUnstake" onclick="executeValidatorUnstake(document.getElementById('inputCustomStakeAmt')?.value || 1000)"
                   class="px-4 py-3 rounded-2xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface font-semibold text-xs border border-outline-variant/30 transition-all active:scale-95 flex items-center justify-center gap-1.5 shrink-0"
                   type="button">
                   <span class="material-symbols-outlined notranslate text-[18px]" translate="no">lock_open</span>
-                  <span>Teminat Çöz (Unstake)</span>
+                  <span>Unlock Collateral (Unstake)</span>
                 </button>
               </div>
 
-              <!-- Dinamik Otomatik Tanıma & Canlı Simülatör Kartı -->
+              <!-- Dynamic Auto-Detection & Live Yield Simulator Card -->
               <div id="smartTierDetectionCard" class="p-4 rounded-2xl bg-surface-container border border-outline-variant/25 transition-all flex flex-col gap-3">
                 <div class="flex items-center justify-between gap-2 flex-wrap">
                   <div class="flex items-center gap-2">
                     <span id="smartTierBadgeIcon" class="material-symbols-outlined text-primary text-[20px]">verified</span>
-                    <strong id="smartTierTitle" class="text-xs sm:text-sm font-bold text-on-surface">1.000 BCT — Doğrulayıcı Seviyesi Teminat</strong>
+                    <strong id="smartTierTitle" class="text-xs sm:text-sm font-bold text-on-surface">1,000 BCT — Validator Tier Collateral</strong>
                   </div>
-                  <span id="smartTierPoolBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-primary/15 text-primary border border-primary/30">%40 veya %10 Havuz</span>
+                  <span id="smartTierPoolBadge" class="px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-primary/15 text-primary border border-primary/30">40% or 10% Pool</span>
                 </div>
 
-                <!-- Otomatik Tanıma Açıklaması -->
+                <!-- Auto-Detection Explanation -->
                 <p id="smartTierDescription" class="text-xs text-on-surface-variant leading-relaxed">
-                  <strong>Akıllı Otomatik Tanıma:</strong> 1.000 BCT veya üzeri kilitlediğinizde iki seçenek devreye girer:<br>
-                  • <span class="text-emerald-400 font-semibold">1. Durum (Düğüm Çalıştırırsanız):</span> Bilgisayar veya sunucunuzda <code class="font-mono text-on-surface bg-surface-container-highest px-1 rounded">python node_runner.py</code> açık olduğunda sistem düğümünüzü otomatik tanır ve doğrudan <strong class="text-emerald-400 font-bold">%40 Aktif Doğrulayıcı Quorum Havuzuna</strong> dahil eder.<br>
-                  • <span class="text-primary font-semibold">2. Durum (Düğüm Çalıştırmazsanız):</span> Düğüm kurmasanız bile kilitli paranız boşa gitmez; otomatik olarak <strong class="text-primary font-bold">%10 Gözlemci Havuzundan</strong> pasif getiri kazanmaya devam edersiniz!
+                  <strong>Smart Dual-Mode Detection:</strong> When you lock 1,000 BCT or more, two modes operate automatically:<br>
+                  • <span class="text-emerald-400 font-semibold">Mode 1 (Running a Node):</span> When <code class="font-mono text-on-surface bg-surface-container-highest px-1 rounded">python node_runner.py</code> is active on your computer or VPS, the network detects your node and includes you in the <strong class="text-emerald-400 font-bold">40% Active Validator Quorum Pool</strong>.<br>
+                  • <span class="text-primary font-semibold">Mode 2 (Without a Node):</span> Even if your node is offline, your collateral never sits idle — it automatically earns passive rewards from the <strong class="text-primary font-bold">10% Observer Staker Pool</strong>!
                 </p>
 
-                <!-- Canlı Getiri Simülatörü Grid -->
+                <!-- Live Yield Simulator Grid -->
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2 border-t border-outline-variant/15 text-xs font-mono">
                   <div class="flex flex-col p-2.5 rounded-xl bg-surface-container-high/60">
-                    <span class="text-[10px] text-on-surface-variant font-sans">Günlük Tahmini Getiri</span>
-                    <strong id="valEstimatedDailyLabel" class="text-primary font-bold text-sm mt-0.5">~1.62 BCT / gün</strong>
-                    <span class="text-[9px] text-on-surface-variant/80 font-sans">Havuz yoğunluğuna göre</span>
+                    <span class="text-[10px] text-on-surface-variant font-sans">Est. Daily Reward</span>
+                    <strong id="valEstimatedDailyLabel" class="text-primary font-bold text-sm mt-0.5">~1.62 BCT / day</strong>
+                    <span class="text-[9px] text-on-surface-variant/80 font-sans">Based on active pool weight</span>
                   </div>
                   <div class="flex flex-col p-2.5 rounded-xl bg-surface-container-high/60">
-                    <span class="text-[10px] text-on-surface-variant font-sans">Aylık Tahmini Getiri</span>
-                    <strong id="valEstimatedMonthlyLabel" class="text-secondary font-bold text-sm mt-0.5">~48.60 BCT / ay</strong>
-                    <span class="text-[9px] text-on-surface-variant/80 font-sans">30 günlük döngü</span>
+                    <span class="text-[10px] text-on-surface-variant font-sans">Est. Monthly Reward</span>
+                    <strong id="valEstimatedMonthlyLabel" class="text-secondary font-bold text-sm mt-0.5">~48.60 BCT / mo</strong>
+                    <span class="text-[9px] text-on-surface-variant/80 font-sans">30-day cycle</span>
                   </div>
                   <div class="flex flex-col p-2.5 rounded-xl bg-surface-container-high/60">
-                    <span class="text-[10px] text-on-surface-variant font-sans">Yıllık Getiri &amp; APR Oranı</span>
+                    <span class="text-[10px] text-on-surface-variant font-sans">Annualized Yield &amp; APR</span>
                     <strong id="valEstimatedAprLabel" class="text-emerald-400 font-bold text-sm mt-0.5">~59.1% APR</strong>
-                    <span class="text-[9px] text-on-surface-variant/80 font-sans">Bileşik olmayan teminat getirisi</span>
+                    <span class="text-[9px] text-on-surface-variant/80 font-sans">Non-compounded staking APR</span>
                   </div>
                 </div>
               </div>
 
             </div>
 
-            <!-- 3 Kademeli Konsensüs Modeli Bilgilendirme Bannerı -->
+            <!-- 3-Tier Consensus Model Info Banner -->
             <div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/15 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs text-on-surface-variant">
               <div class="flex items-center gap-2.5">
                 <span class="material-symbols-outlined text-secondary text-[22px] shrink-0">info</span>
                 <span class="leading-relaxed">
-                  <strong>Konsensüs Ödül Dağılımı:</strong> Her blokta üretilen toplam ödül havuzunun <strong class="text-on-surface">%50'si PoW Bloğunu Bulan Madenciye</strong>, <strong class="text-emerald-400 font-bold">%40'ı Aktif Düğüm Doğrulayıcılarına</strong>, <strong class="text-primary font-bold">%10'u ise Gözlemci Staker'lara</strong> kilitli coin oranlarına göre paylaştırılır.
+                  <strong>Consensus Reward Distribution:</strong> Every block distributes <strong class="text-on-surface">50% to the PoW Block Proposer</strong>, <strong class="text-emerald-400 font-bold">40% to Active Node Validators</strong>, and <strong class="text-primary font-bold">10% to Observer Stakers</strong> pro-rata by locked collateral.
                 </span>
               </div>
             </div>
 
-            <!-- Staking Katılımcıları & Canlı Defter Tablosu -->
+            <!-- Staking Participants & Live Ledger Table -->
             <div class="flex flex-col w-full bg-surface-container-low rounded-2xl border border-outline-variant/20 p-4 sm:p-5 shadow-sm">
               <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-4">
                 <div>
                   <h3 class="text-sm font-bold text-on-surface flex items-center gap-2">
                     <span class="material-symbols-outlined notranslate text-primary text-[18px]">group_work</span>
-                    <span>Staking &amp; Doğrulayıcı Havuzu Katılımcıları</span>
+                    <span>Staking &amp; Validator Pool Participants</span>
                   </h3>
-                  <p class="text-[11px] text-on-surface-variant">Ağda aktif teminat kilitleyen doğrulayıcılar ve gözlemciler listesi</p>
+                  <p class="text-[11px] text-on-surface-variant">Live ledger of active collateral validators and observer stakers</p>
                 </div>
                 <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
-                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Toplam Kilitli: <strong id="statTotalStakedBCT" class="text-primary font-bold">0.00 BCT</strong></span>
-                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Aktif Düğüm: <strong id="statActiveValidatorsCount" class="text-emerald-400 font-bold">0</strong></span>
-                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Gözlemci: <strong id="statObserversCount" class="text-primary font-bold">0</strong></span>
+                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Total Staked: <strong id="statTotalStakedBCT" class="text-primary font-bold">0.00 BCT</strong></span>
+                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Active Nodes: <strong id="statActiveValidatorsCount" class="text-emerald-400 font-bold">0</strong></span>
+                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Observers: <strong id="statObserversCount" class="text-primary font-bold">0</strong></span>
                 </div>
               </div>
               <div class="overflow-x-auto w-full">
                 <table class="w-full text-left border-collapse">
                   <thead>
                     <tr class="border-b border-outline-variant/20 text-[11px] uppercase tracking-wider text-on-surface-variant font-mono">
-                      <th class="py-2.5 px-3">Cüzdan Adresi</th>
-                      <th class="py-2.5 px-3 text-right">Kilitli Miktar</th>
-                      <th class="py-2.5 px-3 text-center">Statü / Kategori</th>
-                      <th class="py-2.5 px-3 text-center">Ödül Havuzu Payı</th>
-                      <th class="py-2.5 px-3 text-right">Kazanılan Ödül</th>
+                      <th class="py-2.5 px-3">Wallet Address</th>
+                      <th class="py-2.5 px-3 text-right">Locked Stake</th>
+                      <th class="py-2.5 px-3 text-center">Status / Tier</th>
+                      <th class="py-2.5 px-3 text-center">Pool Share</th>
+                      <th class="py-2.5 px-3 text-right">Rewards Earned</th>
                     </tr>
                   </thead>
                   <tbody id="stakingParticipantsTableBody">
-                    <tr><td colspan="5" class="py-6 text-center text-on-surface-variant text-xs font-sans">Katılımcı verileri yükleniyor...</td></tr>
+                    <tr><td colspan="5" class="py-6 text-center text-on-surface-variant text-xs font-sans">Loading participant telemetry...</td></tr>
                   </tbody>
                 </table>
               </div>
@@ -4832,8 +4833,8 @@
                 <span class="material-symbols-outlined notranslate text-[20px]" translate="no">widgets</span>
               </div>
               <div class="flex flex-col items-center gap-1">
-                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Şimdilik Aktif Olmayan Widget</h2>
-                <span class="text-[11px] font-mono text-on-surface-variant/75">Bu alan yakında yeni protokol modülü ile aktif edilecektir.</span>
+                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Upcoming Protocol Module</h2>
+                <span class="text-[11px] font-mono text-on-surface-variant/75">This widget slot will be activated with the next on-chain governance release.</span>
               </div>
             </div>
 
@@ -4938,14 +4939,14 @@
             <div class="flex items-center gap-2">
               <span
                 class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE
-                MASTER DOCS v2.9.7</span>
+                MASTER DOCS v2.11.0</span>
               <span class="text-outline text-xs">•</span>
               <span class="text-on-surface-variant font-mono text-xs">Open Source &amp; Decentralized Protocol</span>
             </div>
             <h1 class="font-headline-md md:text-3xl text-on-surface font-bold">BlocTag Protocol Handbook (Developed by LockTrace)
             </h1>
             <p class="font-body-sm text-body-sm text-on-surface-variant max-w-2xl">
-              Comprehensive v2.9.7 architectural guide: 3-Phase Atomic CAS Consensus, O(1) Delta SQLite WAL Engine,
+              Comprehensive v2.11.0 architectural guide: 3-Phase Atomic CAS Consensus, O(1) Delta SQLite WAL Engine,
               Anti-Stall Emergency LWMA, Priority RBF Mempool, P2P Compact Block Relay, State Snapshot Warp Sync, OpenCL
               GPU Mining, Anti-DDoS &amp; Sybil /24 Subnet Defense, and REST/P2P API reference.
             </p>
@@ -5007,9 +5008,9 @@
               <div class="flex flex-col">
                 <div class="flex items-center gap-2">
                   <h2 class="font-headline-sm text-sm sm:text-base text-on-surface font-bold leading-tight">Official
-                    Technical Whitepaper (v2.9.7)</h2>
+                    Technical Whitepaper (v2.11.0)</h2>
                   <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-mono text-[10px] font-bold">PDF
-                    &bull; v2.9.7</span>
+                    &bull; v2.11.0</span>
                 </div>
                 <p class="text-xs text-on-surface-variant line-clamp-1">3-Phase Atomic CAS Consensus, Compact Block
                   Relay, State Snapshot Warp Sync, OpenCL GPU Mining, Anti-Stall LWMA &amp; RBF</p>
@@ -5097,18 +5098,19 @@
                   <p class="text-xs text-on-surface-variant leading-relaxed">
                     To eliminate Sybil attacks, consensus validators lock <strong>1,000.00 BCT</strong> in <code
                       class="text-on-surface font-mono">BCT_STAKE_VAULT_...</code> via 100% non-custodial ECDSA
-                    signatures. Staked validators share the <strong>30% Quorum Attestation Pool</strong> and face a 50%
+                    signatures. Staked validators share the <strong>40% Quorum Attestation Pool</strong> (with <strong>10%
+                      Observer Staking Pool</strong> for passive collateral) and face a 50%
                     on-chain slash penalty for double-signing.
                   </p>
                 </div>
                 <div
                   class="p-4 rounded-xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-1.5">
-                  <span class="text-xs font-mono font-semibold text-primary uppercase">3. 70% / 30% Hybrid Block
+                  <span class="text-xs font-mono font-semibold text-primary uppercase">3. 50% / 40% / 10% Tri-Tier Block
                     Reward</span>
                   <p class="text-xs text-on-surface-variant leading-relaxed">
-                    For each sealed block, <strong>70% of the total reward pool goes to the PoW proposer</strong> who
-                    solved the cryptographic challenge, and <strong>30% is split equally among active P2P validating
-                      nodes (Quorum Pool)</strong>.
+                    For each sealed block, <strong>50% of the total reward pool goes to the PoW proposer</strong> who
+                    solved the cryptographic challenge, <strong>40% is distributed among active P2P validating
+                      nodes (Quorum Pool)</strong>, and <strong>10% goes to Observer Stakers</strong>.
                   </p>
                 </div>
                 <div
@@ -5142,7 +5144,7 @@
                   <span
                     class="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary font-mono text-[11px] font-semibold flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                    <span>v2.9.7 Active</span>
+                    <span>v2.11.0 Active</span>
                   </span>
                   <span
                     class="px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/20 text-on-surface-variant font-mono text-[11px]">
@@ -5245,8 +5247,8 @@
                   <ul
                     class="flex flex-col gap-2 font-mono text-[11px] text-on-surface-variant pt-2 border-t border-outline-variant/10">
                     <li class="flex items-start gap-1.5"><span
-                        class="text-tertiary font-bold">▸</span><span><strong>Consensus:</strong> 70% PoW Proposer + 30%
-                        Active Quorum Validator Pool</span></li>
+                        class="text-tertiary font-bold">▸</span><span><strong>Consensus:</strong> 50% PoW Proposer + 40%
+                        Active Quorum Pool + 10% Observer Staking</span></li>
                     <li class="flex items-start gap-1.5"><span
                         class="text-tertiary font-bold">▸</span><span><strong>Anti-Stall LWMA:</strong> Emergency
                         difficulty halving if block interval exceeds 120s</span></li>
@@ -5283,8 +5285,8 @@
                   <ul
                     class="flex flex-col gap-2 font-mono text-[11px] text-on-surface-variant pt-2 border-t border-outline-variant/10">
                     <li class="flex items-start gap-1.5"><span
-                        class="text-amber-300 font-bold">▸</span><span><strong>Base L2 Bridge:</strong> WrappedBCT
-                        ERC-20 contract (0xA3C74...254)</span></li>
+                        class="text-amber-300 font-bold">▸</span><span><strong>Base L2 Bridge:</strong> WrappedBlocTag
+                        ERC-20 contract (0xCa6152...EB28)</span></li>
                     <li class="flex items-start gap-1.5"><span
                         class="text-amber-300 font-bold">▸</span><span><strong>Bridge Relayer:</strong> Automated
                         dual-direction lock-and-burn listener daemon</span></li>
@@ -5342,7 +5344,7 @@
                     <span class="text-[10px] font-bold text-emerald-400">STEP 5 • SETTLEMENT</span>
                     <span class="font-sans text-xs text-on-surface font-medium">Block committed to SQLite WAL and
                       gossiped to P2P peers.</span>
-                    <span class="text-[10px] text-on-surface-variant">70% Miner / 30% Quorum paid.</span>
+                    <span class="text-[10px] text-on-surface-variant">50% Miner / 40% Validator / 10% Observer.</span>
                   </div>
                 </div>
               </div>
@@ -5694,7 +5696,7 @@
                   <p class="font-body-sm text-body-sm text-on-surface-variant pt-2 leading-relaxed">
                     No! LockTrace consensus is specifically engineered to be CPU-friendly. A standard laptop, home
                     desktop, or entry-level cloud VPS (1 vCPU, 1 GB RAM) runs effortlessly with zero extra package
-                    dependencies. You earn both 70% PoW block rewards and 30% Quorum validator distributions.
+                    dependencies. You earn 50% PoW block rewards, 40% Quorum validator distributions, and 10% Observer staking rewards.
                   </p>
                 </details>
 
@@ -6136,7 +6138,7 @@
               <div class="flex flex-col">
                 <div class="flex flex-wrap items-center gap-2">
                   <h3 class="font-headline-sm text-sm sm:text-base font-semibold text-on-surface">Cryptographic
-                    Integrity Shield (v2.9.7)</h3>
+                    Integrity Shield (v2.11.0)</h3>
                   <span
                     class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">ACTIVE
                     &bull; VERIFIED</span>
@@ -7260,7 +7262,7 @@
         <div class="p-3 pt-0 border-t border-outline-variant/10">
           <div class="flex justify-end mb-1">
             <button type="button" onclick="copyText(document.getElementById('modalRawJson').textContent, 'Raw JSON copied!')" class="text-[10px] text-primary hover:underline font-mono flex items-center gap-1">
-              <span class="material-symbols-outlined notranslate text-[12px]" translate="no">content_copy</span> Kopyala
+              <span class="material-symbols-outlined notranslate text-[12px]" translate="no">content_copy</span> Copy
             </button>
           </div>
           <pre class="p-2.5 rounded-lg bg-surface-container-lowest text-[10.5px] text-on-surface-variant overflow-x-auto max-h-48 leading-relaxed select-all" id="modalRawJson">--</pre>
@@ -7726,7 +7728,7 @@
             <span id="secModalStatusText">Verifying Signed Release...</span>
           </span>
           <span class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px]"
-            id="secModalVersionBadge">v2.9.7</span>
+            id="secModalVersionBadge">v2.11.0</span>
         </div>
         <div class="grid grid-cols-1 gap-1.5 font-mono text-[11px] text-on-surface-variant pt-1">
           <div class="flex flex-col bg-surface-container p-2 rounded-lg">
@@ -8677,7 +8679,7 @@
             <span class="material-symbols-outlined notranslate text-[20px]" translate="no">account_balance_wallet</span>
           </div>
           <div class="flex flex-col">
-            <h3 class="font-bold text-sm text-on-surface">Web3 Cüzdan Bağlantısı</h3>
+            <h3 class="font-bold text-sm text-on-surface">Web3 Wallet Connection</h3>
             <span class="text-[11px] text-on-surface-variant font-medium">MetaMask, Trust Wallet &amp; Base Mainnet</span>
           </div>
         </div>
@@ -8692,7 +8694,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Cüzdan Bağlı (Base Mainnet)</span>
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Wallet Connected (Base Mainnet)</span>
           </div>
           <span class="text-[11px] font-mono font-bold text-emerald-300" id="modalConnectedWbctBal">0.0000 wBCT</span>
         </div>
@@ -8701,7 +8703,7 @@
           <button type="button" onclick="copyConnectedEvmAddress()"
             class="px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[14px]" translate="no">content_copy</span>
-            <span>Kopyala</span>
+            <span>Copy</span>
           </button>
         </div>
         <div class="flex items-center justify-between pt-0.5 text-[11px]">
@@ -8709,7 +8711,7 @@
           <button type="button" onclick="disconnectEvmAddress()"
             class="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[14px]" translate="no">link_off</span>
-            <span>Bağlantıyı Kes</span>
+            <span>Disconnect</span>
           </button>
         </div>
       </div>
@@ -8728,9 +8730,9 @@
             <div class="flex flex-col">
               <div class="flex items-center gap-1.5">
                 <span class="font-bold text-xs text-on-surface group-hover:text-amber-400 transition-colors">MetaMask</span>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400">Doğrudan İmza</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400">Direct Sign</span>
               </div>
-              <span class="text-[11px] text-on-surface-variant" id="mmStatusSubtitle">Doğrudan Bağlan &amp; İmzala (Tarayıcıdan Ayrılmadan)</span>
+              <span class="text-[11px] text-on-surface-variant" id="mmStatusSubtitle">Direct Connect &amp; Sign (Stay in Browser)</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-amber-400 text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
@@ -8748,7 +8750,7 @@
             </div>
             <div class="flex flex-col">
               <span class="font-bold text-xs text-on-surface group-hover:text-blue-400 transition-colors">Trust Wallet</span>
-              <span class="text-[11px] text-on-surface-variant">Web3 Eklenti / Mobil Cüzdan</span>
+              <span class="text-[11px] text-on-surface-variant">Web3 Extension / Mobile Wallet</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-blue-400 text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
@@ -8758,27 +8760,27 @@
       <!-- Quick Manual Address Paste (Read-only / L1->EVM helper) -->
       <div class="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2.5">
         <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold text-on-surface">Cüzdan Adresi ile Hızlı Ekle (L1 &rarr; EVM)</span>
-          <span class="text-[10px] font-mono text-primary">Sadece İzleme</span>
+          <span class="text-[11px] font-bold text-on-surface">Quick Address Entry (L1 &rarr; EVM)</span>
+          <span class="text-[10px] font-mono text-primary">Read-Only / Watch</span>
         </div>
         <p class="text-[11px] text-on-surface-variant leading-relaxed">
-          Eğer sadece bakiye görmek veya L1'den EVM'e coin aktarmak istiyorsanız adresinizi yapıştırabilirsiniz:
+          To preview your Base wBCT balance or set your destination address for L1 &rarr; EVM bridging, paste your 0x address below:
         </p>
         <div class="relative">
           <input type="text" id="manualEvmAddressInput"
-            placeholder="0x... (42 karakterlik EVM Cüzdan Adresi)"
+            placeholder="0x... (42-character EVM Wallet Address)"
             class="w-full bg-surface-container rounded-xl pl-3 pr-24 py-2 text-xs font-mono text-on-surface border border-outline-variant/30 focus:border-primary focus:outline-none select-all"
             autocomplete="off" spellcheck="false">
           <button type="button" onclick="pasteAddressFromClipboard()"
             class="absolute right-1 top-1 bottom-1 px-2.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors">
             <span class="material-symbols-outlined notranslate text-[13px]" translate="no">content_paste</span>
-            <span>Yapıştır</span>
+            <span>Paste</span>
           </button>
         </div>
         <button type="button" onclick="connectManualEvmAddress()"
           class="w-full py-2 px-3 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 border border-outline-variant/20 transition-all cursor-pointer">
           <span class="material-symbols-outlined notranslate text-[15px]" translate="no">check</span>
-          <span>Adresi Kaydet &amp; Kullan</span>
+          <span>Save &amp; Use Address</span>
         </button>
       </div>
     </div>
@@ -9111,7 +9113,7 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v2.9.7)     -->
+  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v2.11.0)     -->
   <!-- ========================================================================= -->
   <script>
     'use strict';
@@ -10452,7 +10454,7 @@
       const netTxt = isLocal ? 'Local Node Active' : 'BlocTag Mainnet';
       const mobLbl = document.getElementById('mobileNetLabel');
       const dskLbl = document.getElementById('desktopNetLabel');
-      const currentVer = (rpcState.integrityStatus && rpcState.integrityStatus.version) ? ('v' + rpcState.integrityStatus.version) : 'v2.9.7';
+      const currentVer = (rpcState.integrityStatus && rpcState.integrityStatus.version) ? ('v' + rpcState.integrityStatus.version) : 'v2.11.0';
       if (mobLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) mobLbl.textContent = isLocal ? `Local ${currentVer}` : `Mainnet ${currentVer}`;
       if (dskLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) dskLbl.textContent = isLocal ? `Local Node Active (${currentVer})` : `LockTrace Mainnet ${currentVer}`;
     }
@@ -11615,7 +11617,7 @@
 
 
     // =========================================================================
-    // WALLET BALANCE & REVENUE ANALYTICS CONTROLLER (v2.9.7)
+    // WALLET BALANCE & REVENUE ANALYTICS CONTROLLER (v2.11.0)
     // =========================================================================
     function toggleAnalyticsView() {
       if (currentTxFilter === 'analytics') {
@@ -12185,10 +12187,10 @@
                 <span class="material-symbols-outlined notranslate text-[16px]" translate="no">swap_calls</span>
                 <span>Cross-Chain Bridge (${escapeHtml(chainName)})</span>
               </span>
-              <button type="button" onclick="closeTxModal(); switchTab('bridge-paneli');" class="text-[11px] text-sky-400 hover:underline flex items-center gap-0.5 font-semibold">Bridge Hub <span class="material-symbols-outlined notranslate text-[13px]" translate="no">arrow_forward</span></button>
+              <button type="button" onclick="closeTxModal(); switchTab('kopru');" class="text-[11px] text-sky-400 hover:underline flex items-center gap-0.5 font-semibold">Bridge Hub <span class="material-symbols-outlined notranslate text-[13px]" translate="no">arrow_forward</span></button>
             </div>
             <div class="space-y-1.5 p-2.5 rounded-lg bg-surface-container-low/80 border border-outline-variant/15 text-xs font-mono">
-              <div><span class="text-on-surface-variant">EVM Adresi:</span> <span class="text-primary truncate block font-bold">${escapeHtml(extra.evm_address || '--')}</span></div>
+              <div><span class="text-on-surface-variant">EVM Address:</span> <span class="text-primary truncate block font-bold">${escapeHtml(extra.evm_address || '--')}</span></div>
               ${extra.tx_hash_evm ? `<div><span class="text-on-surface-variant">BaseScan:</span> <a href="https://basescan.org/tx/${encodeURIComponent(extra.tx_hash_evm)}" target="_blank" rel="noopener" class="text-secondary hover:underline truncate block">${escapeHtml(extra.tx_hash_evm)}</a></div>` : ''}
             </div>
           `;
@@ -12708,7 +12710,7 @@
       if (input) {
         input.value = name || address;
         validateRecipientInput();
-        showToast('Alıcı seçildi: ' + (name || (address.slice(0, 8) + '...' + address.slice(-4))), 'person');
+        showToast('Recipient selected: ' + (name || (address.slice(0, 8) + '...' + address.slice(-4))), 'person');
         const amtInput = document.getElementById('sendAmountInput');
         if (amtInput) {
           amtInput.focus();
@@ -13627,14 +13629,14 @@
         if (relayer.is_operational) {
           balEl.className = 'font-mono font-bold text-emerald-400';
           if (badgeEl) {
-            badgeEl.textContent = 'Aktif (Hazır)';
+            badgeEl.textContent = 'Active (Ready)';
             badgeEl.className = 'ml-1 px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold';
           }
           if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
         } else {
           balEl.className = 'font-mono font-bold text-amber-400';
           if (badgeEl) {
-            badgeEl.textContent = 'Düşük Gaz (Yatırılmalı)';
+            badgeEl.textContent = 'Low Gas (Needs Top-Up)';
             badgeEl.className = 'ml-1 px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 text-[10px] font-semibold';
           }
           if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-amber-400';
@@ -13785,7 +13787,7 @@
         } else if (h.tag_type === 'validator') {
           tagBadge = '<span class="bg-emerald-500/10 text-emerald-400 border border-emerald-500/20 px-2 py-0.5 rounded text-[11px] font-medium font-sans whitespace-nowrap">Validator Node</span>';
         } else if (h.tag_type === 'slashed') {
-          tagBadge = '<span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-[11px] font-bold font-sans whitespace-nowrap inline-flex items-center gap-1" title="Geçmiş protokol ihlali nedeniyle işaretlenmiş hesap (Doğrulayıcı yetkisi iptal)"><span class="material-symbols-outlined notranslate text-[13px] text-amber-400" translate="no">flag</span>İşaretli / Slashed</span>';
+          tagBadge = '<span class="bg-amber-500/20 text-amber-300 border border-amber-500/40 px-2 py-0.5 rounded text-[11px] font-bold font-sans whitespace-nowrap inline-flex items-center gap-1" title="Account flagged for historical protocol violation (Validator privileges revoked)"><span class="material-symbols-outlined notranslate text-[13px] text-amber-400" translate="no">flag</span>Flagged / Slashed</span>';
         } else if (h.tag_type === 'lost_key_burn') {
           tagBadge = '<span class="bg-rose-500/15 text-rose-300 border border-rose-500/30 px-2 py-0.5 rounded text-[11px] font-semibold font-sans whitespace-nowrap inline-flex items-center gap-1 cursor-help" title="Developer verified: Lost private key test address (Inactive / Locked)"><span class="material-symbols-outlined notranslate text-[13px] text-rose-400" translate="no">local_fire_department</span>Lost Key (Permanent Burn)</span>';
         }
@@ -13854,7 +13856,7 @@
               </div>
               <div>
                 <p class="font-body-sm text-body-sm text-on-surface font-medium leading-none">Add Community P2P Miner &amp; Validator Node</p>
-                <span class="font-label-sm text-label-sm text-on-surface-variant">node_runner.py • 70% PoW Proposer + 30% Validator Reward Pool</span>
+                <span class="font-label-sm text-label-sm text-on-surface-variant">node_runner.py • 50% PoW Proposer + 40% Validator + 10% Observer Pool</span>
               </div>
             </div>
             <button class="px-3 py-1 rounded-full bg-surface-container text-primary font-label-sm text-label-sm font-semibold" onclick="switchTab('api-docs')" type="button">Install</button>
@@ -13911,9 +13913,10 @@
         if (txType === 'welcome_bonus') { icon = 'redeem'; label = 'Welcome Bonus'; }
         else if (txType === 'space_post') { icon = 'forum'; label = 'Space Post'; }
         else if (txType === 'space_like') { icon = 'favorite'; label = 'Space Like'; }
-        else if (txType === 'space_comment') { icon = 'chat_bubble'; label = 'Space Yorum'; }
-        else if (txType === 'mining_reward') { icon = 'memory'; label = 'PoW Reward (70%)'; }
-        else if (txType === 'validator_reward') { icon = 'verified_user'; label = 'Validator (30%)'; }
+        else if (txType === 'space_comment') { icon = 'chat_bubble'; label = 'Space Comment'; }
+        else if (txType === 'mining_reward') { icon = 'memory'; label = 'PoW Reward (50%)'; }
+        else if (txType === 'validator_reward') { icon = 'verified_user'; label = 'Validator (40%)'; }
+        else if (txType === 'observer_reward') { icon = 'visibility'; label = 'Observer (10%)'; }
 
         return `
           <div class="bg-surface-container-low p-3.5 rounded-xl flex items-center justify-between active:bg-surface-container hover:bg-surface-container transition-colors cursor-pointer border border-outline-variant/10" onclick="openExplorerTxByIndex(${idx})">
@@ -13964,7 +13967,7 @@
               <div class="min-w-0">
                 <div class="flex items-center gap-1.5">
                   <span class="font-body-sm text-body-sm text-on-surface font-medium font-mono truncate">${escapeHtml(String(b.hash || '').slice(0, 14))}...</span>
-                  ${b.miner_is_slashed ? '<span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-label-sm text-label-sm font-semibold shrink-0">⛔ Cezalı Madenci</span>' : `<span class="bg-surface-container px-1.5 py-0.5 rounded font-label-sm text-label-sm text-secondary shrink-0">Merkle v${escapeHtml(ver)}</span>`}
+                  ${b.miner_is_slashed ? '<span class="bg-rose-500/20 text-rose-300 border border-rose-500/30 px-1.5 py-0.5 rounded font-label-sm text-label-sm font-semibold shrink-0">⛔ Slashed Miner</span>' : `<span class="bg-surface-container px-1.5 py-0.5 rounded font-label-sm text-label-sm text-secondary shrink-0">Merkle v${escapeHtml(ver)}</span>`}
                 </div>
                 <span class="font-label-sm text-label-sm text-on-surface-variant block truncate">Root: ${escapeHtml(mRoot ? mRoot.slice(0, 12) + '...' : 'SHA-256')} • ${escapeHtml(formatTimeAgo(b.timestamp))}</span>
               </div>
@@ -14258,7 +14261,7 @@
             ${(vNode.is_slashed || b.miner_is_slashed) ? `
             <div class="sm:col-span-2 p-2.5 rounded-lg bg-rose-500/15 border border-rose-500/30 text-rose-300 text-xs font-sans flex items-center gap-2">
               <span class="material-symbols-outlined notranslate text-base text-rose-400" translate="no">gavel</span>
-              <span><strong>Cezalandırılmış / Slashed Madenci:</strong> Bu bloktaki madenci adresi (<code>${escapeHtml(b.miner)}</code>) çift çekim / kural ihlali nedeniyle kalıcı olarak ihraç edilmiştir (Slashed). Artık blok üretemez ve transfer yapamaz.</span>
+              <span><strong>Slashed Miner:</strong> The proposer address of this block (<code>${escapeHtml(b.miner)}</code>) has been permanently disqualified from consensus (Slashed) due to double-signing or rule violation.</span>
             </div>` : ''}
           </div>
           <div class="flex flex-col gap-2">
@@ -15435,7 +15438,7 @@
         { method: 'POST', path: '/api/v1/space/comment', desc: 'Comment on a post with hybrid batching (50s window / 10 comments quota) delivering +0.004 BCT royalty to author', testable: null },
         { method: 'POST', path: '/api/v1/transaction', desc: 'Broadcast client-signed Non-Custodial SECP256k1 ECDSA transfer', testable: null },
         { method: 'GET', path: '/api/v1/explorer/merkle-proof/<tx_hash>', desc: 'SPV Merkle cryptographic inclusion proof for light clients', testable: sampleTx ? '/explorer/merkle-proof/' + sampleTx : '/blocks/latest?count=1' },
-        { method: 'GET', path: '/api/v1/nodes', desc: 'Active network nodes, peer hashrate, and 70/30 reward distributions', testable: '/nodes' },
+        { method: 'GET', path: '/api/v1/nodes', desc: 'Active network nodes, peer hashrate, and 50/40/10 reward distributions', testable: '/nodes' },
         { method: 'GET', path: '/api/v1/peers', desc: 'Direct peer-to-peer (P2P Gossip) discovery directory', testable: '/peers' },
         { method: 'GET', path: '/api/v1/mining/template', desc: 'Block mining template for external PoW miners', testable: null },
         { method: 'POST', path: '/api/v1/mining/submit', desc: 'Submit solved block from external PoW miner to network', testable: null },
@@ -15768,7 +15771,7 @@
           verified: allOk,
           devMode: isLocalHost,
           sigValid: sigValid || isLocalHost || Boolean(info.verified),
-          version: info.version || '2.9.7',
+          version: info.version || '2.11.0',
           sha256: info.index_html_sha256 || '--',
           ipfsCid: info.ipfs_cid_v1 || '--',
           onchainBlock: info.onchain_anchor ? info.onchain_anchor.block_index : null
@@ -16472,7 +16475,7 @@
         return { id: 'active', name: activeEvmWalletName, isInApp: false };
       }
       if (mmSdkProvider && userMetaMaskAddress) {
-        return { id: 'metamask-sdk', name: 'MetaMask (Doğrudan İmza)', isInApp: false };
+        return { id: 'metamask-sdk', name: 'MetaMask (Direct Sign)', isInApp: false };
       }
       const ua = navigator.userAgent || '';
       if (/MetaMaskMobile/i.test(ua) || (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet && !window.ethereum.isBraveWallet)) {
@@ -16584,7 +16587,7 @@
         title.textContent = entry.info.name || 'Web3 Wallet';
         const sub = document.createElement('span');
         sub.className = 'text-[11px] text-on-surface-variant';
-        sub.textContent = 'Algılandı • Doğrudan Bağlan & İmzala';
+        sub.textContent = 'Detected • Direct Connect & Sign';
         textWrap.appendChild(title);
         textWrap.appendChild(sub);
         left.appendChild(iconWrap);
@@ -16614,13 +16617,13 @@
 
       if (mmSubtitle) {
         if (activeWallet && activeWallet.id === 'metamask') {
-          mmSubtitle.textContent = 'MetaMask Algılandı — Dokunarak Doğrudan İmzala';
+          mmSubtitle.textContent = 'MetaMask Detected — Tap to Sign Directly';
         } else if (isMobileUser()) {
-          mmSubtitle.textContent = 'Doğrudan MetaMask İmza Ekranını Aç (Tarayıcıda Kal)';
+          mmSubtitle.textContent = 'Open MetaMask Signing Sheet Directly (Stay in Browser)';
         } else if (getInjectedEvmProvider(true)) {
-          mmSubtitle.textContent = 'Eklenti ile Doğrudan Bağlan & İmzala';
+          mmSubtitle.textContent = 'Direct Connect & Sign via Extension';
         } else {
-          mmSubtitle.textContent = 'QR Kod veya MetaMask Uygulaması ile Doğrudan Bağlan';
+          mmSubtitle.textContent = 'Direct Connect via QR Code or MetaMask App';
         }
       }
 
@@ -16660,7 +16663,7 @@
     function copyConnectedEvmAddress() {
       if (!userMetaMaskAddress) return;
       copyToClipboard(userMetaMaskAddress);
-      showToast('EVM Cüzdan Adresi panoya kopyalandı!', 'success');
+      showToast('EVM Wallet Address copied to clipboard!', 'success');
     }
 
     function disconnectEvmAddress() {
@@ -16679,7 +16682,7 @@
       const manualInput = document.getElementById('manualEvmAddressInput');
       if (manualInput) manualInput.value = '';
       updateEvmWalletUi();
-      showToast('Cüzdan bağlantısı kesildi.', 'info');
+      showToast('Web3 wallet disconnected.', 'info');
     }
 
     async function connectManualEvmAddress(addrOverride = null) {
@@ -16688,7 +16691,7 @@
       const cleanAddr = String(rawVal || '').trim();
 
       if (!/^0x[a-fA-F0-9]{40}$/i.test(cleanAddr)) {
-        showToast('Lütfen geçerli bir EVM (0x... 42 karakter) cüzdan adresi giriniz.', 'warning');
+        showToast('Please enter a valid 42-character EVM wallet address (0x...).', 'warning');
         if (manualInput) manualInput.focus();
         return;
       }
@@ -16703,7 +16706,7 @@
       }
 
       closeMobileWalletModal();
-      showToast(`Cüzdan kaydedildi: ${cleanAddr.substring(0, 6)}...${cleanAddr.substring(38)} (Base)`, 'success');
+      showToast(`Wallet address saved: ${cleanAddr.substring(0, 6)}...${cleanAddr.substring(38)} (Base)`, 'success');
 
       await checkMetaMaskWbctBalance();
       updateEvmWalletUi();
@@ -16721,12 +16724,12 @@
           if (manualInput) manualInput.value = match[0];
           await connectManualEvmAddress(match[0]);
         } else {
-          showToast('Panoda geçerli bir 0x... EVM adresi bulunamadı. Lütfen elle yapıştırın.', 'info');
+          showToast('No valid 0x... EVM address found in clipboard. Please paste it manually.', 'info');
           const manualInput = document.getElementById('manualEvmAddressInput');
           if (manualInput) { manualInput.focus(); manualInput.select(); }
         }
       } catch (err) {
-        showToast('Panodan okunamadı. Lütfen adresi kutucuğa yapıştırın.', 'info');
+        showToast('Could not read clipboard automatically. Please paste your address into the box.', 'info');
         const manualInput = document.getElementById('manualEvmAddressInput');
         if (manualInput) { manualInput.focus(); }
       }
@@ -16735,18 +16738,18 @@
     async function connectViaMetaMaskSDK() {
       const sdk = getOrInitMetaMaskSDK();
       if (!sdk) {
-        showToast('MetaMask SDK henüz yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.', 'warning');
+        showToast('MetaMask SDK is still loading. Please refresh the page and try again.', 'warning');
         return null;
       }
       try {
         showToast(isMobileUser()
-          ? "MetaMask bağlantı onayı açılıyor... Onayladıktan sonra bu sayfaya dönün."
-          : "MetaMask bağlantısı başlatılıyor...", 'info');
+          ? 'Opening MetaMask connection prompt... Return to this tab after approving.'
+          : 'Initiating MetaMask connection...', 'info');
 
         const accounts = await sdk.connect();
         const provider = sdk.getProvider();
         if (!provider || !accounts || accounts.length === 0) {
-          throw new Error('MetaMask cüzdan bağlantısı alınamadı.');
+          throw new Error('Could not obtain MetaMask wallet connection.');
         }
 
         mmSdkProvider = provider;
@@ -16756,7 +16759,7 @@
         try { localStorage.setItem('bct_connected_evm_address', accounts[0]); } catch (_e) { }
         bindEvmProviderListeners(provider);
 
-        showToast(`MetaMask Bağlandı: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'success');
+        showToast(`MetaMask Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'success');
 
         // Ensure Base Mainnet once during connect if needed
         try {
@@ -16776,9 +16779,9 @@
       } catch (err) {
         console.warn('MetaMask SDK connect error:', err);
         if (err && err.code === 4001) {
-          showToast('MetaMask bağlantı isteği reddedildi.', 'info');
+          showToast('MetaMask connection request was rejected.', 'info');
         } else {
-          showToast((err && err.message) || 'MetaMask bağlantısı tamamlanamadı.', 'error');
+          showToast((err && err.message) || 'MetaMask connection could not be completed.', 'error');
         }
         return null;
       }
@@ -16822,7 +16825,7 @@
           return;
         }
         if (isMobileUser()) {
-          showToast('Trust Wallet uygulaması açılıyor...', 'info');
+          showToast('Opening Trust Wallet...', 'info');
           const rawUrl = `${window.location.origin}${window.location.pathname}?tab=kopru&dir=${encodeURIComponent(currentBridgeDirection)}`;
           window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(rawUrl)}`;
           return;
@@ -16861,7 +16864,7 @@
             console.warn('Network switch warning:', netErr);
           }
 
-          showToast(`Cüzdan Bağlandı: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)} (Base)`, 'success');
+          showToast(`Wallet Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)} (Base)`, 'success');
 
           if (currentBridgeDirection === 'L1_TO_EVM') {
             const destInput = document.getElementById('bridgeDestinationInput');
@@ -16874,9 +16877,9 @@
       } catch (err) {
         console.warn('EVM wallet connect error:', err);
         if (err && err.code === 4001) {
-          showToast('Cüzdan bağlantı isteği reddedildi.', 'info');
+          showToast('Wallet connection request was rejected.', 'info');
         } else {
-          showToast((err && err.message) || 'Web3 cüzdan bağlantısı başarısız oldu.', 'error');
+          showToast((err && err.message) || 'Web3 wallet connection failed.', 'error');
         }
       }
     }
@@ -16888,7 +16891,7 @@
           const destInput = document.getElementById('bridgeDestinationInput');
           if (destInput && (!destInput.value || destInput.value !== userMetaMaskAddress)) {
             destInput.value = userMetaMaskAddress;
-            showToast(`Hedef EVM adresi ayarlandı: ${userMetaMaskAddress.substring(0, 6)}...${userMetaMaskAddress.substring(38)}`, 'info');
+            showToast(`Destination EVM address set: ${userMetaMaskAddress.substring(0, 6)}...${userMetaMaskAddress.substring(38)}`, 'info');
             return;
           }
         }
@@ -16912,7 +16915,7 @@
       const activeWallet = detectActiveInAppWallet();
 
       if (label) {
-        label.textContent = activeWallet ? activeWallet.name : 'EVM Web3 Cüzdan';
+        label.textContent = activeWallet ? activeWallet.name : 'EVM Web3 Wallet';
       }
 
       if (userMetaMaskAddress) {
@@ -16926,19 +16929,19 @@
         }
         if (netBadge) netBadge.classList.remove('hidden');
         if (btnText) {
-          btnText.textContent = currentBridgeDirection === 'L1_TO_EVM' ? 'Adresi Kullan' : 'Bağlı (Base)';
+          btnText.textContent = currentBridgeDirection === 'L1_TO_EVM' ? 'Use Address' : 'Connected (Base)';
         }
       } else {
         if (dot) {
           dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 animate-pulse';
         }
         if (addrDisplay) {
-          addrDisplay.textContent = getEvmProvider() ? 'Cüzdan Algılandı (Bağlanın)' : 'Bağlı Değil';
+          addrDisplay.textContent = getEvmProvider() ? 'Wallet Detected (Connect)' : 'Not Connected';
           addrDisplay.title = '';
         }
         if (netBadge) netBadge.classList.add('hidden');
         if (btnText) {
-          btnText.textContent = 'Cüzdan Bağla';
+          btnText.textContent = 'Connect Wallet';
         }
       }
 
@@ -16946,7 +16949,7 @@
       const bridgeBtnText = document.getElementById('btnBridgeText');
       if (bridgeBtnText && currentBridgeDirection === 'EVM_TO_L1' && !isExecutingBridge) {
         if (!getEvmProvider()) {
-          bridgeBtnText.textContent = 'MetaMask ile Bağlan & İmzala';
+          bridgeBtnText.textContent = 'Connect MetaMask & Sign';
         } else {
           bridgeBtnText.textContent = 'Burn wBCT & Unlock L1';
         }
@@ -17050,7 +17053,7 @@
           if (currentAccount && currentAccount.address && !destInput.value) destInput.value = currentAccount.address;
         }
         if (btnText) {
-          btnText.textContent = !getEvmProvider() ? 'MetaMask ile Bağlan & İmzala' : 'Burn wBCT & Unlock L1';
+          btnText.textContent = !getEvmProvider() ? 'Connect MetaMask & Sign' : 'Burn wBCT & Unlock L1';
         }
         checkMetaMaskWbctBalance();
       }
@@ -17084,13 +17087,13 @@
 
       if (currentBridgeDirection === 'L1_TO_EVM') {
         if (!currentAccount || !currentAccount.address) {
-          showToast('L1 bakiyenizi kullanmak için lütfen önce LockTrace cüzdanınızı açın.', 'warning');
+          showToast('Please open or unlock your LockTrace L1 wallet first.', 'warning');
           return;
         }
         const rawBal = Number(currentAccount.balance || 0);
         const maxSpendable = Math.max(0, Math.floor((rawBal - 0.001) * 10000) / 10000);
         if (maxSpendable < 1.0) {
-          showToast(`Yetersiz L1 bakiye! Minimum köprü miktarı 1.00 BCT (Mevcut: ${formatBct(rawBal, 4)} BCT).`, 'warning');
+          showToast(`Insufficient L1 balance! Minimum bridge amount is 1.00 BCT (Available: ${formatBct(rawBal, 4)} BCT).`, 'warning');
           amtInput.value = maxSpendable > 0 ? String(maxSpendable) : '';
           calculateBridgeOutput();
           return;
@@ -17100,7 +17103,7 @@
       } else {
         if (!userMetaMaskAddress) {
           openMobileWalletModal();
-          showToast('wBCT bakiyenizi doldurmak için lütfen Web3 cüzdanınızı bağlayın.', 'info');
+          showToast('Please connect your Web3 wallet to populate your Base wBCT balance.', 'info');
           return;
         }
         if (userWbctBalanceBase <= 0) {
@@ -17108,7 +17111,7 @@
         }
         const maxWbct = Math.max(0, Math.floor(userWbctBalanceBase * 10000) / 10000);
         if (maxWbct <= 0) {
-          showToast('Base ağındaki cüzdanınızda wBCT bakiyesi bulunamadı (0.0000 wBCT).', 'warning');
+          showToast('No wBCT balance found in your Base Mainnet wallet (0.0000 wBCT).', 'warning');
           amtInput.value = '';
           calculateBridgeOutput();
           return;
@@ -17116,7 +17119,7 @@
         amtInput.value = String(maxWbct);
         calculateBridgeOutput();
         if (maxWbct < 1.0) {
-          showToast(`Minimum köprü miktarı 1.00 wBCT (Mevcut: ${formatBct(maxWbct, 4)} wBCT).`, 'warning');
+          showToast(`Minimum bridge amount is 1.00 wBCT (Available: ${formatBct(maxWbct, 4)} wBCT).`, 'warning');
         }
       }
     }
@@ -17149,17 +17152,17 @@
 
       // If autoburn was requested, and we are inside MetaMask / Web3 browser
       if (autoburn === '1' && dir === 'EVM_TO_L1') {
-        showToast('MetaMask algılandı. İmza penceresi hazırlanıyor...', 'info');
+        showToast('Web3 wallet detected. Preparing transaction signature...', 'info');
         setTimeout(async () => {
           const provider = getEvmProvider();
           if (provider) {
             await connectEvmWalletDirect(provider);
-            showToast('Lütfen MetaMask imza penceresinde işlemi onaylayın...', 'info');
+            showToast('Please confirm the transaction in your Web3 wallet...', 'info');
             setTimeout(() => {
               handleBridgeSubmit();
             }, 600);
           } else {
-            showToast('Lütfen MetaMask içinden işlemi onaylayın', 'info');
+            showToast('Please connect your Web3 wallet to confirm the transaction.', 'info');
           }
         }, 1000);
       }
@@ -17179,32 +17182,32 @@
       const selectedChain = chainSelect ? chainSelect.value : 'base';
 
       if (!Number.isFinite(amount) || amount < 1.0) {
-        showToast("Minimum köprü miktarı 1.00 BCT / wBCT'dir.", 'warning', true);
+        showToast('Minimum bridge amount is 1.00 BCT / wBCT.', 'warning', true);
         return;
       }
 
       if (currentBridgeDirection === 'L1_TO_EVM') {
         // L1_TO_EVM requires local LockTrace wallet to sign L1 lock transaction!
         if (!currentAccount || !currentAccount.address) {
-          showToast('L1 transferi için lütfen önce LockTrace cüzdanınızı açın', 'warning', true);
+          showToast('Please open your LockTrace L1 wallet first to bridge from Layer-1.', 'warning', true);
           switchTab('yeni-cuzdan');
           return;
         }
 
         if (!/^0x[a-fA-F0-9]{40}$/.test(destAddr)) {
-          showToast('Lütfen geçerli bir EVM (0x... 42 karakter) cüzdan adresi giriniz', 'error', true);
+          showToast('Please enter a valid 42-character EVM destination address (0x...).', 'error', true);
           return;
         }
 
         const userBal = Number((currentAccount && currentAccount.balance) || 0);
         if (amount > userBal) {
-          showToast(`Yetersiz bakiye! Mevcut: ${formatBct(userBal, 4)} BCT`, 'warning', true);
+          showToast(`Insufficient balance! Available: ${formatBct(userBal, 4)} BCT`, 'warning', true);
           return;
         }
 
         isExecutingBridge = true;
         if (btn) btn.disabled = true;
-        if (btnText) btnText.textContent = 'Köprü Emri Oluşturuluyor...';
+        if (btnText) btnText.textContent = 'Creating Bridge Order...';
 
         try {
           const orderCanonical = `BRIDGE_ORDER:L1_TO_EVM:${currentAccount.address}:${String(destAddr).toLowerCase()}:${Number(amount).toFixed(8)}:${selectedChain}`;
@@ -17221,14 +17224,14 @@
           });
 
           if (!orderOk || !orderBody.data) {
-            throw new Error(orderBody.message || 'Köprü emri oluşturulamadı');
+            throw new Error(orderBody.message || 'Could not create bridge order');
           }
 
           const bridgeOrder = orderBody.data;
           const bridgeId = bridgeOrder.bridge_id;
           const vaultAddr = bridgeOrder.vault_address || 'BCT_BRIDGE_VAULT_000000000000000000000000000000000';
 
-          if (btnText) btnText.textContent = 'L1 Kilitleme İşlemi İmzalanıyor...';
+          if (btnText) btnText.textContent = 'Signing L1 Lock Transaction...';
           const roundedAmt = Number(amount.toFixed(8));
 
           const lockPayload = {
@@ -17242,14 +17245,14 @@
           };
 
           const signedTx = await signTransactionLocally(lockPayload, currentAccount.privateKey);
-          if (btnText) btnText.textContent = 'L1 Ağına İletiliyor...';
+          if (btnText) btnText.textContent = 'Broadcasting to L1 Network...';
           const { ok: sendOk, body: sendBody } = await apiFetch('/send_transaction', {
             method: 'POST',
             body: JSON.stringify(signedTx)
           });
 
           if (!sendOk || !sendBody.data) {
-            throw new Error(sendBody.message || 'L1 köprü işlemi iletilemedi');
+            throw new Error(sendBody.message || 'Failed to broadcast L1 bridge lock transaction');
           }
 
           const l1TxHash = sendBody.data.tx_hash || signedTx.hash;
@@ -17257,18 +17260,18 @@
           currentAccount.balance = Math.max(0, userBal - roundedAmt - 0.001);
           saveWalletState(currentAccount);
 
-          if (btnText) btnText.textContent = 'L1 Blok Onayı Bekleniyor...';
-          showToast('L1 Kilitleme iletildi! Blok onayı bekleniyor...', 'info');
+          if (btnText) btnText.textContent = 'Awaiting L1 Block Confirmation...';
+          showToast('L1 Lock broadcasted! Waiting for block confirmation...', 'info');
 
           await pollL1TxConfirmation(l1TxHash, 20);
 
-          showToast('Köprü Kilidi Onaylandı! Base wBCT Basımı İşleniyor...', 'verified');
+          showToast('Bridge Lock Confirmed! Base wBCT Minting in Progress...', 'verified');
           displayBridgeStatusBox(bridgeId, l1TxHash);
           await refreshCurrentAccountBalance();
           await refreshPersonalTransactions();
 
         } catch (err) {
-          showToast(err.message || 'Köprü işlemi başarısız oldu', 'error', true);
+          showToast(err.message || 'Bridge operation failed', 'error', true);
         } finally {
           isExecutingBridge = false;
           if (btn) btn.disabled = false;
@@ -17279,16 +17282,16 @@
         // ── EVM_TO_L1 (Burn wBCT on Base -> Unlock native BCT on LockTrace L1) ──
         const cleanDest = (destAddr || '').trim();
         if (!/^BCT[0-9a-fA-F]{40}$/.test(cleanDest)) {
-          showToast('Lütfen geçerli bir 43 karakterlik BCT hedef adresi giriniz (BCT...)', 'error', true);
+          showToast('Please enter a valid 43-character BCT destination address (BCT...).', 'error', true);
           return;
         }
         if (/^BCT0{40}$/i.test(cleanDest)) {
-          showToast('Sıfır yakma adresine köprüleme yapılamaz', 'error', true);
+          showToast('Cannot bridge to the zero burn address.', 'error', true);
           return;
         }
 
         if (typeof window.ethers === 'undefined') {
-          showToast('Web3 motoru yükleniyor... Lütfen birkaç saniye sonra tekrar deneyin.', 'warning');
+          showToast('Web3 engine is still initializing... Please try again in a moment.', 'warning');
           return;
         }
 
@@ -17297,7 +17300,7 @@
           // Connect directly via MetaMask SDK (opens native Connect sheet without MetaMask in-app browser redirect!)
           isExecutingBridge = true;
           if (btn) btn.disabled = true;
-          if (btnText) btnText.textContent = 'MetaMask Bağlanıyor...';
+          if (btnText) btnText.textContent = 'Connecting MetaMask...';
           try {
             evmProvider = await connectViaMetaMaskSDK();
           } finally {
@@ -17310,7 +17313,7 @@
           }
           // On mobile, after returning from Connect approval, prompt user to tap once more to open the native Sign sheet cleanly
           if (isMobileUser()) {
-            showToast("MetaMask bağlandı! Şimdi imzalama ekranını açmak için tekrar 'Burn wBCT & Unlock L1' butonuna dokunun.", 'success', true);
+            showToast("MetaMask connected! Tap 'Burn wBCT & Unlock L1' once more to open the transaction signing sheet.", 'success', true);
             return;
           }
         }
@@ -17320,7 +17323,7 @@
 
         // Quick synchronous balance guard if balance is already known
         if (userMetaMaskAddress && userWbctBalanceBase > 0 && amount > userWbctBalanceBase) {
-          showToast(`Yetersiz wBCT bakiyesi! Mevcut: ${formatBct(userWbctBalanceBase, 4)} wBCT`, 'warning', true);
+          showToast(`Insufficient wBCT balance! Available: ${formatBct(userWbctBalanceBase, 4)} wBCT`, 'warning', true);
           return;
         }
 
@@ -17331,10 +17334,10 @@
           // 1. Resolve connected EVM account safely (avoids Proxy private-field getter error)
           let userEvm = safeGetProviderAddress(evmProvider);
           if (!userEvm) {
-            if (btnText) btnText.textContent = 'Cüzdan Bağlanıyor...';
+            if (btnText) btnText.textContent = 'Connecting Wallet...';
             const accounts = await evmProvider.request({ method: 'eth_requestAccounts' });
             if (!accounts || accounts.length === 0) {
-              throw new Error('Web3 cüzdan bağlantısı kullanıcı tarafından reddedildi.');
+              throw new Error('Web3 wallet connection was rejected by user.');
             }
             userEvm = accounts[0];
             userMetaMaskAddress = userEvm;
@@ -17343,17 +17346,17 @@
 
           // 2. Ensure Base Mainnet (Chain ID 8453 / 0x2105) safely
           if (!isChainIdBase(safeGetProviderChainId(evmProvider))) {
-            if (btnText) btnText.textContent = 'Base Ağına Geçiliyor...';
+            if (btnText) btnText.textContent = 'Switching to Base...';
             await ensureBaseNetworkOnProvider(evmProvider);
           }
 
           // 3. Verify live wBCT balance on Base via direct HTTPS RPC only if not yet loaded
           if (userWbctBalanceBase <= 0) {
-            if (btnText) btnText.textContent = 'wBCT Bakiyesi Kontrol Ediliyor...';
+            if (btnText) btnText.textContent = 'Checking wBCT Balance...';
             const rawBal = await fetchBaseWbctBalanceWei(userEvm, contractAddr);
             userWbctBalanceBase = Number(ethers.formatUnits(rawBal, 18));
             if (rawBal < amountWei) {
-              throw new Error(`Yetersiz wBCT bakiyesi! Mevcut: ${formatBct(userWbctBalanceBase, 4)} wBCT`);
+              throw new Error(`Insufficient wBCT balance! Available: ${formatBct(userWbctBalanceBase, 4)} wBCT`);
             }
           }
 
@@ -17364,8 +17367,8 @@
           ]);
           const encodedData = wbctIface.encodeFunctionData("burnToBridge", [amountWei, cleanDest]);
 
-          if (btnText) btnText.textContent = "MetaMask'ta Onaylayın...";
-          showToast(`Lütfen cüzdanınızda ${formatBct(amount, 2)} wBCT yakım işlemini imzalayın.`, 'info');
+          if (btnText) btnText.textContent = 'Confirm in Wallet...';
+          showToast(`Please sign the ${formatBct(amount, 2)} wBCT burn transaction in your wallet.`, 'info');
 
           const evmTxHash = await evmProvider.request({
             method: 'eth_sendTransaction',
@@ -17378,32 +17381,32 @@
           });
 
           if (!evmTxHash || typeof evmTxHash !== 'string') {
-            throw new Error('İşlem hash değeri alınamadı.');
+            throw new Error('Could not obtain EVM transaction hash.');
           }
 
-          if (btnText) btnText.textContent = 'Base İşlemi Onaylanıyor...';
-          showToast(`İşlem imzalandı! Hash: ${evmTxHash.substring(0, 10)}... Base blok onayı bekleniyor...`, 'info');
+          if (btnText) btnText.textContent = 'Confirming Base Transaction...';
+          showToast(`Transaction signed! Hash: ${evmTxHash.substring(0, 10)}... Waiting for Base confirmation...`, 'info');
 
           // 5. Wait for Base Mainnet receipt via direct HTTPS RPC (immune to mobile backgrounding)
           const receipt = await waitForBaseTxReceipt(evmTxHash, 45, 2000);
           if (!receipt) {
-            throw new Error('Base ağı işlem onayı zaman aşımına uğradı. İşleminiz onaylandığında relayer otomatik tamamlayacaktır.');
+            throw new Error('Base transaction confirmation timed out. Once confirmed on Base, the relayer will finalize your unlock automatically.');
           }
           const receiptOk = receipt.status === '0x1' || receipt.status === 1 || receipt.status === true;
           if (!receiptOk) {
-            throw new Error('Base yakım işlemi başarısız oldu veya geri alındı (reverted).');
+            throw new Error('Base burn transaction failed or reverted on-chain.');
           }
 
           // 6. Claim unlock on BlocTag Layer-1
-          if (btnText) btnText.textContent = "L1'de BCT Kilidi Açılıyor...";
+          if (btnText) btnText.textContent = 'Unlocking BCT on Layer-1...';
           let claimOk = false;
           let claimBody = null;
           const maxClaimAttempts = 15;
           for (let attempt = 1; attempt <= maxClaimAttempts; attempt++) {
             if (btnText) {
               btnText.textContent = attempt === 1
-                ? "L1'de BCT Kilidi Açılıyor..."
-                : `Base Onayları Doğrulanıyor (${attempt}/${maxClaimAttempts})...`;
+                ? 'Unlocking BCT on Layer-1...'
+                : `Verifying Base Finality (${attempt}/${maxClaimAttempts})...`;
             }
             const res = await apiFetch('/bridge/claim_burn', {
               method: 'POST',
@@ -17431,11 +17434,11 @@
           }
 
           if (!claimOk || !claimBody || !claimBody.data) {
-            throw new Error((claimBody && claimBody.message) || 'L1 kilidi blok onaylarını bekliyor. Relayer kısa süre içinde tamamlayacaktır.');
+            throw new Error((claimBody && claimBody.message) || 'Layer-1 unlock is awaiting Base finality confirmations. The relayer will complete it shortly.');
           }
 
           const l1Hash = claimBody.data.l1_tx_hash || '';
-          showToast(`Başarılı! ${formatBct(amount, 2)} BCT LockTrace L1 cüzdanınıza aktarıldı!`, 'verified');
+          showToast(`Success! ${formatBct(amount, 2)} BCT unlocked into your LockTrace L1 wallet!`, 'verified');
 
           displayBridgeStatusBox(claimBody.data.bridge_id || 'burn_' + evmTxHash.substring(2, 10), l1Hash);
           await refreshCurrentAccountBalance();
@@ -17445,9 +17448,9 @@
         } catch (err) {
           console.error('Burn bridge error:', err);
           if (err && err.code === 4001) {
-            showToast('İşlem imzası kullanıcı tarafından iptal edildi.', 'info', true);
+            showToast('Transaction signature was cancelled by user.', 'info', true);
           } else {
-            showToast((err && (err.reason || err.message)) || 'Köprü işlemi başarısız oldu', 'error', true);
+            showToast((err && (err.reason || err.message)) || 'Bridge transaction failed', 'error', true);
           }
         } finally {
           isExecutingBridge = false;
@@ -20011,7 +20014,7 @@
         tagEl.title = 'Validator Staker (Collateral Locked in Vault)';
       } else if (data.tag_type === 'slashed' || data.is_slashed) {
         tagClass = 'bg-amber-500/20 text-amber-300 border border-amber-500/40 shadow-sm font-bold';
-        tagEl.title = data.slashed_note || 'Protokol kurallarını ihlal ettiği için işaretlenmiş hesap (Doğrulayıcı yetkisi iptal edilmiştir. Normal transfer yapabilir.)';
+        tagEl.title = data.slashed_note || 'Account flagged for protocol rule violation (Validator consensus privileges revoked; normal transfers remain enabled).';
       } else if (isLostKey) {
         tagClass = 'bg-rose-500/20 text-rose-300 border border-rose-500/40 shadow-sm cursor-help';
         tagEl.title = data.lost_key_note || 'Developer verified: Lost private key genesis test address (Permanently Inactive)';
@@ -21366,7 +21369,7 @@
     document.addEventListener('DOMContentLoaded', initApp);
 
     // =========================================================================
-    // LOCAL NODE & VALIDATOR HUB CONTROLLER (v2.9.7)
+    // LOCAL NODE & VALIDATOR HUB CONTROLLER (v2.11.0)
     // =========================================================================
     async function probeLocalNode() {
       const endpoints = ['http://127.0.0.1:5000', 'http://127.0.0.1:5050'];
@@ -21564,7 +21567,7 @@
 
 
     // =========================================================================
-    // VALIDATOR 1,000 BCT STAKING & COLLATERAL VAULT CONTROLLERS (v2.9.7)
+    // VALIDATOR 1,000 BCT STAKING & COLLATERAL VAULT CONTROLLERS (v2.11.0)
     // =========================================================================
     let currentValidatorStakedBCT = 0;
 
@@ -21592,15 +21595,15 @@
       const vaultBadge = document.getElementById('validatorVaultBadge');
       const progressText = document.getElementById('validatorStakeProgressText');
       const progressBar = document.getElementById('validatorStakeProgressBar');
-      const operatorStakeEl = document.getElementById('operatorStakeStatus');
-      const operatorStakeSub = document.getElementById('operatorStakeSubtitle');
-      const operatorRoleEl = document.getElementById('operatorConsensusRole');
+      const operatorStakeEls = document.querySelectorAll('[id="operatorStakeStatus"]');
+      const operatorStakeSubs = document.querySelectorAll('[id="operatorStakeSubtitle"]');
+      const operatorRoleEls = document.querySelectorAll('[id="operatorConsensusRole"]');
       const operatorRoleBadge = document.getElementById('operatorRoleBadge');
 
       const pct = Math.min(100, Math.max(0, (staked / 1000) * 100));
 
       if (progressText) {
-        progressText.textContent = `${formatBct(staked, 2)} / 1.000.00 BCT (%${pct.toFixed(0)})`;
+        progressText.textContent = `${formatBct(staked, 2)} / 1,000.00 BCT (${pct.toFixed(0)}%)`;
       }
       if (progressBar) {
         progressBar.style.width = `${pct}%`;
@@ -21611,21 +21614,29 @@
           vaultBadge.textContent = 'ACTIVE VALIDATOR';
           vaultBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-[10px] font-bold uppercase';
         }
-        if (operatorStakeEl) operatorStakeEl.textContent = `${formatBct(staked, 2)} BCT (Kilitli)`;
-        if (operatorStakeSub) operatorStakeSub.textContent = '✅ 1.000 BCT Teminat Kilitlendi (%30 Quorum Yetkili)';
-        if (operatorRoleEl) operatorRoleEl.textContent = 'Aktif PoS Validator';
+        operatorStakeEls.forEach(el => { el.textContent = `${formatBct(staked, 2)} BCT (Locked)`; });
+        operatorStakeSubs.forEach(el => { el.textContent = '✅ 1,000+ BCT Collateral Locked (40% Quorum Eligible)'; });
+        operatorRoleEls.forEach(el => { el.textContent = 'Active PoS Validator'; });
         if (operatorRoleBadge) {
           operatorRoleBadge.textContent = 'VALIDATOR ACTIVE';
           operatorRoleBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-[10px] font-bold uppercase';
         }
+      } else if (staked >= 100) {
+        if (vaultBadge) {
+          vaultBadge.textContent = `${formatBct(staked, 0)} BCT OBSERVER`;
+          vaultBadge.className = 'px-2.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 font-mono text-[10px] font-bold uppercase';
+        }
+        operatorStakeEls.forEach(el => { el.textContent = `${formatBct(staked, 2)} BCT (Locked)`; });
+        operatorStakeSubs.forEach(el => { el.textContent = '10% Observer Pool Active (' + formatBct(Math.max(0, 1000 - staked), 2) + ' BCT to Validator)'; });
+        operatorRoleEls.forEach(el => { el.textContent = 'Observer Staker (10%)'; });
       } else {
         if (vaultBadge) {
           vaultBadge.textContent = staked > 0 ? `${formatBct(staked, 0)} BCT STAKED` : 'UNSTAKED';
           vaultBadge.className = 'px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase';
         }
-        if (operatorStakeEl) operatorStakeEl.textContent = `${formatBct(staked, 2)} BCT`;
-        if (operatorStakeSub) operatorStakeSub.textContent = 'Threshold: 1,000 BCT (Remaining: ' + formatBct(Math.max(0, 1000 - staked), 2) + ' BCT)';
-        if (operatorRoleEl) operatorRoleEl.textContent = 'Watcher Node';
+        operatorStakeEls.forEach(el => { el.textContent = `${formatBct(staked, 2)} BCT`; });
+        operatorStakeSubs.forEach(el => { el.textContent = 'Threshold: 1,000 BCT (Remaining: ' + formatBct(Math.max(0, 1000 - staked), 2) + ' BCT)'; });
+        operatorRoleEls.forEach(el => { el.textContent = 'Watcher Node'; });
       }
     }
 
@@ -21660,37 +21671,37 @@
       const aprEl = document.getElementById('valEstimatedAprLabel');
 
       if (amt < 100) {
-        if (titleEl) titleEl.textContent = `${amt} BCT — Yetersiz Teminat Miktarı`;
+        if (titleEl) titleEl.textContent = `${amt} BCT — Insufficient Collateral Amount`;
         if (iconEl) iconEl.textContent = 'warning';
         if (badgeEl) {
-          badgeEl.textContent = 'Min. 100 BCT Gerekli';
+          badgeEl.textContent = 'Min. 100 BCT Required';
           badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30';
         }
-        if (descEl) descEl.innerHTML = "⚠️ Staking ödül havuzuna katılabilmek için minimum kilitlenebilir miktar <strong>100 BCT</strong>'dir.";
-        if (dailyEl) dailyEl.textContent = '0.00 BCT / gün';
-        if (monthlyEl) monthlyEl.textContent = '0.00 BCT / ay';
+        if (descEl) descEl.innerHTML = '⚠️ The minimum lockable collateral to participate in the staking reward pools is <strong>100 BCT</strong>.';
+        if (dailyEl) dailyEl.textContent = '0.00 BCT / day';
+        if (monthlyEl) monthlyEl.textContent = '0.00 BCT / mo';
         if (aprEl) aprEl.textContent = '0% APR';
         return;
       }
 
       if (amt >= 100 && amt < 1000) {
         // Observer Staker Tier (10% pool)
-        if (titleEl) titleEl.textContent = `${Number(amt).toLocaleString()} BCT — Pasif Gözlemci Staking (Observer)`;
+        if (titleEl) titleEl.textContent = `${Number(amt).toLocaleString('en-US')} BCT — Passive Observer Staking`;
         if (iconEl) iconEl.textContent = 'visibility';
         if (badgeEl) {
-          badgeEl.textContent = '%10 Gözlemci Havuzu';
+          badgeEl.textContent = '10% Observer Pool';
           badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-primary/15 text-primary border border-primary/30';
         }
         if (descEl) descEl.innerHTML = `
-          <strong>Pasif Gözlemci Modeli (%10 Havuz):</strong><br>
-          • <strong>Düğüm (Node) Gerekmez:</strong> Sunucuda hiçbir yazılım çalıştırmanıza gerek yoktur. Sadece coin kilitleyerek teminat sağlarsınız.<br>
-          • <strong>Otomatik Ödül:</strong> Her blokta oluşan sübvansiyon ve transfer ücretlerinin %10'u, kilitlediğiniz BCT oranında (pro-rata) cüzdanınıza yansıtılır.<br>
-          • <em>İpucu:</em> İleride miktarınızı 1.000 BCT'ye tamamlayıp bir düğüm çalıştırırsanız, statünüz otomatik olarak <strong>%40 Doğrulayıcı Havuzuna</strong> yükselecektir!
+          <strong>Passive Observer Model (10% Pool):</strong><br>
+          • <strong>No Node Required:</strong> You do not need to run any server or software — simply lock BCT collateral in the vault.<br>
+          • <strong>Automated Yield:</strong> 10% of every block's reward and fee pool is distributed pro-rata directly to your wallet.<br>
+          • <em>Tip:</em> Upgrading your stake to 1,000 BCT and running a node automatically promotes you to the <strong>40% Validator Quorum Pool</strong>!
         `;
         // Daily est: 4320 blk/day * 0.05 BCT * 10% = 21.6 BCT pool / day
         const estDaily = ((amt / 5000) * 21.6) / 2;
-        if (dailyEl) dailyEl.textContent = `~${estDaily.toFixed(3)} BCT / gün`;
-        if (monthlyEl) monthlyEl.textContent = `~${(estDaily * 30).toFixed(2)} BCT / ay`;
+        if (dailyEl) dailyEl.textContent = `~${estDaily.toFixed(3)} BCT / day`;
+        if (monthlyEl) monthlyEl.textContent = `~${(estDaily * 30).toFixed(2)} BCT / mo`;
         const estApr = Math.min(45, Math.max(12, (estDaily * 365 / amt) * 100));
         if (aprEl) aprEl.textContent = `~${estApr.toFixed(1)}% APR`;
       } else {
@@ -21699,25 +21710,25 @@
         const excessAmt = amt - 1000;
         if (titleEl) {
           titleEl.textContent = hasExcess
-            ? `${Number(amt).toLocaleString()} BCT — %40 Doğrulayıcı (1.000 BCT) + %10 Gözlemci (${Number(excessAmt).toLocaleString()} BCT)`
-            : `${Number(amt).toLocaleString()} BCT — Doğrulayıcı Seviyesi Teminat (1.000 BCT)`;
+            ? `${Number(amt).toLocaleString('en-US')} BCT — 40% Validator (1,000 BCT) + 10% Observer (${Number(excessAmt).toLocaleString('en-US')} BCT)`
+            : `${Number(amt).toLocaleString('en-US')} BCT — Validator Tier Collateral (1,000 BCT)`;
         }
         if (iconEl) iconEl.textContent = 'verified_user';
         if (badgeEl) {
-          badgeEl.textContent = hasExcess ? '%40 Doğrulayıcı + %10 Gözlemci' : 'Düğüm ile %40 / Düğümsüz %10';
+          badgeEl.textContent = hasExcess ? '40% Validator + 10% Observer' : '40% w/ Node • 10% Passive';
           badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-emerald-500/15 text-emerald-400 border border-emerald-500/30';
         }
         if (descEl) descEl.innerHTML = `
-          <strong>Akıllı Çift Kademeli Konsensüs (1.000+ BCT):</strong><br>
-          • 🟢 <strong>1. Kısım (1.000 BCT Teminat):</strong> Bilgisayar veya VPS sunucunuzda bir düğüm (node) çalıştırdığınızda doğrudan <strong class="text-emerald-400 font-bold">%40 Aktif Doğrulayıcı Quorum Havuzuna</strong> katılır ve blok onaylama ödülü kazandırır.<br>
-          ${hasExcess ? `• 🟣 <strong>2. Kısım (${Number(excessAmt).toLocaleString()} BCT Aşan Miktar):</strong> 1.000 BCT üzerindeki miktarınız otomatik olarak <strong class="text-primary font-bold">%10 Gözlemci Havuzuna</strong> dahil edilir ve oransal olarak ilave pasif getiri sağlar!<br>` : ''}
-          • 🔵 <strong>Düğüm Çalıştırmadığınızda:</strong> Düğüm çalıştırmasanız dahi kilitlediğiniz toplam ${Number(amt).toLocaleString()} BCT otomatik olarak <strong class="text-primary font-bold">%10 Gözlemci Havuzuna</strong> yönlendirilir ve paranız asla boşta kalmaz!
+          <strong>Smart Dual-Tier Consensus (1,000+ BCT):</strong><br>
+          • 🟢 <strong>Tier 1 (1,000 BCT Base Collateral):</strong> When running a node on your PC or VPS, this enters the <strong class="text-emerald-400 font-bold">40% Active Validator Quorum Pool</strong>.<br>
+          ${hasExcess ? `• 🟣 <strong>Tier 2 (${Number(excessAmt).toLocaleString('en-US')} BCT Excess Collateral):</strong> Any stake above 1,000 BCT automatically earns additional pro-rata yield from the <strong class="text-primary font-bold">10% Observer Pool</strong>!<br>` : ''}
+          • 🔵 <strong>When Node Is Offline:</strong> Even without an active node, your full ${Number(amt).toLocaleString('en-US')} BCT automatically earns from the <strong class="text-primary font-bold">10% Observer Pool</strong> so your capital never sits idle!
         `;
         // Daily est: 4320 blk/day * 0.05 BCT * 40% = 86.4 BCT pool / day
         const estDaily = (86.4 / 2) + (hasExcess ? ((excessAmt / 5000) * 21.6) / 2 : 0);
-        if (dailyEl) dailyEl.textContent = `~${estDaily.toFixed(2)} BCT / gün`;
-        if (monthlyEl) monthlyEl.textContent = `~${(estDaily * 30).toFixed(2)} BCT / ay`;
-        if (aprEl) aprEl.textContent = `~58.4% APR (Düğüm ile)`;
+        if (dailyEl) dailyEl.textContent = `~${estDaily.toFixed(2)} BCT / day`;
+        if (monthlyEl) monthlyEl.textContent = `~${(estDaily * 30).toFixed(2)} BCT / mo`;
+        if (aprEl) aprEl.textContent = '~58.4% APR (w/ Node)';
       }
     }
 
@@ -21760,13 +21771,13 @@
 
         if (ok && body && body.success) {
           const isValTier = amt >= 1000;
-          let successMsg = '🎉 ' + (body.message || 'Teminat başarıyla kilitlendi!');
+          let successMsg = '🎉 ' + (body.message || 'Collateral locked successfully!');
           if (isValTier) {
             successMsg = amt > 1000
-              ? `🎉 ${amt.toLocaleString()} BCT Kilitlendi! (1.000 BCT Doğrulayıcı + ${(amt - 1000).toLocaleString()} BCT Gözlemci)`
-              : '🎉 1.000 BCT Teminat başarıyla kilitlendi! Düğümünüz aktifse %40 Doğrulayıcı havuzuna dahil oldunuz.';
+              ? `🎉 ${amt.toLocaleString('en-US')} BCT Staked! (1,000 BCT Validator + ${(amt - 1000).toLocaleString('en-US')} BCT Observer)`
+              : '🎉 1,000 BCT Collateral locked! When your node is online, you earn from the 40% Validator Quorum pool.';
           } else {
-            successMsg = `🎉 ${amt.toLocaleString()} BCT Teminat kilitlendi! %10 Pasif Gözlemci havuzuna katıldınız.`;
+            successMsg = `🎉 ${amt.toLocaleString('en-US')} BCT Collateral locked! You joined the 10% Passive Observer pool.`;
           }
           showToast(successMsg, 'verified');
           await refreshCurrentAccountBalance();
@@ -21774,7 +21785,7 @@
           refreshValidatorTelemetry();
           checkAndSyncNodeWalletStatus();
         } else {
-          showToast(body && body.message ? body.message : 'Teminat kilitleme reddedildi!', 'error', true);
+          showToast(body && body.message ? body.message : 'Stake transaction rejected!', 'error', true);
         }
       } catch (err) {
         showToast(err.message || 'Staking error occurred!', 'error', true);
@@ -21829,7 +21840,7 @@
 
 
     // =========================================================================
-    // INTEGRATED VALIDATOR & REMOTE NODE TELEMETRY CONTROLLER (v2.9.7)
+    // INTEGRATED VALIDATOR & REMOTE NODE TELEMETRY CONTROLLER (v2.11.0)
     // =========================================================================
     let cachedValidatorTelemetry = null;
 
@@ -21903,12 +21914,25 @@
         if (!currentAccount || !currentAccount.address) {
           summaryLabel.textContent = '1,000 BCT Staking & Node Telemetry';
         } else if (isEligible) {
-          summaryLabel.textContent = '✅ 1.000 BCT Kilitli • Validator Aktif';
+          summaryLabel.textContent = '✅ 1,000+ BCT Locked • Validator Active';
         } else if (staked > 0) {
           summaryLabel.textContent = `${formatBct(staked, 0)} / 1,000 BCT Staked • Open Telemetry`;
         } else {
           summaryLabel.textContent = '1,000 BCT Staking & Node Telemetry';
         }
+      }
+
+      const opNodeLinkEl = document.getElementById('operatorNodeLinkStatus');
+      const opRewardsEl = document.getElementById('operatorRewardsEarned');
+      if (opRewardsEl && data && data.rewards_earned !== undefined) {
+        opRewardsEl.textContent = `${formatBct(data.rewards_earned || 0, 4)} BCT`;
+      }
+      if (opNodeLinkEl) {
+        const nodeOnline = Boolean(data && data.node_connected);
+        opNodeLinkEl.textContent = nodeOnline ? 'Node Online (40% Quorum)' : (isEligible ? 'Standby (10% Observer)' : 'Node Not Linked');
+        opNodeLinkEl.className = nodeOnline
+          ? 'text-xs font-bold text-emerald-400 mt-1 truncate'
+          : 'text-xs font-bold text-on-surface mt-1 truncate';
       }
 
       if (isEligible) {
@@ -21975,12 +21999,12 @@
       if (current) {
         localStorage.removeItem('locktrace_node_wallet_' + addr);
         currentAccount.is_node = false;
-        showToast('Düğüm (Node Runner) rolü kaldırıldı.', 'info');
+        showToast('Node Runner role removed.', 'info');
         checkAndSyncNodeWalletStatus();
         return;
       }
 
-      showToast('🔍 Bağlı LockTrace Düğümü (Node) taranıyor...', 'info');
+      showToast('🔍 Scanning for active LockTrace Node...', 'info');
 
       let isNodeActive = false;
       let nodeLabel = '';
@@ -21997,7 +22021,7 @@
             const miner = (inf.miner_address || '').trim().toLowerCase();
             if (miner === addr || !miner) {
               isNodeActive = true;
-              nodeLabel = `Yerel Düğüm (Port ${p})`;
+              nodeLabel = `Local Node (Port ${p})`;
               break;
             }
           }
@@ -22016,20 +22040,20 @@
             );
             if (matched) {
               isNodeActive = true;
-              nodeLabel = `Ağ Düğümü (${matched.name || matched.node_id?.slice(0, 8)})`;
+              nodeLabel = `Network Node (${matched.name || matched.node_id?.slice(0, 8)})`;
             }
           }
         } catch (_e) {}
       }
 
       if (!isNodeActive) {
-        showToast('⚠️ Aktif bir LockTrace Düğümü (Node) bulunamadı! Düğüm rolünü aktifleştirmek için önce bilgisayarınızda bir düğüm (node_runner.py veya server.py) başlatmalısınız.', 'warning', true);
+        showToast('⚠️ No active LockTrace Node detected for this wallet! Please start node_runner.py or server.py on your machine first.', 'warning', true);
         return;
       }
 
       localStorage.setItem('locktrace_node_wallet_' + addr, 'true');
       currentAccount.is_node = true;
-      showToast(`🎉 Düğüm Doğrulandı: ${nodeLabel}! Düğüm çalıştırıcı rolü başarıyla bağlandı.`, 'success');
+      showToast(`🎉 Node Verified: ${nodeLabel}! Node Runner role linked successfully.`, 'success');
       switchTab('dugum-paneli');
       checkAndSyncNodeWalletStatus();
     }
@@ -22044,37 +22068,47 @@
 
         const renderRows = (stakers) => {
           if (!stakers || stakers.length === 0) {
-            return `<tr><td colspan="5" class="py-6 text-center text-on-surface-variant text-xs font-sans">Henüz kilitli teminat bulunmuyor.</td></tr>`;
+            return `<tr><td colspan="5" class="py-6 text-center text-on-surface-variant text-xs font-sans">No active staked collateral yet.</td></tr>`;
           }
           return stakers.map((s) => {
             let badgeColor = "bg-primary/10 text-primary border-primary/20";
-            let tierLabel = "Gözlemci (%10)";
+            let tierLabel = "Observer (10%)";
             if (s.tier === "active_validator") {
               badgeColor = "bg-emerald-500/10 text-emerald-400 border-emerald-500/20";
-              tierLabel = "Aktif Validator (%40)";
+              tierLabel = "Active Validator (40%)";
             } else if (s.tier === "inactive_validator") {
               badgeColor = "bg-amber-500/10 text-amber-400 border-amber-500/20";
-              tierLabel = "Çevrimdışı Validator (%10)";
+              tierLabel = "Standby Validator (10%)";
             } else if (s.tier === "slashed") {
               badgeColor = "bg-rose-500/10 text-rose-400 border-rose-500/20";
-              tierLabel = "Cezalı (Slashed)";
+              tierLabel = "Slashed";
             }
+            const safeAddr = escapeHtml(String(s.address || ''));
+            const safeShare = escapeHtml(String(s.pool_share || '0%'));
             return `
               <tr class="border-b border-outline-variant/10 hover:bg-surface-container-high/40 transition-colors">
                 <td class="py-3 px-3 font-mono text-xs text-on-surface select-all flex items-center gap-1.5">
                   <span class="material-symbols-outlined notranslate text-[14px] text-primary/70">account_balance_wallet</span>
-                  <span title="${s.address}">${s.address.slice(0, 10)}...${s.address.slice(-6)}</span>
+                  <span title="${safeAddr}">${safeAddr.slice(0, 10)}...${safeAddr.slice(-6)}</span>
                 </td>
                 <td class="py-3 px-3 font-mono text-xs font-semibold text-primary text-right">${Number(s.staked_amount).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2})} BCT</td>
                 <td class="py-3 px-3 text-center">
                   <span class="px-2 py-0.5 rounded-full text-[10px] font-semibold border ${badgeColor}">${tierLabel}</span>
                 </td>
-                <td class="py-3 px-3 text-center text-xs text-on-surface-variant font-mono">${s.pool_share}</td>
+                <td class="py-3 px-3 text-center text-xs text-on-surface-variant font-mono">${safeShare}</td>
                 <td class="py-3 px-3 font-mono text-xs text-secondary text-right font-semibold">${Number(s.rewards_earned).toFixed(4)} BCT</td>
               </tr>
             `;
           }).join('');
         };
+
+        if (currentAccount && currentAccount.address && Array.isArray(d.stakers)) {
+          const me = d.stakers.find(s => String(s.address || '').toLowerCase() === currentAccount.address.toLowerCase());
+          const opRewardsEl = document.getElementById('operatorRewardsEarned');
+          if (opRewardsEl && me) {
+            opRewardsEl.textContent = `${Number(me.rewards_earned || 0).toFixed(4)} BCT`;
+          }
+        }
 
         const nodeEl = document.getElementById('stakingParticipantsTableBody');
         if (nodeEl) nodeEl.innerHTML = renderRows(d.stakers);

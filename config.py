@@ -111,7 +111,16 @@ class Config:
 
     # ── Cross-Chain Bridge Güvenliği ──────────────────
     MIN_EVM_CONFIRMATIONS = 12   # Base Mainnet reorg koruması için gereken min onay sayısı
-    WBCT_CONTRACT_ADDRESS = os.environ.get("WBCT_CONTRACT_ADDRESS", "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28")
+    _DEPRECATED_WBCT_CONTRACTS = {
+        "0xa3c743113a41cfd0146917065d4578337bb77254",
+        "0x5e5d957b240c9e4a51613f58c6c242b710519b41",
+    }
+    _env_wbct = os.environ.get("WBCT_CONTRACT_ADDRESS", "").strip()
+    WBCT_CONTRACT_ADDRESS = (
+        "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
+        if (not _env_wbct or _env_wbct.lower() in _DEPRECATED_WBCT_CONTRACTS)
+        else _env_wbct
+    )
     BASE_RPC_URL = os.environ.get("BASE_RPC_URL", "https://mainnet.base.org")
 
     # ── Fiyat ve Ticaret Oranları ─────────────────────

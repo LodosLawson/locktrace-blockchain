@@ -153,11 +153,13 @@ def verify_evm_burn_receipt(
 
                 canon_recip = _to_canonical_bct(recip_str)
                 canon_expected = _to_canonical_bct(clean_recipient)
+                expected_wei = int((Decimal(str(expected_amount)) * Decimal(10 ** 18)).to_integral_value())
 
-                if canon_recip == canon_expected and amount_wei == int((Decimal(str(expected_amount)) * Decimal(10 ** 18)).to_integral_value()):
+                # Allow up to 10^10 wei (1e-8 BCT = 1 L1 atomic unit) tolerance against IEEE-754 float serialization drift
+                if canon_recip == canon_expected and abs(amount_wei - expected_wei) <= 10 ** 10:
                     matched_event = {
                         "sender": sender_addr,
-                        "amount_bct": amount_bct,
+                        "amount_bct": float((Decimal(amount_wei) / Decimal(10 ** 18)).quantize(Decimal("0.00000001"))),
                         "recipient": canon_recip,
                         "block_number": receipt.get("blockNumber")
                     }
@@ -277,7 +279,16 @@ class BridgeManager:
 
     def get_bridge_config(self) -> Dict[str, Any]:
         """Returns public parameters, active contracts, and limits for the bridge."""
-        contract_addr = os.environ.get("WBCT_CONTRACT_ADDRESS", WBCT_OFFICIAL_CONTRACT)
+        raw_env = os.environ.get("WBCT_CONTRACT_ADDRESS", "").strip()
+        deprecated = {
+            "0xa3c743113a41cfd0146917065d4578337bb77254",
+            "0x5e5d957b240c9e4a51613f58c6c242b710519b41",
+        }
+        contract_addr = (
+            WBCT_OFFICIAL_CONTRACT
+            if (not raw_env or raw_env.lower() in deprecated)
+            else raw_env
+        )
         return {
             "bridge_vault_address": BRIDGE_VAULT_ADDRESS,
             "wbct_contract_address": contract_addr if contract_addr else WBCT_OFFICIAL_CONTRACT,

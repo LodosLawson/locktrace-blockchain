@@ -1,7 +1,7 @@
-# BlocTag (BCT) Technical Whitepaper — v2.10.1
+# BlocTag (BCT) Technical Whitepaper — v2.11.0
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.10.1 — November 2026*  
+*Version 2.11.0 — November 2026*  
 *Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
@@ -20,7 +20,8 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **BlocTag (Ticker: BCT)**, developed by LockTrace, introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (BlocTag Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.10.1**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+In **Version 2.11.0**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+0. **Base L2 WrappedBlocTag Contract Migration & MetaMask SDK Direct Native Signing (v2.11.0):** Deployed the audit-hardened `WrappedBlocTag` (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) on Base Mainnet with Multi-Relayer Quorum Consensus and live Uniswap v4 liquidity (`0xf38d2770...`). Integrated self-hosted MetaMask SDK (`@metamask/sdk` IIFE with Proxy private-field binding fix) and EIP-6963 multi-wallet discovery so mobile and desktop users sign `burnToBridge` transactions directly in their wallet's native signing sheet without redirecting into an in-app browser.
 0. **Wallet Security & Vault Modal Mobile Alignment (v2.10.1):** Resolved DOM tree hierarchy clash in `#vault-modal` caused by duplicate closing tags, and enforced clean `flex-col` stacking on narrow mobile viewports.
 0. **Dedicated Receive BCT Widget, Live Payment Radar & Profile History Stack (v2.10.0):** Dedicated `#receive-bct-modal` widget removing all sensitive private key / PIN controls from payment reception, integrated live mempool/block payment radar, and implemented `userProfileHistoryStack` with one-step back navigation and direct close controls.
 1. **Space Social Multi-Follow & Web3 Action Re-Enablement (v2.9.9):** Explicitly reset `btnProfileFollow.disabled = false` in `renderUserProfileData` and `openUserProfile`, preventing the button from becoming unclickable when navigating to subsequent creator profiles after following a creator. Implemented `web3ModalTimer` tracking with `clearTimeout` and `isFollowInProgress` concurrency guard. Synchronized P2P node runner verification variants for lowercase `follow:follower:target` signatures.
@@ -456,7 +457,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.9.8 (Completed):** Wallet Negative Balance & Mempool Deduping Hardening, zero-floor balance mathematical clamp (`max(0, ...)`), wallet analytics outflow double-fee fix, and frontend non-negative formatting parity.
 - **v2.9.9 (Completed):** Space Social Multi-Follow & Web3 Action Re-Enablement (`btnProfileFollow.disabled` lifecycle reset across creator navigation, `web3ModalTimer` race condition elimination, `isFollowInProgress` guard, and P2P signature canonical parity).
 - **v2.10.0 (Completed):** Dedicated Receive BCT Widget (`#receive-bct-modal`), Live Payment Radar with on-chain polling, and Profile Navigation History Stack (`userProfileHistoryStack`, `navigateBackUserProfile`, `closeUserProfileDirectly`).
-- **v2.10.1 (Current Production Release):** Wallet Security & Vault Modal Mobile Alignment, DOM hierarchy parity, and responsive single-column mobile stacking.
+- **v2.10.1 (Completed):** Wallet Security & Vault Modal Mobile Alignment, DOM hierarchy parity, and responsive single-column mobile stacking.
+- **v2.11.0 (Current Production Release):** Base L2 `WrappedBlocTag` (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) Multi-Relayer Quorum Consensus & Uniswap v4 DEX integration, MetaMask SDK Direct Native Mobile Signing (eliminating in-app browser redirects and Proxy private-field traps), EIP-6963 multi-wallet discovery, and 100% English UI unification.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---
