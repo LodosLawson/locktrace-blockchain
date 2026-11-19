@@ -5835,15 +5835,27 @@
             <div class="flex flex-col gap-1.5">
               <div class="flex items-center justify-between text-xs">
                 <label class="font-label-md font-medium text-on-surface-variant" for="bridgeDestinationInput"
-                  id="bridgeDestLabel">Destination EVM Address (Base / Arbitrum)</label>
-                <button type="button" class="text-primary hover:underline text-[11px] font-medium"
-                  onclick="pasteBridgeAddress()">Paste</button>
+                  id="bridgeDestLabel">Destination EVM Address (Base Mainnet)</label>
+                <div class="flex items-center gap-2.5">
+                  <button type="button" id="btnUseConnectedWallet" class="text-amber-400 hover:text-amber-300 hover:underline text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors"
+                    onclick="useConnectedWalletAsBridgeDest()">
+                    <span class="material-symbols-outlined notranslate text-[13px]" translate="no">account_balance_wallet</span>
+                    <span id="btnUseConnectedWalletText">Use Connected Wallet</span>
+                  </button>
+                  <button type="button" class="text-primary hover:underline text-[11px] font-medium cursor-pointer"
+                    onclick="pasteBridgeAddress()">Paste</button>
+                </div>
               </div>
               <div
                 class="flex items-center gap-2 p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/20 focus-within:border-primary transition-colors">
                 <span class="material-symbols-outlined notranslate text-outline text-[20px]" id="bridgeDestIcon" translate="no">wallet</span>
                 <input id="bridgeDestinationInput" type="text" placeholder="0x... (42-char EVM wallet)"
                   class="bg-transparent flex-1 font-mono text-xs sm:text-sm text-on-surface placeholder:text-outline/50 focus:outline-none">
+                <button type="button" id="btnPillUseWallet" onclick="useConnectedWalletAsBridgeDest()"
+                  class="shrink-0 px-2.5 py-1 rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 border border-amber-500/30 font-semibold text-[11px] flex items-center gap-1 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[13px]" translate="no">sync_alt</span>
+                  <span id="btnPillUseWalletText">My Wallet</span>
+                </button>
               </div>
             </div>
 
@@ -17409,6 +17421,28 @@
         label.textContent = activeWallet ? activeWallet.name : 'EVM Web3 Wallet';
       }
 
+      const useWalletText = document.getElementById('btnUseConnectedWalletText');
+      const pillWalletText = document.getElementById('btnPillUseWalletText');
+      if (currentBridgeDirection === 'L1_TO_EVM') {
+        if (useWalletText) useWalletText.textContent = userMetaMaskAddress ? 'Use Connected EVM' : 'Connect & Use EVM';
+        if (pillWalletText) pillWalletText.textContent = userMetaMaskAddress ? 'Base EVM' : 'Connect';
+        if (userMetaMaskAddress) {
+          const destInput = document.getElementById('bridgeDestinationInput');
+          if (destInput && (!destInput.value || !/^0x[a-fA-F0-9]{40}$/i.test(destInput.value))) {
+            destInput.value = userMetaMaskAddress;
+          }
+        }
+      } else {
+        if (useWalletText) useWalletText.textContent = (currentAccount && currentAccount.address) ? 'Use My L1 Wallet' : 'Unlock L1 Wallet';
+        if (pillWalletText) pillWalletText.textContent = 'My L1';
+        if (currentAccount && currentAccount.address) {
+          const destInput = document.getElementById('bridgeDestinationInput');
+          if (destInput && (!destInput.value || !/^BCT[0-9a-fA-F]{40}$/i.test(destInput.value))) {
+            destInput.value = currentAccount.address;
+          }
+        }
+      }
+
       if (userMetaMaskAddress) {
         if (dot) {
           dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0';
@@ -17537,6 +17571,51 @@
         console.warn('Could not read wBCT balance:', err);
       }
       updateEvmWalletUi();
+    }
+
+        function useConnectedWalletAsBridgeDest() {
+      const destInput = document.getElementById('bridgeDestinationInput');
+      if (!destInput) return;
+
+      if (currentBridgeDirection === 'L1_TO_EVM') {
+        const addr = userMetaMaskAddress || (typeof localStorage !== 'undefined' ? localStorage.getItem('bct_connected_evm_address') : null);
+        if (addr && /^0x[a-fA-F0-9]{40}$/i.test(addr)) {
+          destInput.value = addr;
+          showToast(`EVM destination set to connected Base wallet: ${addr.substring(0, 6)}...${addr.substring(38)}`, 'success');
+        } else {
+          openMobileWalletModal();
+          showToast('Please connect your Web3 wallet first to populate your Base destination address.', 'info');
+        }
+      } else {
+        if (currentAccount && currentAccount.address) {
+          destInput.value = currentAccount.address;
+          showToast(`L1 destination set to your LockTrace address: ${currentAccount.address.substring(0, 8)}...`, 'success');
+        } else {
+          showToast('Please open or unlock your LockTrace L1 wallet first.', 'warning');
+          switchTab('yeni-cuzdan');
+        }
+      }
+    }
+
+    async function pasteBridgeAddress() {
+      const destInput = document.getElementById('bridgeDestinationInput');
+      if (!destInput) return;
+      try {
+        let text = '';
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          text = (await navigator.clipboard.readText() || '').trim();
+        }
+        if (text) {
+          destInput.value = text;
+          showToast('Address pasted into destination field.', 'success');
+        } else {
+          showToast('Clipboard was empty. Please paste your address manually.', 'info');
+          destInput.focus();
+        }
+      } catch (_e) {
+        showToast('Clipboard access was blocked. Please paste your address manually into the box.', 'info');
+        destInput.focus();
+      }
     }
 
     function setBridgeDirection(dir) {
@@ -17732,10 +17811,40 @@
 
         isExecutingBridge = true;
         if (btn) btn.disabled = true;
-        if (btnText) btnText.textContent = 'Creating Bridge Order...';
+        if (btnText) btnText.textContent = 'Locking BCT on Layer-1...';
 
         try {
-          const orderCanonical = `BRIDGE_ORDER:L1_TO_EVM:${currentAccount.address}:${String(destAddr).toLowerCase()}:${Number(amount).toFixed(8)}:${selectedChain}`;
+          const vaultAddr = (bridgeConfig && (bridgeConfig.bridge_vault_address || bridgeConfig.vault_address)) || 'BCT_BRIDGE_VAULT_000000000000000000000000000000000';
+          const roundedAmt = Number(amount.toFixed(8));
+          const amtTrimmed = roundedAmt.toFixed(8).replace(/\.?0+$/, '');
+
+          // 1. Submit L1 Lock Transfer directly to Bridge Vault on BlocTag Layer-1
+          if (btnText) btnText.textContent = 'Signing L1 Lock Transaction...';
+          const lockCanonical = `${currentAccount.address}${vaultAddr}${amtTrimmed}`;
+          const lockAuth = await buildSignedAuthPayload(lockCanonical);
+
+          if (btnText) btnText.textContent = 'Broadcasting L1 Lock...';
+          const { ok: lockOk, body: lockBody } = await apiFetch('/transaction', {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({
+              sender: currentAccount.address,
+              receiver: vaultAddr,
+              amount: roundedAmt
+            }, lockAuth))
+          });
+
+          if (!lockOk || !lockBody || !lockBody.data) {
+            throw new Error((lockBody && lockBody.message) || 'Failed to broadcast L1 bridge lock transaction');
+          }
+
+          const l1TxHash = (lockBody.data && (lockBody.data.tx_hash || lockBody.data.hash)) || '';
+          if (!l1TxHash) {
+            throw new Error('Did not receive valid transaction hash from Layer-1 network');
+          }
+
+          // 2. Register Bridge Order with verified L1 lock tx hash
+          if (btnText) btnText.textContent = 'Registering Bridge Order...';
+          const orderCanonical = `BRIDGE_ORDER:L1_TO_EVM:${currentAccount.address}:${String(destAddr).toLowerCase()}:${roundedAmt.toFixed(8)}:${selectedChain}`;
           const orderAuth = await buildSignedAuthPayload(orderCanonical);
           const { ok: orderOk, body: orderBody } = await apiFetch('/bridge/order', {
             method: 'POST',
@@ -17743,52 +17852,21 @@
               direction: 'L1_TO_EVM',
               bct_address: currentAccount.address,
               evm_address: destAddr,
-              amount: amount,
-              chain: selectedChain
+              amount: roundedAmt,
+              chain: selectedChain,
+              tx_hash_l1: l1TxHash
             }, orderAuth))
           });
 
-          if (!orderOk || !orderBody.data) {
-            throw new Error(orderBody.message || 'Could not create bridge order');
+          if (!orderOk || !orderBody || !orderBody.data) {
+            throw new Error((orderBody && orderBody.message) || 'Could not register bridge order');
           }
 
           const bridgeOrder = orderBody.data;
-          const bridgeId = bridgeOrder.bridge_id;
-          const vaultAddr = bridgeOrder.vault_address || 'BCT_BRIDGE_VAULT_000000000000000000000000000000000';
+          const bridgeId = bridgeOrder.bridge_id || `brg_${l1TxHash.substring(0, 16)}`;
 
-          if (btnText) btnText.textContent = 'Signing L1 Lock Transaction...';
-          const roundedAmt = Number(amount.toFixed(8));
-
-          const lockPayload = {
-            from: currentAccount.address,
-            to: vaultAddr,
-            amount: roundedAmt,
-            fee: 0.001,
-            nonce: (currentAccount.nonce || 0) + 1,
-            memo: `BRIDGE_LOCK:${bridgeId}:${destAddr}`,
-            timestamp: Date.now() / 1000
-          };
-
-          const signedTx = await signTransactionLocally(lockPayload, currentAccount.privateKey);
-          if (btnText) btnText.textContent = 'Broadcasting to L1 Network...';
-          const { ok: sendOk, body: sendBody } = await apiFetch('/send_transaction', {
-            method: 'POST',
-            body: JSON.stringify(signedTx)
-          });
-
-          if (!sendOk || !sendBody.data) {
-            throw new Error(sendBody.message || 'Failed to broadcast L1 bridge lock transaction');
-          }
-
-          const l1TxHash = sendBody.data.tx_hash || signedTx.hash;
-          currentAccount.nonce = lockPayload.nonce;
           currentAccount.balance = Math.max(0, userBal - roundedAmt - 0.001);
           saveWalletState(currentAccount);
-
-          if (btnText) btnText.textContent = 'Awaiting L1 Block Confirmation...';
-          showToast('L1 Lock broadcasted! Waiting for block confirmation...', 'info');
-
-          await pollL1TxConfirmation(l1TxHash, 20);
 
           showToast('Bridge Lock Confirmed! Base wBCT Minting in Progress...', 'verified');
           displayBridgeStatusBox(bridgeId, l1TxHash);
