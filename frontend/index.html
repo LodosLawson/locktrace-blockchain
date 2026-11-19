@@ -16852,7 +16852,7 @@
       const selectedChain = chainSelect ? chainSelect.value : 'base';
 
       if (!Number.isFinite(amount) || amount < 1.0) {
-        showToast('Minimum köprü miktarı 1.00 BCT / wBCT'dir.', 'warning', true);
+        showToast("Minimum köprü miktarı 1.00 BCT / wBCT'dir.", 'warning', true);
         return;
       }
 
@@ -17043,7 +17043,7 @@
           }
 
           // 4. Send burnToBridge transaction on Base
-          if (btnText) btnText.textContent = 'MetaMask'ta Onaylayın...';
+          if (btnText) btnText.textContent = "MetaMask'ta Onaylayın...";
           showToast(`Lütfen MetaMask bildiriminde ${formatBct(amount, 2)} wBCT yakımını onaylayın.`, 'info');
 
           const tx = await wbctContract.burnToBridge(amountWei, destAddr);
@@ -17058,14 +17058,14 @@
           const evmTxHash = receipt.hash;
 
           // 5. Claim unlock on BlocTag Layer-1
-          if (btnText) btnText.textContent = 'L1'de BCT Kilidi Açılıyor...';
+          if (btnText) btnText.textContent = "L1'de BCT Kilidi Açılıyor...";
           let claimOk = false;
           let claimBody = null;
           const maxClaimAttempts = 15;
           for (let attempt = 1; attempt <= maxClaimAttempts; attempt++) {
             if (btnText) {
               btnText.textContent = attempt === 1
-                ? 'L1'de BCT Kilidi Açılıyor...'
+                ? "L1'de BCT Kilidi Açılıyor..."
                 : `Base Onayları Doğrulanıyor (${attempt}/${maxClaimAttempts})...`;
             }
             const res = await apiFetch('/bridge/claim_burn', {
