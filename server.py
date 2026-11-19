@@ -338,7 +338,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-TOMVvTfj0d+Io0LbZiERv/6MLc5F4iTe0F62bP5I+yQ=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-QYwB6GjIZ3XhfyD/ADe5UXBuvcotGEcIAaRKgLqTpJQ=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
