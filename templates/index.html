@@ -3895,13 +3895,13 @@
                     <span>BaseScan</span>
                     <span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span>
                   </a>
-                  <a href="https://app.uniswap.org/#/swap?chain=base&outputCurrency=0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
+                  <a href="https://app.uniswap.org/explore/pools/base/0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139"
                     target="_blank" rel="noopener noreferrer"
                     class="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-secondary font-medium flex items-center gap-1 transition-colors">
-                    <span>Uniswap v3 Pool</span>
+                    <span>Uniswap v4 Pool</span>
                     <span class="material-symbols-outlined notranslate text-[13px]" translate="no">currency_exchange</span>
                   </a>
-                  <a href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
+                  <a href="https://dexscreener.com/base/0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139"
                     target="_blank" rel="noopener noreferrer"
                     class="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-emerald-400 font-medium flex items-center gap-1 transition-colors">
                     <span>DexScreener</span>
@@ -3925,7 +3925,7 @@
                   </div>
                   <div>
                     <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Bridge Relayer (Automated Mint &amp;
-                      Burn Daemon)</h3>
+                       Burn Daemon)</h3>
                     <p class="text-body-sm text-on-surface-variant mt-0.5">
                       The automated bridge relayer that listens for confirmed L1 locks to mint wBCT on Base, and listens
                       for Base burns to release native BCT on Layer-1.
@@ -3936,9 +3936,9 @@
                 <div
                   class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
                   <span class="font-mono text-xs text-on-surface select-all truncate"
-                    id="sysRelayerAddr">0x7007d5863336FFaeFFc5A4076AC0f9fcB47c1940</span>
+                    id="sysRelayerAddr">0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3</span>
                   <button type="button"
-                    onclick="copyToClipboard('0x7007d5863336FFaeFFc5A4076AC0f9fcB47c1940'); showToast('Bridge relayer address copied!')"
+                    onclick="copyToClipboard('0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3'); showToast('Bridge relayer address copied!')"
                     class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0"
                     title="Copy Address">
                     <span class="material-symbols-outlined notranslate text-[16px]" translate="no">content_copy</span>
@@ -3947,7 +3947,7 @@
 
                 <div
                   class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant/10 text-xs">
-                  <a href="https://basescan.org/address/0x7007d5863336FFaeFFc5A4076AC0f9fcB47c1940" target="_blank"
+                  <a href="https://basescan.org/address/0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3" target="_blank"
                     rel="noopener noreferrer"
                     class="px-2.5 py-1 rounded-lg bg-surface-container hover:bg-surface-container-high text-on-surface font-medium flex items-center gap-1 transition-colors">
                     <span>View Relayer on BaseScan</span>
@@ -16010,7 +16010,7 @@
       }
     }
 
-    let currentActiveDexPair = '0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28';
+    let currentActiveDexPair = '0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139';
 
     function setChartSource(src) {
       const iframe = document.getElementById('dexChartIframe');
@@ -16033,7 +16033,7 @@
       }
     }
 
-    let currentWbctPriceUsd = 0.01;
+    let currentWbctPriceUsd = 0.000807;
 
     async function pollDexPriceLive() {
       // 1. Try server cached route first (CSP & CORS safe, fast)
