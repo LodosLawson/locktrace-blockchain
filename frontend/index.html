@@ -16804,6 +16804,7 @@
       if (btn && targetLink) {
         btn.setAttribute('href', targetLink);
         btn.onclick = (e) => {
+          if (e && e.preventDefault) e.preventDefault();
           try {
             openMetaMaskDirectly(targetLink);
           } catch (_e) { }
@@ -16826,7 +16827,13 @@
     }
 
     function openMetaMaskDirectly(overrideLink = null) {
-      const link = overrideLink || latestMetaMaskDeeplink || 'metamask://';
+      const isIos = (typeof isIosDevice === 'function') && isIosDevice();
+      let link = overrideLink;
+      if (!link) {
+        link = isIos
+          ? (latestMetaMaskUniversalLink || 'https://metamask.app.link')
+          : (latestMetaMaskDeeplink || 'metamask://');
+      }
       try {
         window.location.href = link;
       } catch (_e) { }
@@ -17023,6 +17030,11 @@
       try {
         window.dispatchEvent(new Event('eip6963:requestProvider'));
       } catch (_e) { }
+    }
+
+    function isIosDevice() {
+      if (typeof navigator === 'undefined') return false;
+      return /iPad|iPhone|iPod/.test(navigator.userAgent || '') || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
     }
 
     function isMobileUser() {
@@ -17326,12 +17338,13 @@
         return null;
       }
 
-      // Show immediate action banner on mobile right now, so user doesn't wait with no UI
-      if (isMobileUser()) {
+      // Show action banner on mobile once deep link is known, or show connecting status
+      if (isMobileUser() && (latestMetaMaskDeeplink || latestMetaMaskUniversalLink)) {
+        const isIos = (typeof isIosDevice === 'function') && isIosDevice();
         showMetaMaskActionBanner(
           'Connecting to MetaMask',
           'Tap "Open" below if MetaMask does not switch automatically:',
-          latestMetaMaskDeeplink || 'metamask://'
+          isIos ? latestMetaMaskUniversalLink : latestMetaMaskDeeplink
         );
       }
 
