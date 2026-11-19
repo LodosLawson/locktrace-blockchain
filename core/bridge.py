@@ -190,8 +190,11 @@ def is_transient_bridge_error(msg: str) -> bool:
 BRIDGE_VAULT_ADDRESS = "BCT_BRIDGE_VAULT_000000000000000000000000000000000"
 SUPPORTED_CHAINS = {
     "base": {
-        "name": "Base Mainnet",
+        "name": "Base Mainnet (Coinbase L2)",
+        "short_name": "Base Mainnet (8453)",
         "chain_id": 8453,
+        "chain_id_hex": "0x2105",
+        "is_testnet": False,
         "explorer": "https://basescan.org",
         "contract_address": WBCT_OFFICIAL_CONTRACT,
         "uniswap_url": f"https://app.uniswap.org/#/swap?chain=base&outputCurrency={WBCT_OFFICIAL_CONTRACT}",
@@ -199,21 +202,27 @@ SUPPORTED_CHAINS = {
         "sourcify_url": f"https://repo.sourcify.dev/8453/{WBCT_OFFICIAL_CONTRACT}",
         "recommended": True
     },
+    "base-sepolia": {
+        "name": "Base Sepolia (Coinbase L2 Testnet)",
+        "short_name": "Base Sepolia Testnet (84532)",
+        "chain_id": 84532,
+        "chain_id_hex": "0x14a34",
+        "is_testnet": True,
+        "explorer": "https://sepolia.basescan.org",
+        "contract_address": WBCT_OFFICIAL_CONTRACT,
+        "uniswap_url": "https://app.uniswap.org/#/swap?chain=base_sepolia",
+        "recommended": False
+    },
     "arbitrum": {
-        "name": "Arbitrum One",
+        "name": "Arbitrum One (L2)",
+        "short_name": "Arbitrum One (42161)",
         "chain_id": 42161,
+        "chain_id_hex": "0xa4b1",
+        "is_testnet": False,
         "explorer": "https://arbiscan.io",
         "contract_address": "",
         "uniswap_url": "https://app.uniswap.org/#/swap?chain=arbitrum",
         "uniswap_pool_url": "https://app.uniswap.org/#/pool?chain=arbitrum",
-        "recommended": False
-    },
-    "base-sepolia": {
-        "name": "Base Sepolia (Testnet)",
-        "chain_id": 84532,
-        "explorer": "https://sepolia.basescan.org",
-        "contract_address": "",
-        "uniswap_url": "https://app.uniswap.org/#/swap?chain=base_sepolia",
         "recommended": False
     }
 }

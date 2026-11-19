@@ -5777,11 +5777,17 @@
                   </div>
                 </div>
               </div>
-              <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+              <div class="flex items-center gap-1.5 shrink-0 self-end sm:self-auto">
                 <button type="button" id="btnConnectEvmWallet" onclick="handleConnectEvmWalletClick()"
                   class="px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[15px]" id="evmWalletBtnIcon" translate="no">account_balance_wallet</span>
                   <span id="btnConnectEvmWalletText">Connect Wallet</span>
+                </button>
+                <button type="button" id="btnDisconnectEvmWallet" onclick="disconnectEvmAddress()"
+                  title="Disconnect Web3 Wallet"
+                  class="hidden px-2.5 py-1.5 rounded-xl bg-red-500/10 hover:bg-red-500/20 text-red-400 font-semibold text-xs items-center gap-1 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">link_off</span>
+                  <span>Disconnect</span>
                 </button>
               </div>
             </div>
@@ -5803,10 +5809,11 @@
                 <div class="flex items-center gap-1.5 font-semibold text-on-surface">
                   <span class="w-2 h-2 rounded-full bg-secondary"></span>
                   <select id="bridgeTargetChainSelect"
-                    class="bg-transparent font-semibold text-on-surface text-xs focus:outline-none cursor-pointer"
+                    class="bg-transparent font-semibold text-on-surface text-xs focus:outline-none cursor-pointer w-full max-w-full truncate"
                     onchange="onBridgeChainChange()">
-                    <option value="base" selected>Base Mainnet (Coinbase L2)</option>
-                    <option value="arbitrum">Arbitrum One</option>
+                    <option value="base" selected>Base Mainnet (Coinbase L2) (Recommended)</option>
+                    <option value="base-sepolia">Base Sepolia (Coinbase L2 Testnet)</option>
+                    <option value="arbitrum">Arbitrum One (L2)</option>
                   </select>
                 </div>
               </div>
@@ -16212,6 +16219,38 @@
       renderBridgePageTransactions();
     }
 
+    async function initBridgeTab() {
+      try {
+        if (typeof loadBridgeConfig === 'function') {
+          await loadBridgeConfig();
+        }
+      } catch (_e) { }
+
+      try {
+        if (typeof autoDetectEvmWallet === 'function') {
+          await autoDetectEvmWallet(false);
+        }
+      } catch (_e) { }
+
+      try {
+        if (typeof loadBridgePageTransactions === 'function') {
+          loadBridgePageTransactions();
+        }
+      } catch (_e) { }
+
+      try {
+        if (typeof calculateBridgeOutput === 'function') {
+          calculateBridgeOutput();
+        }
+      } catch (_e) { }
+
+      try {
+        if (typeof updateEvmWalletUi === 'function') {
+          updateEvmWalletUi();
+        }
+      } catch (_e) { }
+    }
+
     async function loadBridgePageTransactions(forceToast = false) {
       const list = document.getElementById('bridgePageTxsList');
       try {
@@ -16442,6 +16481,16 @@
       const uniswapBtn = document.getElementById('btnUniswapLink');
       if (uniswapBtn && bridgeConfig && bridgeConfig.supported_chains && bridgeConfig.supported_chains[selectedChain]) {
         uniswapBtn.href = bridgeConfig.supported_chains[selectedChain].uniswap_url;
+      }
+      const netBadge = document.getElementById('evmWalletNetworkBadge');
+      if (netBadge) {
+        if (selectedChain === 'base-sepolia') {
+          netBadge.textContent = 'Base Sepolia (84532)';
+        } else if (selectedChain === 'arbitrum') {
+          netBadge.textContent = 'Arbitrum One (42161)';
+        } else {
+          netBadge.textContent = 'Base Mainnet (8453)';
+        }
       }
     }
 
@@ -17143,16 +17192,25 @@
       mmSdkInstance = null;
       mmSdkProvider = null;
       try {
+        localStorage.setItem('bct_evm_wallet_disconnected', 'true');
         localStorage.removeItem('bct_connected_evm_address');
         localStorage.removeItem('.sdk-comm');
         localStorage.removeItem('.MMSDK_cached_address');
         localStorage.removeItem('.MMSDK_cached_chainId');
+        sessionStorage.removeItem('bct_connected_evm_address');
       } catch (_e) { }
       const activeBox = document.getElementById('modalActiveWalletBox');
       if (activeBox) activeBox.classList.add('hidden');
       const manualInput = document.getElementById('manualEvmAddressInput');
       if (manualInput) manualInput.value = '';
+      if (currentBridgeDirection === 'L1_TO_EVM') {
+        const destInput = document.getElementById('bridgeDestinationInput');
+        if (destInput && /^0x[a-fA-F0-9]{40}$/i.test(destInput.value)) {
+          destInput.value = '';
+        }
+      }
       updateEvmWalletUi();
+      closeMobileWalletModal();
       showToast('Web3 wallet disconnected.', 'info');
     }
 
@@ -17168,7 +17226,10 @@
       }
 
       userMetaMaskAddress = cleanAddr;
-      try { localStorage.setItem('bct_connected_evm_address', cleanAddr); } catch (_e) { }
+      try {
+        localStorage.removeItem('bct_evm_wallet_disconnected');
+        localStorage.setItem('bct_connected_evm_address', cleanAddr);
+      } catch (_e) { }
 
       // Prefill bridge destination if in L1_TO_EVM
       if (currentBridgeDirection === 'L1_TO_EVM') {
@@ -17238,7 +17299,10 @@
         activeEvmProvider = provider;
         activeEvmWalletName = 'MetaMask';
         userMetaMaskAddress = accounts[0];
-        try { localStorage.setItem('bct_connected_evm_address', accounts[0]); } catch (_e) { }
+        try {
+          localStorage.removeItem('bct_evm_wallet_disconnected');
+          localStorage.setItem('bct_connected_evm_address', accounts[0]);
+        } catch (_e) { }
         bindEvmProviderListeners(provider);
 
         showToast(`MetaMask Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'success');
@@ -17365,7 +17429,10 @@
           activeEvmProvider = provider;
           if (walletLabel) activeEvmWalletName = walletLabel;
           userMetaMaskAddress = accounts[0];
-          try { localStorage.setItem('bct_connected_evm_address', accounts[0]); } catch (_e) { }
+          try {
+            localStorage.removeItem('bct_evm_wallet_disconnected');
+            localStorage.setItem('bct_connected_evm_address', accounts[0]);
+          } catch (_e) { }
           bindEvmProviderListeners(provider);
 
           try {
@@ -17395,18 +17462,13 @@
     }
 
     async function handleConnectEvmWalletClick() {
+      if (userMetaMaskAddress) {
+        openMobileWalletModal();
+        return;
+      }
       const provider = getEvmProvider();
       if (provider) {
-        if (userMetaMaskAddress && currentBridgeDirection === 'L1_TO_EVM') {
-          const destInput = document.getElementById('bridgeDestinationInput');
-          if (destInput && (!destInput.value || destInput.value !== userMetaMaskAddress)) {
-            destInput.value = userMetaMaskAddress;
-            showToast(`Destination EVM address set: ${userMetaMaskAddress.substring(0, 6)}...${userMetaMaskAddress.substring(38)}`, 'info');
-            return;
-          }
-        }
-        // If multiple EIP-6963 wallets are installed and user is not connected yet, let them choose
-        if (!userMetaMaskAddress && announcedEip6963Providers.length > 1) {
+        if (announcedEip6963Providers.length > 1) {
           openMobileWalletModal();
           return;
         }
@@ -17450,6 +17512,17 @@
         }
       }
 
+      const disconnectBtn = document.getElementById('btnDisconnectEvmWallet');
+      if (disconnectBtn) {
+        if (userMetaMaskAddress) {
+          disconnectBtn.classList.remove('hidden');
+          disconnectBtn.classList.add('flex');
+        } else {
+          disconnectBtn.classList.add('hidden');
+          disconnectBtn.classList.remove('flex');
+        }
+      }
+
       if (userMetaMaskAddress) {
         if (dot) {
           dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0';
@@ -17459,16 +17532,27 @@
           addrDisplay.textContent = shortAddr;
           addrDisplay.title = userMetaMaskAddress;
         }
-        if (netBadge) netBadge.classList.remove('hidden');
+        if (netBadge) {
+          netBadge.classList.remove('hidden');
+          const chainSelect = document.getElementById('bridgeTargetChainSelect');
+          const sel = chainSelect ? chainSelect.value : 'base';
+          if (sel === 'base-sepolia') {
+            netBadge.textContent = 'Base Sepolia (84532)';
+          } else if (sel === 'arbitrum') {
+            netBadge.textContent = 'Arbitrum One (42161)';
+          } else {
+            netBadge.textContent = 'Base Mainnet (8453)';
+          }
+        }
         if (btnText) {
-          btnText.textContent = currentBridgeDirection === 'L1_TO_EVM' ? 'Use Address' : 'Connected (Base)';
+          btnText.textContent = 'Manage';
         }
       } else {
         if (dot) {
           dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 animate-pulse';
         }
         if (addrDisplay) {
-          addrDisplay.textContent = getEvmProvider() ? 'Wallet Detected (Connect)' : 'Not Connected';
+          addrDisplay.textContent = getEvmProvider() ? 'Wallet Detected' : 'Not Connected';
           addrDisplay.title = '';
         }
         if (netBadge) netBadge.classList.add('hidden');
@@ -17515,8 +17599,14 @@
       return null;
     }
 
-    async function autoDetectEvmWallet() {
-      // 1. Check injected provider accounts if present
+    async function autoDetectEvmWallet(allowSdkConnect = false) {
+      // Respect explicit user disconnect: do not auto-reconnect or restore unless explicitly connected
+      if (localStorage.getItem('bct_evm_wallet_disconnected') === 'true') {
+        updateEvmWalletUi();
+        return;
+      }
+
+      // 1. Check injected provider accounts if present (passive, does not trigger popup)
       const provider = getInjectedEvmProvider(true);
       if (provider && provider.request) {
         try {
@@ -17530,7 +17620,7 @@
         } catch (_e) { }
       }
 
-      // 2. Restore from localStorage if not injected, and re-attach persisted MetaMask SDK channel if present
+      // 2. Restore from localStorage if not injected
       if (!userMetaMaskAddress) {
         try {
           const savedAddr = localStorage.getItem('bct_connected_evm_address') || localStorage.getItem('.MMSDK_cached_address');
@@ -17543,7 +17633,8 @@
         } catch (_e) { }
       }
 
-      if (!activeEvmProvider) {
+      // Only restore SDK session if user explicitly requested/authorized it
+      if (!activeEvmProvider && allowSdkConnect) {
         await restorePersistedMetaMaskSdkSession();
       }
 
@@ -17645,7 +17736,9 @@
         if (destLabel) destLabel.textContent = 'Destination EVM Address (Base Mainnet)';
         if (destInput) {
           destInput.placeholder = '0x... (42-char EVM wallet)';
-          if (userMetaMaskAddress && !destInput.value) destInput.value = userMetaMaskAddress;
+          if (!destInput.value || /^BCT[0-9a-fA-F]{40}$/i.test(destInput.value)) {
+            destInput.value = userMetaMaskAddress || '';
+          }
         }
         if (btnText) btnText.textContent = 'Initiate Bridge Transfer';
         const availText = document.getElementById('bridgeAvailableBalText');
@@ -17661,7 +17754,9 @@
         if (destLabel) destLabel.textContent = 'Destination BlocTag L1 Address';
         if (destInput) {
           destInput.placeholder = 'BCT... (43-char BlocTag wallet)';
-          if (currentAccount && currentAccount.address && !destInput.value) destInput.value = currentAccount.address;
+          if (!destInput.value || /^0x[a-fA-F0-9]{40}$/i.test(destInput.value)) {
+            destInput.value = (currentAccount && currentAccount.address) ? currentAccount.address : '';
+          }
         }
         if (btnText) {
           btnText.textContent = !getEvmProvider() ? 'Connect MetaMask & Sign' : 'Burn wBCT & Unlock L1';
