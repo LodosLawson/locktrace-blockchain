@@ -46,7 +46,7 @@
     crossorigin="anonymous"></script>
   <!-- MetaMask SDK (Standalone Browser IIFE for Direct Native Mobile Signing, SRI Verified) -->
   <script src="/vendor/metamask-sdk.js"
-    integrity="sha384-+YezwfTws8PnaydGety78Y2QKkzYok/TnV9lYQltlqxkOMBSfl+b0+3hWhp7Pikz"
+    integrity="sha384-Kj6XvGMY8qywt5fzimv2wf3n4A6n82TGmpBjZVNhrMZ0duSQxkdUhnTbQf4NehBm"
     crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
@@ -17207,7 +17207,14 @@
     }
 
     async function connectViaMetaMaskSDK() {
-      const sdk = getOrInitMetaMaskSDK();
+      let sdk = getOrInitMetaMaskSDK();
+      if (!sdk) {
+        for (let wait = 0; wait < 6; wait++) {
+          await new Promise(r => setTimeout(r, 150));
+          sdk = getOrInitMetaMaskSDK();
+          if (sdk) break;
+        }
+      }
       if (!sdk) {
         showToast('MetaMask SDK is still loading. Please refresh the page and try again.', 'warning');
         return null;
@@ -17303,9 +17310,9 @@
           return;
         }
         if (isMobileUser()) {
-          showToast('Trust Wallet in-app browser bypassed. Connect directly with MetaMask or paste your address below.', 'info');
-          const manualInput = document.getElementById('manualEvmAddressInput');
-          if (manualInput) { manualInput.scrollIntoView({ behavior: 'smooth' }); manualInput.focus(); }
+          showToast('Opening Trust Wallet app...', 'info');
+          const rawUrl = `${window.location.origin}${window.location.pathname}?tab=kopru&dir=${encodeURIComponent(currentBridgeDirection)}`;
+          window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(rawUrl)}`;
           return;
         }
         window.open('https://trustwallet.com/browser-extension', '_blank');
@@ -17328,9 +17335,9 @@
           return;
         }
         if (isMobileUser()) {
-          showToast('Coinbase in-app browser bypassed. Connect directly with MetaMask or paste your address below.', 'info');
-          const manualInput = document.getElementById('manualEvmAddressInput');
-          if (manualInput) { manualInput.scrollIntoView({ behavior: 'smooth' }); manualInput.focus(); }
+          showToast('Opening Coinbase Wallet app...', 'info');
+          const rawUrl = `${window.location.origin}${window.location.pathname}?tab=kopru&dir=${encodeURIComponent(currentBridgeDirection)}`;
+          window.location.href = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(rawUrl)}`;
           return;
         }
         window.open('https://www.coinbase.com/wallet', '_blank');
