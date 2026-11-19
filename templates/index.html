@@ -5758,6 +5758,28 @@
               </button>
             </div>
 
+            <!-- EVM Web3 Wallet Connection Bar -->
+            <div id="bridgeEvmWalletBar"
+              class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-3 rounded-2xl bg-surface-container border border-outline-variant/20 transition-all shadow-sm">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 transition-colors" id="evmWalletDot"></span>
+                <div class="flex flex-col min-w-0">
+                  <span class="text-[10px] text-on-surface-variant uppercase font-semibold tracking-wider" id="evmWalletLabel">EVM Web3 Wallet</span>
+                  <div class="flex items-center gap-1.5 min-w-0">
+                    <span class="font-mono text-xs text-on-surface font-semibold truncate" id="evmWalletAddressDisplay">Not Connected</span>
+                    <span class="hidden text-[10px] font-mono px-1.5 py-0.5 rounded-md bg-primary/10 text-primary shrink-0" id="evmWalletNetworkBadge">Base (8453)</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <button type="button" id="btnConnectEvmWallet" onclick="handleConnectEvmWalletClick()"
+                  class="px-3 py-1.5 rounded-xl bg-primary/10 hover:bg-primary/20 text-primary font-semibold text-xs flex items-center gap-1.5 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[15px]" id="evmWalletBtnIcon" translate="no">account_balance_wallet</span>
+                  <span id="btnConnectEvmWalletText">Connect Wallet</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Route Summary & Target Chain -->
             <div
               class="grid grid-cols-1 xs:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 text-xs">
@@ -8633,6 +8655,111 @@
   </div>
   </div>
   </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL: MOBILE WEB3 WALLET CONNECTOR & DEEP-LINK GATEWAY                   -->
+  <!-- ========================================================================= -->
+  <div
+    class="fixed inset-0 z-[9999] bg-black/80 backdrop-blur-md hidden items-end sm:items-center justify-center p-0 sm:p-4 select-none transition-opacity duration-200"
+    id="mobileWalletModal" onclick="if(event.target===this) closeMobileWalletModal();">
+    <div
+      class="w-full max-w-md bg-surface-container rounded-t-3xl sm:rounded-3xl border border-outline-variant/30 p-5 pb-safe flex flex-col gap-4 shadow-2xl max-h-[90dvh] overflow-y-auto transform translate-y-6 sm:translate-y-0 sm:scale-95 transition-all duration-200"
+      id="mobileWalletModalCard">
+      <!-- Modal Header -->
+      <div class="flex items-center justify-between pb-3 border-b border-outline-variant/15">
+        <div class="flex items-center gap-2.5">
+          <div class="w-9 h-9 rounded-2xl bg-gradient-to-tr from-amber-500/20 to-primary/20 text-primary border border-primary/20 flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined notranslate text-[20px]" translate="no">account_balance_wallet</span>
+          </div>
+          <div class="flex flex-col">
+            <h3 class="font-bold text-sm text-on-surface">Connect Web3 Wallet</h3>
+            <span class="text-[11px] text-on-surface-variant font-medium">MetaMask, Trust, Coinbase & EVM Wallets</span>
+          </div>
+        </div>
+        <button type="button" onclick="closeMobileWalletModal()"
+          class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface-variant hover:text-on-surface flex items-center justify-center transition-colors cursor-pointer">
+          <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
+        </button>
+      </div>
+
+      <!-- Detected Context / In-App status banner -->
+      <div id="mobileWalletContextBanner" class="p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/20 flex items-center gap-2.5 text-xs text-on-surface-variant">
+        <span class="material-symbols-outlined notranslate text-primary text-[18px] shrink-0" translate="no">info</span>
+        <span id="mobileWalletContextText" class="leading-relaxed">Connect your EVM wallet to interact with Wrapped BlocTag (wBCT) on Base Mainnet.</span>
+      </div>
+
+      <!-- Wallet Options Grid -->
+      <div class="flex flex-col gap-2.5">
+        <!-- Option 1: MetaMask -->
+        <button type="button" onclick="connectOrDeepLinkWallet('metamask')"
+          class="group flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-amber-500/40 transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
+              <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+                <path d="M21.1 2.3l-8.6 6.3 1.6-3.8-1-1.3-4.3 3.1 1.6 3.8L1.8 2.3c-.6-.4-1.4.1-1.3.8l2.6 13.9c.1.6.6 1.1 1.2 1.2l6.8 1.4v-4.1l-4.1-.9 1.4-1.3-3.6-1.5 5.5-2 1.3 4.8 1.3-4.8 5.5 2-3.6 1.5 1.4 1.3-4.1.9v4.1l6.8-1.4c.6-.1 1.1-.6 1.2-1.2L22.4 3.1c.1-.7-.7-1.2-1.3-.8z" fill="#E2761B"/>
+              </svg>
+            </div>
+            <div class="flex flex-col">
+              <span class="font-semibold text-xs text-on-surface group-hover:text-amber-400 transition-colors">MetaMask</span>
+              <span class="text-[11px] text-on-surface-variant" id="mmStatusSubtitle">Direct Web3 Connection & Mobile App</span>
+            </div>
+          </div>
+          <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-on-surface text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
+        </button>
+
+        <!-- Option 2: Trust Wallet -->
+        <button type="button" onclick="connectOrDeepLinkWallet('trust')"
+          class="group flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-blue-500/40 transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined notranslate text-blue-400 text-[24px]" translate="no">shield</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="font-semibold text-xs text-on-surface group-hover:text-blue-400 transition-colors">Trust Wallet</span>
+              <span class="text-[11px] text-on-surface-variant">Mobile Multi-Chain Web3 Browser</span>
+            </div>
+          </div>
+          <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-on-surface text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
+        </button>
+
+        <!-- Option 3: Coinbase Wallet -->
+        <button type="button" onclick="connectOrDeepLinkWallet('coinbase')"
+          class="group flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-primary/40 transition-all text-left cursor-pointer">
+          <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined notranslate text-primary text-[24px]" translate="no">account_balance</span>
+            </div>
+            <div class="flex flex-col">
+              <span class="font-semibold text-xs text-on-surface group-hover:text-primary transition-colors">Coinbase Wallet</span>
+              <span class="text-[11px] text-on-surface-variant">Base Native Smart Wallet & App</span>
+            </div>
+          </div>
+          <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-on-surface text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
+        </button>
+      </div>
+
+      <!-- Copy DApp Link fallback for manual mobile browser pasting -->
+      <div class="p-3 rounded-2xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
+        <div class="flex items-center justify-between">
+          <span class="text-[11px] font-semibold text-on-surface">Manual In-App Browser Method</span>
+          <span class="text-[10px] font-mono text-primary">Zero Extension Required</span>
+        </div>
+        <p class="text-[11px] text-on-surface-variant leading-relaxed">
+          If you are on Chrome/Safari, copy this URL and open it inside your wallet app's built-in <strong class="text-on-surface">Browser</strong> tab:
+        </p>
+        <div class="flex items-center gap-2 pt-1">
+          <input type="text" readonly id="mobileDappUrlInput"
+            class="flex-1 bg-surface-container rounded-xl px-2.5 py-1.5 text-[11px] font-mono text-on-surface border border-outline-variant/20 focus:outline-none select-all"
+            value="https://locktrace.space">
+          <button type="button" onclick="copyDappUrlForWallet()"
+            class="px-3 py-1.5 rounded-xl bg-primary hover:bg-primary-hover text-on-primary font-semibold text-xs flex items-center gap-1 transition-all shrink-0 cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[15px]" translate="no">content_copy</span>
+            <span>Copy Link</span>
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 
   <!-- ========================================================================= -->
@@ -15962,7 +16089,11 @@
     async function addWbctToMetaMask() {
       const provider = typeof getEvmProvider === 'function' ? getEvmProvider() : window.ethereum;
       if (!provider) {
-        showToast('MetaMask or EVM Web3 wallet not detected in your browser.', 'error');
+        if (typeof openMobileWalletModal === 'function') {
+          openMobileWalletModal();
+        } else {
+          showToast('MetaMask or EVM Web3 wallet not detected in your browser.', 'error');
+        }
         return;
       }
       try {
@@ -16106,17 +16237,311 @@
 
     let userMetaMaskAddress = null;
     let userWbctBalanceBase = 0;
+    const announcedEip6963Providers = [];
+
+    // EIP-6963: Multi-Injected Provider Discovery (MetaMask, Coinbase, Trust, Rainbow, OKX, Phantom)
+    if (typeof window !== 'undefined') {
+      window.addEventListener('eip6963:announceProvider', (e) => {
+        if (e && e.detail && e.detail.provider) {
+          if (!announcedEip6963Providers.some(p => p.info && p.info.uuid === e.detail.info.uuid)) {
+            announcedEip6963Providers.push(e.detail);
+            updateEvmWalletUi();
+          }
+        }
+      });
+      try {
+        window.dispatchEvent(new Event('eip6963:requestProvider'));
+      } catch (_e) { }
+    }
+
+    function isMobileUser() {
+      return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent || navigator.vendor || window.opera || '');
+    }
+
+    function detectActiveInAppWallet() {
+      const ua = navigator.userAgent || '';
+      if (/MetaMaskMobile/i.test(ua) || (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet && !window.ethereum.isBraveWallet)) {
+        return { id: 'metamask', name: 'MetaMask Mobile', isInApp: /MetaMaskMobile/i.test(ua) };
+      }
+      if (/Trust/i.test(ua) || (window.ethereum && window.ethereum.isTrust) || window.trustwallet) {
+        return { id: 'trust', name: 'Trust Wallet', isInApp: true };
+      }
+      if (/Coinbase/i.test(ua) || (window.ethereum && window.ethereum.isCoinbaseWallet) || window.coinbaseWalletExtension) {
+        return { id: 'coinbase', name: 'Coinbase Wallet', isInApp: true };
+      }
+      if (window.okxwallet || (window.ethereum && window.ethereum.isOkxWallet)) {
+        return { id: 'okx', name: 'OKX Wallet', isInApp: true };
+      }
+      if (window.phantom && window.phantom.ethereum) {
+        return { id: 'phantom', name: 'Phantom Wallet', isInApp: true };
+      }
+      if (window.ethereum) {
+        return { id: 'injected', name: 'Web3 Wallet', isInApp: isMobileUser() };
+      }
+      return null;
+    }
 
     function getEvmProvider() {
-      if (typeof window.ethereum === 'undefined') return null;
-      if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
-        const mm = window.ethereum.providers.find(p => p.isMetaMask && !p.isCoinbaseWallet && !p.isBraveWallet);
-        if (mm) return mm;
-        const anyMm = window.ethereum.providers.find(p => p.isMetaMask);
-        if (anyMm) return anyMm;
-        return window.ethereum.providers[0];
+      // 1. EIP-6963 Multi-Injected Discovery
+      if (announcedEip6963Providers.length > 0) {
+        const mm = announcedEip6963Providers.find(p => p.info && (p.info.rdns === 'io.metamask' || /metamask/i.test(p.info.name || '')));
+        if (mm && mm.provider) return mm.provider;
+        return announcedEip6963Providers[0].provider;
       }
-      return window.ethereum;
+
+      // 2. Window.ethereum & sub-providers array (MetaMask, Coinbase, Brave, etc.)
+      if (typeof window.ethereum !== 'undefined' && window.ethereum) {
+        if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
+          const mm = window.ethereum.providers.find(p => p.isMetaMask && !p.isCoinbaseWallet && !p.isBraveWallet);
+          if (mm) return mm;
+          const anyMm = window.ethereum.providers.find(p => p.isMetaMask);
+          if (anyMm) return anyMm;
+          return window.ethereum.providers[0];
+        }
+        return window.ethereum;
+      }
+
+      // 3. Known standalone mobile/browser injected provider instances
+      if (typeof window.trustwallet !== 'undefined') return window.trustwallet;
+      if (typeof window.okxwallet !== 'undefined') return window.okxwallet;
+      if (typeof window.coinbaseWalletExtension !== 'undefined') return window.coinbaseWalletExtension;
+      if (typeof window.phantom !== 'undefined' && window.phantom.ethereum) return window.phantom.ethereum;
+      if (typeof window.bitkeep !== 'undefined' && window.bitkeep.ethereum) return window.bitkeep.ethereum;
+
+      return null;
+    }
+
+    function openMobileWalletModal() {
+      const modal = document.getElementById('mobileWalletModal');
+      const card = document.getElementById('mobileWalletModalCard');
+      if (!modal || !card) return;
+
+      const activeWallet = detectActiveInAppWallet();
+      const contextText = document.getElementById('mobileWalletContextText');
+      const dappInput = document.getElementById('mobileDappUrlInput');
+      const mmSubtitle = document.getElementById('mmStatusSubtitle');
+
+      const currentHref = window.location.origin + window.location.pathname + '?tab=kopru';
+      if (dappInput) dappInput.value = currentHref;
+
+      if (activeWallet && activeWallet.isInApp) {
+        if (contextText) contextText.textContent = `${activeWallet.name} in-app browser detected! Tap MetaMask below to connect your account directly.`;
+        if (mmSubtitle && activeWallet.id === 'metamask') mmSubtitle.textContent = 'Active in MetaMask In-App Browser - Tap to connect';
+      } else if (isMobileUser()) {
+        if (contextText) contextText.textContent = 'Mobile browser detected. Tap MetaMask or Trust Wallet below to launch the dApp inside your wallet app.';
+      } else {
+        if (contextText) contextText.textContent = 'Connect your MetaMask extension or compatible Web3 wallet on Base Mainnet.';
+      }
+
+      modal.classList.remove('hidden');
+      modal.classList.add('flex');
+      setTimeout(() => {
+        modal.classList.remove('opacity-0');
+        card.classList.remove('translate-y-6', 'sm:scale-95');
+        card.classList.add('translate-y-0', 'sm:scale-100');
+      }, 10);
+    }
+
+    function closeMobileWalletModal() {
+      const modal = document.getElementById('mobileWalletModal');
+      const card = document.getElementById('mobileWalletModalCard');
+      if (!modal || !card) return;
+
+      card.classList.remove('translate-y-0', 'sm:scale-100');
+      card.classList.add('translate-y-6', 'sm:scale-95');
+      modal.classList.add('opacity-0');
+      setTimeout(() => {
+        modal.classList.remove('flex');
+        modal.classList.add('hidden');
+      }, 200);
+    }
+
+    function copyDappUrlForWallet() {
+      const dappInput = document.getElementById('mobileDappUrlInput');
+      const val = (dappInput && dappInput.value) || (window.location.origin + window.location.pathname + '?tab=kopru');
+      copyToClipboard(val);
+      showToast('dApp Link copied! Paste into your MetaMask or Trust Wallet Browser tab', 'success');
+    }
+
+    async function connectOrDeepLinkWallet(walletType = 'metamask') {
+      const provider = getEvmProvider();
+
+      // If a Web3 provider is already injected in this browser session (desktop extension or in-app browser)
+      if (provider) {
+        closeMobileWalletModal();
+        await connectEvmWalletDirect(provider);
+        return;
+      }
+
+      // If user is on a mobile phone without an injected provider, launch universal deep links
+      if (isMobileUser()) {
+        const rawTargetUrl = window.location.origin + window.location.pathname + '?tab=kopru';
+        const cleanHostPath = (window.location.host + window.location.pathname + '?tab=kopru').replace(/\/+/g, '/').replace(/\/$/, '');
+
+        if (walletType === 'metamask') {
+          showToast('Opening MetaMask App...', 'info');
+          const mmDeepLink = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}?tab=kopru`;
+          window.location.href = mmDeepLink;
+        } else if (walletType === 'trust') {
+          showToast('Opening Trust Wallet App...', 'info');
+          const trustDeepLink = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(rawTargetUrl)}`;
+          window.location.href = trustDeepLink;
+        } else if (walletType === 'coinbase') {
+          showToast('Opening Coinbase Wallet App...', 'info');
+          const cbDeepLink = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(rawTargetUrl)}`;
+          window.location.href = cbDeepLink;
+        } else {
+          window.location.href = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}?tab=kopru`;
+        }
+        return;
+      }
+
+      // If on desktop without extension
+      if (walletType === 'metamask') {
+        window.open('https://metamask.io/download/', '_blank');
+        showToast('Please install the MetaMask browser extension to connect.', 'info');
+      } else if (walletType === 'coinbase') {
+        window.open('https://www.coinbase.com/wallet', '_blank');
+      } else {
+        window.open('https://trustwallet.com/browser-extension', '_blank');
+      }
+    }
+
+    async function connectEvmWalletDirect(customProvider = null) {
+      const provider = customProvider || getEvmProvider();
+      if (!provider) {
+        openMobileWalletModal();
+        return;
+      }
+
+      const BASE_CHAIN_ID_HEX = '0x2105';
+      try {
+        try {
+          await provider.request({
+            method: 'wallet_switchEthereumChain',
+            params: [{ chainId: BASE_CHAIN_ID_HEX }]
+          });
+        } catch (switchError) {
+          if (switchError.code === 4902 || (switchError.data && switchError.data.originalError && switchError.data.originalError.code === 4902)) {
+            await provider.request({
+              method: 'wallet_addEthereumChain',
+              params: [{
+                chainId: BASE_CHAIN_ID_HEX,
+                chainName: 'Base Mainnet',
+                nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+                rpcUrls: ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'],
+                blockExplorerUrls: ['https://basescan.org']
+              }]
+            });
+          }
+        }
+
+        const accounts = await provider.request({ method: 'eth_requestAccounts' });
+        if (accounts && accounts.length > 0) {
+          userMetaMaskAddress = accounts[0];
+          showToast(`Wallet Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)} (Base)`, 'success');
+
+          // Bind event listeners once
+          if (provider.on && !provider._locktraceListenersBound) {
+            provider.on('accountsChanged', (accs) => {
+              userMetaMaskAddress = (accs && accs.length > 0) ? accs[0] : null;
+              updateEvmWalletUi();
+              checkMetaMaskWbctBalance();
+            });
+            provider.on('chainChanged', () => {
+              checkMetaMaskWbctBalance();
+              updateEvmWalletUi();
+            });
+            provider._locktraceListenersBound = true;
+          }
+
+          await checkMetaMaskWbctBalance();
+          updateEvmWalletUi();
+        }
+      } catch (err) {
+        console.warn('EVM wallet connect error:', err);
+        if (err.code === 4001) {
+          showToast('Wallet connection request rejected by user', 'info');
+        } else {
+          showToast(err.message || 'Failed to connect Web3 wallet', 'error');
+        }
+      }
+    }
+
+    async function handleConnectEvmWalletClick() {
+      const provider = getEvmProvider();
+      if (!provider) {
+        openMobileWalletModal();
+        return;
+      }
+      if (userMetaMaskAddress) {
+        // If in L1_TO_EVM mode, offer to prefill destination address
+        if (currentBridgeDirection === 'L1_TO_EVM') {
+          const destInput = document.getElementById('bridgeDestinationInput');
+          if (destInput) {
+            destInput.value = userMetaMaskAddress;
+            showToast(`Destination EVM address set to ${userMetaMaskAddress.substring(0, 6)}...${userMetaMaskAddress.substring(38)}`, 'info');
+            return;
+          }
+        }
+        openMobileWalletModal();
+        return;
+      }
+      await connectEvmWalletDirect(provider);
+    }
+
+    function updateEvmWalletUi() {
+      const dot = document.getElementById('evmWalletDot');
+      const addrDisplay = document.getElementById('evmWalletAddressDisplay');
+      const netBadge = document.getElementById('evmWalletNetworkBadge');
+      const btnText = document.getElementById('btnConnectEvmWalletText');
+      const label = document.getElementById('evmWalletLabel');
+      const activeWallet = detectActiveInAppWallet();
+
+      if (label && activeWallet) {
+        label.textContent = activeWallet.name;
+      }
+
+      if (userMetaMaskAddress) {
+        if (dot) {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0';
+        }
+        if (addrDisplay) {
+          const shortAddr = `${userMetaMaskAddress.substring(0, 6)}...${userMetaMaskAddress.substring(38)}`;
+          addrDisplay.textContent = shortAddr;
+          addrDisplay.title = userMetaMaskAddress;
+        }
+        if (netBadge) netBadge.classList.remove('hidden');
+        if (btnText) {
+          btnText.textContent = currentBridgeDirection === 'L1_TO_EVM' ? 'Use Address' : 'Connected';
+        }
+      } else {
+        if (dot) {
+          dot.className = 'w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0 animate-pulse';
+        }
+        if (addrDisplay) {
+          addrDisplay.textContent = getEvmProvider() ? 'Wallet Detected (Click Connect)' : 'Not Connected';
+          addrDisplay.title = '';
+        }
+        if (netBadge) netBadge.classList.add('hidden');
+        if (btnText) {
+          btnText.textContent = isMobileUser() && !getEvmProvider() ? 'Open Wallet' : 'Connect Wallet';
+        }
+      }
+    }
+
+    async function autoDetectEvmWallet() {
+      const provider = getEvmProvider();
+      if (provider && provider.request) {
+        try {
+          const accounts = await provider.request({ method: 'eth_accounts' });
+          if (accounts && accounts.length > 0) {
+            userMetaMaskAddress = accounts[0];
+            await checkMetaMaskWbctBalance();
+          }
+        } catch (_e) { }
+      }
+      updateEvmWalletUi();
     }
 
     async function checkMetaMaskWbctBalance() {
@@ -16124,8 +16549,9 @@
       const availText = document.getElementById('bridgeAvailableBalText');
       if (!provider) {
         if (availText && currentBridgeDirection === 'EVM_TO_L1') {
-          availText.textContent = 'MetaMask not detected';
+          availText.textContent = isMobileUser() ? 'Connect Mobile Wallet' : 'EVM Wallet not detected';
         }
+        updateEvmWalletUi();
         return;
       }
       try {
@@ -16146,12 +16572,13 @@
           }
         } else {
           if (availText && currentBridgeDirection === 'EVM_TO_L1') {
-            availText.textContent = 'Connect MetaMask to check wBCT balance';
+            availText.textContent = isMobileUser() ? 'Connect Mobile Wallet' : 'Connect Web3 Wallet';
           }
         }
       } catch (err) {
         console.warn('Could not read wBCT balance:', err);
       }
+      updateEvmWalletUi();
     }
 
     function setBridgeDirection(dir) {
@@ -16193,6 +16620,7 @@
         checkMetaMaskWbctBalance();
       }
       calculateBridgeOutput();
+      updateEvmWalletUi();
     }
 
     function calculateBridgeOutput() {
@@ -16253,6 +16681,7 @@
         availText.textContent = `Available: ${formatBct(currentAccount.balance || 0, 4)} BCT`;
       }
       calculateBridgeOutput();
+      autoDetectEvmWallet();
     }
 
     async function handleBridgeSubmit() {
@@ -16375,7 +16804,8 @@
 
         const evmProvider = getEvmProvider();
         if (!evmProvider) {
-          showToast('MetaMask or compatible EVM Web3 wallet not found in your browser', 'error', true);
+          openMobileWalletModal();
+          showToast('Please connect your MetaMask or mobile Web3 wallet to proceed.', 'info');
           return;
         }
 
@@ -18049,6 +18479,9 @@
       verifyFrontendIntegrityState();
       refreshExplorerData();
       refreshSystemWalletsData();
+      if (typeof autoDetectEvmWallet === 'function') {
+        setTimeout(autoDetectEvmWallet, 800);
+      }
 
       const urlParams = new URLSearchParams(window.location.search || '');
       const cleanPath = (window.location.pathname || '').replace(/\/+$/, '');
