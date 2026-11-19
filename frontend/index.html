@@ -5792,29 +5792,54 @@
               </div>
             </div>
 
-            <!-- Route Summary & Target Chain -->
-            <div
-              class="grid grid-cols-1 xs:grid-cols-2 gap-3 p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 text-xs">
-              <div class="flex flex-col gap-0.5">
-                <span class="text-on-surface-variant font-medium text-[11px] uppercase tracking-wider">Source
-                  Network</span>
-                <div class="flex items-center gap-1.5 font-semibold text-on-surface" id="bridgeSourceNetText">
-                  <span class="w-2 h-2 rounded-full bg-primary"></span>
-                  <span>BlocTag L1 Mainnet</span>
-                </div>
+            <!-- Cross-Chain Network Routing Card -->
+            <div class="flex flex-col gap-2.5 p-3.5 sm:p-4 rounded-3xl bg-surface-container-low/80 border border-outline-variant/20 shadow-xs">
+              <div class="flex items-center justify-between text-xs pb-1 border-b border-outline-variant/10">
+                <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider flex items-center gap-1.5">
+                  <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">route</span>
+                  <span>Cross-Chain Route</span>
+                </span>
+                <span class="text-[10px] font-mono text-emerald-400 font-semibold px-2 py-0.5 rounded-full bg-emerald-500/10 flex items-center gap-1">
+                  <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
+                  <span>Relayer Active</span>
+                </span>
               </div>
-              <div class="flex flex-col gap-0.5">
-                <span class="text-on-surface-variant font-medium text-[11px] uppercase tracking-wider">Target
-                  Network</span>
-                <div class="flex items-center gap-1.5 font-semibold text-on-surface">
-                  <span class="w-2 h-2 rounded-full bg-secondary"></span>
-                  <select id="bridgeTargetChainSelect"
-                    class="bg-transparent font-semibold text-on-surface text-xs focus:outline-none cursor-pointer w-full max-w-full truncate"
-                    onchange="onBridgeChainChange()">
-                    <option value="base" selected>Base Mainnet (Coinbase L2) (Recommended)</option>
-                    <option value="base-sepolia">Base Sepolia (Coinbase L2 Testnet)</option>
-                    <option value="arbitrum">Arbitrum One (L2)</option>
-                  </select>
+
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5 text-xs">
+                <!-- Source Network Box -->
+                <div class="flex items-center gap-3 p-3 rounded-2xl bg-surface-container border border-outline-variant/15 transition-all" id="bridgeSourceNetBox">
+                  <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center font-bold text-xs shrink-0" id="bridgeSourceNetIcon">
+                    L1
+                  </div>
+                  <div class="flex flex-col min-w-0">
+                    <span class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider">Source Network</span>
+                    <span class="font-bold text-xs sm:text-sm text-on-surface truncate" id="bridgeSourceNetName">BlocTag L1 Mainnet</span>
+                    <span class="text-[10px] text-on-surface-variant font-mono truncate" id="bridgeSourceNetSub">Native Blockchain Trace</span>
+                  </div>
+                </div>
+
+                <!-- Target Network Box (Interactive Selector) -->
+                <div class="flex items-center gap-3 p-3 rounded-2xl bg-surface-container border border-blue-500/30 hover:border-blue-500/50 transition-all relative group cursor-pointer" id="bridgeTargetNetBox">
+                  <div class="w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center justify-center font-bold text-xs shrink-0" id="bridgeTargetNetIcon">
+                    L2
+                  </div>
+                  <div class="flex flex-col min-w-0 flex-1">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[10px] text-on-surface-variant font-medium uppercase tracking-wider">Target Network</span>
+                      <span class="text-[9px] font-bold text-blue-400 bg-blue-500/15 px-1.5 py-0.5 rounded" id="bridgeTargetBadge">Recommended</span>
+                    </div>
+                    <div class="relative flex items-center mt-0.5">
+                      <select id="bridgeTargetChainSelect"
+                        class="w-full bg-transparent font-bold text-xs sm:text-sm text-on-surface focus:outline-none cursor-pointer appearance-none pr-5 truncate"
+                        onchange="onBridgeChainChange()">
+                        <option value="base" selected>Base Mainnet (Coinbase L2)</option>
+                        <option value="base-sepolia">Base Sepolia (Coinbase L2 Testnet)</option>
+                        <option value="arbitrum">Arbitrum One (L2)</option>
+                      </select>
+                      <span class="material-symbols-outlined notranslate absolute right-0 text-on-surface-variant text-[16px] pointer-events-none group-hover:text-blue-400 transition-colors" translate="no">expand_more</span>
+                    </div>
+                    <span class="text-[10px] text-on-surface-variant font-mono truncate" id="bridgeTargetChainDesc">Coinbase L2 • Chain ID: 8453</span>
+                  </div>
                 </div>
               </div>
             </div>
@@ -8861,8 +8886,11 @@
               </svg>
             </div>
             <div class="flex flex-col">
-              <span class="font-bold text-xs text-on-surface group-hover:text-blue-500 transition-colors">Coinbase Wallet</span>
-              <span class="text-[11px] text-on-surface-variant">Web3 Extension / Mobile App</span>
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-xs text-on-surface group-hover:text-blue-500 transition-colors">Coinbase Wallet</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-400">Base L2</span>
+              </div>
+              <span class="text-[11px] text-on-surface-variant">Direct Connect for Base Mainnet &amp; Mobile</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-blue-500 text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
@@ -8876,8 +8904,11 @@
               <span class="material-symbols-outlined notranslate text-blue-400 text-[24px]" translate="no">shield</span>
             </div>
             <div class="flex flex-col">
-              <span class="font-bold text-xs text-on-surface group-hover:text-blue-400 transition-colors">Trust Wallet</span>
-              <span class="text-[11px] text-on-surface-variant">Web3 Extension / Mobile Wallet</span>
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-xs text-on-surface group-hover:text-blue-400 transition-colors">Trust Wallet</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-400">Multi-Chain</span>
+              </div>
+              <span class="text-[11px] text-on-surface-variant">Direct Connect for Trust Wallet Mobile</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-blue-400 text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
@@ -16220,6 +16251,13 @@
     }
 
     async function initBridgeTab() {
+      // 1. Pre-warm MetaMask SDK in background so WebSocket relay is already hot when user clicks
+      try {
+        if (typeof getOrInitMetaMaskSDK === 'function') {
+          getOrInitMetaMaskSDK();
+        }
+      } catch (_e) { }
+
       try {
         if (typeof loadBridgeConfig === 'function') {
           await loadBridgeConfig();
@@ -16483,14 +16521,21 @@
         uniswapBtn.href = bridgeConfig.supported_chains[selectedChain].uniswap_url;
       }
       const netBadge = document.getElementById('evmWalletNetworkBadge');
-      if (netBadge) {
-        if (selectedChain === 'base-sepolia') {
-          netBadge.textContent = 'Base Sepolia (84532)';
-        } else if (selectedChain === 'arbitrum') {
-          netBadge.textContent = 'Arbitrum One (42161)';
-        } else {
-          netBadge.textContent = 'Base Mainnet (8453)';
-        }
+      const targetBadge = document.getElementById('bridgeTargetBadge');
+      const targetDesc = document.getElementById('bridgeTargetChainDesc');
+
+      if (selectedChain === 'base-sepolia') {
+        if (netBadge) netBadge.textContent = 'Base Sepolia (84532)';
+        if (targetBadge) { targetBadge.textContent = 'Testnet'; targetBadge.className = 'text-[9px] font-bold text-amber-400 bg-amber-500/15 px-1.5 py-0.5 rounded'; }
+        if (targetDesc) targetDesc.textContent = 'Coinbase L2 Testnet • Chain ID: 84532';
+      } else if (selectedChain === 'arbitrum') {
+        if (netBadge) netBadge.textContent = 'Arbitrum One (42161)';
+        if (targetBadge) { targetBadge.textContent = 'Arbitrum L2'; targetBadge.className = 'text-[9px] font-bold text-cyan-400 bg-cyan-500/15 px-1.5 py-0.5 rounded'; }
+        if (targetDesc) targetDesc.textContent = 'Arbitrum Nitro • Chain ID: 42161';
+      } else {
+        if (netBadge) netBadge.textContent = 'Base Mainnet (8453)';
+        if (targetBadge) { targetBadge.textContent = 'Recommended'; targetBadge.className = 'text-[9px] font-bold text-blue-400 bg-blue-500/15 px-1.5 py-0.5 rounded'; }
+        if (targetDesc) targetDesc.textContent = 'Coinbase L2 • Chain ID: 8453';
       }
     }
 
@@ -17277,15 +17322,33 @@
         }
       }
       if (!sdk) {
-        showToast('MetaMask SDK is still loading. Please refresh the page and try again.', 'warning');
+        showToast('MetaMask SDK is initializing. Please tap again in a moment.', 'warning');
         return null;
       }
+
+      // Show immediate action banner on mobile right now, so user doesn't wait with no UI
+      if (isMobileUser()) {
+        showMetaMaskActionBanner(
+          'Connecting to MetaMask',
+          'Tap "Open" below if MetaMask does not switch automatically:',
+          latestMetaMaskDeeplink || 'metamask://'
+        );
+      }
+
       try {
         showToast(isMobileUser()
-          ? 'Opening MetaMask connection prompt... Return to this tab after approving.'
+          ? 'Opening MetaMask... Return to this tab after approving.'
           : 'Initiating MetaMask connection...', 'info');
 
-        const accounts = await sdk.connect();
+        // Add 18-second timeout guard so it NEVER hangs indefinitely
+        const connectPromise = sdk.connect();
+        const timeoutPromise = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('MetaMask connection timed out. Please tap "Open MetaMask" to retry.')), 18000)
+        );
+
+        const accounts = await Promise.race([connectPromise, timeoutPromise]);
+        hideMetaMaskActionBanner();
+
         const provider = sdk.getProvider();
         if (!provider || !accounts || accounts.length === 0) {
           throw new Error('Could not obtain MetaMask wallet connection.');
@@ -17375,8 +17438,15 @@
         }
         if (isMobileUser()) {
           showToast('Opening Trust Wallet app...', 'info');
-          const rawUrl = `${window.location.origin}${window.location.pathname}?tab=kopru&dir=${encodeURIComponent(currentBridgeDirection)}`;
-          window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(rawUrl)}`;
+          try {
+            window.location.href = 'trust://';
+          } catch (_e) { }
+          setTimeout(() => {
+            openMobileWalletModal();
+            showToast('Paste your Base EVM address below once copied from Trust Wallet.', 'info');
+            const manualInput = document.getElementById('manualEvmAddressInput');
+            if (manualInput) manualInput.focus();
+          }, 1200);
           return;
         }
         window.open('https://trustwallet.com/browser-extension', '_blank');
@@ -17400,8 +17470,15 @@
         }
         if (isMobileUser()) {
           showToast('Opening Coinbase Wallet app...', 'info');
-          const rawUrl = `${window.location.origin}${window.location.pathname}?tab=kopru&dir=${encodeURIComponent(currentBridgeDirection)}`;
-          window.location.href = `https://go.cb-w.com/dapp?cb_url=${encodeURIComponent(rawUrl)}`;
+          try {
+            window.location.href = 'cbwallet://';
+          } catch (_e) { }
+          setTimeout(() => {
+            openMobileWalletModal();
+            showToast('Paste your Base EVM address below once copied from Coinbase Wallet.', 'info');
+            const manualInput = document.getElementById('manualEvmAddressInput');
+            if (manualInput) manualInput.focus();
+          }, 1200);
           return;
         }
         window.open('https://www.coinbase.com/wallet', '_blank');
@@ -17727,10 +17804,19 @@
       const destInput = document.getElementById('bridgeDestinationInput');
       const btnText = document.getElementById('btnBridgeText');
 
+      const srcIcon = document.getElementById('bridgeSourceNetIcon');
+      const srcName = document.getElementById('bridgeSourceNetName');
+      const srcSub = document.getElementById('bridgeSourceNetSub');
+      const targetIcon = document.getElementById('bridgeTargetNetIcon');
+
       if (dir === 'L1_TO_EVM') {
         if (btnL1) btnL1.className = 'flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center justify-center gap-1.5 bg-primary text-on-primary shadow-sm';
         if (btnEvm) btnEvm.className = 'flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface';
         if (srcText) srcText.innerHTML = '<span class="w-2 h-2 rounded-full bg-primary"></span><span>BlocTag L1 Mainnet</span>';
+        if (srcIcon) { srcIcon.textContent = 'L1'; srcIcon.className = 'w-9 h-9 rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center font-bold text-xs shrink-0'; }
+        if (srcName) srcName.textContent = 'BlocTag L1 Mainnet';
+        if (srcSub) srcSub.textContent = 'Native Blockchain Trace';
+        if (targetIcon) { targetIcon.textContent = 'L2'; targetIcon.className = 'w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center justify-center font-bold text-xs shrink-0'; }
         if (inputSymbol) inputSymbol.textContent = 'BCT';
         if (outputSymbol) outputSymbol.textContent = 'wBCT';
         if (destLabel) destLabel.textContent = 'Destination EVM Address (Base Mainnet)';
@@ -17749,6 +17835,10 @@
         if (btnEvm) btnEvm.className = 'flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center justify-center gap-1.5 bg-secondary text-on-secondary shadow-sm';
         if (btnL1) btnL1.className = 'flex-1 py-2.5 px-3 rounded-xl font-label-md text-label-md font-semibold transition-all flex items-center justify-center gap-1.5 text-on-surface-variant hover:text-on-surface';
         if (srcText) srcText.innerHTML = '<span class="w-2 h-2 rounded-full bg-secondary"></span><span>Base Mainnet (EVM)</span>';
+        if (srcIcon) { srcIcon.textContent = 'L2'; srcIcon.className = 'w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center justify-center font-bold text-xs shrink-0'; }
+        if (srcName) srcName.textContent = 'Base Mainnet (Coinbase L2)';
+        if (srcSub) srcSub.textContent = 'Coinbase L2 • Chain ID: 8453';
+        if (targetIcon) { targetIcon.textContent = 'L1'; targetIcon.className = 'w-9 h-9 rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center font-bold text-xs shrink-0'; }
         if (inputSymbol) inputSymbol.textContent = 'wBCT';
         if (outputSymbol) outputSymbol.textContent = 'BCT';
         if (destLabel) destLabel.textContent = 'Destination BlocTag L1 Address';
