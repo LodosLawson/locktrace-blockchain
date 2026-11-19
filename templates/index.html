@@ -46,7 +46,7 @@
     crossorigin="anonymous"></script>
   <!-- MetaMask SDK (Standalone Browser IIFE for Direct Native Mobile Signing, SRI Verified) -->
   <script src="/vendor/metamask-sdk.js"
-    integrity="sha384-lMOClogLeJV29+7Xuxn30zEfCGVZtL2yU1aK/hDVo6+gcTtEp/1tjG23q4GSmqnl"
+    integrity="sha384-+YezwfTws8PnaydGety78Y2QKkzYok/TnV9lYQltlqxkOMBSfl+b0+3hWhp7Pikz"
     crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
@@ -16360,8 +16360,19 @@
             url: window.location.origin,
             iconUrl: `${window.location.origin}/icons/icon-192.png`
           },
+          defaultReadOnlyChainId: '0x2105',
+          readonlyRPCMap: {
+            '0x2105': 'https://mainnet.base.org'
+          },
           preferDesktop: false,
-          useDeeplink: false,
+          useDeeplink: true,
+          openDeeplink: (link) => {
+            if (link && typeof window !== 'undefined') {
+              window.location.href = link;
+            }
+          },
+          injectProvider: false,
+          shouldShimWeb3: false,
           enableAnalytics: false,
           checkInstallationImmediately: false,
           logging: { developerMode: false, sdk: false }
@@ -16675,8 +16686,14 @@
       if (mmSdkInstance && typeof mmSdkInstance.terminate === 'function') {
         try { mmSdkInstance.terminate(); } catch (_e) { }
       }
+      mmSdkInstance = null;
       mmSdkProvider = null;
-      try { localStorage.removeItem('bct_connected_evm_address'); } catch (_e) { }
+      try {
+        localStorage.removeItem('bct_connected_evm_address');
+        localStorage.removeItem('.sdk-comm');
+        localStorage.removeItem('.MMSDK_cached_address');
+        localStorage.removeItem('.MMSDK_cached_chainId');
+      } catch (_e) { }
       const activeBox = document.getElementById('modalActiveWalletBox');
       if (activeBox) activeBox.classList.add('hidden');
       const manualInput = document.getElementById('manualEvmAddressInput');
@@ -16752,6 +16769,10 @@
           throw new Error('Could not obtain MetaMask wallet connection.');
         }
 
+        if (typeof provider._setConnected === 'function') {
+          try { provider._setConnected(); } catch (_e) { }
+        }
+
         mmSdkProvider = provider;
         activeEvmProvider = provider;
         activeEvmWalletName = 'MetaMask';
@@ -16761,11 +16782,14 @@
 
         showToast(`MetaMask Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'success');
 
-        // Ensure Base Mainnet once during connect if needed
-        try {
-          await ensureBaseNetworkOnProvider(provider);
-        } catch (netErr) {
-          console.warn('Base network switch deferred:', netErr);
+        // Note: Do NOT call ensureBaseNetworkOnProvider on mobile MetaMask SDK right after connect(),
+        // because MetaMask Mobile is now in the background and eth_chainId would hang the RPC stream.
+        if (!isMobileUser()) {
+          try {
+            await ensureBaseNetworkOnProvider(provider);
+          } catch (netErr) {
+            console.warn('Base network switch deferred:', netErr);
+          }
         }
 
         if (currentBridgeDirection === 'L1_TO_EVM') {
@@ -16956,6 +16980,33 @@
       }
     }
 
+    async function restorePersistedMetaMaskSdkSession() {
+      if (mmSdkProvider) return mmSdkProvider;
+      try {
+        const hasPersisted = localStorage.getItem('.sdk-comm');
+        if (!hasPersisted) return null;
+        const sdk = getOrInitMetaMaskSDK();
+        if (!sdk) return null;
+        if (typeof sdk.init === 'function' && !sdk._initialized) {
+          await sdk.init();
+        }
+        const provider = sdk.getProvider();
+        if (provider) {
+          if (typeof provider._setConnected === 'function') {
+            try { provider._setConnected(); } catch (_e) { }
+          }
+          mmSdkProvider = provider;
+          if (!activeEvmProvider) activeEvmProvider = provider;
+          if (!activeEvmWalletName) activeEvmWalletName = 'MetaMask';
+          bindEvmProviderListeners(provider);
+          return provider;
+        }
+      } catch (err) {
+        console.warn('Could not restore persisted MetaMask SDK session:', err);
+      }
+      return null;
+    }
+
     async function autoDetectEvmWallet() {
       // 1. Check injected provider accounts if present
       const provider = getInjectedEvmProvider(true);
@@ -16971,14 +17022,21 @@
         } catch (_e) { }
       }
 
-      // 2. Restore from localStorage if not injected (read-only balance preview until SDK connect)
+      // 2. Restore from localStorage if not injected, and re-attach persisted MetaMask SDK channel if present
       if (!userMetaMaskAddress) {
         try {
-          const savedAddr = localStorage.getItem('bct_connected_evm_address');
-          if (savedAddr && /^0x[a-fA-F0-9]{40}$/i.test(savedAddr)) {
-            userMetaMaskAddress = savedAddr;
+          const savedAddr = localStorage.getItem('bct_connected_evm_address') || localStorage.getItem('.MMSDK_cached_address');
+          if (savedAddr) {
+            const parsed = savedAddr.startsWith('[') ? JSON.parse(savedAddr)[0] : savedAddr;
+            if (parsed && /^0x[a-fA-F0-9]{40}$/i.test(parsed)) {
+              userMetaMaskAddress = parsed;
+            }
           }
         } catch (_e) { }
+      }
+
+      if (!activeEvmProvider) {
+        await restorePersistedMetaMaskSdkSession();
       }
 
       await checkMetaMaskWbctBalance();
@@ -17297,6 +17355,10 @@
 
         let evmProvider = getEvmProvider();
         if (!evmProvider) {
+          // Try restoring persisted MetaMask SDK channel first (if user already connected before page reload)
+          evmProvider = await restorePersistedMetaMaskSdkSession();
+        }
+        if (!evmProvider) {
           // Connect directly via MetaMask SDK (opens native Connect sheet without MetaMask in-app browser redirect!)
           isExecutingBridge = true;
           if (btn) btn.disabled = true;
@@ -17309,11 +17371,6 @@
             updateEvmWalletUi();
           }
           if (!evmProvider) {
-            return;
-          }
-          // On mobile, after returning from Connect approval, prompt user to tap once more to open the native Sign sheet cleanly
-          if (isMobileUser()) {
-            showToast("MetaMask connected! Tap 'Burn wBCT & Unlock L1' once more to open the transaction signing sheet.", 'success', true);
             return;
           }
         }
@@ -17331,7 +17388,7 @@
         if (btn) btn.disabled = true;
 
         try {
-          // 1. Resolve connected EVM account safely (avoids Proxy private-field getter error)
+          // 1. Resolve connected EVM account safely
           let userEvm = safeGetProviderAddress(evmProvider);
           if (!userEvm) {
             if (btnText) btnText.textContent = 'Connecting Wallet...';
@@ -17344,8 +17401,11 @@
             try { localStorage.setItem('bct_connected_evm_address', userEvm); } catch (_e) { }
           }
 
-          // 2. Ensure Base Mainnet (Chain ID 8453 / 0x2105) safely
-          if (!isChainIdBase(safeGetProviderChainId(evmProvider))) {
+          // 2. Ensure Base Mainnet (Chain ID 8453 / 0x2105) ONLY for injected providers.
+          //    For MetaMask SDK mobile (mmSdkProvider), calling eth_chainId / wallet_switchEthereumChain
+          //    before eth_sendTransaction hangs on the backgrounded app and prevents the signing deep link!
+          const isMmSdk = (evmProvider === mmSdkProvider) || Boolean(evmProvider && typeof evmProvider._setConnected === 'function');
+          if (!isMmSdk && !isChainIdBase(safeGetProviderChainId(evmProvider))) {
             if (btnText) btnText.textContent = 'Switching to Base...';
             await ensureBaseNetworkOnProvider(evmProvider);
           }
@@ -17360,15 +17420,20 @@
             }
           }
 
-          // 4. Encode burnToBridge(uint256, string) locally & send eth_sendTransaction directly
-          //    This triggers MetaMask's native Transaction Signature screen immediately with zero extra RPC round-trips!
+          // 4. Encode burnToBridge(uint256, string) locally & send eth_sendTransaction directly.
+          //    Ensure _setConnected() is active on SDKProvider so MetaMask SDK's stream writer (LR)
+          //    always triggers openDeeplink('metamask://connect?...') immediately!
+          if (typeof evmProvider._setConnected === 'function') {
+            try { evmProvider._setConnected(); } catch (_e) { }
+          }
+
           const wbctIface = new ethers.Interface([
             "function burnToBridge(uint256 amount, string calldata locktraceRecipient) external"
           ]);
           const encodedData = wbctIface.encodeFunctionData("burnToBridge", [amountWei, cleanDest]);
 
           if (btnText) btnText.textContent = 'Confirm in Wallet...';
-          showToast(`Please sign the ${formatBct(amount, 2)} wBCT burn transaction in your wallet.`, 'info');
+          showToast(`Opening MetaMask to sign ${formatBct(amount, 2)} wBCT burn transaction...`, 'info');
 
           const evmTxHash = await evmProvider.request({
             method: 'eth_sendTransaction',
