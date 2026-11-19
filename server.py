@@ -338,7 +338,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-/6TAKCeET71KOdcac1wP9TuNGhTX3IrPcDrzlqnPZro=' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-Nj+G6oHFwoo1uAAaXOWguMijqwHwProzVRf4+NhueBk=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -3421,24 +3421,7 @@ def api_bridge_claim_burn():
         _BRIDGE_CLAIMS_IN_FLIGHT.add(evm_tx_hash)
 
     try:
-        # 0. Cryptographic On-Chain Verification on Base Mainnet
-        verified, v_msg, event_data = verify_evm_burn_receipt(
-            evm_tx_hash=evm_tx_hash,
-            expected_recipient=bct_address,
-            expected_amount=amount_bct
-        )
-        if not verified:
-            # Allow admin key override only if network is offline and caller has admin key
-            if event_data.get("network_error") and _require_admin_api_key():
-                logger.warning(f"Bridge unlock granted via ADMIN_API_KEY override for {evm_tx_hash}")
-            else:
-                return api_response(False, message=f"Burn could not be verified on Base Mainnet: {v_msg}", status=400)
-        else:
-            verified_sender = str(event_data.get("sender") or "").strip().lower()
-            if verified_sender.startswith("0x") and len(verified_sender) == 42:
-                safe_sender = verified_sender
-
-        # 0.5. Check if this EVM transaction has already been unlocked on-chain
+        # 0. Check if this EVM transaction has already been unlocked on-chain
         for block in blockchain.chain:
             for tx in block.transactions:
                 if tx.tx_type == "bridge_unlock" and tx.extra_data and str(tx.extra_data.get("evm_tx_hash", "")).lower() == evm_tx_hash:
@@ -3451,7 +3434,7 @@ def api_bridge_claim_burn():
                         "message": "This EVM burn transaction has already been unlocked on LockTrace."
                     }, status=200)
 
-        # 1. Register order in bridge_manager if not already registered
+        # 1. Register order in bridge_manager immediately as PENDING (so background relayer daemon can track & auto-retry)
         order_res = bridge_manager.create_bridge_order(
             direction="EVM_TO_L1",
             bct_address=bct_address,
@@ -3462,7 +3445,41 @@ def api_bridge_claim_burn():
         )
         bridge_id = order_res.get("data", {}).get("bridge_id", "")
 
-        # 2. Execute on-chain Layer-1 unlock (transfers BCT to user and seals block)
+        # 2. Cryptographic On-Chain Verification on Base Mainnet
+        verified, v_msg, event_data = verify_evm_burn_receipt(
+            evm_tx_hash=evm_tx_hash,
+            expected_recipient=bct_address,
+            expected_amount=amount_bct
+        )
+        if not verified:
+            # Allow admin key override only if network is offline and caller has admin key
+            if event_data.get("network_error") and _require_admin_api_key():
+                logger.warning(f"Bridge unlock granted via ADMIN_API_KEY override for {evm_tx_hash}")
+            elif is_transient_bridge_error(v_msg) or "confirmation" in v_msg.lower() or event_data.get("confirmations") is not None:
+                # F-08 & AUD18-02: Pending confirmation depth is retryable - mark PENDING in DB and return 409 retryable
+                if bridge_id:
+                    with bridge_manager._get_connection() as conn:
+                        conn.execute(
+                            "UPDATE bridge_transactions SET status = 'PENDING', error_message = ?, updated_at = ? WHERE bridge_id = ?",
+                            (f"Awaiting Base confirmations: {v_msg}", time.time(), bridge_id)
+                        )
+                return api_response(False, data={
+                    "retryable": True,
+                    "bridge_id": bridge_id,
+                    "confirmations": event_data.get("confirmations", 0),
+                    "required": event_data.get("required", 12)
+                }, message=f"Base onayları bekleniyor ({v_msg}). İşleminiz kayıt altına alındı ve relayer tarafından otomatik tamamlanacaktır.", status=409)
+            else:
+                if bridge_id:
+                    with bridge_manager._get_connection() as conn:
+                        conn.execute("UPDATE bridge_transactions SET status = 'FAILED', error_message = ?, updated_at = ? WHERE bridge_id = ?", (v_msg, time.time(), bridge_id))
+                return api_response(False, message=f"Burn could not be verified on Base Mainnet: {v_msg}", status=400)
+        else:
+            verified_sender = str(event_data.get("sender") or "").strip().lower()
+            if verified_sender.startswith("0x") and len(verified_sender) == 42:
+                safe_sender = verified_sender
+
+        # 3. Execute on-chain Layer-1 unlock (transfers BCT to user and seals block)
         ok, msg, tx_data = blockchain.execute_bridge_unlock(
             recipient_address=bct_address,
             amount_bct=amount_bct,
@@ -3488,7 +3505,7 @@ def api_bridge_claim_burn():
                         conn.execute("UPDATE bridge_transactions SET status = 'FAILED', error_message = ?, updated_at = ? WHERE bridge_id = ?", (msg, time.time(), bridge_id))
                 return api_response(False, message=msg, status=400)
 
-        # 3. Mark bridge order as completed in bridge database
+        # 4. Mark bridge order as completed in bridge database
         if bridge_id:
             bridge_manager.complete_bridge(bridge_id, tx_hash_evm=evm_tx_hash)
 

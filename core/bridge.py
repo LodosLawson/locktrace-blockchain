@@ -21,6 +21,31 @@ logger = logging.getLogger("LockTrace.Bridge")
 
 WBCT_OFFICIAL_CONTRACT = "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"
 BURNED_TO_BRIDGE_TOPIC = "0x3275d83b87617ce084971fb014e237c81fb767cfb2fb708a12be7ec5a6c5afd0"
+BASE_RPC_FALLBACKS = [
+    "https://mainnet.base.org",
+    "https://base-rpc.publicnode.com",
+    "https://1rpc.io/base",
+    "https://base.meowrpc.com"
+]
+
+
+def _call_base_rpc(payload: dict, primary_rpc: str = "https://mainnet.base.org", timeout: int = 10) -> Optional[Dict[str, Any]]:
+    """Helper to query Base RPC with automatic failover across fallback endpoints."""
+    endpoints = [primary_rpc] + [ep for ep in BASE_RPC_FALLBACKS if ep != primary_rpc]
+    req_bytes = json.dumps(payload).encode("utf-8")
+    headers = {"Content-Type": "application/json", "User-Agent": "LockTraceBridge/2.0"}
+
+    for ep in endpoints:
+        try:
+            req = urllib.request.Request(ep, data=req_bytes, headers=headers)
+            with urllib.request.urlopen(req, timeout=timeout) as response:
+                res = json.loads(response.read().decode("utf-8"))
+                if res and "result" in res:
+                    return res
+        except Exception as e:
+            logger.debug(f"RPC {ep} attempt failed: {e}")
+            continue
+    return None
 
 
 def verify_evm_burn_receipt(
@@ -42,24 +67,14 @@ def verify_evm_burn_receipt(
     target_contract = (wbct_contract or WBCT_OFFICIAL_CONTRACT).strip().lower()
     clean_recipient = (expected_recipient or "").strip()
 
-    req_payload = json.dumps({
-        "jsonrpc": "2.0",
-        "method": "eth_getTransactionReceipt",
-        "params": [clean_hash],
-        "id": 1
-    }).encode("utf-8")
-
-    req = urllib.request.Request(
-        rpc_url or "https://mainnet.base.org",
-        data=req_payload,
-        headers={"Content-Type": "application/json", "User-Agent": "LockTraceBridge/1.5"}
+    res_data = _call_base_rpc(
+        {"jsonrpc": "2.0", "method": "eth_getTransactionReceipt", "params": [clean_hash], "id": 1},
+        primary_rpc=rpc_url or "https://mainnet.base.org",
+        timeout=12
     )
 
-    try:
-        with urllib.request.urlopen(req, timeout=12) as response:
-            res_data = json.loads(response.read().decode("utf-8"))
-    except Exception as e:
-        logger.warning(f"Base RPC connection failed while verifying burn tx {clean_hash}: {e}")
+    if not res_data:
+        logger.warning(f"All Base RPC connections failed while verifying burn tx {clean_hash}")
         return False, "Failed to connect to Base Mainnet RPC endpoint.", {"network_error": True}
 
     receipt = res_data.get("result")
@@ -85,18 +100,18 @@ def verify_evm_burn_receipt(
         return False, "EVM blockNumber missing from transaction receipt.", {}
     try:
         rb_int = int(receipt_block, 16) if isinstance(receipt_block, str) and receipt_block.startswith("0x") else int(receipt_block)
-        block_req = urllib.request.Request(
-            rpc_url or "https://mainnet.base.org",
-            data=json.dumps({"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 2}).encode("utf-8"),
-            headers={"Content-Type": "application/json", "User-Agent": "LockTraceBridge/1.5"}
+        b_data = _call_base_rpc(
+            {"jsonrpc": "2.0", "method": "eth_blockNumber", "params": [], "id": 2},
+            primary_rpc=rpc_url or "https://mainnet.base.org",
+            timeout=8
         )
-        with urllib.request.urlopen(block_req, timeout=8) as b_resp:
-            b_data = json.loads(b_resp.read().decode("utf-8"))
-            latest_block = int(b_data.get("result", "0x0"), 16)
-            confs = (latest_block - rb_int + 1) if latest_block >= rb_int else 0
-            min_confs = int(os.environ.get("MIN_EVM_CONFIRMATIONS", "12"))
-            if confs < min_confs:
-                return False, f"EVM transaction has {confs} confirmation(s); at least {min_confs} required for reorg security.", {"confirmations": confs, "required": min_confs}
+        if not b_data:
+            return False, "Could not verify Base EVM confirmation depth; RPC failed.", {"network_error": True}
+        latest_block = int(b_data.get("result", "0x0"), 16)
+        confs = (latest_block - rb_int + 1) if latest_block >= rb_int else 0
+        min_confs = int(os.environ.get("MIN_EVM_CONFIRMATIONS", "12"))
+        if confs < min_confs:
+            return False, f"EVM transaction has {confs} confirmation(s); at least {min_confs} required for reorg security.", {"confirmations": confs, "required": min_confs}
     except Exception as e:
         logger.warning(f"Could not verify confirmation depth: {e}")
         return False, "Could not verify Base EVM confirmation depth; reorg guard failed.", {"network_error": True}

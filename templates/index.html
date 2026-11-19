@@ -16459,20 +16459,44 @@
 
           const evmTxHash = receipt.hash;
 
-          // 5. Claim unlock on BlocTag Layer-1
+          // 5. Claim unlock on BlocTag Layer-1 (with automatic reorg confirmation polling)
           if (btnText) btnText.textContent = 'Unlocking Native BCT on L1...';
-          const { ok: claimOk, body: claimBody } = await apiFetch('/bridge/claim_burn', {
-            method: 'POST',
-            body: JSON.stringify({
-              evm_tx_hash: evmTxHash,
-              bct_address: destAddr,
-              amount: amount,
-              evm_sender: userEvm
-            })
-          });
+          let claimOk = false;
+          let claimBody = null;
+          const maxClaimAttempts = 15; // 15 attempts * 2.5s = ~37s (exceeds 12 Base blocks @ 2s/blk)
+          for (let attempt = 1; attempt <= maxClaimAttempts; attempt++) {
+            if (btnText) {
+              btnText.textContent = attempt === 1
+                ? 'Unlocking Native BCT on L1...'
+                : `Verifying Base Confirmations (${attempt}/${maxClaimAttempts})...`;
+            }
+            const res = await apiFetch('/bridge/claim_burn', {
+              method: 'POST',
+              body: JSON.stringify({
+                evm_tx_hash: evmTxHash,
+                bct_address: destAddr,
+                amount: amount,
+                evm_sender: userEvm
+              })
+            });
+            claimOk = res.ok;
+            claimBody = res.body;
 
-          if (!claimOk || !claimBody.data) {
-            throw new Error(claimBody.message || 'L1 Unlock failed. Relayer will retry automatically.');
+            if (claimOk && claimBody && claimBody.data) {
+              break;
+            }
+
+            const isRetryable = res.status === 409 || (claimBody && (claimBody.data?.retryable || /confirmation|bekleniyor|pending|reorg/i.test(claimBody.message || '')));
+            if (isRetryable && attempt < maxClaimAttempts) {
+              await new Promise(r => setTimeout(r, 2500));
+              continue;
+            } else {
+              break;
+            }
+          }
+
+          if (!claimOk || !claimBody || !claimBody.data) {
+            throw new Error((claimBody && claimBody.message) || 'L1 Unlock awaiting network confirmations. Relayer daemon will complete it automatically.');
           }
 
           const l1Hash = claimBody.data.l1_tx_hash || '';
