@@ -16263,6 +16263,38 @@
     let mmSdkProvider = null;
     let activeEvmProvider = null;
     let activeEvmWalletName = null;
+    let lastKnownEvmChainId = null;
+
+    function safeGetProviderChainId(provider) {
+      if (!provider) return lastKnownEvmChainId;
+      try {
+        if (typeof provider.getChainId === 'function') {
+          const cid = provider.getChainId();
+          if (cid) return cid;
+        }
+      } catch (_e) { }
+      try {
+        const cid = provider.chainId;
+        if (cid) return cid;
+      } catch (_e) { }
+      return lastKnownEvmChainId;
+    }
+
+    function safeGetProviderAddress(provider) {
+      if (userMetaMaskAddress) return userMetaMaskAddress;
+      if (!provider) return null;
+      try {
+        if (typeof provider.getSelectedAddress === 'function') {
+          const addr = provider.getSelectedAddress();
+          if (addr) return addr;
+        }
+      } catch (_e) { }
+      try {
+        const addr = provider.selectedAddress;
+        if (addr) return addr;
+      } catch (_e) { }
+      return null;
+    }
 
     const BASE_RPC_URLS = ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'];
 
@@ -16357,7 +16389,8 @@
         updateEvmWalletUi();
         checkMetaMaskWbctBalance();
       });
-      provider.on('chainChanged', () => {
+      provider.on('chainChanged', (newChainId) => {
+        if (newChainId) lastKnownEvmChainId = newChainId;
         checkMetaMaskWbctBalance();
         updateEvmWalletUi();
       });
@@ -16368,6 +16401,7 @@
         if (provider === activeEvmProvider) {
           activeEvmProvider = null;
         }
+        lastKnownEvmChainId = null;
         updateEvmWalletUi();
       });
       provider._locktraceListenersBound = true;
@@ -16376,10 +16410,15 @@
     async function ensureBaseNetworkOnProvider(provider) {
       if (!provider || !provider.request) return;
       const BASE_CHAIN_ID_HEX = '0x2105';
-      // Check cached chainId property first to avoid redundant mobile round-trips
-      if (isChainIdBase(provider.chainId)) return;
+      // Safely check cached/known chainId without touching proxied private fields directly
+      const knownChain = safeGetProviderChainId(provider);
+      if (isChainIdBase(knownChain)) {
+        lastKnownEvmChainId = BASE_CHAIN_ID_HEX;
+        return;
+      }
       try {
         const currentChain = await provider.request({ method: 'eth_chainId' });
+        if (currentChain) lastKnownEvmChainId = currentChain;
         if (isChainIdBase(currentChain)) return;
       } catch (_e) { }
 
@@ -16388,6 +16427,7 @@
           method: 'wallet_switchEthereumChain',
           params: [{ chainId: BASE_CHAIN_ID_HEX }]
         });
+        lastKnownEvmChainId = BASE_CHAIN_ID_HEX;
       } catch (switchError) {
         const code = switchError && (switchError.code || (switchError.data && switchError.data.originalError && switchError.data.originalError.code));
         if (code === 4902 || code === -32603) {
@@ -16401,6 +16441,7 @@
               blockExplorerUrls: ['https://basescan.org']
             }]
           });
+          lastKnownEvmChainId = BASE_CHAIN_ID_HEX;
         } else {
           throw switchError;
         }
@@ -16627,6 +16668,7 @@
       userWbctBalanceBase = 0;
       activeEvmProvider = null;
       activeEvmWalletName = null;
+      lastKnownEvmChainId = null;
       if (mmSdkInstance && typeof mmSdkInstance.terminate === 'function') {
         try { mmSdkInstance.terminate(); } catch (_e) { }
       }
@@ -17036,6 +17078,49 @@
       if (netDisplay) netDisplay.textContent = formatBct(net, 4);
     }
 
+    async function setBridgeMaxAmount() {
+      const amtInput = document.getElementById('bridgeAmountInput');
+      if (!amtInput) return;
+
+      if (currentBridgeDirection === 'L1_TO_EVM') {
+        if (!currentAccount || !currentAccount.address) {
+          showToast('L1 bakiyenizi kullanmak için lütfen önce LockTrace cüzdanınızı açın.', 'warning');
+          return;
+        }
+        const rawBal = Number(currentAccount.balance || 0);
+        const maxSpendable = Math.max(0, Math.floor((rawBal - 0.001) * 10000) / 10000);
+        if (maxSpendable < 1.0) {
+          showToast(`Yetersiz L1 bakiye! Minimum köprü miktarı 1.00 BCT (Mevcut: ${formatBct(rawBal, 4)} BCT).`, 'warning');
+          amtInput.value = maxSpendable > 0 ? String(maxSpendable) : '';
+          calculateBridgeOutput();
+          return;
+        }
+        amtInput.value = String(maxSpendable);
+        calculateBridgeOutput();
+      } else {
+        if (!userMetaMaskAddress) {
+          openMobileWalletModal();
+          showToast('wBCT bakiyenizi doldurmak için lütfen Web3 cüzdanınızı bağlayın.', 'info');
+          return;
+        }
+        if (userWbctBalanceBase <= 0) {
+          await checkMetaMaskWbctBalance();
+        }
+        const maxWbct = Math.max(0, Math.floor(userWbctBalanceBase * 10000) / 10000);
+        if (maxWbct <= 0) {
+          showToast('Base ağındaki cüzdanınızda wBCT bakiyesi bulunamadı (0.0000 wBCT).', 'warning');
+          amtInput.value = '';
+          calculateBridgeOutput();
+          return;
+        }
+        amtInput.value = String(maxWbct);
+        calculateBridgeOutput();
+        if (maxWbct < 1.0) {
+          showToast(`Minimum köprü miktarı 1.00 wBCT (Mevcut: ${formatBct(maxWbct, 4)} wBCT).`, 'warning');
+        }
+      }
+    }
+
     function handleBridgeUrlParams(urlParams) {
       if (!urlParams) urlParams = new URLSearchParams(window.location.search || '');
       const dir = urlParams.get('dir');
@@ -17243,8 +17328,8 @@
         if (btn) btn.disabled = true;
 
         try {
-          // 1. Resolve connected EVM account (skip extra RPC prompt if already connected)
-          let userEvm = evmProvider.selectedAddress || userMetaMaskAddress || null;
+          // 1. Resolve connected EVM account safely (avoids Proxy private-field getter error)
+          let userEvm = safeGetProviderAddress(evmProvider);
           if (!userEvm) {
             if (btnText) btnText.textContent = 'Cüzdan Bağlanıyor...';
             const accounts = await evmProvider.request({ method: 'eth_requestAccounts' });
@@ -17256,8 +17341,8 @@
             try { localStorage.setItem('bct_connected_evm_address', userEvm); } catch (_e) { }
           }
 
-          // 2. Ensure Base Mainnet (Chain ID 8453 / 0x2105) — skipped synchronously if already on Base
-          if (!isChainIdBase(evmProvider.chainId)) {
+          // 2. Ensure Base Mainnet (Chain ID 8453 / 0x2105) safely
+          if (!isChainIdBase(safeGetProviderChainId(evmProvider))) {
             if (btnText) btnText.textContent = 'Base Ağına Geçiliyor...';
             await ensureBaseNetworkOnProvider(evmProvider);
           }
