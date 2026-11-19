@@ -8821,8 +8821,8 @@
             <span class="material-symbols-outlined notranslate text-[20px]" translate="no">account_balance_wallet</span>
           </div>
           <div class="flex flex-col">
-            <h3 class="font-bold text-sm text-on-surface">Web3 Wallet Connection</h3>
-            <span class="text-[11px] text-on-surface-variant font-medium">MetaMask, Trust Wallet &amp; Base Mainnet</span>
+            <h3 class="font-bold text-sm text-on-surface">Web3 Cüzdan Bağlantısı</h3>
+            <span class="text-[11px] text-on-surface-variant font-medium">Base Mainnet (8453) • MetaMask, Trust, Coinbase</span>
           </div>
         </div>
         <button type="button" onclick="closeMobileWalletModal()"
@@ -8836,7 +8836,7 @@
         <div class="flex items-center justify-between">
           <div class="flex items-center gap-2">
             <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Wallet Connected (Base Mainnet)</span>
+            <span class="text-xs font-bold text-emerald-400 uppercase tracking-wider">Cüzdan Bağlı (Base Mainnet)</span>
           </div>
           <span class="text-[11px] font-mono font-bold text-emerald-300" id="modalConnectedWbctBal">0.0000 wBCT</span>
         </div>
@@ -8845,24 +8845,70 @@
           <button type="button" onclick="copyConnectedEvmAddress()"
             class="px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-variant text-on-surface text-[11px] font-semibold flex items-center gap-1 shrink-0 cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[14px]" translate="no">content_copy</span>
-            <span>Copy</span>
+            <span>Kopyala</span>
           </button>
         </div>
         <div class="flex items-center justify-between pt-0.5 text-[11px]">
-          <span class="text-on-surface-variant">Base Mainnet (8453)</span>
+          <span class="text-on-surface-variant">Coinbase L2 • Chain ID: 8453</span>
           <button type="button" onclick="disconnectEvmAddress()"
             class="px-2.5 py-1 rounded-lg bg-red-500/15 hover:bg-red-500/25 text-red-400 text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[14px]" translate="no">link_off</span>
-            <span>Disconnect</span>
+            <span>Bağlantıyı Kes</span>
           </button>
+        </div>
+      </div>
+
+      <!-- Mobile In-App Browser Direct Open Card (Fastest, zero-timeout for mobile devices) -->
+      <div class="flex flex-col gap-2 p-3 rounded-2xl bg-gradient-to-br from-amber-500/10 to-primary/10 border border-amber-500/25">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-1.5">
+            <span class="material-symbols-outlined notranslate text-[18px] text-amber-400" translate="no">bolt</span>
+            <span class="text-xs font-bold text-amber-400">Mobil Uygulama İçi Tarayıcı</span>
+          </div>
+          <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300">Önerilen (Mobilde Anında)</span>
+        </div>
+        <p class="text-[11px] text-on-surface-variant leading-tight">
+          Cüzdan uygulamanızın dahili Web3 tarayıcısında açarak sıfır gecikme ve kesintisiz imza ile bağlanın:
+        </p>
+        <div class="grid grid-cols-3 gap-2 pt-1">
+          <!-- MetaMask DApp link -->
+          <a href="https://metamask.app.link/dapp/locktrace.space/?tab=kopru" target="_blank" rel="noopener noreferrer"
+            class="py-2.5 px-1.5 rounded-xl bg-surface-container-high hover:bg-amber-500/20 border border-amber-500/30 flex flex-col items-center justify-center gap-1 text-center transition-all active:scale-95 cursor-pointer shadow-xs">
+            <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="none">
+              <path d="M21.1 2.3l-8.6 6.3 1.6-3.8-1-1.3-4.3 3.1 1.6 3.8L1.8 2.3c-.6-.4-1.4.1-1.3.8l2.6 13.9c.1.6.6 1.1 1.2 1.2l6.8 1.4v-4.1l-4.1-.9 1.4-1.3-3.6-1.5 5.5-2 1.3 4.8 1.3-4.8 5.5 2-3.6 1.5 1.4 1.3-4.1.9v4.1l6.8-1.4c.6-.1 1.1-.6 1.2-1.2L22.4 3.1c.1-.7-.7-1.2-1.3-.8z" fill="#E2761B"/>
+            </svg>
+            <span class="text-[10px] font-bold text-on-surface">MetaMask</span>
+            <span class="text-[9px] text-amber-400/90 font-medium">Uygulamada Aç</span>
+          </a>
+          <!-- Coinbase DApp link -->
+          <a href="https://go.cb-w.com/dapp?cb_url=https%3A%2F%2Flocktrace.space%2F%3Ftab%3Dkopru" target="_blank" rel="noopener noreferrer"
+            class="py-2.5 px-1.5 rounded-xl bg-surface-container-high hover:bg-blue-600/20 border border-blue-600/30 flex flex-col items-center justify-center gap-1 text-center transition-all active:scale-95 cursor-pointer shadow-xs">
+            <svg class="w-5 h-5 shrink-0" viewBox="0 0 24 24" fill="#0052FF">
+              <path d="M12 24C18.6274 24 24 18.6274 24 12C24 5.37258 18.6274 0 12 0C5.37258 0 0 5.37258 0 12C0 18.6274 5.37258 24 12 24ZM12 4.5C16.1421 4.5 19.5 7.85786 19.5 12C19.5 16.1421 16.1421 19.5 12 19.5C7.85786 19.5 4.5 16.1421 4.5 12C4.5 7.85786 7.85786 4.5 12 4.5ZM10.5 8.5C9.39543 8.5 8.5 9.39543 8.5 10.5V13.5C8.5 14.6046 9.39543 15.5 10.5 15.5H13.5C14.6046 15.5 15.5 14.6046 15.5 13.5V10.5C15.5 9.39543 14.6046 8.5 13.5 8.5H10.5Z"/>
+            </svg>
+            <span class="text-[10px] font-bold text-on-surface">Coinbase</span>
+            <span class="text-[9px] text-blue-400/90 font-medium">Uygulamada Aç</span>
+          </a>
+          <!-- Trust Wallet DApp link -->
+          <a href="https://link.trustwallet.com/open_url?coin_id=60&url=https%3A%2F%2Flocktrace.space%2F%3Ftab%3Dkopru" target="_blank" rel="noopener noreferrer"
+            class="py-2.5 px-1.5 rounded-xl bg-surface-container-high hover:bg-blue-500/20 border border-blue-500/30 flex flex-col items-center justify-center gap-1 text-center transition-all active:scale-95 cursor-pointer shadow-xs">
+            <span class="material-symbols-outlined notranslate text-[20px] text-blue-400 shrink-0" translate="no">shield</span>
+            <span class="text-[10px] font-bold text-on-surface">Trust Wallet</span>
+            <span class="text-[9px] text-blue-400/90 font-medium">Uygulamada Aç</span>
+          </a>
         </div>
       </div>
 
       <!-- Primary Web3 Wallet Options Grid (Full Direct Native / Extension Signing) -->
       <div class="flex flex-col gap-2.5">
+        <div class="flex items-center justify-between px-0.5">
+          <span class="text-[11px] font-bold text-on-surface-variant uppercase tracking-wider">Mevcut Tarayıcıda Doğrudan Bağlan</span>
+          <span class="text-[10px] text-on-surface-variant font-mono">Eklenti &amp; SDK</span>
+        </div>
+
         <!-- MetaMask Option (Direct Native Signing via MetaMask SDK / EIP-6963) -->
         <button type="button" onclick="connectOrLaunchWeb3Wallet('metamask')"
-          class="group flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-amber-500/40 transition-all text-left cursor-pointer shadow-sm">
+          class="group flex items-center justify-between p-3 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-amber-500/40 transition-all text-left cursor-pointer shadow-sm">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center shrink-0">
               <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
@@ -8872,9 +8918,9 @@
             <div class="flex flex-col">
               <div class="flex items-center gap-1.5">
                 <span class="font-bold text-xs text-on-surface group-hover:text-amber-400 transition-colors">MetaMask</span>
-                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400">Direct Sign</span>
+                <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400">Doğrudan İmza</span>
               </div>
-              <span class="text-[11px] text-on-surface-variant" id="mmStatusSubtitle">Direct Connect &amp; Sign (Stay in Browser)</span>
+              <span class="text-[11px] text-on-surface-variant" id="mmStatusSubtitle">Eklenti veya MetaMask SDK ile Bağlan</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-amber-400 text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
@@ -8885,7 +8931,7 @@
 
         <!-- Coinbase Wallet Option -->
         <button type="button" onclick="connectOrLaunchWeb3Wallet('coinbase')"
-          class="group flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-blue-600/40 transition-all text-left cursor-pointer shadow-sm">
+          class="group flex items-center justify-between p-3 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-blue-600/40 transition-all text-left cursor-pointer shadow-sm">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-600/10 border border-blue-600/20 flex items-center justify-center shrink-0">
               <svg class="w-5 h-5" viewBox="0 0 24 24" fill="#0052FF">
@@ -8897,7 +8943,7 @@
                 <span class="font-bold text-xs text-on-surface group-hover:text-blue-500 transition-colors">Coinbase Wallet</span>
                 <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-400">Base L2</span>
               </div>
-              <span class="text-[11px] text-on-surface-variant">Direct Connect for Base Mainnet &amp; Mobile</span>
+              <span class="text-[11px] text-on-surface-variant">Base Mainnet &amp; Mobil Doğrudan Bağlantı</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-blue-500 text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
@@ -8905,7 +8951,7 @@
 
         <!-- Trust Wallet Option -->
         <button type="button" onclick="connectOrLaunchWeb3Wallet('trust')"
-          class="group flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-blue-500/40 transition-all text-left cursor-pointer shadow-sm">
+          class="group flex items-center justify-between p-3 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-blue-500/40 transition-all text-left cursor-pointer shadow-sm">
           <div class="flex items-center gap-3">
             <div class="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center shrink-0">
               <span class="material-symbols-outlined notranslate text-blue-400 text-[24px]" translate="no">shield</span>
@@ -8915,7 +8961,7 @@
                 <span class="font-bold text-xs text-on-surface group-hover:text-blue-400 transition-colors">Trust Wallet</span>
                 <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-blue-500/15 text-blue-400">Multi-Chain</span>
               </div>
-              <span class="text-[11px] text-on-surface-variant">Direct Connect for Trust Wallet Mobile</span>
+              <span class="text-[11px] text-on-surface-variant">Trust Wallet Doğrudan Bağlantı &amp; İmza</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-blue-400 text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
@@ -8923,29 +8969,29 @@
       </div>
 
       <!-- Quick Manual Address Paste (Read-only / L1->EVM helper) -->
-      <div class="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2.5">
+      <div class="p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/15 flex flex-col gap-2">
         <div class="flex items-center justify-between">
-          <span class="text-[11px] font-bold text-on-surface">Quick Address Entry (L1 &rarr; EVM)</span>
-          <span class="text-[10px] font-mono text-primary">Read-Only / Watch</span>
+          <span class="text-[11px] font-bold text-on-surface">Base EVM Alıcı Adresi (L1 &rarr; Base İçin)</span>
+          <span class="text-[10px] font-mono text-emerald-400 font-semibold bg-emerald-500/10 px-1.5 py-0.5 rounded">İmza Gerekmez</span>
         </div>
         <p class="text-[11px] text-on-surface-variant leading-relaxed">
-          To preview your Base wBCT balance or set your destination address for L1 &rarr; EVM bridging, paste your 0x address below:
+          <strong class="text-on-surface">Önemli:</strong> Layer-1'den Base'e BCT transfer ederken EVM cüzdanından imza gerekmez. Sadece Base alıcı adresinizi (0x...) girmeniz yeterlidir:
         </p>
         <div class="relative">
           <input type="text" id="manualEvmAddressInput"
-            placeholder="0x... (42-character EVM Wallet Address)"
+            placeholder="0x... (42 karakterlik Base / EVM Cüzdan Adresi)"
             class="w-full bg-surface-container rounded-xl pl-3 pr-24 py-2 text-xs font-mono text-on-surface border border-outline-variant/30 focus:border-primary focus:outline-none select-all"
             autocomplete="off" spellcheck="false">
           <button type="button" onclick="pasteAddressFromClipboard()"
             class="absolute right-1 top-1 bottom-1 px-2.5 rounded-lg bg-primary/15 hover:bg-primary/25 text-primary text-[11px] font-semibold flex items-center gap-1 cursor-pointer transition-colors">
             <span class="material-symbols-outlined notranslate text-[13px]" translate="no">content_paste</span>
-            <span>Paste</span>
+            <span>Yapıştır</span>
           </button>
         </div>
         <button type="button" onclick="connectManualEvmAddress()"
           class="w-full py-2 px-3 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 border border-outline-variant/20 transition-all cursor-pointer">
           <span class="material-symbols-outlined notranslate text-[15px]" translate="no">check</span>
-          <span>Save &amp; Use Address</span>
+          <span>Adresi Kaydet &amp; Köprüde Kullan</span>
         </button>
       </div>
     </div>
@@ -16258,13 +16304,7 @@
     }
 
     async function initBridgeTab() {
-      // 1. Pre-warm MetaMask SDK in background so WebSocket relay is already hot when user clicks
-      try {
-        if (typeof getOrInitMetaMaskSDK === 'function') {
-          getOrInitMetaMaskSDK();
-        }
-      } catch (_e) { }
-
+      // 1. Load active bridge parameters & supported networks (passive, no aggressive wallet popups)
       try {
         if (typeof loadBridgeConfig === 'function') {
           await loadBridgeConfig();
@@ -16847,30 +16887,23 @@
       const btnText = document.getElementById('mmActionBannerBtnText');
       const altBtn = document.getElementById('mmActionBannerAltBtn');
 
-      if (tEl) tEl.textContent = title || 'Confirm in MetaMask';
-      if (sEl) sEl.textContent = subtitle || 'Tap Open MetaMask below to continue';
+      if (tEl) tEl.textContent = title || 'MetaMask Onayı Bekleniyor';
+      if (sEl) sEl.textContent = subtitle || 'MetaMask uygulamasını açıp onaylamak için butona dokunun';
 
       const isPwa = isStandalonePwa();
+      const effectiveLink = targetLink || latestMetaMaskUniversalLink || latestMetaMaskDeeplink || ('https://metamask.app.link/dapp/' + window.location.host + '/?tab=kopru');
+
       if (btn) {
-        if (targetLink) {
-          btn.setAttribute('href', targetLink);
-          btn.setAttribute('target', isPwa ? '_blank' : '_self');
-          btn.setAttribute('rel', 'noopener noreferrer');
-          // IMPORTANT: Do NOT call e.preventDefault() on the real native <a> tag!
-          // Native <a> activation is required in iOS & Android Standalone PWAs to launch external apps immediately.
-          btn.onclick = null;
-          btn.classList.remove('opacity-60', 'pointer-events-none');
-          if (btnText) btnText.textContent = 'Open MetaMask';
-        } else {
-          btn.setAttribute('href', 'javascript:void(0)');
-          btn.onclick = (e) => { if (e) e.preventDefault(); };
-          btn.classList.add('opacity-60', 'pointer-events-none');
-          if (btnText) btnText.textContent = 'Preparing Link...';
-        }
+        btn.setAttribute('href', effectiveLink);
+        btn.setAttribute('target', isPwa ? '_blank' : '_self');
+        btn.setAttribute('rel', 'noopener noreferrer');
+        btn.onclick = null;
+        btn.classList.remove('opacity-60', 'pointer-events-none');
+        if (btnText) btnText.textContent = 'MetaMask\'ı Aç (Onayla)';
       }
 
       if (altBtn) {
-        if (altLink && altLink !== targetLink) {
+        if (altLink && altLink !== effectiveLink) {
           altBtn.setAttribute('href', altLink);
           altBtn.setAttribute('target', '_blank');
           altBtn.setAttribute('rel', 'noopener noreferrer');
@@ -16903,7 +16936,11 @@
       hideMetaMaskActionBanner();
       isMetaMaskConnecting = false;
       activeMetaMaskCancelReject = null;
-      resetMetaMaskSdkInstance(true);
+      if (mmSdkInstance && typeof mmSdkInstance.terminate === 'function') {
+        try { mmSdkInstance.terminate(); } catch (_e) { }
+      }
+      mmSdkInstance = null;
+      mmSdkProvider = null;
       latestMetaMaskDeeplink = null;
       latestMetaMaskUniversalLink = null;
       try {
@@ -16931,7 +16968,7 @@
       }
       if (isMetaMaskConnecting) {
         isMetaMaskConnecting = false;
-        resetMetaMaskSdkInstance(true);
+        resetMetaMaskSdkInstance(false);
       }
     }
 
@@ -16972,32 +17009,22 @@
       return null;
     }
 
-    function handleMetaMaskLinkReady(link, autoLaunch = true) {
+    function handleMetaMaskLinkReady(link, autoLaunch = false) {
       if (!link || typeof link !== 'string') return;
       const { primary, alt, deep, universal } = getPreferredMetaMaskLinks(link);
       latestMetaMaskDeeplink = deep;
       latestMetaMaskUniversalLink = universal;
       if (!primary) return;
 
-      const isPwa = isStandalonePwa();
       if (isMobileUser()) {
         showMetaMaskActionBanner(
-          'MetaMask Request Ready',
-          isPwa
-            ? 'Tap "Open MetaMask" below to approve & return to app:'
-            : 'Tap below if MetaMask did not open automatically:',
+          'MetaMask Bağlantısı Hazır',
+          'MetaMask uygulamasını açıp onaylamak için aşağıdaki butona dokunun:',
           primary,
           alt
         );
-        if (autoLaunch) {
-          // In Standalone PWA, do NOT force async window.location.href (which iOS/Android WebKit queues until PWA exit!).
-          // Instead trigger a non-destructive target="_blank" anchor click and keep the real native <a> button ready.
-          if (isPwa) {
-            triggerNativeAnchorLaunch(primary, true);
-          } else {
-            try { window.location.href = primary; } catch (_e) { }
-          }
-        }
+        // Explicitly NEVER auto-launch in the background on mobile/PWA.
+        // Direct user touch is required by iOS & Android to open external apps without delay or queuing.
       }
     }
 
@@ -17027,7 +17054,7 @@
           useDeeplink: true,
           headless: isMobileUser(),
           openDeeplink: (link) => {
-            handleMetaMaskLinkReady(link, true);
+            handleMetaMaskLinkReady(link, false);
           },
           injectProvider: false,
           shouldShimWeb3: false,
@@ -17471,8 +17498,8 @@
         const { primary, alt } = getPreferredMetaMaskLinks();
         if (isMobileUser()) {
           showMetaMaskActionBanner(
-            primary ? 'MetaMask Request Ready' : 'Connecting to MetaMask...',
-            primary ? 'Tap "Open MetaMask" below to approve:' : 'Preparing secure MetaMask channel...',
+            primary ? 'MetaMask Bağlantısı Hazır' : 'MetaMask\'a Bağlanılıyor...',
+            primary ? 'Onaylamak için aşağıdaki "MetaMask\'ı Aç" butonuna dokunun:' : 'Güvenli bağlantı kanalı hazırlanıyor...',
             primary,
             alt
           );
@@ -17494,7 +17521,7 @@
         }
       }
       if (!sdk) {
-        showToast('MetaMask SDK is initializing. Please tap again in a moment.', 'warning');
+        showToast('MetaMask SDK hazırlanıyor. Lütfen bir saniye sonra tekrar dokunun.', 'warning');
         return null;
       }
 
@@ -17505,8 +17532,8 @@
       if (isMobileUser()) {
         const { primary, alt } = getPreferredMetaMaskLinks();
         showMetaMaskActionBanner(
-          primary ? 'MetaMask Request Ready' : 'Connecting to MetaMask...',
-          primary ? 'Tap "Open MetaMask" below to approve:' : 'Preparing secure connection link...',
+          primary ? 'MetaMask Bağlantısı Hazır' : 'MetaMask\'a Bağlanılıyor...',
+          primary ? 'Onaylamak için "MetaMask\'ı Aç" butonuna dokunun:' : 'MetaMask bağlantısı hazırlanıyor...',
           primary,
           alt
         );
@@ -17514,8 +17541,8 @@
 
       try {
         showToast(isMobileUser()
-          ? 'Preparing MetaMask approval... Tap Open MetaMask when ready.'
-          : 'Initiating MetaMask connection...', 'info');
+          ? 'MetaMask onayı bekleniyor... Hazır olduğunda MetaMask\'ı Aç butonuna dokunun.'
+          : 'MetaMask bağlantısı başlatılıyor...', 'info');
 
         if (typeof sdk.init === 'function' && !sdk._initialized) {
           await sdk.init();
@@ -17526,7 +17553,7 @@
           activeMetaMaskCancelReject = reject;
           // Generous 120s window on mobile for FaceID + approval + returning to PWA
           timeoutId = setTimeout(() => {
-            reject(new Error('MetaMask approval timed out. Please tap MetaMask again.'));
+            reject(new Error('MetaMask onayı zaman aşımına uğradı. Lütfen tekrar deneyin.'));
           }, 120000);
         });
 
@@ -17538,7 +17565,7 @@
 
         const provider = sdk.getProvider();
         if (!provider || !accounts || accounts.length === 0) {
-          throw new Error('Could not obtain MetaMask wallet connection.');
+          throw new Error('MetaMask cüzdan bağlantısı alınamadı.');
         }
 
         if (typeof provider._setConnected === 'function') {
@@ -17555,7 +17582,7 @@
         } catch (_e) { }
         bindEvmProviderListeners(provider);
 
-        showToast(`MetaMask Connected: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'success');
+        showToast(`MetaMask Bağlandı: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'success');
 
         // Note: Do NOT call ensureBaseNetworkOnProvider on mobile MetaMask SDK right after connect(),
         // because MetaMask Mobile is now in the background and eth_chainId would hang the RPC stream.
@@ -17585,11 +17612,11 @@
         hideMetaMaskActionBanner();
         console.warn('MetaMask SDK connect error:', err);
         if (err && err.code === 4001) {
-          showToast('MetaMask connection request was cancelled.', 'info');
+          showToast('MetaMask bağlantı isteği iptal edildi.', 'info');
         } else {
           // Reset poisoned/timed-out SDK instance so next attempt starts 100% fresh!
           resetMetaMaskSdkInstance(true);
-          showToast((err && err.message) || 'MetaMask connection could not be completed.', 'error');
+          showToast((err && err.message) || 'MetaMask bağlantısı tamamlanamadı.', 'error');
         }
         return null;
       }
@@ -17632,19 +17659,18 @@
           return;
         }
         if (isMobileUser()) {
-          showToast('Opening Trust Wallet app...', 'info');
+          showToast('Trust Wallet uygulaması açılıyor...', 'info');
+          const bridgeUrl = window.location.origin + '/?tab=kopru';
+          const twUniversal = 'https://link.trustwallet.com/open_url?coin_id=60&url=' + encodeURIComponent(bridgeUrl);
           try {
-            window.location.href = 'trust://';
-          } catch (_e) { }
-          setTimeout(() => {
-            openMobileWalletModal();
-            showToast('Paste your Base EVM address below once copied from Trust Wallet.', 'info');
-            const manualInput = document.getElementById('manualEvmAddressInput');
-            if (manualInput) manualInput.focus();
-          }, 1200);
+            window.location.href = twUniversal;
+          } catch (_e) {
+            try { window.location.href = 'trust://'; } catch (_e2) { }
+          }
           return;
         }
-        window.open('https://trustwallet.com/browser-extension', '_blank');
+        showToast('Trust Wallet eklentisi bulunamadı. Lütfen cüzdan adresinizi yapıştırın.', 'info');
+        openMobileWalletModal();
         return;
       }
 
@@ -17664,19 +17690,18 @@
           return;
         }
         if (isMobileUser()) {
-          showToast('Opening Coinbase Wallet app...', 'info');
+          showToast('Coinbase Wallet uygulaması açılıyor...', 'info');
+          const bridgeUrl = window.location.origin + '/?tab=kopru';
+          const cbUniversal = 'https://go.cb-w.com/dapp?cb_url=' + encodeURIComponent(bridgeUrl);
           try {
-            window.location.href = 'cbwallet://';
-          } catch (_e) { }
-          setTimeout(() => {
-            openMobileWalletModal();
-            showToast('Paste your Base EVM address below once copied from Coinbase Wallet.', 'info');
-            const manualInput = document.getElementById('manualEvmAddressInput');
-            if (manualInput) manualInput.focus();
-          }, 1200);
+            window.location.href = cbUniversal;
+          } catch (_e) {
+            try { window.location.href = 'cbwallet://'; } catch (_e2) { }
+          }
           return;
         }
-        window.open('https://www.coinbase.com/wallet', '_blank');
+        showToast('Coinbase Wallet eklentisi bulunamadı. Lütfen cüzdan adresinizi yapıştırın.', 'info');
+        openMobileWalletModal();
         return;
       }
 
@@ -18012,6 +18037,9 @@
         if (srcName) srcName.textContent = 'BlocTag L1 Mainnet';
         if (srcSub) srcSub.textContent = 'Native Blockchain Trace';
         if (targetIcon) { targetIcon.textContent = 'L2'; targetIcon.className = 'w-9 h-9 rounded-xl bg-blue-500/15 text-blue-400 border border-blue-500/25 flex items-center justify-center font-bold text-xs shrink-0'; }
+        if (typeof onBridgeChainChange === 'function') {
+          onBridgeChainChange();
+        }
         if (inputSymbol) inputSymbol.textContent = 'BCT';
         if (outputSymbol) outputSymbol.textContent = 'wBCT';
         if (destLabel) destLabel.textContent = 'Destination EVM Address (Base Mainnet)';
@@ -18034,6 +18062,15 @@
         if (srcName) srcName.textContent = 'Base Mainnet (Coinbase L2)';
         if (srcSub) srcSub.textContent = 'Coinbase L2 • Chain ID: 8453';
         if (targetIcon) { targetIcon.textContent = 'L1'; targetIcon.className = 'w-9 h-9 rounded-xl bg-primary/15 text-primary border border-primary/25 flex items-center justify-center font-bold text-xs shrink-0'; }
+        const targetBadge = document.getElementById('bridgeTargetBadge');
+        const targetDesc = document.getElementById('bridgeTargetChainDesc');
+        if (targetBadge) {
+          targetBadge.textContent = 'Layer-1 Mainnet';
+          targetBadge.className = 'text-[9px] font-bold text-emerald-400 bg-emerald-500/15 px-1.5 py-0.5 rounded';
+        }
+        if (targetDesc) {
+          targetDesc.textContent = 'BlocTag Native L1 Blockchain • Secure Vault';
+        }
         if (inputSymbol) inputSymbol.textContent = 'wBCT';
         if (outputSymbol) outputSymbol.textContent = 'BCT';
         if (destLabel) destLabel.textContent = 'Destination BlocTag L1 Address';
