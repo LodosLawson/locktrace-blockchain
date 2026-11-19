@@ -338,11 +338,11 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-zsMX0jsOR+vgk1YpZ6/NKyFax4LhKrMoy6W71aEGUKI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-1rHceY2vJvCxPm/oXaEBP2gsfLRWvkFJmgsfRQ1AMj4=' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
-        "connect-src 'self' https://bloctag.space https://www.bloctag.space https://locktrace.space https://www.locktrace.space https://basescan.org https://mainnet.base.org https://*.rpc.thirdweb.com https://*.thirdweb.com wss://*.thirdweb.com https://api.coinbase.com https://api.geckoterminal.com https://api.dexscreener.com http://127.0.0.1:* http://localhost:*; "
+        "connect-src 'self' https://bloctag.space https://www.bloctag.space https://locktrace.space https://www.locktrace.space https://basescan.org https://mainnet.base.org https://base-rpc.publicnode.com https://*.api.cx.metamask.io wss://*.api.cx.metamask.io https://*.rpc.thirdweb.com https://*.thirdweb.com wss://*.thirdweb.com https://api.coinbase.com https://api.geckoterminal.com https://api.dexscreener.com http://127.0.0.1:* http://localhost:*; "
         "frame-ancestors 'self'; "
         "base-uri 'self'; "
         "form-action 'self';"

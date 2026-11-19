@@ -44,6 +44,10 @@
   <script src="/vendor/ethers.umd.min.js"
     integrity="sha384-NRAZj94DQk3dgtsOZzVYHbYVV1DFkF5QhL5RRxF0ILZLi6OQ7CsMlun748D42JbO"
     crossorigin="anonymous"></script>
+  <!-- MetaMask SDK (Standalone Browser IIFE for Direct Native Mobile Signing, SRI Verified) -->
+  <script src="/vendor/metamask-sdk.js"
+    integrity="sha384-OI1osw1fDe5X05uv5wm58G4bMMUC0mZdcp0iSmMUUq1vu5NZJjDnU/dVEUgYTg0F"
+    crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -8710,9 +8714,9 @@
         </div>
       </div>
 
-      <!-- Primary Web3 Wallet Options Grid (Full In-App / Extension Signing) -->
+      <!-- Primary Web3 Wallet Options Grid (Full Direct Native / Extension Signing) -->
       <div class="flex flex-col gap-2.5">
-        <!-- MetaMask Option -->
+        <!-- MetaMask Option (Direct Native Signing via MetaMask SDK / EIP-6963) -->
         <button type="button" onclick="connectOrLaunchWeb3Wallet('metamask')"
           class="group flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-amber-500/40 transition-all text-left cursor-pointer shadow-sm">
           <div class="flex items-center gap-3">
@@ -8726,11 +8730,14 @@
                 <span class="font-bold text-xs text-on-surface group-hover:text-amber-400 transition-colors">MetaMask</span>
                 <span class="text-[9px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/15 text-amber-400">Doğrudan İmza</span>
               </div>
-              <span class="text-[11px] text-on-surface-variant" id="mmStatusSubtitle">Web3 Bağlantısı &amp; İşlem İmzalama</span>
+              <span class="text-[11px] text-on-surface-variant" id="mmStatusSubtitle">Doğrudan Bağlan &amp; İmzala (Tarayıcıdan Ayrılmadan)</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-amber-400 text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
         </button>
+
+        <!-- Dynamically Discovered EIP-6963 Wallets (Coinbase, Rabby, Phantom, OKX, Rainbow, etc.) -->
+        <div id="eip6963DiscoveredWallets" class="hidden flex-col gap-2"></div>
 
         <!-- Trust Wallet Option -->
         <button type="button" onclick="connectOrLaunchWeb3Wallet('trust')"
@@ -8741,7 +8748,7 @@
             </div>
             <div class="flex flex-col">
               <span class="font-bold text-xs text-on-surface group-hover:text-blue-400 transition-colors">Trust Wallet</span>
-              <span class="text-[11px] text-on-surface-variant">Mobile Multi-Chain Web3 Tarayıcı</span>
+              <span class="text-[11px] text-on-surface-variant">Web3 Eklenti / Mobil Cüzdan</span>
             </div>
           </div>
           <span class="material-symbols-outlined notranslate text-on-surface-variant group-hover:text-blue-400 text-[18px] transition-transform group-hover:translate-x-0.5" translate="no">chevron_right</span>
@@ -16252,8 +16259,155 @@
     let userMetaMaskAddress = null;
     let userWbctBalanceBase = 0;
     const announcedEip6963Providers = [];
+    let mmSdkInstance = null;
+    let mmSdkProvider = null;
+    let activeEvmProvider = null;
+    let activeEvmWalletName = null;
 
-    // EIP-6963: Multi-Injected Provider Discovery (MetaMask, Coinbase, Trust, Rainbow, OKX, Phantom)
+    const BASE_RPC_URLS = ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'];
+
+    async function callBaseJsonRpc(method, params = []) {
+      let lastErr = null;
+      for (const rpcUrl of BASE_RPC_URLS) {
+        try {
+          const res = await fetch(rpcUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ jsonrpc: '2.0', id: Date.now(), method, params })
+          });
+          if (!res.ok) continue;
+          const data = await res.json();
+          if (data && data.error) {
+            lastErr = new Error(data.error.message || 'Base RPC error');
+            continue;
+          }
+          return data.result;
+        } catch (err) {
+          lastErr = err;
+        }
+      }
+      throw lastErr || new Error('Base Mainnet RPC unreachable');
+    }
+
+    async function fetchBaseWbctBalanceWei(evmAddress, contractAddr) {
+      const cleanAddr = String(evmAddress || '').replace(/^0x/i, '').toLowerCase().padStart(64, '0');
+      const result = await callBaseJsonRpc('eth_call', [{
+        to: contractAddr,
+        data: '0x70a08231' + cleanAddr
+      }, 'latest']);
+      if (!result || result === '0x') return 0n;
+      return BigInt(result);
+    }
+
+    async function waitForBaseTxReceipt(txHash, maxAttempts = 45, intervalMs = 2000) {
+      for (let i = 0; i < maxAttempts; i++) {
+        try {
+          const receipt = await callBaseJsonRpc('eth_getTransactionReceipt', [txHash]);
+          if (receipt && receipt.blockNumber) {
+            return receipt;
+          }
+        } catch (_e) { }
+        await new Promise(r => setTimeout(r, intervalMs));
+      }
+      return null;
+    }
+
+    function getOrInitMetaMaskSDK() {
+      if (mmSdkInstance) return mmSdkInstance;
+      const SdkCtor = (typeof window !== 'undefined' && window.MetaMaskSDK)
+        ? (window.MetaMaskSDK.MetaMaskSDK || window.MetaMaskSDK.default || (typeof window.MetaMaskSDK === 'function' ? window.MetaMaskSDK : null))
+        : null;
+      if (!SdkCtor) return null;
+      try {
+        mmSdkInstance = new SdkCtor({
+          dappMetadata: {
+            name: 'LockTrace Bridge (BlocTag)',
+            url: window.location.origin,
+            iconUrl: `${window.location.origin}/icons/icon-192.png`
+          },
+          preferDesktop: false,
+          useDeeplink: false,
+          enableAnalytics: false,
+          checkInstallationImmediately: false,
+          logging: { developerMode: false, sdk: false }
+        });
+        return mmSdkInstance;
+      } catch (err) {
+        console.warn('MetaMaskSDK init error:', err);
+        return null;
+      }
+    }
+
+    function isChainIdBase(chainId) {
+      if (chainId === null || chainId === undefined) return false;
+      if (typeof chainId === 'number') return chainId === 8453;
+      const s = String(chainId).trim().toLowerCase();
+      return s === '0x2105' || s === '8453';
+    }
+
+    function bindEvmProviderListeners(provider) {
+      if (!provider || !provider.on || provider._locktraceListenersBound) return;
+      provider.on('accountsChanged', (accs) => {
+        userMetaMaskAddress = (accs && accs.length > 0) ? accs[0] : null;
+        if (userMetaMaskAddress) {
+          try { localStorage.setItem('bct_connected_evm_address', userMetaMaskAddress); } catch (_e) { }
+        } else {
+          try { localStorage.removeItem('bct_connected_evm_address'); } catch (_e) { }
+        }
+        updateEvmWalletUi();
+        checkMetaMaskWbctBalance();
+      });
+      provider.on('chainChanged', () => {
+        checkMetaMaskWbctBalance();
+        updateEvmWalletUi();
+      });
+      provider.on('disconnect', () => {
+        if (provider === mmSdkProvider) {
+          mmSdkProvider = null;
+        }
+        if (provider === activeEvmProvider) {
+          activeEvmProvider = null;
+        }
+        updateEvmWalletUi();
+      });
+      provider._locktraceListenersBound = true;
+    }
+
+    async function ensureBaseNetworkOnProvider(provider) {
+      if (!provider || !provider.request) return;
+      const BASE_CHAIN_ID_HEX = '0x2105';
+      // Check cached chainId property first to avoid redundant mobile round-trips
+      if (isChainIdBase(provider.chainId)) return;
+      try {
+        const currentChain = await provider.request({ method: 'eth_chainId' });
+        if (isChainIdBase(currentChain)) return;
+      } catch (_e) { }
+
+      try {
+        await provider.request({
+          method: 'wallet_switchEthereumChain',
+          params: [{ chainId: BASE_CHAIN_ID_HEX }]
+        });
+      } catch (switchError) {
+        const code = switchError && (switchError.code || (switchError.data && switchError.data.originalError && switchError.data.originalError.code));
+        if (code === 4902 || code === -32603) {
+          await provider.request({
+            method: 'wallet_addEthereumChain',
+            params: [{
+              chainId: BASE_CHAIN_ID_HEX,
+              chainName: 'Base Mainnet',
+              nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
+              rpcUrls: BASE_RPC_URLS,
+              blockExplorerUrls: ['https://basescan.org']
+            }]
+          });
+        } else {
+          throw switchError;
+        }
+      }
+    }
+
+    // EIP-6963: Multi-Injected Provider Discovery (MetaMask, Coinbase, Trust, Rainbow, OKX, Phantom, Rabby)
     if (typeof window !== 'undefined') {
       window.addEventListener('eip6963:announceProvider', (e) => {
         if (e && e.detail && e.detail.provider) {
@@ -16273,9 +16427,15 @@
     }
 
     function detectActiveInAppWallet() {
+      if (activeEvmWalletName) {
+        return { id: 'active', name: activeEvmWalletName, isInApp: false };
+      }
+      if (mmSdkProvider && userMetaMaskAddress) {
+        return { id: 'metamask-sdk', name: 'MetaMask (Doğrudan İmza)', isInApp: false };
+      }
       const ua = navigator.userAgent || '';
       if (/MetaMaskMobile/i.test(ua) || (window.ethereum && window.ethereum.isMetaMask && !window.ethereum.isCoinbaseWallet && !window.ethereum.isBraveWallet)) {
-        return { id: 'metamask', name: 'MetaMask Mobile', isInApp: /MetaMaskMobile/i.test(ua) };
+        return { id: 'metamask', name: 'MetaMask', isInApp: /MetaMaskMobile/i.test(ua) };
       }
       if (/Trust/i.test(ua) || (window.ethereum && window.ethereum.isTrust) || window.trustwallet) {
         return { id: 'trust', name: 'Trust Wallet', isInApp: true };
@@ -16295,21 +16455,25 @@
       return null;
     }
 
-    function getEvmProvider() {
+    function getInjectedEvmProvider(preferMetaMask = true) {
       // 1. EIP-6963 Multi-Injected Discovery
       if (announcedEip6963Providers.length > 0) {
-        const mm = announcedEip6963Providers.find(p => p.info && (p.info.rdns === 'io.metamask' || /metamask/i.test(p.info.name || '')));
-        if (mm && mm.provider) return mm.provider;
+        if (preferMetaMask) {
+          const mm = announcedEip6963Providers.find(p => p.info && (p.info.rdns === 'io.metamask' || /metamask/i.test(p.info.name || '')));
+          if (mm && mm.provider) return mm.provider;
+        }
         return announcedEip6963Providers[0].provider;
       }
 
       // 2. Window.ethereum & sub-providers array (MetaMask, Coinbase, Brave, etc.)
       if (typeof window.ethereum !== 'undefined' && window.ethereum) {
         if (window.ethereum.providers && Array.isArray(window.ethereum.providers)) {
-          const mm = window.ethereum.providers.find(p => p.isMetaMask && !p.isCoinbaseWallet && !p.isBraveWallet);
-          if (mm) return mm;
-          const anyMm = window.ethereum.providers.find(p => p.isMetaMask);
-          if (anyMm) return anyMm;
+          if (preferMetaMask) {
+            const mm = window.ethereum.providers.find(p => p.isMetaMask && !p.isCoinbaseWallet && !p.isBraveWallet);
+            if (mm) return mm;
+            const anyMm = window.ethereum.providers.find(p => p.isMetaMask);
+            if (anyMm) return anyMm;
+          }
           return window.ethereum.providers[0];
         }
         return window.ethereum;
@@ -16325,10 +16489,80 @@
       return null;
     }
 
+    function getEvmProvider() {
+      if (activeEvmProvider) return activeEvmProvider;
+      const injected = getInjectedEvmProvider(true);
+      if (injected) return injected;
+      if (mmSdkProvider) return mmSdkProvider;
+      return null;
+    }
+
+    function renderEip6963ModalButtons() {
+      const container = document.getElementById('eip6963DiscoveredWallets');
+      if (!container) return;
+      // Show other discovered wallets (exclude MetaMask since it has its own primary button above)
+      const others = announcedEip6963Providers.filter(p => p.info && p.info.rdns !== 'io.metamask' && !/^metamask$/i.test(p.info.name || ''));
+      if (others.length === 0) {
+        container.innerHTML = '';
+        container.classList.add('hidden');
+        container.classList.remove('flex');
+        return;
+      }
+      container.classList.remove('hidden');
+      container.classList.add('flex');
+      container.innerHTML = '';
+      for (const entry of others) {
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'group flex items-center justify-between p-3 rounded-2xl bg-surface-container-lowest hover:bg-surface-container-high border border-outline-variant/20 hover:border-primary/40 transition-all text-left cursor-pointer shadow-sm';
+        btn.onclick = () => {
+          closeMobileWalletModal();
+          activeEvmWalletName = entry.info.name || 'Web3 Wallet';
+          connectEvmWalletDirect(entry.provider, activeEvmWalletName);
+        };
+        const left = document.createElement('div');
+        left.className = 'flex items-center gap-3';
+        const iconWrap = document.createElement('div');
+        iconWrap.className = 'w-9 h-9 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0 overflow-hidden';
+        if (entry.info.icon && /^data:image\/|^https:\/\//i.test(entry.info.icon)) {
+          const img = document.createElement('img');
+          img.src = entry.info.icon;
+          img.alt = entry.info.name || 'Wallet';
+          img.className = 'w-6 h-6 object-contain';
+          iconWrap.appendChild(img);
+        } else {
+          const ic = document.createElement('span');
+          ic.className = 'material-symbols-outlined notranslate text-primary text-[20px]';
+          ic.textContent = 'account_balance_wallet';
+          iconWrap.appendChild(ic);
+        }
+        const textWrap = document.createElement('div');
+        textWrap.className = 'flex flex-col';
+        const title = document.createElement('span');
+        title.className = 'font-bold text-xs text-on-surface group-hover:text-primary transition-colors';
+        title.textContent = entry.info.name || 'Web3 Wallet';
+        const sub = document.createElement('span');
+        sub.className = 'text-[11px] text-on-surface-variant';
+        sub.textContent = 'Algılandı • Doğrudan Bağlan & İmzala';
+        textWrap.appendChild(title);
+        textWrap.appendChild(sub);
+        left.appendChild(iconWrap);
+        left.appendChild(textWrap);
+        const chev = document.createElement('span');
+        chev.className = 'material-symbols-outlined notranslate text-on-surface-variant group-hover:text-primary text-[18px]';
+        chev.textContent = 'chevron_right';
+        btn.appendChild(left);
+        btn.appendChild(chev);
+        container.appendChild(btn);
+      }
+    }
+
     function openMobileWalletModal() {
       const modal = document.getElementById('mobileWalletModal');
       const card = document.getElementById('mobileWalletModalCard');
       if (!modal || !card) return;
+
+      renderEip6963ModalButtons();
 
       const activeWallet = detectActiveInAppWallet();
       const activeBox = document.getElementById('modalActiveWalletBox');
@@ -16338,12 +16572,14 @@
       const mmSubtitle = document.getElementById('mmStatusSubtitle');
 
       if (mmSubtitle) {
-        if (activeWallet) {
-          mmSubtitle.textContent = `${activeWallet.name} Algılandı - Dokunarak Bağlanın`;
+        if (activeWallet && activeWallet.id === 'metamask') {
+          mmSubtitle.textContent = 'MetaMask Algılandı — Dokunarak Doğrudan İmzala';
         } else if (isMobileUser()) {
-          mmSubtitle.textContent = 'MetaMask Uygulamasında Aç & İmzala';
-        } else {
+          mmSubtitle.textContent = 'Doğrudan MetaMask İmza Ekranını Aç (Tarayıcıda Kal)';
+        } else if (getInjectedEvmProvider(true)) {
           mmSubtitle.textContent = 'Eklenti ile Doğrudan Bağlan & İmzala';
+        } else {
+          mmSubtitle.textContent = 'QR Kod veya MetaMask Uygulaması ile Doğrudan Bağlan';
         }
       }
 
@@ -16389,6 +16625,12 @@
     function disconnectEvmAddress() {
       userMetaMaskAddress = null;
       userWbctBalanceBase = 0;
+      activeEvmProvider = null;
+      activeEvmWalletName = null;
+      if (mmSdkInstance && typeof mmSdkInstance.terminate === 'function') {
+        try { mmSdkInstance.terminate(); } catch (_e) { }
+      }
+      mmSdkProvider = null;
       try { localStorage.removeItem('bct_connected_evm_address'); } catch (_e) { }
       const activeBox = document.getElementById('modalActiveWalletBox');
       if (activeBox) activeBox.classList.add('hidden');
@@ -16448,109 +16690,140 @@
       }
     }
 
-    async function connectOrLaunchWeb3Wallet(walletType = 'metamask') {
-      const provider = getEvmProvider();
-
-      // If already inside injected Web3 environment (extension or in-app browser)
-      if (provider) {
-        closeMobileWalletModal();
-        await connectEvmWalletDirect(provider);
-        return;
+    async function connectViaMetaMaskSDK() {
+      const sdk = getOrInitMetaMaskSDK();
+      if (!sdk) {
+        showToast('MetaMask SDK henüz yüklenemedi. Lütfen sayfayı yenileyip tekrar deneyin.', 'warning');
+        return null;
       }
+      try {
+        showToast(isMobileUser()
+          ? "MetaMask bağlantı onayı açılıyor... Onayladıktan sonra bu sayfaya dönün."
+          : "MetaMask bağlantısı başlatılıyor...", 'info');
 
-      // If on mobile outside Web3 browser (Safari / Chrome), launch the wallet DApp browser with context
-      if (isMobileUser()) {
-        const destInput = document.getElementById('bridgeDestinationInput');
-        const amtInput = document.getElementById('bridgeAmountInput');
-        const cleanDest = destInput ? destInput.value.trim() : '';
-        const amtVal = amtInput ? amtInput.value.trim() : '';
-
-        let targetQuery = '?tab=kopru';
-        if (currentBridgeDirection === 'EVM_TO_L1' && cleanDest && /^BCT[0-9a-fA-F]{40}$/.test(cleanDest)) {
-          targetQuery += `&dir=EVM_TO_L1&dest=${encodeURIComponent(cleanDest)}&amount=${encodeURIComponent(amtVal)}&autoburn=1`;
-        } else if (currentBridgeDirection === 'EVM_TO_L1') {
-          targetQuery += `&dir=EVM_TO_L1`;
+        const accounts = await sdk.connect();
+        const provider = sdk.getProvider();
+        if (!provider || !accounts || accounts.length === 0) {
+          throw new Error('MetaMask cüzdan bağlantısı alınamadı.');
         }
 
-        closeMobileWalletModal();
-        if (walletType === 'metamask') {
-          showToast('MetaMask uygulaması açılıyor...', 'info');
-          const mmDeepLink = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}${targetQuery}`;
-          setTimeout(() => {
-            window.location.href = mmDeepLink;
-          }, 200);
-        } else if (walletType === 'trust') {
-          showToast('Trust Wallet uygulaması açılıyor...', 'info');
-          const rawUrl = `${window.location.origin}${window.location.pathname}${targetQuery}`;
-          const trustDeepLink = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(rawUrl)}`;
-          setTimeout(() => {
-            window.location.href = trustDeepLink;
-          }, 200);
-        }
-        return;
-      }
+        mmSdkProvider = provider;
+        activeEvmProvider = provider;
+        activeEvmWalletName = 'MetaMask';
+        userMetaMaskAddress = accounts[0];
+        try { localStorage.setItem('bct_connected_evm_address', accounts[0]); } catch (_e) { }
+        bindEvmProviderListeners(provider);
 
-      // Desktop without extension
-      if (walletType === 'metamask') {
-        window.open('https://metamask.io/download/', '_blank');
-        showToast('Lütfen MetaMask tarayıcı eklentisini yükleyin.', 'info');
-      } else {
-        window.open('https://trustwallet.com/browser-extension', '_blank');
+        showToast(`MetaMask Bağlandı: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)}`, 'success');
+
+        // Ensure Base Mainnet once during connect if needed
+        try {
+          await ensureBaseNetworkOnProvider(provider);
+        } catch (netErr) {
+          console.warn('Base network switch deferred:', netErr);
+        }
+
+        if (currentBridgeDirection === 'L1_TO_EVM') {
+          const destInput = document.getElementById('bridgeDestinationInput');
+          if (destInput && !destInput.value) destInput.value = accounts[0];
+        }
+
+        await checkMetaMaskWbctBalance();
+        updateEvmWalletUi();
+        return provider;
+      } catch (err) {
+        console.warn('MetaMask SDK connect error:', err);
+        if (err && err.code === 4001) {
+          showToast('MetaMask bağlantı isteği reddedildi.', 'info');
+        } else {
+          showToast((err && err.message) || 'MetaMask bağlantısı tamamlanamadı.', 'error');
+        }
+        return null;
       }
     }
 
-    async function connectEvmWalletDirect(customProvider = null) {
-      const provider = customProvider || getEvmProvider();
-      if (!provider) {
-        openMobileWalletModal();
+    async function connectOrLaunchWeb3Wallet(walletType = 'metamask') {
+      closeMobileWalletModal();
+
+      if (walletType === 'metamask') {
+        // 1. If MetaMask extension or in-app browser is injected, use it directly
+        const mmEip6963 = announcedEip6963Providers.find(p => p.info && (p.info.rdns === 'io.metamask' || /metamask/i.test(p.info.name || '')));
+        if (mmEip6963 && mmEip6963.provider) {
+          await connectEvmWalletDirect(mmEip6963.provider, 'MetaMask');
+          return;
+        }
+        const injected = getInjectedEvmProvider(true);
+        if (injected && injected.isMetaMask) {
+          await connectEvmWalletDirect(injected, 'MetaMask');
+          return;
+        }
+
+        // 2. Otherwise use MetaMask SDK: opens native MetaMask Connect/Sign sheet directly
+        //    WITHOUT redirecting to MetaMask's in-app browser! (Also supports Desktop QR!)
+        await connectViaMetaMaskSDK();
         return;
       }
 
-      const BASE_CHAIN_ID_HEX = '0x2105';
-      try {
-        try {
-          await provider.request({
-            method: 'wallet_switchEthereumChain',
-            params: [{ chainId: BASE_CHAIN_ID_HEX }]
-          });
-        } catch (switchError) {
-          if (switchError.code === 4902 || (switchError.data && switchError.data.originalError && switchError.data.originalError.code === 4902)) {
-            await provider.request({
-              method: 'wallet_addEthereumChain',
-              params: [{
-                chainId: BASE_CHAIN_ID_HEX,
-                chainName: 'Base Mainnet',
-                nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-                rpcUrls: ['https://mainnet.base.org', 'https://base-rpc.publicnode.com'],
-                blockExplorerUrls: ['https://basescan.org']
-              }]
-            });
-          }
+      if (walletType === 'trust') {
+        const trustEip = announcedEip6963Providers.find(p => p.info && /trust/i.test(p.info.name || p.info.rdns || ''));
+        if (trustEip && trustEip.provider) {
+          await connectEvmWalletDirect(trustEip.provider, 'Trust Wallet');
+          return;
         }
+        if (window.trustwallet || (window.ethereum && window.ethereum.isTrust)) {
+          await connectEvmWalletDirect(window.trustwallet || window.ethereum, 'Trust Wallet');
+          return;
+        }
+        const injected = getInjectedEvmProvider(false);
+        if (injected) {
+          await connectEvmWalletDirect(injected, 'Web3 Wallet');
+          return;
+        }
+        if (isMobileUser()) {
+          showToast('Trust Wallet uygulaması açılıyor...', 'info');
+          const rawUrl = `${window.location.origin}${window.location.pathname}?tab=kopru&dir=${encodeURIComponent(currentBridgeDirection)}`;
+          window.location.href = `https://link.trustwallet.com/open_url?coin_id=60&url=${encodeURIComponent(rawUrl)}`;
+          return;
+        }
+        window.open('https://trustwallet.com/browser-extension', '_blank');
+        return;
+      }
 
+      const fallbackProvider = getEvmProvider();
+      if (fallbackProvider) {
+        await connectEvmWalletDirect(fallbackProvider);
+      } else {
+        await connectViaMetaMaskSDK();
+      }
+    }
+
+    async function connectEvmWalletDirect(customProvider = null, walletLabel = null) {
+      const provider = customProvider || getEvmProvider();
+      if (!provider) {
+        await connectViaMetaMaskSDK();
+        return;
+      }
+
+      try {
         const accounts = await provider.request({ method: 'eth_requestAccounts' });
         if (accounts && accounts.length > 0) {
+          activeEvmProvider = provider;
+          if (walletLabel) activeEvmWalletName = walletLabel;
           userMetaMaskAddress = accounts[0];
           try { localStorage.setItem('bct_connected_evm_address', accounts[0]); } catch (_e) { }
+          bindEvmProviderListeners(provider);
+
+          try {
+            await ensureBaseNetworkOnProvider(provider);
+          } catch (netErr) {
+            console.warn('Network switch warning:', netErr);
+          }
+
           showToast(`Cüzdan Bağlandı: ${accounts[0].substring(0, 6)}...${accounts[0].substring(38)} (Base)`, 'success');
 
-          // Bind event listeners once
-          if (provider.on && !provider._locktraceListenersBound) {
-            provider.on('accountsChanged', (accs) => {
-              userMetaMaskAddress = (accs && accs.length > 0) ? accs[0] : null;
-              if (userMetaMaskAddress) {
-                try { localStorage.setItem('bct_connected_evm_address', userMetaMaskAddress); } catch (_e) { }
-              } else {
-                try { localStorage.removeItem('bct_connected_evm_address'); } catch (_e) { }
-              }
-              updateEvmWalletUi();
-              checkMetaMaskWbctBalance();
-            });
-            provider.on('chainChanged', () => {
-              checkMetaMaskWbctBalance();
-              updateEvmWalletUi();
-            });
-            provider._locktraceListenersBound = true;
+          if (currentBridgeDirection === 'L1_TO_EVM') {
+            const destInput = document.getElementById('bridgeDestinationInput');
+            if (destInput && !destInput.value) destInput.value = accounts[0];
           }
 
           await checkMetaMaskWbctBalance();
@@ -16558,10 +16831,10 @@
         }
       } catch (err) {
         console.warn('EVM wallet connect error:', err);
-        if (err.code === 4001) {
+        if (err && err.code === 4001) {
           showToast('Cüzdan bağlantı isteği reddedildi.', 'info');
         } else {
-          showToast(err.message || 'Web3 cüzdan bağlantısı başarısız oldu.', 'error');
+          showToast((err && err.message) || 'Web3 cüzdan bağlantısı başarısız oldu.', 'error');
         }
       }
     }
@@ -16576,6 +16849,11 @@
             showToast(`Hedef EVM adresi ayarlandı: ${userMetaMaskAddress.substring(0, 6)}...${userMetaMaskAddress.substring(38)}`, 'info');
             return;
           }
+        }
+        // If multiple EIP-6963 wallets are installed and user is not connected yet, let them choose
+        if (!userMetaMaskAddress && announcedEip6963Providers.length > 1) {
+          openMobileWalletModal();
+          return;
         }
         await connectEvmWalletDirect(provider);
         return;
@@ -16625,8 +16903,8 @@
       // Update Execute Bridge button text when in EVM_TO_L1
       const bridgeBtnText = document.getElementById('btnBridgeText');
       if (bridgeBtnText && currentBridgeDirection === 'EVM_TO_L1' && !isExecutingBridge) {
-        if (isMobileUser() && !getEvmProvider()) {
-          bridgeBtnText.textContent = 'MetaMask ile İmzala & Yak (App Aç)';
+        if (!getEvmProvider()) {
+          bridgeBtnText.textContent = 'MetaMask ile Bağlan & İmzala';
         } else {
           bridgeBtnText.textContent = 'Burn wBCT & Unlock L1';
         }
@@ -16635,18 +16913,20 @@
 
     async function autoDetectEvmWallet() {
       // 1. Check injected provider accounts if present
-      const provider = getEvmProvider();
+      const provider = getInjectedEvmProvider(true);
       if (provider && provider.request) {
         try {
           const accounts = await provider.request({ method: 'eth_accounts' });
           if (accounts && accounts.length > 0) {
+            activeEvmProvider = provider;
             userMetaMaskAddress = accounts[0];
+            bindEvmProviderListeners(provider);
             try { localStorage.setItem('bct_connected_evm_address', accounts[0]); } catch (_e) { }
           }
         } catch (_e) { }
       }
 
-      // 2. Restore from localStorage if not injected
+      // 2. Restore from localStorage if not injected (read-only balance preview until SDK connect)
       if (!userMetaMaskAddress) {
         try {
           const savedAddr = localStorage.getItem('bct_connected_evm_address');
@@ -16673,47 +16953,9 @@
       }
       try {
         const contractAddr = (bridgeConfig && bridgeConfig.wbct_contract_address) || '0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28';
-        let balanceFound = false;
-
-        // Try injected browser provider if present
-        const provider = getEvmProvider();
-        if (provider && window.ethers) {
-          try {
-            const browserProvider = new ethers.BrowserProvider(provider);
-            const contract = new ethers.Contract(contractAddr, [
-              "function balanceOf(address) view returns (uint256)"
-            ], browserProvider);
-            const rawBal = await contract.balanceOf(userMetaMaskAddress);
-            userWbctBalanceBase = Number(ethers.formatUnits(rawBal, 18));
-            balanceFound = true;
-          } catch (_e) { }
-        }
-
-        // Direct JSON-RPC fetch to Base Mainnet over HTTPS
-        if (!balanceFound) {
-          try {
-            const cleanAddr = userMetaMaskAddress.replace(/^0x/, '').toLowerCase().padStart(64, '0');
-            const res = await fetch('https://mainnet.base.org', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                jsonrpc: '2.0',
-                id: 1,
-                method: 'eth_call',
-                params: [{
-                  to: contractAddr,
-                  data: '0x70a08231' + cleanAddr
-                }, 'latest']
-              })
-            });
-            const data = await res.json();
-            if (data && data.result && data.result !== '0x') {
-              userWbctBalanceBase = Number(BigInt(data.result)) / 1e18;
-            }
-          } catch (rpcErr) {
-            console.warn('Base RPC balance check failed:', rpcErr);
-          }
-        }
+        // Direct HTTPS JSON-RPC to Base Mainnet (instant, zero round-trip through mobile wallet bridge)
+        const rawBalWei = await fetchBaseWbctBalanceWei(userMetaMaskAddress, contractAddr);
+        userWbctBalanceBase = window.ethers ? Number(ethers.formatUnits(rawBalWei, 18)) : Number(rawBalWei) / 1e18;
 
         if (availText && currentBridgeDirection === 'EVM_TO_L1') {
           availText.textContent = `Available: ${formatBct(userWbctBalanceBase, 4)} wBCT (Base)`;
@@ -16766,7 +17008,7 @@
           if (currentAccount && currentAccount.address && !destInput.value) destInput.value = currentAccount.address;
         }
         if (btnText) {
-          btnText.textContent = isMobileUser() && !getEvmProvider() ? 'MetaMask ile İmzala & Yak (App Aç)' : 'Burn wBCT & Unlock L1';
+          btnText.textContent = !getEvmProvider() ? 'MetaMask ile Bağlan & İmzala' : 'Burn wBCT & Unlock L1';
         }
         checkMetaMaskWbctBalance();
       }
@@ -16960,104 +17202,114 @@
           return;
         }
 
-        const evmProvider = getEvmProvider();
-        if (!evmProvider) {
-          // If on mobile outside Web3 browser, smoothly forward to MetaMask with autoburn!
-          if (isMobileUser()) {
-            showToast('İşlemi imzalamak için MetaMask açılıyor...', 'info');
-            const mmDeepLink = `https://metamask.app.link/dapp/${window.location.host}${window.location.pathname}?tab=kopru&dir=EVM_TO_L1&amount=${encodeURIComponent(amount)}&dest=${encodeURIComponent(cleanDest)}&autoburn=1`;
-            setTimeout(() => {
-              window.location.href = mmDeepLink;
-            }, 300);
-            return;
-          }
-          openMobileWalletModal();
-          showToast('İşlemi imzalamak için lütfen MetaMask veya Web3 cüzdanınızı bağlayın.', 'info');
-          return;
-        }
-
         if (typeof window.ethers === 'undefined') {
           showToast('Web3 motoru yükleniyor... Lütfen birkaç saniye sonra tekrar deneyin.', 'warning');
           return;
         }
 
+        let evmProvider = getEvmProvider();
+        if (!evmProvider) {
+          // Connect directly via MetaMask SDK (opens native Connect sheet without MetaMask in-app browser redirect!)
+          isExecutingBridge = true;
+          if (btn) btn.disabled = true;
+          if (btnText) btnText.textContent = 'MetaMask Bağlanıyor...';
+          try {
+            evmProvider = await connectViaMetaMaskSDK();
+          } finally {
+            isExecutingBridge = false;
+            if (btn) btn.disabled = false;
+            updateEvmWalletUi();
+          }
+          if (!evmProvider) {
+            return;
+          }
+          // On mobile, after returning from Connect approval, prompt user to tap once more to open the native Sign sheet cleanly
+          if (isMobileUser()) {
+            showToast("MetaMask bağlandı! Şimdi imzalama ekranını açmak için tekrar 'Burn wBCT & Unlock L1' butonuna dokunun.", 'success', true);
+            return;
+          }
+        }
+
+        const contractAddr = (bridgeConfig && bridgeConfig.wbct_contract_address) || '0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28';
+        const amountWei = ethers.parseUnits(amount.toFixed(8).replace(/\.?0+$/, ''), 18);
+
+        // Quick synchronous balance guard if balance is already known
+        if (userMetaMaskAddress && userWbctBalanceBase > 0 && amount > userWbctBalanceBase) {
+          showToast(`Yetersiz wBCT bakiyesi! Mevcut: ${formatBct(userWbctBalanceBase, 4)} wBCT`, 'warning', true);
+          return;
+        }
+
         isExecutingBridge = true;
         if (btn) btn.disabled = true;
-        if (btnText) btnText.textContent = 'MetaMask Bağlanıyor...';
 
         try {
-          // 1. Ensure connected to Base Mainnet (Chain ID 8453 / 0x2105)
-          const BASE_CHAIN_ID_HEX = '0x2105';
-          try {
-            await evmProvider.request({
-              method: 'wallet_switchEthereumChain',
-              params: [{ chainId: BASE_CHAIN_ID_HEX }]
-            });
-          } catch (switchError) {
-            if (switchError.code === 4902 || (switchError.data && switchError.data.originalError && switchError.data.originalError.code === 4902)) {
-              await evmProvider.request({
-                method: 'wallet_addEthereumChain',
-                params: [{
-                  chainId: BASE_CHAIN_ID_HEX,
-                  chainName: 'Base Mainnet',
-                  nativeCurrency: { name: 'Ether', symbol: 'ETH', decimals: 18 },
-                  rpcUrls: ['https://mainnet.base.org'],
-                  blockExplorerUrls: ['https://basescan.org']
-                }]
-              });
-            } else {
-              throw switchError;
+          // 1. Resolve connected EVM account (skip extra RPC prompt if already connected)
+          let userEvm = evmProvider.selectedAddress || userMetaMaskAddress || null;
+          if (!userEvm) {
+            if (btnText) btnText.textContent = 'Cüzdan Bağlanıyor...';
+            const accounts = await evmProvider.request({ method: 'eth_requestAccounts' });
+            if (!accounts || accounts.length === 0) {
+              throw new Error('Web3 cüzdan bağlantısı kullanıcı tarafından reddedildi.');
+            }
+            userEvm = accounts[0];
+            userMetaMaskAddress = userEvm;
+            try { localStorage.setItem('bct_connected_evm_address', userEvm); } catch (_e) { }
+          }
+
+          // 2. Ensure Base Mainnet (Chain ID 8453 / 0x2105) — skipped synchronously if already on Base
+          if (!isChainIdBase(evmProvider.chainId)) {
+            if (btnText) btnText.textContent = 'Base Ağına Geçiliyor...';
+            await ensureBaseNetworkOnProvider(evmProvider);
+          }
+
+          // 3. Verify live wBCT balance on Base via direct HTTPS RPC only if not yet loaded
+          if (userWbctBalanceBase <= 0) {
+            if (btnText) btnText.textContent = 'wBCT Bakiyesi Kontrol Ediliyor...';
+            const rawBal = await fetchBaseWbctBalanceWei(userEvm, contractAddr);
+            userWbctBalanceBase = Number(ethers.formatUnits(rawBal, 18));
+            if (rawBal < amountWei) {
+              throw new Error(`Yetersiz wBCT bakiyesi! Mevcut: ${formatBct(userWbctBalanceBase, 4)} wBCT`);
             }
           }
 
-          // 2. Request user account
-          const accounts = await evmProvider.request({ method: 'eth_requestAccounts' });
-          if (!accounts || accounts.length === 0) {
-            throw new Error('MetaMask cüzdan bağlantısı kullanıcı tarafından reddedildi.');
-          }
-          const userEvm = accounts[0];
-          userMetaMaskAddress = userEvm;
-          try { localStorage.setItem('bct_connected_evm_address', userEvm); } catch (_e) { }
+          // 4. Encode burnToBridge(uint256, string) locally & send eth_sendTransaction directly
+          //    This triggers MetaMask's native Transaction Signature screen immediately with zero extra RPC round-trips!
+          const wbctIface = new ethers.Interface([
+            "function burnToBridge(uint256 amount, string calldata locktraceRecipient) external"
+          ]);
+          const encodedData = wbctIface.encodeFunctionData("burnToBridge", [amountWei, cleanDest]);
 
-          // 3. Prepare ethers contract
-          const browserProvider = new ethers.BrowserProvider(evmProvider);
-          const signer = await browserProvider.getSigner();
-          const contractAddr = (bridgeConfig && bridgeConfig.wbct_contract_address) || '0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28';
-
-          const wbctContract = new ethers.Contract(
-            contractAddr,
-            [
-              "function balanceOf(address account) view returns (uint256)",
-              "function burnToBridge(uint256 amount, string calldata locktraceRecipient) external"
-            ],
-            signer
-          );
-
-          if (btnText) btnText.textContent = 'wBCT Bakiyesi Kontrol Ediliyor...';
-          const rawBal = await wbctContract.balanceOf(userEvm);
-          const amountWei = ethers.parseUnits(amount.toFixed(8).replace(/\.?0+$/, ''), 18);
-
-          if (rawBal < amountWei) {
-            const availWbct = Number(ethers.formatUnits(rawBal, 18));
-            throw new Error(`Yetersiz wBCT bakiyesi! Mevcut: ${formatBct(availWbct, 4)} wBCT`);
-          }
-
-          // 4. Send burnToBridge transaction on Base
           if (btnText) btnText.textContent = "MetaMask'ta Onaylayın...";
-          showToast(`Lütfen MetaMask bildiriminde ${formatBct(amount, 2)} wBCT yakımını onaylayın.`, 'info');
+          showToast(`Lütfen cüzdanınızda ${formatBct(amount, 2)} wBCT yakım işlemini imzalayın.`, 'info');
 
-          const tx = await wbctContract.burnToBridge(amountWei, destAddr);
-          if (btnText) btnText.textContent = 'Base İşlemi Madencilikte...';
-          showToast(`İşlem iletildi! Hash: ${tx.hash.substring(0, 10)}... Blok bekleniyor...`, 'info');
+          const evmTxHash = await evmProvider.request({
+            method: 'eth_sendTransaction',
+            params: [{
+              from: userEvm,
+              to: contractAddr,
+              data: encodedData,
+              value: '0x0'
+            }]
+          });
 
-          const receipt = await tx.wait();
-          if (!receipt || receipt.status !== 1) {
+          if (!evmTxHash || typeof evmTxHash !== 'string') {
+            throw new Error('İşlem hash değeri alınamadı.');
+          }
+
+          if (btnText) btnText.textContent = 'Base İşlemi Onaylanıyor...';
+          showToast(`İşlem imzalandı! Hash: ${evmTxHash.substring(0, 10)}... Base blok onayı bekleniyor...`, 'info');
+
+          // 5. Wait for Base Mainnet receipt via direct HTTPS RPC (immune to mobile backgrounding)
+          const receipt = await waitForBaseTxReceipt(evmTxHash, 45, 2000);
+          if (!receipt) {
+            throw new Error('Base ağı işlem onayı zaman aşımına uğradı. İşleminiz onaylandığında relayer otomatik tamamlayacaktır.');
+          }
+          const receiptOk = receipt.status === '0x1' || receipt.status === 1 || receipt.status === true;
+          if (!receiptOk) {
             throw new Error('Base yakım işlemi başarısız oldu veya geri alındı (reverted).');
           }
 
-          const evmTxHash = receipt.hash;
-
-          // 5. Claim unlock on BlocTag Layer-1
+          // 6. Claim unlock on BlocTag Layer-1
           if (btnText) btnText.textContent = "L1'de BCT Kilidi Açılıyor...";
           let claimOk = false;
           let claimBody = null;
@@ -17072,7 +17324,7 @@
               method: 'POST',
               body: JSON.stringify({
                 evm_tx_hash: evmTxHash,
-                bct_address: destAddr,
+                bct_address: cleanDest,
                 amount: amount,
                 evm_sender: userEvm
               })
@@ -17107,11 +17359,15 @@
 
         } catch (err) {
           console.error('Burn bridge error:', err);
-          showToast(err.reason || err.message || 'Köprü işlemi başarısız oldu', 'error', true);
+          if (err && err.code === 4001) {
+            showToast('İşlem imzası kullanıcı tarafından iptal edildi.', 'info', true);
+          } else {
+            showToast((err && (err.reason || err.message)) || 'Köprü işlemi başarısız oldu', 'error', true);
+          }
         } finally {
           isExecutingBridge = false;
           if (btn) btn.disabled = false;
-          if (btnText) btnText.textContent = 'Burn wBCT & Unlock L1';
+          updateEvmWalletUi();
         }
       }
     }
