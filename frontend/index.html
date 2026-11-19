@@ -8773,28 +8773,35 @@
   <!-- FLOATING ACTION BANNER: METAMASK SIGNING / CONFIRMATION                   -->
   <!-- ========================================================================= -->
   <div id="metaMaskActionBanner"
-    class="fixed bottom-6 left-4 right-4 sm:left-auto sm:right-6 sm:w-96 z-[10001] p-4 rounded-3xl bg-surface-container-high/95 backdrop-blur-xl border-2 border-amber-500/50 shadow-2xl hidden items-center justify-between gap-3 animate-pulse">
-    <div class="flex items-center gap-3 min-w-0">
-      <div class="w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
-        <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
-          <path d="M21.1 2.3l-8.6 6.3 1.6-3.8-1-1.3-4.3 3.1 1.6 3.8L1.8 2.3c-.6-.4-1.4.1-1.3.8l2.6 13.9c.1.6.6 1.1 1.2 1.2l6.8 1.4v-4.1l-4.1-.9 1.4-1.3-3.6-1.5 5.5-2 1.3 4.8 1.3-4.8 5.5 2-3.6 1.5 1.4 1.3-4.1.9v4.1l6.8-1.4c.6-.1 1.1-.6 1.2-1.2L22.4 3.1c.1-.7-.7-1.2-1.3-.8z" fill="#E2761B"/>
-        </svg>
+    class="fixed bottom-5 left-3 right-3 sm:left-auto sm:right-6 sm:w-[400px] z-[10001] p-3.5 sm:p-4 rounded-3xl bg-surface-container-high/95 backdrop-blur-xl border-2 border-amber-500/60 shadow-2xl hidden flex-col gap-2.5">
+    <div class="flex items-center justify-between gap-2.5">
+      <div class="flex items-center gap-2.5 min-w-0">
+        <div class="relative w-10 h-10 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none">
+            <path d="M21.1 2.3l-8.6 6.3 1.6-3.8-1-1.3-4.3 3.1 1.6 3.8L1.8 2.3c-.6-.4-1.4.1-1.3.8l2.6 13.9c.1.6.6 1.1 1.2 1.2l6.8 1.4v-4.1l-4.1-.9 1.4-1.3-3.6-1.5 5.5-2 1.3 4.8 1.3-4.8 5.5 2-3.6 1.5 1.4 1.3-4.1.9v4.1l6.8-1.4c.6-.1 1.1-.6 1.2-1.2L22.4 3.1c.1-.7-.7-1.2-1.3-.8z" fill="#E2761B"/>
+          </svg>
+          <span class="w-2.5 h-2.5 rounded-full bg-amber-400 animate-ping absolute -top-0.5 -right-0.5"></span>
+        </div>
+        <div class="flex flex-col min-w-0">
+          <span class="font-bold text-xs text-on-surface truncate" id="mmActionBannerTitle">Confirm in MetaMask</span>
+          <span class="text-[11px] text-on-surface-variant leading-tight" id="mmActionBannerSubtitle">Tap Open MetaMask to approve</span>
+        </div>
       </div>
-      <div class="flex flex-col min-w-0">
-        <span class="font-bold text-xs text-on-surface truncate" id="mmActionBannerTitle">Confirm in MetaMask</span>
-        <span class="text-[11px] text-on-surface-variant truncate" id="mmActionBannerSubtitle">Tap if MetaMask did not open</span>
-      </div>
+      <button type="button" onclick="cancelMetaMaskPendingAction()" title="Cancel"
+        class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-variant text-on-surface-variant flex items-center justify-center transition-colors shrink-0 cursor-pointer">
+        <span class="material-symbols-outlined notranslate text-[16px]" translate="no">close</span>
+      </button>
     </div>
-    <div class="flex items-center gap-1.5 shrink-0">
-      <a id="mmActionBannerBtn" href="#open-metamask"
-        class="py-2 px-3.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center gap-1">
-        <span>Open</span>
+    <div class="flex items-center gap-2">
+      <a id="mmActionBannerBtn" href="javascript:void(0)" target="_blank" rel="noopener noreferrer"
+        class="flex-1 py-2.5 px-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold text-xs shadow-md transition-all active:scale-95 cursor-pointer flex items-center justify-center gap-1.5">
+        <span id="mmActionBannerBtnText">Preparing Link...</span>
         <span class="material-symbols-outlined notranslate text-[16px]" translate="no">arrow_outward</span>
       </a>
-      <button type="button" onclick="hideMetaMaskActionBanner()"
-        class="w-7 h-7 rounded-full bg-surface-container hover:bg-surface-variant text-on-surface-variant flex items-center justify-center transition-colors cursor-pointer">
-        <span class="material-symbols-outlined notranslate text-[14px]" translate="no">close</span>
-      </button>
+      <a id="mmActionBannerAltBtn" href="javascript:void(0)" target="_blank" rel="noopener noreferrer"
+        class="hidden py-2.5 px-3 rounded-2xl bg-surface-container hover:bg-surface-variant text-on-surface font-semibold text-xs border border-outline-variant/30 transition-all active:scale-95 cursor-pointer items-center justify-center gap-1 shrink-0">
+        <span>Alt Link</span>
+      </a>
     </div>
   </div>
 
@@ -16779,6 +16786,16 @@
     let latestMetaMaskDeeplink = null;
     let latestMetaMaskUniversalLink = null;
     let activeSigningActionDismissTimer = null;
+    let isMetaMaskConnecting = false;
+    let activeMetaMaskCancelReject = null;
+
+    function isStandalonePwa() {
+      if (typeof window === 'undefined') return false;
+      return Boolean(
+        (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+        (window.navigator && window.navigator.standalone === true)
+      );
+    }
 
     function getMetaMaskDeeplinkVariants(link) {
       if (!link || typeof link !== 'string') return { deep: null, universal: null };
@@ -16792,24 +16809,80 @@
       return { deep, universal };
     }
 
-    function showMetaMaskActionBanner(title, subtitle, targetLink) {
+    function getPreferredMetaMaskLinks(rawLink = null) {
+      const v = rawLink ? getMetaMaskDeeplinkVariants(rawLink) : { deep: latestMetaMaskDeeplink, universal: latestMetaMaskUniversalLink };
+      const isIos = (typeof isIosDevice === 'function') && isIosDevice();
+      const isPwa = isStandalonePwa();
+      // In iOS Standalone PWA, https://metamask.app.link often opens SFSafariViewController trap;
+      // metamask:// custom scheme breaks straight out of the PWA into the MetaMask app!
+      // In regular iOS Safari, Universal Link (https://metamask.app.link/...) is preferred.
+      // On Android (both Chrome & PWA), metamask:// launches the app intent directly.
+      const primary = (isIos && !isPwa) ? (v.universal || v.deep) : (v.deep || v.universal);
+      const alt = (primary === v.deep) ? v.universal : v.deep;
+      return { primary, alt, deep: v.deep, universal: v.universal };
+    }
+
+    function triggerNativeAnchorLaunch(url, useBlank = true) {
+      if (!url || typeof document === 'undefined') return;
+      try {
+        const a = document.createElement('a');
+        a.href = url;
+        if (useBlank) a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.style.display = 'none';
+        document.body.appendChild(a);
+        a.click();
+        setTimeout(() => { try { a.remove(); } catch (_e) { } }, 250);
+      } catch (_e) {
+        try { window.location.href = url; } catch (_e2) { }
+      }
+    }
+
+    function showMetaMaskActionBanner(title, subtitle, targetLink = null, altLink = null) {
       const banner = document.getElementById('metaMaskActionBanner');
       if (!banner) return;
       const tEl = document.getElementById('mmActionBannerTitle');
       const sEl = document.getElementById('mmActionBannerSubtitle');
       const btn = document.getElementById('mmActionBannerBtn');
+      const btnText = document.getElementById('mmActionBannerBtnText');
+      const altBtn = document.getElementById('mmActionBannerAltBtn');
 
       if (tEl) tEl.textContent = title || 'Confirm in MetaMask';
-      if (sEl) sEl.textContent = subtitle || 'Tap to open the MetaMask signing sheet';
-      if (btn && targetLink) {
-        btn.setAttribute('href', targetLink);
-        btn.onclick = (e) => {
-          if (e && e.preventDefault) e.preventDefault();
-          try {
-            openMetaMaskDirectly(targetLink);
-          } catch (_e) { }
-        };
+      if (sEl) sEl.textContent = subtitle || 'Tap Open MetaMask below to continue';
+
+      const isPwa = isStandalonePwa();
+      if (btn) {
+        if (targetLink) {
+          btn.setAttribute('href', targetLink);
+          btn.setAttribute('target', isPwa ? '_blank' : '_self');
+          btn.setAttribute('rel', 'noopener noreferrer');
+          // IMPORTANT: Do NOT call e.preventDefault() on the real native <a> tag!
+          // Native <a> activation is required in iOS & Android Standalone PWAs to launch external apps immediately.
+          btn.onclick = null;
+          btn.classList.remove('opacity-60', 'pointer-events-none');
+          if (btnText) btnText.textContent = 'Open MetaMask';
+        } else {
+          btn.setAttribute('href', 'javascript:void(0)');
+          btn.onclick = (e) => { if (e) e.preventDefault(); };
+          btn.classList.add('opacity-60', 'pointer-events-none');
+          if (btnText) btnText.textContent = 'Preparing Link...';
+        }
       }
+
+      if (altBtn) {
+        if (altLink && altLink !== targetLink) {
+          altBtn.setAttribute('href', altLink);
+          altBtn.setAttribute('target', '_blank');
+          altBtn.setAttribute('rel', 'noopener noreferrer');
+          altBtn.onclick = null;
+          altBtn.classList.remove('hidden');
+          altBtn.classList.add('flex');
+        } else {
+          altBtn.classList.add('hidden');
+          altBtn.classList.remove('flex');
+        }
+      }
+
       banner.classList.remove('hidden');
       banner.classList.add('flex');
       if (activeSigningActionDismissTimer) clearTimeout(activeSigningActionDismissTimer);
@@ -16826,17 +16899,46 @@
       }
     }
 
-    function openMetaMaskDirectly(overrideLink = null) {
-      const isIos = (typeof isIosDevice === 'function') && isIosDevice();
-      let link = overrideLink;
-      if (!link) {
-        link = isIos
-          ? (latestMetaMaskUniversalLink || 'https://metamask.app.link')
-          : (latestMetaMaskDeeplink || 'metamask://');
-      }
+    function resetMetaMaskSdkInstance(clearStorage = false) {
+      hideMetaMaskActionBanner();
+      isMetaMaskConnecting = false;
+      activeMetaMaskCancelReject = null;
+      resetMetaMaskSdkInstance(true);
+      latestMetaMaskDeeplink = null;
+      latestMetaMaskUniversalLink = null;
       try {
-        window.location.href = link;
+        if (typeof window !== 'undefined' && window.mmsdk) {
+          try { if (typeof window.mmsdk.terminate === 'function') window.mmsdk.terminate(); } catch (_e) { }
+          window.mmsdk = null;
+          delete window.mmsdk;
+        }
       } catch (_e) { }
+      if (clearStorage) {
+        try {
+          localStorage.removeItem('.sdk-comm');
+          localStorage.removeItem('.MMSDK_cached_address');
+          localStorage.removeItem('.MMSDK_cached_chainId');
+        } catch (_e) { }
+      }
+    }
+
+    function cancelMetaMaskPendingAction() {
+      hideMetaMaskActionBanner();
+      if (typeof activeMetaMaskCancelReject === 'function') {
+        const rej = activeMetaMaskCancelReject;
+        activeMetaMaskCancelReject = null;
+        try { rej(Object.assign(new Error('MetaMask connection cancelled.'), { code: 4001 })); } catch (_e) { }
+      }
+      if (isMetaMaskConnecting) {
+        isMetaMaskConnecting = false;
+        resetMetaMaskSdkInstance(true);
+      }
+    }
+
+    function openMetaMaskDirectly(overrideLink = null) {
+      const { primary } = getPreferredMetaMaskLinks(overrideLink);
+      const link = primary || ((typeof isIosDevice === 'function' && isIosDevice() && !isStandalonePwa()) ? 'https://metamask.app.link' : 'metamask://');
+      triggerNativeAnchorLaunch(link, isStandalonePwa());
     }
 
     async function checkForRecentOnChainBurn(userAddress, contractAddress) {
@@ -16870,6 +16972,35 @@
       return null;
     }
 
+    function handleMetaMaskLinkReady(link, autoLaunch = true) {
+      if (!link || typeof link !== 'string') return;
+      const { primary, alt, deep, universal } = getPreferredMetaMaskLinks(link);
+      latestMetaMaskDeeplink = deep;
+      latestMetaMaskUniversalLink = universal;
+      if (!primary) return;
+
+      const isPwa = isStandalonePwa();
+      if (isMobileUser()) {
+        showMetaMaskActionBanner(
+          'MetaMask Request Ready',
+          isPwa
+            ? 'Tap "Open MetaMask" below to approve & return to app:'
+            : 'Tap below if MetaMask did not open automatically:',
+          primary,
+          alt
+        );
+        if (autoLaunch) {
+          // In Standalone PWA, do NOT force async window.location.href (which iOS/Android WebKit queues until PWA exit!).
+          // Instead trigger a non-destructive target="_blank" anchor click and keep the real native <a> button ready.
+          if (isPwa) {
+            triggerNativeAnchorLaunch(primary, true);
+          } else {
+            try { window.location.href = primary; } catch (_e) { }
+          }
+        }
+      }
+    }
+
     function getOrInitMetaMaskSDK() {
       if (mmSdkInstance) return mmSdkInstance;
       const SdkCtor = (typeof window !== 'undefined' && window.MetaMaskSDK)
@@ -16877,6 +17008,11 @@
         : null;
       if (!SdkCtor) return null;
       try {
+        // Ensure no stale terminated singleton poisons MetaMaskSDK.init()
+        if (typeof window !== 'undefined' && window.mmsdk && window.mmsdk !== mmSdkInstance) {
+          try { if (typeof window.mmsdk.terminate === 'function') window.mmsdk.terminate(); } catch (_e) { }
+          try { window.mmsdk = null; delete window.mmsdk; } catch (_e) { }
+        }
         mmSdkInstance = new SdkCtor({
           dappMetadata: {
             name: 'LockTrace Bridge (BlocTag)',
@@ -16889,24 +17025,9 @@
           },
           preferDesktop: false,
           useDeeplink: true,
+          headless: isMobileUser(),
           openDeeplink: (link) => {
-            if (link && typeof window !== 'undefined') {
-              const { deep, universal } = getMetaMaskDeeplinkVariants(link);
-              latestMetaMaskDeeplink = deep;
-              latestMetaMaskUniversalLink = universal;
-
-              try {
-                window.location.href = isMobileUser() ? (deep || link) : link;
-              } catch (_e) { }
-
-              if (isMobileUser()) {
-                showMetaMaskActionBanner(
-                  'MetaMask Request Ready',
-                  'Tap below if MetaMask did not open automatically:',
-                  deep || link
-                );
-              }
-            }
+            handleMetaMaskLinkReady(link, true);
           },
           injectProvider: false,
           shouldShimWeb3: false,
@@ -16914,6 +17035,15 @@
           checkInstallationImmediately: false,
           logging: { developerMode: false, sdk: false }
         });
+        if (mmSdkInstance && typeof mmSdkInstance.on === 'function') {
+          try {
+            mmSdkInstance.on('display_uri', (uri) => {
+              if (uri && typeof uri === 'string') {
+                handleMetaMaskLinkReady(uri, false);
+              }
+            });
+          } catch (_e) { }
+        }
         return mmSdkInstance;
       } catch (err) {
         console.warn('MetaMaskSDK init error:', err);
@@ -17000,21 +17130,32 @@
     }
 
     if (typeof document !== 'undefined') {
-      document.addEventListener('visibilitychange', () => {
-        if (document.visibilityState === 'visible') {
-          if (mmSdkInstance && typeof mmSdkInstance.resume === 'function') {
-            try { mmSdkInstance.resume(); } catch (_e) { }
-          }
-          if (userMetaMaskAddress) {
-            checkMetaMaskWbctBalance();
-          }
-        }
-      });
-      window.addEventListener('focus', () => {
+      const handlePwaReturnResume = () => {
         if (mmSdkInstance && typeof mmSdkInstance.resume === 'function') {
           try { mmSdkInstance.resume(); } catch (_e) { }
         }
+        try {
+          const p = mmSdkProvider || (mmSdkInstance && typeof mmSdkInstance.getProvider === 'function' ? mmSdkInstance.getProvider() : null);
+          const addr = p ? safeGetProviderAddress(p) : null;
+          if (addr && !userMetaMaskAddress && localStorage.getItem('bct_evm_wallet_disconnected') !== 'true') {
+            userMetaMaskAddress = addr;
+            mmSdkProvider = p;
+            activeEvmProvider = p;
+            activeEvmWalletName = 'MetaMask';
+            try { localStorage.setItem('bct_connected_evm_address', addr); } catch (_e) { }
+            hideMetaMaskActionBanner();
+            updateEvmWalletUi();
+          }
+        } catch (_e) { }
+        if (userMetaMaskAddress) {
+          checkMetaMaskWbctBalance();
+        }
+      };
+      document.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') handlePwaReturnResume();
       });
+      window.addEventListener('focus', handlePwaReturnResume);
+      window.addEventListener('pageshow', handlePwaReturnResume);
     }
 
     // EIP-6963: Multi-Injected Provider Discovery (MetaMask, Coinbase, Trust, Rainbow, OKX, Phantom, Rabby)
@@ -17325,9 +17466,28 @@
     }
 
     async function connectViaMetaMaskSDK() {
+      if (isMetaMaskConnecting) {
+        // Already preparing or awaiting approval: surface the banner again if link is ready
+        const { primary, alt } = getPreferredMetaMaskLinks();
+        if (isMobileUser()) {
+          showMetaMaskActionBanner(
+            primary ? 'MetaMask Request Ready' : 'Connecting to MetaMask...',
+            primary ? 'Tap "Open MetaMask" below to approve:' : 'Preparing secure MetaMask channel...',
+            primary,
+            alt
+          );
+        }
+        return null;
+      }
+
+      // If user previously disconnected, ensure a completely fresh SDK channel (no poisoned window.mmsdk)
+      if (localStorage.getItem('bct_evm_wallet_disconnected') === 'true') {
+        resetMetaMaskSdkInstance(true);
+      }
+
       let sdk = getOrInitMetaMaskSDK();
       if (!sdk) {
-        for (let wait = 0; wait < 6; wait++) {
+        for (let wait = 0; wait < 8; wait++) {
           await new Promise(r => setTimeout(r, 150));
           sdk = getOrInitMetaMaskSDK();
           if (sdk) break;
@@ -17338,28 +17498,42 @@
         return null;
       }
 
-      // Show action banner on mobile once deep link is known, or show connecting status
-      if (isMobileUser() && (latestMetaMaskDeeplink || latestMetaMaskUniversalLink)) {
-        const isIos = (typeof isIosDevice === 'function') && isIosDevice();
+      isMetaMaskConnecting = true;
+      let timeoutId = null;
+
+      // Show clean preparing banner immediately on mobile (Open button enables the millisecond channel URI arrives)
+      if (isMobileUser()) {
+        const { primary, alt } = getPreferredMetaMaskLinks();
         showMetaMaskActionBanner(
-          'Connecting to MetaMask',
-          'Tap "Open" below if MetaMask does not switch automatically:',
-          isIos ? latestMetaMaskUniversalLink : latestMetaMaskDeeplink
+          primary ? 'MetaMask Request Ready' : 'Connecting to MetaMask...',
+          primary ? 'Tap "Open MetaMask" below to approve:' : 'Preparing secure connection link...',
+          primary,
+          alt
         );
       }
 
       try {
         showToast(isMobileUser()
-          ? 'Opening MetaMask... Return to this tab after approving.'
+          ? 'Preparing MetaMask approval... Tap Open MetaMask when ready.'
           : 'Initiating MetaMask connection...', 'info');
 
-        // Add 18-second timeout guard so it NEVER hangs indefinitely
-        const connectPromise = sdk.connect();
-        const timeoutPromise = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('MetaMask connection timed out. Please tap "Open MetaMask" to retry.')), 18000)
-        );
+        if (typeof sdk.init === 'function' && !sdk._initialized) {
+          await sdk.init();
+        }
 
-        const accounts = await Promise.race([connectPromise, timeoutPromise]);
+        const connectPromise = sdk.connect();
+        const cancelOrTimeoutPromise = new Promise((_, reject) => {
+          activeMetaMaskCancelReject = reject;
+          // Generous 120s window on mobile for FaceID + approval + returning to PWA
+          timeoutId = setTimeout(() => {
+            reject(new Error('MetaMask approval timed out. Please tap MetaMask again.'));
+          }, 120000);
+        });
+
+        const accounts = await Promise.race([connectPromise, cancelOrTimeoutPromise]);
+        if (timeoutId) clearTimeout(timeoutId);
+        activeMetaMaskCancelReject = null;
+        isMetaMaskConnecting = false;
         hideMetaMaskActionBanner();
 
         const provider = sdk.getProvider();
@@ -17395,7 +17569,9 @@
 
         if (currentBridgeDirection === 'L1_TO_EVM') {
           const destInput = document.getElementById('bridgeDestinationInput');
-          if (destInput && !destInput.value) destInput.value = accounts[0];
+          if (destInput && (!destInput.value || /^BCT[0-9a-fA-F]{40}$/i.test(destInput.value))) {
+            destInput.value = accounts[0];
+          }
         }
 
         await checkMetaMaskWbctBalance();
@@ -17403,10 +17579,16 @@
         closeMobileWalletModal();
         return provider;
       } catch (err) {
+        if (timeoutId) clearTimeout(timeoutId);
+        activeMetaMaskCancelReject = null;
+        isMetaMaskConnecting = false;
+        hideMetaMaskActionBanner();
         console.warn('MetaMask SDK connect error:', err);
         if (err && err.code === 4001) {
-          showToast('MetaMask connection request was rejected.', 'info');
+          showToast('MetaMask connection request was cancelled.', 'info');
         } else {
+          // Reset poisoned/timed-out SDK instance so next attempt starts 100% fresh!
+          resetMetaMaskSdkInstance(true);
           showToast((err && err.message) || 'MetaMask connection could not be completed.', 'error');
         }
         return null;
