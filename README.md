@@ -535,7 +535,12 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Audit-Hardened WrappedBlocTag (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`):** Multi-relayer quorum consensus (`requiredApprovals`), zero transfer taxes/blacklists/pauses, and live Uniswap v4 pool telemetry.
    - **Direct Native Mobile & Desktop Signing:** Integrated self-hosted SRI-verified MetaMask SDK IIFE (with Proxy private-field receiver forwarding) and EIP-6963 multi-wallet discovery, opening MetaMask's native transaction signing screen directly without redirecting users to MetaMask's in-app browser.
    - **Full English UI & SSOT Version Parity:** Unified all frontend UI, staking, explorer, and bridge flows in English and synchronized `v2.11.0` across all protocol components.
-32. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+32. **Cross-Chain Bridge Mobile & PWA Optimization (v2.12.0):**
+   - **Anti-Recursion & Safe SDK Lifetime:** Resolved a critical recursive reset bug in `resetMetaMaskSdkInstance()` that caused call stack overflows on mobile disconnect/reconnect.
+   - **Unblocked Mobile WebKit Intent Gestures:** Removed synthetic asynchronous `a.click()` background navigation that caused iOS Safari and Standalone PWAs to queue deep links until app exit; replaced with an interactive synchronous user tap model.
+   - **1-Tap In-App DApp Browser Quick Launch:** Added direct 1-tap launchers for MetaMask (`metamask.app.link/dapp/...`), Coinbase Wallet, and Trust Wallet DApp browsers for instant zero-timeout Web3 connections.
+   - **Interactive Cross-Chain Routing:** Real-time bidirectional route indicator for Layer-1 and Base EVM, with instant 1-tap 0x address pasting for L1 -> EVM bridging without requiring EVM signatures.
+33. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 
