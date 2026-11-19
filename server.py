@@ -338,7 +338,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-pz1qWTr6bLigtQElosrUOR/PLFJNwdXGiKbhHK1YOvI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-uK8OilYyGDjmb1rTv54bUHxDsDsKKqzC6iI5QCVff6g=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -3116,9 +3116,82 @@ def api_thirdweb_wait_hash(transaction_id: str):
 
 
 # ── Cross-Chain Bridge Endpoints (LockTrace L1 <-> EVM wBCT) ─────────────
+_relayer_status_cache = {"data": None, "timestamp": 0}
+
+def get_relayer_public_status(force_refresh: bool = False) -> Dict[str, Any]:
+    global _relayer_status_cache
+    now = time.time()
+    if not force_refresh and _relayer_status_cache["data"] and (now - _relayer_status_cache["timestamp"] < 10):
+        return _relayer_status_cache["data"]
+
+    relayer_address = "0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3"
+    for path in ["relayer_wallet.json", "/opt/blockchaint/relayer_wallet.json", "deploy/relayer_evm.key"]:
+        if os.path.exists(path):
+            try:
+                with open(path, "r", encoding="utf-8") as f:
+                    content = f.read().strip()
+                    if content.startswith("{"):
+                        data = json.loads(content)
+                        if data.get("address"):
+                            relayer_address = data["address"]
+                            break
+            except Exception:
+                pass
+
+    bal_eth = 0.0
+    bal_wei = 0
+    try:
+        import urllib.request
+        base_rpc = getattr(Config, "BASE_RPC_URL", "https://mainnet.base.org")
+        payload = json.dumps({
+            "jsonrpc": "2.0",
+            "method": "eth_getBalance",
+            "params": [relayer_address, "latest"],
+            "id": 1
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            base_rpc,
+            data=payload,
+            headers={"Content-Type": "application/json", "User-Agent": "LockTrace-Explorer/1.0"}
+        )
+        with urllib.request.urlopen(req, timeout=3.0) as resp:
+            res_obj = json.loads(resp.read().decode("utf-8"))
+            hex_bal = res_obj.get("result", "0x0")
+            bal_wei = int(hex_bal, 16)
+            bal_eth = bal_wei / 1e18
+    except Exception as e:
+        logger.warning(f"Failed to query relayer balance: {e}")
+        if _relayer_status_cache["data"]:
+            return _relayer_status_cache["data"]
+
+    is_operational = bal_eth >= 0.000001
+    status_data = {
+        "relayer_address": relayer_address,
+        "balance_eth": float(bal_eth),
+        "balance_wei": bal_wei,
+        "balance_formatted": f"{bal_eth:.6f} ETH",
+        "is_operational": is_operational,
+        "status_label": "Operational" if is_operational else "Low Gas (Funding Required)",
+        "chain_id": 8453,
+        "chain_name": "Base Mainnet",
+        "basescan_url": f"https://basescan.org/address/{relayer_address}",
+        "updated_at": now
+    }
+    _relayer_status_cache = {"data": status_data, "timestamp": now}
+    return status_data
+
+
 @app.route("/api/v1/bridge/config", methods=["GET"])
 def api_bridge_config():
-    return api_response(True, data=bridge_manager.get_bridge_config())
+    cfg = bridge_manager.get_bridge_config()
+    cfg["relayer"] = get_relayer_public_status()
+    return api_response(True, data=cfg)
+
+
+@app.route("/api/v1/bridge/relayer", methods=["GET"])
+def api_bridge_relayer():
+    force = request.args.get("refresh", "").lower() in ("1", "true")
+    return api_response(True, data=get_relayer_public_status(force_refresh=force))
 
 
 def _verify_l1_bridge_lock_tx(tx_hash_l1: str, expected_sender: str, expected_amount: float) -> Tuple[bool, str]:
@@ -3269,7 +3342,8 @@ def api_bridge_base_transactions():
         "contract_address": contract_addr,
         "chain_id": 8453,
         "chain_name": "Base Mainnet",
-        "basescan_contract_url": f"https://basescan.org/token/{contract_addr}"
+        "basescan_contract_url": f"https://basescan.org/token/{contract_addr}",
+        "relayer": get_relayer_public_status()
     })
 
 

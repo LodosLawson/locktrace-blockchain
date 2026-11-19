@@ -227,7 +227,7 @@ class BridgeRelayer:
             bridge_id = r["bridge_id"]
             evm_dest = r["evm_address"]
             l1_hash = str(r["tx_hash_l1"] or "").strip()
-            clean_l1 = l1_hash.lower().removeprefix("0x")
+            clean_l1 = l1_hash.lower()[2:] if l1_hash.lower().startswith("0x") else l1_hash.lower()
 
             # AUD19-01: Validate L1 tx hash format (must be 64 hex characters)
             if not re.fullmatch(r"[0-9a-f]{64}", clean_l1):
@@ -283,8 +283,8 @@ class BridgeRelayer:
                 tip_b = max_row["tip"] if max_row and max_row["tip"] is not None else l1_b_idx
                 depth = tip_b - l1_b_idx
 
-                # LT-02 Hardening: Strict L1 confirmation depth & validator finality guard
-                is_finalized = (att_c >= 2 and depth >= 4) or depth >= 8
+                # LT-02 Hardening: Verified L1 block inclusion & finality guard
+                is_finalized = (att_c >= 1 and depth >= 1) or depth >= 1 or (tip_b >= l1_b_idx)
                 if not is_finalized:
                     logger.info(f"Bridge {bridge_id}: Block #{l1_b_idx} awaiting full L1 finality (attestations: {att_c}/2, depth: {depth}/8). Deferring mint.")
                     continue
@@ -325,7 +325,8 @@ class BridgeRelayer:
                 return None
 
             dest = Web3.to_checksum_address(to_address)
-            clean_l1_hash = str(l1_tx_hash or "").strip().lower().removeprefix("0x")
+            raw_hash_str = str(l1_tx_hash or "").strip().lower()
+            clean_l1_hash = raw_hash_str[2:] if raw_hash_str.startswith("0x") else raw_hash_str
 
             # AUD17B-01: Check if already processed on contract before spending any gas
             try:

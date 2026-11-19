@@ -3113,6 +3113,38 @@
               </div>
             </div>
 
+            <!-- Base Bridge Relayer Status & Live Gas Balance -->
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-space-sm p-3.5 rounded-2xl bg-surface-container border border-outline-variant/20 shadow-sm">
+              <div class="flex items-center gap-2.5">
+                <div class="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center text-primary shrink-0">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">local_gas_station</span>
+                </div>
+                <div>
+                  <div class="flex items-center gap-1.5 flex-wrap text-xs">
+                    <span class="text-on-surface-variant font-medium">Base Relayer Adresi:</span>
+                    <a id="explorerRelayerAddressLink" href="https://basescan.org/address/0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3" target="_blank"
+                      rel="noopener noreferrer" class="font-mono text-primary font-semibold hover:underline inline-flex items-center gap-0.5">
+                      <span id="explorerRelayerAddressText">0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3</span>
+                      <span class="material-symbols-outlined notranslate text-[12px]" translate="no">open_in_new</span>
+                    </a>
+                  </div>
+                  <div class="text-[11px] text-on-surface-variant flex items-center gap-1.5 mt-0.5">
+                    <span id="explorerRelayerStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>Güncel Gaz Bakiyesi:</span>
+                    <span id="explorerRelayerBalance" class="font-mono font-bold text-emerald-400">Yükleniyor...</span>
+                    <span id="explorerRelayerStatusBadge" class="ml-1 px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold">Aktif</span>
+                  </div>
+                </div>
+              </div>
+              <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                <button type="button" onclick="refreshRelayerBalance(true); showToast('Relayer bakiyesi güncellendi');"
+                  class="px-2.5 py-1 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center gap-1 border border-outline-variant/20 transition-all text-xs font-semibold active:scale-95">
+                  <span class="material-symbols-outlined notranslate text-[13px] text-primary" translate="no">refresh</span>
+                  <span>Bakiyeyi Kontrol Et</span>
+                </button>
+              </div>
+            </div>
+
             <!-- Feed List for Base Transactions -->
             <div class="flex flex-col gap-2" id="feedBaseTxsList">
               <div
@@ -13417,10 +13449,61 @@
     let currentExplorerBaseTxsPage = 1;
     const explorerBaseTxsPageSize = 5;
 
+    async function refreshRelayerBalance(force = false) {
+      try {
+        const res = await apiFetch(`/bridge/relayer${force ? '?refresh=1' : ''}`);
+        const data = (res && res.body && res.body.data) ? res.body.data : (res && res.data ? res.data : null);
+        if (data) {
+          updateRelayerUI(data);
+        }
+      } catch (err) {
+        console.debug('Failed to refresh relayer balance:', err);
+      }
+    }
+
+    function updateRelayerUI(relayer) {
+      if (!relayer) return;
+      const addrEl = document.getElementById('explorerRelayerAddressText');
+      const linkEl = document.getElementById('explorerRelayerAddressLink');
+      const balEl = document.getElementById('explorerRelayerBalance');
+      const badgeEl = document.getElementById('explorerRelayerStatusBadge');
+      const dotEl = document.getElementById('explorerRelayerStatusDot');
+
+      if (addrEl && relayer.relayer_address) {
+        const a = relayer.relayer_address;
+        addrEl.textContent = a.slice(0, 6) + '...' + a.slice(-4);
+        if (linkEl) linkEl.href = `https://basescan.org/address/${a}`;
+      }
+      if (balEl && typeof relayer.balance_formatted !== 'undefined') {
+        balEl.textContent = relayer.balance_formatted;
+        if (relayer.is_operational) {
+          balEl.className = 'font-mono font-bold text-emerald-400';
+          if (badgeEl) {
+            badgeEl.textContent = 'Aktif (Hazır)';
+            badgeEl.className = 'ml-1 px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold';
+          }
+          if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+        } else {
+          balEl.className = 'font-mono font-bold text-amber-400';
+          if (badgeEl) {
+            badgeEl.textContent = 'Düşük Gaz (Yatırılmalı)';
+            badgeEl.className = 'ml-1 px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 text-[10px] font-semibold';
+          }
+          if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-amber-400';
+        }
+      }
+    }
+
     async function loadExplorerBaseTransactions() {
       const list = document.getElementById('feedBaseTxsList');
       try {
         const res = await apiFetch('/bridge/base-transactions?limit=50');
+        const relayerData = (res && res.body && res.body.data && res.body.data.relayer) || (res && res.data && res.data.relayer);
+        if (relayerData) {
+          updateRelayerUI(relayerData);
+        } else {
+          refreshRelayerBalance();
+        }
         let txs = null;
         if (res && res.body && res.body.data && Array.isArray(res.body.data.transactions)) {
           txs = res.body.data.transactions;
