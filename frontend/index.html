@@ -1866,59 +1866,115 @@
               <div class="flex items-center justify-center gap-1.5 flex-wrap">
                 <span class="text-sm sm:text-base font-semibold font-mono text-emerald-400" id="cardBalanceUsd">≈ $0.00 USD</span>
                 <span class="text-[11px] font-mono text-on-surface-variant/80" id="cardBalancePricePerBct">(1 BCT ≈ $0.00)</span>
-                <button type="button" onclick="toggleWalletInlineChart()"
-                  class="ml-1 inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/25 text-[11px] font-mono font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
-                  id="btnWalletInlineChartToggle" title="Canlı DexScreener Grafiğini Göster / Gizle">
-                  <span class="material-symbols-outlined notranslate text-[13px]" id="walletInlineChartIcon" translate="no">show_chart</span>
-                  <span id="walletInlineChartText">Grafik</span>
+                <button type="button" onclick="toggleWalletBalanceChart()"
+                  class="ml-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                  id="btnWalletBalanceChartToggle" title="Kişisel Bakiye Değişim Grafiğini Göster / Gizle">
+                  <span class="material-symbols-outlined notranslate text-[14px]" id="walletBalanceChartIcon" translate="no">show_chart</span>
+                  <span id="walletBalanceChartText">Bakiye Grafiği</span>
                 </button>
               </div>
             </div>
 
-            <!-- Collapsible Live Chart Container in Wallet Tab -->
-            <div id="walletInlineDexChart" class="hidden w-full max-w-xl mx-auto mt-3 mb-2 rounded-3xl overflow-hidden border border-emerald-500/30 bg-surface-container-low shadow-xl transition-all duration-300">
-              <!-- Header Bar with Source Switcher & External Link -->
+            <!-- Collapsible User Balance History & Market Chart Container in Wallet Tab -->
+            <div id="walletBalanceChartBox" class="hidden w-full max-w-xl mx-auto mt-3 mb-3 rounded-3xl overflow-hidden border border-emerald-500/30 bg-surface-container-low shadow-xl transition-all duration-300">
+              <!-- Header Bar with View Switcher (Kişisel Bakiye vs DEX Piyasası) -->
               <div class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 bg-surface-container-high/80 border-b border-outline-variant/15 text-xs text-on-surface-variant">
                 <div class="flex items-center gap-2 min-w-0">
                   <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-                  <span class="font-bold text-on-surface text-xs truncate font-mono">wBCT / USDC &bull; Base v4</span>
-                  <div class="flex items-center gap-1 ml-1 bg-surface-container-lowest/80 p-0.5 rounded-lg border border-outline-variant/15">
-                    <button type="button" id="btnWalletSrcGecko" onclick="setWalletChartSource('geckoterminal')"
-                      class="px-2 py-0.5 rounded-md text-[10.5px] font-mono font-bold bg-primary/20 text-primary border border-primary/30 transition-all cursor-pointer">Gecko</button>
-                    <button type="button" id="btnWalletSrcDex" onclick="setWalletChartSource('dexscreener')"
-                      class="px-2 py-0.5 rounded-md text-[10.5px] font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer">DexScreener</button>
+                  <div class="flex items-center gap-1 bg-surface-container-lowest/90 p-0.5 rounded-xl border border-outline-variant/20 shadow-xs">
+                    <button type="button" id="btnWalletTabUserBal" onclick="switchWalletChartTab('balance')"
+                      class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer">Bakiye Geçmişim</button>
+                    <button type="button" id="btnWalletTabDex" onclick="switchWalletChartTab('dex')"
+                      class="px-2.5 py-1 rounded-lg text-xs font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer">DEX Piyasası</button>
                   </div>
                 </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <a id="walletChartDirectLink" href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28" target="_blank" rel="noopener noreferrer"
-                    class="px-2.5 py-1 rounded-xl bg-surface-container-highest hover:bg-surface-variant text-on-surface text-[11px] font-semibold flex items-center gap-1 transition-all" title="Tam Ekran Aç">
-                    <span>Tam Ekran</span>
-                    <span class="material-symbols-outlined notranslate text-[13px] text-emerald-400" translate="no">open_in_new</span>
-                  </a>
-                  <button type="button" onclick="toggleWalletInlineChart()" class="p-1 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" title="Grafiği Kapat">
+                <div class="flex items-center gap-2 shrink-0">
+                  <button type="button" onclick="renderWalletBalanceNativeChart()" class="p-1.5 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" title="Yenile">
+                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">refresh</span>
+                  </button>
+                  <button type="button" onclick="toggleWalletBalanceChart()" class="p-1 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" title="Kapat">
                     <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
                   </button>
                 </div>
               </div>
 
-              <!-- Iframe Viewport with Loading State Overlay -->
-              <div class="w-full h-[400px] sm:h-[480px] bg-[#0c1015] relative overflow-hidden">
-                <!-- Shimmer Placeholder Spinner (Hides once loaded) -->
-                <div id="walletChartLoader" class="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-[#0c1015] text-on-surface-variant z-0 pointer-events-none transition-opacity duration-500">
-                  <div class="w-8 h-8 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin"></div>
-                  <span class="text-xs font-mono text-outline">Canlı DEX Grafiği Yükleniyor...</span>
+              <!-- VIEW 1: Native SVG Personal Balance Chart -->
+              <div id="walletViewUserBalance" class="p-4 flex flex-col gap-3 bg-[#0a0e14]">
+                <!-- Stats Row -->
+                <div class="flex items-center justify-between gap-2 flex-wrap text-xs font-mono">
+                  <div class="flex flex-col">
+                    <span class="text-[10px] uppercase text-outline">Anlık Bakiye</span>
+                    <span class="text-sm font-bold text-emerald-400" id="walletBalChartCurrent">0.00 BCT</span>
+                  </div>
+                  <div class="flex items-center gap-3">
+                    <div class="flex flex-col text-right">
+                      <span class="text-[10px] uppercase text-outline">En Düşük</span>
+                      <span class="text-xs font-bold text-on-surface" id="walletBalChartMin">0.00 BCT</span>
+                    </div>
+                    <div class="flex flex-col text-right">
+                      <span class="text-[10px] uppercase text-outline">En Yüksek</span>
+                      <span class="text-xs font-bold text-emerald-300" id="walletBalChartMax">0.00 BCT</span>
+                    </div>
+                    <div class="flex flex-col text-right">
+                      <span class="text-[10px] uppercase text-outline">İşlemler</span>
+                      <span class="text-xs font-bold text-primary" id="walletBalChartTxs">0 Tx</span>
+                    </div>
+                  </div>
                 </div>
-                <iframe id="walletInlineDexIframe" src="" onload="document.getElementById('walletChartLoader') && document.getElementById('walletChartLoader').classList.add('opacity-0')"
-                  class="w-full h-full border-0 relative z-10" loading="lazy" allow="clipboard-write" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+
+                <!-- High-Res Native SVG Area Chart -->
+                <div class="w-full h-44 sm:h-52 relative pt-2">
+                  <svg class="w-full h-full overflow-visible" viewBox="0 0 400 130" preserveAspectRatio="none" id="walletNativeBalSvg">
+                    <defs>
+                      <linearGradient id="walletBalGrad" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stop-color="#10b981" stop-opacity="0.38" />
+                        <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+                      </linearGradient>
+                    </defs>
+                    <!-- Background Horizontal Guide Lines -->
+                    <line x1="0" y1="20" x2="400" y2="20" stroke="#1f2937" stroke-dasharray="3,3" stroke-width="1" />
+                    <line x1="0" y1="65" x2="400" y2="65" stroke="#1f2937" stroke-dasharray="3,3" stroke-width="1" />
+                    <line x1="0" y1="110" x2="400" y2="110" stroke="#1f2937" stroke-dasharray="3,3" stroke-width="1" />
+
+                    <!-- Vector Line & Area -->
+                    <path id="walletNativeBalArea" d="M0,120 L400,120 Z" fill="url(#walletBalGrad)"></path>
+                    <path id="walletNativeBalLine" d="M0,120 L400,120" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
+                    <!-- Current Position Dot -->
+                    <circle id="walletNativeBalDot" cx="400" cy="120" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="2"></circle>
+                  </svg>
+                </div>
+
+                <!-- Timeline Axis Labels -->
+                <div class="flex items-center justify-between text-[10.5px] font-mono text-outline pt-1 border-t border-outline-variant/10">
+                  <span id="walletBalChartStartLabel">İlk Kayıt</span>
+                  <span class="text-on-surface-variant font-sans text-[11px]">&bull; Cüzdan Bakiye Eğrisi (BCT) &bull;</span>
+                  <span id="walletBalChartEndLabel" class="text-emerald-400 font-semibold">Şimdi</span>
+                </div>
               </div>
 
-              <!-- Compact Live Bar Under Chart -->
-              <div class="px-3.5 py-2 bg-surface-container-high/60 border-t border-outline-variant/15 flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
-                <span class="flex items-center gap-1">
-                  <span class="material-symbols-outlined notranslate text-[13px] text-emerald-400" translate="no">currency_exchange</span>
-                  <span>1 BCT = 1 wBCT On-Chain Peg</span>
-                </span>
-                <span class="text-emerald-400 font-bold" id="walletChartLivePriceLabel">...</span>
+              <!-- VIEW 2: External Live DEX Market Embed (Gecko / DexScreener) -->
+              <div id="walletViewDexMarket" class="hidden flex-col w-full bg-[#0c1015]">
+                <div class="flex items-center justify-between px-3 py-2 bg-surface-container-high/60 border-b border-outline-variant/10 text-xs">
+                  <div class="flex items-center gap-1.5 font-mono">
+                    <button type="button" id="btnWalletDexSrcGecko" onclick="setWalletDexEmbedSource('geckoterminal')"
+                      class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-primary/20 text-primary border border-primary/30">Gecko</button>
+                    <button type="button" id="btnWalletDexSrcDex" onclick="setWalletDexEmbedSource('dexscreener')"
+                      class="px-2 py-0.5 rounded text-[10.5px] font-medium text-on-surface-variant hover:text-on-surface">DexScreener</button>
+                  </div>
+                  <a id="walletDexExternalLink" href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28" target="_blank" rel="noopener noreferrer"
+                    class="text-xs text-emerald-400 hover:underline flex items-center gap-0.5 font-mono">
+                    <span>Tam Ekran Aç</span>
+                    <span class="material-symbols-outlined notranslate text-[12px]" translate="no">open_in_new</span>
+                  </a>
+                </div>
+                <div class="w-full h-[380px] sm:h-[440px] relative">
+                  <div id="walletDexLoader" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#0c1015] text-on-surface-variant z-0 pointer-events-none">
+                    <div class="w-7 h-7 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin"></div>
+                    <span class="text-xs font-mono">Piyasa Grafiği Yükleniyor...</span>
+                  </div>
+                  <iframe id="walletDexIframe" src="" onload="document.getElementById('walletDexLoader') && document.getElementById('walletDexLoader').classList.add('opacity-0')"
+                    class="w-full h-full border-0 relative z-10" loading="lazy" allow="clipboard-write" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+                </div>
               </div>
             </div>
 
@@ -16876,37 +16932,13 @@
       } catch (_e) { }
     }
 
-    let walletCurrentChartSource = 'geckoterminal';
+    let walletCurrentActiveTab = 'balance';
+    let walletDexEmbedSource = 'geckoterminal';
 
-    function setWalletChartSource(src) {
-      walletCurrentChartSource = src;
-      const iframe = document.getElementById('walletInlineDexIframe');
-      const geckoBtn = document.getElementById('btnWalletSrcGecko');
-      const dexBtn = document.getElementById('btnWalletSrcDex');
-      const link = document.getElementById('walletChartDirectLink');
-      const loader = document.getElementById('walletChartLoader');
-      if (loader) loader.classList.remove('opacity-0');
-      const pair = currentActiveDexPair || '0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139';
-
-      if (src === 'geckoterminal') {
-        if (iframe) iframe.src = `https://www.geckoterminal.com/base/pools/${pair}?embed=1&info=0&swaps=0`;
-        if (geckoBtn) geckoBtn.className = 'px-2 py-0.5 rounded-md text-[10.5px] font-mono font-bold bg-primary/20 text-primary border border-primary/30 transition-all cursor-pointer';
-        if (dexBtn) dexBtn.className = 'px-2 py-0.5 rounded-md text-[10.5px] font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer';
-        if (link) link.href = `https://www.geckoterminal.com/base/pools/${pair}`;
-      } else {
-        if (iframe) iframe.src = `https://dexscreener.com/base/${pair}?embed=1&theme=dark`;
-        if (dexBtn) dexBtn.className = 'px-2 py-0.5 rounded-md text-[10.5px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer';
-        if (geckoBtn) geckoBtn.className = 'px-2 py-0.5 rounded-md text-[10.5px] font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer';
-        if (link) link.href = `https://dexscreener.com/base/${pair}`;
-      }
-    }
-
-    function toggleWalletInlineChart() {
-      const box = document.getElementById('walletInlineDexChart');
-      const text = document.getElementById('walletInlineChartText');
-      const icon = document.getElementById('walletInlineChartIcon');
-      const iframe = document.getElementById('walletInlineDexIframe');
-      const pLabel = document.getElementById('walletChartLivePriceLabel');
+    function toggleWalletBalanceChart() {
+      const box = document.getElementById('walletBalanceChartBox');
+      const text = document.getElementById('walletBalanceChartText');
+      const icon = document.getElementById('walletBalanceChartIcon');
       if (!box) return;
 
       const isHidden = box.classList.contains('hidden');
@@ -16914,14 +16946,174 @@
         box.classList.remove('hidden');
         if (text) text.textContent = 'Gizle';
         if (icon) icon.textContent = 'close';
-        if (pLabel) pLabel.textContent = formatUnitPrice(currentWbctPriceUsd || 0.000807);
-        if (iframe && (!iframe.src || iframe.src === 'about:blank' || iframe.src === window.location.href)) {
-          setWalletChartSource(walletCurrentChartSource || 'geckoterminal');
-        }
+        switchWalletChartTab(walletCurrentActiveTab || 'balance');
       } else {
         box.classList.add('hidden');
-        if (text) text.textContent = 'Grafik';
+        if (text) text.textContent = 'Bakiye Grafiği';
         if (icon) icon.textContent = 'show_chart';
+      }
+    }
+
+    function switchWalletChartTab(tab) {
+      walletCurrentActiveTab = tab;
+      const btnBal = document.getElementById('btnWalletTabUserBal');
+      const btnDex = document.getElementById('btnWalletTabDex');
+      const viewBal = document.getElementById('walletViewUserBalance');
+      const viewDex = document.getElementById('walletViewDexMarket');
+
+      if (tab === 'balance') {
+        if (btnBal) btnBal.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer';
+        if (btnDex) btnDex.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer';
+        if (viewBal) viewBal.classList.remove('hidden');
+        if (viewDex) viewDex.classList.add('hidden');
+        renderWalletBalanceNativeChart();
+      } else {
+        if (btnDex) btnDex.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer';
+        if (btnBal) btnBal.className = 'px-2.5 py-1 rounded-lg text-xs font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer';
+        if (viewBal) viewBal.classList.add('hidden');
+        if (viewDex) viewDex.classList.remove('hidden');
+        setWalletDexEmbedSource(walletDexEmbedSource || 'geckoterminal');
+      }
+    }
+
+    function setWalletDexEmbedSource(src) {
+      walletDexEmbedSource = src;
+      const iframe = document.getElementById('walletDexIframe');
+      const geckoBtn = document.getElementById('btnWalletDexSrcGecko');
+      const dexBtn = document.getElementById('btnWalletDexSrcDex');
+      const link = document.getElementById('walletDexExternalLink');
+      const loader = document.getElementById('walletDexLoader');
+      if (loader) loader.classList.remove('opacity-0');
+      const pair = currentActiveDexPair || '0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139';
+
+      if (src === 'geckoterminal') {
+        if (iframe) iframe.src = `https://www.geckoterminal.com/base/pools/${pair}?embed=1&info=0&swaps=0`;
+        if (geckoBtn) geckoBtn.className = 'px-2 py-0.5 rounded text-[10.5px] font-bold bg-primary/20 text-primary border border-primary/30';
+        if (dexBtn) dexBtn.className = 'px-2 py-0.5 rounded text-[10.5px] font-medium text-on-surface-variant hover:text-on-surface';
+        if (link) link.href = `https://www.geckoterminal.com/base/pools/${pair}`;
+      } else {
+        if (iframe) iframe.src = `https://dexscreener.com/base/${pair}?embed=1&theme=dark`;
+        if (dexBtn) dexBtn.className = 'px-2 py-0.5 rounded text-[10.5px] font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30';
+        if (geckoBtn) geckoBtn.className = 'px-2 py-0.5 rounded text-[10.5px] font-medium text-on-surface-variant hover:text-on-surface';
+        if (link) link.href = `https://dexscreener.com/base/${pair}`;
+      }
+    }
+
+    function renderWalletBalanceNativeChart() {
+      const areaEl = document.getElementById('walletNativeBalArea');
+      const lineEl = document.getElementById('walletNativeBalLine');
+      const dotEl = document.getElementById('walletNativeBalDot');
+      const curEl = document.getElementById('walletBalChartCurrent');
+      const minEl = document.getElementById('walletBalChartMin');
+      const maxEl = document.getElementById('walletBalChartMax');
+      const txsEl = document.getElementById('walletBalChartTxs');
+      const startEl = document.getElementById('walletBalChartStartLabel');
+      const endEl = document.getElementById('walletBalChartEndLabel');
+
+      if (!areaEl || !lineEl) return;
+
+      const currentBal = (currentAccount && typeof currentAccount.balance === 'number') ? currentAccount.balance : 0;
+      if (curEl) curEl.textContent = `${formatBct(currentBal, 4)} BCT`;
+
+      const txList = Array.isArray(personalTxCache) ? personalTxCache : [];
+      const txCount = txList.length;
+      if (txsEl) txsEl.textContent = `${txCount} Tx`;
+
+      const myAddr = (currentAccount && currentAccount.address) ? String(currentAccount.address).trim().toLowerCase() : '';
+      const sorted = [...txList].sort((a, b) => Number(a.timestamp || 0) - Number(b.timestamp || 0));
+
+      // Calculate historical running balance trajectory
+      let running = 0;
+      const history = [];
+
+      sorted.forEach((tx) => {
+        const ttype = tx.type || tx.tx_type || 'transfer';
+        const amt = Number(tx.amount || 0);
+        const fee = Number(tx.fee || 0);
+        const sender = String(tx.sender || '').trim().toLowerCase();
+        const receiver = String(tx.receiver || tx.recipient || '').trim().toLowerCase();
+        const isFollowReward = Boolean(tx.is_creator_follow_reward || (ttype === 'space_follow' && tx.extra_data && String(tx.extra_data.target || '').toLowerCase() === myAddr && sender !== myAddr));
+        const isRoyalty = Boolean(tx.is_author_royalty) || isFollowReward;
+        const isIncoming = isRoyalty || (receiver === myAddr && sender !== myAddr);
+        const isSelf = (sender === myAddr && receiver === myAddr);
+        const isOutgoing = (sender === myAddr && !isIncoming && !isSelf);
+
+        if (isIncoming) {
+          if (isRoyalty) {
+            const royAmt = Number(tx.royalty_amount || (isFollowReward ? 0.50 : 0.002));
+            running += royAmt;
+          } else {
+            running += amt;
+          }
+        } else if (isOutgoing) {
+          running -= amt;
+        } else if (isSelf) {
+          running -= fee;
+        }
+
+        history.push({
+          time: Number(tx.timestamp || 0) || Math.floor(Date.now() / 1000),
+          bal: Math.max(0, running)
+        });
+      });
+
+      // Shift baseline so the last point matches currentBal exactly
+      if (history.length > 0) {
+        const lastDelta = currentBal - history[history.length - 1].bal;
+        history.forEach(h => {
+          h.bal = Math.max(0, h.bal + lastDelta);
+        });
+      }
+
+      const nowTs = Math.floor(Date.now() / 1000);
+      if (history.length === 0) {
+        history.push({ time: nowTs - 86400 * 3, bal: currentBal });
+        history.push({ time: nowTs, bal: currentBal });
+      } else if (history.length === 1) {
+        history.unshift({ time: history[0].time - 3600, bal: Math.max(0, history[0].bal - 1) });
+        history.push({ time: nowTs, bal: currentBal });
+      } else {
+        const last = history[history.length - 1];
+        if (nowTs - last.time > 60) {
+          history.push({ time: nowTs, bal: currentBal });
+        }
+      }
+
+      if (startEl && history[0].time) startEl.textContent = formatTimeAgo(history[0].time);
+      if (endEl && history[history.length - 1].time) endEl.textContent = 'Şimdi';
+
+      const bals = history.map(h => h.bal);
+      const minB = Math.min(...bals);
+      const maxB = Math.max(...bals);
+      if (minEl) minEl.textContent = `${formatBct(minB, 2)} BCT`;
+      if (maxEl) maxEl.textContent = `${formatBct(maxB, 2)} BCT`;
+
+      const span = maxB - minB;
+      const points = history.map((h, i) => {
+        const x = Math.round((i / (history.length - 1)) * 400);
+        let y = 65;
+        if (span > 0.000001) {
+          const norm = (h.bal - minB) / span;
+          y = Math.round(110 - (norm * 90)); // between 20 (high) and 110 (low)
+        }
+        return { x, y };
+      });
+
+      let lineD = `M${points[0].x},${points[0].y}`;
+      for (let i = 1; i < points.length; i++) {
+        const prev = points[i - 1];
+        const cur = points[i];
+        const cx = Math.round((prev.x + cur.x) / 2);
+        lineD += ` C${cx},${prev.y} ${cx},${cur.y} ${cur.x},${cur.y}`;
+      }
+
+      const areaD = `${lineD} L${points[points.length - 1].x},130 L${points[0].x},130 Z`;
+
+      areaEl.setAttribute('d', areaD);
+      lineEl.setAttribute('d', lineD);
+      if (dotEl) {
+        dotEl.setAttribute('cx', points[points.length - 1].x);
+        dotEl.setAttribute('cy', points[points.length - 1].y);
       }
     }
 
@@ -16958,6 +17150,7 @@
 
       if (typeof currentAccount !== 'undefined' && currentAccount) {
         renderBalanceFigures(currentAccount.balance || 0);
+        if (typeof renderWalletBalanceNativeChart === 'function') renderWalletBalanceNativeChart();
       }
     }
     setInterval(pollDexPriceLive, 20000);
