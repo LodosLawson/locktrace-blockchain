@@ -1847,20 +1847,20 @@
           <!-- Hero Balance Section -->
           <div class="flex flex-col items-center justify-center pt-space-sm pb-space-md text-center">
             <div class="flex items-center gap-space-xs mb-1">
-              <span
-                class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold">Total
-                Portfolio Value</span>
+              <span class="font-label-sm text-[11px] text-on-surface-variant uppercase tracking-wider font-semibold">Total Portfolio Value</span>
               <button aria-label="Toggle Balance Visibility"
-                class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors"
+                class="flex items-center text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer"
                 onclick="toggleBalanceVisibility()" type="button">
                 <span class="material-symbols-outlined notranslate text-[15px]" id="balanceEyeIcon" translate="no">visibility</span>
               </button>
             </div>
+
+            <!-- Big Balance Numbers -->
             <div class="flex items-baseline justify-center gap-2 select-none max-w-full overflow-hidden px-2">
-              <span class="text-3xl sm:text-4xl md:text-5xl text-on-surface tracking-tight font-bold truncate"
-                id="cardBalance">0.00</span>
+              <span class="text-3xl sm:text-4xl md:text-5xl text-on-surface tracking-tight font-bold truncate" id="cardBalance">0.00</span>
               <span class="font-headline-sm text-headline-sm text-primary font-semibold shrink-0">BCT</span>
             </div>
+
             <!-- Live Uniswap / DEX Dollar Equivalent Value with Toggle Chart Button -->
             <div class="flex flex-col items-center justify-center gap-1.5 select-none mt-1">
               <div class="flex items-center justify-center gap-1.5 flex-wrap">
@@ -1868,117 +1868,131 @@
                 <span class="text-[11px] font-mono text-on-surface-variant/80" id="cardBalancePricePerBct">(1 BCT ≈ $0.00)</span>
                 <button type="button" onclick="toggleWalletBalanceChart()"
                   class="ml-1 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-500/15 hover:bg-emerald-500/25 text-emerald-400 border border-emerald-500/30 text-[11px] font-mono font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
-                  id="btnWalletBalanceChartToggle" title="Kişisel Bakiye Değişim Grafiğini Göster / Gizle">
+                  id="btnWalletBalanceChartToggle" title="Bakiye Grafiğini Aç / Kapat">
                   <span class="material-symbols-outlined notranslate text-[14px]" id="walletBalanceChartIcon" translate="no">show_chart</span>
                   <span id="walletBalanceChartText">Bakiye Grafiği</span>
                 </button>
               </div>
             </div>
 
-            <!-- Collapsible User Balance History & Market Chart Container in Wallet Tab -->
-            <div id="walletBalanceChartBox" class="hidden w-full max-w-xl mx-auto mt-3 mb-3 rounded-3xl overflow-hidden border border-emerald-500/30 bg-surface-container-low shadow-xl transition-all duration-300">
-              <!-- Header Bar with View Switcher (Kişisel Bakiye vs DEX Piyasası) -->
-              <div class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 bg-surface-container-high/80 border-b border-outline-variant/15 text-xs text-on-surface-variant">
-                <div class="flex items-center gap-2 min-w-0">
-                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-                  <div class="flex items-center gap-1 bg-surface-container-lowest/90 p-0.5 rounded-xl border border-outline-variant/20 shadow-xs">
-                    <button type="button" id="btnWalletTabUserBal" onclick="switchWalletChartTab('balance')"
-                      class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer">Bakiye Geçmişim</button>
-                    <button type="button" id="btnWalletTabDex" onclick="switchWalletChartTab('dex')"
-                      class="px-2.5 py-1 rounded-lg text-xs font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer">DEX Piyasası</button>
-                  </div>
-                </div>
-                <div class="flex items-center gap-2 shrink-0">
-                  <button type="button" onclick="renderWalletBalanceNativeChart()" class="p-1.5 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" title="Yenile">
-                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">refresh</span>
-                  </button>
-                  <button type="button" onclick="toggleWalletBalanceChart()" class="p-1 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" title="Kapat">
-                    <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
-                  </button>
+            <!-- Protocol & Network Status Badges -->
+            <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-2.5 select-none">
+              <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-primary text-[11px] sm:text-xs font-semibold border border-outline-variant/20 shadow-xs">
+                <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
+                <span id="walletStatusBadge">Mainnet Native Asset</span>
+              </div>
+              <div class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant text-[11px] sm:text-xs font-mono border border-outline-variant/15" id="walletSubStatusWrap">
+                <span class="material-symbols-outlined notranslate text-[13px] text-emerald-400" translate="no">verified</span>
+                <span id="walletSubStatusText">Confirmed On-Chain</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- ================================================================= -->
+          <!-- COLLAPSIBLE USER BALANCE & MARKET ANALYTICS DRAWER                -->
+          <!-- ================================================================= -->
+          <div id="walletBalanceChartBox" class="hidden w-full max-w-xl mx-auto mb-4 rounded-3xl overflow-hidden border border-emerald-500/25 bg-surface-container-low shadow-xl transition-all duration-300">
+            <!-- Top Controls Header -->
+            <div class="flex flex-wrap items-center justify-between gap-2 px-4 py-2.5 bg-surface-container-high/80 border-b border-outline-variant/15 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                <div class="flex items-center gap-1 bg-surface-container-lowest/90 p-0.5 rounded-xl border border-outline-variant/20 shadow-xs">
+                  <button type="button" id="btnWalletTabUserBal" onclick="switchWalletChartTab('balance')"
+                    class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer">Bakiye Geçmişim</button>
+                  <button type="button" id="btnWalletTabDex" onclick="switchWalletChartTab('dex')"
+                    class="px-2.5 py-1 rounded-lg text-xs font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer">DEX Piyasası</button>
                 </div>
               </div>
-
-              <!-- VIEW 1: Native SVG Personal Balance Chart -->
-              <div id="walletViewUserBalance" class="p-4 flex flex-col gap-3 bg-[#0a0e14]">
-                <!-- Stats Row -->
-                <div class="flex items-center justify-between gap-2 flex-wrap text-xs font-mono">
-                  <div class="flex flex-col">
-                    <span class="text-[10px] uppercase text-outline">Anlık Bakiye</span>
-                    <span class="text-sm font-bold text-emerald-400" id="walletBalChartCurrent">0.00 BCT</span>
-                  </div>
-                  <div class="flex items-center gap-3">
-                    <div class="flex flex-col text-right">
-                      <span class="text-[10px] uppercase text-outline">En Düşük</span>
-                      <span class="text-xs font-bold text-on-surface" id="walletBalChartMin">0.00 BCT</span>
-                    </div>
-                    <div class="flex flex-col text-right">
-                      <span class="text-[10px] uppercase text-outline">En Yüksek</span>
-                      <span class="text-xs font-bold text-emerald-300" id="walletBalChartMax">0.00 BCT</span>
-                    </div>
-                    <div class="flex flex-col text-right">
-                      <span class="text-[10px] uppercase text-outline">İşlemler</span>
-                      <span class="text-xs font-bold text-primary" id="walletBalChartTxs">0 Tx</span>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- High-Res Native SVG Area Chart -->
-                <div class="w-full h-44 sm:h-52 relative pt-2">
-                  <svg class="w-full h-full overflow-visible" viewBox="0 0 400 130" preserveAspectRatio="none" id="walletNativeBalSvg">
-                    <defs>
-                      <linearGradient id="walletBalGrad" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="0%" stop-color="#10b981" stop-opacity="0.38" />
-                        <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
-                      </linearGradient>
-                    </defs>
-                    <!-- Background Horizontal Guide Lines -->
-                    <line x1="0" y1="20" x2="400" y2="20" stroke="#1f2937" stroke-dasharray="3,3" stroke-width="1" />
-                    <line x1="0" y1="65" x2="400" y2="65" stroke="#1f2937" stroke-dasharray="3,3" stroke-width="1" />
-                    <line x1="0" y1="110" x2="400" y2="110" stroke="#1f2937" stroke-dasharray="3,3" stroke-width="1" />
-
-                    <!-- Vector Line & Area -->
-                    <path id="walletNativeBalArea" d="M0,120 L400,120 Z" fill="url(#walletBalGrad)"></path>
-                    <path id="walletNativeBalLine" d="M0,120 L400,120" fill="none" stroke="#10b981" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"></path>
-                    <!-- Current Position Dot -->
-                    <circle id="walletNativeBalDot" cx="400" cy="120" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="2"></circle>
-                  </svg>
-                </div>
-
-                <!-- Timeline Axis Labels -->
-                <div class="flex items-center justify-between text-[10.5px] font-mono text-outline pt-1 border-t border-outline-variant/10">
-                  <span id="walletBalChartStartLabel">İlk Kayıt</span>
-                  <span class="text-on-surface-variant font-sans text-[11px]">&bull; Cüzdan Bakiye Eğrisi (BCT) &bull;</span>
-                  <span id="walletBalChartEndLabel" class="text-emerald-400 font-semibold">Şimdi</span>
-                </div>
-              </div>
-
-              <!-- VIEW 2: External Live DEX Market Embed (Gecko / DexScreener) -->
-              <div id="walletViewDexMarket" class="hidden flex-col w-full bg-[#0c1015]">
-                <div class="flex items-center justify-between px-3 py-2 bg-surface-container-high/60 border-b border-outline-variant/10 text-xs">
-                  <div class="flex items-center gap-1.5 font-mono">
-                    <button type="button" id="btnWalletDexSrcGecko" onclick="setWalletDexEmbedSource('geckoterminal')"
-                      class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-primary/20 text-primary border border-primary/30">Gecko</button>
-                    <button type="button" id="btnWalletDexSrcDex" onclick="setWalletDexEmbedSource('dexscreener')"
-                      class="px-2 py-0.5 rounded text-[10.5px] font-medium text-on-surface-variant hover:text-on-surface">DexScreener</button>
-                  </div>
-                  <a id="walletDexExternalLink" href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28" target="_blank" rel="noopener noreferrer"
-                    class="text-xs text-emerald-400 hover:underline flex items-center gap-0.5 font-mono">
-                    <span>Tam Ekran Aç</span>
-                    <span class="material-symbols-outlined notranslate text-[12px]" translate="no">open_in_new</span>
-                  </a>
-                </div>
-                <div class="w-full h-[380px] sm:h-[440px] relative">
-                  <div id="walletDexLoader" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#0c1015] text-on-surface-variant z-0 pointer-events-none">
-                    <div class="w-7 h-7 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin"></div>
-                    <span class="text-xs font-mono">Piyasa Grafiği Yükleniyor...</span>
-                  </div>
-                  <iframe id="walletDexIframe" src="" onload="document.getElementById('walletDexLoader') && document.getElementById('walletDexLoader').classList.add('opacity-0')"
-                    class="w-full h-full border-0 relative z-10" loading="lazy" allow="clipboard-write" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
-                </div>
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="renderWalletBalanceNativeChart()" class="p-1.5 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" title="Yenile">
+                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">refresh</span>
+                </button>
+                <button type="button" onclick="toggleWalletBalanceChart()" class="p-1.5 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" title="Kapat">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
+                </button>
               </div>
             </div>
 
-            <!-- Primary 2-Button Action Row (Send + Receive) -->
+            <!-- VIEW 1: Native SVG Personal Balance Chart -->
+            <div id="walletViewUserBalance" class="p-4 sm:p-5 flex flex-col gap-3.5 bg-[#080d12]">
+              <!-- Stats Row: Current Bal, Min, Max, Tx Count -->
+              <div class="grid grid-cols-2 sm:grid-cols-4 gap-2.5 text-xs font-mono">
+                <div class="p-2.5 rounded-2xl bg-surface-container-lowest/90 border border-outline-variant/15 flex flex-col">
+                  <span class="text-[10px] uppercase text-outline">Anlık Bakiye</span>
+                  <span class="text-sm font-bold text-emerald-400 truncate mt-0.5" id="walletBalChartCurrent">0.00 BCT</span>
+                </div>
+                <div class="p-2.5 rounded-2xl bg-surface-container-lowest/90 border border-outline-variant/15 flex flex-col">
+                  <span class="text-[10px] uppercase text-outline">Dip Değer</span>
+                  <span class="text-xs font-bold text-on-surface truncate mt-0.5" id="walletBalChartMin">0.00 BCT</span>
+                </div>
+                <div class="p-2.5 rounded-2xl bg-surface-container-lowest/90 border border-outline-variant/15 flex flex-col">
+                  <span class="text-[10px] uppercase text-outline">Zirve Değer</span>
+                  <span class="text-xs font-bold text-emerald-300 truncate mt-0.5" id="walletBalChartMax">0.00 BCT</span>
+                </div>
+                <div class="p-2.5 rounded-2xl bg-surface-container-lowest/90 border border-outline-variant/15 flex flex-col">
+                  <span class="text-[10px] uppercase text-outline">İşlem Hacmi</span>
+                  <span class="text-xs font-bold text-primary truncate mt-0.5" id="walletBalChartTxs">0 Tx</span>
+                </div>
+              </div>
+
+              <!-- High-Res Native SVG Area Chart with Gradient -->
+              <div class="w-full h-44 sm:h-52 relative pt-2 pb-1">
+                <svg class="w-full h-full overflow-visible" viewBox="0 0 400 130" preserveAspectRatio="none" id="walletNativeBalSvg">
+                  <defs>
+                    <linearGradient id="walletBalGrad" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stop-color="#10b981" stop-opacity="0.4" />
+                      <stop offset="70%" stop-color="#10b981" stop-opacity="0.08" />
+                      <stop offset="100%" stop-color="#10b981" stop-opacity="0.0" />
+                    </linearGradient>
+                  </defs>
+                  <!-- Background Guide Lines -->
+                  <line x1="0" y1="20" x2="400" y2="20" stroke="#1f2937" stroke-dasharray="3,3" stroke-width="1" />
+                  <line x1="0" y1="65" x2="400" y2="65" stroke="#1f2937" stroke-dasharray="3,3" stroke-width="1" />
+                  <line x1="0" y1="110" x2="400" y2="110" stroke="#1f2937" stroke-dasharray="3,3" stroke-width="1" />
+
+                  <!-- Vector Area & Stroke Line -->
+                  <path id="walletNativeBalArea" d="M0,120 L400,120 Z" fill="url(#walletBalGrad)"></path>
+                  <path id="walletNativeBalLine" d="M0,120 L400,120" fill="none" stroke="#10b981" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"></path>
+                  <!-- Current Position Glowing Dot -->
+                  <circle id="walletNativeBalDot" cx="400" cy="120" r="4.5" fill="#34d399" stroke="#ffffff" stroke-width="2"></circle>
+                </svg>
+              </div>
+
+              <!-- Timeline Axis Footer -->
+              <div class="flex items-center justify-between text-[10.5px] font-mono text-outline pt-1 border-t border-outline-variant/10">
+                <span id="walletBalChartStartLabel" class="text-on-surface-variant font-medium">İlk İşlem</span>
+                <span class="text-on-surface-variant/70 font-sans text-[11px]">&bull; Kişisel Bakiye Değişim Eğrisi &bull;</span>
+                <span id="walletBalChartEndLabel" class="text-emerald-400 font-semibold">Anlık</span>
+              </div>
+            </div>
+
+            <!-- VIEW 2: External Live DEX Market Embed -->
+            <div id="walletViewDexMarket" class="hidden flex-col w-full bg-[#0c1015]">
+              <div class="flex items-center justify-between px-3.5 py-2 bg-surface-container-high/60 border-b border-outline-variant/10 text-xs">
+                <div class="flex items-center gap-1.5 font-mono">
+                  <button type="button" id="btnWalletDexSrcGecko" onclick="setWalletDexEmbedSource('geckoterminal')"
+                    class="px-2 py-0.5 rounded text-[10.5px] font-bold bg-primary/20 text-primary border border-primary/30 cursor-pointer">Gecko</button>
+                  <button type="button" id="btnWalletDexSrcDex" onclick="setWalletDexEmbedSource('dexscreener')"
+                    class="px-2 py-0.5 rounded text-[10.5px] font-medium text-on-surface-variant hover:text-on-surface cursor-pointer">DexScreener</button>
+                </div>
+                <a id="walletDexExternalLink" href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28" target="_blank" rel="noopener noreferrer"
+                  class="text-xs text-emerald-400 hover:underline flex items-center gap-0.5 font-mono">
+                  <span>Tam Ekran Aç</span>
+                  <span class="material-symbols-outlined notranslate text-[12px]" translate="no">open_in_new</span>
+                </a>
+              </div>
+              <div class="w-full h-[380px] sm:h-[440px] relative">
+                <div id="walletDexLoader" class="absolute inset-0 flex flex-col items-center justify-center gap-2 bg-[#0c1015] text-on-surface-variant z-0 pointer-events-none">
+                  <div class="w-7 h-7 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin"></div>
+                  <span class="text-xs font-mono">Piyasa Grafiği Yükleniyor...</span>
+                </div>
+                <iframe id="walletDexIframe" src="" onload="document.getElementById('walletDexLoader') && document.getElementById('walletDexLoader').classList.add('opacity-0')"
+                  class="w-full h-full border-0 relative z-10" loading="lazy" allow="clipboard-write" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+              </div>
+            </div>
+          </div>
+
+          <!-- Primary 2-Button Action Row (Send + Receive) -->
           <div class="grid grid-cols-2 gap-3 mb-4">
             <button
               class="flex items-center justify-center gap-2 h-12 bg-primary-container text-on-primary-container rounded-2xl font-label-md text-label-md active:scale-[0.98] transition-all shadow-sm font-semibold hover:brightness-105 cursor-pointer"
