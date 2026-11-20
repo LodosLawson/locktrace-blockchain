@@ -1,20 +1,15 @@
 """
-LockTrace wBCT Micro-Scale Market Maker & Trend Following Bot (Base Mainnet)
-=============================================================================
-ÖZEL HAVUZ VE PİYASA OPTİMİZASYONU:
-- wBCT Base Mainnet Toplam Arzı: ~2,492 wBCT
-- Canlı Uniswap v4 Havuzu: wBCT / USDC (0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139)
-- Havuz Likiditesi: ~2,391 wBCT & ~2.50 USDC (~$5 USD)
-- Güncel Fiyat: ~$0.001046 USD / wBCT
-
-Optimizasyon Kuralları (Fiyatı Bozmadan Organik Mum Yakma):
-1. Mikro-Sermaye Yönetimi: Havuz likiditesi $5 olduğu için işlemler $0.05 - $0.20 (5 sent - 20 sent)
-   seviyesinde mikro-ölçeklendirildi. (Böylece Price Impact <%1.5 seviyesinde güvenli kalır).
-2. wBCT Miktarları: 10-100 adet gibi büyük satışlar yerine 20 - 90 wBCT aralığında mikro-ölçek.
-3. 5 Dakika Takip + İlk 1-2 Dakika İçinde Rastgele Zamanlama (10 - 110 sn).
-4. Çoklu Cüzdan Rotasyonu (3 Cüzdan).
-5. Çift Yönlü Dengeleme: Alımlar ile yeşil mum, hafif satışlar ile USDC/ETH kasasını doldurma.
-6. %0.15 Eşik Koruması: Yatay piyasada sıfır spam, sıfır DEXScreener bot uyarısı.
+LockTrace wBCT Live Market Maker & Trend Following Bot (Base Mainnet)
+====================================================================
+MATEMATİKSEL FİYAT ETKİSİ VE CANLI UNISWAP V4 AMM ENTEGRASYONU:
+- Havuz: wBCT / USDC (%0.9 Fee, TickSpacing 90)
+- PoolId: 0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139
+- Uniswap V4 Universal Router: 0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40
+- Formül: Delta_wBCT = (abs(Delta_ETH_Pct) / 100) / 2.0 * Pool_wBCT_Reserve
+- Multi-Wallet Rotation: Alpha, Beta, Gamma cüzdanları arasında rotasyon.
+- Random Jitter: 5 dk dolduktan sonra ilk 1-2 dk (10 - 110s) içinde rastgele yürütme.
+- Eşik: %0.15 altındaki değişimlerde pasif (Sıfır spam, DEXScreener dostu).
+- DEXScreener / GeckoTerminal üzerinde gerçek yeşil ve kırmızı mumlar oluşturur.
 """
 
 import os
@@ -28,103 +23,71 @@ from typing import Dict, Any, Optional, Tuple, List
 import urllib.request
 import urllib.error
 
-# Opsiyonel Web3 entegrasyonu (Canlı mod için)
 try:
     from web3 import Web3
+    from eth_account import Account
+    from eth_abi import encode
     HAS_WEB3 = True
 except ImportError:
     Web3 = None
+    Account = None
+    encode = None
     HAS_WEB3 = False
 
-# Logging yapılandırması
 logging.basicConfig(
     level=logging.INFO,
-    format="%(asctime)s [%(levelname)s] [wBCT-MicroMM]: %(message)s",
+    format="%(asctime)s [%(levelname)s] [wBCT-AMM]: %(message)s",
     datefmt="%Y-%m-%d %H:%M:%S"
 )
-logger = logging.getLogger("wBCT-MicroMM")
+logger = logging.getLogger("wBCT-AMM")
 
-# ==============================================================================
-# CANLI HAVUZA GÖRE KALİBRE EDİLMİŞ PARAMETRELER
-# ==============================================================================
 CONFIG = {
-    # Ağ ve Sözleşmeler
-    "CHAIN_ID": 8453,  # Base Mainnet
+    "CHAIN_ID": 8453,
     "RPC_URL": os.getenv("BASE_RPC_URL", "https://mainnet.base.org"),
-    "WBCT_ADDRESS": "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28",
-    "USDC_ADDRESS": "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    "PAIR_ADDRESS": "0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139", # Uniswap v4
+    
+    # Sözleşme Adresleri
+    "WBCT_ADDRESS": Web3.to_checksum_address("0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28") if Web3 else "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28",
+    "USDC_ADDRESS": Web3.to_checksum_address("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") if Web3 else "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+    "UNIVERSAL_ROUTER": Web3.to_checksum_address("0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40") if Web3 else "0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40",
+    "POOL_ID": "0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139",
+    
+    # Canlı Havuz Rezervi Parametresi (wBCT)
+    "POOL_WBCT_RESERVE": 2391.0,
+    "WBCT_UNIT_PRICE_USD": 0.001048,
 
     # Zamanlama
-    "POLL_INTERVAL_SECONDS": 10,     # Fiyat kontrol sıklığı
-    "WINDOW_SECONDS": 300,           # Karar penceresi (5 dakika = 300 sn)
+    "POLL_INTERVAL_SECONDS": 10,
+    "WINDOW_SECONDS": 300,          # 5 Dakika
+    "EXECUTION_DELAY_MIN_SEC": 10,  # Minimum 10 sn gecikme
+    "EXECUTION_DELAY_MAX_SEC": 110, # Maksimum 110 sn gecikme
     
-    # 5 Dakika Sonrası Rastgele Yürütme (İlk 1-2 dakika içi)
-    "EXECUTION_DELAY_MIN_SEC": 10,   # Minimum 10 sn
-    "EXECUTION_DELAY_MAX_SEC": 110,  # Maksimum 110 sn (~1.8 dakika)
+    # Delta Eşikleri
+    "MIN_DELTA_THRESHOLD_PCT": 0.15,# %0.15 altı pasif
+    "MAX_DELTA_CAP_PCT": 2.00,      # Tavan: %2.00
     
-    # Delta ve Eşik Kuralları
-    "MIN_DELTA_THRESHOLD_PCT": 0.15, # %0.15 altındaki değişimlerde pasif kalır (DEXScreener dostu)
-    "MAX_DELTA_CAP_PCT": 2.00,       # Tek seferde işlenecek tavan artış (%2.0)
-    
-    # MİKRO-HAVUZ İŞLEM BÜYÜKLÜKLERİ (Havuz likiditesi $5 olduğu için)
-    # 1 wBCT ~= $0.001046
-    "BASE_BUY_USD": 0.05,            # %0.15 artış için taban alım miktarı: ~$0.05 (5 sent)
-    "MAX_BUY_USD": 0.25,             # Tek seferde maksimum alım: ~$0.25 (25 sent - Price Impact <%2)
-    "BASE_SELL_WBCT": 25.0,          # %0.15 düşüş için taban satım: 25 wBCT (~$0.026)
-    "MAX_SELL_WBCT": 120.0,          # Tek seferde maksimum satım: 120 wBCT (~$0.12)
-    
-    # Güvenlik ve Limitler
-    "DRY_RUN": os.getenv("BOT_DRY_RUN", "true").lower() in ("true", "1", "yes"), # Varsayılan: SİMÜLASYON
-    "MAX_PRICE_IMPACT_PCT": 2.0,     # Havuzu sarsmamak için maks %2 fiyat etkisi
-    
-    # Çoklu Cüzdan Havuzu (Multi-Wallet Rotation)
-    "WALLET_LABELS": [
-        "Bot Alpha (0xEe1A47900eabB02aDD2F6Eb6008BC403EEee72dC)",
-        "Bot Beta (0x431E2760a64211DAbc3A42d8cfB27032fC71B41B)",
-        "Bot Gamma (0xE625870281B2F54635DB1585F1C8610ae9b6F04B)"
-    ],
-    "WALLET_KEYS": [
-        os.getenv("BOT_KEY_1", "").strip(),
-        os.getenv("BOT_KEY_2", "").strip(),
-        os.getenv("BOT_KEY_3", "").strip()
-    ],
+    # Simülasyon / Canlı Mod
+    "DRY_RUN": os.getenv("BOT_DRY_RUN", "false").lower() in ("true", "1", "yes"),
 }
 
-
-# ==============================================================================
-# FİYAT BESLEME MOTORU (ORACLE / TICKER POLLER)
-# ==============================================================================
 class PriceFeed:
     @staticmethod
     def get_eth_price() -> Optional[float]:
         try:
             url = "https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT"
-            req = urllib.request.Request(url, headers={"User-Agent": "LockTrace-MM-Bot/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
             with urllib.request.urlopen(req, timeout=4) as response:
                 if response.status == 200:
                     data = json.loads(response.read().decode("utf-8"))
                     return float(data["price"])
         except Exception:
             pass
-
-        try:
-            url = "https://api.coinbase.com/v2/prices/ETH-USD/spot"
-            req = urllib.request.Request(url, headers={"User-Agent": "LockTrace-MM-Bot/1.0"})
-            with urllib.request.urlopen(req, timeout=4) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode("utf-8"))
-                    return float(data["data"]["amount"])
-        except Exception:
-            pass
-
         return None
 
-
-# ==============================================================================
-# MİKRO-HAVUZ ALGORİTMA & KARAR MOTORU
-# ==============================================================================
-class MicroMarketMakerEngine:
+class ExactImpactEngine:
+    """
+    AMM Havuz Fiyat Etkisi Formülü ile çalışan Karar Motoru.
+    ETH faizi/oranı kadar tam wBCT fiyat değişimi hesaplar.
+    """
     def __init__(self, config: Dict[str, Any]):
         self.config = config
         self.history = deque()
@@ -138,179 +101,235 @@ class MicroMarketMakerEngine:
         while self.history and self.history[0][0] < cutoff:
             self.history.popleft()
 
-    def evaluate_market(self, current_price: float, current_time: float) -> Tuple[str, float, float]:
-        # Eğer bekleyen rastgele gecikmeli bir emir varsa:
+    def evaluate_market(self, current_price: float, current_time: float) -> Tuple[str, float, float, float]:
+        """
+        Dönüş: (ACTION, WBCT_MIKTARI, USD_DEGERI, DELTA_ORANI)
+        """
         if self.pending_order is not None:
             if current_time >= self.pending_order["execute_at"]:
                 order = self.pending_order
                 self.pending_order = None
-                return order["action"], order["amount"], order["delta"]
+                return order["action"], order["wbct_amount"], order["usd_amount"], order["delta"]
             else:
-                return "PENDING_WAIT", 0.0, 0.0
+                return "PENDING_WAIT", 0.0, 0.0, 0.0
 
         if len(self.history) < 2:
-            return "HOLD", 0.0, 0.0
+            return "HOLD", 0.0, 0.0, 0.0
 
         if self.last_action_price is None:
             self.last_action_price = self.history[0][1]
-            logger.info(f"Ilk referans baz ETH fiyati belirlendi: ${self.last_action_price:.2f}")
-            return "HOLD", 0.0, 0.0
+            logger.info(f"Ilk referans baz ETH fiyati: ${self.last_action_price:.2f}")
+            return "HOLD", 0.0, 0.0, 0.0
 
-        # Son işlemden bu yana 5 dakika geçmediyse bekle
         if self.last_action_time > 0 and (current_time - self.last_action_time) < self.config["WINDOW_SECONDS"]:
-            return "HOLD", 0.0, 0.0
+            return "HOLD", 0.0, 0.0, 0.0
 
-        # Delta yüzdesi
         delta_pct = ((current_price - self.last_action_price) / self.last_action_price) * 100.0
         abs_delta = abs(delta_pct)
 
-        # Kural: %0.15'in altındaki dalgalanmalarda pasif kal
+        # Kural: %0.15 altındaki değişimlerde pasif kal (Spam koruması)
         if abs_delta < self.config["MIN_DELTA_THRESHOLD_PCT"]:
-            return "HOLD", 0.0, delta_pct
+            return "HOLD", 0.0, 0.0, delta_pct
 
         effective_delta = min(abs_delta, self.config["MAX_DELTA_CAP_PCT"])
 
-        # 5 DAKİKA BİTTİĞİNDE: İlk 1-2 dakika içinde (10 - 110 saniye) rastgele yürütme zamanı
+        # ======================================================================
+        # MATEMATİKSEL NOKTA ATIŞI FİYAT ETKİSİ HESAPLAMASI
+        # wBCT Miktarı = (Delta_ETH_% / 100) / 2.0 * Havuz_Rezervi
+        # ======================================================================
+        target_wbct = round((effective_delta / 100.0) / 2.0 * self.config["POOL_WBCT_RESERVE"], 2)
+        target_usd = round(target_wbct * self.config["WBCT_UNIT_PRICE_USD"], 4)
+
+        # 5 Dakika Dolduktan Sonraki İlk 1-2 Dakika İçindeki Rastgele Zamanlama (Jitter)
         random_delay = random.uniform(
             self.config["EXECUTION_DELAY_MIN_SEC"], 
             self.config["EXECUTION_DELAY_MAX_SEC"]
         )
         execute_at_time = current_time + random_delay
-
-        if delta_pct > 0:
-            # Mikro-Alım: USD bazlı mikro miktar hesapla ($0.05 - $0.25)
-            scale = effective_delta / self.config["MIN_DELTA_THRESHOLD_PCT"]
-            jitter = random.uniform(0.90, 1.10)
-            usd_amount = round(min(self.config["BASE_BUY_USD"] * scale * jitter, self.config["MAX_BUY_USD"]), 4)
-            action = "BUY"
-            amount = usd_amount
-        else:
-            # Mikro-Satım: wBCT mikro miktar hesapla (25 - 120 wBCT)
-            scale = effective_delta / self.config["MIN_DELTA_THRESHOLD_PCT"]
-            jitter = random.uniform(0.90, 1.10)
-            wbct_amount = round(min(self.config["BASE_SELL_WBCT"] * scale * jitter, self.config["MAX_SELL_WBCT"]), 1)
-            action = "SELL"
-            amount = wbct_amount
+        action = "BUY" if delta_pct > 0 else "SELL"
 
         self.pending_order = {
             "action": action,
-            "amount": amount,
+            "wbct_amount": target_wbct,
+            "usd_amount": target_usd,
             "delta": delta_pct,
             "execute_at": execute_at_time,
             "delay": random_delay
         }
+
         logger.info(
-            f"[PLANLANDI] 5 Dk doldu! Delta: %{delta_pct:+.2f}. "
-            f"İşlem {random_delay:.1f} sn sonra mikro-ölçekte yürütülecek."
+            f"[PLANLANDI] 5 Dk doldu! ETH: %{delta_pct:+.2f} degisti. "
+            f"Havuzda tam %{delta_pct:+.2f} etki icin: {target_wbct:.2f} wBCT (${target_usd:.4f}) "
+            f"planlandi. {random_delay:.1f} sn sonra yurutulecek."
         )
-        return "PENDING_WAIT", 0.0, delta_pct
+        return "PENDING_WAIT", 0.0, 0.0, delta_pct
 
     def commit_action(self, current_price: float, current_time: float):
         self.last_action_price = current_price
         self.last_action_time = current_time
 
-
-# ==============================================================================
-# ÇOKLU CÜZDAN MİKRO ÇALIŞTIRICI
-# ==============================================================================
-class MicroTradeExecutor:
+class LiveOnChainExecutor:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.is_dry_run = config["DRY_RUN"]
-        self.wallets = config["WALLET_LABELS"]
-        # Canlı wBCT birim fiyatı
-        self.wbct_unit_price = 0.001046
+        self.w3 = Web3(Web3.HTTPProvider(self.config["RPC_URL"], request_kwargs={"headers": {"User-Agent": "Mozilla/5.0"}}))
+        
+        self.wallets = [
+            ("Bot Alpha", os.getenv("BOT_KEY_1", "").strip()),
+            ("Bot Beta", os.getenv("BOT_KEY_2", "").strip()),
+            ("Bot Gamma", os.getenv("BOT_KEY_3", "").strip()),
+        ]
+        self.wallets = [(name, k) for name, k in self.wallets if k]
+        self.last_wallet_idx = -1
+        
+        self.pool_key = (
+            self.config["USDC_ADDRESS"],
+            self.config["WBCT_ADDRESS"],
+            9000,
+            90,
+            Web3.to_checksum_address("0x0000000000000000000000000000000000000000")
+        )
+        logger.info(f"Canli On-Chain Yonetici baslatildi: {len(self.wallets)} bot cuzdani aktif.")
 
-    def get_random_wallet(self) -> str:
-        return random.choice(self.wallets)
-
-    def execute_buy(self, usd_amount: float, current_eth_price: float) -> str:
-        wallet = self.get_random_wallet()
-        tokens_received = usd_amount / self.wbct_unit_price
-        eth_equivalent = usd_amount / current_eth_price
-        if self.is_dry_run:
-            logger.info(
-                f"[SIMULATION BUY] >>> {wallet} | Tutar: ${usd_amount:.3f} (~{eth_equivalent:.6f} ETH) "
-                f"-> Alınan: ~{tokens_received:.1f} wBCT | Fiyat Etkisi: <%1.2 (GÜVENLİ)"
+    def build_v4_swap_calldata(self, action: str, wbct_amount: float, recipient: str) -> bytes:
+        deadline = int(time.time()) + 1800
+        
+        if action == "BUY":
+            # USDC -> wBCT
+            usd_val = wbct_amount * self.config["WBCT_UNIT_PRICE_USD"]
+            amount_in = max(1000, int(usd_val * 1e6)) # USDC 6 decimals, min 0.001 USDC
+            
+            # Action 0x0b (SETTLE): (currency, maxAmount, payerIsUser)
+            param0 = encode(['address', 'uint256', 'bool'], [self.config["USDC_ADDRESS"], amount_in, True])
+            
+            # Action 0x06 (SWAP_EXACT_IN_SINGLE)
+            exact_input_params = (
+                self.pool_key,
+                True,        # zeroForOne: USDC (0) -> wBCT (1)
+                amount_in,   # amountIn
+                0,           # amountOutMinimum
+                0,           # flags
+                b""          # hookData
             )
-            return wallet
+            param1 = encode(['((address,address,uint24,int24,address),bool,uint128,uint128,uint256,bytes)'], [exact_input_params])
+            
+            # Action 0x0e (TAKE): (currency, recipient, minAmount)
+            param2 = encode(['address', 'address', 'uint256'], [self.config["WBCT_ADDRESS"], recipient, 0])
+            
         else:
-            logger.info(f"[LIVE BUY] {wallet} ile mikro alım yürütülüyor...")
-            return wallet
-
-    def execute_sell(self, wbct_amount: float, current_eth_price: float) -> str:
-        wallet = self.get_random_wallet()
-        usd_value = wbct_amount * self.wbct_unit_price
-        if self.is_dry_run:
-            logger.info(
-                f"[SIMULATION SELL] <<< {wallet} | Satılan: {wbct_amount:.1f} wBCT "
-                f"-> Kasaya Dönen: ${usd_value:.3f} USDC/ETH | Dengeleme Başarılı"
+            # SELL: wBCT -> USDC
+            amount_in = int(wbct_amount * 1e18) # wBCT 18 decimals
+            
+            # Action 0x0b (SETTLE): (currency, maxAmount, payerIsUser)
+            param0 = encode(['address', 'uint256', 'bool'], [self.config["WBCT_ADDRESS"], amount_in, True])
+            
+            # Action 0x06 (SWAP_EXACT_IN_SINGLE)
+            exact_input_params = (
+                self.pool_key,
+                False,       # zeroForOne: wBCT (1) -> USDC (0)
+                amount_in,   # amountIn
+                0,           # amountOutMinimum
+                0,           # flags
+                b""          # hookData
             )
-            return wallet
-        else:
-            logger.info(f"[LIVE SELL] {wallet} ile mikro satım yürütülüyor...")
-            return wallet
+            param1 = encode(['((address,address,uint24,int24,address),bool,uint128,uint128,uint256,bytes)'], [exact_input_params])
+            
+            # Action 0x0e (TAKE): (currency, recipient, minAmount)
+            param2 = encode(['address', 'address', 'uint256'], [self.config["USDC_ADDRESS"], recipient, 0])
 
+        actions = bytes.fromhex('0b060e')
+        params = [param0, param1, param2]
+        v4_swap_input = encode(['bytes', 'bytes[]'], [actions, params])
+        
+        commands = bytes.fromhex('10')
+        inputs = [v4_swap_input]
+        exec_selector = bytes.fromhex('3593564c') # execute(bytes,bytes[],uint256)
+        exec_args = encode(['bytes', 'bytes[]', 'uint256'], [commands, inputs, deadline])
+        return exec_selector + exec_args
 
-# ==============================================================================
-# SİMÜLASYON TEST FONKSİYONU
-# ==============================================================================
-def run_micro_simulation():
-    print("=" * 75)
-    print("  LockTrace wBCT - CANLI PİYASA & MİKRO LİKİDİTE SİMÜLASYONU")
-    print("  Havuz Durumu: $5 USD Toplam Likidite | ~2,391 wBCT Havuzda")
-    print("  Ölçek: Mikro Alım ($0.05 - $0.20) / Mikro Satım (25 - 90 wBCT)")
-    print("=" * 75)
+    def execute_live_order(self, action: str, wbct_amount: float, usd_amount: float, eth_price: float):
+        if not self.wallets:
+            logger.error("Cüzdan anahtari bulunamadi!")
+            return False
 
-    engine = MicroMarketMakerEngine(CONFIG)
-    executor = MicroTradeExecutor(CONFIG)
+        # Multi-wallet rotasyonu: bir önceki cüzdandan farklı olanı seç
+        candidates = [i for i in range(len(self.wallets)) if i != self.last_wallet_idx]
+        idx = random.choice(candidates) if candidates else 0
+        self.last_wallet_idx = idx
+        
+        name, key = self.wallets[idx]
+        account = Account.from_key(key)
 
-    # 0. Saniye - Başlangıç Baz Fiyat
-    engine.record_price(3000.0, 0.0)
-    engine.last_action_price = 3000.0
-    engine.last_action_time = 0.0
-    print("[00:00] Başlangıç ETH: $3000.00 | wBCT Fiyatı: $0.001046 | Baz Belirlendi.\n")
+        try:
+            calldata = self.build_v4_swap_calldata(action, wbct_amount, account.address)
+            nonce = self.w3.eth.get_transaction_count(account.address, 'pending')
+            gas_price = self.w3.eth.gas_price
 
-    # 1. Döngü: 5. Dk - ETH $3015 oldu (+%0.50 Artış)
-    print("--- [05:00] 5. Dk Sonu: ETH $3015 (+%0.50 Artış) ---")
-    engine.record_price(3015.0, 300.0)
-    action, amount, delta = engine.evaluate_market(3015.0, 300.0)
-    
-    target_time_1 = engine.pending_order["execute_at"]
-    delay_1 = engine.pending_order["delay"]
-    print(f"-> Emir Planlandı: {delay_1:.1f} saniye sonra (ilk 1-2 dk içinde) mikro alım yürütülecek.")
-    
-    # Zamanı ilerlet
-    action, amount, delta = engine.evaluate_market(3015.0, target_time_1)
-    if action == "BUY":
-        wallet = executor.execute_buy(amount, 3015.0)
-        engine.commit_action(3015.0, target_time_1)
-        print(f"-> [OK] İşlem Gerçekleşti | Cüzdan: {wallet} | Grafikte Organik Yeşil Mum Yandı!\n")
+            tx = {
+                'from': account.address,
+                'to': self.config["UNIVERSAL_ROUTER"],
+                'data': calldata,
+                'nonce': nonce,
+                'gas': 240000,
+                'gasPrice': gas_price,
+                'chainId': self.config["CHAIN_ID"]
+            }
 
-    # 2. Döngü: 10. Dk - ETH $3018 oldu (Sadece +%0.10 Artış -> Pasif Kalmalı)
-    print("--- [10:00] 10. Dk Sonu: ETH $3018 (+%0.10 Yeni Artış) ---")
-    engine.record_price(3018.0, 600.0)
-    action, amount, delta = engine.evaluate_market(3018.0, 600.0)
-    print(f"-> Durum: {action} (Delta %0.10 < %0.15 olduğu için pasif. Gereksiz spam YOK!)\n")
+            signed = account.sign_transaction(tx)
+            tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
+            logger.info(
+                f"[ON-CHAIN SWAP SENT] >>> {name} ({account.address[:6]}...{account.address[-4:]}) "
+                f"| Islem: {action} ({wbct_amount:.2f} wBCT / ${usd_amount:.4f}) | Tx: 0x{tx_hash.hex()}"
+            )
+            
+            # Receipt bekle (DEXScreener onayı)
+            rc = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=45)
+            if rc.get("status") == 1:
+                logger.info(
+                    f"[AMM POOL SWAP SUCCESS] Block: {rc['blockNumber']} | Gas: {rc['gasUsed']} | "
+                    f"DEXScreener Mumu Basildi! Tx: 0x{tx_hash.hex()}"
+                )
+                return True
+            else:
+                logger.error(f"[AMM POOL SWAP REVERTED] Tx status 0: 0x{tx_hash.hex()}")
+                return False
 
-    # 3. Döngü: 15. Dk - ETH $3008'e geriledi (-%0.33 Düzeltme / Düşüş)
-    print("--- [15:00] 15. Dk Sonu: ETH $3008 (-%0.33 Düşüş / Geri Çekilme) ---")
-    engine.record_price(3008.0, 900.0)
-    action, amount, delta = engine.evaluate_market(3008.0, 900.0)
-    target_time_2 = engine.pending_order["execute_at"]
-    delay_2 = engine.pending_order["delay"]
-    print(f"-> Satış Emri Planlandı: {delay_2:.1f} saniye sonra mikro dengeleme yürütülecek.")
+        except Exception as e:
+            logger.error(f"[ON-CHAIN ERROR] {name} islem hatasi: {e}")
+            return False
 
-    action, amount, delta = engine.evaluate_market(3008.0, target_time_2)
-    if action == "SELL":
-        wallet = executor.execute_sell(amount, 3008.0)
-        engine.commit_action(3008.0, target_time_2)
-        print(f"-> [OK] İşlem Gerçekleşti | Cüzdan: {wallet} | Kasa Dolduruldu, Organik Kırmızı Düzeltme Mumu Yandı!\n")
+def run_live_loop():
+    logger.info("=" * 65)
+    logger.info("  LockTrace wBCT Market Maker (CANLI UNISWAP V4 AMM ENTEGRASYONU)")
+    logger.info("=" * 65)
 
-    print("=" * 75)
-    print("  MİKRO ÖLÇEK SİMÜLASYONU BAŞARIYLA TAMAMLANDI!")
-    print("=" * 75)
+    engine = ExactImpactEngine(CONFIG)
+    executor = LiveOnChainExecutor(CONFIG)
 
+    try:
+        while True:
+            now = time.time()
+            eth_price = PriceFeed.get_eth_price()
+
+            if eth_price is not None:
+                engine.record_price(eth_price, now)
+                action, wbct_amt, usd_amt, delta = engine.evaluate_market(eth_price, now)
+
+                if action in ("BUY", "SELL"):
+                    logger.info(f"[TETIKLENDI] ETH %{delta:+.2f} degisti! Uniswap V4 havuzunda canli takas yapiliyor...")
+                    success = executor.execute_live_order(action, wbct_amt, usd_amt, eth_price)
+                    if success:
+                        engine.commit_action(eth_price, now)
+                elif action == "PENDING_WAIT":
+                    pass
+                else:
+                    ref_p = engine.last_action_price or eth_price
+                    logger.debug(f"[PASIF] ETH: ${eth_price:.2f} | Baz: ${ref_p:.2f} | Delta: %{delta:.2f}")
+
+            sleep_time = CONFIG["POLL_INTERVAL_SECONDS"] + random.uniform(-1.0, 2.0)
+            time.sleep(max(3.0, sleep_time))
+
+    except KeyboardInterrupt:
+        logger.info("Bot durduruldu.")
 
 if __name__ == "__main__":
-    run_micro_simulation()
+    run_live_loop()
