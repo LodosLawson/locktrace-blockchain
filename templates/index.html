@@ -1876,44 +1876,53 @@
             </div>
 
             <!-- Collapsible Live Chart Container in Wallet Tab -->
-            <div id="walletInlineDexChart" class="hidden w-full max-w-xl mx-auto mt-3 mb-2 rounded-2xl overflow-hidden border border-emerald-500/25 bg-surface-container-lowest shadow-md transition-all duration-300">
-              <div class="flex items-center justify-between gap-2 px-3 py-2 bg-surface-container-high/70 border-b border-outline-variant/15 text-xs text-on-surface-variant">
+            <div id="walletInlineDexChart" class="hidden w-full max-w-xl mx-auto mt-3 mb-2 rounded-3xl overflow-hidden border border-emerald-500/30 bg-surface-container-low shadow-xl transition-all duration-300">
+              <!-- Header Bar with Source Switcher & External Link -->
+              <div class="flex flex-wrap items-center justify-between gap-2 px-3.5 py-2.5 bg-surface-container-high/80 border-b border-outline-variant/15 text-xs text-on-surface-variant">
                 <div class="flex items-center gap-2 min-w-0">
-                  <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
-                  <span class="font-bold text-on-surface text-[11px] sm:text-xs truncate font-mono">wBCT / USDC &bull; Base Uniswap v4</span>
-                  <span class="hidden sm:inline px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">1 BCT = 1 wBCT</span>
+                  <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse shrink-0"></span>
+                  <span class="font-bold text-on-surface text-xs truncate font-mono">wBCT / USDC &bull; Base v4</span>
+                  <div class="flex items-center gap-1 ml-1 bg-surface-container-lowest/80 p-0.5 rounded-lg border border-outline-variant/15">
+                    <button type="button" id="btnWalletSrcGecko" onclick="setWalletChartSource('geckoterminal')"
+                      class="px-2 py-0.5 rounded-md text-[10.5px] font-mono font-bold bg-primary/20 text-primary border border-primary/30 transition-all cursor-pointer">Gecko</button>
+                    <button type="button" id="btnWalletSrcDex" onclick="setWalletChartSource('dexscreener')"
+                      class="px-2 py-0.5 rounded-md text-[10.5px] font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer">DexScreener</button>
+                  </div>
                 </div>
                 <div class="flex items-center gap-1.5 shrink-0">
-                  <a href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28" target="_blank" rel="noopener noreferrer"
-                    class="px-2 py-0.8 rounded-lg bg-surface-container hover:bg-surface-container-highest text-on-surface text-[10.5px] font-semibold flex items-center gap-1 transition-all" title="DexScreener'da Aç">
-                    <span>DexScreener</span>
-                    <span class="material-symbols-outlined notranslate text-[11px] text-outline" translate="no">open_in_new</span>
+                  <a id="walletChartDirectLink" href="https://dexscreener.com/base/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28" target="_blank" rel="noopener noreferrer"
+                    class="px-2.5 py-1 rounded-xl bg-surface-container-highest hover:bg-surface-variant text-on-surface text-[11px] font-semibold flex items-center gap-1 transition-all" title="Tam Ekran Aç">
+                    <span>Tam Ekran</span>
+                    <span class="material-symbols-outlined notranslate text-[13px] text-emerald-400" translate="no">open_in_new</span>
                   </a>
-                  <button type="button" onclick="toggleWalletInlineChart()" class="p-1 rounded-lg hover:bg-surface-container-highest text-on-surface-variant hover:text-on-surface transition-colors" title="Kapat">
-                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">close</span>
+                  <button type="button" onclick="toggleWalletInlineChart()" class="p-1 rounded-xl hover:bg-surface-variant text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer" title="Grafiği Kapat">
+                    <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
                   </button>
                 </div>
               </div>
-              <div class="w-full h-[380px] sm:h-[440px] bg-surface-container-lowest relative">
-                <iframe id="walletInlineDexIframe" src="" class="w-full h-full border-0" loading="lazy" allow="clipboard-write" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
-              </div>
-            </div>
-            <div class="flex flex-wrap items-center justify-center gap-1.5 sm:gap-2 mt-2 select-none">
-              <div
-                class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container text-primary text-[11px] sm:text-xs font-semibold border border-outline-variant/20 shadow-xs">
-                <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0"></span>
-                <span id="walletStatusBadge">Mainnet Native Asset</span>
-              </div>
-              <div
-                class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-surface-container-low text-on-surface-variant text-[11px] sm:text-xs font-mono border border-outline-variant/15"
-                id="walletSubStatusWrap">
-                <span class="material-symbols-outlined notranslate text-[13px] text-emerald-400" translate="no">verified</span>
-                <span id="walletSubStatusText">Confirmed On-Chain</span>
-              </div>
-            </div>
-          </div>
 
-          <!-- Primary 2-Button Action Row (Send + Receive) -->
+              <!-- Iframe Viewport with Loading State Overlay -->
+              <div class="w-full h-[400px] sm:h-[480px] bg-[#0c1015] relative overflow-hidden">
+                <!-- Shimmer Placeholder Spinner (Hides once loaded) -->
+                <div id="walletChartLoader" class="absolute inset-0 flex flex-col items-center justify-center gap-2.5 bg-[#0c1015] text-on-surface-variant z-0 pointer-events-none transition-opacity duration-500">
+                  <div class="w-8 h-8 rounded-full border-2 border-emerald-400 border-t-transparent animate-spin"></div>
+                  <span class="text-xs font-mono text-outline">Canlı DEX Grafiği Yükleniyor...</span>
+                </div>
+                <iframe id="walletInlineDexIframe" src="" onload="document.getElementById('walletChartLoader') && document.getElementById('walletChartLoader').classList.add('opacity-0')"
+                  class="w-full h-full border-0 relative z-10" loading="lazy" allow="clipboard-write" sandbox="allow-scripts allow-same-origin allow-popups allow-forms"></iframe>
+              </div>
+
+              <!-- Compact Live Bar Under Chart -->
+              <div class="px-3.5 py-2 bg-surface-container-high/60 border-t border-outline-variant/15 flex items-center justify-between text-[11px] font-mono text-on-surface-variant">
+                <span class="flex items-center gap-1">
+                  <span class="material-symbols-outlined notranslate text-[13px] text-emerald-400" translate="no">currency_exchange</span>
+                  <span>1 BCT = 1 wBCT On-Chain Peg</span>
+                </span>
+                <span class="text-emerald-400 font-bold" id="walletChartLivePriceLabel">...</span>
+              </div>
+            </div>
+
+            <!-- Primary 2-Button Action Row (Send + Receive) -->
           <div class="grid grid-cols-2 gap-3 mb-4">
             <button
               class="flex items-center justify-center gap-2 h-12 bg-primary-container text-on-primary-container rounded-2xl font-label-md text-label-md active:scale-[0.98] transition-all shadow-sm font-semibold hover:brightness-105 cursor-pointer"
@@ -10097,21 +10106,29 @@
       const text = String(rawContent).toLowerCase();
       const cards = [];
 
-      // Helper to generate dynamic historical / daily trajectory SVG for any symbol
-      const makeHistoricalDailyTrajectorySvg = (symClean, colorHex, isUp = true) => {
-        // Deterministic multi-point past/daily trajectory based on symbol characters
+      // Helper to generate dynamic historical / daily trajectory SVG for any symbol (Smooth & High Contrast)
+      const makeHistoricalDailyTrajectorySvg = (symClean, colorHex, isUp = true, height = 36) => {
         const hashSeed = (symClean.charCodeAt(0) || 65) + (symClean.charCodeAt(symClean.length - 1) || 84);
-        const p1 = 28 - ((hashSeed * 7) % 12);
-        const p2 = 22 - ((hashSeed * 13) % 10);
-        const p3 = isUp ? (14 - ((hashSeed * 3) % 8)) : (24 + ((hashSeed * 3) % 6));
-        const p4 = isUp ? (8 - ((hashSeed * 5) % 6)) : (27 - ((hashSeed * 2) % 4));
-        const p5 = isUp ? 3 : 28;
-        const pts = `0,${p1} 25,${p2} 50,${p3} 75,${p4} 100,${p5}`;
-        const areaPts = `0,${p1} 25,${p2} 50,${p3} 75,${p4} 100,${p5} 100,32 0,32`;
+        const yBase = isUp ? 28 : 8;
+        const p1 = isUp ? 26 - ((hashSeed * 7) % 10) : 10 + ((hashSeed * 7) % 8);
+        const p2 = isUp ? 22 - ((hashSeed * 11) % 9) : 14 + ((hashSeed * 11) % 8);
+        const p3 = isUp ? 14 - ((hashSeed * 5) % 8) : 22 + ((hashSeed * 5) % 7);
+        const p4 = isUp ? 9 - ((hashSeed * 3) % 6) : 26 - ((hashSeed * 3) % 5);
+        const p5 = isUp ? 4 : 30;
+
+        const pathD = `M 0,${p1} C 15,${p1} 20,${p2} 35,${p2} C 50,${p2} 55,${p3} 70,${p3} C 82,${p3} 88,${p4} 100,${p5}`;
+        const areaD = `M 0,${p1} C 15,${p1} 20,${p2} 35,${p2} C 50,${p2} 55,${p3} 70,${p3} C 82,${p3} 88,${p4} 100,${p5} L 100,${height} L 0,${height} Z`;
+
         return `
-          <svg class="w-full h-full overflow-visible" fill="none" viewBox="0 0 100 32">
-            <polyline points="${pts}" fill="none" stroke="${colorHex}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" />
-            <polygon points="${areaPts}" fill="${colorHex}" fill-opacity="0.14" />
+          <svg class="w-full h-full overflow-visible" fill="none" viewBox="0 0 100 ${height}" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="grad_${symClean}" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="${colorHex}" stop-opacity="0.32" />
+                <stop offset="100%" stop-color="${colorHex}" stop-opacity="0.0" />
+              </linearGradient>
+            </defs>
+            <path d="${areaD}" fill="url(#grad_${symClean})" />
+            <path d="${pathD}" fill="none" stroke="${colorHex}" stroke-linecap="round" stroke-linejoin="round" stroke-width="2.4" />
             <circle cx="100" cy="${p5}" r="3" fill="${colorHex}" />
           </svg>
         `;
@@ -10142,19 +10159,19 @@
         const rangeHigh = extraData.high || (safePrice.startsWith('$') ? '$' + (parseFloat(safePrice.replace(/[^0-9.]/g, '')) * 1.06).toFixed(4).replace(/0+$/, '').replace(/\.$/, '') : '$0.00');
 
         return `
-          <div class="rounded-2xl bg-surface-container-lowest my-2 border border-outline-variant/20 hover:border-outline-variant/40 shadow-xs select-none w-full overflow-hidden transition-all" onclick="event.stopPropagation()">
+          <div class="rounded-2xl bg-surface-container-low/70 my-2.5 border border-outline-variant/20 hover:border-outline-variant/40 shadow-xs select-none w-full overflow-hidden transition-all" onclick="event.stopPropagation()">
             <!-- Main Header / Overview Row -->
             <div class="p-3 sm:p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
               <div class="flex items-center gap-2.5 sm:gap-3 min-w-0">
-                <div class="w-8 h-8 sm:w-9 sm:h-9 rounded-xl ${bgClass} ${colorClass} flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined notranslate text-[18px] sm:text-[20px]" translate="no">${safeIcon}</span>
+                <div class="w-9 h-9 sm:w-10 sm:h-10 rounded-2xl ${bgClass} ${colorClass} flex items-center justify-center shrink-0 border border-outline-variant/15">
+                  <span class="material-symbols-outlined notranslate text-[20px] sm:text-[22px]" translate="no">${safeIcon}</span>
                 </div>
                 <div class="flex flex-col min-w-0">
                   <div class="flex items-center gap-1.5 sm:gap-2 flex-wrap">
                     <span class="font-mono text-xs sm:text-sm font-bold text-on-surface">${safeSym}</span>
                     <span class="font-mono text-xs sm:text-sm font-medium text-on-surface market-price-${cleanSym}">${safePrice}</span>
-                    <span class="inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-full ${bgClass} ${colorClass} font-mono text-[10px] font-bold">
-                      <span class="material-symbols-outlined notranslate text-[10px]" translate="no">${isUp ? 'trending_up' : 'trending_down'}</span>
+                    <span class="inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full ${bgClass} ${colorClass} font-mono text-[10px] font-bold">
+                      <span class="material-symbols-outlined notranslate text-[11px]" translate="no">${isUp ? 'trending_up' : 'trending_down'}</span>
                       <span class="market-change-${cleanSym}">${safeChange}</span>
                     </span>
                   </div>
@@ -10163,39 +10180,39 @@
               </div>
 
               <!-- Quick Mini Sparkline + Chart Drawer Action Button -->
-              <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1 sm:pt-0 border-t sm:border-t-0 border-outline-variant/10">
+              <div class="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-outline-variant/10">
                 <div class="flex flex-col items-start sm:items-end">
-                  <span class="text-[9px] sm:text-[10px] text-on-surface-variant font-mono">${safeMetricTitle}</span>
+                  <span class="text-[9px] sm:text-[10px] text-on-surface-variant font-mono uppercase">${safeMetricTitle}</span>
                   <span class="font-mono text-xs ${colorClass} font-bold">${safeMetricVal}</span>
                 </div>
-                <div class="w-20 sm:w-24 h-6 sm:h-7 flex items-center">
-                  ${makeHistoricalDailyTrajectorySvg(cleanSym, strokeHex, isUp)}
+                <div class="w-20 sm:w-24 h-7 sm:h-8 flex items-center">
+                  ${makeHistoricalDailyTrajectorySvg(cleanSym, strokeHex, isUp, 32)}
                 </div>
                 <button type="button" onclick="window.toggleSpacePostChartDrawer('${cardId}')"
-                  class="px-2.5 py-1 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/25 text-on-surface text-[10.5px] font-mono font-semibold flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs"
+                  class="px-2.5 py-1 rounded-xl bg-surface-container-high hover:bg-surface-variant border border-outline-variant/30 text-on-surface text-[11px] font-mono font-semibold flex items-center gap-1 transition-all active:scale-95 cursor-pointer shadow-xs"
                   title="24 Saatlik Geçmiş ve Günlük Grafiği Genişlet">
                   <span class="material-symbols-outlined notranslate text-[13px] text-primary" translate="no">timeline</span>
-                  <span class="hidden xs:inline">Grafik</span>
+                  <span class="text-[10.5px]">24h Grafik</span>
                   <span class="material-symbols-outlined notranslate text-[13px]" translate="no">expand_more</span>
                 </button>
               </div>
             </div>
 
             <!-- Expandable Historical & Daily Chart Widget Container -->
-            <div id="${cardId}" class="hidden px-3.5 pb-3.5 pt-1 bg-surface-container-low/50 border-t border-outline-variant/15 flex flex-col gap-2.5">
-              <div class="flex items-center justify-between text-[10px] sm:text-[11px] font-mono text-on-surface-variant pt-1">
-                <span class="flex items-center gap-1 font-semibold text-on-surface">
-                  <span class="w-1.5 h-1.5 rounded-full ${isUp ? 'bg-emerald-400' : 'bg-rose-400'}"></span>
-                  <span>Günlük &bull; 24h Geçmiş Grafiği</span>
-                </span>
+            <div id="${cardId}" class="hidden px-3.5 pb-3.5 pt-2 bg-surface-container-lowest/80 border-t border-outline-variant/15 flex flex-col gap-2.5">
+              <div class="flex items-center justify-between text-[10.5px] sm:text-[11px] font-mono text-on-surface-variant">
+                <div class="flex items-center gap-1.5 font-semibold text-on-surface">
+                  <span class="w-2 h-2 rounded-full ${isUp ? 'bg-emerald-400' : 'bg-rose-400'} animate-pulse"></span>
+                  <span>Günlük &bull; 24 Saatlik Hareket Seyri</span>
+                </div>
                 <div class="flex items-center gap-3">
-                  <span>En Düşük: <strong class="text-on-surface">${rangeLow}</strong></span>
-                  <span>En Yüksek: <strong class="text-on-surface">${rangeHigh}</strong></span>
+                  <span>En Düşük: <strong class="text-on-surface font-mono">${rangeLow}</strong></span>
+                  <span>En Yüksek: <strong class="text-on-surface font-mono">${rangeHigh}</strong></span>
                 </div>
               </div>
 
-              <!-- High-Res Daily Vector Candlestick / Area Chart -->
-              <div class="w-full h-20 sm:h-24 p-2 rounded-xl bg-surface-container-lowest border border-outline-variant/15 relative overflow-hidden flex items-end">
+              <!-- High-Res Daily Vector Curve Area Chart -->
+              <div class="w-full h-24 sm:h-28 px-3 py-2 rounded-2xl bg-[#0b0f14] border border-outline-variant/20 relative overflow-hidden flex items-end shadow-inner">
                 <!-- Background Gridlines -->
                 <div class="absolute inset-0 flex flex-col justify-between p-2 pointer-events-none opacity-20">
                   <div class="border-b border-outline-variant border-dashed w-full"></div>
@@ -10204,18 +10221,18 @@
                 </div>
                 <!-- Interactive Multi-Period Trajectory Graph -->
                 <div class="w-full h-full relative z-10">
-                  ${makeHistoricalDailyTrajectorySvg(cleanSym, strokeHex, isUp)}
+                  ${makeHistoricalDailyTrajectorySvg(cleanSym, strokeHex, isUp, 40)}
                 </div>
               </div>
 
               <!-- 24h Metric Footer (Timeline, Liquidity, Bridge / Market Telemetry) -->
-              <div class="flex items-center justify-between text-[9.5px] sm:text-[10px] text-on-surface-variant font-mono">
-                <span>Dün Bu Saat: <strong class="text-on-surface">${rangeLow}</strong></span>
+              <div class="flex items-center justify-between text-[9.5px] sm:text-[10.5px] text-on-surface-variant font-mono pt-0.5">
+                <span>Dün Bu Saat: <strong class="text-on-surface font-semibold">${rangeLow}</strong></span>
                 <span class="flex items-center gap-1 text-primary">
-                  <span class="material-symbols-outlined notranslate text-[11px]" translate="no">verified</span>
-                  <span>Gerçek Zamanlı Zincir Verisi</span>
+                  <span class="material-symbols-outlined notranslate text-[12px]" translate="no">verified</span>
+                  <span>On-Chain Telemetri</span>
                 </span>
-                <span>Anlık: <strong class="${colorClass}">${safePrice}</strong></span>
+                <span>Anlık: <strong class="${colorClass} font-bold">${safePrice}</strong></span>
               </div>
             </div>
           </div>
@@ -16859,20 +16876,47 @@
       } catch (_e) { }
     }
 
+    let walletCurrentChartSource = 'geckoterminal';
+
+    function setWalletChartSource(src) {
+      walletCurrentChartSource = src;
+      const iframe = document.getElementById('walletInlineDexIframe');
+      const geckoBtn = document.getElementById('btnWalletSrcGecko');
+      const dexBtn = document.getElementById('btnWalletSrcDex');
+      const link = document.getElementById('walletChartDirectLink');
+      const loader = document.getElementById('walletChartLoader');
+      if (loader) loader.classList.remove('opacity-0');
+      const pair = currentActiveDexPair || '0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139';
+
+      if (src === 'geckoterminal') {
+        if (iframe) iframe.src = `https://www.geckoterminal.com/base/pools/${pair}?embed=1&info=0&swaps=0`;
+        if (geckoBtn) geckoBtn.className = 'px-2 py-0.5 rounded-md text-[10.5px] font-mono font-bold bg-primary/20 text-primary border border-primary/30 transition-all cursor-pointer';
+        if (dexBtn) dexBtn.className = 'px-2 py-0.5 rounded-md text-[10.5px] font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer';
+        if (link) link.href = `https://www.geckoterminal.com/base/pools/${pair}`;
+      } else {
+        if (iframe) iframe.src = `https://dexscreener.com/base/${pair}?embed=1&theme=dark`;
+        if (dexBtn) dexBtn.className = 'px-2 py-0.5 rounded-md text-[10.5px] font-mono font-bold bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 transition-all cursor-pointer';
+        if (geckoBtn) geckoBtn.className = 'px-2 py-0.5 rounded-md text-[10.5px] font-mono font-medium text-on-surface-variant hover:text-on-surface transition-all cursor-pointer';
+        if (link) link.href = `https://dexscreener.com/base/${pair}`;
+      }
+    }
+
     function toggleWalletInlineChart() {
       const box = document.getElementById('walletInlineDexChart');
       const text = document.getElementById('walletInlineChartText');
       const icon = document.getElementById('walletInlineChartIcon');
       const iframe = document.getElementById('walletInlineDexIframe');
+      const pLabel = document.getElementById('walletChartLivePriceLabel');
       if (!box) return;
+
       const isHidden = box.classList.contains('hidden');
       if (isHidden) {
         box.classList.remove('hidden');
         if (text) text.textContent = 'Gizle';
         if (icon) icon.textContent = 'close';
-        if (iframe && !iframe.src) {
-          const pair = currentActiveDexPair || '0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139';
-          iframe.src = `https://dexscreener.com/base/${pair}?embed=1&theme=dark`;
+        if (pLabel) pLabel.textContent = formatUnitPrice(currentWbctPriceUsd || 0.000807);
+        if (iframe && (!iframe.src || iframe.src === 'about:blank' || iframe.src === window.location.href)) {
+          setWalletChartSource(walletCurrentChartSource || 'geckoterminal');
         }
       } else {
         box.classList.add('hidden');
@@ -16895,6 +16939,8 @@
       if (el) el.textContent = formatted;
       const cardPer = document.getElementById('cardBalancePricePerBct');
       if (cardPer) cardPer.textContent = `(1 BCT ≈ ${formatted})`;
+      const wChartLbl = document.getElementById('walletChartLivePriceLabel');
+      if (wChartLbl) wChartLbl.textContent = formatted;
 
       // Update DOM spans with market-price-bct
       document.querySelectorAll('.market-price-bct').forEach(span => {
