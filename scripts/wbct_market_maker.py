@@ -168,6 +168,16 @@ class ExactImpactEngine:
         self.last_action_price = current_price
         self.last_action_time = current_time
 
+ERC20_BALANCE_ABI = [
+    {
+        "constant": True,
+        "inputs": [{"name": "_owner", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "balance", "type": "uint256"}],
+        "type": "function"
+    }
+]
+
 class LiveOnChainExecutor:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
@@ -188,7 +198,40 @@ class LiveOnChainExecutor:
             90,
             Web3.to_checksum_address("0x0000000000000000000000000000000000000000")
         )
-        logger.info(f"Canli On-Chain Yonetici baslatildi: {len(self.wallets)} bot cuzdani aktif.")
+        
+        # Token sözleşmeleri (Bakiye kontrolleri için)
+        self.usdc_contract = self.w3.eth.contract(address=self.config["USDC_ADDRESS"], abi=ERC20_BALANCE_ABI)
+        self.wbct_contract = self.w3.eth.contract(address=self.config["WBCT_ADDRESS"], abi=ERC20_BALANCE_ABI)
+        
+        logger.info(f"Canli On-Chain Yonetici baslatildi: {len(self.wallets)} bot cuzdani aktif (Akilli Yedekleme Korumali).")
+
+    def check_wallet_liquidity(self, account, action: str, req_wbct: float, req_usd: float) -> Tuple[bool, str]:
+        """
+        Cüzdanın ETH (gas), USDC (alım için) ve wBCT (satım için) bakiyelerini doğrular.
+        Eğer bakiye yetersizse False ve sebep döner; böylece bot otomatik diğer cüzdana geçer.
+        """
+        try:
+            eth_bal = float(self.w3.from_wei(self.w3.eth.get_balance(account.address), 'ether'))
+            # Minimum 0.000002 ETH gas payı (yaklaşık 2 swaplık pay)
+            if eth_bal < 0.000002:
+                return False, f"Yetersiz Gas: {eth_bal:.6f} ETH (Gereken: >=0.000002 ETH)"
+
+            if action == "BUY":
+                usdc_raw = self.usdc_contract.functions.balanceOf(account.address).call()
+                usdc_bal = usdc_raw / 1e6
+                # Alım için gereken minimum USDC
+                if usdc_bal < req_usd:
+                    return False, f"Yetersiz USDC: ${usdc_bal:.4f} (Gereken: ${req_usd:.4f})"
+            elif action == "SELL":
+                wbct_raw = self.wbct_contract.functions.balanceOf(account.address).call()
+                wbct_bal = wbct_raw / 1e18
+                # Satım için gereken minimum wBCT
+                if wbct_bal < req_wbct:
+                    return False, f"Yetersiz wBCT: {wbct_bal:.2f} wBCT (Gereken: {req_wbct:.2f} wBCT)"
+
+            return True, "OK"
+        except Exception as e:
+            return False, f"Bakiye kontrol hatasi: {e}"
 
     def build_v4_swap_calldata(self, action: str, wbct_amount: float, recipient: str) -> bytes:
         deadline = int(time.time()) + 1800
@@ -251,12 +294,30 @@ class LiveOnChainExecutor:
             logger.error("Cüzdan anahtari bulunamadi!")
             return False
 
-        # Multi-wallet rotasyonu: bir önceki cüzdandan farklı olanı seç
-        candidates = [i for i in range(len(self.wallets)) if i != self.last_wallet_idx]
-        idx = random.choice(candidates) if candidates else 0
-        self.last_wallet_idx = idx
-        
-        name, key = self.wallets[idx]
+        # Multi-wallet rotasyon listesi oluştur (önceki cüzdan hariç olanları önceliklendir)
+        non_last = [i for i in range(len(self.wallets)) if i != self.last_wallet_idx]
+        random.shuffle(non_last)
+        last_candidates = [self.last_wallet_idx] if self.last_wallet_idx >= 0 else []
+        candidates_order = non_last + last_candidates
+
+        # Cüzdanları sırayla kontrol et: Yeterli bakiyesi (USDC/wBCT ve Gas) olan İLK cüzdanı seç
+        selected_idx = None
+        for cand_idx in candidates_order:
+            name, key = self.wallets[cand_idx]
+            account = Account.from_key(key)
+            has_funds, reason = self.check_wallet_liquidity(account, action, wbct_amount, usd_amount)
+            if has_funds:
+                selected_idx = cand_idx
+                break
+            else:
+                logger.warning(f"[BAKİYE YETERSİZ - YEDEK CÜZDANA GEÇİLİYOR] {name} ({account.address[:6]}...{account.address[-4]}): {reason}")
+
+        if selected_idx is None:
+            logger.error(f"[TÜM CÜZDANLAR YETERSİZ] {action} islemi ({wbct_amount:.2f} wBCT / ${usd_amount:.4f}) icin hicbir cuzdanin bakiyesi uygun degil!")
+            return False
+
+        self.last_wallet_idx = selected_idx
+        name, key = self.wallets[selected_idx]
         account = Account.from_key(key)
 
         try:
