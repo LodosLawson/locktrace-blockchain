@@ -469,13 +469,6 @@
 
           <div class="flex items-center gap-1.5 shrink-0">
             ${rightActionHtml}
-            <!-- Quick Simple/Pro Mode Switch Pill -->
-            <button type="button" onclick="window.toggleSimpleModeSetting(false)"
-              title="Pro Moda Geç (Tam Görünüm)"
-              class="h-7 px-2.5 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary font-mono text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[13px]" translate="no">auto_awesome</span>
-              <span>Simple</span>
-              <span class="text-on-surface-variant font-normal">→ Pro</span>
             <!-- Compact Icon-Only Simple/Pro Mode Switch Button -->
             <button type="button" onclick="window.BlocTagSimpleMode.requestProMode()"
               title="Pro Moda Geç (Tam Görünüm)" aria-label="Pro Moda Geç"
@@ -486,7 +479,6 @@
             <!-- Profile Avatar Pill -->
             <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
               title="Profilim"
-              class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer">
               class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer shrink-0">
               ${avatarChar ? esc(avatarChar) : '<span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>'}
             </button>
@@ -507,13 +499,9 @@
 
     return `
       <nav class="simple-bottom-nav" aria-label="Simple Mode Navigation">
-        <div class="flex justify-around items-center h-16 px-2">
         <div class="flex justify-around items-center h-14 px-1.5">
           ${backBtnEnabled ? `
             <button type="button" onclick="window.BlocTagSimpleMode.back()"
-              class="flex flex-col items-center justify-center gap-1 min-w-[52px] min-h-[44px] text-on-surface-variant hover:text-primary active:scale-90 transition-all cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[21px]" translate="no">arrow_back</span>
-              <span class="font-label-sm text-[10px]">Geri</span>
               class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 text-on-surface-variant hover:text-primary active:scale-90 transition-all cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_back</span>
               <span class="font-label-sm text-[9.5px] leading-none">Geri</span>
@@ -521,28 +509,18 @@
           ` : ''}
 
           <button type="button" onclick="window.BlocTagSimpleMode.openWalletTab()"
-            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">account_balance_wallet</span>
-            <span class="font-label-sm text-[10.5px]">Cüzdan</span>
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">account_balance_wallet</span>
             <span class="font-label-sm text-[10px] leading-none">Cüzdan</span>
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
-            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[23px]" translate="no">tag</span>
-            <span class="font-label-sm text-[10.5px]">Space</span>
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[22px]" translate="no">tag</span>
             <span class="font-label-sm text-[10px] leading-none">Space</span>
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
-            class="relative flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isNotif ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">notifications</span>
-            <span class="font-label-sm text-[10.5px]">Bildirimler</span>
-            ${unread > 0 ? `<span class="absolute top-1 right-2.5 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center">${unread}</span>` : ''}
             class="relative flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isNotif ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">notifications</span>
             <span class="font-label-sm text-[10px] leading-none">Bildirim</span>
@@ -550,18 +528,12 @@
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
-            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">person</span>
-            <span class="font-label-sm text-[10.5px]">Profil</span>
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>
             <span class="font-label-sm text-[10px] leading-none">Profil</span>
           </button>
 
           <button type="button" onclick="if(typeof openMobileMenuModal==='function') openMobileMenuModal();"
-            class="flex flex-col items-center justify-center gap-1 min-w-[52px] min-h-[44px] text-primary hover:brightness-110 active:scale-95 transition-all cursor-pointer">
-            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">widgets</span>
-            <span class="font-label-sm text-[10.5px] font-semibold">Menü</span>
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 text-primary hover:brightness-110 active:scale-95 transition-all cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">widgets</span>
             <span class="font-label-sm text-[10px] leading-none font-semibold">Menü</span>
@@ -624,7 +596,6 @@
           </div>
 
           <div class="flex items-start gap-3.5 p-3.5 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer"
-               onclick="if(typeof switchTab==='function'){ window.toggleSimpleModeSetting(false); switchTab('bns'); }">
                onclick="window.BlocTagSimpleMode.requestProMode('bns')">
             <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-secondary shrink-0">
               <span class="material-symbols-outlined notranslate text-[20px]" style="font-variation-settings: 'FILL' 1;" translate="no">alternate_email</span>
@@ -1485,7 +1456,6 @@
         </section>
 
         <!-- Sticky Bottom Reply Bar (Above bottom nav) -->
-        <div class="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40 bg-surface-dim/95 backdrop-blur-xl px-4 py-2.5 border-t border-outline-variant/15">
         <div class="fixed bottom-14 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-surface-dim/95 backdrop-blur-xl px-4 py-2.5 border-t border-outline-variant/15" style="padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));">
           <form class="flex items-center gap-2 bg-surface-container rounded-full p-1.5 shadow-md border border-outline-variant/20"
                 onsubmit="event.preventDefault(); window.BlocTagSimpleMode.submitComment('${pid}');">
@@ -1943,7 +1913,6 @@
     shell.innerHTML = `
       <div class="simple-app-frame">
         ${screenHtml}
-        ${renderBottomNav()}
       </div>
     `;
 

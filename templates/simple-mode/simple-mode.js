@@ -73,7 +73,7 @@
       if (typeof currentAccount !== 'undefined' && currentAccount && currentAccount.address) {
         return currentAccount;
       }
-    } catch (_e) {}
+    } catch (_e) { }
     return null;
   }
 
@@ -89,7 +89,7 @@
       }
       const acc = getActiveWallet();
       if (acc && acc.bns_name) return String(acc.bns_name).replace(/^@/, '');
-    } catch (_e) {}
+    } catch (_e) { }
     return '';
   }
 
@@ -209,7 +209,7 @@
       if (mobMenu && !mobMenu.classList.contains('hidden') && typeof window.closeMobileMenuModal === 'function') {
         window.closeMobileMenuModal();
       }
-    } catch (_e) {}
+    } catch (_e) { }
 
     let modal = document.getElementById('bloctag-pro-confirm-modal');
     if (!modal) {
@@ -298,9 +298,9 @@
         if (!hasPosts && typeof window.loadSpaceFeed === 'function') {
           window.loadSpaceFeed().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
-      } catch (_e) {}
+      } catch (_e) { }
     } else {
       html.classList.remove('bloctag-simple-mode');
     }
@@ -312,7 +312,7 @@
     const nextState = typeof forceState === 'boolean' ? forceState : !simpleState.enabled;
     try {
       localStorage.setItem(SIMPLE_MODE_STORAGE_KEY, nextState ? 'true' : 'false');
-    } catch (_e) {}
+    } catch (_e) { }
 
     // Close menu drawer smoothly if open so the user sees the animated design update immediately
     try {
@@ -320,7 +320,7 @@
       if (mobMenu && !mobMenu.classList.contains('hidden') && typeof window.closeMobileMenuModal === 'function') {
         window.closeMobileMenuModal();
       }
-    } catch (_e) {}
+    } catch (_e) { }
 
     applySimpleModeState(nextState, true);
 
@@ -385,7 +385,7 @@
         if (typeof window.loadSpaceFeed === 'function') {
           window.loadSpaceFeed().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
       } else if (target === 'SCR-SPC-04') {
         const activePid = simpleState.activePostId;
@@ -399,25 +399,25 @@
                 renderSimpleMode(false);
               }
             }
-          }).catch(() => {});
+          }).catch(() => { });
         } else if (typeof window.loadSpaceFeed === 'function') {
           window.loadSpaceFeed().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
       } else if (target === 'SCR-WLT-HOME' || target === 'SCR-WLT-SEND') {
         if (typeof window.refreshCurrentAccountBalance === 'function') {
           window.refreshCurrentAccountBalance().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
         if (typeof window.refreshPersonalTransactions === 'function') {
           window.refreshPersonalTransactions().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
-    } catch (_e) {}
+    } catch (_e) { }
   }
 
   function navigateSimpleBack() {
@@ -436,10 +436,10 @@
         simpleState.seedMnemonic = previewMnemonicPhrase.trim();
       } else if (typeof LockTraceCrypto !== 'undefined' && typeof LockTraceCrypto.generateMnemonic12 === 'function') {
         simpleState.seedMnemonic = LockTraceCrypto.generateMnemonic12();
-        try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) {}
+        try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) { }
       }
       simpleState.seedSavedConfirmed = false;
-    } catch (_e) {}
+    } catch (_e) { }
   }
 
   // ==========================================================================
@@ -916,15 +916,15 @@
                 Bu filtrede henüz işlem bulunmuyor.
               </div>
             ` : filteredTxs.slice(0, 25).map((tx) => {
-              const meta = typeof window.classifyPersonalTx === 'function'
-                ? window.classifyPersonalTx(tx, acc.address)
-                : { title: 'BCT Transfer', icon: 'swap_horiz', iconColor: 'text-primary', isIncoming: true, sign: '+', displayAmount: Number(tx.amount || 0), counterparty: tx.receiver || '--' };
-              const amtStr = typeof window.formatBct === 'function' ? window.formatBct(Math.abs(meta.displayAmount), 4) : Number(meta.displayAmount || 0).toFixed(4);
-              const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(tx.timestamp) : '';
-              const cpShort = typeof window.shortAddr === 'function' ? window.shortAddr(meta.counterparty) : String(meta.counterparty || '');
-              const txHashAttr = escAttr(tx.tx_hash || tx.hash || '');
+      const meta = typeof window.classifyPersonalTx === 'function'
+        ? window.classifyPersonalTx(tx, acc.address)
+        : { title: 'BCT Transfer', icon: 'swap_horiz', iconColor: 'text-primary', isIncoming: true, sign: '+', displayAmount: Number(tx.amount || 0), counterparty: tx.receiver || '--' };
+      const amtStr = typeof window.formatBct === 'function' ? window.formatBct(Math.abs(meta.displayAmount), 4) : Number(meta.displayAmount || 0).toFixed(4);
+      const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(tx.timestamp) : '';
+      const cpShort = typeof window.shortAddr === 'function' ? window.shortAddr(meta.counterparty) : String(meta.counterparty || '');
+      const txHashAttr = escAttr(tx.tx_hash || tx.hash || '');
 
-              return `
+      return `
                 <div onclick="window.BlocTagSimpleMode.openTxByHash('${txHashAttr}')"
                   class="flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
                   <div class="flex items-center gap-3 min-w-0">
@@ -949,7 +949,7 @@
                   </div>
                 </div>
               `;
-            }).join('')}
+    }).join('')}
           </div>
         </div>
       </main>
@@ -1425,12 +1425,12 @@
               İlk zincir üstü yorumu aşağıdan siz yazın!
             </div>
           ` : comments.slice().reverse().map(c => {
-            const cAddr = String(c.commenter || '');
-            const cBns = (c.commenter_bns && c.commenter_bns !== 'anonymous') ? String(c.commenter_bns).replace(/^@/, '') : '';
-            const cName = cBns ? ('@' + cBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(cAddr) : cAddr);
-            const cTime = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(c.timestamp) : '';
-            const cBody = typeof window.formatSpaceBodyHtml === 'function' ? window.formatSpaceBodyHtml(c.content || '') : esc(c.content || '');
-            return `
+      const cAddr = String(c.commenter || '');
+      const cBns = (c.commenter_bns && c.commenter_bns !== 'anonymous') ? String(c.commenter_bns).replace(/^@/, '') : '';
+      const cName = cBns ? ('@' + cBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(cAddr) : cAddr);
+      const cTime = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(c.timestamp) : '';
+      const cBody = typeof window.formatSpaceBodyHtml === 'function' ? window.formatSpaceBodyHtml(c.content || '') : esc(c.content || '');
+      return `
               <article class="bg-surface-container rounded-2xl px-3.5 py-3 flex flex-col gap-1.5 border border-outline-variant/10">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2 min-w-0 cursor-pointer"
@@ -1452,7 +1452,7 @@
                 </div>
               </article>
             `;
-          }).join('')}
+    }).join('')}
         </section>
 
         <!-- Sticky Bottom Reply Bar (Above bottom nav) -->
@@ -1641,9 +1641,9 @@
               Henüz zincir üstü gönderi paylaşılmamış.
             </div>
           ` : (simpleState.profileTab === 'likes'
-              ? [...userPosts].sort((a, b) => Number(b.likes_count || 0) - Number(a.likes_count || 0))
-              : userPosts
-            ).map(p => renderSimplePostCard(p, acc)).join('')}
+        ? [...userPosts].sort((a, b) => Number(b.likes_count || 0) - Number(a.likes_count || 0))
+        : userPosts
+      ).map(p => renderSimplePostCard(p, acc)).join('')}
         </div>
       </main>
     `;
@@ -1718,10 +1718,10 @@
               </p>
             </div>
           ` : filtered.slice(0, 30).map(item => {
-            const timeSec = Number(item.time || Date.now()) / 1000;
-            const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(timeSec) : '';
-            const icon = item.icon || (item.category === 'transfer' ? 'payments' : (item.category === 'space' ? 'forum' : 'verified_user'));
-            return `
+      const timeSec = Number(item.time || Date.now()) / 1000;
+      const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(timeSec) : '';
+      const icon = item.icon || (item.category === 'transfer' ? 'payments' : (item.category === 'space' ? 'forum' : 'verified_user'));
+      return `
               <div class="relative flex items-start gap-3 p-3.5 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all">
                 ${!item.read ? '<span class="absolute left-2 top-5 w-1.5 h-1.5 rounded-full bg-primary ring-4 ring-primary/10"></span>' : ''}
                 <div class="shrink-0 w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-primary ml-1">
@@ -1736,7 +1736,7 @@
                 </div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
       </main>
     `;
@@ -1973,11 +1973,11 @@
       try {
         if (typeof LockTraceCrypto !== 'undefined' && typeof LockTraceCrypto.generateMnemonic12 === 'function') {
           simpleState.seedMnemonic = LockTraceCrypto.generateMnemonic12();
-          try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) {}
+          try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) { }
           simpleState.seedSavedConfirmed = false;
           renderSimpleMode();
         }
-      } catch (_e) {}
+      } catch (_e) { }
     },
 
     copySeed: () => {
@@ -1986,7 +1986,7 @@
       if (typeof window.copyText === 'function') {
         window.copyText(phrase, 'Kurtarma kelimeleri panoya kopyalandı!');
       } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(phrase).catch(() => {});
+        navigator.clipboard.writeText(phrase).catch(() => { });
       }
       const ic = document.getElementById('simple-copy-seed-icon');
       const tx = document.getElementById('simple-copy-seed-text');
@@ -2010,7 +2010,7 @@
         try {
           previewMnemonicPhrase = simpleState.seedMnemonic;
           isTermsAccepted = true;
-        } catch (_e) {}
+        } catch (_e) { }
 
         if (typeof window.requestNewWallet === 'function') {
           await window.requestNewWallet();
@@ -2093,7 +2093,7 @@
           const inp = document.getElementById('simple-send-recipient');
           if (inp && text) inp.value = text;
         }
-      } catch (_e) {}
+      } catch (_e) { }
     },
 
     executeSend: async () => {
@@ -2203,7 +2203,7 @@
       if (!text) return;
       try {
         activeDetailPostId = postId;
-      } catch (_e) {}
+      } catch (_e) { }
       const proCommentInput = document.getElementById('detailCommentInput');
       if (proCommentInput && typeof window.submitDetailSpaceComment === 'function') {
         proCommentInput.value = text;
