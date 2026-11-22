@@ -61,7 +61,7 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
-        return caches.match('/index.html') || caches.match('/');
+        return caches.match('/index.html').then((res) => res || caches.match('/'));
       })
     );
     return;
@@ -78,7 +78,7 @@ self.addEventListener('fetch', (event) => {
           });
         }
         return networkResponse;
-      }).catch(() => cachedResponse);
+      }).catch(() => cachedResponse || new Response('', { status: 504, statusText: 'Offline' }));
       return cachedResponse || fetchPromise;
     })
   );

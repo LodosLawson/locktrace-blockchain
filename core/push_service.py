@@ -18,6 +18,7 @@ Security Invariants:
 """
 
 import os
+import math
 import time
 import json
 import sqlite3
@@ -30,7 +31,7 @@ from concurrent.futures import ThreadPoolExecutor
 from typing import Dict, Any, Optional, Tuple, List
 from urllib.parse import urlparse
 
-from core.wallet import verify_signature, public_key_to_address
+from core.wallet import verify_signature, public_key_to_address, normalize_bct_address
 
 logger = logging.getLogger("LockTrace.Push")
 
@@ -189,7 +190,7 @@ class PushNotificationService:
         Cryptographically registers an off-site Web Push subscription for a BCT wallet.
         Enforces SECP256k1 signature validation to prevent subscription spoofing.
         """
-        clean_addr = (wallet_address or "").strip()
+        clean_addr = normalize_bct_address(wallet_address)
         clean_pub = (public_key or "").strip()
         clean_sig = (signature or "").strip()
 
@@ -205,7 +206,7 @@ class PushNotificationService:
         now = time.time()
         try:
             ts = float(timestamp)
-            if abs(now - ts) > 300:
+            if not math.isfinite(ts) or abs(now - ts) > 300:
                 return False, "Signature timestamp expired or skewed (> 300s difference)."
         except Exception:
             return False, "Invalid timestamp format."
@@ -326,7 +327,7 @@ class PushNotificationService:
         if not clean_ep or len(clean_ep) > 512:
             return False, "Invalid push endpoint."
 
-        clean_addr = (wallet_address or "").strip()
+        clean_addr = normalize_bct_address(wallet_address)
         clean_pub = (public_key or "").strip()
         clean_sig = (signature or "").strip()
         clean_auth = (auth_secret or "").strip()
@@ -339,7 +340,7 @@ class PushNotificationService:
             now = time.time()
             try:
                 ts = float(timestamp)
-                if abs(now - ts) > 300:
+                if not math.isfinite(ts) or abs(now - ts) > 300:
                     return False, "Signature timestamp expired (> 300s)."
             except Exception:
                 return False, "Invalid timestamp."

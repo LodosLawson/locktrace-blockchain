@@ -8,14 +8,17 @@ Enables seamless wrapping to wBCT and decentralized trading on Uniswap / Pancake
 
 import os
 import sys
+import math
 import time
 import json
 import sqlite3
 import hashlib
 import logging
+import contextlib
 import urllib.request
 from decimal import Decimal
 from typing import Dict, Any, List, Optional, Tuple
+from core.wallet import normalize_bct_address
 
 logger = logging.getLogger("LockTrace.Bridge")
 
@@ -237,10 +240,18 @@ class BridgeManager:
         self.db_path = db_path
         self._init_db()
 
+    @contextlib.contextmanager
     def _get_connection(self):
         conn = sqlite3.connect(self.db_path, timeout=30.0)
         conn.row_factory = sqlite3.Row
-        return conn
+        conn.execute("PRAGMA journal_mode=WAL;")
+        conn.execute("PRAGMA synchronous=NORMAL;")
+        conn.execute("PRAGMA busy_timeout=15000;")
+        try:
+            with conn:
+                yield conn
+        finally:
+            conn.close()
 
     def _init_db(self):
         with self._get_connection() as conn:
@@ -327,14 +338,17 @@ class BridgeManager:
         if direction not in ("L1_TO_EVM", "EVM_TO_L1"):
             return {"success": False, "error": "Invalid bridge direction. Must be L1_TO_EVM or EVM_TO_L1"}
 
-        clean_bct = bct_address.strip()
-        clean_evm = evm_address.strip().lower()
+        clean_bct = normalize_bct_address(bct_address)
+        clean_evm = (evm_address or "").strip().lower()
 
         if not (clean_bct.startswith("BCT") and len(clean_bct) == 43):
             return {"success": False, "error": "Invalid LockTrace BCT address format"}
 
         if not (clean_evm.startswith("0x") and len(clean_evm) == 42):
             return {"success": False, "error": "Invalid EVM destination address (0x... 42 chars required)"}
+
+        if not isinstance(amount_bct, (int, float)) or not math.isfinite(amount_bct):
+            return {"success": False, "error": "Bridge amount must be a finite number"}
 
         if amount_bct < MIN_BRIDGE_AMOUNT:
             return {"success": False, "error": f"Minimum bridge amount is {MIN_BRIDGE_AMOUNT:.2f} BCT"}

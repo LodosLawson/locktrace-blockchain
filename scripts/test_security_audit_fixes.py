@@ -249,6 +249,38 @@ code_whale, resp_whale = lnode.handle_decentralized_write("/api/v1/transaction",
 assert code_whale == 400 and "Maximum single transfer limit" in resp_whale.get("message", ""), f"node_runner whale failed: {resp_whale}"
 print("node_runner MIN_TRANSACTION & MAX_TRANSACTION verified! (Passed)")
 
+print("\n=== 13. Testing NaN / Infinity Timestamp Bypass Defenses ===")
+ok_nan_att, msg_nan_att, _ = bc.attest_block("node-1", wallet_a.address, 0, "0000", wallet_a.get_public_key_hex(), "sig", float("nan"))
+assert not ok_nan_att, f"NaN timestamp in attest_block MUST be rejected: {msg_nan_att}"
+from core.push_service import PushNotificationService
+ps = PushNotificationService(db_path=os.path.join(_test_temp_dir, "push_test.db"))
+ok_nan_push, msg_nan_push = ps.subscribe(wallet_a.address, wallet_a.get_public_key_hex(), {"endpoint": "https://fcm.googleapis.com/fcm/send/123", "keys": {"p256dh": "a"*20, "auth": "b"*16}}, float("nan"), "sig")
+assert not ok_nan_push, f"NaN timestamp in push subscribe MUST be rejected: {msg_nan_push}"
+print("NaN / Infinity timestamp bypass defenses verified! (Passed)")
+
+print("\n=== 14. Testing Confirmed-Cache Aliasing Isolation (Space & BNS Mempool Overlay) ===")
+bc._load_in_memory_space_index()
+bc._load_in_memory_bns_index()
+confirmed_posts_before = len(bc._confirmed_space_posts)
+confirmed_bns_before = len(bc._confirmed_bns_records)
+bc.balances[wallet_a.address] = 500.0
+bc._confirmed_units_map[wallet_a.address] = 500 * 100_000_000
+sig_post = wallet_a.sign(f"{wallet_a.address}:Hello Audit Security Test")
+ok_post, msg_post, post_res = bc.create_space_post(wallet_a.address, "Hello Audit Security Test", sig_post, wallet_a.get_public_key_hex())
+assert ok_post, f"create_space_post failed: {msg_post}"
+assert len(bc._confirmed_space_posts) == confirmed_posts_before, "Mempool post MUST NOT corrupt _confirmed_space_posts!"
+assert post_res["post_id"] in bc.space_posts, "Mempool post must be visible in overlay space_posts!"
+print("Confirmed-cache aliasing isolation verified! (Passed)")
+
+print("\n=== 15. Testing Atomic Under-Lock Nonce TOCTOU Guard ===")
+bc._pending_auth_nonces["stale_nonce_sig"] = 999
+sig_toctou = wallet_a.sign(f"{wallet_a.address}:{wallet_b.address}:1.0")
+# Inject mismatched pending auth nonce for this signature
+bc._pending_auth_nonces[sig_toctou] = 999
+ok_toc, msg_toc = bc._verify_actor_signature(wallet_a.address, f"{wallet_a.address}:{wallet_b.address}:1.0", sig_toctou, wallet_a.get_public_key_hex())
+assert not ok_toc and "nonce conflict" in msg_toc.lower(), f"TOCTOU nonce mismatch must be rejected under lock: {msg_toc}"
+print("Atomic under-lock TOCTOU nonce guard verified! (Passed)")
+
 print("\nALL SECURITY AUDIT VERIFICATIONS PASSED SUCCESSFULLY!")
 
 try:

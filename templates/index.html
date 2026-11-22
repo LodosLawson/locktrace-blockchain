@@ -8970,9 +8970,6 @@
       </div>
     </div>
   </div>
-  </div>
-  </div>
-  </div>
 
   <!-- ========================================================================= -->
   <!-- FLOATING ACTION BANNER: METAMASK SIGNING / CONFIRMATION                   -->
@@ -10904,8 +10901,8 @@
           btn.onclick = null;
           setTimeout(() => {
             loadSuggestedVoices();
-            if (typeof refreshWalletBalances === 'function') refreshWalletBalances();
-            if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
+            if (typeof refreshCurrentAccountBalance === 'function') refreshCurrentAccountBalance();
+            if (typeof refreshPersonalTransactions === 'function') refreshPersonalTransactions();
             if (currentProfileData && currentProfileData.address && currentProfileData.address.toLowerCase() === targetAddress.toLowerCase()) {
               openUserProfile(targetAddress);
             }
@@ -11311,7 +11308,12 @@
       }
     }
 
+    let _lastBnsSyncedAddress = '';
+    let _lastNodeStatusSyncTs = 0;
+    let _lastNodeStatusSyncAddr = '';
+
     function saveWalletState(acc) {
+      const prevAddr = (currentAccount && currentAccount.address) ? String(currentAccount.address).toLowerCase() : '';
       currentAccount = acc;
       if (acc) {
         if (acc.private_key || acc.mnemonic) {
@@ -11322,11 +11324,15 @@
         }
         const safePayload = sanitizeForStorage(acc);
         localStorage.setItem(STORAGE_KEY, JSON.stringify(safePayload));
-        fetchAndSyncMyBnsHandles();
+        const newAddr = String(acc.address || '').toLowerCase();
+        if (newAddr && newAddr !== _lastBnsSyncedAddress) {
+          _lastBnsSyncedAddress = newAddr;
+          fetchAndSyncMyBnsHandles();
+        }
         if (acc.address && typeof Notification !== 'undefined') {
           if (Notification.permission === 'granted') {
             const pk = (sessionUnlockedKeys && sessionUnlockedKeys.private_key) || acc.private_key;
-            if (pk) {
+            if (pk && newAddr !== prevAddr) {
               registerDevicePushSubscription(pk, false);
             }
           } else if (Notification.permission === 'default') {
@@ -11336,6 +11342,8 @@
       } else {
         localStorage.removeItem(STORAGE_KEY);
         sessionUnlockedKeys = null;
+        _lastBnsSyncedAddress = '';
+        _lastNodeStatusSyncAddr = '';
         bnsMyHandlesCache = [];
         currentBnsHandle = '';
         syncSpaceHandleSelectors([], '');
@@ -11381,8 +11389,14 @@
             : 'Public Profile · Posts, followers & ledger';
         }
 
-        // Check if currently active wallet is a Node / Validator Wallet
-        checkAndSyncNodeWalletStatus();
+        // Check if currently active wallet is a Node / Validator Wallet (throttled to avoid redundant 15s poll storms)
+        const nowMs = Date.now();
+        const curAddrLower = currentAccount.address.toLowerCase();
+        if (curAddrLower !== _lastNodeStatusSyncAddr || (nowMs - _lastNodeStatusSyncTs) > 60000) {
+          _lastNodeStatusSyncAddr = curAddrLower;
+          _lastNodeStatusSyncTs = nowMs;
+          checkAndSyncNodeWalletStatus();
+        }
         if (compAuthor) compAuthor.textContent = sAddr;
         if (compSub) compSub.textContent = '· You (ECDSA)';
         if (spaceAlert) {
@@ -11980,7 +11994,6 @@
           currentAccount.nonce = Number(body.data.nonce || 0);
           saveWalletState(currentAccount);
           renderBalanceFigures(currentAccount.balance);
-          fetchAndSyncMyBnsHandles();
         }
       } catch (_e) {
         renderBalanceFigures(currentAccount.balance || 0);
@@ -12536,11 +12549,12 @@
 
     // Global iOS-safe Background Scroll Lock for Modals & Overlays
     const MODAL_SCROLL_LOCK_IDS = [
-      'mobileMenuModal', 'tx-modal', 'receive-modal', 'pin-unlock-modal',
+      'mobileMenuModal', 'tx-modal', 'receive-bct-modal', 'vault-modal', 'pin-unlock-modal',
       'ios-pwa-modal', 'block-detail-modal', 'qr-scanner-modal', 'network-security-modal',
       'bnsRegisterModal', 'bnsSetPriceModal', 'bnsTransferModal', 'bnsBuyModal',
       'bnsOfferModal', 'quickComposeModal', 'spaceSettingsModal', 'userProfileModal',
-      'web3TxConfirmModal', 'notificationModal', 'postShareModal', 'pushPromptModal'
+      'web3TxConfirmModal', 'notificationModal', 'postShareModal', 'pushPromptModal',
+      'mobileWalletModal', 'botWalletDetailsModal'
     ];
 
     function syncBodyScrollLock() {
@@ -12781,7 +12795,7 @@
                 <span class="material-symbols-outlined notranslate text-[16px]" translate="no">badge</span>
                 <span>BNS Domain (${escapeHtml(bnsAction)})</span>
               </span>
-              <button type="button" onclick="closeTxModal(); switchTab('bns-pazari');" class="text-[11px] text-emerald-400 hover:underline flex items-center gap-0.5 font-semibold">BNS Market <span class="material-symbols-outlined notranslate text-[13px]" translate="no">arrow_forward</span></button>
+              <button type="button" onclick="closeTxModal(); switchTab('bns'); if (typeof switchBnsSubTab === 'function') switchBnsSubTab('market');" class="text-[11px] text-emerald-400 hover:underline flex items-center gap-0.5 font-semibold">BNS Market <span class="material-symbols-outlined notranslate text-[13px]" translate="no">arrow_forward</span></button>
             </div>
             <div class="flex items-center justify-between p-2.5 rounded-lg bg-surface-container-low/80 border border-outline-variant/15">
               <div class="flex items-center gap-2">
@@ -13018,8 +13032,8 @@
               const diff = (newBal - receiveInitialRadarBal).toFixed(4);
               receiveInitialRadarBal = newBal;
               currentAccount.balance = newBal;
-              if (typeof updateWalletDisplay === 'function') updateWalletDisplay();
-              if (typeof refreshWalletBalances === 'function') refreshWalletBalances();
+              renderBalanceFigures(newBal);
+              if (typeof refreshPersonalTransactions === 'function') refreshPersonalTransactions();
 
               const alertBox = document.getElementById('receiveIncomingPaymentAlert');
               const alertMsg = document.getElementById('receiveIncomingPaymentMsg');
@@ -13377,18 +13391,18 @@
       box.classList.add('flex');
 
       list.innerHTML = recents.slice(0, 8).map(item => {
-        const addr = typeof item === 'string' ? item : item.address;
-        const name = typeof item === 'string' ? '' : (item.name || '');
+        const addr = String(typeof item === 'string' ? item : (item.address || ''));
+        const name = String(typeof item === 'string' ? '' : (item.name || ''));
         const displayLabel = name ? ('@' + name.replace(/^\@/, '')) : (addr.slice(0, 7) + '...' + addr.slice(-4));
         const initial = (name ? name.charAt(0) : addr.charAt(3) || 'B').toUpperCase();
         return `
-          <button type="button" onclick="selectRecentRecipient('${addr}', '${name}')"
+          <button type="button" onclick="selectRecentRecipient('${sanitizeJsAttr(addr)}', '${sanitizeJsAttr(name)}')"
             class="flex items-center gap-2 px-2.5 py-1.5 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/25 transition-all hover:scale-[1.02] active:scale-95 shrink-0 group shadow-xs">
             <div class="w-6 h-6 rounded-full bg-primary/20 text-primary border border-primary/30 flex items-center justify-center text-[10px] font-bold font-mono shrink-0">
-              ${initial}
+              ${escapeHtml(initial)}
             </div>
             <div class="flex flex-col text-left">
-              <span class="text-xs font-semibold text-on-surface group-hover:text-primary transition-colors font-mono truncate max-w-[110px]">${displayLabel}</span>
+              <span class="text-xs font-semibold text-on-surface group-hover:text-primary transition-colors font-mono truncate max-w-[110px]">${escapeHtml(displayLabel)}</span>
             </div>
           </button>
         `;
@@ -15051,14 +15065,6 @@
       }).join('');
     }
 
-    function focusSpaceComposer() {
-      const input = document.getElementById('spacePostInput');
-      if (input) {
-        window.scrollTo({ top: 0, behavior: 'smooth' });
-        setTimeout(() => input.focus(), 200);
-      }
-    }
-
     function insertSpaceTokenTag(tag) {
       const input = document.getElementById('spacePostInput');
       if (!input) return;
@@ -16114,6 +16120,30 @@
 
     // Global Modal & Overlay Dismissal Helper
     function closeTopmostActiveModal() {
+      if (!document.getElementById('web3TxConfirmModal')?.classList.contains('hidden')) {
+        if (typeof rejectWeb3Tx === 'function') rejectWeb3Tx();
+        return true;
+      }
+      if (!document.getElementById('mobileWalletModal')?.classList.contains('hidden')) {
+        if (typeof closeMobileWalletModal === 'function') closeMobileWalletModal();
+        return true;
+      }
+      if (!document.getElementById('botWalletDetailsModal')?.classList.contains('hidden')) {
+        if (typeof closeBotWalletDetailsModal === 'function') closeBotWalletDetailsModal();
+        return true;
+      }
+      if (!document.getElementById('pushPromptModal')?.classList.contains('hidden')) {
+        if (typeof closePushPromptModal === 'function') closePushPromptModal(true);
+        return true;
+      }
+      if (!document.getElementById('quickComposeModal')?.classList.contains('hidden')) {
+        if (typeof closeQuickComposeModal === 'function') closeQuickComposeModal();
+        return true;
+      }
+      if (!document.getElementById('bnsRegisterModal')?.classList.contains('hidden')) {
+        if (typeof closeBnsRegisterModal === 'function') closeBnsRegisterModal();
+        return true;
+      }
       if (!document.getElementById('postShareModal')?.classList.contains('hidden')) {
         if (typeof closePostShareModal === 'function') closePostShareModal();
         return true;
@@ -16464,7 +16494,7 @@
       listEl.innerHTML = options.map(opt => {
         const isSel = rpcState.selected === opt.key;
         return `
-          <div class="flex items-center justify-between p-2.5 rounded-xl border ${isSel ? 'bg-primary/10 border-primary/40' : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'} transition-colors cursor-pointer" onclick="selectRpcEndpoint('${escapeHtml(opt.key)}')">
+          <div class="flex items-center justify-between p-2.5 rounded-xl border ${isSel ? 'bg-primary/10 border-primary/40' : 'bg-surface-container-low border-outline-variant/15 hover:bg-surface-container'} transition-colors cursor-pointer" onclick="selectRpcEndpoint('${sanitizeJsAttr(opt.key)}')">
             <div class="flex items-center gap-2.5 min-w-0">
               <span class="material-symbols-outlined notranslate text-[18px] ${isSel ? 'text-primary' : 'text-outline'}" translate="no">${isSel ? 'radio_button_checked' : 'radio_button_unchecked'}</span>
               <div class="flex flex-col min-w-0">
@@ -17081,6 +17111,7 @@
     window.currentWbctPriceUsd = currentWbctPriceUsd;
 
     async function pollDexPriceLive() {
+      if (document.hidden) return;
       // 1. Try server cached route first (CSP & CORS safe, fast)
       try {
         const srv = await apiFetch('/market/price');
@@ -19792,7 +19823,7 @@
                   </div>
                 </div>
               </div>
-              <button class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="openBnsRegisterModal('${escapeHtml(p.name)}', ${p.cost}, ${p.fee}, ${p.treasury_cut})" type="button">
+              <button class="w-full sm:w-auto px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="openBnsRegisterModal('${sanitizeJsAttr(p.name)}', ${Number(p.cost)}, ${Number(p.fee)}, ${Number(p.treasury_cut)})" type="button">
                 <span class="material-symbols-outlined notranslate text-[17px]" translate="no">badge</span>
                 <span>Register Now</span>
               </button>
@@ -19826,12 +19857,12 @@
               ${!isMyOwn ? `
                 <div class="flex items-center gap-2 w-full sm:w-auto">
                   ${isForSale ? `
-                    <button class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold hover:brightness-110 active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="openBnsBuyModal('${escapeHtml(p.name)}', ${salePrice}, '${escapeHtml(ownerAddr)}')" type="button">
+                    <button class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-primary text-on-primary font-label-md text-label-md font-bold hover:brightness-110 active:scale-95 transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="openBnsBuyModal('${sanitizeJsAttr(p.name)}', ${salePrice}, '${sanitizeJsAttr(ownerAddr)}')" type="button">
                       <span class="material-symbols-outlined notranslate text-[17px]" translate="no">shopping_bag</span>
                       <span>Buy for ${salePrice} BCT</span>
                     </button>
                   ` : ''}
-                  <button class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="openBnsOfferModal('${escapeHtml(p.name)}', '${escapeHtml(ownerAddr)}')" type="button">
+                  <button class="flex-1 sm:flex-none px-4 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-1.5 shrink-0" onclick="openBnsOfferModal('${sanitizeJsAttr(p.name)}', '${sanitizeJsAttr(ownerAddr)}')" type="button">
                     <span class="material-symbols-outlined notranslate text-[17px]" translate="no">gavel</span>
                     <span>Make Offer</span>
                   </button>
@@ -20265,7 +20296,7 @@
 
             <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap">
               ${!isPrimary ? `
-                <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xs" onclick="setPrimaryBnsHandle('${escapeHtml(rec.name)}')" type="button" title="Set this handle as primary identity">
+                <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-semibold transition-all flex items-center justify-center gap-1.5 active:scale-95 shadow-xs" onclick="setPrimaryBnsHandle('${sanitizeJsAttr(rec.name)}')" type="button" title="Set this handle as primary identity">
                   <span class="material-symbols-outlined notranslate text-[16px]" translate="no">star</span>
                   <span>Set Primary</span>
                 </button>
@@ -20274,11 +20305,11 @@
                 <span class="material-symbols-outlined notranslate text-[16px]" translate="no">show_chart</span>
                 <span>History</span>
               </button>
-              <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="openBnsSetPriceModal('${escapeHtml(rec.name)}', ${rec.sale_price || 0})" type="button">
+              <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="openBnsSetPriceModal('${sanitizeJsAttr(rec.name)}', ${Number(rec.sale_price || 0)})" type="button">
                 <span class="material-symbols-outlined notranslate text-[16px]" translate="no">storefront</span>
                 <span>${isForSale ? 'Edit Price' : 'List on Market'}</span>
               </button>
-              <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="openBnsTransferModal('${escapeHtml(rec.name)}')" type="button">
+              <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="openBnsTransferModal('${sanitizeJsAttr(rec.name)}')" type="button">
                 <span class="material-symbols-outlined notranslate text-[16px]" translate="no">swap_horiz</span>
                 <span>Transfer</span>
               </button>
@@ -20331,16 +20362,16 @@
                 <span>History</span>
               </button>
               ${isMyOwn ? `
-                <button class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="openBnsSetPriceModal('${escapeHtml(rec.name)}', ${price})" type="button">
+                <button class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="openBnsSetPriceModal('${sanitizeJsAttr(rec.name)}', ${price})" type="button">
                   <span class="material-symbols-outlined notranslate text-[16px]" translate="no">edit</span>
                   <span>Edit</span>
                 </button>
               ` : `
-                <button class="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="openBnsOfferModal('${escapeHtml(rec.name)}', '${escapeHtml(rec.owner)}')" type="button">
+                <button class="flex-1 sm:flex-none px-3.5 py-2.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 text-xs font-semibold transition-all flex items-center justify-center gap-1.5" onclick="openBnsOfferModal('${sanitizeJsAttr(rec.name)}', '${sanitizeJsAttr(rec.owner)}')" type="button">
                   <span class="material-symbols-outlined notranslate text-[16px]" translate="no">gavel</span>
                   <span>Offer</span>
                 </button>
-                <button class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-1.5" onclick="openBnsBuyModal('${escapeHtml(rec.name)}', ${price}, '${escapeHtml(rec.owner)}')" type="button">
+                <button class="flex-1 sm:flex-none px-5 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-black font-label-md text-label-md font-bold transition-all shadow-md flex items-center justify-center gap-1.5" onclick="openBnsBuyModal('${sanitizeJsAttr(rec.name)}', ${price}, '${sanitizeJsAttr(rec.owner)}')" type="button">
                   <span class="material-symbols-outlined notranslate text-[17px]" translate="no">shopping_bag</span>
                   <span>Buy for ${price} BCT</span>
                 </button>
@@ -20646,11 +20677,11 @@
 
               ${isActive ? `
                 <div class="flex items-center gap-2 w-full sm:w-auto">
-                  <button class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-black font-label-md text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1" onclick="acceptBnsOffer('${escapeHtml(o.name)}', '${escapeHtml(o.offer_id)}', '${escapeHtml(o.bidder)}', ${o.amount})" type="button">
+                  <button class="flex-1 sm:flex-none px-4 py-2 rounded-xl bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-black font-label-md text-xs font-bold transition-all shadow-md flex items-center justify-center gap-1" onclick="acceptBnsOffer('${sanitizeJsAttr(o.name)}', '${sanitizeJsAttr(o.offer_id)}', '${sanitizeJsAttr(o.bidder)}', ${Number(o.amount)})" type="button">
                     <span class="material-symbols-outlined notranslate text-[16px]" translate="no">check</span>
                     <span>Accept (${Number(o.amount * 0.99).toFixed(2)} BCT)</span>
                   </button>
-                  <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-error/20 hover:text-error text-on-surface-variant text-xs font-semibold transition-all flex items-center justify-center gap-1" onclick="cancelOrRejectBnsOffer('${escapeHtml(o.name)}', '${escapeHtml(o.offer_id)}', true)" type="button">
+                  <button class="flex-1 sm:flex-none px-3 py-2 rounded-xl bg-surface-container-high hover:bg-error/20 hover:text-error text-on-surface-variant text-xs font-semibold transition-all flex items-center justify-center gap-1" onclick="cancelOrRejectBnsOffer('${sanitizeJsAttr(o.name)}', '${sanitizeJsAttr(o.offer_id)}', true)" type="button">
                     <span class="material-symbols-outlined notranslate text-[16px]" translate="no">close</span>
                     <span>Reject</span>
                   </button>
@@ -20695,7 +20726,7 @@
 
               ${isActive ? `
                 <div class="flex items-center gap-2 w-full sm:w-auto">
-                  <button class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-error/20 hover:text-error text-on-surface-variant text-xs font-semibold transition-all flex items-center justify-center gap-1" onclick="cancelOrRejectBnsOffer('${escapeHtml(o.name)}', '${escapeHtml(o.offer_id)}', false)" type="button">
+                  <button class="flex-1 sm:flex-none px-3.5 py-2 rounded-xl bg-surface-container-high hover:bg-error/20 hover:text-error text-on-surface-variant text-xs font-semibold transition-all flex items-center justify-center gap-1" onclick="cancelOrRejectBnsOffer('${sanitizeJsAttr(o.name)}', '${sanitizeJsAttr(o.offer_id)}', false)" type="button">
                     <span class="material-symbols-outlined notranslate text-[16px]" translate="no">cancel</span>
                     <span>Cancel Offer</span>
                   </button>
@@ -20737,6 +20768,7 @@
     }
 
     function initApp() {
+      initBrowserTranslationGuard();
       initMobileLandscapeOptimization();
       initModalScrollLockObserver();
       loadRpcSettings();
@@ -20762,8 +20794,6 @@
 
       loadTradeConfig();
       verifyFrontendIntegrityState();
-      refreshExplorerData();
-      refreshSystemWalletsData();
       if (typeof autoDetectEvmWallet === 'function') {
         setTimeout(autoDetectEvmWallet, 800);
       }
@@ -20781,6 +20811,9 @@
       const paramTab = urlParams.get('tab');
       const initialTab = sharedPostId ? 'space' : (paramTab || hashTab || (currentAccount && currentAccount.address ? 'cuzdanim' : 'ana-sayfa'));
       switchTab(initialTab, false);
+      if (initialTab !== 'ana-sayfa' && initialTab !== 'ag-ve-explorer') {
+        setTimeout(refreshExplorerData, 1800);
+      }
 
       if (paramTab === 'kopru' || urlParams.get('dir')) {
         setTimeout(() => {
@@ -20808,7 +20841,7 @@
           else if (activeId === 'tab-ag-ve-explorer') await refreshExplorerData();
           else if (activeId === 'tab-system-wallets') await refreshSystemWalletsData();
           else if (activeId === 'tab-space' && !activeDetailPostId) await loadSpaceFeed();
-          await checkRealtimeNotificationEvents();
+          await checkRealtimeNotificationEvents(activeId === 'tab-cuzdanim');
         } catch (_e) { }
         finally {
           isPollActive = false;
@@ -20853,7 +20886,8 @@
     function syncSpaceHandleSelectors(handlesList, primaryHandle) {
       const composerSel = document.getElementById('spaceAuthorHandleSelect');
       const commentSel = document.getElementById('detailCommentHandleSelect');
-      const sels = [composerSel, commentSel].filter(Boolean);
+      const quickSel = document.getElementById('quickComposeHandleSelect');
+      const sels = [composerSel, commentSel, quickSel].filter(Boolean);
       if (!sels.length) return;
 
       const myAddr = currentAccount ? currentAccount.address : '';
@@ -20979,21 +21013,13 @@
       const modal = document.getElementById('quickComposeModal');
       const card = document.getElementById('quickComposeModalCard');
       const textarea = document.getElementById('quickComposeTextarea');
-      const select = document.getElementById('quickComposeHandleSelect');
       if (!modal || !card) return;
 
-      // Populate handles if available
-      if (select && window.currentAccount) {
-        select.innerHTML = `<option value="wallet">💳 ${shortAddr(currentAccount.address)}</option>`;
-        if (window.userBnsHandles && Array.isArray(userBnsHandles)) {
-          userBnsHandles.forEach(h => {
-            select.innerHTML += `<option value="${escapeHtml(h.name)}">@${escapeHtml(h.name)}</option>`;
-          });
-        }
-      }
+      syncSpaceHandleSelectors(bnsMyHandlesCache, currentBnsHandle);
 
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      syncBodyScrollLock();
       requestAnimationFrame(() => {
         card.classList.remove('scale-95', 'opacity-0');
         card.classList.add('scale-100', 'opacity-100');
@@ -21010,6 +21036,7 @@
       setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        syncBodyScrollLock();
       }, 150);
     }
 
@@ -21052,9 +21079,9 @@
         return;
       }
 
-      const selectedHandle = select ? select.value : 'wallet';
+      const selectedHandle = select ? select.value : 'address';
       let authorBns = '';
-      if (selectedHandle && selectedHandle !== 'wallet') {
+      if (selectedHandle && selectedHandle !== 'wallet' && selectedHandle !== 'address' && selectedHandle !== '__register_bns__') {
         authorBns = selectedHandle;
       }
 
@@ -22532,7 +22559,7 @@
                   <span class="text-[10px] text-on-surface-variant font-mono">${tx.time} • ${tx.amount}</span>
                 </div>
               </div>
-              <a href="https://basescan.org/address/${currentViewingBotAddress}" target="_blank" rel="noopener noreferrer"
+              <a href="https://basescan.org/address/${encodeURIComponent(currentViewingBotAddress)}" target="_blank" rel="noopener noreferrer"
                 class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-mono font-semibold hover:underline flex items-center gap-0.5">
                 <span>Doğrulandı</span>
                 <span class="material-symbols-outlined notranslate text-[10px]" translate="no">open_in_new</span>
@@ -22950,7 +22977,10 @@
       try {
         const AudioContext = window.AudioContext || window.webkitAudioContext;
         if (!AudioContext) return;
-        const ctx = new AudioContext();
+        if (!window._notifAudioCtx || window._notifAudioCtx.state === 'closed') {
+          window._notifAudioCtx = new AudioContext();
+        }
+        const ctx = window._notifAudioCtx;
         if (ctx.state === 'suspended') {
           ctx.resume();
         }
@@ -23156,7 +23186,7 @@
         else if (isSystem) iconBg = 'bg-amber-500/15 text-amber-400';
 
         return `
-          <div class="p-3 rounded-2xl ${item.read ? 'bg-surface-container-low/70' : 'bg-surface-container-high/90 border border-primary/20'} flex items-start justify-between gap-3 transition-all hover:bg-surface-container-high cursor-pointer group" onclick="handleNotificationItemClick('${escapeHtml(item.id)}')">
+          <div class="p-3 rounded-2xl ${item.read ? 'bg-surface-container-low/70' : 'bg-surface-container-high/90 border border-primary/20'} flex items-start justify-between gap-3 transition-all hover:bg-surface-container-high cursor-pointer group" onclick="handleNotificationItemClick('${sanitizeJsAttr(item.id)}')">
             <div class="w-8 h-8 rounded-xl ${iconBg} flex items-center justify-center shrink-0 mt-0.5">
               <span class="material-symbols-outlined notranslate text-[18px]" translate="no">${escapeHtml(item.icon)}</span>
             </div>
@@ -23172,8 +23202,8 @@
                 ${item.actionUrl ? `<span class="text-[10px] text-primary font-semibold hover:underline">View Details →</span>` : ''}
               </div>
             </div>
-            <button class="w-6 h-6 rounded-full text-outline hover:text-primary flex items-center justify-center shrink-0 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation(); toggleNotificationCategoryMute('${escapeHtml(item.category || 'system')}')" title="${isCatMuted ? 'Sesi Aç' : 'Bu Türü Sustur'}" type="button"><span class="material-symbols-outlined notranslate text-[15px]" translate="no">${isCatMuted ? 'notifications_off' : 'notifications'}</span></button>
-            <button class="w-6 h-6 rounded-full text-outline hover:text-rose-400 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onclick="deleteSingleNotification('${escapeHtml(item.id)}', event)" title="Delete" type="button">
+            <button class="w-6 h-6 rounded-full text-outline hover:text-primary flex items-center justify-center shrink-0 opacity-80 sm:opacity-0 group-hover:opacity-100 transition-opacity" onclick="event.stopPropagation(); toggleNotificationCategoryMute('${sanitizeJsAttr(item.category || 'system')}')" title="${isCatMuted ? 'Sesi Aç' : 'Bu Türü Sustur'}" type="button"><span class="material-symbols-outlined notranslate text-[15px]" translate="no">${isCatMuted ? 'notifications_off' : 'notifications'}</span></button>
+            <button class="w-6 h-6 rounded-full text-outline hover:text-rose-400 flex items-center justify-center shrink-0 opacity-0 group-hover:opacity-100 transition-opacity" onclick="deleteSingleNotification('${sanitizeJsAttr(item.id)}', event)" title="Delete" type="button">
               <span class="material-symbols-outlined notranslate text-[15px]" translate="no">close</span>
             </button>
           </div>
@@ -23441,16 +23471,23 @@
       return false;
     }
 
-    async function checkRealtimeNotificationEvents() {
+    async function checkRealtimeNotificationEvents(useCachedPersonalTxs = false) {
       if (!currentAccount || !currentAccount.address) return;
       const myAddr = currentAccount.address;
       const seenTxs = getSeenTxHashes();
 
       // 1. Check incoming transactions & rewards
       try {
-        const res = await apiFetch('/transactions/' + encodeURIComponent(myAddr));
-        if (res.ok && res.body && res.body.data && Array.isArray(res.body.data.transactions)) {
-          const txs = res.body.data.transactions;
+        let txs = null;
+        if (useCachedPersonalTxs && Array.isArray(personalTxCache) && personalTxCache.length > 0) {
+          txs = personalTxCache;
+        } else {
+          const res = await apiFetch('/transactions/' + encodeURIComponent(myAddr));
+          if (res.ok && res.body && res.body.data && Array.isArray(res.body.data.transactions)) {
+            txs = res.body.data.transactions;
+          }
+        }
+        if (Array.isArray(txs)) {
           txs.forEach(tx => {
             const txHash = tx.tx_hash || tx.hash;
             if (!txHash) return;
@@ -23540,21 +23577,25 @@
         if (spaceRes.ok && spaceRes.body && spaceRes.body.data && Array.isArray(spaceRes.body.data.posts)) {
           const posts = spaceRes.body.data.posts;
           posts.forEach(post => {
-            if (!post.id) return;
-            const notifId = 'space-mention-' + post.id;
+            const postId = post.post_id || post.id;
+            if (!postId) return;
+            const notifId = 'space-mention-' + postId;
             const isAlreadyInCache = notificationsCache.some(n => n.id === notifId);
-            const isAlreadySeen = seenPosts.has(post.id);
+            const isAlreadySeen = seenPosts.has(postId);
 
             // Also check if someone commented on my post
             if (post.author === myAddr) {
-              seenPosts.add(post.id);
+              seenPosts.add(postId);
               if (Array.isArray(post.comments) && post.comments.length > 0) {
                 post.comments.forEach((cmt, idx) => {
-                  const cmtId = 'cmt-' + post.id + '-' + (cmt.id || idx);
-                  if (cmt.author && cmt.author !== myAddr && !seenPosts.has(cmtId)) {
+                  const cmtKey = cmt.comment_id || cmt.id || idx;
+                  const cmtId = 'cmt-' + postId + '-' + cmtKey;
+                  const cmtAddr = cmt.commenter || cmt.author;
+                  const cmtBns = cmt.commenter_bns || cmt.bns_name;
+                  if (cmtAddr && cmtAddr !== myAddr && !seenPosts.has(cmtId)) {
                     seenPosts.add(cmtId);
                     if (!notificationsCache.some(n => n.id === cmtId)) {
-                      const cmtAuthor = cmt.bns_name ? `@${cmt.bns_name}` : shortAddr(cmt.author);
+                      const cmtAuthor = cmtBns ? `@${cmtBns}` : shortAddr(cmtAddr);
                       addNotification({
                         id: cmtId,
                         category: 'space',
@@ -23577,9 +23618,10 @@
 
             if (isMentioned) {
               const shouldAlert = !isAlreadySeen && (seenPosts.size > 0);
-              seenPosts.add(post.id);
+              seenPosts.add(postId);
               if (!isAlreadyInCache) {
-                const authorName = post.bns_name ? `@${post.bns_name}` : shortAddr(post.author);
+                const postBns = post.author_bns || post.bns_name;
+                const authorName = postBns ? `@${postBns}` : shortAddr(post.author);
                 addNotification({
                   id: notifId,
                   category: 'space',
@@ -23592,7 +23634,7 @@
                 }, shouldAlert);
               }
             } else {
-              seenPosts.add(post.id);
+              seenPosts.add(postId);
             }
           });
           saveSeenSpacePosts();
@@ -23745,9 +23787,10 @@
       const titleEl = document.getElementById('operatorStatusTitle');
       const roleBadge = document.getElementById('operatorRoleBadge');
       const addrEl = document.getElementById('operatorAddressLabel');
-      const stakeEl = document.getElementById('operatorStakeStatus');
-      const stakeSub = document.getElementById('operatorStakeSubtitle');
-      const roleEl = document.getElementById('operatorConsensusRole');
+      const stakeEls = document.querySelectorAll('[id="operatorStakeStatus"]');
+      const stakeSubs = document.querySelectorAll('[id="operatorStakeSubtitle"]');
+      const roleEls = document.querySelectorAll('[id="operatorConsensusRole"]');
+      const availBalEl = document.getElementById('lblWalletAvailBalance');
       const btnEl = document.getElementById('btnToggleNodeWallet');
       const btnTxt = document.getElementById('btnToggleNodeWalletText');
 
@@ -23758,14 +23801,16 @@
           roleBadge.className = 'px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase';
         }
         if (addrEl) addrEl.textContent = 'Wallet: No wallet selected';
-        if (stakeEl) stakeEl.textContent = '-- BCT';
-        if (roleEl) roleEl.textContent = 'Watcher Node';
+        stakeEls.forEach(el => { el.textContent = '-- BCT'; });
+        roleEls.forEach(el => { el.textContent = 'Watcher Node'; });
+        if (availBalEl) availBalEl.textContent = '0.00 BCT';
         if (btnEl) btnEl.style.display = 'none';
         return;
       }
 
       if (btnEl) btnEl.style.display = 'inline-flex';
       const bal = Number(currentAccount.balance || 0);
+      if (availBalEl) availBalEl.textContent = `${formatBct(bal, 2)} BCT`;
       const isStakedVal = (Number(currentValidatorStakedBCT || 0) >= 1000.0);
 
       if (isNode) {
@@ -23777,13 +23822,13 @@
             : 'px-2.5 py-0.5 rounded-full bg-cyan-500/20 text-cyan-400 border border-cyan-500/30 font-mono text-[10px] font-bold uppercase';
         }
         if (addrEl) addrEl.textContent = `Wallet: ${currentAccount.address}`;
-        if (stakeEl) stakeEl.textContent = `${formatBct(bal, 4)} BCT`;
-        if (stakeSub) {
-          stakeSub.textContent = isStakedVal
+        stakeEls.forEach(el => { el.textContent = `${formatBct(bal, 4)} BCT`; });
+        stakeSubs.forEach(el => {
+          el.textContent = isStakedVal
             ? '✅ 1,000 BCT Collateral Staked (Quorum Authorized)'
             : '⚡ Configured as Node Operator (Stake 1,000 BCT for Quorum)';
-        }
-        if (roleEl) roleEl.textContent = isStakedVal ? 'Active Validator (Quorum Voting Rights)' : 'Miner / Node Operator';
+        });
+        roleEls.forEach(el => { el.textContent = isStakedVal ? 'Active Validator (Quorum Voting Rights)' : 'Miner / Node Operator'; });
         if (btnTxt) btnTxt.textContent = 'Remove Node Runner Role';
       } else {
         if (titleEl) titleEl.textContent = 'Standard User Wallet';
@@ -23792,9 +23837,9 @@
           roleBadge.className = 'px-2.5 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold uppercase';
         }
         if (addrEl) addrEl.textContent = `Wallet: ${currentAccount.address}`;
-        if (stakeEl) stakeEl.textContent = `${formatBct(bal, 4)} BCT`;
-        if (stakeSub) stakeSub.textContent = 'Validator threshold: 1,000 BCT required';
-        if (roleEl) roleEl.textContent = 'Watcher / Client';
+        stakeEls.forEach(el => { el.textContent = `${formatBct(bal, 4)} BCT`; });
+        stakeSubs.forEach(el => { el.textContent = 'Validator threshold: 1,000 BCT required'; });
+        roleEls.forEach(el => { el.textContent = 'Watcher / Client'; });
         if (btnTxt) btnTxt.textContent = 'Set as Node Runner Wallet';
       }
     }
@@ -24295,9 +24340,8 @@
   
     async function loadStakingParticipantsUI() {
       try {
-        const res = await fetch('/api/v1/staking/participants');
-        const json = await res.json();
-        if (!json.success || !json.data) return;
+        const { ok, body: json } = await apiFetch('/staking/participants');
+        if (!ok || !json || !json.success || !json.data) return;
         const d = json.data;
 
         const renderRows = (stakers) => {

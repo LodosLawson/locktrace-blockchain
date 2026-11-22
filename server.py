@@ -46,6 +46,7 @@ from core.wallet import (
     restore_wallet_from_mnemonic,
     public_key_to_address,
     verify_signature,
+    normalize_bct_address,
 )
 from core.mnemonic import generate_mnemonic, validate_mnemonic
 from core.thirdweb_service import thirdweb_service
@@ -96,6 +97,7 @@ class SlidingWindowRateLimiter:
         self._lock = threading.Lock()
         self._buckets = {}
         self._used_signatures = {}
+        self._action_cooldowns = {}
         self._last_cleanup = time.time()
 
     def _cleanup_if_needed(self, now: float, force: bool = False):
@@ -116,6 +118,13 @@ class SlidingWindowRateLimiter:
             excess_s = len(self._used_signatures) - self.MAX_SIG_CACHE
             for s in list(self._used_signatures.keys())[:excess_s]:
                 self._used_signatures.pop(s, None)
+        stale_cds = [k for k, ts in self._action_cooldowns.items() if (now - ts) > 3600]
+        for k in stale_cds:
+            self._action_cooldowns.pop(k, None)
+        if len(self._action_cooldowns) > self.MAX_BUCKETS:
+            excess_cd = len(self._action_cooldowns) - self.MAX_BUCKETS
+            for k in list(self._action_cooldowns.keys())[:excess_cd]:
+                self._action_cooldowns.pop(k, None)
 
     def allow(self, key: str, limit: int, window_seconds: int) -> bool:
         now = time.time()
@@ -244,7 +253,8 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
       2) Non-custodial client-side ECDSA signing via `public_key`, `signature`, `timestamp`, and strictly enforced `nonce`
     Returns: (ok: bool, status_code: int, error_msg: str, signature: str, public_key: str, signed_payload: str)
     """
-    clean_expected = (expected_address or "").strip()
+    raw_expected = (expected_address or "").strip()
+    clean_expected = normalize_bct_address(raw_expected)
     if not is_valid_bct_address(clean_expected) or clean_expected.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
         return False, 400, "Invalid wallet address format.", "", "", ""
 
@@ -287,7 +297,14 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
             if safe_int(client_nonce, default=-1) != expected_nonce:
                 return False, 409, f"Invalid transaction nonce. Expected: {expected_nonce}, got: {client_nonce}", "", "", ""
 
-        candidates = canonical_payload if isinstance(canonical_payload, (list, tuple)) else [canonical_payload]
+        raw_candidates = canonical_payload if isinstance(canonical_payload, (list, tuple)) else [canonical_payload]
+        candidates = list(raw_candidates)
+        if raw_expected != clean_expected:
+            for c in raw_candidates:
+                norm_c = c.replace(raw_expected, clean_expected)
+                if norm_c not in candidates:
+                    candidates.append(norm_c)
+
         signed_payload = ""
         verified_ok = False
         if client_ts is not None:
@@ -312,6 +329,12 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
 
         if not rate_limiter.register_signature_once(client_sig):
             return False, 409, "Replay signature rejected.", "", "", ""
+
+        if (require_nonce or client_nonce is not None) and hasattr(blockchain, "_pending_auth_nonces"):
+            with blockchain.lock:
+                if len(blockchain._pending_auth_nonces) > 10000:
+                    blockchain._pending_auth_nonces.clear()
+                blockchain._pending_auth_nonces[client_sig] = expected_nonce
 
         return True, 200, "", client_sig, pub_hex, signed_payload
 
@@ -338,7 +361,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-TVBa5Gs/TVsIqLFwZPSSLvAqHGTo2kHCZ+LJ2u5QGx8=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-UXzeExzGxErycBLS5+SntB01pBgqjqfIrJsRlxW5zJI=' 'sha256-sJdZzXDLbGPm1GprdoTQKCGUQFupEzomrQJVBdN5xlo=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -850,53 +873,59 @@ _market_price_cache = {
 }
 
 
+_market_price_lock = threading.Lock()
+
+
 @app.route("/api/v1/market/price", methods=["GET"])
 def api_market_price():
     """Returns cached/live Uniswap v3/v4 wBCT market price on Base (CORS & CSP safe)."""
     global _market_price_cache
     now = time.time()
-    if (now - _market_price_cache.get("last_fetched", 0.0)) > 30.0:
-        fetched_ok = False
-        token_addr = getattr(Config, "WBCT_CONTRACT_ADDRESS", "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28")
-        # 1. Primary source: DexScreener Token API (automatically discovers active Base pool & pairAddress)
+    if (now - _market_price_cache.get("last_fetched", 0.0)) > 30.0 and _market_price_lock.acquire(blocking=False):
         try:
-            import urllib.request, json
-            ds_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_addr}"
-            req_ds = urllib.request.Request(ds_url, headers={"User-Agent": "LockTrace/2.11"})
-            with urllib.request.urlopen(req_ds, timeout=3.5) as resp_ds:
-                ds_data = json.loads(resp_ds.read().decode())
-                pairs = [p for p in (ds_data.get("pairs") or []) if p.get("chainId") == "base" and p.get("priceUsd")]
-                if not pairs:
-                    pairs = [p for p in (ds_data.get("pairs") or []) if p.get("priceUsd")]
-                if pairs:
-                    p_usd = float(pairs[0]["priceUsd"])
-                    if p_usd > 0:
-                        _market_price_cache["price_usd"] = p_usd
-                        _market_price_cache["pair"] = pairs[0].get("pairAddress") or token_addr
-                        _market_price_cache["dex"] = pairs[0].get("dexId", "Uniswap (Base)")
-                        _market_price_cache["last_fetched"] = now
-                        fetched_ok = True
-        except Exception:
-            pass
-
-        # 2. Secondary fallback: GeckoTerminal Token API for Base
-        if not fetched_ok:
+            fetched_ok = False
+            token_addr = getattr(Config, "WBCT_CONTRACT_ADDRESS", "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28")
+            # 1. Primary source: DexScreener Token API (automatically discovers active Base pool & pairAddress)
             try:
                 import urllib.request, json
-                url = f"https://api.geckoterminal.com/api/v2/networks/base/tokens/{token_addr}"
-                req = urllib.request.Request(url, headers={"User-Agent": "LockTrace/2.11"})
-                with urllib.request.urlopen(req, timeout=3.5) as resp:
-                    data = json.loads(resp.read().decode())
-                    p_usd = float(data.get("data", {}).get("attributes", {}).get("price_usd", 0.0) or 0.0)
-                    if p_usd > 0:
-                        _market_price_cache["price_usd"] = p_usd
-                        _market_price_cache["last_fetched"] = now
-                        fetched_ok = True
+                ds_url = f"https://api.dexscreener.com/latest/dex/tokens/{token_addr}"
+                req_ds = urllib.request.Request(ds_url, headers={"User-Agent": "LockTrace/2.11"})
+                with urllib.request.urlopen(req_ds, timeout=3.5) as resp_ds:
+                    ds_data = json.loads(resp_ds.read().decode())
+                    pairs = [p for p in (ds_data.get("pairs") or []) if p.get("chainId") == "base" and p.get("priceUsd")]
+                    if not pairs:
+                        pairs = [p for p in (ds_data.get("pairs") or []) if p.get("priceUsd")]
+                    if pairs:
+                        p_usd = float(pairs[0]["priceUsd"])
+                        if p_usd > 0:
+                            _market_price_cache["price_usd"] = p_usd
+                            _market_price_cache["pair"] = pairs[0].get("pairAddress") or token_addr
+                            _market_price_cache["dex"] = pairs[0].get("dexId", "Uniswap (Base)")
+                            _market_price_cache["last_fetched"] = now
+                            fetched_ok = True
             except Exception:
                 pass
 
-        if not fetched_ok:
-            _market_price_cache["last_fetched"] = now
+            # 2. Secondary fallback: GeckoTerminal Token API for Base
+            if not fetched_ok:
+                try:
+                    import urllib.request, json
+                    url = f"https://api.geckoterminal.com/api/v2/networks/base/tokens/{token_addr}"
+                    req = urllib.request.Request(url, headers={"User-Agent": "LockTrace/2.11"})
+                    with urllib.request.urlopen(req, timeout=3.5) as resp:
+                        data = json.loads(resp.read().decode())
+                        p_usd = float(data.get("data", {}).get("attributes", {}).get("price_usd", 0.0) or 0.0)
+                        if p_usd > 0:
+                            _market_price_cache["price_usd"] = p_usd
+                            _market_price_cache["last_fetched"] = now
+                            fetched_ok = True
+                except Exception:
+                    pass
+
+            if not fetched_ok:
+                _market_price_cache["last_fetched"] = now
+        finally:
+            _market_price_lock.release()
 
     return api_response(True, data=_market_price_cache)
 
@@ -1126,10 +1155,6 @@ def api_transaction():
     if not sender or not receiver or amount_raw is None:
         return api_response(False, message="Missing required fields: sender, receiver, amount", status=400)
 
-    cd_err = check_wallet_cooldown(sender, "transfer")
-    if cd_err:
-        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
-
     # BNS Handle Auto-Resolution (.bct domain support)
     raw_receiver = receiver
     if receiver.lower().endswith(".bct"):
@@ -1167,6 +1192,10 @@ def api_transaction():
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(sender, "transfer")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     success, message, tx_info = blockchain.create_transaction(
         sender=sender,
@@ -2285,10 +2314,6 @@ def api_space_create_post():
     if not content:
         return api_response(False, message="Post content cannot be empty", status=400)
 
-    cd_err = check_wallet_cooldown(author, "space_post")
-    if cd_err:
-        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
-
     bns_name = str(data.get("bns_name", "") or "").strip()
     canonical = [f"{author}:{content}", f"{author}:{content}:{bns_name}"] if bns_name else f"{author}:{content}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
@@ -2296,6 +2321,10 @@ def api_space_create_post():
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(author, "space_post")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     success, message, result = blockchain.create_space_post(
         author=author,
@@ -2345,16 +2374,16 @@ def api_space_like():
     if not liker or not post_id:
         return api_response(False, message="Fields 'liker' and 'post_id' are required.", status=400)
 
-    cd_err = check_wallet_cooldown(liker, "space_like")
-    if cd_err:
-        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
-
     canonical = f"{liker}:{post_id}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, liker, canonical
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(liker, "space_like")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     success, message, result = blockchain.like_space_post(
         liker=liker,
@@ -2400,10 +2429,6 @@ def api_space_comment():
     if not commenter or not post_id or not content:
         return api_response(False, message="Fields 'commenter', 'post_id', and 'content' are required.", status=400)
 
-    cd_err = check_wallet_cooldown(commenter, "space_comment")
-    if cd_err:
-        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
-
     bns_name = str(data.get("bns_name", "") or "").strip()
     canonical = [f"{commenter}:{post_id}:{content}", f"{commenter}:{post_id}:{content}:{bns_name}"] if bns_name else f"{commenter}:{post_id}:{content}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
@@ -2411,6 +2436,10 @@ def api_space_comment():
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(commenter, "space_comment")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     success, message, result = blockchain.comment_space_post(
         commenter=commenter,
@@ -2474,16 +2503,16 @@ def api_space_follow():
     if not follower or not target:
         return api_response(False, message="Fields 'follower' and 'target' are required.", status=400)
 
-    cd_err = check_wallet_cooldown(follower, "space_follow")
-    if cd_err:
-        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
-
     canonical = f"follow:{follower}:{target}"
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, follower, canonical
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(follower, "space_follow")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     success, message, result = blockchain.follow_creator(
         follower=follower,
@@ -2606,10 +2635,6 @@ def api_bns_register():
     if not name or not owner:
         return api_response(False, message="Both 'name' and 'owner' address are required.", status=400)
 
-    cd_err = check_wallet_cooldown(owner, "bns_register")
-    if cd_err:
-        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
-
     pricing = blockchain.get_bns_pricing(name)
     if not pricing["valid"]:
         return api_response(False, message=pricing.get("tier", "Invalid name length (3-24 characters required)."), status=400)
@@ -2629,6 +2654,10 @@ def api_bns_register():
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(owner, "bns_register")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     success, message, result = blockchain.bns_register(
         name=name,
@@ -3225,6 +3254,7 @@ def api_thirdweb_wait_hash(transaction_id: str):
 
 # ── Cross-Chain Bridge Endpoints (LockTrace L1 <-> EVM wBCT) ─────────────
 _relayer_status_cache = {"data": None, "timestamp": 0}
+_relayer_status_lock = threading.Lock()
 
 def get_relayer_public_status(force_refresh: bool = False) -> Dict[str, Any]:
     global _relayer_status_cache
@@ -3232,61 +3262,73 @@ def get_relayer_public_status(force_refresh: bool = False) -> Dict[str, Any]:
     if not force_refresh and _relayer_status_cache["data"] and (now - _relayer_status_cache["timestamp"] < 10):
         return _relayer_status_cache["data"]
 
-    relayer_address = "0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3"
-    for path in ["relayer_wallet.json", "/opt/blockchaint/relayer_wallet.json", "deploy/relayer_evm.key"]:
-        if os.path.exists(path):
-            try:
-                with open(path, "r", encoding="utf-8") as f:
-                    content = f.read().strip()
-                    if content.startswith("{"):
-                        data = json.loads(content)
-                        if data.get("address"):
-                            relayer_address = data["address"]
-                            break
-            except Exception:
-                pass
-
-    bal_eth = 0.0
-    bal_wei = 0
-    try:
-        import urllib.request
-        base_rpc = getattr(Config, "BASE_RPC_URL", "https://mainnet.base.org")
-        payload = json.dumps({
-            "jsonrpc": "2.0",
-            "method": "eth_getBalance",
-            "params": [relayer_address, "latest"],
-            "id": 1
-        }).encode("utf-8")
-        req = urllib.request.Request(
-            base_rpc,
-            data=payload,
-            headers={"Content-Type": "application/json", "User-Agent": "LockTrace-Explorer/1.0"}
-        )
-        with urllib.request.urlopen(req, timeout=3.0) as resp:
-            res_obj = json.loads(resp.read().decode("utf-8"))
-            hex_bal = res_obj.get("result", "0x0")
-            bal_wei = int(hex_bal, 16)
-            bal_eth = bal_wei / 1e18
-    except Exception as e:
-        logger.warning(f"Failed to query relayer balance: {e}")
+    if not _relayer_status_lock.acquire(blocking=False):
         if _relayer_status_cache["data"]:
             return _relayer_status_cache["data"]
+        _relayer_status_lock.acquire()
 
-    is_operational = bal_eth >= 0.000001
-    status_data = {
-        "relayer_address": relayer_address,
-        "balance_eth": float(bal_eth),
-        "balance_wei": bal_wei,
-        "balance_formatted": f"{bal_eth:.6f} ETH",
-        "is_operational": is_operational,
-        "status_label": "Operational" if is_operational else "Low Gas (Funding Required)",
-        "chain_id": 8453,
-        "chain_name": "Base Mainnet",
-        "basescan_url": f"https://basescan.org/address/{relayer_address}",
-        "updated_at": now
-    }
-    _relayer_status_cache = {"data": status_data, "timestamp": now}
-    return status_data
+    try:
+        now = time.time()
+        if not force_refresh and _relayer_status_cache["data"] and (now - _relayer_status_cache["timestamp"] < 10):
+            return _relayer_status_cache["data"]
+
+        relayer_address = "0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3"
+        for path in ["relayer_wallet.json", "/opt/blockchaint/relayer_wallet.json", "deploy/relayer_evm.key"]:
+            if os.path.exists(path):
+                try:
+                    with open(path, "r", encoding="utf-8") as f:
+                        content = f.read().strip()
+                        if content.startswith("{"):
+                            data = json.loads(content)
+                            if data.get("address"):
+                                relayer_address = data["address"]
+                                break
+                except Exception:
+                    pass
+
+        bal_eth = 0.0
+        bal_wei = 0
+        try:
+            import urllib.request
+            base_rpc = getattr(Config, "BASE_RPC_URL", "https://mainnet.base.org")
+            payload = json.dumps({
+                "jsonrpc": "2.0",
+                "method": "eth_getBalance",
+                "params": [relayer_address, "latest"],
+                "id": 1
+            }).encode("utf-8")
+            req = urllib.request.Request(
+                base_rpc,
+                data=payload,
+                headers={"Content-Type": "application/json", "User-Agent": "LockTrace-Explorer/1.0"}
+            )
+            with urllib.request.urlopen(req, timeout=3.0) as resp:
+                res_obj = json.loads(resp.read().decode("utf-8"))
+                hex_bal = res_obj.get("result", "0x0")
+                bal_wei = int(hex_bal, 16)
+                bal_eth = bal_wei / 1e18
+        except Exception as e:
+            logger.warning(f"Failed to query relayer balance: {e}")
+            if _relayer_status_cache["data"]:
+                return _relayer_status_cache["data"]
+
+        is_operational = bal_eth >= 0.000001
+        status_data = {
+            "relayer_address": relayer_address,
+            "balance_eth": float(bal_eth),
+            "balance_wei": bal_wei,
+            "balance_formatted": f"{bal_eth:.6f} ETH",
+            "is_operational": is_operational,
+            "status_label": "Operational" if is_operational else "Low Gas (Funding Required)",
+            "chain_id": 8453,
+            "chain_name": "Base Mainnet",
+            "basescan_url": f"https://basescan.org/address/{relayer_address}",
+            "updated_at": now
+        }
+        _relayer_status_cache = {"data": status_data, "timestamp": now}
+        return status_data
+    finally:
+        _relayer_status_lock.release()
 
 
 @app.route("/api/v1/bridge/config", methods=["GET"])
@@ -3474,9 +3516,20 @@ def api_bridge_confirm():
     if str(order.get("status", "")).upper() != "PENDING":
         return api_response(False, message=f"Bridge order is already {order.get('status')}.", status=400)
 
+    order_bct_addr = normalize_bct_address(str(order.get("bct_address", "")))
+    confirm_canonical = [
+        f"BRIDGE_CONFIRM:{bridge_id}:{tx_hash}",
+        f"BRIDGE_CONFIRM:{tx_hash}",
+    ]
+    auth_ok, auth_status, auth_err, _sig, _pub, _signed = resolve_authenticated_action(
+        payload, order_bct_addr, confirm_canonical, require_nonce=False
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err or "Wallet signature required to confirm bridge order.", status=auth_status)
+
     ok_lock, lock_err = _verify_l1_bridge_lock_tx(
         tx_hash_l1=tx_hash,
-        expected_sender=str(order.get("bct_address", "")),
+        expected_sender=order_bct_addr,
         expected_amount=float(order.get("amount_bct", 0.0)),
     )
     if not ok_lock:

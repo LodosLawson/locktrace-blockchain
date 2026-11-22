@@ -339,10 +339,42 @@ class Block:
         self.merkle_root = compute_merkle_root([tx.hash() for tx in self.transactions])
         tx_dicts = [tx.to_dict() for tx in self.transactions]
         target = "0" * difficulty
-        self.hash = self.calculate_hash(tx_dicts)
-        while not self.hash.startswith(target):
-            self.nonce += 1
+        sentinel = -999999999
+        if self.version >= 2:
+            payload = {
+                "version": self.version,
+                "index": self.index,
+                "merkle_root": self.merkle_root,
+                "previous_hash": self.previous_hash,
+                "timestamp": self.timestamp,
+                "miner": self.miner,
+                "nonce": sentinel,
+            }
+        else:
+            payload = {
+                "index": self.index,
+                "transactions": tx_dicts,
+                "previous_hash": self.previous_hash,
+                "timestamp": self.timestamp,
+                "nonce": sentinel,
+            }
+        template = json.dumps(payload, sort_keys=True)
+        parts = template.split(str(sentinel))
+        if len(parts) == 2:
+            prefix, suffix = parts[0], parts[1]
+            nonce = self.nonce
+            while True:
+                h = hashlib.sha256((prefix + str(nonce) + suffix).encode()).hexdigest()
+                if h.startswith(target):
+                    self.nonce = nonce
+                    self.hash = h
+                    break
+                nonce += 1
+        else:
             self.hash = self.calculate_hash(tx_dicts)
+            while not self.hash.startswith(target):
+                self.nonce += 1
+                self.hash = self.calculate_hash(tx_dicts)
         self._cached_dict = None
 
     def to_dict(self) -> dict:
@@ -430,6 +462,7 @@ class Blockchain:
         self.finalized_height: int = 0
         self.slashed_validators: Dict[str, dict] = {}
         self._attestations_by_validator: Dict[str, str] = {}
+        self._pending_auth_nonces: Dict[str, int] = {}
         self._stop_sequencer: Optional[threading.Event] = None
         self._sequencer_thread: Optional[threading.Thread] = None
 
@@ -731,6 +764,13 @@ class Blockchain:
         if clean_sig in self._used_signatures_set:
             return False, "Replay transaction signature rejected (already used on-chain or in mempool)!"
 
+        # Atomic under-lock nonce verification (closes TOCTOU window between HTTP auth & ledger admission)
+        req_nonce = self._pending_auth_nonces.pop(clean_sig, None)
+        if req_nonce is not None:
+            current_nonce = self._sender_nonce_map.get(clean_addr, 0)
+            if req_nonce != current_nonce:
+                return False, f"Concurrent transaction nonce conflict (Expected: {current_nonce}, signed: {req_nonce})."
+
         # Anti-DDoS & Mempool Flood Shield: Per-wallet and global pending transaction quotas
         if len(self.pending_transactions) >= MAX_GLOBAL_MEMPOOL_SIZE:
             # Check if mempool can accommodate priority RBF replacement
@@ -809,8 +849,7 @@ class Blockchain:
                 )
                 self.pending_transactions.append(welcome_tx)
                 self.total_transactions += 1
-                if self.auto_mine:
-                    self._mine_block()
+                self._seal_or_queue_mempool()
 
             # Always sync actual balance from verified ledger
             final_bal = self.verify_and_recalc_balance(clean_addr)
@@ -996,7 +1035,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_author = author.strip()
+            clean_author = normalize_bct_address(author)
             if not is_valid_bct_address(clean_author):
                 return False, f"Invalid author address: '{clean_author}'", None
 
@@ -1060,26 +1099,8 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + fee, 8)
 
-            # Seal immediately on-chain if auto_mine is enabled
-            block = self._mine_block() if self.auto_mine else self._seal_or_queue_mempool()
-
-            # Record in fast index
-            self.space_posts[post_id] = {
-                "post_id": post_id,
-                "author": clean_author,
-                "author_bns": assigned_bns,
-                "is_anonymous": (assigned_bns == "anonymous"),
-                "content": clean_text,
-                "timestamp": tx.timestamp,
-                "tx_hash": tx.hash(),
-                "block_index": block.index if block else "Mempool",
-                "status": "confirmed" if block else "mempool",
-                "likes_count": 0,
-                "likes": [],
-                "comments_count": 0,
-                "comments": [],
-                "author_earnings": 0.0
-            }
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_space_index()
 
             self.balances[clean_author] = self.verify_and_recalc_balance(clean_author)
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
@@ -1109,7 +1130,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_liker = liker.strip()
+            clean_liker = normalize_bct_address(liker)
             if not is_valid_bct_address(clean_liker):
                 return False, f"Invalid liker address: '{clean_liker}'", None
 
@@ -1170,23 +1191,14 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
 
-            # Update optimistic index immediately for real-time responsiveness
-            if clean_liker not in post["likes"]:
-                post["likes"].append(clean_liker)
-                post["likes_count"] = len(post["likes"])
-                post["author_earnings"] = round(post["author_earnings"] + author_cut, 8)
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_space_index()
+            updated_post = self.space_posts.get(pid, post)
 
             self.balances[clean_liker] = self.verify_and_recalc_balance(clean_liker)
             self.balances[author_address] = self.verify_and_recalc_balance(author_address)
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
-
-            # Hybrid Batching Evaluation (Quota or Timeout Trigger)
-            block = None
-            if self.auto_mine:
-                ready, trigger_reason = self._check_batch_ready()
-                if ready:
-                    block = self._mine_block()
 
             res = {
                 "post_id": pid,
@@ -1195,12 +1207,12 @@ class Blockchain:
                 "status": "confirmed" if block else "mempool_batched",
                 "batch_window_seconds": LIKE_BATCH_WINDOW_SECONDS,
                 "batch_quota": LIKE_BATCH_QUOTA,
-                "likes_count": post["likes_count"],
+                "likes_count": updated_post.get("likes_count", 1),
                 "author_earned": author_cut,
                 "liker_new_balance": self.balances[clean_liker]
             }
             msg = ("Post liked and sealed into block!" if block
-                   else f"Post liked! Queued in 20s batch pool.")
+                   else "Post liked! Queued in 20s batch pool.")
             return True, msg, res
 
     def comment_space_post(self, commenter: str, post_id: str, content: str,
@@ -1217,7 +1229,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_commenter = commenter.strip()
+            clean_commenter = normalize_bct_address(commenter)
             if not is_valid_bct_address(clean_commenter):
                 return False, f"Invalid commenter address: '{clean_commenter}'", None
 
@@ -1302,7 +1314,6 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
 
-            # Update index
             cmt_obj = {
                 "comment_id": comment_id,
                 "commenter": clean_commenter,
@@ -1312,21 +1323,14 @@ class Blockchain:
                 "timestamp": tx.timestamp,
                 "tx_hash": tx.hash()
             }
-            post["comments"].append(cmt_obj)
-            post["comments_count"] = len(post["comments"])
-            post["author_earnings"] = round(post["author_earnings"] + author_cut, 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_space_index()
 
             self.balances[clean_commenter] = self.verify_and_recalc_balance(clean_commenter)
             self.balances[author_address] = self.verify_and_recalc_balance(author_address)
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
-
-            # Hybrid Batching Evaluation (Quota or Timeout Trigger)
-            block = None
-            if self.auto_mine:
-                ready, trigger_reason = self._check_batch_ready()
-                if ready:
-                    block = self._mine_block()
 
             res = {
                 "post_id": pid,
@@ -1354,8 +1358,8 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_follower = (follower or "").strip()
-            clean_target = (target or "").strip()
+            clean_follower = normalize_bct_address(follower)
+            clean_target = normalize_bct_address(target)
 
             if not is_valid_bct_address(clean_follower):
                 return False, f"Invalid follower address: '{clean_follower}'", None
@@ -1416,16 +1420,8 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
 
-            # Update optimistic state immediately
-            if clean_target not in self.follows:
-                self.follows[clean_target] = []
-            if clean_follower not in self.follows[clean_target]:
-                self.follows[clean_target].append(clean_follower)
-
-            if clean_follower not in self.following:
-                self.following[clean_follower] = []
-            if clean_target not in self.following[clean_follower]:
-                self.following[clean_follower].append(clean_target)
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_space_index()
 
             self.balances[clean_follower] = self.verify_and_recalc_balance(clean_follower)
             self.balances[clean_target] = self.verify_and_recalc_balance(clean_target)
@@ -1434,17 +1430,13 @@ class Blockchain:
             self._profile_cache.clear()
             self._save_state()
 
-            block = None
-            if self.auto_mine:
-                block = self._mine_block()
-
             res = {
                 "target": clean_target,
                 "follower": clean_follower,
                 "tx_hash": tx.hash(),
                 "block_index": block.index if block else "Mempool",
                 "status": "confirmed" if block else "mempool_batched",
-                "followers_count": len(self.follows[clean_target]),
+                "followers_count": len(self.follows.get(clean_target, [])),
                 "creator_earned": creator_cut,
                 "follower_new_balance": self.balances[clean_follower]
             }
@@ -1867,27 +1859,7 @@ class Blockchain:
             self.total_fees_collected = round(self.total_fees_collected + fee, 8)
 
             block = self._seal_or_queue_mempool()
-
-            self.bns_records[full_name] = {
-                "name": full_name,
-                "owner": clean_owner,
-                "registered_at": tx.timestamp,
-                "updated_at": tx.timestamp,
-                "block_index": block.index if block else "Mempool",
-                "tx_hash": tx.hash(),
-                "status": "confirmed" if block else "mempool",
-                "sale_price": 0.0,
-                "cost": cost,
-                "history": [{
-                    "action": "registered",
-                    "by": clean_owner,
-                    "timestamp": tx.timestamp,
-                    "tx_hash": tx.hash(),
-                    "block": block.index if block else "Mempool"
-                }]
-            }
-            if clean_owner not in self.bns_reverse:
-                self.bns_reverse[clean_owner] = full_name
+            self._load_in_memory_bns_index()
 
             self.balances[clean_owner] = self.verify_and_recalc_balance(clean_owner)
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
@@ -1961,32 +1933,8 @@ class Blockchain:
             self.total_transactions += 1
             self.total_fees_collected = round(self.total_fees_collected + miner_fee, 8)
 
-            block = self._mine_block() if self.auto_mine else self._seal_or_queue_mempool()
-
-            rec["owner"] = clean_to
-            rec["sale_price"] = 0.0
-            rec["updated_at"] = tx.timestamp
-            for _oid, _off in (rec.get("offers") or {}).items():
-                if isinstance(_off, dict) and _off.get("status") == "active":
-                    _off["status"] = "superseded"
-                    _off["resolved_at"] = tx.timestamp
-            rec["history"].append({
-                "action": "transferred",
-                "from": clean_from,
-                "to": clean_to,
-                "timestamp": tx.timestamp,
-                "tx_hash": tx.hash(),
-                "block": block.index if block else "Mempool"
-            })
-
-            if self.bns_reverse.get(clean_from) == norm:
-                other = next((n for n, r in self.bns_records.items() if r.get("owner") == clean_from), "")
-                if other:
-                    self.bns_reverse[clean_from] = other
-                else:
-                    self.bns_reverse.pop(clean_from, None)
-            if clean_to not in self.bns_reverse:
-                self.bns_reverse[clean_to] = norm
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_bns_index()
 
             self.balances[clean_from] = self.verify_and_recalc_balance(clean_from)
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
@@ -2046,16 +1994,7 @@ class Blockchain:
             self.total_transactions += 1
 
             block = self._seal_or_queue_mempool()
-
-            rec["sale_price"] = price
-            rec["updated_at"] = tx.timestamp
-            rec["history"].append({
-                "action": "price_listed" if price > 0 else "unlisted",
-                "price": price,
-                "timestamp": tx.timestamp,
-                "tx_hash": tx.hash(),
-                "block": block.index if block else "Mempool"
-            })
+            self._load_in_memory_bns_index()
             self._save_state()
 
             msg = f"'{norm}' listed on marketplace for {price} BCT!" if price > 0 else f"'{norm}' unlisted from marketplace."
@@ -2117,32 +2056,7 @@ class Blockchain:
             self.total_fees_collected = round(self.total_fees_collected + fee, 8)
 
             block = self._seal_or_queue_mempool()
-
-            rec["owner"] = clean_buyer
-            rec["sale_price"] = 0.0
-            rec["updated_at"] = tx.timestamp
-            for _oid, _off in (rec.get("offers") or {}).items():
-                if isinstance(_off, dict) and _off.get("status") == "active":
-                    _off["status"] = "superseded"
-                    _off["resolved_at"] = tx.timestamp
-            rec["history"].append({
-                "action": "purchased",
-                "buyer": clean_buyer,
-                "seller": seller,
-                "price": sale_price,
-                "timestamp": tx.timestamp,
-                "tx_hash": tx.hash(),
-                "block": block.index if block else "Mempool"
-            })
-
-            if self.bns_reverse.get(seller) == norm:
-                other = next((n for n, r in self.bns_records.items() if r.get("owner") == seller), "")
-                if other:
-                    self.bns_reverse[seller] = other
-                else:
-                    self.bns_reverse.pop(seller, None)
-            if clean_buyer not in self.bns_reverse:
-                self.bns_reverse[clean_buyer] = norm
+            self._load_in_memory_bns_index()
 
             self.balances[clean_buyer] = self.verify_and_recalc_balance(clean_buyer)
             self.balances[seller] = self.verify_and_recalc_balance(seller)
@@ -2165,7 +2079,7 @@ class Blockchain:
                         signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
         with self.lock:
             self._load_state()
-            clean_owner = owner.strip()
+            clean_owner = normalize_bct_address(owner)
             norm = self._normalize_bns_name(name)
             if norm not in self.bns_records:
                 return False, f"'{norm}' is not registered.", None
@@ -2198,16 +2112,7 @@ class Blockchain:
             self.total_transactions += 1
 
             block = self._seal_or_queue_mempool()
-
-            rec["updated_at"] = tx.timestamp
-            rec["history"].append({
-                "action": "set_primary",
-                "owner": clean_owner,
-                "timestamp": tx.timestamp,
-                "tx_hash": tx.hash(),
-                "block": block.index if block else "Mempool"
-            })
-            self.bns_reverse[clean_owner] = norm
+            self._load_in_memory_bns_index()
             self._save_state()
 
             msg = f"'{norm}' is now your primary BNS handle!"
@@ -2222,7 +2127,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_bidder = bidder.strip()
+            clean_bidder = normalize_bct_address(bidder)
             if not is_valid_bct_address(clean_bidder):
                 return False, f"Invalid bidder address: '{clean_bidder}'", None
 
@@ -2285,15 +2190,8 @@ class Blockchain:
             self.total_transactions += 1
 
             block = self._seal_or_queue_mempool()
-
-            if "offers" not in rec or not isinstance(rec["offers"], dict):
-                rec["offers"] = {}
-
-            # Auto-supersede any previous active offer from the same bidder on this domain
-            for prev_oid, prev_o in rec["offers"].items():
-                if isinstance(prev_o, dict) and prev_o.get("bidder") == clean_bidder and prev_o.get("status") == "active":
-                    prev_o["status"] = "superseded"
-                    prev_o["resolved_at"] = tx.timestamp
+            self._load_in_memory_bns_index()
+            self._save_state()
 
             offer_obj = {
                 "offer_id": offer_id,
@@ -2305,19 +2203,6 @@ class Blockchain:
                 "tx_hash": tx.hash(),
                 "status": "active"
             }
-            rec["offers"][offer_id] = offer_obj
-            rec["updated_at"] = tx.timestamp
-            rec["history"].append({
-                "action": "offer_placed",
-                "bidder": clean_bidder,
-                "amount": amount,
-                "offer_id": offer_id,
-                "timestamp": tx.timestamp,
-                "tx_hash": tx.hash(),
-                "block": block.index if block else "Mempool"
-            })
-            self._save_state()
-
             return True, f"Offer of {amount:.2f} BCT successfully placed for '@{norm}'!", offer_obj
 
     def bns_accept_offer(self, name: str, owner: str, offer_id: str,
@@ -2329,7 +2214,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_owner = owner.strip()
+            clean_owner = normalize_bct_address(owner)
             norm = self._normalize_bns_name(name)
             if norm not in self.bns_records:
                 return False, f"'{norm}' is not registered.", None
@@ -2346,7 +2231,7 @@ class Blockchain:
             if target_offer.get("status") != "active":
                 return False, f"Offer is {target_offer.get('status')} and cannot be accepted.", None
 
-            bidder = target_offer.get("bidder", "")
+            bidder = normalize_bct_address(target_offer.get("bidder", ""))
             amount = float(target_offer.get("amount", 0.0))
             if bidder == clean_owner:
                 return False, "Cannot accept an offer from your own address.", None
@@ -2359,9 +2244,7 @@ class Blockchain:
             # Verify bidder still has sufficient balance
             bidder_bal = self.verify_and_recalc_balance(bidder)
             if bidder_bal < amount:
-                target_offer["status"] = "expired"
-                self._save_state()
-                return False, f"Bidder no longer has sufficient funds ({bidder_bal:.4f} BCT available). Offer marked expired.", None
+                return False, f"Bidder no longer has sufficient funds ({bidder_bal:.4f} BCT available). Offer cannot be accepted.", None
 
             # Standard 1% network trade fee
             fee = round(amount * 0.01, 8)
@@ -2392,42 +2275,7 @@ class Blockchain:
             self.total_fees_collected = round(self.total_fees_collected + fee, 8)
 
             block = self._seal_or_queue_mempool()
-
-            # Transfer ownership
-            rec["owner"] = bidder
-            rec["sale_price"] = 0.0
-            rec["updated_at"] = tx.timestamp
-            target_offer["status"] = "accepted"
-            target_offer["accepted_at"] = tx.timestamp
-            target_offer["accept_tx_hash"] = tx.hash()
-
-            # Mark all other active offers on this domain as superseded
-            for o_id, off in offers.items():
-                if o_id != offer_id and off.get("status") == "active":
-                    off["status"] = "superseded"
-
-            rec["history"].append({
-                "action": "offer_accepted",
-                "buyer": bidder,
-                "bidder": bidder,
-                "seller": clean_owner,
-                "price": amount,
-                "amount": amount,
-                "offer_id": offer_id,
-                "timestamp": tx.timestamp,
-                "tx_hash": tx.hash(),
-                "block": block.index if block else "Mempool"
-            })
-
-            # Update reverse lookups
-            if self.bns_reverse.get(clean_owner) == norm:
-                other = next((n for n, r in self.bns_records.items() if r.get("owner") == clean_owner), "")
-                if other:
-                    self.bns_reverse[clean_owner] = other
-                else:
-                    self.bns_reverse.pop(clean_owner, None)
-            if bidder not in self.bns_reverse:
-                self.bns_reverse[bidder] = norm
+            self._load_in_memory_bns_index()
 
             self.balances[bidder] = self.verify_and_recalc_balance(bidder)
             self.balances[clean_owner] = self.verify_and_recalc_balance(clean_owner)
@@ -2456,7 +2304,7 @@ class Blockchain:
         """
         with self.lock:
             self._load_state()
-            clean_actor = actor.strip()
+            clean_actor = normalize_bct_address(actor)
             norm = self._normalize_bns_name(name)
             if norm not in self.bns_records:
                 return False, f"'{norm}' is not registered.", None
@@ -2466,7 +2314,7 @@ class Blockchain:
             if not isinstance(offers, dict) or offer_id not in offers:
                 return False, "Offer not found.", None
 
-            target_offer = offers[offer_id]
+            target_offer = dict(offers[offer_id])
             if target_offer.get("status") != "active":
                 return False, f"Offer is already {target_offer.get('status')}.", None
 
@@ -2506,6 +2354,7 @@ class Blockchain:
             self.total_transactions += 1
 
             self._seal_or_queue_mempool()
+            self._load_in_memory_bns_index()
             self._save_state()
 
             label = "cancelled" if clean_actor == bidder else "rejected"
@@ -4015,6 +3864,7 @@ class Blockchain:
         self._ensure_ledger_index()
         vault_u = int(self._confirmed_units_map.get(VALIDATOR_STAKE_VAULT_ADDRESS, 0))
         available_stakes = dict(self._confirmed_stakes_map)
+        available_units = dict(self._confirmed_units_map)
 
         valid_txs: List[Transaction] = []
         evict_hashes = set()
@@ -4036,6 +3886,22 @@ class Blockchain:
                     continue
                 available_stakes[rec] -= amt_u
                 vault_u -= amt_u
+            elif tx.tx_type == "bns_accept_offer":
+                bidder_addr = normalize_bct_address(tx.receiver)
+                amt_u = _to_units(tx.amount)
+                if not bidder_addr or amt_u <= 0 or available_units.get(bidder_addr, 0) < amt_u:
+                    logger.warning(f"[CONSENSUS GUARD] Evicting insolvent bns_accept_offer for bidder {bidder_addr}")
+                    evict_hashes.add(tx.hash())
+                    continue
+                available_units[bidder_addr] -= amt_u
+            elif tx.amount > 0:
+                snd = normalize_bct_address(tx.sender)
+                amt_u = _to_units(tx.amount)
+                if snd and snd not in ("GENESIS_VAULT", "GENESIS", TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS, VALIDATOR_STAKE_VAULT_ADDRESS):
+                    if available_units.get(snd, 0) < amt_u:
+                        evict_hashes.add(tx.hash())
+                        continue
+                    available_units[snd] -= amt_u
             valid_txs.append(tx)
 
         if evict_hashes:
@@ -4222,7 +4088,13 @@ class Blockchain:
             submitted_hash = str(block_data.get("hash", "") or "").strip().lower()
             submitted_prev = str(block_data.get("previous_hash", "") or "").strip().lower()
             submitted_nonce = int(block_data.get("nonce", -1))
-            submitted_ts = round(float(block_data.get("timestamp", 0.0)), 3)
+            try:
+                raw_ts = float(block_data.get("timestamp", 0.0))
+            except (ValueError, TypeError):
+                return False, "Invalid block timestamp format.", None
+            if not math.isfinite(raw_ts) or raw_ts <= 0:
+                return False, "Block timestamp must be a finite positive number.", None
+            submitted_ts = round(raw_ts, 3)
             submitted_ver = int(block_data.get("version", 2))
 
             if submitted_ver < 2 or submitted_nonce < 0:
@@ -4305,10 +4177,11 @@ class Blockchain:
             if not matched_user_txs:
                 return False, "Block must contain at least 1 valid mempool transaction.", None
 
-            # Strict Solvency Guard: Validate that validator_unstake does not exceed confirmed stake or vault balance
+            # Strict Solvency Guard: Validate that validator_unstake & bns_accept_offer do not exceed confirmed balances
             self._ensure_ledger_index()
             vault_u_check = int(self._confirmed_units_map.get(VALIDATOR_STAKE_VAULT_ADDRESS, 0))
             stakes_check = dict(self._confirmed_stakes_map)
+            units_check = dict(self._confirmed_units_map)
             for m_tx in matched_user_txs:
                 if m_tx.tx_type == "validator_unstake":
                     rec = normalize_bct_address(m_tx.receiver)
@@ -4321,6 +4194,19 @@ class Blockchain:
                         return False, f"Block contains invalid validator_unstake: {rec} exceeds confirmed stake or vault balance!", None
                     stakes_check[rec] -= amt_u
                     vault_u_check -= amt_u
+                elif m_tx.tx_type == "bns_accept_offer":
+                    bidder_addr = normalize_bct_address(m_tx.receiver)
+                    amt_u = _to_units(m_tx.amount)
+                    if not bidder_addr or amt_u <= 0 or units_check.get(bidder_addr, 0) < amt_u:
+                        return False, f"Block contains insolvent bns_accept_offer for bidder {bidder_addr}!", None
+                    units_check[bidder_addr] -= amt_u
+                elif m_tx.amount > 0:
+                    snd = normalize_bct_address(m_tx.sender)
+                    amt_u = _to_units(m_tx.amount)
+                    if snd and snd not in ("GENESIS_VAULT", "GENESIS", TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS, VALIDATOR_STAKE_VAULT_ADDRESS):
+                        if units_check.get(snd, 0) < amt_u:
+                            return False, f"Block contains insolvent transaction from {snd}!", None
+                        units_check[snd] -= amt_u
 
             expected_reward_txs, breakdown = self._build_reward_transactions(
                 matched_user_txs, clean_miner, expected_idx, fixed_timestamp=submitted_ts
@@ -4425,7 +4311,11 @@ class Blockchain:
             if public_key_to_address(clean_pub) != clean_miner:
                 return False, "Public key does not match validator wallet address!", None
             ts_str = str(timestamp).strip()
-            if abs(time.time() - float(ts_str)) > 300:
+            try:
+                ts_val = float(ts_str)
+            except (ValueError, TypeError):
+                return False, "Invalid attestation timestamp format.", None
+            if not math.isfinite(ts_val) or abs(time.time() - ts_val) > 300:
                 return False, "Attestation timestamp expired or invalid.", None
             if block_index < 0 or block_index >= len(self.chain):
                 return False, f"Block #{block_index} is not yet available.", None
@@ -4688,9 +4578,7 @@ class Blockchain:
 
     def mine_pending_block(self, miner_address: str = "") -> Optional[Block]:
         """Thread-safe mining entrypoint; strictly requires pending transactions."""
-        with self.lock:
-            self._load_state(sweep_overdue=False)
-            return self._mine_block(miner_address=miner_address, require_pending=True)
+        return self._mine_block(miner_address=miner_address, require_pending=True)
 
     def get_wallet_transactions(self, address: str) -> list:
         with self.lock:
@@ -4898,6 +4786,29 @@ class Blockchain:
             target = (tx_hash or "").strip().lower()
             if not target:
                 return None
+            storage = self._get_storage()
+            if storage:
+                try:
+                    indexed_tx = storage.get_transaction_by_hash(target)
+                    b_idx = indexed_tx.get("block_index") if isinstance(indexed_tx, dict) else None
+                    if isinstance(b_idx, int) and 0 <= b_idx < len(self.chain):
+                        b = self.chain[b_idx]
+                        tx_hashes = [tx.hash() for tx in b.transactions]
+                        if target in [h.lower() for h in tx_hashes]:
+                            proof = compute_merkle_proof(tx_hashes, target)
+                            if proof is not None:
+                                return {
+                                    "tx_hash": target,
+                                    "block_index": b.index,
+                                    "block_version": b.version,
+                                    "block_hash": b.hash,
+                                    "merkle_root": b.merkle_root,
+                                    "transaction_count": len(tx_hashes),
+                                    "proof": proof,
+                                    "verified": verify_merkle_proof(target, proof, b.merkle_root),
+                                }
+                except Exception:
+                    pass
             for b in self.chain:
                 tx_hashes = [tx.hash() for tx in b.transactions]
                 if target in [h.lower() for h in tx_hashes]:
@@ -5051,14 +4962,15 @@ class Blockchain:
             )
             self.pending_transactions.append(tx)
             self.total_transactions += 1
-            block = self._mine_block()
-            sealed = dict(clean_manifest)
-            if block:
-                sealed["block_index"] = block.index
-                sealed["block_hash"] = block.hash
-                sealed["tx_hash"] = tx.hash()
-                sealed["sealed_timestamp"] = block.timestamp
-            return True, "Frontend SHA-256 release digest successfully sealed on-chain!", sealed
+
+        block = self._mine_block()
+        sealed = dict(clean_manifest)
+        if block:
+            sealed["block_index"] = block.index
+            sealed["block_hash"] = block.hash
+            sealed["tx_hash"] = tx.hash()
+            sealed["sealed_timestamp"] = block.timestamp
+        return True, "Frontend SHA-256 release digest successfully sealed on-chain!", sealed
 
     @staticmethod
     def _sanitize_node_field(val: str, max_len: int = 64) -> str:
@@ -5141,6 +5053,9 @@ class Blockchain:
 
             safe_name = self._sanitize_node_field(name, 64)
             safe_endpoint = self._sanitize_node_field(endpoint, 120)
+            if safe_endpoint and safe_endpoint.lower().startswith(("http://", "https://")):
+                if not self._is_safe_peer_endpoint(safe_endpoint):
+                    safe_endpoint = "p2p-client"
             safe_role = self._sanitize_node_field(role, 48)
             safe_location = self._sanitize_node_field(location, 64)
             safe_version = self._sanitize_node_field(version, 24)
