@@ -461,7 +461,8 @@
       'SCR-SPC-03',
       'SCR-SPC-04',
       'SCR-PRF-05',
-      'SCR-NTF-06'
+      'SCR-NTF-06',
+      'SCR-MNU-07'
     ];
     const target = valid.includes(screenCode) ? screenCode : 'SCR-SPC-03';
 
@@ -566,6 +567,7 @@
     const acc = getActiveWallet();
     const myHandle = getMyPrimaryHandle();
     const avatarChar = myHandle ? myHandle[0].toUpperCase() : (acc && acc.address ? acc.address.slice(3, 4).toUpperCase() : '');
+    const unread = getUnreadNotificationsCount();
 
     return `
       <header class="simple-top-header">
@@ -584,6 +586,15 @@
 
           <div class="flex items-center gap-1.5 shrink-0">
             ${rightActionHtml}
+
+            <!-- Notification Bell Icon (Yukarıda Bildirim Butonu) -->
+            <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
+              title="Bildirimler" aria-label="Bildirimler"
+              class="relative w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface-variant hover:text-primary flex items-center justify-center active:scale-90 transition-all cursor-pointer shrink-0">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">notifications</span>
+              ${unread > 0 ? `<span class="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center ring-2 ring-surface">${unread}</span>` : ''}
+            </button>
+
             <!-- Compact Icon-Only Simple/Pro Mode Switch Button -->
             <button type="button" onclick="window.BlocTagSimpleMode.requestProMode()"
               title="Pro Moda Geç (Tam Görünüm)" aria-label="Pro Moda Geç"
@@ -605,51 +616,38 @@
 
   function renderBottomNav() {
     const active = simpleState.activeScreen;
-    const isWallet = active === 'SCR-WLT-HOME' || active === 'SCR-WLT-SEND' || active === 'SCR-ONB-01' || active === 'SCR-WLT-02';
     const isSpace = active === 'SCR-SPC-03' || active === 'SCR-SPC-04';
-    const isNotif = active === 'SCR-NTF-06';
+    const isWallet = active === 'SCR-WLT-HOME' || active === 'SCR-WLT-SEND' || active === 'SCR-ONB-01' || active === 'SCR-WLT-02';
     const isProfile = active === 'SCR-PRF-05';
-    const unread = getUnreadNotificationsCount();
-    const backBtnEnabled = typeof window.isPwaBackButtonEnabled === 'function' ? window.isPwaBackButtonEnabled() : true;
+    const isMenu = active === 'SCR-MNU-07';
 
     return `
       <nav class="simple-bottom-nav" aria-label="Simple Mode Navigation">
         <div class="flex justify-around items-center h-14 px-1.5">
-          ${backBtnEnabled ? `
-            <button type="button" onclick="window.BlocTagSimpleMode.back()"
-              class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 text-on-surface-variant hover:text-primary active:scale-90 transition-all cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_back</span>
-              <span class="font-label-sm text-[9.5px] leading-none">Geri</span>
-            </button>
-          ` : ''}
-
-          <button type="button" onclick="window.BlocTagSimpleMode.openWalletTab()"
-            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">account_balance_wallet</span>
-            <span class="font-label-sm text-[10px] leading-none">Cüzdan</span>
-          </button>
-
+          <!-- 1. Space (Soldan Sağa İlk) -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[22px]" translate="no">tag</span>
             <span class="font-label-sm text-[10px] leading-none">Space</span>
           </button>
 
-          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
-            class="relative flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isNotif ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">notifications</span>
-            <span class="font-label-sm text-[10px] leading-none">Bildirim</span>
-            ${unread > 0 ? `<span class="absolute top-1 right-3 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center">${unread}</span>` : ''}
+          <!-- 2. Cüzdan -->
+          <button type="button" onclick="window.BlocTagSimpleMode.openWalletTab()"
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">account_balance_wallet</span>
+            <span class="font-label-sm text-[10px] leading-none">Cüzdan</span>
           </button>
 
+          <!-- 3. Profil -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>
             <span class="font-label-sm text-[10px] leading-none">Profil</span>
           </button>
 
-          <button type="button" onclick="if(typeof openMobileMenuModal==='function') openMobileMenuModal();"
-            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 text-primary hover:brightness-110 active:scale-95 transition-all cursor-pointer">
+          <!-- 4. Menü -->
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-MNU-07')"
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isMenu ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">widgets</span>
             <span class="font-label-sm text-[10px] leading-none font-semibold">Menü</span>
           </button>
@@ -1868,6 +1866,172 @@
     `;
   }
 
+  // ── SCR-MNU-07: Simple Mode Menu & Settings Screen ─────────────────────────
+  function renderScreenMenu() {
+    const acc = getActiveWallet();
+    const myHandle = getMyPrimaryHandle();
+    const displayTag = getDisplayHandleOrAddr(acc ? acc.address : '', myHandle);
+    const balanceStr = acc ? (typeof window.formatBct === 'function' ? window.formatBct(acc.balance || 0, 2) + ' BCT' : '0.00 BCT') : '0.00 BCT';
+    const isValidator = acc && Array.isArray(window.knownValidators) && window.knownValidators.includes(acc.address);
+
+    return `
+      ${renderTopBar('Menü', false)}
+      <main class="flex-1 flex flex-col w-full px-4 pt-3 pb-24 simple-screen-animate">
+        <!-- Account Summary Card -->
+        <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/15 shadow-sm mb-3.5">
+          <div class="flex items-center gap-3">
+            <div class="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono font-bold text-base shrink-0">
+              ${myHandle ? esc(myHandle[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[24px]" translate="no">person</span>'}
+            </div>
+            <div class="flex-1 min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="font-bold text-on-surface text-sm truncate">${esc(displayTag)}</span>
+                ${isValidator ? '<span class="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[9px] font-bold">VALİDATOR</span>' : ''}
+              </div>
+              <span class="text-xs font-mono text-primary font-semibold">${balanceStr}</span>
+              <p class="text-[10.5px] text-on-surface-variant font-mono truncate mt-0.5">${acc ? esc(acc.address) : 'Cüzdan bağlı değil'}</p>
+            </div>
+          </div>
+          <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-outline-variant/10">
+            <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-WLT-HOME')"
+              class="h-9 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[16px] text-primary" translate="no">account_balance_wallet</span>
+              <span>Cüzdanım</span>
+            </button>
+            <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
+              class="h-9 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[16px] text-primary" translate="no">person</span>
+              <span>Profilim</span>
+            </button>
+          </div>
+        </div>
+
+        <!-- Mode Switch Banner (Pro Moda Geçiş) -->
+        <div class="bg-gradient-to-r from-primary/15 via-surface-container-low to-secondary/15 rounded-2xl p-4 border border-primary/25 shadow-sm mb-3.5">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-xl bg-primary/20 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">bolt</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="text-xs font-bold text-on-surface">Pro Mod (Tam Görünüm)</span>
+                <span class="text-[10px] text-on-surface-variant">Ağ Explorer, Düğümler ve Geliştirici Araçları</span>
+              </div>
+            </div>
+            <button type="button" onclick="window.BlocTagSimpleMode.requestProMode()"
+              class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-[11px] font-bold hover:brightness-95 active:scale-95 transition-all shadow-sm shrink-0 cursor-pointer">
+              Geçiş Yap
+            </button>
+          </div>
+        </div>
+
+        <!-- Quick Simple Features List -->
+        <div class="flex flex-col gap-2">
+          <span class="text-[11px] font-mono uppercase font-bold text-on-surface-variant/70 px-1">İşlemler &amp; Hizmetler</span>
+
+          <!-- Send Crypto -->
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-WLT-SEND')"
+            class="w-full p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">send</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-on-surface">Kripto Gönder</span>
+                <span class="text-[10px] text-on-surface-variant">Sıfır komisyonlu anında BCT transferi</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
+          </button>
+
+          <!-- BNS Name (.bct) -->
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
+            class="w-full p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">badge</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-on-surface">BNS Kullanıcı Adı (.bct)</span>
+                <span class="text-[10px] text-on-surface-variant">Kimlik ve Web3 profilinizi yönetin</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
+          </button>
+
+          <!-- Backup / Seed Phrase -->
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-WLT-02')"
+            class="w-full p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">key</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-on-surface">Güvenlik &amp; Kurtarma Anahtarı</span>
+                <span class="text-[10px] text-on-surface-variant">12 kelimelik gizli kurtarma ifadesi (Seed Phrase)</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
+          </button>
+
+          <!-- Notifications -->
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
+            class="w-full p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">notifications</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-on-surface">Bildirimler &amp; Uyarılar</span>
+                <span class="text-[10px] text-on-surface-variant">İşlem ve Space güncellemeleri</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
+          </button>
+
+          <!-- Language Selector -->
+          <button type="button" onclick="if(typeof openLanguageModal==='function') openLanguageModal();"
+            class="w-full p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-surface-container text-on-surface flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">language</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-on-surface">Dil Seçimi (Language)</span>
+                <span class="text-[10px] text-on-surface-variant">Türkçe, English &amp; 8 dil desteği</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
+          </button>
+
+          <!-- Whitepaper Link -->
+          <a href="/docs/WHITEPAPER.md" target="_blank" rel="noopener noreferrer"
+            class="w-full p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-surface-container text-on-surface flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">description</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-on-surface">LockTrace Whitepaper</span>
+                <span class="text-[10px] text-on-surface-variant">Protokol mimarisi ve teknik dokümantasyon</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">open_in_new</span>
+          </a>
+        </div>
+
+        <!-- Network Info Pill Footer -->
+        <div class="mt-4 p-3 rounded-2xl bg-surface-container-low/60 border border-outline-variant/10 flex items-center justify-between text-[11px] text-on-surface-variant">
+          <div class="flex items-center gap-2">
+            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+            <span class="font-mono">LockTrace Mainnet v2.12.2</span>
+          </div>
+          <span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">Simple Mod</span>
+        </div>
+      </main>
+    `;
+  }
+
   // ==========================================================================
   // 4. MASTER RENDER DISPATCHER (ZERO-FLICKER DIFF & SILENT BACKGROUND SYNC)
   // ==========================================================================
@@ -2025,6 +2189,9 @@
         break;
       case 'SCR-NTF-06':
         screenHtml = renderScreenNotifications();
+        break;
+      case 'SCR-MNU-07':
+        screenHtml = renderScreenMenu();
         break;
       case 'SCR-SPC-03':
       default:
@@ -3491,6 +3658,20 @@
       };
       wrappedSwitchTab._simpleHooked = true;
       window.switchTab = wrappedSwitchTab;
+    }
+
+    // Intercept Mobile Menu open in Simple Mode and route to Simple Menu Screen
+    const origOpenMobileMenuModal = window.openMobileMenuModal;
+    if (typeof origOpenMobileMenuModal === 'function' && !origOpenMobileMenuModal._simpleHooked) {
+      const wrappedOpenMobileMenu = function () {
+        if (simpleState.enabled) {
+          navigateToSimpleScreen('SCR-MNU-07');
+          return;
+        }
+        return origOpenMobileMenuModal.apply(this, arguments);
+      };
+      wrappedOpenMobileMenu._simpleHooked = true;
+      window.openMobileMenuModal = wrappedOpenMobileMenu;
     }
   }
 

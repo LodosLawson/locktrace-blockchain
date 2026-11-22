@@ -65,7 +65,10 @@ html.bloctag-simple-mode #mobile-nav,
 html.bloctag-simple-mode.is-mobile-landscape #mobile-nav,
 html.bloctag-simple-mode.is-mobile-landscape nav.md\:hidden#mobile-nav,
 html.bloctag-simple-mode #pwaBannerContainer,
-html.bloctag-simple-mode body > div.md\:pl-64 {
+html.bloctag-simple-mode body > div.md\:pl-64,
+html.bloctag-simple-mode main.mobile-main-offset,
+html.bloctag-simple-mode section[id^="tab-"],
+html.bloctag-simple-mode #mobileMenuModal {
   display: none !important;
 }
 
