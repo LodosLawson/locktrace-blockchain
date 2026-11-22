@@ -7141,8 +7141,8 @@
         <span class="font-label-sm text-[10px] font-medium leading-none">New</span>
       </button>
       <button
-        class="mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-primary transition-colors active:scale-95"
-        id="mobileNavMenuBtn" onclick="handleMobileNavMenuClick()" type="button" title="Menu (Dual-Action Navigation)">
+        class="mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer"
+        id="mobileNavMenuBtn" onclick="openMobileMenuModal()" type="button" title="Menu">
         <span id="mobileNavMenuIndicator" class="hidden absolute top-1.5 right-1/4 w-2 h-2 rounded-full bg-primary ring-2 ring-surface animate-pulse"></span>
         <span class="material-symbols-outlined notranslate text-[23px] text-primary" translate="no" id="mobileNavMenuIcon">widgets</span>
         <span class="font-label-sm text-[10px] font-semibold text-primary leading-none" id="mobileNavMenuLabel">Menu</span>
@@ -7154,10 +7154,10 @@
   <!-- MODAL: MOBILE ALL-SERVICES & NAVIGATION MENU DRAWER                       -->
   <!-- ========================================================================= -->
   <div
-    class="fixed inset-0 z-50 bg-background/85 backdrop-blur-sm hidden items-end sm:items-center justify-center transition-all opacity-0 overscroll-none touch-none"
+    class="fixed inset-0 z-[80] bg-background/85 backdrop-blur-sm hidden items-end sm:items-center justify-center transition-all opacity-0"
     id="mobileMenuModal" onclick="if(event.target===this) closeMobileMenuModal();">
     <div
-      class="w-full max-w-lg bg-surface-container rounded-t-3xl sm:rounded-3xl border border-outline-variant/20 p-5 pb-safe flex flex-col gap-4 shadow-2xl max-h-[85dvh] overflow-y-auto overscroll-contain touch-pan-y no-scrollbar transform translate-y-full sm:translate-y-0 transition-transform duration-200"
+      class="w-full max-w-lg bg-surface-container rounded-t-3xl sm:rounded-3xl border border-outline-variant/20 p-5 pb-safe flex flex-col gap-4 shadow-2xl max-h-[85dvh] overflow-y-auto overscroll-contain no-scrollbar transform translate-y-full sm:translate-y-0 transition-transform duration-200"
       id="mobileMenuDrawerCard">
       <!-- Sheet Handle & Header -->
       <div class="flex flex-col gap-2">
@@ -7212,7 +7212,7 @@
           <div class="grid grid-cols-2 gap-2">
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="recordMenuTabSelection(\'cuzdanim\'); closeMobileMenuModal(); switchTab(\'cuzdanim\');" type="button">
+              onclick="closeMobileMenuModal(); switchTab('cuzdanim');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">account_balance_wallet</span>
               </div>
@@ -7223,7 +7223,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="recordMenuTabSelection(\'para-gonder\'); closeMobileMenuModal(); switchTab(\'para-gonder\');" type="button">
+              onclick="closeMobileMenuModal(); switchTab('para-gonder');" type="button">
               <div
                 class="w-8 h-8 rounded-lg bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">send</span>
@@ -7235,7 +7235,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="recordMenuTabSelection(\'yeni-cuzdan\'); closeMobileMenuModal(); switchTab(\'yeni-cuzdan\');" type="button">
+              onclick="closeMobileMenuModal(); switchTab('yeni-cuzdan');" type="button">
               <div
                 class="w-8 h-8 rounded-lg bg-surface-container text-on-surface flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">add_circle</span>
@@ -7247,7 +7247,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="recordMenuTabSelection(\'bns\'); closeMobileMenuModal(); switchTab(\'bns\');" type="button">
+              onclick="closeMobileMenuModal(); switchTab('bns');" type="button">
               <div
                 class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">badge</span>
@@ -7268,7 +7268,7 @@
           <div class="grid grid-cols-2 gap-2">
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="recordMenuTabSelection(\'ana-sayfa\'); closeMobileMenuModal(); switchTab(\'ana-sayfa\');" type="button">
+              onclick="closeMobileMenuModal(); switchTab('ana-sayfa');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">explore</span>
               </div>
@@ -7279,7 +7279,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="recordMenuTabSelection(\'space\'); closeMobileMenuModal(); switchTab(\'space\');" type="button">
+              onclick="closeMobileMenuModal(); switchTab('space');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">forum</span>
               </div>
@@ -7299,7 +7299,7 @@
           <div class="grid grid-cols-2 gap-2">
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="recordMenuTabSelection(\'ag-ve-explorer\'); closeMobileMenuModal(); switchTab(\'ag-ve-explorer\');" type="button">
+              onclick="closeMobileMenuModal(); switchTab('ag-ve-explorer');" type="button">
               <div class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">hub</span>
               </div>
@@ -7310,7 +7310,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-primary/20 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="recordMenuTabSelection(\'system-wallets\'); closeMobileMenuModal(); switchTab(\'system-wallets\');" type="button">
+              onclick="closeMobileMenuModal(); switchTab('system-wallets');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">account_balance</span>
               </div>
@@ -7322,7 +7322,7 @@
 
             <button
               class="col-span-2 p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="recordMenuTabSelection(\'kopru\'); closeMobileMenuModal(); switchTab(\'kopru\');" type="button">
+              onclick="closeMobileMenuModal(); switchTab('kopru');" type="button">
               <div class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">swap_horiz</span>
               </div>
@@ -13070,6 +13070,8 @@
       if (!modal || !card) return;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
+      card.style.transform = '';
+      card.style.transition = '';
       syncBodyScrollLock();
       requestAnimationFrame(() => {
         modal.classList.remove('opacity-0');
@@ -13086,6 +13088,8 @@
       setTimeout(() => {
         modal.classList.add('hidden');
         modal.classList.remove('flex');
+        card.style.transform = '';
+        card.style.transition = '';
         syncBodyScrollLock();
       }, 200);
     }
@@ -22159,13 +22163,15 @@
           handle.addEventListener('touchmove', onTouchMove, { passive: false });
           handle.addEventListener('touchend', onTouchEnd, { passive: true });
           handle.addEventListener('touchcancel', onTouchEnd, { passive: true });
+        } else {
+          card.addEventListener('touchstart', (e) => {
+            if (e.target && e.target.closest('button, a, input, select, textarea')) return;
+            onTouchStart(e);
+          }, { passive: true });
+          card.addEventListener('touchmove', onTouchMove, { passive: true });
+          card.addEventListener('touchend', onTouchEnd, { passive: true });
+          card.addEventListener('touchcancel', onTouchEnd, { passive: true });
         }
-
-        // Also allow swipe down from top of card
-        card.addEventListener('touchstart', onTouchStart, { passive: true });
-        card.addEventListener('touchmove', onTouchMove, { passive: true });
-        card.addEventListener('touchend', onTouchEnd, { passive: true });
-        card.addEventListener('touchcancel', onTouchEnd, { passive: true });
       });
     }
 
@@ -22264,22 +22270,6 @@
     }
 
     function handleMobileNavMenuClick() {
-      // Find currently visible active tab
-      let activeTabId = null;
-      document.querySelectorAll('.tab-content').forEach(el => {
-        if (!el.classList.contains('hidden')) {
-          activeTabId = el.id.replace('tab-', '');
-        }
-      });
-
-      // 1st Click: If user selected a page from menu and is currently on another page -> return to menu-selected page!
-      if (lastMenuSelectedTab && activeTabId && activeTabId !== lastMenuSelectedTab) {
-        showToast(`Menü sayfasına dönüldü: ${lastMenuSelectedTab}`, 'info');
-        switchTab(lastMenuSelectedTab);
-        return;
-      }
-
-      // 2nd Click (or already on lastMenuSelectedTab, or no menu selection yet) -> open full menu drawer!
       openMobileMenuModal();
     }
 
