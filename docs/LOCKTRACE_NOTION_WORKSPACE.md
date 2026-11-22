@@ -214,7 +214,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.12.0` | Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.12.1` | Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
 | **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -686,7 +686,7 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 3. **Tam İngilizce UI & Sürüm (`v2.11.0`) Senkronizasyonu:**
    - Tüm arayüz, köprü, staking ve bildirim mesajları İngilizceye çevrildi; `config.py`, `node_runner.py`, `package.json`, `frontend/index.html`, `README.md` ve `WHITEPAPER.md` `v2.11.0` sürümünde eşitlendi.
 
-## 🛡️ 32. BlocTag / LockTrace v2.12.0: Cross-Chain Köprü Mobil & PWA Optimizasyonu, Anti-Recursion & 1-Dokunuşla DApp Tarayıcı Başlatma
+## 🛡️ 32. BlocTag / LockTrace v2.12.1: Cross-Chain Köprü Mobil & PWA Optimizasyonu, Anti-Recursion & 1-Dokunuşla DApp Tarayıcı Başlatma
 
 1. **MetaMask SDK Çağrı Yığını Çökmesi (Recursion Bug) Giderildi:**
    - `resetMetaMaskSdkInstance()` fonksiyonundaki rekürsif çağrı kaldırılarak bağlantı kesildiğinde veya hata aldığında oluşan `Maximum call stack size exceeded` çökmesi engellendi.
