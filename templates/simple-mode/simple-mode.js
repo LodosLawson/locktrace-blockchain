@@ -30,6 +30,7 @@
   const WEB3_ONBOARDING_STORAGE_KEY = 'locktrace_web3_onboarding_choice_v1';
   const PWA_INSTALLED_STORAGE_KEY = 'locktrace_pwa_installed_v1';
   const PWA_BACK_BTN_STORAGE_KEY = 'locktrace_pwa_back_btn_enabled_v1';
+  const GATE_LANG_STORAGE_KEY = 'locktrace_gate_lang_v1';
 
   let _capturedPwaPrompt = null;
   let _mobileGateStep = null; // 'web3' | 'pwa' | 'pwa-installed' | null
@@ -2364,6 +2365,7 @@
     },
 
     selectWeb3Experience: (choice) => handleSelectWeb3Experience(choice),
+    setGateLanguage: (langCode) => handleSetGateLanguage(langCode),
     triggerMandatoryPwaInstall: () => handleTriggerMandatoryPwaInstall(),
     openIosInstallSheet: () => handleToggleIosInstallSheet(true),
     closeIosInstallSheet: () => handleToggleIosInstallSheet(false),
@@ -2375,8 +2377,450 @@
 
   // ==========================================================================
   // 6. MOBILE FIRST-VISIT WEB3 ONBOARDING & MANDATORY PWA INSTALL GATE
-  //    (Mobile Only — Desktop/PC remains untouched with optional Windows App)
+  //    (Mobile Only — Default English for Native Browser Translator Support)
   // ==========================================================================
+  const GATE_I18N = {
+    en: {
+      welcomeBadge: 'BlocTag • Welcome',
+      web3TitlePre: 'Do you know what ',
+      web3TitleHighlight: 'Web3 is?',
+      web3Sub: 'Choose the interface that fits you best. You can switch between <strong class="text-on-surface">Simple</strong> and <strong class="text-on-surface">Pro</strong> mode anytime from the menu.',
+      simpleTitle: 'No, Keep It Simple',
+      simpleBadge: 'Simple Mode',
+      simpleDesc: 'No complex jargon. Start with an easy wallet, fast transfers, and a clean Space feed.',
+      proTitle: 'Yes, I Know Web3',
+      proBadge: 'Pro Mode',
+      proDesc: 'Continue with Block Explorer, Node Panel, Bridge, BNS, and all advanced protocol tools.',
+      nonCustodialFooter: '100% Non-Custodial • Keys Stay Only on Your Device',
+      pwaBadge: 'Mobile App Installation Required',
+      pwaTitlePre: 'Add BlocTag App to ',
+      pwaTitleHighlight: 'Home Screen',
+      pwaSub: 'For fullscreen performance, instant notifications, and secure local non-custodial storage on mobile, please install the BlocTag app.',
+      chipVault: 'Secure Vault',
+      chipSpeed: 'Instant Speed',
+      chipFull: 'Fullscreen',
+      iosInAppTitle: 'Open in Safari Browser',
+      iosInAppDesc: 'On iPhone, in-app browsers (Instagram, WhatsApp, Telegram) cannot add apps to the Home Screen. Copy the link and open it in <strong class="text-on-surface">Safari</strong>.',
+      iosInAppBtn: 'Copy Link & Open in Safari',
+      iosCta: 'Add App to Home Screen',
+      iosAlready: 'Already Added to Home Screen',
+      iosSheetTitle: 'Add to Home Screen',
+      iosStep1Chrome: 'Tap the <strong class="text-primary">Share</strong> icon in the <strong>top right</strong> corner of Chrome.',
+      iosStep1Safari: 'Tap the <strong class="text-primary">Share</strong> icon at the <strong>bottom center</strong> of Safari.',
+      iosStep2: 'Scroll down and tap <strong class="text-primary">"Add to Home Screen"</strong> → then tap <strong class="text-primary">"Add"</strong>.',
+      iosAddedBtn: 'I Added It to Home Screen',
+      iosPointerSafari: 'Safari Share (↑) icon is right below',
+      iosPointerChrome: 'Chrome Share (↑) icon is at top right',
+      androidStarting: 'Starting Auto-Install...',
+      androidReadyCta: 'Install & Add to Home Screen',
+      androidAutoCta: 'Install BlocTag App Automatically',
+      androidManualTitle: 'Browser Does Not Support Auto-Prompt',
+      androidManualDesc: 'Tap <strong class="text-on-surface">Menu (⋮)</strong> in the top right corner and select <strong class="text-primary">"Install App"</strong> or <strong class="text-primary">"Add to Home screen"</strong>.',
+      androidManualDone: 'I Installed the App',
+      androidHint: 'Tap the button to open your device install prompt; confirm to add <strong class="text-on-surface">BlocTag</strong> directly to your home screen.',
+      doneBadge: 'Installation Complete',
+      doneTitlePre: 'You Can ',
+      doneTitleHighlight: 'Open the App!',
+      doneSub: '<strong class="text-on-surface">BlocTag</strong> has been added to your home screen. You are still in your mobile browser — close it and tap the <strong class="text-primary">BlocTag</strong> icon on your home screen.',
+      doneCardTitle: 'BlocTag App Ready',
+      doneCardSub: 'Launch the app from your home screen',
+      doneOpenBtn: 'Open App',
+      doneRetryBtn: "Didn't appear on home screen? Install again",
+      browserTranslateHint: 'Use your browser Translate menu (⋮ → Translate or aA → Translate) for any language.'
+    },
+    tr: {
+      welcomeBadge: 'BlocTag • Hoş Geldiniz',
+      web3TitlePre: 'Web3 nedir, ',
+      web3TitleHighlight: 'biliyor musun?',
+      web3Sub: 'Deneyimine en uygun arayüzü seç. Dilediğin zaman menüden <strong class="text-on-surface">Simple</strong> ve <strong class="text-on-surface">Pro</strong> modları arasında geçiş yapabilirsin.',
+      simpleTitle: 'Hayır, Sade Olsun',
+      simpleBadge: 'Simple Mod',
+      simpleDesc: 'Karmaşık teknik terimler yok. Hızlı cüzdan, kolay transfer ve sade Space akışı ile başla.',
+      proTitle: "Evet, Web3'ü Biliyorum",
+      proBadge: 'Pro Mod',
+      proDesc: 'Blok Explorer, Node Paneli, Köprü (Bridge), BNS ve tüm gelişmiş protokol araçlarıyla devam et.',
+      nonCustodialFooter: '%100 Non-Custodial • Anahtarlar Yalnızca Cihazınızda',
+      pwaBadge: 'Mobil Uygulama Kurulumu Zorunludur',
+      pwaTitlePre: 'BlocTag Uygulamasını ',
+      pwaTitleHighlight: 'Ana Ekrana Ekle',
+      pwaSub: 'Mobil cihazlarda tam ekran performans, anlık bildirimler ve güvenli yerel kasa deneyimi için BlocTag PWA uygulamasını cihazınıza indirmeniz gerekmektedir.',
+      chipVault: 'Güvenli Kasa',
+      chipSpeed: 'Anlık Hız',
+      chipFull: 'Tam Ekran',
+      iosInAppTitle: 'Safari Tarayıcısında Açın',
+      iosInAppDesc: "iPhone'da uygulama içi tarayıcılardan (Instagram, WhatsApp, Telegram) ana ekrana ekleme yapılamaz. Linki kopyalayıp <strong class=\"text-on-surface\">Safari</strong>'de açın.",
+      iosInAppBtn: "Linki Kopyala ve Safari'de Aç",
+      iosCta: 'Uygulamayı Ana Ekrana Ekle',
+      iosAlready: 'Zaten Ana Ekrana Ekledim',
+      iosSheetTitle: 'Ana Ekrana Ekle',
+      iosStep1Chrome: 'Sağ üst çubuktaki <strong class="text-primary">Paylaş</strong> simgesine dokunun.',
+      iosStep1Safari: 'Ekranın <strong>en alt ortasındaki</strong> <strong class="text-primary">Paylaş</strong> simgesine dokunun.',
+      iosStep2: 'Listede <strong class="text-primary">"Ana Ekrana Ekle"</strong> → sağ üstten <strong class="text-primary">"Ekle"</strong> butonuna basın.',
+      iosAddedBtn: 'Ana Ekrana Ekledim',
+      iosPointerSafari: 'Safari Paylaş (↑) simgesi tam burada',
+      iosPointerChrome: 'Chrome Paylaş (↑) simgesi sağ üstte',
+      androidStarting: 'Otomatik Kurulum Başlatılıyor...',
+      androidReadyCta: 'Uygulamayı İndir & Ana Ekrana Ekle',
+      androidAutoCta: 'BlocTag Uygulamasını Otomatik İndir',
+      androidManualTitle: 'Tarayıcı Otomatik Onayı Desteklemiyor',
+      androidManualDesc: 'Sağ üst köşedeki <strong class="text-on-surface">Menü (⋮)</strong> → <strong class="text-primary">"Uygulamayı Yükle"</strong> veya <strong class="text-primary">"Ana ekrana ekle"</strong> seçeneğine dokunun.',
+      androidManualDone: 'Uygulamayı Yükledim',
+      androidHint: 'Butona bastığınızda cihazınızda kurulum onayı otomatik açılır; onayladığınızda <strong class="text-on-surface">BlocTag</strong> ana ekranınıza eklenir.',
+      doneBadge: 'Kurulum Tamamlandı',
+      doneTitlePre: 'Uygulamayı ',
+      doneTitleHighlight: 'Açabilirsiniz!',
+      doneSub: '<strong class="text-on-surface">BlocTag</strong> ana ekranınıza eklendi. Şu anda hâlâ mobil tarayıcı üzerindesiniz — tarayıcıyı kapatıp telefonunuzun ana ekranındaki <strong class="text-primary">BlocTag</strong> simgesine dokunun.',
+      doneCardTitle: 'BlocTag Uygulaması Hazır',
+      doneCardSub: 'Ana ekranınızdan uygulamayı başlatın',
+      doneOpenBtn: 'Uygulamayı Aç',
+      doneRetryBtn: 'Uygulama ekrana düşmediyse tekrar yükle',
+      browserTranslateHint: 'Tarayıcınızın Çeviri eklentisi (⋮ → Çevir) ile tüm dilleri kullanabilirsiniz.'
+    },
+    az: {
+      welcomeBadge: 'BlocTag • Xoş Gəldiniz',
+      web3TitlePre: 'Web3 nədir, ',
+      web3TitleHighlight: 'bilirsinizmi?',
+      web3Sub: 'Sizə ən uyğun interfeysi seçin. İstədiyiniz zaman menyudan <strong class="text-on-surface">Simple</strong> və <strong class="text-on-surface">Pro</strong> rejimi dəyişə bilərsiniz.',
+      simpleTitle: 'Xeyr, Sadə Olsun',
+      simpleBadge: 'Simple Rejim',
+      simpleDesc: 'Mürəkkəb terminlər yoxdur. Asan cüzdan, sürətli köçürmə və sadə Space axını ilə başlayın.',
+      proTitle: 'Bəli, Web3-ü Bilirəm',
+      proBadge: 'Pro Rejim',
+      proDesc: 'Blok Explorer, Node Paneli, Körpü (Bridge), BNS və bütün protokol alətləri ilə davam edin.',
+      nonCustodialFooter: '100% Non-Custodial • Açarlar Yalnız Cihazınızda Saxlanır',
+      pwaBadge: 'Mobil Tətbiq Quraşdırılması Məcburidir',
+      pwaTitlePre: 'BlocTag Tətbiqini ',
+      pwaTitleHighlight: 'Ana Ekrana Əlavə Et',
+      pwaSub: 'Mobil cihazlarda tam ekran performans, ani bildirişlər və təhlükəsiz yerli saxlama üçün BlocTag tətbiqini quraşdırın.',
+      chipVault: 'Təhlükəsiz Kassa',
+      chipSpeed: 'Ani Sürət',
+      chipFull: 'Tam Ekran',
+      iosInAppTitle: 'Safari Brauzerində Açın',
+      iosInAppDesc: 'iPhone-da tətbiqdaxili brauzerlərdən ana ekrana əlavə etmək olmur. Linki kopyalayıb <strong class="text-on-surface">Safari</strong>-də açın.',
+      iosInAppBtn: 'Linki Kopyala və Safari-də Aç',
+      iosCta: 'Tətbiqi Ana Ekrana Əlavə Et',
+      iosAlready: 'Artıq Ana Ekrana Əlavə Etdim',
+      iosSheetTitle: 'Ana Ekrana Əlavə Et',
+      iosStep1Chrome: 'Sağ yuxarıdakı <strong class="text-primary">Paylaş</strong> işarəsinə toxunun.',
+      iosStep1Safari: 'Ekranın <strong>aşağı ortasındakı</strong> <strong class="text-primary">Paylaş</strong> işarəsinə toxunun.',
+      iosStep2: 'Siyahıda <strong class="text-primary">"Ana Ekrana Əlavə Et"</strong> → <strong class="text-primary">"Əlavə Et"</strong> seçin.',
+      iosAddedBtn: 'Ana Ekrana Əlavə Etdim',
+      iosPointerSafari: 'Safari Paylaş (↑) işarəsi aşağıdadır',
+      iosPointerChrome: 'Chrome Paylaş (↑) işarəsi sağ yuxarıdadır',
+      androidStarting: 'Avtomatik Quraşdırma Başladılır...',
+      androidReadyCta: 'Tətbiqi Yüklə & Ana Ekrana Əlavə Et',
+      androidAutoCta: 'BlocTag Tətbiqini Avtomatik Yüklə',
+      androidManualTitle: 'Brauzer Avtomatik Quraşdırmanı Dəstəkləmir',
+      androidManualDesc: 'Sağ yuxarıdakı <strong class="text-on-surface">Menyu (⋮)</strong> → <strong class="text-primary">"Tətbiqi Quraşdır"</strong> seçin.',
+      androidManualDone: 'Tətbiqi Quraşdırdım',
+      androidHint: 'Düyməyə basdıqda cihazınızda quraşdırma təsdiqi açılacaq; təsdiqlədikdə <strong class="text-on-surface">BlocTag</strong> ana ekranınıza düşəcək.',
+      doneBadge: 'Quraşdırma Tamamlandı',
+      doneTitlePre: 'Tətbiqi ',
+      doneTitleHighlight: 'Aça Bilərsiniz!',
+      doneSub: '<strong class="text-on-surface">BlocTag</strong> ana ekranınıza əlavə edildi. Brauzeri bağlayıb ana ekrandakı <strong class="text-primary">BlocTag</strong> ikonuna toxunun.',
+      doneCardTitle: 'BlocTag Tətbiqi Hazırdır',
+      doneCardSub: 'Ana ekranınızdan tətbiqi açın',
+      doneOpenBtn: 'Tətbiqi Aç',
+      doneRetryBtn: 'Ekrana düşmədisə yenidən yüklə',
+      browserTranslateHint: 'İstənilən dil üçün brauzerinizin tərcümə menyusundan istifadə edə bilərsiniz.'
+    },
+    ru: {
+      welcomeBadge: 'BlocTag • Добро пожаловать',
+      web3TitlePre: 'Вы знаете, что такое ',
+      web3TitleHighlight: 'Web3?',
+      web3Sub: 'Выберите удобный режим. Вы всегда сможете переключиться между <strong class="text-on-surface">Simple</strong> и <strong class="text-on-surface">Pro</strong> в меню.',
+      simpleTitle: 'Нет, мне нужен простой режим',
+      simpleBadge: 'Simple Mode',
+      simpleDesc: 'Без сложных терминов. Простой кошелёк, быстрые переводы и чистая лента Space.',
+      proTitle: 'Да, я знаю Web3',
+      proBadge: 'Pro Mode',
+      proDesc: 'Block Explorer, панель узла, мост (Bridge), BNS и все инструменты протокола.',
+      nonCustodialFooter: '100% Non-Custodial • Ключи хранятся только на вашем устройстве',
+      pwaBadge: 'Требуется установка приложения',
+      pwaTitlePre: 'Добавьте BlocTag на ',
+      pwaTitleHighlight: 'главный экран',
+      pwaSub: 'Для полноэкранного режима, уведомлений и безопасного локального хранилища установите приложение BlocTag.',
+      chipVault: 'Безопасный сейф',
+      chipSpeed: 'Мгновенно',
+      chipFull: 'Полный экран',
+      iosInAppTitle: 'Откройте в Safari',
+      iosInAppDesc: 'Встроенные браузеры на iPhone не поддерживают установку. Скопируйте ссылку и откройте её в <strong class="text-on-surface">Safari</strong>.',
+      iosInAppBtn: 'Скопировать ссылку для Safari',
+      iosCta: 'Добавить на экран «Домой»',
+      iosAlready: 'Уже добавлено на экран',
+      iosSheetTitle: 'На экран «Домой»',
+      iosStep1Chrome: 'Нажмите <strong class="text-primary">Поделиться</strong> в <strong>правом верхнем</strong> углу Chrome.',
+      iosStep1Safari: 'Нажмите <strong class="text-primary">Поделиться</strong> в <strong>нижней части</strong> Safari.',
+      iosStep2: 'Выберите <strong class="text-primary">«На экран Домой»</strong> → <strong class="text-primary">«Добавить»</strong>.',
+      iosAddedBtn: 'Я добавил на экран',
+      iosPointerSafari: 'Кнопка «Поделиться» (↑) внизу',
+      iosPointerChrome: 'Кнопка «Поделиться» (↑) вверху справа',
+      androidStarting: 'Запуск установки...',
+      androidReadyCta: 'Установить на главный экран',
+      androidAutoCta: 'Установить BlocTag автоматически',
+      androidManualTitle: 'Браузер не поддерживает автоустановку',
+      androidManualDesc: 'Нажмите <strong class="text-on-surface">Меню (⋮)</strong> → <strong class="text-primary">«Установить приложение»</strong>.',
+      androidManualDone: 'Приложение установлено',
+      androidHint: 'Нажмите кнопку, чтобы открыть системное окно установки <strong class="text-on-surface">BlocTag</strong>.',
+      doneBadge: 'Установка завершена',
+      doneTitlePre: 'Можно ',
+      doneTitleHighlight: 'открыть приложение!',
+      doneSub: '<strong class="text-on-surface">BlocTag</strong> добавлен на главный экран. Закройте браузер и откройте иконку <strong class="text-primary">BlocTag</strong>.',
+      doneCardTitle: 'BlocTag готов к работе',
+      doneCardSub: 'Запустите приложение с главного экрана',
+      doneOpenBtn: 'Открыть приложение',
+      doneRetryBtn: 'Не появилось на экране? Установить снова',
+      browserTranslateHint: 'Вы можете использовать встроенный переводчик браузера для любого языка.'
+    },
+    de: {
+      welcomeBadge: 'BlocTag • Willkommen',
+      web3TitlePre: 'Weißt du, was ',
+      web3TitleHighlight: 'Web3 ist?',
+      web3Sub: 'Wähle die passende Ansicht. Du kannst jederzeit im Menü zwischen <strong class="text-on-surface">Simple</strong> und <strong class="text-on-surface">Pro</strong> wechseln.',
+      simpleTitle: 'Nein, bitte einfach',
+      simpleBadge: 'Simple Mode',
+      simpleDesc: 'Keine Fachbegriffe. Starte mit einfacher Wallet, schnellen Transfers und Space.',
+      proTitle: 'Ja, ich kenne Web3',
+      proBadge: 'Pro Mode',
+      proDesc: 'Block Explorer, Node-Panel, Bridge, BNS und alle Protokoll-Tools.',
+      nonCustodialFooter: '100% Non-Custodial • Schlüssel bleiben nur auf deinem Gerät',
+      pwaBadge: 'App-Installation erforderlich',
+      pwaTitlePre: 'BlocTag App zum ',
+      pwaTitleHighlight: 'Startbildschirm hinzufügen',
+      pwaSub: 'Für Vollbild, Benachrichtigungen und sicheren lokalen Speicher installiere bitte die BlocTag App.',
+      chipVault: 'Sicherer Tresor',
+      chipSpeed: 'Sofort schnell',
+      chipFull: 'Vollbild',
+      iosInAppTitle: 'In Safari öffnen',
+      iosInAppDesc: 'In-App-Browser auf dem iPhone unterstützen keine Installation. Kopiere den Link und öffne ihn in <strong class="text-on-surface">Safari</strong>.',
+      iosInAppBtn: 'Link kopieren & in Safari öffnen',
+      iosCta: 'Zum Home-Bildschirm hinzufügen',
+      iosAlready: 'Bereits hinzugefügt',
+      iosSheetTitle: 'Zum Home-Bildschirm',
+      iosStep1Chrome: 'Tippe oben rechts auf das <strong class="text-primary">Teilen</strong>-Symbol.',
+      iosStep1Safari: 'Tippe unten in der Mitte auf das <strong class="text-primary">Teilen</strong>-Symbol.',
+      iosStep2: 'Wähle <strong class="text-primary">„Zum Home-Bildschirm“</strong> → <strong class="text-primary">„Hinzufügen“</strong>.',
+      iosAddedBtn: 'Ich habe es hinzugefügt',
+      iosPointerSafari: 'Safari Teilen-Symbol (↑) unten',
+      iosPointerChrome: 'Chrome Teilen-Symbol (↑) oben rechts',
+      androidStarting: 'Installation wird gestartet...',
+      androidReadyCta: 'App installieren & hinzufügen',
+      androidAutoCta: 'BlocTag App automatisch installieren',
+      androidManualTitle: 'Auto-Installation nicht unterstützt',
+      androidManualDesc: 'Tippe oben rechts auf <strong class="text-on-surface">Menü (⋮)</strong> → <strong class="text-primary">„App installieren“</strong>.',
+      androidManualDone: 'App wurde installiert',
+      androidHint: 'Tippe auf den Button und bestätige, um <strong class="text-on-surface">BlocTag</strong> hinzuzufügen.',
+      doneBadge: 'Installation abgeschlossen',
+      doneTitlePre: 'Du kannst die ',
+      doneTitleHighlight: 'App öffnen!',
+      doneSub: '<strong class="text-on-surface">BlocTag</strong> wurde hinzugefügt. Schließe den Browser und öffne das <strong class="text-primary">BlocTag</strong>-Symbol auf deinem Startbildschirm.',
+      doneCardTitle: 'BlocTag App bereit',
+      doneCardSub: 'Starte die App vom Startbildschirm',
+      doneOpenBtn: 'App öffnen',
+      doneRetryBtn: 'Nicht erschienen? Erneut installieren',
+      browserTranslateHint: 'Nutze die Browser-Übersetzung für weitere Sprachen.'
+    },
+    es: {
+      welcomeBadge: 'BlocTag • Bienvenido',
+      web3TitlePre: '¿Sabes qué es ',
+      web3TitleHighlight: 'Web3?',
+      web3Sub: 'Elige tu modo ideal. Puedes cambiar entre <strong class="text-on-surface">Simple</strong> y <strong class="text-on-surface">Pro</strong> en cualquier momento.',
+      simpleTitle: 'No, hazlo simple',
+      simpleBadge: 'Modo Simple',
+      simpleDesc: 'Sin términos complejos. Billetera fácil, envíos rápidos y Space limpio.',
+      proTitle: 'Sí, conozco Web3',
+      proBadge: 'Modo Pro',
+      proDesc: 'Block Explorer, Panel de Nodo, Bridge, BNS y todas las herramientas.',
+      nonCustodialFooter: '100% Non-Custodial • Tus llaves solo en tu dispositivo',
+      pwaBadge: 'Instalación de App Obligatoria',
+      pwaTitlePre: 'Añadir BlocTag a la ',
+      pwaTitleHighlight: 'Pantalla de Inicio',
+      pwaSub: 'Para pantalla completa, notificaciones y bóveda local segura, instala la aplicación BlocTag.',
+      chipVault: 'Bóveda Segura',
+      chipSpeed: 'Velocidad',
+      chipFull: 'Pantalla Completa',
+      iosInAppTitle: 'Abrir en Safari',
+      iosInAppDesc: 'Los navegadores integrados en iPhone no permiten instalar. Copia el enlace y ábrelo en <strong class="text-on-surface">Safari</strong>.',
+      iosInAppBtn: 'Copiar enlace y abrir en Safari',
+      iosCta: 'Añadir a pantalla de inicio',
+      iosAlready: 'Ya la añadí',
+      iosSheetTitle: 'Añadir a inicio',
+      iosStep1Chrome: 'Toca el icono <strong class="text-primary">Compartir</strong> arriba a la derecha.',
+      iosStep1Safari: 'Toca el icono <strong class="text-primary">Compartir</strong> abajo en el centro de Safari.',
+      iosStep2: 'Pulsa <strong class="text-primary">«Añadir a pantalla de inicio»</strong> → <strong class="text-primary">«Añadir»</strong>.',
+      iosAddedBtn: 'Ya la añadí a inicio',
+      iosPointerSafari: 'El icono Compartir (↑) está justo abajo',
+      iosPointerChrome: 'El icono Compartir (↑) está arriba a la derecha',
+      androidStarting: 'Iniciando instalación...',
+      androidReadyCta: 'Instalar y añadir a inicio',
+      androidAutoCta: 'Instalar BlocTag automáticamente',
+      androidManualTitle: 'Instalación automática no disponible',
+      androidManualDesc: 'Toca <strong class="text-on-surface">Menú (⋮)</strong> → <strong class="text-primary">«Instalar aplicación»</strong>.',
+      androidManualDone: 'App instalada',
+      androidHint: 'Toca el botón y confirma para añadir <strong class="text-on-surface">BlocTag</strong> a tu pantalla.',
+      doneBadge: 'Instalación completa',
+      doneTitlePre: '¡Ya puedes ',
+      doneTitleHighlight: 'abrir la App!',
+      doneSub: '<strong class="text-on-surface">BlocTag</strong> está en tu pantalla de inicio. Cierra el navegador y abre el icono <strong class="text-primary">BlocTag</strong>.',
+      doneCardTitle: 'App BlocTag lista',
+      doneCardSub: 'Ábrela desde tu pantalla de inicio',
+      doneOpenBtn: 'Abrir App',
+      doneRetryBtn: '¿No apareció? Instalar de nuevo',
+      browserTranslateHint: 'Usa el traductor de tu navegador para otros idiomas.'
+    },
+    fr: {
+      welcomeBadge: 'BlocTag • Bienvenue',
+      web3TitlePre: 'Savez-vous ce qu’est le ',
+      web3TitleHighlight: 'Web3 ?',
+      web3Sub: 'Choisissez l’interface adaptée. Vous pouvez basculer entre <strong class="text-on-surface">Simple</strong> et <strong class="text-on-surface">Pro</strong> dans le menu.',
+      simpleTitle: 'Non, restons simple',
+      simpleBadge: 'Mode Simple',
+      simpleDesc: 'Sans jargon technique. Portefeuille facile, transferts rapides et fil Space.',
+      proTitle: 'Oui, je connais le Web3',
+      proBadge: 'Mode Pro',
+      proDesc: 'Block Explorer, Node Panel, Bridge, BNS et tous les outils avancés.',
+      nonCustodialFooter: '100% Non-Custodial • Clés stockées uniquement sur votre appareil',
+      pwaBadge: 'Installation de l’application requise',
+      pwaTitlePre: 'Ajouter BlocTag à ',
+      pwaTitleHighlight: 'l’écran d’accueil',
+      pwaSub: 'Pour le plein écran, les notifications et le coffre sécurisé sur mobile, installez l’application BlocTag.',
+      chipVault: 'Coffre Sécurisé',
+      chipSpeed: 'Instantané',
+      chipFull: 'Plein Écran',
+      iosInAppTitle: 'Ouvrir dans Safari',
+      iosInAppDesc: 'Les navigateurs intégrés sur iPhone bloquent l’installation. Copiez le lien et ouvrez-le dans <strong class="text-on-surface">Safari</strong>.',
+      iosInAppBtn: 'Copier le lien pour Safari',
+      iosCta: 'Ajouter à l’écran d’accueil',
+      iosAlready: 'Déjà ajouté',
+      iosSheetTitle: 'Sur l’écran d’accueil',
+      iosStep1Chrome: 'Touchez <strong class="text-primary">Partager</strong> en haut à droite.',
+      iosStep1Safari: 'Touchez <strong class="text-primary">Partager</strong> en bas au centre de Safari.',
+      iosStep2: 'Sélectionnez <strong class="text-primary">« Sur l’écran d’accueil »</strong> → <strong class="text-primary">« Ajouter »</strong>.',
+      iosAddedBtn: 'Ajouté à l’écran d’accueil',
+      iosPointerSafari: 'Icône Partager (↑) juste en dessous',
+      iosPointerChrome: 'Icône Partager (↑) en haut à droite',
+      androidStarting: 'Lancement de l’installation...',
+      androidReadyCta: 'Installer et ajouter à l’écran',
+      androidAutoCta: 'Installer BlocTag automatiquement',
+      androidManualTitle: 'Installation auto non prise en charge',
+      androidManualDesc: 'Touchez <strong class="text-on-surface">Menu (⋮)</strong> → <strong class="text-primary">« Installer l’application »</strong>.',
+      androidManualDone: 'Application installée',
+      androidHint: 'Touchez le bouton et confirmez pour ajouter <strong class="text-on-surface">BlocTag</strong>.',
+      doneBadge: 'Installation terminée',
+      doneTitlePre: 'Vous pouvez ',
+      doneTitleHighlight: 'ouvrir l’app !',
+      doneSub: '<strong class="text-on-surface">BlocTag</strong> est sur votre écran d’accueil. Fermez le navigateur et touchez l’icône <strong class="text-primary">BlocTag</strong>.',
+      doneCardTitle: 'BlocTag est prêt',
+      doneCardSub: 'Lancez l’app depuis votre écran d’accueil',
+      doneOpenBtn: 'Ouvrir l’application',
+      doneRetryBtn: 'Pas sur l’écran ? Réinstaller',
+      browserTranslateHint: 'Utilisez le traducteur du navigateur pour toute autre langue.'
+    },
+    ar: {
+      welcomeBadge: 'BlocTag • مرحباً بك',
+      web3TitlePre: 'هل تعرف ما هو ',
+      web3TitleHighlight: 'Web3؟',
+      web3Sub: 'اختر الواجهة المناسبة لك. يمكنك التبديل بين <strong class="text-on-surface">Simple</strong> و <strong class="text-on-surface">Pro</strong> في أي وقت.',
+      simpleTitle: 'لا، أريد الوضع البسيط',
+      simpleBadge: 'الوضع البسيط',
+      simpleDesc: 'بدون مصطلحات معقدة. محفظة سهلة وتحويلات سريعة وخلاصة Space بسيطة.',
+      proTitle: 'نعم، أعرف Web3',
+      proBadge: 'وضع Pro',
+      proDesc: 'مستكشف الكتل، لوحة العقدة، الجسر، BNS وجميع أدوات البروتوكول المتقدمة.',
+      nonCustodialFooter: '100% غير وصائي • المفاتيح تبقى على جهازك فقط',
+      pwaBadge: 'تثبيت تطبيق الجوال مطلوب',
+      pwaTitlePre: 'أضف تطبيق BlocTag إلى ',
+      pwaTitleHighlight: 'الشاشة الرئيسية',
+      pwaSub: 'للحصول على تجربة ملء الشاشة والإشعارات الفورية والتخزين الآمن، يرجى تثبيت تطبيق BlocTag.',
+      chipVault: 'خزنة آمنة',
+      chipSpeed: 'سرعة فائقة',
+      chipFull: 'ملء الشاشة',
+      iosInAppTitle: 'افتح في متصفح Safari',
+      iosInAppDesc: 'لا تسمح المتصفحات الداخلية على iPhone بالتثبيت. انسخ الرابط وافتحه في <strong class="text-on-surface">Safari</strong>.',
+      iosInAppBtn: 'نسخ الرابط وفتحه في Safari',
+      iosCta: 'إضافة إلى الشاشة الرئيسية',
+      iosAlready: 'تمت الإضافة بالفعل',
+      iosSheetTitle: 'إضافة للشاشة الرئيسية',
+      iosStep1Chrome: 'اضغط على أيقونة <strong class="text-primary">المشاركة</strong> في الأعلى.',
+      iosStep1Safari: 'اضغط على أيقونة <strong class="text-primary">المشاركة</strong> في أسفل Safari.',
+      iosStep2: 'اختر <strong class="text-primary">"إضافة إلى الشاشة الرئيسية"</strong> ثم <strong class="text-primary">"إضافة"</strong>.',
+      iosAddedBtn: 'تمت الإضافة للشاشة الرئيسية',
+      iosPointerSafari: 'أيقونة المشاركة (↑) بالأسفل',
+      iosPointerChrome: 'أيقونة المشاركة (↑) بالأعلى',
+      androidStarting: 'جاري بدء التثبيت...',
+      androidReadyCta: 'تثبيت وإضافة للشاشة الرئيسية',
+      androidAutoCta: 'تثبيت BlocTag تلقائياً',
+      androidManualTitle: 'التثبيت التلقائي غير مدعوم',
+      androidManualDesc: 'اضغط على <strong class="text-on-surface">القائمة (⋮)</strong> ثم <strong class="text-primary">"تثبيت التطبيق"</strong>.',
+      androidManualDone: 'تم تثبيت التطبيق',
+      androidHint: 'اضغط على الزر ووافق لإضافة <strong class="text-on-surface">BlocTag</strong> مباشرة لشاشتك الرئيسية.',
+      doneBadge: 'اكتمل التثبيت',
+      doneTitlePre: 'يمكنك الآن ',
+      doneTitleHighlight: 'فتح التطبيق!',
+      doneSub: 'تمت إضافة <strong class="text-on-surface">BlocTag</strong> إلى شاشتك الرئيسية. أغلق المتصفح واضغط على أيقونة <strong class="text-primary">BlocTag</strong>.',
+      doneCardTitle: 'تطبيق BlocTag جاهز',
+      doneCardSub: 'افتح التطبيق من الشاشة الرئيسية',
+      doneOpenBtn: 'فتح التطبيق',
+      doneRetryBtn: 'لم يظهر التطبيق؟ أعد التثبيت',
+      browserTranslateHint: 'يمكنك استخدام مترجم المتصفح لأي لغة أخرى.'
+    }
+  };
+
+  function getGateLanguage() {
+    try {
+      const saved = localStorage.getItem(GATE_LANG_STORAGE_KEY);
+      if (saved && GATE_I18N[saved]) return saved;
+    } catch (_e) { }
+    return 'en'; // Default English so browser translator plugins translate cleanly
+  }
+
+  function handleSetGateLanguage(langCode) {
+    if (langCode === 'browser') {
+      try { localStorage.setItem(GATE_LANG_STORAGE_KEY, 'en'); } catch (_e) { }
+      document.documentElement.lang = 'en';
+      document.documentElement.dir = 'ltr';
+      if (_mobileGateStep) renderMobileOnboardingGate(_mobileGateStep);
+      if (typeof window.showToast === 'function') {
+        window.showToast(GATE_I18N.en.browserTranslateHint, 'translate');
+      }
+      return;
+    }
+    const clean = GATE_I18N[langCode] ? langCode : 'en';
+    try {
+      localStorage.setItem(GATE_LANG_STORAGE_KEY, clean);
+    } catch (_e) { }
+    document.documentElement.lang = clean;
+    document.documentElement.dir = (clean === 'ar') ? 'rtl' : 'ltr';
+    if (_mobileGateStep) {
+      renderMobileOnboardingGate(_mobileGateStep);
+    }
+  }
+
+  function renderGateLanguageBar(activeLang) {
+    const opts = [
+      ['en', '🌐 English (Default)'],
+      ['tr', '🇹🇷 Türkçe'],
+      ['az', '🇦🇿 Azərbaycanca'],
+      ['ru', '🇷🇺 Русский'],
+      ['de', '🇩🇪 Deutsch'],
+      ['es', '🇪🇸 Español'],
+      ['fr', '🇫🇷 Français'],
+      ['ar', '🇸🇦 العربية'],
+      ['browser', '✨ Browser Translate']
+    ];
+    return `
+      <div class="w-full flex items-center justify-end -mb-1 notranslate" translate="no">
+        <label class="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-surface-container-high border border-outline-variant/25 text-[11px] font-medium text-on-surface cursor-pointer shadow-sm">
+          <span class="material-symbols-outlined text-[15px] text-primary">translate</span>
+          <select aria-label="Language" onchange="window.BlocTagSimpleMode.setGateLanguage(this.value)"
+            class="bg-transparent text-on-surface text-[11px] font-semibold focus:outline-none cursor-pointer pr-1">
+            ${opts.map(([code, label]) => `<option value="${code}" class="bg-[#1b1b1e] text-[#e5e1e4]" ${activeLang === code ? 'selected' : ''}>${label}</option>`).join('')}
+          </select>
+        </label>
+      </div>
+    `;
+  }
+
   function ensureMobileGateOverlay() {
     let el = document.getElementById('bloctag-mobile-gate-overlay');
     if (!el) {
@@ -2384,6 +2828,7 @@
       el.id = 'bloctag-mobile-gate-overlay';
       el.setAttribute('role', 'dialog');
       el.setAttribute('aria-modal', 'true');
+      el.setAttribute('translate', 'yes');
       document.body.appendChild(el);
     }
     return el;
@@ -2392,6 +2837,7 @@
   function closeMobileOnboardingGate() {
     _mobileGateStep = null;
     document.documentElement.classList.remove('bloctag-mobile-gate-open');
+    document.documentElement.dir = 'ltr';
     const el = document.getElementById('bloctag-mobile-gate-overlay');
     if (el) {
       el.classList.remove('is-visible');
@@ -2406,12 +2852,19 @@
     }
 
     _mobileGateStep = step;
+    const lang = getGateLanguage();
+    const t = GATE_I18N[lang] || GATE_I18N.en;
+    document.documentElement.lang = lang;
+    document.documentElement.dir = (lang === 'ar') ? 'rtl' : 'ltr';
+
     const overlay = ensureMobileGateOverlay();
     document.documentElement.classList.add('bloctag-mobile-gate-open');
+    const langBarHtml = renderGateLanguageBar(lang);
 
     if (step === 'web3') {
       overlay.innerHTML = `
-        <div class="w-full max-w-[400px] flex flex-col gap-5">
+        <div class="w-full max-w-[400px] flex flex-col gap-5" translate="yes">
+          ${langBarHtml}
           <!-- Brand Header -->
           <div class="flex flex-col items-center text-center gap-3">
             <div class="relative flex items-center justify-center w-20 h-20 rounded-full bg-surface-container-high shadow-xl border border-primary/25">
@@ -2424,13 +2877,13 @@
             </div>
             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high border border-outline-variant/20 text-[11px] font-mono text-primary">
               <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-              <span>BlocTag • Hoş Geldiniz</span>
+              <span>${t.welcomeBadge}</span>
             </div>
             <h1 class="text-[26px] leading-[32px] font-bold text-on-surface tracking-tight">
-              Web3 nedir, <span class="text-primary">biliyor musun?</span>
+              ${t.web3TitlePre}<span class="text-primary">${t.web3TitleHighlight}</span>
             </h1>
             <p class="text-xs text-on-surface-variant leading-relaxed max-w-[330px]">
-              Deneyimine en uygun arayüzü seç. Dilediğin zaman menüden <strong class="text-on-surface">Simple</strong> ve <strong class="text-on-surface">Pro</strong> modları arasında geçiş yapabilirsin.
+              ${t.web3Sub}
             </p>
           </div>
 
@@ -2443,11 +2896,11 @@
               </div>
               <div class="flex flex-col flex-1 min-w-0">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-sm font-bold text-on-surface">Hayır, Sade Olsun</span>
-                  <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-mono text-[10px] font-bold">Simple Mod</span>
+                  <span class="text-sm font-bold text-on-surface">${t.simpleTitle}</span>
+                  <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-mono text-[10px] font-bold shrink-0">${t.simpleBadge}</span>
                 </div>
                 <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                  Karmaşık teknik terimler yok. Hızlı cüzdan, kolay transfer ve sade Space akışı ile başla.
+                  ${t.simpleDesc}
                 </p>
               </div>
             </button>
@@ -2459,11 +2912,11 @@
               </div>
               <div class="flex flex-col flex-1 min-w-0">
                 <div class="flex items-center justify-between gap-2">
-                  <span class="text-sm font-bold text-on-surface">Evet, Web3'ü Biliyorum</span>
-                  <span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold">Pro Mod</span>
+                  <span class="text-sm font-bold text-on-surface">${t.proTitle}</span>
+                  <span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold shrink-0">${t.proBadge}</span>
                 </div>
                 <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
-                  Blok Explorer, Node Paneli, Köprü (Bridge), BNS ve tüm gelişmiş protokol araçlarıyla devam et.
+                  ${t.proDesc}
                 </p>
               </div>
             </button>
@@ -2471,7 +2924,7 @@
 
           <div class="flex items-center justify-center gap-1.5 text-[11px] text-on-surface-variant/70 pt-1">
             <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">verified_user</span>
-            <span>%100 Non-Custodial • Anahtarlar Yalnızca Cihazınızda</span>
+            <span>${t.nonCustodialFooter}</span>
           </div>
         </div>
       `;
@@ -2480,7 +2933,8 @@
       const hasNativePrompt = Boolean(getAvailablePwaPrompt());
 
       overlay.innerHTML = `
-        <div class="w-full max-w-[400px] flex flex-col gap-5">
+        <div class="w-full max-w-[400px] flex flex-col gap-5" translate="yes">
+          ${langBarHtml}
           <div class="flex flex-col items-center text-center gap-3">
             <div class="relative flex items-center justify-center w-20 h-20 rounded-3xl bg-surface-container-high shadow-xl border border-primary/30">
               <span class="material-symbols-outlined notranslate text-primary text-[38px]" translate="no">install_mobile</span>
@@ -2491,14 +2945,14 @@
 
             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-[11px] font-mono text-primary font-semibold">
               <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-              <span>Mobil Uygulama Kurulumu Zorunludur</span>
+              <span>${t.pwaBadge}</span>
             </div>
 
             <h1 class="text-[24px] leading-[30px] font-bold text-on-surface tracking-tight">
-              BlocTag Uygulamasını <span class="text-primary">Ana Ekrana Ekle</span>
+              ${t.pwaTitlePre}<span class="text-primary">${t.pwaTitleHighlight}</span>
             </h1>
             <p class="text-xs text-on-surface-variant leading-relaxed max-w-[340px]">
-              Mobil cihazlarda tam ekran performans, anlık bildirimler ve güvenli yerel kasa deneyimi için BlocTag PWA uygulamasını cihazınıza indirmeniz gerekmektedir.
+              ${t.pwaSub}
             </p>
           </div>
 
@@ -2506,33 +2960,33 @@
           <div class="grid grid-cols-3 gap-2">
             <div class="p-3 rounded-2xl bg-surface-container/90 border border-outline-variant/15 flex flex-col items-center text-center gap-1">
               <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">shield_lock</span>
-              <span class="text-[11px] font-semibold text-on-surface">Güvenli Kasa</span>
+              <span class="text-[11px] font-semibold text-on-surface">${t.chipVault}</span>
             </div>
             <div class="p-3 rounded-2xl bg-surface-container/90 border border-outline-variant/15 flex flex-col items-center text-center gap-1">
               <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">bolt</span>
-              <span class="text-[11px] font-semibold text-on-surface">Anlık Hız</span>
+              <span class="text-[11px] font-semibold text-on-surface">${t.chipSpeed}</span>
             </div>
             <div class="p-3 rounded-2xl bg-surface-container/90 border border-outline-variant/15 flex flex-col items-center text-center gap-1">
               <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">fullscreen</span>
-              <span class="text-[11px] font-semibold text-on-surface">Tam Ekran</span>
+              <span class="text-[11px] font-semibold text-on-surface">${t.chipFull}</span>
             </div>
           </div>
 
           ${isIos ? `
             ${isIosInAppBrowser() ? `
-              <!-- iOS In-App Browser (Instagram/WhatsApp/Telegram) Redirect to Safari -->
+              <!-- iOS In-App Browser Redirect to Safari -->
               <div class="p-4 rounded-3xl bg-surface-container border border-amber-400/35 flex flex-col gap-3">
                 <div class="flex items-center gap-2 text-xs font-bold text-amber-300">
                   <span class="material-symbols-outlined notranslate text-[18px]" translate="no">open_in_browser</span>
-                  <span>Safari Tarayıcısında Açın</span>
+                  <span>${t.iosInAppTitle}</span>
                 </div>
                 <p class="text-xs text-on-surface-variant leading-relaxed">
-                  iPhone'da uygulama içi tarayıcılardan (Instagram, WhatsApp, Telegram) ana ekrana ekleme yapılamaz. Linki kopyalayıp <strong class="text-on-surface">Safari</strong>'de açın.
+                  ${t.iosInAppDesc}
                 </p>
                 <button type="button" onclick="window.BlocTagSimpleMode.copySiteLinkForSafari()"
                   class="w-full h-12 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[19px]" translate="no">content_copy</span>
-                  <span>Linki Kopyala ve Safari'de Aç</span>
+                  <span>${t.iosInAppBtn}</span>
                 </button>
               </div>
             ` : `
@@ -2541,13 +2995,13 @@
                 <button type="button" onclick="window.BlocTagSimpleMode.openIosInstallSheet()"
                   class="w-full h-[54px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(78,222,163,0.3)] hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[20px]" translate="no">add_to_home_screen</span>
-                  <span>Uygulamayı Ana Ekrana Ekle</span>
+                  <span>${t.iosCta}</span>
                 </button>
 
                 <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
                   class="w-full h-11 rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[17px] text-primary" translate="no">check_circle</span>
-                  <span>Zaten Ana Ekrana Ekledim</span>
+                  <span>${t.iosAlready}</span>
                 </button>
               </div>
 
@@ -2563,8 +3017,8 @@
                           <span class="material-symbols-outlined notranslate text-[22px]" translate="no">add_to_home_screen</span>
                         </div>
                         <div class="flex flex-col">
-                          <span class="text-sm font-bold text-on-surface">Ana Ekrana Ekle</span>
-                          <span class="text-[11px] font-mono text-primary">${isIosChrome() ? 'Chrome iOS • 2 Adım' : 'Safari • 2 Adım'}</span>
+                          <span class="text-sm font-bold text-on-surface">${t.iosSheetTitle}</span>
+                          <span class="text-[11px] font-mono text-primary notranslate" translate="no">${isIosChrome() ? 'Chrome iOS' : 'Safari'}</span>
                         </div>
                       </div>
                       <button type="button" onclick="window.BlocTagSimpleMode.closeIosInstallSheet()"
@@ -2577,13 +3031,13 @@
                       <div class="flex items-center gap-3 p-3 rounded-2xl bg-surface-container border border-outline-variant/15">
                         <span class="w-6 h-6 rounded-full bg-primary text-on-primary font-mono font-bold text-xs flex items-center justify-center shrink-0">1</span>
                         <span class="text-xs text-on-surface leading-snug">
-                          ${isIosChrome() ? 'Sağ üst çubuktaki' : 'Ekranın <strong>en alt ortasındaki</strong>'} <strong class="text-primary">Paylaş</strong> (<span class="material-symbols-outlined notranslate text-[16px] align-middle text-primary" translate="no">ios_share</span>) simgesine dokunun.
+                          ${isIosChrome() ? t.iosStep1Chrome : t.iosStep1Safari} (<span class="material-symbols-outlined notranslate text-[16px] align-middle text-primary" translate="no">ios_share</span>)
                         </span>
                       </div>
                       <div class="flex items-center gap-3 p-3 rounded-2xl bg-surface-container border border-outline-variant/15">
                         <span class="w-6 h-6 rounded-full bg-primary text-on-primary font-mono font-bold text-xs flex items-center justify-center shrink-0">2</span>
                         <span class="text-xs text-on-surface leading-snug">
-                          Listede <strong class="text-primary">"Ana Ekrana Ekle"</strong> (<span class="material-symbols-outlined notranslate text-[15px] align-middle text-primary" translate="no">add_box</span>) → sağ üstten <strong class="text-primary">"Ekle"</strong> butonuna basın.
+                          ${t.iosStep2} (<span class="material-symbols-outlined notranslate text-[15px] align-middle text-primary" translate="no">add_box</span>)
                         </span>
                       </div>
                     </div>
@@ -2591,19 +3045,19 @@
                     <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
                       class="w-full h-12 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
                       <span class="material-symbols-outlined notranslate text-[19px]" translate="no">check_circle</span>
-                      <span>Ana Ekrana Ekledim</span>
+                      <span>${t.iosAddedBtn}</span>
                     </button>
                   </div>
 
                   ${!isIosChrome() ? `
                     <div class="flex flex-col items-center gap-0.5 pt-2.5 text-primary animate-bounce pointer-events-none">
-                      <span class="text-[11px] font-bold">Safari Paylaş (↑) simgesi tam burada</span>
+                      <span class="text-[11px] font-bold">${t.iosPointerSafari}</span>
                       <span class="material-symbols-outlined notranslate text-[26px]" translate="no">keyboard_double_arrow_down</span>
                     </div>
                   ` : `
                     <div class="flex items-center justify-center gap-1.5 pt-2.5 text-primary text-[11px] font-bold pointer-events-none">
                       <span class="material-symbols-outlined notranslate text-[18px]" translate="no">north_east</span>
-                      <span>Chrome Paylaş (↑) simgesi sağ üstte</span>
+                      <span>${t.iosPointerChrome}</span>
                     </div>
                   `}
                 </div>
@@ -2617,10 +3071,10 @@
                 class="w-full h-[54px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(78,222,163,0.3)] hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-85">
                 ${_pwaInstallWaiting ? `
                   <span class="material-symbols-outlined notranslate text-[21px] animate-spin" translate="no">progress_activity</span>
-                  <span>Otomatik Kurulum Başlatılıyor...</span>
+                  <span>${t.androidStarting}</span>
                 ` : `
                   <span class="material-symbols-outlined notranslate text-[21px]" translate="no">download</span>
-                  <span>${hasNativePrompt ? 'Uygulamayı İndir & Ana Ekrana Ekle' : 'BlocTag Uygulamasını Otomatik İndir'}</span>
+                  <span>${hasNativePrompt ? t.androidReadyCta : t.androidAutoCta}</span>
                 `}
               </button>
 
@@ -2628,19 +3082,19 @@
                 <div class="p-3.5 rounded-2xl bg-surface-container border border-outline-variant/25 flex flex-col gap-2 text-xs text-on-surface-variant">
                   <div class="font-semibold text-on-surface flex items-center gap-1.5">
                     <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">info</span>
-                    <span>Tarayıcı Otomatik Onayı Desteklemiyor</span>
+                    <span>${t.androidManualTitle}</span>
                   </div>
                   <p class="leading-relaxed">
-                    Bu tarayıcıda sağ üst köşedeki <strong class="text-on-surface">Menü (⋮)</strong> → <strong class="text-primary">"Uygulamayı Yükle"</strong> veya <strong class="text-primary">"Ana ekrana ekle"</strong> seçeneğine dokunun.
+                    ${t.androidManualDesc}
                   </p>
                   <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
                     class="mt-1 h-9 px-3 rounded-full bg-surface-container-high hover:bg-surface-bright text-primary text-xs font-semibold cursor-pointer">
-                    Uygulamayı Yükledim
+                    ${t.androidManualDone}
                   </button>
                 </div>
               ` : `
                 <p class="text-center text-[11px] text-on-surface-variant/80 leading-relaxed">
-                  Butona bastığınızda cihazınızda kurulum onayı otomatik açılır; onayladığınızda <strong class="text-on-surface">BlocTag</strong> ana ekranınıza eklenir.
+                  ${t.androidHint}
                 </p>
               `}
             </div>
@@ -2649,7 +3103,8 @@
       `;
     } else if (step === 'pwa-installed') {
       overlay.innerHTML = `
-        <div class="w-full max-w-[400px] flex flex-col items-center text-center gap-5">
+        <div class="w-full max-w-[400px] flex flex-col items-center text-center gap-5" translate="yes">
+          ${langBarHtml}
           <div class="relative flex items-center justify-center w-22 h-22 rounded-full bg-primary/15 border border-primary/40 shadow-[0_0_40px_rgba(78,222,163,0.22)]">
             <span class="material-symbols-outlined notranslate text-primary text-[44px]" style="font-variation-settings: 'FILL' 1;" translate="no">task_alt</span>
           </div>
@@ -2657,13 +3112,13 @@
           <div class="flex flex-col gap-2">
             <div class="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-[11px] font-mono text-primary font-semibold mx-auto">
               <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-              <span>Kurulum Tamamlandı</span>
+              <span>${t.doneBadge}</span>
             </div>
             <h1 class="text-[24px] leading-[30px] font-bold text-on-surface tracking-tight">
-              Uygulamayı <span class="text-primary">Açabilirsiniz!</span>
+              ${t.doneTitlePre}<span class="text-primary">${t.doneTitleHighlight}</span>
             </h1>
             <p class="text-xs text-on-surface-variant leading-relaxed max-w-[330px] mx-auto">
-              <strong class="text-on-surface">BlocTag</strong> ana ekranınıza eklendi. Şu anda hâlâ mobil tarayıcı üzerindesiniz — tarayıcıyı kapatıp telefonunuzun ana ekranındaki <strong class="text-primary">BlocTag</strong> simgesine dokunarak uygulamayı açabilirsiniz.
+              ${t.doneSub}
             </p>
           </div>
 
@@ -2675,8 +3130,8 @@
               </svg>
             </div>
             <div class="flex flex-col min-w-0">
-              <span class="text-xs font-bold text-on-surface">BlocTag Uygulaması Hazır</span>
-              <span class="text-[11px] text-on-surface-variant">Ana ekranınızdan uygulamayı başlatın</span>
+              <span class="text-xs font-bold text-on-surface">${t.doneCardTitle}</span>
+              <span class="text-[11px] text-on-surface-variant">${t.doneCardSub}</span>
             </div>
           </div>
 
@@ -2685,11 +3140,11 @@
               onclick="window.BlocTagSimpleMode.openInstalledAppHint(event)"
               class="w-full h-[52px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer no-underline">
               <span class="material-symbols-outlined notranslate text-[20px]" translate="no">open_in_new</span>
-              <span>Uygulamayı Aç</span>
+              <span>${t.doneOpenBtn}</span>
             </a>
             <button type="button" onclick="window.BlocTagSimpleMode.showPwaInstallStepsAgain()"
               class="w-full h-10 rounded-full bg-transparent hover:bg-surface-container text-on-surface-variant text-xs font-medium transition-colors cursor-pointer">
-              Uygulama ekrana düşmediyse tekrar yükle
+              ${t.doneRetryBtn}
             </button>
           </div>
         </div>
