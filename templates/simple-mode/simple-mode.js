@@ -198,6 +198,14 @@
         simpleState.activeScreen = 'SCR-ONB-01';
       }
       renderSimpleMode();
+      try {
+        const hasPosts = typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache) && spacePostsCache.length > 0;
+        if (!hasPosts && typeof window.loadSpaceFeed === 'function') {
+          window.loadSpaceFeed().then(() => {
+            if (simpleState.enabled) renderSimpleMode(false);
+          }).catch(() => {});
+        }
+      } catch (_e) {}
     } else {
       html.classList.remove('bloctag-simple-mode');
     }
@@ -278,8 +286,26 @@
 
     // Trigger background data sync on screen entry
     try {
-      if (target === 'SCR-SPC-03' || target === 'SCR-SPC-04') {
+      if (target === 'SCR-SPC-03') {
         if (typeof window.loadSpaceFeed === 'function') {
+          window.loadSpaceFeed().then(() => {
+            if (simpleState.enabled) renderSimpleMode(false);
+          }).catch(() => {});
+        }
+      } else if (target === 'SCR-SPC-04') {
+        const activePid = simpleState.activePostId;
+        if (activePid && typeof window.apiFetch === 'function') {
+          window.apiFetch('/space/post/' + encodeURIComponent(activePid) + '?_nc=' + Date.now()).then(({ ok, body }) => {
+            if (ok && body && body.data && typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) {
+              const idx = spacePostsCache.findIndex(p => String(p.post_id || p.id) === String(activePid));
+              if (idx >= 0) spacePostsCache[idx] = body.data;
+              else spacePostsCache.unshift(body.data);
+              if (simpleState.enabled && simpleState.activeScreen === 'SCR-SPC-04') {
+                renderSimpleMode(false);
+              }
+            }
+          }).catch(() => {});
+        } else if (typeof window.loadSpaceFeed === 'function') {
           window.loadSpaceFeed().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
           }).catch(() => {});
@@ -2022,6 +2048,19 @@
       };
       wrappedRenderSpace._simpleHooked = true;
       window.renderSpacePosts = wrappedRenderSpace;
+    }
+
+    const origOpenSpacePostDetail = window.openSpacePostDetail;
+    if (typeof origOpenSpacePostDetail === 'function' && !origOpenSpacePostDetail._simpleHooked) {
+      const wrappedOpenPostDetail = function (postId) {
+        if (simpleState.enabled && postId) {
+          navigateToSimpleScreen('SCR-SPC-04', { postId: postId });
+          return;
+        }
+        return origOpenSpacePostDetail.apply(this, arguments);
+      };
+      wrappedOpenPostDetail._simpleHooked = true;
+      window.openSpacePostDetail = wrappedOpenPostDetail;
     }
   }
 

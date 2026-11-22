@@ -15171,9 +15171,28 @@
       try {
         loadSuggestedVoices();
         fetchLiveEthTelemetry();
-        const { ok, body } = await apiFetch('/space/feed?limit=80');
+        const { ok, body } = await apiFetch('/space/feed?limit=80&_nc=' + Date.now());
         if (ok && body.data && Array.isArray(body.data.posts)) {
-          spacePostsCache = body.data.posts;
+          const prevDetailPost = activeDetailPostId
+            ? spacePostsCache.find(p => String(p.post_id || p.id) === String(activeDetailPostId))
+            : null;
+          const nextPosts = body.data.posts.slice();
+          if (prevDetailPost) {
+            const idx = nextPosts.findIndex(p => String(p.post_id || p.id) === String(activeDetailPostId));
+            if (idx === -1) {
+              nextPosts.unshift(prevDetailPost);
+            } else {
+              const prevCmts = Array.isArray(prevDetailPost.comments) ? prevDetailPost.comments : [];
+              const nextCmts = Array.isArray(nextPosts[idx].comments) ? nextPosts[idx].comments : [];
+              if (prevCmts.length > nextCmts.length) {
+                nextPosts[idx] = Object.assign({}, nextPosts[idx], {
+                  comments: prevCmts,
+                  comments_count: Math.max(Number(nextPosts[idx].comments_count || 0), prevCmts.length)
+                });
+              }
+            }
+          }
+          spacePostsCache = nextPosts;
           renderTrendingTagsBar();
           renderSpacePosts();
           if (activeDetailPostId) {
@@ -15256,13 +15275,36 @@
         const isMine = myAddr && post.author === myAddr;
         const likedByMe = myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr);
         const likesCount = Number(post.likes_count || (post.likes ? post.likes.length : 0));
-        const commentsCount = Number(post.comments_count || (post.comments ? post.comments.length : 0));
+        const postComments = Array.isArray(post.comments) ? post.comments : [];
+        const commentsCount = Number(post.comments_count || postComments.length || 0);
         const earned = Number(post.author_earnings || 0);
         const isAnon = post.author_bns === 'anonymous' || post.author_bns === 'anon' || Boolean(post.is_anonymous);
         const initialLetter = isAnon ? '?' : (post.author_bns ? post.author_bns.charAt(0).toUpperCase() : (post.author ? post.author.slice(3, 4).toUpperCase() : 'U'));
+        const previewCommentsHtml = postComments.length > 0 ? `
+          <div class="mt-1 pt-2 border-t border-outline-variant/10 flex flex-col gap-1.5 cursor-pointer" onclick="event.stopPropagation(); openSpacePostDetail('${pid}')">
+            <div class="flex items-center justify-between text-[11px] text-on-surface-variant font-medium">
+              <span class="flex items-center gap-1 text-sky-400 font-semibold">
+                <span class="material-symbols-outlined notranslate text-[14px]" translate="no">forum</span>
+                <span>${commentsCount} On-Chain Comment${commentsCount === 1 ? '' : 's'}</span>
+              </span>
+              <span class="text-primary hover:underline text-[11px] font-semibold">View all &rarr;</span>
+            </div>
+            ${postComments.slice(-2).reverse().map((c) => {
+              const cAnon = c.commenter_bns === 'anonymous' || Boolean(c.is_anonymous);
+              const cAuthor = cAnon ? '🕵️ Anonim' : (c.commenter_bns ? '@' + c.commenter_bns : shortAddr(c.commenter));
+              return `
+                <div class="px-2.5 py-1.5 rounded-xl bg-surface-container/70 border border-outline-variant/10 flex items-baseline gap-1.5 text-xs min-w-0">
+                  <span class="font-mono font-semibold text-primary shrink-0">${escapeHtml(cAuthor)}:</span>
+                  <span class="text-on-surface/90 truncate flex-1 min-w-0">${escapeHtml(String(c.content || ''))}</span>
+                  <span class="text-[10px] text-outline shrink-0">${escapeHtml(formatTimeAgo(c.timestamp))}</span>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        ` : '';
 
         return `
-          <article class="bg-surface-container-low/95 hover:bg-surface-container rounded-2xl p-4 sm:p-5 flex flex-col gap-3 transition-all duration-200 border border-outline-variant/15 shadow-xs">
+          <article class="bg-surface-container-low/95 hover:bg-surface-container rounded-2xl p-4 sm:p-5 flex flex-col gap-3 transition-all duration-200 border border-outline-variant/15 shadow-xs cursor-pointer" onclick="openSpacePostDetail('${pid}')">
             <!-- Author Header (Mobile-First 2-Line Hierarchy) -->
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3 min-w-0">
@@ -15328,8 +15370,11 @@
                 </span>` : ''}
             </div>
 
+            <!-- Inline Comments Preview (If post has on-chain comments) -->
+            ${previewCommentsHtml}
+
             <!-- Modern 4-Item Action Bar (Touch-Friendly) -->
-            <div class="flex items-center justify-between pt-2 mt-1 border-t border-outline-variant/10 text-on-surface-variant">
+            <div class="flex items-center justify-between pt-2 mt-1 border-t border-outline-variant/10 text-on-surface-variant" onclick="event.stopPropagation()">
               <!-- Like -->
               <button class="flex items-center gap-1.5 py-1.5 px-2.5 rounded-full ${likedByMe ? 'text-rose-400 bg-rose-500/15 font-bold' : 'hover:text-rose-400 hover:bg-rose-500/10'} active:scale-90 transition-all cursor-pointer" onclick="likeSpacePost('${pid}', event)" type="button" title="Like post">
                 <span class="material-symbols-outlined notranslate text-[19px]" ${likedByMe ? 'style="font-variation-settings: \'FILL\' 1;"' : ''} translate="no">favorite</span>
@@ -15337,7 +15382,7 @@
               </button>
 
               <!-- Comment -->
-              <button class="flex items-center gap-1.5 py-1.5 px-2.5 rounded-full hover:text-sky-400 hover:bg-sky-500/10 active:scale-90 transition-all cursor-pointer" onclick="openSpacePostDetail('${pid}')" type="button" title="Reply to post">
+              <button class="flex items-center gap-1.5 py-1.5 px-2.5 rounded-full hover:text-sky-400 hover:bg-sky-500/10 active:scale-90 transition-all cursor-pointer" onclick="event.stopPropagation(); openSpacePostDetail('${pid}')" type="button" title="Reply to post">
                 <span class="material-symbols-outlined notranslate text-[19px]" translate="no">chat_bubble</span>
                 <span class="text-xs sm:text-sm font-mono">${commentsCount}</span>
               </button>
@@ -15532,12 +15577,18 @@
       const hdrDetail = document.getElementById('mobileHeaderPostDetail');
       const mobNav = document.getElementById('mobile-nav');
 
-      if (feedView) feedView.classList.add('hidden');
+      if (feedView) {
+        feedView.classList.add('hidden');
+        feedView.classList.remove('flex');
+      }
       if (detailView) {
         detailView.classList.remove('hidden');
         detailView.classList.add('flex');
       }
-      if (hdrDefault) hdrDefault.classList.add('hidden');
+      if (hdrDefault) {
+        hdrDefault.classList.add('hidden');
+        hdrDefault.classList.remove('flex');
+      }
       if (hdrDetail) {
         hdrDetail.classList.remove('hidden');
         hdrDetail.classList.add('flex');
@@ -15547,14 +15598,14 @@
       renderSpacePostDetailContent(postId);
       window.scrollTo(0, 0);
 
-      // Fetch fresh post payload, comments & royalties from blockchain node
-      apiFetch('/space/post/' + encodeURIComponent(postId)).then(({ ok, body }) => {
+      // Fetch fresh post payload, comments & royalties from blockchain node (cache-busted)
+      apiFetch('/space/post/' + encodeURIComponent(postId) + '?_nc=' + Date.now()).then(({ ok, body }) => {
         if (window._loadingDetailPostId === postId) {
           window._loadingDetailPostId = null;
         }
         if (ok && body && body.data) {
           const updated = body.data;
-          const idx = spacePostsCache.findIndex(p => p.post_id === postId);
+          const idx = spacePostsCache.findIndex(p => String(p.post_id || p.id) === String(postId));
           if (idx >= 0) {
             spacePostsCache[idx] = updated;
           } else {
@@ -15592,12 +15643,18 @@
         detailView.classList.add('hidden');
         detailView.classList.remove('flex');
       }
-      if (feedView) feedView.classList.remove('hidden');
+      if (feedView) {
+        feedView.classList.remove('hidden');
+        feedView.classList.add('flex');
+      }
       if (hdrDetail) {
         hdrDetail.classList.add('hidden');
         hdrDetail.classList.remove('flex');
       }
-      if (hdrDefault) hdrDefault.classList.remove('hidden');
+      if (hdrDefault) {
+        hdrDefault.classList.remove('hidden');
+        hdrDefault.classList.add('flex');
+      }
       if (mobNav) mobNav.classList.remove('hidden');
     }
 
@@ -16030,7 +16087,7 @@
       try {
         const handleSelect = document.getElementById('detailCommentHandleSelect');
         let selectedBns = handleSelect ? String(handleSelect.value || '').trim() : '';
-        if (selectedBns === 'address') selectedBns = '';
+        if (selectedBns === 'address' || selectedBns === '__register_bns__' || selectedBns === 'wallet') selectedBns = '';
 
         const canonical = `${currentAccount.address}:${activeDetailPostId}:${content}`;
         const authFields = await buildSignedAuthPayload(canonical);
@@ -16046,6 +16103,24 @@
         if (ok) {
           if (input) input.value = '';
           if (typeof cancelCommentReply === 'function') cancelCommentReply();
+          const newComment = (body && body.data && body.data.comment) ? body.data.comment : {
+            comment_id: 'cmt_local_' + Date.now(),
+            commenter: currentAccount.address,
+            commenter_bns: selectedBns || currentBnsHandle || '',
+            content: content,
+            timestamp: Date.now() / 1000,
+            tx_hash: '',
+            status: 'mempool'
+          };
+          const targetPost = spacePostsCache.find(p => String(p.post_id || p.id) === String(activeDetailPostId));
+          if (targetPost) {
+            if (!Array.isArray(targetPost.comments)) targetPost.comments = [];
+            if (!targetPost.comments.some(c => c.comment_id && c.comment_id === newComment.comment_id)) {
+              targetPost.comments.push(newComment);
+              targetPost.comments_count = Math.max(Number(targetPost.comments_count || 0) + 1, targetPost.comments.length);
+            }
+            renderSpacePostDetailContent(activeDetailPostId);
+          }
           const isBatched = (body && body.data && body.data.status === 'mempool_batched');
           const toastMsg = isBatched
             ? 'Comment registered! Sealing into block batch (~50s)...'
@@ -16053,7 +16128,15 @@
           showToast(toastMsg, 'chat_bubble');
           await refreshCurrentAccountBalance();
           await loadSpaceFeed();
-          if (activeDetailPostId) await openSpacePostDetail(activeDetailPostId);
+          if (activeDetailPostId) {
+            const freshRes = await apiFetch('/space/post/' + encodeURIComponent(activeDetailPostId) + '?_nc=' + Date.now());
+            if (freshRes.ok && freshRes.body && freshRes.body.data) {
+              const fIdx = spacePostsCache.findIndex(p => String(p.post_id || p.id) === String(activeDetailPostId));
+              if (fIdx >= 0) spacePostsCache[fIdx] = freshRes.body.data;
+              else spacePostsCache.unshift(freshRes.body.data);
+            }
+            renderSpacePostDetailContent(activeDetailPostId);
+          }
         } else {
           showToast(body.message || 'Could not submit comment', 'error', true);
         }
@@ -20903,6 +20986,15 @@
           else if (activeId === 'tab-ag-ve-explorer') await refreshExplorerData();
           else if (activeId === 'tab-system-wallets') await refreshSystemWalletsData();
           else if (activeId === 'tab-space' && !activeDetailPostId) await loadSpaceFeed();
+          else if (activeId === 'tab-space' && activeDetailPostId) {
+            const pRes = await apiFetch('/space/post/' + encodeURIComponent(activeDetailPostId) + '?_nc=' + Date.now());
+            if (pRes.ok && pRes.body && pRes.body.data) {
+              const pIdx = spacePostsCache.findIndex(p => String(p.post_id || p.id) === String(activeDetailPostId));
+              if (pIdx >= 0) spacePostsCache[pIdx] = pRes.body.data;
+              else spacePostsCache.unshift(pRes.body.data);
+              renderSpacePostDetailContent(activeDetailPostId);
+            }
+          }
           await checkRealtimeNotificationEvents(activeId === 'tab-cuzdanim');
         } catch (_e) { }
         finally {
@@ -23326,9 +23418,16 @@
 
       if (item.actionUrl) {
         closeNotificationModal();
-        const tabName = item.actionUrl.replace(/^#/, '').trim();
-        if (tabName) {
-          switchTab(tabName);
+        const rawAction = String(item.actionUrl || '').replace(/^#/, '').trim();
+        if (rawAction.startsWith('post-')) {
+          const targetPid = rawAction.slice(5).trim();
+          if (targetPid && typeof openSpacePostDetail === 'function') {
+            openSpacePostDetail(targetPid);
+            return;
+          }
+        }
+        if (rawAction) {
+          switchTab(rawAction);
         }
       }
     }
@@ -23580,7 +23679,8 @@
                   notifTitle = '💬 New Comment on Post!';
                   notifBody = `${shortAddr(info.counterparty)} commented on your cast (+${formatBct(info.displayAmount, 4)} BCT Royalty).`;
                   notifIcon = 'chat_bubble';
-                  notifAction = '#space';
+                  const cmtPid = (tx.extra_data && tx.extra_data.post_id) ? tx.extra_data.post_id : '';
+                  notifAction = cmtPid ? ('#post-' + cmtPid) : '#space';
                 } else if (info.isFollowReward || txType === 'space_follow') {
                   notifCategory = 'space';
                   notifTitle = '🤝 New Follower!';
@@ -23666,7 +23766,7 @@
                         icon: 'chat_bubble',
                         time: Number(cmt.timestamp || Date.now() / 1000) * 1000,
                         read: isAlreadySeen,
-                        actionUrl: '#space'
+                        actionUrl: '#post-' + postId
                       }, !isAlreadySeen && (seenPosts.size > 0));
                     }
                   }
