@@ -83,6 +83,24 @@
     }
   }
 
+  function isIosChrome() {
+    try {
+      return isIosDeviceLocal() && /CriOS/i.test(navigator.userAgent || '');
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function isIosInAppBrowser() {
+    try {
+      if (!isIosDeviceLocal()) return false;
+      const ua = navigator.userAgent || '';
+      return /Instagram|FBAN|FBAV|WhatsApp|Telegram|Line\/|TikTok|Snapchat|Twitter|MicroMessenger/i.test(ua);
+    } catch (_e) {
+      return false;
+    }
+  }
+
   function getAvailablePwaPrompt() {
     if (window.__bloctagPwaPrompt) return window.__bloctagPwaPrompt;
     if (_capturedPwaPrompt) return _capturedPwaPrompt;
@@ -2346,6 +2364,8 @@
 
     selectWeb3Experience: (choice) => handleSelectWeb3Experience(choice),
     triggerMandatoryPwaInstall: () => handleTriggerMandatoryPwaInstall(),
+    triggerIosShareInstall: () => handleTriggerIosShareInstall(),
+    copySiteLinkForSafari: () => handleCopySiteLinkForSafari(),
     markManualPwaInstalled: () => handleMarkManualPwaInstalled(),
     showPwaInstallStepsAgain: () => handleShowPwaInstallStepsAgain(),
     openInstalledAppHint: (ev) => handleOpenInstalledAppHint(ev)
@@ -2497,30 +2517,56 @@
           </div>
 
           ${isIos ? `
-            <!-- iOS Safari Native Add to Home Screen Guide -->
-            <div class="p-4 rounded-3xl bg-surface-container border border-primary/25 flex flex-col gap-3">
-              <div class="flex items-center gap-2 text-xs font-bold text-primary">
-                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">phone_iphone</span>
-                <span>iOS (Safari) Kurulum Adımları</span>
+            ${isIosInAppBrowser() ? `
+              <!-- iOS In-App Browser (Instagram/WhatsApp/Telegram) Redirect to Safari -->
+              <div class="p-4 rounded-3xl bg-surface-container border border-amber-400/35 flex flex-col gap-3">
+                <div class="flex items-center gap-2 text-xs font-bold text-amber-300">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">open_in_browser</span>
+                  <span>Safari Tarayıcısında Açın</span>
+                </div>
+                <p class="text-xs text-on-surface-variant leading-relaxed">
+                  iPhone'da uygulama içi tarayıcılardan (Instagram, WhatsApp, Telegram) ana ekrana ekleme yapılamaz. Linki kopyalayıp <strong class="text-on-surface">Safari</strong>'de açın.
+                </p>
+                <button type="button" onclick="window.BlocTagSimpleMode.copySiteLinkForSafari()"
+                  class="w-full h-12 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[19px]" translate="no">content_copy</span>
+                  <span>Linki Kopyala ve Safari'de Aç</span>
+                </button>
               </div>
-              <div class="flex items-start gap-2.5 text-xs text-on-surface">
-                <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">1</span>
-                <span>Safari alt menüsündeki <strong class="text-primary">Paylaş</strong> (<span class="material-symbols-outlined notranslate text-[14px] align-middle text-primary" translate="no">ios_share</span>) simgesine dokunun.</span>
+            ` : `
+              <!-- iOS Safari / Chrome Native Share-Sheet 1-Tap Trigger + Visual Guide -->
+              <div class="flex flex-col gap-3">
+                <button type="button" onclick="window.BlocTagSimpleMode.triggerIosShareInstall()"
+                  class="w-full h-[54px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(78,222,163,0.3)] hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[20px]" translate="no">ios_share</span>
+                  <span>Paylaş Menüsünü Aç &amp; Ana Ekrana Ekle</span>
+                </button>
+
+                <div class="p-3.5 rounded-3xl bg-surface-container border border-primary/25 flex flex-col gap-2.5">
+                  <div class="flex items-center justify-between text-xs font-bold text-primary">
+                    <span class="flex items-center gap-1.5">
+                      <span class="material-symbols-outlined notranslate text-[17px]" translate="no">phone_iphone</span>
+                      <span>iPhone Kurulumu (2 Adım)</span>
+                    </span>
+                    <span class="text-[10px] font-mono text-on-surface-variant">${isIosChrome() ? 'Chrome iOS' : 'Safari'}</span>
+                  </div>
+                  <div class="flex items-start gap-2.5 text-xs text-on-surface">
+                    <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">1</span>
+                    <span>Yukarıdaki butona (veya ${isIosChrome() ? 'sağ üstteki' : 'alttaki'} <strong class="text-primary">Paylaş</strong> <span class="material-symbols-outlined notranslate text-[14px] align-middle text-primary" translate="no">ios_share</span> simgesine) dokunun.</span>
+                  </div>
+                  <div class="flex items-start gap-2.5 text-xs text-on-surface">
+                    <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">2</span>
+                    <span>Açılan menüde <strong class="text-primary">"Ana Ekrana Ekle"</strong> → <strong class="text-primary">"Ekle"</strong> seçeneğine dokunun.</span>
+                  </div>
+                </div>
+
+                <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
+                  class="w-full h-11 rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[17px] text-primary" translate="no">check_circle</span>
+                  <span>Ana Ekrana Ekledim</span>
+                </button>
               </div>
-              <div class="flex items-start gap-2.5 text-xs text-on-surface">
-                <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">2</span>
-                <span>Listede aşağı kaydırıp <strong class="text-primary">"Ana Ekrana Ekle"</strong> seçeneğine dokunun.</span>
-              </div>
-              <div class="flex items-start gap-2.5 text-xs text-on-surface">
-                <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">3</span>
-                <span>Sağ üstten <strong class="text-primary">"Ekle"</strong> butonuna basın; uygulama ana ekranınıza düşecektir.</span>
-              </div>
-              <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
-                class="mt-1 w-full h-12 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
-                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">check_circle</span>
-                <span>Ana Ekrana Ekledim</span>
-              </button>
-            </div>
+            `}
           ` : `
             <!-- Android / Chromium One-Tap Auto-Install CTA -->
             <div class="flex flex-col gap-3">
@@ -2714,6 +2760,41 @@
     _pwaInstallWaiting = false;
     _pwaManualGuideOpen = true;
     renderMobileOnboardingGate('pwa');
+  }
+
+  async function handleTriggerIosShareInstall() {
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: 'BlocTag',
+          text: 'BlocTag Web3 Platformu',
+          url: window.location.origin + '/'
+        });
+        return;
+      } catch (err) {
+        if (err && err.name === 'AbortError') return;
+      }
+    }
+    if (typeof window.showToast === 'function') {
+      window.showToast(
+        isIosChrome()
+          ? 'Sağ üstteki Paylaş simgesine dokunup "Ana Ekrana Ekle" seçeneğini seçin.'
+          : 'Safari alt çubuğundaki Paylaş simgesine dokunup "Ana Ekrana Ekle" seçeneğini seçin.',
+        'ios_share'
+      );
+    }
+  }
+
+  function handleCopySiteLinkForSafari() {
+    const url = 'https://www.locktrace.space/';
+    if (typeof window.copyText === 'function') {
+      window.copyText(url, 'Link kopyalandı! Safari\'yi açıp adres çubuğuna yapıştırın.');
+    } else if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(url).catch(() => { });
+      if (typeof window.showToast === 'function') {
+        window.showToast('Link kopyalandı! Safari\'de açın.', 'content_copy');
+      }
+    }
   }
 
   function handleMarkManualPwaInstalled() {
