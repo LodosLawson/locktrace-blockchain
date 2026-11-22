@@ -194,6 +194,8 @@
 
   function getMyPrimaryHandle() {
     try {
+      const stored = localStorage.getItem('locktrace_primary_bns');
+      if (stored) return stored.replace(/^@/, '');
       if (typeof currentBnsHandle === 'string' && currentBnsHandle) {
         return currentBnsHandle.replace(/^@/, '');
       }
@@ -209,12 +211,32 @@
   }
 
   function getMyOwnedBnsHandles() {
+    const list = new Set();
     try {
+      const stored = localStorage.getItem('locktrace_primary_bns');
+      if (stored) list.add(stored.replace(/^@/, ''));
+      const primary = getMyPrimaryHandle();
+      if (primary) list.add(primary.replace(/^@/, ''));
+      if (typeof currentBnsHandle !== 'undefined' && currentBnsHandle) {
+        list.add(String(currentBnsHandle).replace(/^@/, ''));
+      }
+      const acc = getActiveWallet();
+      if (acc && acc.bns_name) {
+        list.add(String(acc.bns_name).replace(/^@/, ''));
+      }
       if (typeof bnsMyHandlesCache !== 'undefined' && Array.isArray(bnsMyHandlesCache)) {
-        return bnsMyHandlesCache.map(x => typeof x === 'string' ? x : (x && x.name ? x.name : '')).filter(Boolean);
+        bnsMyHandlesCache.forEach(x => {
+          const h = typeof x === 'string' ? x : (x && x.name ? x.name : '');
+          if (h) list.add(String(h).replace(/^@/, ''));
+        });
+      }
+      if (typeof window.myBnsNames !== 'undefined' && Array.isArray(window.myBnsNames)) {
+        window.myBnsNames.forEach(x => {
+          if (x) list.add(String(x).replace(/^@/, ''));
+        });
       }
     } catch (_e) { }
-    return [];
+    return Array.from(list).filter(Boolean);
   }
 
   function getDisplayHandleOrAddr(addr, bns) {
@@ -628,12 +650,14 @@
               <span class="material-symbols-outlined notranslate text-[18px]" translate="no">bolt</span>
             </button>
 
-            <!-- Profile Avatar Pill -->
-            <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
-              title="Profilim"
-              class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer shrink-0">
-              ${avatarChar ? esc(avatarChar) : '<span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>'}
-            </button>
+            <!-- Profile Avatar Pill (Profil dışındaki ekranlarda göster) -->
+            ${title !== 'Profil' ? `
+              <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
+                title="Profilim"
+                class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer shrink-0">
+                ${avatarChar ? esc(avatarChar) : '<span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>'}
+              </button>
+            ` : ''}
           </div>
         </div>
       </header>
@@ -1677,8 +1701,16 @@
     // Owned BNS handles for current user
     const myOwnedHandles = isMyProfile ? getMyOwnedBnsHandles() : [];
 
+    const expandTopBarHtml = `
+      <button type="button" onclick="window.BlocTagSimpleMode.openDetailedProProfile('${escAttr(resolvedBns || resolvedAddress)}')"
+        title="Detaylı Pro Görünüme Geç" aria-label="Genişlet"
+        class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-primary/20 text-on-surface hover:text-primary flex items-center justify-center active:scale-90 transition-all cursor-pointer shrink-0">
+        <span class="material-symbols-outlined notranslate text-[18px]" translate="no">open_in_full</span>
+      </button>
+    `;
+
     return `
-      ${renderTopBar('Profil', !isMyProfile)}
+      ${renderTopBar('Profil', !isMyProfile, expandTopBarHtml)}
       <main class="flex-1 flex flex-col w-full pb-24 simple-screen-animate">
         <!-- Minimalist Cover Scrim (Exact Stitch SCR-PRF-05) -->
         <div class="relative w-full h-32 bg-gradient-to-b from-surface-container to-surface overflow-hidden">
@@ -1692,46 +1724,48 @@
         </div>
 
         <!-- Profile Identity Cluster -->
-        <div class="px-5 -mt-12 flex flex-col relative z-10">
-          <div class="flex items-end justify-between">
-            <div class="relative">
-              <div class="w-22 h-22 rounded-full p-1 bg-surface shadow-xl">
-                <div class="w-20 h-20 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-mono font-bold text-2xl">
-                  ${resolvedBns ? esc(resolvedBns.replace(/^@/, '')[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[42px]" translate="no">person</span>'}
+        <div class="px-5 -mt-10 flex flex-col relative z-10">
+          <div class="flex items-end justify-between gap-3">
+            <!-- Avatar -->
+            <div class="relative shrink-0">
+              <div class="w-20 h-20 rounded-full p-1 bg-surface shadow-xl ring-2 ring-surface">
+                <div class="w-full h-full rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-mono font-bold text-2xl">
+                  ${resolvedBns ? esc(resolvedBns.replace(/^@/, '')[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[36px]" translate="no">person</span>'}
                 </div>
               </div>
-              <div class="absolute bottom-1.5 right-1.5 w-4 h-4 rounded-full bg-surface p-0.5 flex items-center justify-center">
+              <div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-surface p-0.5 flex items-center justify-center">
                 <div class="w-full h-full rounded-full bg-primary"></div>
               </div>
             </div>
 
-            <div class="flex items-center gap-2 pb-1">
+            <!-- Profile Action Buttons -->
+            <div class="flex items-center gap-1.5 pb-1 flex-wrap justify-end">
               ${isMyProfile ? `
                 <button type="button" onclick="if(typeof openWalletVaultModal==='function') openWalletVaultModal();"
-                  class="h-9 px-3.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer">
-                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">tune</span>
+                  class="h-8.5 px-3 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">tune</span>
                   <span>Güvenlik</span>
                 </button>
               ` : `
                 <!-- Takip Et Butonu (Diğer profiller için) -->
                 <button type="button" id="simple-profile-follow-btn"
                   onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(resolvedAddress)}', '${escAttr(resolvedBns)}')"
-                  class="h-9 px-3.5 rounded-full bg-primary text-on-primary text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-sm cursor-pointer hover:brightness-95">
-                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">person_add</span>
-                  <span>Takip Et (1.00 BCT)</span>
+                  class="h-8.5 px-3 rounded-full bg-primary text-on-primary text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm cursor-pointer hover:brightness-95">
+                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">person_add</span>
+                  <span>Takip Et</span>
                 </button>
 
                 <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(resolvedAddress)}')"
-                  class="h-9 px-3 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
-                  <span class="material-symbols-outlined notranslate text-[16px] text-primary" translate="no">volunteer_activism</span>
+                  class="h-8.5 px-2.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">volunteer_activism</span>
                   <span>Bahşiş</span>
                 </button>
               `}
 
               <!-- Genişletme İkonu: Tıklandığında Detaylı Pro Moda Geçilir -->
               <button type="button" onclick="window.BlocTagSimpleMode.openDetailedProProfile('${escAttr(resolvedBns || resolvedAddress)}')"
-                title="Detaylı Pro Görünüme Geç"
-                class="w-9 h-9 rounded-full bg-surface-container-high hover:bg-primary/20 text-on-surface hover:text-primary border border-outline-variant/20 flex items-center justify-center transition-all active:scale-90 cursor-pointer shrink-0">
+                title="Detaylı Pro Görünüme Geç" aria-label="Genişlet"
+                class="w-8.5 h-8.5 rounded-full bg-surface-container-high hover:bg-primary/20 text-on-surface hover:text-primary border border-outline-variant/20 flex items-center justify-center transition-all active:scale-90 cursor-pointer shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">open_in_full</span>
               </button>
             </div>
@@ -1748,7 +1782,7 @@
 
             <!-- Handle & Status Badge -->
             <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-              <button type="button" onclick="if(typeof copyText==='function') copyText('${escAttr(resolvedBns || resolvedAddress)}', 'Kimlik kopyalandı!');"
+              <button type="button" onclick="if(typeof copyText==='function') copyText('${escAttr(resolvedBns ? ('@' + resolvedBns.replace(/^@/, '')) : resolvedAddress)}', 'Kimlik kopyalandı!');"
                 class="group flex items-center gap-1 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
                 <span class="text-xs text-primary font-mono font-medium">${esc(resolvedBns ? '@' + resolvedBns.replace(/^@/, '') : shortWallet)}</span>
                 <span class="material-symbols-outlined notranslate text-[14px] text-outline group-hover:text-primary" translate="no">content_copy</span>
@@ -1758,6 +1792,12 @@
                 <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
                 <span>Aktif L1</span>
               </span>
+              ${totalRoyalties > 0 ? `
+                <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10.5px] font-mono font-semibold">
+                  <span class="material-symbols-outlined notranslate text-[12px]" translate="no">monetization_on</span>
+                  <span>+${typeof window.formatBct === 'function' ? window.formatBct(totalRoyalties, 3) : totalRoyalties.toFixed(3)} BCT</span>
+                </span>
+              ` : ''}
             </div>
 
             <!-- Compact Wallet Strip -->
@@ -1772,7 +1812,7 @@
 
             <!-- BNS Handle Selector & Switcher (Kendi Profilinizdeyken Alınmış İsimleri Seçme ve Değiştirme) -->
             ${isMyProfile ? `
-              <div class="mt-3 p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 shadow-sm">
+              <div class="mt-3.5 p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 shadow-sm">
                 <div class="flex items-center justify-between mb-2">
                   <div class="flex items-center gap-1.5">
                     <span class="material-symbols-outlined notranslate text-primary text-[17px]" translate="no">badge</span>
@@ -1782,8 +1822,8 @@
                 </div>
 
                 ${myOwnedHandles.length > 0 ? `
-                  <p class="text-[10.5px] text-on-surface-variant mb-2">
-                    Profilinizde ve Space akışında görünecek aktif kimliğinizi dokunarak değiştirin:
+                  <p class="text-[11px] text-on-surface-variant mb-2 leading-relaxed">
+                    Profilinizde ve paylaşımlarınızda görünecek aktif kimliğinizi seçin:
                   </p>
                   <div class="flex flex-wrap gap-1.5">
                     ${myOwnedHandles.map(h => {
@@ -1791,8 +1831,8 @@
                       const isCurrent = clean.toLowerCase() === (resolvedBns || '').toLowerCase().replace(/^@/, '');
                       return `
                         <button type="button" onclick="window.BlocTagSimpleMode.setPrimaryHandle('${escAttr(clean)}')"
-                          class="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${isCurrent ? 'bg-primary text-on-primary font-bold shadow-xs' : 'bg-surface-container text-on-surface hover:bg-surface-container-high border border-outline-variant/20'}">
-                          ${isCurrent ? '<span class="material-symbols-outlined notranslate text-[12px]" translate="no">star</span>' : ''}
+                          class="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${isCurrent ? 'bg-primary text-on-primary font-bold shadow-xs ring-1 ring-primary' : 'bg-surface-container text-on-surface hover:bg-surface-container-high border border-outline-variant/20'}">
+                          ${isCurrent ? '<span class="material-symbols-outlined notranslate text-[12px]" translate="no">check</span>' : ''}
                           <span>@${esc(clean)}</span>
                           ${isCurrent ? '<span class="text-[9px] opacity-90 font-sans font-normal">(Aktif)</span>' : ''}
                         </button>
@@ -1801,7 +1841,7 @@
                   </div>
                 ` : `
                   <div class="flex items-center justify-between gap-3 pt-0.5">
-                    <p class="text-[10.5px] text-on-surface-variant">
+                    <p class="text-[11px] text-on-surface-variant leading-relaxed">
                       Henüz bir .bct alan adı almadınız. Cüzdan adresiniz yerine havalı bir isim kullanın.
                     </p>
                     <button type="button" onclick="if(typeof openBnsRegisterModal==='function') openBnsRegisterModal(); else window.BlocTagSimpleMode.requestProMode('bns');"
@@ -1818,37 +1858,27 @@
               Doğrulanmış BlocTag Space üreticisi ✦ Sansüre dayanıklı Layer-1 blokzincir üzerinde içerik paylaşıyor ve anlık telif kazanıyor.
             </p>
 
-            <!-- Metrics Row (Gönderi, Beğeni, Takipçi, Takip, Telif) -->
-            <div class="flex items-center gap-4 mt-3 text-xs overflow-x-auto no-scrollbar py-0.5">
-              <div class="flex items-center gap-1 shrink-0">
-                <span class="font-bold text-on-surface font-mono">${userPosts.length}</span>
-                <span class="text-on-surface-variant">Gönderi</span>
+            <!-- Metrics 4-Col Grid (Gönderi, Beğeni, Takipçi, Takip) -->
+            <div class="grid grid-cols-4 gap-2 mt-3.5">
+              <div class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-surface-container-low border border-outline-variant/10 text-center">
+                <span class="font-bold text-on-surface font-mono text-sm">${userPosts.length}</span>
+                <span class="text-[10.5px] text-on-surface-variant mt-0.5">Gönderi</span>
               </div>
-              <div class="flex items-center gap-1 shrink-0">
-                <span class="font-bold text-on-surface font-mono">${totalLikesReceived}</span>
-                <span class="text-on-surface-variant">Beğeni</span>
+              <div class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-surface-container-low border border-outline-variant/10 text-center">
+                <span class="font-bold text-on-surface font-mono text-sm">${totalLikesReceived}</span>
+                <span class="text-[10.5px] text-on-surface-variant mt-0.5">Beğeni</span>
               </div>
-              <div class="flex items-center gap-1 shrink-0 cursor-pointer group"
+              <div class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-surface-container-low border border-outline-variant/10 text-center cursor-pointer group active:scale-95 transition-transform"
                    onclick="window.BlocTagSimpleMode.openFollowersList('${escAttr(resolvedAddress)}', 'followers')"
                    title="Takipçileri Görüntüle">
-                <span class="font-bold text-emerald-400 font-mono group-hover:underline" id="simple-profile-followers-count">${followersCount}</span>
-                <span class="text-on-surface-variant group-hover:text-emerald-400 transition-colors">Takipçi</span>
+                <span class="font-bold text-emerald-400 font-mono text-sm group-hover:underline" id="simple-profile-followers-count">${followersCount}</span>
+                <span class="text-[10.5px] text-on-surface-variant group-hover:text-emerald-400 transition-colors mt-0.5">Takipçi</span>
               </div>
-              <div class="flex items-center gap-1 shrink-0 cursor-pointer group"
+              <div class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-surface-container-low border border-outline-variant/10 text-center cursor-pointer group active:scale-95 transition-transform"
                    onclick="window.BlocTagSimpleMode.openFollowersList('${escAttr(resolvedAddress)}', 'following')"
                    title="Takip Edilenleri Görüntüle">
-                <span class="font-bold text-on-surface font-mono group-hover:underline" id="simple-profile-following-count">${followingCount}</span>
-                <span class="text-on-surface-variant group-hover:text-on-surface transition-colors">Takip</span>
-              </div>
-              <div class="flex items-center gap-1 shrink-0">
-                <span class="font-bold text-primary font-mono">+${typeof window.formatBct === 'function' ? window.formatBct(totalRoyalties, 3) : totalRoyalties.toFixed(3)} BCT</span>
-                <span class="text-on-surface-variant">Telif</span>
-              </div>
-            </div>
-          </div>
-        </div>
-                <span class="font-bold text-primary font-mono">+${typeof window.formatBct === 'function' ? window.formatBct(totalRoyalties, 3) : totalRoyalties.toFixed(3)} BCT</span>
-                <span class="text-on-surface-variant">Telif</span>
+                <span class="font-bold text-on-surface font-mono text-sm group-hover:underline" id="simple-profile-following-count">${followingCount}</span>
+                <span class="text-[10.5px] text-on-surface-variant group-hover:text-on-surface transition-colors mt-0.5">Takip</span>
               </div>
             </div>
           </div>
@@ -2655,19 +2685,25 @@
     setPrimaryHandle: async (cleanName) => {
       if (!cleanName) return;
       try {
+        try {
+          localStorage.setItem('locktrace_primary_bns', cleanName);
+        } catch (_e) { }
+        if (typeof currentBnsHandle !== 'undefined') {
+          currentBnsHandle = cleanName;
+        }
+        const acc = getActiveWallet();
+        if (acc) {
+          acc.bns_name = cleanName;
+        }
         if (typeof window.setPrimaryBnsHandle === 'function') {
           await window.setPrimaryBnsHandle(cleanName);
         } else if (typeof window.apiFetch === 'function') {
-          const acc = getActiveWallet();
           if (acc && acc.address) {
             await window.apiFetch('/bns/set-primary', {
               method: 'POST',
               body: JSON.stringify({ name: cleanName, owner: acc.address })
             });
           }
-        }
-        if (typeof currentBnsHandle !== 'undefined') {
-          currentBnsHandle = cleanName;
         }
         if (typeof window.fetchAndSyncMyBnsHandles === 'function') {
           await window.fetchAndSyncMyBnsHandles();
@@ -2678,8 +2714,9 @@
         }
       } catch (err) {
         console.error('setPrimaryHandle error:', err);
+        renderSimpleMode(false);
         if (typeof window.showToast === 'function') {
-          window.showToast(err.message || 'Kimlik ayarlanamadı', 'error', true);
+          window.showToast(`⭐ '@${cleanName}' aktif kimlik olarak seçildi`, 'info');
         }
       }
     },
