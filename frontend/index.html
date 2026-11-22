@@ -10320,7 +10320,8 @@
         text = (text.slice(0, quoteMatch.index) + text.slice(quoteMatch.index + quoteMatch[0].length)).trim();
       }
 
-      // Placeholder system to prevent recursive multi-tagging on wallet addresses
+      // Placeholder system to prevent recursive multi-tagging & HTML entity corruption (e.g. &#39; -> #39)
+      text = text.replace(/\uE000/g, '');
       const placeholders = [];
       function savePlaceholder(html) {
         const ph = `\uE000BCT_PH_${placeholders.length}\uE000`;
@@ -10328,7 +10329,7 @@
         return ph;
       }
 
-      // 1. External URLs (AUD-01: Extracted from raw text BEFORE escaping to prevent link corruption)
+      // 1. External URLs (Extracted from raw text BEFORE escaping to prevent link corruption; inline so links wrap naturally)
       text = text.replace(/(https?:\/\/[^\s<>"'`]+)/gi, (match) => {
         let urlStr = match;
         let trailing = '';
@@ -10341,42 +10342,40 @@
           if (parsed.protocol !== 'http:' && parsed.protocol !== 'https:') return match;
           const safeHref = escapeHtml(parsed.href);
           const safeDisplay = escapeHtml(urlStr);
-          const linkHtml = `<a href="${safeHref}" target="_blank" rel="noopener noreferrer nofollow" class="text-primary hover:underline inline-flex items-center gap-0.5 break-all" onclick="event.stopPropagation();">${safeDisplay}</a>`;
+          const linkHtml = `<a href="${safeHref}" target="_blank" rel="noopener noreferrer nofollow" class="text-primary hover:underline inline break-all [overflow-wrap:anywhere]" onclick="event.stopPropagation();">${safeDisplay}</a>`;
           return savePlaceholder(linkHtml) + trailing;
         } catch (_) {
           return match;
         }
       });
 
-      let safe = escapeHtml(text || '');
-
-      // 2. Mentions & Replies: Clickable to view author profile directly & filter topic
-      safe = safe.replace(/@([a-zA-Z0-9_\-\.]+)/g, (match, handle) => {
+      // 2. Mentions & Replies: Extracted BEFORE escapeHtml so entities are never broken
+      text = text.replace(/(^|[^a-zA-Z0-9_\-\.])@([a-zA-Z0-9_\-\.]+)/g, (match, prefix, handle) => {
         const cleanHandle = sanitizeJsAttr(handle);
         const escHandle = escapeHtml(handle);
         const isWallet = /^BCT[a-fA-F0-9]{36,44}$/i.test(handle) || /^BCT[a-fA-F0-9]{3,10}(?:\.\.\.|…)[a-fA-F0-9]{3,10}$/i.test(handle);
-        const displayHandle = isWallet && handle.length > 14 ? `@${handle.slice(0, 6)}...${handle.slice(-4)}` : `@${escHandle}`;
+        const displayHandle = isWallet && handle.length > 14 ? `@${handle.slice(0, 6)}...${handle.slice(-4)}` : `@${handle}`;
         const filterEntity = isWallet ? `#${cleanHandle}` : `@${cleanHandle}`;
         const html = `<span class="mention-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('${filterEntity}'); openUserProfile('${cleanHandle}');" title="View Profile &amp; Filter: @${escHandle}">${escapeHtml(displayHandle)}</span>`;
-        return savePlaceholder(html);
+        return prefix + savePlaceholder(html);
       });
 
-      // 3. Hashtags: #topic (supports Unicode letters; wallet tags open profile & stay as active filter)
-      safe = safe.replace(/#([a-zA-Z0-9_\-\u00C0-\u017F]+)/g, (match, tag) => {
+      // 3. Hashtags: #topic (Extracted BEFORE escapeHtml so &#39; apostrophes are never misparsed as #39)
+      text = text.replace(/(^|[^a-zA-Z0-9_&;/])#([a-zA-Z0-9_\-\u00C0-\u017F]+)/g, (match, prefix, tag) => {
         const cleanTag = sanitizeJsAttr(tag);
         const escTag = escapeHtml(tag);
         const isWalletTag = /^BCT[a-fA-F0-9]{36,44}$/i.test(tag) || /^BCT[a-fA-F0-9]{3,10}(?:\.\.\.|…)[a-fA-F0-9]{3,10}$/i.test(tag);
         if (isWalletTag) {
           const shortTag = tag.length > 14 ? `#${tag.slice(0, 6)}...${tag.slice(-4)}` : `#${tag}`;
           const html = `<span class="hashtag-tag inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors shrink-0 shadow-2xs border border-emerald-500/20" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}'); openUserProfile('${cleanTag}');" title="View Profile &amp; Filter: #${escTag}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
-          return savePlaceholder(html);
+          return prefix + savePlaceholder(html);
         }
         const html = `<span class="hashtag-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-400 font-medium hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}')" title="Filter topic #${escTag}">#${escTag}</span>`;
-        return savePlaceholder(html);
+        return prefix + savePlaceholder(html);
       });
 
       // 4. Standalone Full BCT Wallets (36-44 chars)
-      safe = safe.replace(/(^|[^a-zA-Z0-9_#@/])(BCT[a-fA-F0-9]{36,44})\b/g, (match, prefix, addr) => {
+      text = text.replace(/(^|[^a-zA-Z0-9_#@/])(BCT[a-fA-F0-9]{36,44})\b/g, (match, prefix, addr) => {
         const cleanAddr = sanitizeJsAttr(addr);
         const escAddr = escapeHtml(addr);
         const shortTag = `${addr.slice(0, 6)}...${addr.slice(-4)}`;
@@ -10385,7 +10384,7 @@
       });
 
       // 5. Standalone Shortened BCT Wallets (e.g. BCT3fec...1572 or BCTd8b8…3eb9)
-      safe = safe.replace(/(^|[^a-zA-Z0-9_#@/])(BCT[a-fA-F0-9]{3,8}(?:\.\.\.|…)[a-fA-F0-9]{3,8})(?=[^a-zA-Z0-9_]|$)/g, (match, prefix, addr) => {
+      text = text.replace(/(^|[^a-zA-Z0-9_#@/])(BCT[a-fA-F0-9]{3,8}(?:\.\.\.|…)[a-fA-F0-9]{3,8})(?=[^a-zA-Z0-9_]|$)/g, (match, prefix, addr) => {
         const cleanAddr = sanitizeJsAttr(addr);
         const escAddr = escapeHtml(addr);
         const html = `<span class="wallet-pill inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors border border-emerald-500/20 shadow-2xs" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanAddr}'); openUserProfile('${cleanAddr}');" title="View Profile &amp; Filter: ${escAddr}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(addr)}</span></span>`;
@@ -10393,19 +10392,22 @@
       });
 
       // 6. Cashtags ($BCT, $BTC, etc.)
-      safe = safe.replace(/\$([a-zA-Z0-9_]{2,10})\b/g, (match, sym) => {
+      text = text.replace(/(^|[^a-zA-Z0-9_])\$([a-zA-Z][a-zA-Z0-9_]{1,9})\b/g, (match, prefix, sym) => {
         const s = sanitizeJsAttr(sym).toUpperCase();
         const escSym = escapeHtml(sym.toUpperCase());
         const html = `<span class="cashtag-tag inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-secondary/10 text-secondary font-mono font-semibold hover:bg-secondary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('$${s}')" title="Filter symbol $${escSym}">$${escSym}</span>`;
-        return savePlaceholder(html);
+        return prefix + savePlaceholder(html);
       });
 
-      // 7. Restore all placeholders in exact order (prevents attribute corruption)
+      // 7. Escape all remaining raw text safely AFTER entity extraction
+      let safe = escapeHtml(text || '');
+
+      // 8. Restore all placeholders in exact order (prevents attribute corruption)
       for (const item of placeholders) {
         safe = safe.replaceAll(item.placeholder, () => item.html);
       }
 
-      // 8. Line breaks
+      // 9. Line breaks
       safe = safe.replace(/\n/g, '<br/>');
 
       return safe ? (quoteCardHtml ? `${safe}<br/>${quoteCardHtml}` : safe) : quoteCardHtml;
@@ -15314,7 +15316,7 @@
         ` : '';
 
         return `
-          <article class="bg-surface-container-low/95 hover:bg-surface-container rounded-2xl p-4 sm:p-5 flex flex-col gap-3 transition-all duration-200 border border-outline-variant/15 shadow-xs cursor-pointer" onclick="openSpacePostDetail('${pid}')">
+          <article class="bg-surface-container-low/95 hover:bg-surface-container rounded-2xl p-4 sm:p-5 flex flex-col gap-3 transition-all duration-200 border border-outline-variant/15 shadow-xs cursor-pointer min-w-0 overflow-hidden" onclick="openSpacePostDetail('${pid}')">
             <!-- Author Header (Mobile-First 2-Line Hierarchy) -->
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3 min-w-0">
@@ -15360,7 +15362,7 @@
             </div>
 
             <!-- Post Body Text -->
-            <div class="text-[14.5px] sm:text-[15.5px] text-on-surface leading-relaxed break-words font-normal cursor-pointer select-text py-0.5" onclick="openSpacePostDetail('${pid}')">
+            <div class="text-[14.5px] sm:text-[15.5px] text-on-surface leading-relaxed break-words [overflow-wrap:anywhere] min-w-0 max-w-full font-normal cursor-pointer select-text py-0.5" onclick="openSpacePostDetail('${pid}')">
               ${formatSpaceBodyHtml(post.content)}
             </div>
 
@@ -15815,7 +15817,7 @@
           </div>
 
           <div class="space-y-3">
-            <p class="font-body-lg text-body-lg text-on-surface leading-relaxed break-words">
+            <p class="font-body-lg text-body-lg text-on-surface leading-relaxed break-words [overflow-wrap:anywhere] min-w-0 max-w-full">
               ${formatSpaceBodyHtml(post.content)}
             </p>
 
@@ -15916,7 +15918,7 @@
                   </button>
                 </div>
               </div>
-              <p class="font-body-md text-body-md text-on-surface pl-9 break-words">
+              <p class="font-body-md text-body-md text-on-surface pl-9 break-words [overflow-wrap:anywhere] min-w-0 max-w-full">
                 ${formatSpaceBodyHtml(c.content)}
               </p>
             </div>
