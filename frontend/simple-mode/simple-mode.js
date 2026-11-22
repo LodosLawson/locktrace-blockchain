@@ -2534,37 +2534,44 @@
                 </button>
               </div>
             ` : `
-              <!-- iOS Safari / Chrome Native Share-Sheet 1-Tap Trigger + Visual Guide -->
+              <!-- iOS Safari / Chrome Native Toolbar Pointer (Apple blocks JS auto-install & omits Add to Home Screen from navigator.share) -->
               <div class="flex flex-col gap-3">
-                <button type="button" onclick="window.BlocTagSimpleMode.triggerIosShareInstall()"
-                  class="w-full h-[54px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(78,222,163,0.3)] hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer">
-                  <span class="material-symbols-outlined notranslate text-[20px]" translate="no">ios_share</span>
-                  <span>Paylaş Menüsünü Aç &amp; Ana Ekrana Ekle</span>
-                </button>
-
-                <div class="p-3.5 rounded-3xl bg-surface-container border border-primary/25 flex flex-col gap-2.5">
+                <div class="p-4 rounded-3xl bg-surface-container border border-primary/30 flex flex-col gap-3 shadow-lg">
                   <div class="flex items-center justify-between text-xs font-bold text-primary">
                     <span class="flex items-center gap-1.5">
-                      <span class="material-symbols-outlined notranslate text-[17px]" translate="no">phone_iphone</span>
+                      <span class="material-symbols-outlined notranslate text-[18px]" translate="no">phone_iphone</span>
                       <span>iPhone Kurulumu (2 Adım)</span>
                     </span>
-                    <span class="text-[10px] font-mono text-on-surface-variant">${isIosChrome() ? 'Chrome iOS' : 'Safari'}</span>
+                    <span class="px-2 py-0.5 rounded-full bg-primary/15 text-[10px] font-mono text-primary">${isIosChrome() ? 'Chrome iOS' : 'Safari'}</span>
                   </div>
                   <div class="flex items-start gap-2.5 text-xs text-on-surface">
-                    <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">1</span>
-                    <span>Yukarıdaki butona (veya ${isIosChrome() ? 'sağ üstteki' : 'alttaki'} <strong class="text-primary">Paylaş</strong> <span class="material-symbols-outlined notranslate text-[14px] align-middle text-primary" translate="no">ios_share</span> simgesine) dokunun.</span>
+                    <span class="w-5 h-5 rounded-full bg-primary text-on-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">1</span>
+                    <span>${isIosChrome() ? 'Tarayıcının <strong>sağ üst</strong> köşesindeki' : 'Safari\'nin <strong>en alt ortasındaki</strong>'} <strong class="text-primary">Paylaş</strong> (<span class="material-symbols-outlined notranslate text-[15px] align-middle text-primary" translate="no">ios_share</span>) simgesine dokunun.</span>
                   </div>
                   <div class="flex items-start gap-2.5 text-xs text-on-surface">
-                    <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">2</span>
-                    <span>Açılan menüde <strong class="text-primary">"Ana Ekrana Ekle"</strong> → <strong class="text-primary">"Ekle"</strong> seçeneğine dokunun.</span>
+                    <span class="w-5 h-5 rounded-full bg-primary text-on-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">2</span>
+                    <span>Açılan menüyü aşağı kaydırıp <strong class="text-primary">"Ana Ekrana Ekle"</strong> → sağ üstten <strong class="text-primary">"Ekle"</strong> butonuna basın.</span>
                   </div>
                 </div>
 
                 <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
-                  class="w-full h-11 rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer">
-                  <span class="material-symbols-outlined notranslate text-[17px] text-primary" translate="no">check_circle</span>
+                  class="w-full h-12 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[19px]" translate="no">check_circle</span>
                   <span>Ana Ekrana Ekledim</span>
                 </button>
+
+                ${!isIosChrome() ? `
+                  <!-- Animated Bottom Pointer Aiming Directly at Safari's Native Share Button -->
+                  <div class="flex flex-col items-center gap-1 pt-2 text-primary animate-bounce">
+                    <span class="text-[11px] font-semibold tracking-wide">Safari Paylaş (↑) simgesi aşağıda</span>
+                    <span class="material-symbols-outlined notranslate text-[24px]" translate="no">keyboard_double_arrow_down</span>
+                  </div>
+                ` : `
+                  <div class="flex items-center justify-center gap-1.5 pt-1 text-primary text-[11px] font-semibold">
+                    <span class="material-symbols-outlined notranslate text-[18px]" translate="no">north_east</span>
+                    <span>Chrome Paylaş (↑) simgesi sağ üst çubukta</span>
+                  </div>
+                `}
               </div>
             `}
           ` : `
