@@ -255,3 +255,48 @@ html.bloctag-mobile-gate-open #toast {
   display: flex;
   animation: bloctagSimpleMorphIn 0.35s var(--simple-ease-spring);
 }
+
+/* Bulletproof Tweet / Post Card & Body Wrapping (Prevents flex blow-out & inline-flex line collapse) */
+.simple-post-card {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.simple-post-body {
+  min-width: 0;
+  max-width: 100%;
+  width: 100%;
+  overflow: hidden;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.55;
+}
+
+.simple-post-body a {
+  display: inline !important;
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+.simple-post-body .mention-tag,
+.simple-post-body .hashtag-tag,
+.simple-post-body .cashtag-tag,
+.simple-post-body .wallet-pill {
+  max-width: 100%;
+  vertical-align: middle;
+  line-height: 1.35;
+  margin-top: 1px;
+  margin-bottom: 1px;
+  white-space: normal;
+  word-break: break-word;
+}
+
+.simple-post-body img,
+.simple-post-body video {
+  max-width: 100%;
+  height: auto;
+  border-radius: 12px;
+}

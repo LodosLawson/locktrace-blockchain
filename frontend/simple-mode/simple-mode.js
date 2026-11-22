@@ -1320,7 +1320,7 @@
         </div>
 
         <!-- Feed List Stream (Exact Stitch Post Cards) -->
-        <div class="flex flex-col gap-2.5 mt-3" id="simple-feed-container">
+        <div class="flex flex-col gap-2.5 mt-3 w-full min-w-0" id="simple-feed-container">
           ${filteredPosts.length === 0 ? `
             <div class="p-8 rounded-2xl bg-surface-container-low text-center flex flex-col items-center gap-2 text-on-surface-variant">
               <span class="material-symbols-outlined notranslate text-[28px] text-primary" translate="no">forum</span>
@@ -1341,7 +1341,22 @@
     `;
   }
 
+  function safeFormatSimpleBody(rawContent) {
+    try {
+      const str = String(rawContent ?? '');
+      if (!str.trim()) return '';
+      if (typeof window.formatSpaceBodyHtml === 'function') {
+        const formatted = window.formatSpaceBodyHtml(str);
+        if (typeof formatted === 'string' && formatted.length > 0) return formatted;
+      }
+      return esc(str).replace(/\n/g, '<br/>');
+    } catch (_e) {
+      return esc(String(rawContent ?? '')).replace(/\n/g, '<br/>');
+    }
+  }
+
   function renderSimplePostCard(post, acc) {
+    if (!post || typeof post !== 'object') return '';
     const pid = escAttr(post.post_id || post.id || '');
     const authorAddr = String(post.author || '');
     const authorBns = (post.author_bns && post.author_bns !== 'anonymous') ? String(post.author_bns).replace(/^@/, '') : '';
@@ -1352,22 +1367,20 @@
     const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr));
     const likesCount = Number(post.likes_count || (Array.isArray(post.likes) ? post.likes.length : 0));
     const commentsCount = Number(post.comments_count || (Array.isArray(post.comments) ? post.comments.length : 0));
-    const bodyHtml = typeof window.formatSpaceBodyHtml === 'function'
-      ? window.formatSpaceBodyHtml(post.content || '')
-      : esc(post.content || '');
+    const bodyHtml = safeFormatSimpleBody(post.content || '');
     const profileTargetAttr = escAttr(authorBns || authorAddr);
 
     return `
       <article onclick="window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: '${pid}' })"
-        class="bg-surface-container-low rounded-2xl shadow-sm transition-all hover:bg-surface-container p-3.5 border border-outline-variant/10 cursor-pointer">
-        <div class="flex items-center justify-between">
-          <div class="flex items-center gap-2.5 min-w-0"
+        class="simple-post-card bg-surface-container-low rounded-2xl shadow-sm transition-all hover:bg-surface-container p-3.5 border border-outline-variant/10 cursor-pointer">
+        <div class="flex items-center justify-between gap-2 min-w-0">
+          <div class="flex items-center gap-2.5 min-w-0 flex-1"
                onclick="event.stopPropagation(); window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${profileTargetAttr}' })">
             <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary shrink-0">
               <span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>
             </div>
-            <div class="min-w-0">
-              <div class="flex items-center gap-1">
+            <div class="min-w-0 flex-1">
+              <div class="flex items-center gap-1 min-w-0">
                 <span class="text-xs font-semibold text-on-surface truncate">${esc(displayName)}</span>
                 <span class="material-symbols-outlined notranslate text-primary text-[15px] shrink-0" style="font-variation-settings: 'FILL' 1;" translate="no">verified</span>
               </div>
@@ -1376,12 +1389,12 @@
           </div>
           <button type="button" aria-label="Paylaş"
             onclick="event.stopPropagation(); if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
-            class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer">
+            class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer shrink-0">
             <span class="material-symbols-outlined notranslate text-[18px]" translate="no">more_horiz</span>
           </button>
         </div>
 
-        <div class="mt-2.5 text-sm text-on-surface leading-relaxed break-words">
+        <div class="simple-post-body mt-2.5 text-sm text-on-surface">
           ${bodyHtml}
         </div>
 
@@ -1441,16 +1454,14 @@
     const comments = Array.isArray(post.comments) ? post.comments : [];
     const earned = Number(post.author_earnings || 0);
     const fullDate = typeof window.formatFullDate === 'function' ? window.formatFullDate(post.timestamp) : '';
-    const bodyHtml = typeof window.formatSpaceBodyHtml === 'function'
-      ? window.formatSpaceBodyHtml(post.content || '')
-      : esc(post.content || '');
+    const bodyHtml = safeFormatSimpleBody(post.content || '');
     const profileTargetAttr = escAttr(authorBns || authorAddr);
 
     return `
       ${renderTopBar('Gönderi Detayı', true)}
-      <main class="flex-1 flex flex-col w-full px-4 pt-3 pb-36 simple-screen-animate">
+      <main class="flex-1 flex flex-col w-full min-w-0 px-4 pt-3 pb-36 simple-screen-animate">
         <!-- Main Post Card (Exact Stitch SCR-SPC-04) -->
-        <section class="bg-surface-container rounded-2xl flex flex-col shadow-sm p-4 gap-3 border border-outline-variant/15">
+        <section class="simple-post-card bg-surface-container rounded-2xl flex flex-col shadow-sm p-4 gap-3 border border-outline-variant/15">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5 min-w-0 cursor-pointer"
                  onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${profileTargetAttr}' })">
@@ -1471,7 +1482,7 @@
             </button>
           </div>
 
-          <div class="text-base text-on-surface leading-relaxed break-words pt-1">
+          <div class="simple-post-body text-base text-on-surface pt-1">
             ${bodyHtml}
           </div>
 
@@ -1544,25 +1555,25 @@
       const cBns = (c.commenter_bns && c.commenter_bns !== 'anonymous') ? String(c.commenter_bns).replace(/^@/, '') : '';
       const cName = cBns ? ('@' + cBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(cAddr) : cAddr);
       const cTime = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(c.timestamp) : '';
-      const cBody = typeof window.formatSpaceBodyHtml === 'function' ? window.formatSpaceBodyHtml(c.content || '') : esc(c.content || '');
+      const cBody = safeFormatSimpleBody(c.content || '');
       return `
-              <article class="bg-surface-container rounded-2xl px-3.5 py-3 flex flex-col gap-1.5 border border-outline-variant/10">
-                <div class="flex items-center justify-between">
-                  <div class="flex items-center gap-2 min-w-0 cursor-pointer"
+              <article class="simple-post-card bg-surface-container rounded-2xl px-3.5 py-3 flex flex-col gap-1.5 border border-outline-variant/10">
+                <div class="flex items-center justify-between gap-2 min-w-0">
+                  <div class="flex items-center gap-2 min-w-0 cursor-pointer flex-1"
                        onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${escAttr(cBns || cAddr)}' })">
                     <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-secondary shrink-0">
                       <span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>
                     </div>
                     <div class="flex items-center gap-1.5 min-w-0">
                       <span class="text-xs font-semibold text-on-surface truncate">${esc(cName)}</span>
-                      <span class="material-symbols-outlined notranslate text-[13px] text-primary" style="font-variation-settings: 'FILL' 1;" translate="no">verified</span>
-                      <span class="text-[11px] text-on-surface-variant">· ${esc(cTime)}</span>
+                      <span class="material-symbols-outlined notranslate text-[13px] text-primary shrink-0" style="font-variation-settings: 'FILL' 1;" translate="no">verified</span>
+                      <span class="text-[11px] text-on-surface-variant shrink-0">· ${esc(cTime)}</span>
                     </div>
                   </div>
                   <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(cAddr)}')"
-                    class="text-[11px] text-primary hover:underline font-medium cursor-pointer">Bahşiş</button>
+                    class="text-[11px] text-primary hover:underline font-medium cursor-pointer shrink-0">Bahşiş</button>
                 </div>
-                <div class="text-xs text-on-surface leading-relaxed pl-10 break-words">
+                <div class="simple-post-body text-xs text-on-surface pl-10">
                   ${cBody}
                 </div>
               </article>
@@ -3431,6 +3442,22 @@
       };
       wrappedToggleBackBtn._simpleHooked = true;
       window.togglePwaBackButtonSetting = wrappedToggleBackBtn;
+    }
+
+    // Route hashtag / cashtag / mention clicks inside tweets to Simple Mode search/feed
+    const origFilterSpaceByEntity = window.filterSpaceByEntity;
+    if (typeof origFilterSpaceByEntity === 'function' && !origFilterSpaceByEntity._simpleHooked) {
+      const wrappedFilterEntity = function (entity) {
+        if (simpleState.enabled && entity) {
+          simpleState.searchBarOpen = true;
+          simpleState.searchQuery = String(entity).trim();
+          navigateToSimpleScreen('SCR-SPC-03');
+          return;
+        }
+        return origFilterSpaceByEntity.apply(this, arguments);
+      };
+      wrappedFilterEntity._simpleHooked = true;
+      window.filterSpaceByEntity = wrappedFilterEntity;
     }
 
     // Intercept Pro Mode tab navigation while in Simple Mode and ask for user confirmation
