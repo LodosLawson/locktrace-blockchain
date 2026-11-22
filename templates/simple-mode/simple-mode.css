@@ -37,11 +37,9 @@
 @keyframes bloctagScreenSlideIn {
   0% {
     opacity: 0;
-    transform: translateY(10px) scale(0.992);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1);
   }
 }
 
@@ -55,7 +53,7 @@
 }
 
 html.bloctag-mode-switching body {
-  animation: bloctagProMorphIn 0.36s var(--simple-ease-spring) forwards;
+  animation: bloctagProMorphIn 0.36s var(--simple-ease-spring);
 }
 
 /* Hide Pro Mode primary shell when Simple Mode is active (Keep all modals z-[80]+ intact!) */
@@ -67,7 +65,7 @@ html.bloctag-simple-mode body > div.md\:pl-64 {
   display: none !important;
 }
 
-/* Simple Mode Root Shell */
+/* Simple Mode Root Shell (No persistent transform/filter so position:fixed pins cleanly to viewport!) */
 #bloctag-simple-mode-shell {
   display: none;
   width: 100%;
@@ -78,12 +76,15 @@ html.bloctag-simple-mode body > div.md\:pl-64 {
   flex-direction: column;
   align-items: center;
   position: relative;
-  overflow-x: hidden;
+  overflow-x: clip;
 }
 
 html.bloctag-simple-mode #bloctag-simple-mode-shell {
   display: flex !important;
-  animation: bloctagSimpleMorphIn 0.42s var(--simple-ease-spring) forwards;
+}
+
+html.bloctag-simple-mode.bloctag-mode-switching #bloctag-simple-mode-shell {
+  animation: bloctagSimpleMorphIn 0.4s var(--simple-ease-spring);
 }
 
 /* Responsive Centered Mobile-First Frame (390px-480px on mobile, sleek centered app frame on tablet/desktop) */
@@ -108,7 +109,7 @@ html.bloctag-simple-mode #bloctag-simple-mode-shell {
 }
 
 .simple-screen-animate {
-  animation: bloctagScreenSlideIn 0.28s var(--simple-ease-spring) forwards;
+  animation: bloctagScreenSlideIn 0.24s var(--simple-ease-smooth);
 }
 
 /* Stitch Top & Bottom Fixed Bars inside Simple Mode */
@@ -117,27 +118,47 @@ html.bloctag-simple-mode #bloctag-simple-mode-shell {
   top: 0;
   width: 100%;
   z-index: 45;
-  background-color: rgba(19, 19, 21, 0.85);
+  background-color: rgba(19, 19, 21, 0.88);
   -webkit-backdrop-filter: blur(20px);
   backdrop-filter: blur(20px);
   padding-top: env(safe-area-inset-top, 0px);
   border-bottom: 1px solid rgba(60, 74, 66, 0.14);
 }
 
-.simple-bottom-nav {
+/* Viewport-Locked Bottom Navigation Portal (Always pinned to screen bottom, never pushed to page end) */
+#bloctag-simple-bottom-nav-portal {
+  display: none;
   position: fixed;
   bottom: 0;
-  left: 50%;
-  transform: translateX(-50%);
+  left: 0;
+  right: 0;
+  width: 100%;
+  z-index: 55;
+  pointer-events: none;
+}
+
+html.bloctag-simple-mode #bloctag-simple-bottom-nav-portal {
+  display: block !important;
+}
+
+.simple-bottom-nav {
+  pointer-events: auto;
   width: 100%;
   max-width: 480px;
-  z-index: 45;
-  background-color: rgba(19, 19, 21, 0.88);
-  -webkit-backdrop-filter: blur(20px);
-  backdrop-filter: blur(20px);
-  padding-bottom: env(safe-area-inset-bottom, 0px);
-  border-top: 1px solid rgba(60, 74, 66, 0.18);
-  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
+  margin: 0 auto;
+  background-color: rgba(19, 19, 21, 0.92);
+  -webkit-backdrop-filter: blur(22px);
+  backdrop-filter: blur(22px);
+  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  border-top: 1px solid rgba(60, 74, 66, 0.2);
+  box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.42);
+}
+
+@media (min-width: 640px) {
+  .simple-bottom-nav {
+    border-left: 1px solid rgba(60, 74, 66, 0.22);
+    border-right: 1px solid rgba(60, 74, 66, 0.22);
+  }
 }
 
 /* Pro / Simple Mode Toggle Pill Styling in Menu */

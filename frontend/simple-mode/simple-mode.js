@@ -178,7 +178,102 @@
       shell.setAttribute('aria-label', 'BlocTag Simple Mode Interface');
       document.body.appendChild(shell);
     }
+    let navPortal = document.getElementById('bloctag-simple-bottom-nav-portal');
+    if (!navPortal) {
+      navPortal = document.createElement('div');
+      navPortal.id = 'bloctag-simple-bottom-nav-portal';
+      document.body.appendChild(navPortal);
+    }
     return shell;
+  }
+
+  // Pro Mode Switch Confirmation Modal (shown when navigating to Pro pages from Simple Mode)
+  let _pendingProTargetTab = null;
+  const PRO_TAB_LABELS = {
+    'ana-sayfa': 'Ana Sayfa (Pro Genel Bakış)',
+    'ag-ve-explorer': 'Ağ & Blok Explorer',
+    'dugum-paneli': 'Node & Validator Paneli',
+    'system-wallets': 'Sistem Cüzdanları & Hazine',
+    'kopru': 'Base Köprü (Bridge)',
+    'bns': 'BNS İsim Pazarı (.bct)',
+    'api-docs': 'Geliştirici API & Dokümantasyon',
+    'guvenlik': 'Güvenlik & Kriptografi'
+  };
+
+  function requestSwitchToProMode(targetTab = null) {
+    _pendingProTargetTab = targetTab || null;
+
+    // Close mobile menu drawer if open so the confirmation modal is clearly visible
+    try {
+      const mobMenu = document.getElementById('mobileMenuModal');
+      if (mobMenu && !mobMenu.classList.contains('hidden') && typeof window.closeMobileMenuModal === 'function') {
+        window.closeMobileMenuModal();
+      }
+    } catch (_e) {}
+
+    let modal = document.getElementById('bloctag-pro-confirm-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'bloctag-pro-confirm-modal';
+      modal.className = 'hidden fixed inset-0 z-[95] bg-black/75 backdrop-blur-md items-center justify-center p-4';
+      document.body.appendChild(modal);
+    }
+
+    const pageName = targetTab && PRO_TAB_LABELS[targetTab] ? PRO_TAB_LABELS[targetTab] : '';
+    const descHtml = pageName
+      ? `<strong class="text-primary">${esc(pageName)}</strong> sayfası Pro Mod arayüzünde yer almaktadır. Pro Moda geçmek istediğinizden emin misiniz?`
+      : 'Tam protokol araçlarına erişmek için <strong class="text-primary">Pro Mod</strong> arayüzüne geçmek istediğinizden emin misiniz?';
+
+    modal.innerHTML = `
+      <div class="w-full max-w-[360px] rounded-3xl bg-surface-container border border-outline-variant/25 shadow-2xl p-5 flex flex-col gap-4 animate-fade-in" onclick="event.stopPropagation()">
+        <div class="flex items-center gap-3">
+          <div class="w-11 h-11 rounded-2xl bg-primary/15 border border-primary/30 text-primary flex items-center justify-center shrink-0">
+            <span class="material-symbols-outlined notranslate text-[24px]" translate="no">bolt</span>
+          </div>
+          <div class="flex flex-col min-w-0">
+            <h3 class="text-base font-bold text-on-surface leading-tight">Pro Moda Geçilsin mi?</h3>
+            <span class="text-[11px] font-mono text-on-surface-variant">Simple Mod → Pro Mod</span>
+          </div>
+        </div>
+        <p class="text-xs text-on-surface-variant leading-relaxed">
+          ${descHtml}
+        </p>
+        <div class="grid grid-cols-2 gap-2.5 pt-1">
+          <button type="button" onclick="window.BlocTagSimpleMode.cancelProSwitch()"
+            class="h-11 rounded-2xl bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-semibold transition-all active:scale-95 cursor-pointer">
+            Vazgeç
+          </button>
+          <button type="button" onclick="window.BlocTagSimpleMode.confirmProSwitch()"
+            class="h-11 rounded-2xl bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1.5 hover:brightness-95 transition-all active:scale-95 shadow-sm cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[16px]" translate="no">bolt</span>
+            <span>Pro Moda Geç</span>
+          </button>
+        </div>
+      </div>
+    `;
+    modal.onclick = () => cancelSwitchToProMode();
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function cancelSwitchToProMode() {
+    _pendingProTargetTab = null;
+    const modal = document.getElementById('bloctag-pro-confirm-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  function confirmSwitchToProMode() {
+    const targetTab = _pendingProTargetTab;
+    cancelSwitchToProMode();
+    toggleSimpleModeSetting(false);
+    if (targetTab && typeof window._origSwitchTab === 'function') {
+      setTimeout(() => {
+        window._origSwitchTab(targetTab, true, true);
+      }, 40);
+    }
   }
 
   function applySimpleModeState(enabled, withAnimation = true) {
@@ -374,19 +469,17 @@
 
           <div class="flex items-center gap-1.5 shrink-0">
             ${rightActionHtml}
-            <!-- Quick Simple/Pro Mode Switch Pill -->
-            <button type="button" onclick="window.toggleSimpleModeSetting(false)"
-              title="Pro Moda Geç (Tam Görünüm)"
-              class="h-7 px-2.5 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary font-mono text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[13px]" translate="no">auto_awesome</span>
-              <span>Simple</span>
-              <span class="text-on-surface-variant font-normal">→ Pro</span>
+            <!-- Compact Icon-Only Simple/Pro Mode Switch Button -->
+            <button type="button" onclick="window.BlocTagSimpleMode.requestProMode()"
+              title="Pro Moda Geç (Tam Görünüm)" aria-label="Pro Moda Geç"
+              class="w-8 h-8 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary flex items-center justify-center active:scale-90 transition-all cursor-pointer shrink-0">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">bolt</span>
             </button>
 
             <!-- Profile Avatar Pill -->
             <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
               title="Profilim"
-              class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer">
+              class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer shrink-0">
               ${avatarChar ? esc(avatarChar) : '<span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>'}
             </button>
           </div>
@@ -406,44 +499,44 @@
 
     return `
       <nav class="simple-bottom-nav" aria-label="Simple Mode Navigation">
-        <div class="flex justify-around items-center h-16 px-2">
+        <div class="flex justify-around items-center h-14 px-1.5">
           ${backBtnEnabled ? `
             <button type="button" onclick="window.BlocTagSimpleMode.back()"
-              class="flex flex-col items-center justify-center gap-1 min-w-[52px] min-h-[44px] text-on-surface-variant hover:text-primary active:scale-90 transition-all cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[21px]" translate="no">arrow_back</span>
-              <span class="font-label-sm text-[10px]">Geri</span>
+              class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 text-on-surface-variant hover:text-primary active:scale-90 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_back</span>
+              <span class="font-label-sm text-[9.5px] leading-none">Geri</span>
             </button>
           ` : ''}
 
           <button type="button" onclick="window.BlocTagSimpleMode.openWalletTab()"
-            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">account_balance_wallet</span>
-            <span class="font-label-sm text-[10.5px]">Cüzdan</span>
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">account_balance_wallet</span>
+            <span class="font-label-sm text-[10px] leading-none">Cüzdan</span>
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
-            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[23px]" translate="no">tag</span>
-            <span class="font-label-sm text-[10.5px]">Space</span>
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">tag</span>
+            <span class="font-label-sm text-[10px] leading-none">Space</span>
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
-            class="relative flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isNotif ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">notifications</span>
-            <span class="font-label-sm text-[10.5px]">Bildirimler</span>
-            ${unread > 0 ? `<span class="absolute top-1 right-2.5 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center">${unread}</span>` : ''}
+            class="relative flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isNotif ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">notifications</span>
+            <span class="font-label-sm text-[10px] leading-none">Bildirim</span>
+            ${unread > 0 ? `<span class="absolute top-1 right-3 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center">${unread}</span>` : ''}
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
-            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">person</span>
-            <span class="font-label-sm text-[10.5px]">Profil</span>
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>
+            <span class="font-label-sm text-[10px] leading-none">Profil</span>
           </button>
 
           <button type="button" onclick="if(typeof openMobileMenuModal==='function') openMobileMenuModal();"
-            class="flex flex-col items-center justify-center gap-1 min-w-[52px] min-h-[44px] text-primary hover:brightness-110 active:scale-95 transition-all cursor-pointer">
-            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">widgets</span>
-            <span class="font-label-sm text-[10.5px] font-semibold">Menü</span>
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 text-primary hover:brightness-110 active:scale-95 transition-all cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">widgets</span>
+            <span class="font-label-sm text-[10px] leading-none font-semibold">Menü</span>
           </button>
         </div>
       </nav>
@@ -503,7 +596,7 @@
           </div>
 
           <div class="flex items-start gap-3.5 p-3.5 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer"
-               onclick="if(typeof switchTab==='function'){ window.toggleSimpleModeSetting(false); switchTab('bns'); }">
+               onclick="window.BlocTagSimpleMode.requestProMode('bns')">
             <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-secondary shrink-0">
               <span class="material-symbols-outlined notranslate text-[20px]" style="font-variation-settings: 'FILL' 1;" translate="no">alternate_email</span>
             </div>
@@ -1363,7 +1456,7 @@
         </section>
 
         <!-- Sticky Bottom Reply Bar (Above bottom nav) -->
-        <div class="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40 bg-surface-dim/95 backdrop-blur-xl px-4 py-2.5 border-t border-outline-variant/15">
+        <div class="fixed bottom-14 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-surface-dim/95 backdrop-blur-xl px-4 py-2.5 border-t border-outline-variant/15" style="padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));">
           <form class="flex items-center gap-2 bg-surface-container rounded-full p-1.5 shadow-md border border-outline-variant/20"
                 onsubmit="event.preventDefault(); window.BlocTagSimpleMode.submitComment('${pid}');">
             <div class="w-8 h-8 rounded-full bg-surface-container-high ml-1 flex items-center justify-center text-primary shrink-0">
@@ -1688,9 +1781,13 @@
     shell.innerHTML = `
       <div class="simple-app-frame">
         ${screenHtml}
-        ${renderBottomNav()}
       </div>
     `;
+
+    const navPortal = document.getElementById('bloctag-simple-bottom-nav-portal');
+    if (navPortal) {
+      navPortal.innerHTML = renderBottomNav();
+    }
 
     if (simpleState.activeScreen === 'SCR-WLT-SEND') {
       updateSimpleSendPreview();
@@ -1717,6 +1814,9 @@
     go: (screen, opts) => navigateToSimpleScreen(screen, opts),
     back: () => navigateSimpleBack(),
     refresh: () => renderSimpleMode(),
+    requestProMode: (targetTab) => requestSwitchToProMode(targetTab),
+    confirmProSwitch: () => confirmSwitchToProMode(),
+    cancelProSwitch: () => cancelSwitchToProMode(),
 
     openWalletTab: () => {
       const acc = getActiveWallet();
@@ -2061,6 +2161,39 @@
       };
       wrappedOpenPostDetail._simpleHooked = true;
       window.openSpacePostDetail = wrappedOpenPostDetail;
+    }
+
+    // Intercept Pro Mode tab navigation while in Simple Mode and ask for user confirmation
+    const origSwitchTab = window.switchTab;
+    if (typeof origSwitchTab === 'function' && !origSwitchTab._simpleHooked) {
+      window._origSwitchTab = origSwitchTab;
+      const wrappedSwitchTab = function (tabId) {
+        if (simpleState.enabled && tabId) {
+          const cleanTab = String(tabId).trim();
+          if (cleanTab === 'cuzdanim') {
+            BlocTagSimpleMode.openWalletTab();
+            return;
+          }
+          if (cleanTab === 'para-gonder') {
+            navigateToSimpleScreen('SCR-WLT-SEND');
+            return;
+          }
+          if (cleanTab === 'space') {
+            navigateToSimpleScreen('SCR-SPC-03');
+            return;
+          }
+          if (cleanTab === 'yeni-cuzdan') {
+            BlocTagSimpleMode.startCreateWallet();
+            return;
+          }
+          // Any other Pro Mode page -> ask user before switching out of Simple Mode
+          requestSwitchToProMode(cleanTab);
+          return;
+        }
+        return origSwitchTab.apply(this, arguments);
+      };
+      wrappedSwitchTab._simpleHooked = true;
+      window.switchTab = wrappedSwitchTab;
     }
   }
 
