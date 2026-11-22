@@ -1,4 +1,4 @@
-const CACHE_NAME = 'locktrace-pwa-v90';
+const CACHE_NAME = 'locktrace-pwa-v91';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -53,8 +53,8 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // 3. Navigation / HTML shell: Network-First with Offline Fallback
-  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+  // 3. Navigation / HTML shell & Simple Mode JS/CSS: Network-First with Offline Fallback
+  if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html' || url.pathname.startsWith('/simple-mode/')) {
     event.respondWith(
       fetch(event.request).then((networkResponse) => {
         if (networkResponse && networkResponse.status === 200) {
@@ -63,7 +63,13 @@ self.addEventListener('fetch', (event) => {
         }
         return networkResponse;
       }).catch(() => {
-        return caches.match('/index.html').then((res) => res || caches.match('/'));
+        return caches.match(event.request).then((res) => res || caches.match(url.pathname)).then((res) => {
+          if (res) return res;
+          if (event.request.mode === 'navigate' || url.pathname === '/' || url.pathname === '/index.html') {
+            return caches.match('/index.html').then((r) => r || caches.match('/'));
+          }
+          return new Response('', { status: 504, statusText: 'Offline' });
+        });
       })
     );
     return;
