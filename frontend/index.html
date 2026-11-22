@@ -7142,7 +7142,7 @@
       </button>
       <button
         class="mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer"
-        id="mobileNavMenuBtn" onclick="openMobileMenuModal()" type="button" title="Menu">
+        id="mobileNavMenuBtn" onclick="handleMobileNavMenuClick(event)" ondblclick="openMobileMenuModal()" type="button" title="Menu">
         <span id="mobileNavMenuIndicator" class="hidden absolute top-1.5 right-1/4 w-2 h-2 rounded-full bg-primary ring-2 ring-surface animate-pulse"></span>
         <span class="material-symbols-outlined notranslate text-[23px] text-primary" translate="no" id="mobileNavMenuIcon">widgets</span>
         <span class="font-label-sm text-[10px] font-semibold text-primary leading-none" id="mobileNavMenuLabel">Menu</span>
@@ -22331,28 +22331,43 @@
       showToast('Menü ikonu varsayılana sıfırlandı', 'info');
     }
 
-    function handleMobileNavMenuClick() {
-      // 1. If user hasn't selected any menu tool yet, open menu drawer directly
+    let lastMenuSlotClickTime = 0;
+
+    function handleMobileNavMenuClick(e) {
+      // 1. If user hasn't selected any menu tool yet (still initial "Menu" button):
+      // Single click opens the menu widget directly
       if (!lastMenuSelectedTab) {
         openMobileMenuModal();
         return;
       }
 
-      // 2. Identify currently active tab
+      // 2. Two-click / Double-tap detection:
+      // Kullanıcı bu ikona iki defa tıklarsa menü widget'ı çıkar!
+      const now = Date.now();
+      const timeSinceLast = now - lastMenuSlotClickTime;
+
+      if (timeSinceLast > 0 && timeSinceLast < 650) {
+        lastMenuSlotClickTime = 0;
+        openMobileMenuModal();
+        return;
+      }
+
+      // 3. Tek tıklama (1st click):
+      lastMenuSlotClickTime = now;
+
+      // Identify currently active tab
       let activeTabId = null;
       const activeEl = document.querySelector('.tab-content.active');
       if (activeEl && activeEl.id) {
         activeTabId = activeEl.id.replace('tab-', '');
       }
 
-      // 3. 1st click: If user is on a different page, switch back to the menu-selected page!
+      // Başka sayfadaysa seçili sayfaya geç; aynı sayfadaysa tepeye kaydır (menüyü açma)
       if (activeTabId !== lastMenuSelectedTab) {
         switchTab(lastMenuSelectedTab);
-        return;
+      } else {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
       }
-
-      // 4. 2nd click (user is already on the menu-selected page): Open the menu drawer widget!
-      openMobileMenuModal();
     }
 
     function updateMobileNavMenuButtonState() {
