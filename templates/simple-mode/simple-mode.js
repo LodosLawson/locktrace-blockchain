@@ -422,6 +422,128 @@
     }
   }
 
+  // ── Language Selector Modal & Preferences (SCR-MNU-07) ───────────────────────
+  const SIMPLE_LANGUAGES = [
+    { code: 'tr', flag: '🇹🇷', name: 'Türkçe', desc: 'Varsayılan Türkçe arayüz' },
+    { code: 'en', flag: '🌐', name: 'English', desc: 'Default English UI' },
+    { code: 'az', flag: '🇦🇿', name: 'Azərbaycanca', desc: 'Azərbaycan dili' },
+    { code: 'ru', flag: '🇷🇺', name: 'Русский', desc: 'Русскоязычный интерфейс' },
+    { code: 'de', flag: '🇩🇪', name: 'Deutsch', desc: 'Deutsche Sprache' },
+    { code: 'es', flag: '🇪🇸', name: 'Español', desc: 'Idioma español' },
+    { code: 'fr', flag: '🇫🇷', name: 'Français', desc: 'Langue française' },
+    { code: 'ar', flag: '🇸🇦', name: 'العربية', desc: 'واجهة عربية (RTL)' },
+  ];
+
+  function getActiveLanguageCode() {
+    try {
+      const saved = localStorage.getItem('bloctag_lang') || localStorage.getItem(GATE_LANG_STORAGE_KEY);
+      if (saved && SIMPLE_LANGUAGES.some(l => l.code === saved)) return saved;
+    } catch (_e) { }
+    const htmlLang = (document.documentElement.lang || '').slice(0, 2).toLowerCase();
+    if (htmlLang && SIMPLE_LANGUAGES.some(l => l.code === htmlLang)) return htmlLang;
+    return 'tr';
+  }
+
+  function openSimpleLanguageModal() {
+    let modal = document.getElementById('bloctag-language-modal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'bloctag-language-modal';
+      modal.className = 'hidden fixed inset-0 z-[96] bg-black/75 backdrop-blur-md items-end sm:items-center justify-center p-0 sm:p-4';
+      document.body.appendChild(modal);
+    }
+
+    const current = getActiveLanguageCode();
+
+    modal.innerHTML = `
+      <div class="w-full max-w-[420px] rounded-t-3xl sm:rounded-3xl bg-surface-container border border-outline-variant/25 shadow-2xl p-5 flex flex-col gap-3.5 animate-slide-up sm:animate-fade-in" onclick="event.stopPropagation()">
+        <!-- Header -->
+        <div class="flex items-center justify-between pb-1 border-b border-outline-variant/10">
+          <div class="flex items-center gap-2.5">
+            <div class="w-9 h-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center">
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">language</span>
+            </div>
+            <div class="flex flex-col">
+              <h3 class="text-base font-bold text-on-surface">Dil Seçimi (Language)</h3>
+              <p class="text-[11px] text-on-surface-variant">Uygulama dilinizi belirleyin</p>
+            </div>
+          </div>
+          <button type="button" onclick="window.BlocTagSimpleMode.closeLanguageModal()"
+            class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface-variant hover:text-on-surface flex items-center justify-center active:scale-95 transition-all cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
+          </button>
+        </div>
+
+        <!-- Language Items -->
+        <div class="flex flex-col gap-1.5 max-h-[58vh] overflow-y-auto no-scrollbar py-1">
+          ${SIMPLE_LANGUAGES.map(item => {
+            const isSelected = item.code === current;
+            return `
+              <button type="button" onclick="window.BlocTagSimpleMode.selectLanguage('${item.code}')"
+                class="w-full p-3 rounded-2xl flex items-center justify-between transition-all active:scale-[0.98] cursor-pointer ${isSelected ? 'bg-primary/15 border border-primary/30 text-on-surface ring-1 ring-primary/40' : 'bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 text-on-surface'}">
+                <div class="flex items-center gap-3">
+                  <span class="text-2xl notranslate leading-none" translate="no">${item.flag}</span>
+                  <div class="flex flex-col text-left">
+                    <span class="text-xs font-bold leading-snug">${esc(item.name)}</span>
+                    <span class="text-[10.5px] text-on-surface-variant leading-snug">${esc(item.desc)}</span>
+                  </div>
+                </div>
+                ${isSelected ? `
+                  <div class="w-6 h-6 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-xs">
+                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">check</span>
+                  </div>
+                ` : `
+                  <span class="text-[11px] font-mono text-on-surface-variant/60 uppercase">${item.code}</span>
+                `}
+              </button>
+            `;
+          }).join('')}
+        </div>
+
+        <!-- Browser Translate Tip -->
+        <div class="p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10 flex items-center gap-2.5 text-on-surface-variant text-[11px]">
+          <span class="material-symbols-outlined notranslate text-primary text-[17px] shrink-0" translate="no">translate</span>
+          <span>Tarayıcınızın Çevir (Translate) özelliği ve çok dilli PWA desteği ile tam uyumludur.</span>
+        </div>
+      </div>
+    `;
+
+    modal.onclick = () => closeSimpleLanguageModal();
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+  }
+
+  function closeSimpleLanguageModal() {
+    const modal = document.getElementById('bloctag-language-modal');
+    if (modal) {
+      modal.classList.add('hidden');
+      modal.classList.remove('flex');
+    }
+  }
+
+  function setLanguagePreference(code) {
+    if (!code) return;
+    try {
+      localStorage.setItem('bloctag_lang', code);
+      localStorage.setItem(GATE_LANG_STORAGE_KEY, code);
+      document.cookie = `googtrans=/auto/${code}; path=/;`;
+      if (window.location.hostname) {
+        document.cookie = `googtrans=/auto/${code}; domain=${window.location.hostname}; path=/;`;
+      }
+    } catch (_e) { }
+    document.documentElement.lang = code;
+    document.documentElement.dir = (code === 'ar') ? 'rtl' : 'ltr';
+
+    closeSimpleLanguageModal();
+    renderSimpleMode(false);
+
+    const langObj = SIMPLE_LANGUAGES.find(l => l.code === code);
+    const langLabel = langObj ? `${langObj.flag} ${langObj.name}` : code.toUpperCase();
+    if (typeof window.showToast === 'function') {
+      window.showToast(`${langLabel} aktif dil olarak seçildi.`, 'translate');
+    }
+  }
+
   function applySimpleModeState(enabled, withAnimation = true) {
     simpleState.enabled = Boolean(enabled);
     const html = document.documentElement;
@@ -641,13 +763,6 @@
               class="relative w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface-variant hover:text-primary flex items-center justify-center active:scale-90 transition-all cursor-pointer shrink-0">
               <span class="material-symbols-outlined notranslate text-[18px]" translate="no">notifications</span>
               ${unread > 0 ? `<span class="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center ring-2 ring-surface">${unread}</span>` : ''}
-            </button>
-
-            <!-- Compact Icon-Only Simple/Pro Mode Switch Button -->
-            <button type="button" onclick="window.BlocTagSimpleMode.requestProMode()"
-              title="Pro Moda Geç (Tam Görünüm)" aria-label="Pro Moda Geç"
-              class="w-8 h-8 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary flex items-center justify-center active:scale-90 transition-all cursor-pointer shrink-0">
-              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">bolt</span>
             </button>
 
             <!-- Profile Avatar Pill (Profil dışındaki ekranlarda göster) -->
@@ -1701,16 +1816,8 @@
     // Owned BNS handles for current user
     const myOwnedHandles = isMyProfile ? getMyOwnedBnsHandles() : [];
 
-    const expandTopBarHtml = `
-      <button type="button" onclick="window.BlocTagSimpleMode.openDetailedProProfile('${escAttr(resolvedBns || resolvedAddress)}')"
-        title="Detaylı Pro Görünüme Geç" aria-label="Genişlet"
-        class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-primary/20 text-on-surface hover:text-primary flex items-center justify-center active:scale-90 transition-all cursor-pointer shrink-0">
-        <span class="material-symbols-outlined notranslate text-[18px]" translate="no">open_in_full</span>
-      </button>
-    `;
-
     return `
-      ${renderTopBar('Profil', !isMyProfile, expandTopBarHtml)}
+      ${renderTopBar('Profil', !isMyProfile)}
       <main class="flex-1 flex flex-col w-full pb-24 simple-screen-animate">
         <!-- Minimalist Cover Scrim (Exact Stitch SCR-PRF-05) -->
         <div class="relative w-full h-32 bg-gradient-to-b from-surface-container to-surface overflow-hidden">
@@ -1761,13 +1868,6 @@
                   <span>Bahşiş</span>
                 </button>
               `}
-
-              <!-- Genişletme İkonu: Tıklandığında Detaylı Pro Moda Geçilir -->
-              <button type="button" onclick="window.BlocTagSimpleMode.openDetailedProProfile('${escAttr(resolvedBns || resolvedAddress)}')"
-                title="Detaylı Pro Görünüme Geç" aria-label="Genişlet"
-                class="w-8.5 h-8.5 rounded-full bg-surface-container-high hover:bg-primary/20 text-on-surface hover:text-primary border border-outline-variant/20 flex items-center justify-center transition-all active:scale-90 cursor-pointer shrink-0">
-                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">open_in_full</span>
-              </button>
             </div>
           </div>
 
@@ -2013,6 +2113,8 @@
     const displayTag = getDisplayHandleOrAddr(acc ? acc.address : '', myHandle);
     const balanceStr = acc ? (typeof window.formatBct === 'function' ? window.formatBct(acc.balance || 0, 2) + ' BCT' : '0.00 BCT') : '0.00 BCT';
     const isValidator = acc && Array.isArray(window.knownValidators) && window.knownValidators.includes(acc.address);
+    const activeLangCode = getActiveLanguageCode();
+    const activeLangObj = SIMPLE_LANGUAGES.find(l => l.code === activeLangCode) || SIMPLE_LANGUAGES[0];
 
     return `
       ${renderTopBar('Menü', false)}
@@ -2130,7 +2232,7 @@
           </button>
 
           <!-- Language Selector -->
-          <button type="button" onclick="if(typeof openLanguageModal==='function') openLanguageModal();"
+          <button type="button" onclick="window.BlocTagSimpleMode.openLanguageModal()"
             class="w-full p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
             <div class="flex items-center gap-3">
               <div class="w-8 h-8 rounded-xl bg-surface-container text-on-surface flex items-center justify-center shrink-0">
@@ -2138,10 +2240,13 @@
               </div>
               <div class="flex flex-col">
                 <span class="text-xs font-bold text-on-surface">Dil Seçimi (Language)</span>
-                <span class="text-[10px] text-on-surface-variant">Türkçe, English &amp; 8 dil desteği</span>
+                <span class="text-[10px] text-on-surface-variant">Uygulama arayüz dili</span>
               </div>
             </div>
-            <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
+            <div class="flex items-center gap-1.5">
+              <span class="text-xs font-bold text-primary font-mono">${activeLangObj.flag} ${esc(activeLangObj.name)}</span>
+              <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
+            </div>
           </button>
 
           <!-- Whitepaper Link -->
@@ -2753,6 +2858,9 @@
       renderSimpleMode();
     },
 
+    openLanguageModal: () => openSimpleLanguageModal(),
+    closeLanguageModal: () => closeSimpleLanguageModal(),
+    selectLanguage: (code) => setLanguagePreference(code),
     selectWeb3Experience: (choice) => handleSelectWeb3Experience(choice),
     setGateLanguage: (langCode) => handleSetGateLanguage(langCode),
     triggerMandatoryPwaInstall: () => handleTriggerMandatoryPwaInstall(),
@@ -2763,6 +2871,9 @@
     showPwaInstallStepsAgain: () => handleShowPwaInstallStepsAgain(),
     openInstalledAppHint: (ev) => handleOpenInstalledAppHint(ev)
   };
+
+  // Global helper fallback
+  window.openLanguageModal = () => openSimpleLanguageModal();
 
   // ==========================================================================
   // 6. MOBILE FIRST-VISIT WEB3 ONBOARDING & MANDATORY PWA INSTALL GATE
