@@ -22,11 +22,21 @@
   <link rel="apple-touch-icon" sizes="192x192" href="/icons/icon-192.png" />
   <link rel="apple-touch-icon" sizes="512x512" href="/icons/icon-512.png" />
 
-  <!-- Canonical Apex to WWW Redirect (Preserves Deep-Link Hash & Wallet Storage Origin) -->
+  <!-- Canonical Apex to WWW Redirect + Early T=0ms PWA Install Prompt Capture -->
   <script>
     if (window.location.hostname === 'locktrace.space') {
       window.location.replace('https://www.locktrace.space' + window.location.pathname + window.location.search + window.location.hash);
     }
+    window.__bloctagPwaPrompt = null;
+    window.__bloctagPwaInstalled = false;
+    window.addEventListener('beforeinstallprompt', function (e) {
+      e.preventDefault();
+      window.__bloctagPwaPrompt = e;
+    });
+    window.addEventListener('appinstalled', function () {
+      window.__bloctagPwaPrompt = null;
+      window.__bloctagPwaInstalled = true;
+    });
   </script>
 
   <!-- Google Fonts & Material Symbols Outlined (Stitch Design System) -->

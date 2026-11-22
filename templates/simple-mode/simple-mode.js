@@ -84,6 +84,7 @@
   }
 
   function getAvailablePwaPrompt() {
+    if (window.__bloctagPwaPrompt) return window.__bloctagPwaPrompt;
     if (_capturedPwaPrompt) return _capturedPwaPrompt;
     try {
       if (typeof deferredPwaPrompt !== 'undefined' && deferredPwaPrompt) {
@@ -97,17 +98,14 @@
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     _capturedPwaPrompt = e;
+    window.__bloctagPwaPrompt = e;
     try {
       if (typeof deferredPwaPrompt !== 'undefined') {
         deferredPwaPrompt = e;
       }
     } catch (_err) { }
-    if (_pwaAutoTriggerPending) {
-      _pwaAutoTriggerPending = false;
-      _pwaInstallWaiting = false;
-      handleTriggerMandatoryPwaInstall();
-      return;
-    }
+    _pwaInstallWaiting = false;
+    _pwaAutoTriggerPending = false;
     if (_mobileGateStep === 'pwa') {
       renderMobileOnboardingGate('pwa');
     }
@@ -115,6 +113,8 @@
 
   window.addEventListener('appinstalled', () => {
     _capturedPwaPrompt = null;
+    window.__bloctagPwaPrompt = null;
+    window.__bloctagPwaInstalled = true;
     try {
       localStorage.setItem(PWA_INSTALLED_STORAGE_KEY, 'true');
     } catch (_e) { }
@@ -2644,14 +2644,19 @@
   }
 
   async function handleTriggerMandatoryPwaInstall() {
+    // 1. MUST call prompt() synchronously inside the user click gesture (Chrome security requirement!)
     const promptEv = getAvailablePwaPrompt();
     if (promptEv) {
       _pwaInstallWaiting = false;
       _pwaAutoTriggerPending = false;
       try {
-        promptEv.prompt();
+        const promptPromise = promptEv.prompt();
+        if (promptPromise && typeof promptPromise.then === 'function') {
+          await promptPromise;
+        }
         const choice = await promptEv.userChoice;
         _capturedPwaPrompt = null;
+        window.__bloctagPwaPrompt = null;
         try {
           if (typeof deferredPwaPrompt !== 'undefined') deferredPwaPrompt = null;
         } catch (_e) { }
@@ -2670,7 +2675,7 @@
       } catch (_e) { }
     }
 
-    // Check if browser already reports the PWA as installed
+    // 2. Check if the PWA is ALREADY installed on this Android device
     try {
       if (navigator.getInstalledRelatedApps) {
         const related = await navigator.getInstalledRelatedApps();
@@ -2682,9 +2687,8 @@
       }
     } catch (_e) { }
 
-    // Wait briefly for Service Worker & beforeinstallprompt to become ready and auto-trigger
+    // 3. Ensure SW is registered and wait briefly for beforeinstallprompt so user can tap once it's ready
     _pwaInstallWaiting = true;
-    _pwaAutoTriggerPending = true;
     renderMobileOnboardingGate('pwa');
 
     try {
@@ -2693,21 +2697,21 @@
       }
     } catch (_e) { }
 
-    const deadline = Date.now() + 4200;
+    const deadline = Date.now() + 3000;
     while (Date.now() < deadline) {
-      if (!_pwaAutoTriggerPending) return; // Already triggered by beforeinstallprompt listener
-      const latePrompt = getAvailablePwaPrompt();
-      if (latePrompt) {
-        _pwaAutoTriggerPending = false;
+      if (getAvailablePwaPrompt()) {
         _pwaInstallWaiting = false;
-        return handleTriggerMandatoryPwaInstall();
+        renderMobileOnboardingGate('pwa');
+        if (typeof window.showToast === 'function') {
+          window.showToast('Kurulum hazır! Yüklemek için butona tekrar dokunun.', 'download');
+        }
+        return;
       }
-      await new Promise(r => setTimeout(r, 250));
+      await new Promise(r => setTimeout(r, 200));
     }
 
-    // Only if browser truly doesn't emit beforeinstallprompt (e.g. Firefox or already installed)
+    // 4. Fallback only if browser doesn't support beforeinstallprompt (e.g. Firefox, In-App WebView, or already installed)
     _pwaInstallWaiting = false;
-    _pwaAutoTriggerPending = false;
     _pwaManualGuideOpen = true;
     renderMobileOnboardingGate('pwa');
   }
@@ -2762,11 +2766,20 @@
     }
 
     if (!isStandalonePwaApp()) {
-      let alreadyInstalled = false;
+      let alreadyInstalled = Boolean(window.__bloctagPwaInstalled);
       try {
-        alreadyInstalled = localStorage.getItem(PWA_INSTALLED_STORAGE_KEY) === 'true';
+        if (localStorage.getItem(PWA_INSTALLED_STORAGE_KEY) === 'true') alreadyInstalled = true;
       } catch (_e) { }
       renderMobileOnboardingGate(alreadyInstalled ? 'pwa-installed' : 'pwa');
+      // Async check if Android Chrome already has the PWA installed
+      if (!alreadyInstalled && navigator.getInstalledRelatedApps) {
+        navigator.getInstalledRelatedApps().then((related) => {
+          if (Array.isArray(related) && related.length > 0 && _mobileGateStep === 'pwa') {
+            try { localStorage.setItem(PWA_INSTALLED_STORAGE_KEY, 'true'); } catch (_e) { }
+            renderMobileOnboardingGate('pwa-installed');
+          }
+        }).catch(() => { });
+      }
       return;
     }
 
