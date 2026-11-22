@@ -840,13 +840,13 @@
             </button>
           </div>
           <div class="flex items-baseline justify-center gap-1.5">
-            <span class="text-[36px] leading-[42px] text-on-surface tracking-tight font-bold font-mono">${esc(balFormatted)}</span>
+            <span id="simple-wallet-balance-val" class="text-[36px] leading-[42px] text-on-surface tracking-tight font-bold font-mono">${esc(balFormatted)}</span>
             <span class="text-lg font-bold text-primary">BCT</span>
           </div>
           <div class="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-surface-container text-primary text-xs font-mono">
             <span class="material-symbols-outlined notranslate text-[14px]" translate="no">trending_up</span>
-            <span class="font-semibold">≈ ${esc(usdFormatted)}</span>
-            <span class="text-on-surface-variant ml-0.5">• Nonce #${Number(acc.nonce || 0)}</span>
+            <span id="simple-wallet-usd-val" class="font-semibold">≈ ${esc(usdFormatted)}</span>
+            <span id="simple-wallet-nonce-val" class="text-on-surface-variant ml-0.5">• Nonce #${Number(acc.nonce || 0)}</span>
           </div>
         </div>
 
@@ -1130,7 +1130,7 @@
                   ${esc(displayTag)}
                 </span>
               </div>
-              <span class="text-[11px] text-on-surface-variant truncate">
+              <span id="simple-space-bal-subtitle" class="text-[11px] text-on-surface-variant truncate">
                 ${acc ? (typeof window.formatBct === 'function' ? window.formatBct(acc.balance || 0, 2) + ' BCT • Zincir Üstü Aktif' : 'Zincir Üstü Aktif') : 'Cüzdan oluşturun (+1.00 BCT bonus)'}
               </span>
             </div>
@@ -1743,13 +1743,141 @@
   }
 
   // ==========================================================================
-  // 4. MASTER RENDER DISPATCHER
+  // 4. MASTER RENDER DISPATCHER (ZERO-FLICKER DIFF & SILENT BACKGROUND SYNC)
   // ==========================================================================
-  function renderSimpleMode() {
+  let _lastRenderedScreen = null;
+  let _lastRenderedFingerprint = '';
+  let _lastNavHtml = '';
+  let _lastKnownWalletAddr = '';
+
+  function isUserTypingInSimpleMode() {
+    const ae = document.activeElement;
+    if (!ae) return false;
+    const tag = (ae.tagName || '').toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return false;
+    const shell = document.getElementById('bloctag-simple-mode-shell');
+    return Boolean(shell && shell.contains(ae));
+  }
+
+  function computeSimpleScreenFingerprint() {
+    const acc = getActiveWallet();
+    const addr = acc ? String(acc.address || '') : '';
+    const bal = acc ? Number(acc.balance || 0).toFixed(6) : '0';
+    const nonce = acc ? Number(acc.nonce || 0) : 0;
+    const hidden = typeof isBalanceHidden !== 'undefined' && isBalanceHidden ? '1' : '0';
+    const unread = getUnreadNotificationsCount();
+    const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
+    const txs = (typeof personalTxCache !== 'undefined' && Array.isArray(personalTxCache)) ? personalTxCache : [];
+
+    if (simpleState.activeScreen === 'SCR-SPC-03') {
+      const feedSig = posts.slice(0, 35).map(p => `${p.post_id || p.id}:${p.likes_count || (p.likes ? p.likes.length : 0)}:${p.comments_count || (p.comments ? p.comments.length : 0)}`).join(',');
+      return `SPC03|${addr}|${bal}|${unread}|${simpleState.feedFilter}|${simpleState.searchBarOpen}|${simpleState.searchQuery}|${feedSig}`;
+    }
+    if (simpleState.activeScreen === 'SCR-SPC-04') {
+      const post = posts.find(p => String(p.post_id || p.id) === String(simpleState.activePostId)) || posts[0];
+      const cmts = post && Array.isArray(post.comments) ? post.comments : [];
+      const cmtSig = cmts.map(c => c.comment_id || c.tx_hash || c.timestamp).join(',');
+      return `SPC04|${addr}|${simpleState.activePostId}|${post ? (post.likes_count || 0) : 0}|${cmts.length}|${cmtSig}|${unread}`;
+    }
+    if (simpleState.activeScreen === 'SCR-WLT-HOME') {
+      const txSig = txs.slice(0, 20).map(t => `${t.tx_hash || t.hash}:${t.status || ''}`).join(',');
+      return `WLTHOME|${addr}|${bal}|${nonce}|${hidden}|${simpleState.txFilter}|${txSig}|${unread}`;
+    }
+    return `${simpleState.activeScreen}|${addr}|${bal}|${nonce}|${hidden}|${unread}|${simpleState.profileTarget}|${simpleState.profileTab}|${simpleState.notifFilter}|${simpleState.importModeOpen}|${simpleState.seedSavedConfirmed}`;
+  }
+
+  function patchSimpleLiveValuesInPlace() {
+    if (!simpleState.enabled) return;
+    const acc = getActiveWallet();
+    const bal = acc ? Number(acc.balance || 0) : 0;
+    const price = (typeof window.currentWbctPriceUsd === 'number' && window.currentWbctPriceUsd > 0)
+      ? window.currentWbctPriceUsd
+      : 0.01;
+    const hidden = typeof isBalanceHidden !== 'undefined' && isBalanceHidden;
+    const balFormatted = hidden ? '••••••' : (typeof window.formatBct === 'function' ? window.formatBct(bal, 4) : bal.toFixed(4));
+    const usdFormatted = hidden ? '••••' : (typeof window.formatUsdValue === 'function' ? window.formatUsdValue(bal * price) : ('$' + (bal * price).toFixed(2)));
+
+    const balEl = document.getElementById('simple-wallet-balance-val');
+    if (balEl && balEl.textContent !== balFormatted) balEl.textContent = balFormatted;
+
+    const usdEl = document.getElementById('simple-wallet-usd-val');
+    if (usdEl && usdEl.textContent !== ('≈ ' + usdFormatted)) usdEl.textContent = '≈ ' + usdFormatted;
+
+    const nonceEl = document.getElementById('simple-wallet-nonce-val');
+    const nonceTxt = '• Nonce #' + Number(acc ? (acc.nonce || 0) : 0);
+    if (nonceEl && nonceEl.textContent !== nonceTxt) nonceEl.textContent = nonceTxt;
+
+    const spaceSubEl = document.getElementById('simple-space-bal-subtitle');
+    if (spaceSubEl) {
+      const nextSub = acc
+        ? (typeof window.formatBct === 'function' ? window.formatBct(bal, 2) + ' BCT • Zincir Üstü Aktif' : 'Zincir Üstü Aktif')
+        : 'Cüzdan oluşturun (+1.00 BCT bonus)';
+      if (spaceSubEl.textContent.trim() !== nextSub) spaceSubEl.textContent = nextSub;
+    }
+
+    const navPortal = document.getElementById('bloctag-simple-bottom-nav-portal');
+    if (navPortal) {
+      const nextNavHtml = renderBottomNav();
+      if (nextNavHtml !== _lastNavHtml) {
+        navPortal.innerHTML = nextNavHtml;
+        _lastNavHtml = nextNavHtml;
+      }
+    }
+  }
+
+  function renderSimpleMode(animate = true) {
     if (!simpleState.enabled) return;
     const shell = ensureSimpleModeShell();
-    let screenHtml = '';
+    const isSameScreen = (_lastRenderedScreen === simpleState.activeScreen);
+    const shouldAnimate = Boolean(animate && !isSameScreen);
+    const currentFp = computeSimpleScreenFingerprint();
 
+    // Background sync optimization: if nothing changed, do ZERO DOM work (no flicker!)
+    if (!animate && isSameScreen && currentFp === _lastRenderedFingerprint) {
+      return;
+    }
+
+    // Never tear down DOM while user is actively typing in an input/textarea
+    if (!animate && isSameScreen && isUserTypingInSimpleMode()) {
+      patchSimpleLiveValuesInPlace();
+      return;
+    }
+
+    // Targeted in-place feed patch on SCR-SPC-03 (preserves composer text, scroll position, and zero flicker)
+    if (!animate && isSameScreen && simpleState.activeScreen === 'SCR-SPC-03') {
+      const feedContainer = document.getElementById('simple-feed-container');
+      if (feedContainer) {
+        const acc = getActiveWallet();
+        const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
+        const q = String(simpleState.searchQuery || '').trim().toLowerCase();
+        const filteredPosts = posts.filter(p => {
+          if (!p) return false;
+          if (simpleState.feedFilter === 'following' && acc && acc.address) {
+            const isMine = String(p.author || '').toLowerCase() === acc.address.toLowerCase();
+            const hasBns = Boolean(p.author_bns && p.author_bns !== 'anonymous');
+            if (!isMine && !hasBns) return false;
+          }
+          if (q) {
+            const content = String(p.content || '').toLowerCase();
+            const author = String(p.author || '').toLowerCase();
+            const bns = String(p.author_bns || '').toLowerCase();
+            return content.includes(q) || author.includes(q) || bns.includes(q);
+          }
+          return true;
+        });
+        feedContainer.innerHTML = filteredPosts.length === 0 ? `
+          <div class="p-8 rounded-2xl bg-surface-container-low text-center flex flex-col items-center gap-2 text-on-surface-variant">
+            <span class="material-symbols-outlined notranslate text-[28px] text-primary" translate="no">forum</span>
+            <span class="text-xs">Gönderiler yükleniyor veya bu filtrede gönderi yok...</span>
+          </div>
+        ` : filteredPosts.slice(0, 35).map(post => renderSimplePostCard(post, acc)).join('');
+        patchSimpleLiveValuesInPlace();
+        _lastRenderedFingerprint = currentFp;
+        return;
+      }
+    }
+
+    let screenHtml = '';
     switch (simpleState.activeScreen) {
       case 'SCR-ONB-01':
         screenHtml = renderScreenOnboardingWelcome();
@@ -1778,6 +1906,10 @@
         break;
     }
 
+    if (!shouldAnimate) {
+      screenHtml = screenHtml.replace(/\bsimple-screen-animate\b/g, '');
+    }
+
     shell.innerHTML = `
       <div class="simple-app-frame">
         ${screenHtml}
@@ -1786,8 +1918,17 @@
 
     const navPortal = document.getElementById('bloctag-simple-bottom-nav-portal');
     if (navPortal) {
-      navPortal.innerHTML = renderBottomNav();
+      const nextNavHtml = renderBottomNav();
+      if (nextNavHtml !== _lastNavHtml) {
+        navPortal.innerHTML = nextNavHtml;
+        _lastNavHtml = nextNavHtml;
+      }
     }
+
+    _lastRenderedScreen = simpleState.activeScreen;
+    _lastRenderedFingerprint = currentFp;
+    const accNow = getActiveWallet();
+    _lastKnownWalletAddr = accNow ? String(accNow.address || '') : '';
 
     if (simpleState.activeScreen === 'SCR-WLT-SEND') {
       updateSimpleSendPreview();
@@ -2123,13 +2264,19 @@
       applySimpleModeState(true, false);
     }
 
-    // Wrap QR scanner callback so scanning a QR in Simple Mode also populates #simple-send-recipient
+    // Wrap wallet state updates so 15s background balance polls patch in-place with zero flicker
     const origSaveWalletState = window.saveWalletState;
     if (typeof origSaveWalletState === 'function' && !origSaveWalletState._simpleHooked) {
       const wrappedSave = function (acc) {
         const res = origSaveWalletState.apply(this, arguments);
         if (simpleState.enabled) {
-          renderSimpleMode();
+          const nextAddr = acc ? String(acc.address || '') : '';
+          if (nextAddr !== _lastKnownWalletAddr) {
+            _lastKnownWalletAddr = nextAddr;
+            renderSimpleMode(false);
+          } else {
+            patchSimpleLiveValuesInPlace();
+          }
         }
         return res;
       };
@@ -2142,7 +2289,7 @@
       const wrappedRenderSpace = function () {
         const res = origRenderSpacePosts.apply(this, arguments);
         if (simpleState.enabled && (simpleState.activeScreen === 'SCR-SPC-03' || simpleState.activeScreen === 'SCR-SPC-04' || simpleState.activeScreen === 'SCR-PRF-05')) {
-          renderSimpleMode();
+          renderSimpleMode(false);
         }
         return res;
       };

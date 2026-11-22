@@ -73,7 +73,7 @@
       if (typeof currentAccount !== 'undefined' && currentAccount && currentAccount.address) {
         return currentAccount;
       }
-    } catch (_e) {}
+    } catch (_e) { }
     return null;
   }
 
@@ -89,7 +89,7 @@
       }
       const acc = getActiveWallet();
       if (acc && acc.bns_name) return String(acc.bns_name).replace(/^@/, '');
-    } catch (_e) {}
+    } catch (_e) { }
     return '';
   }
 
@@ -209,7 +209,7 @@
       if (mobMenu && !mobMenu.classList.contains('hidden') && typeof window.closeMobileMenuModal === 'function') {
         window.closeMobileMenuModal();
       }
-    } catch (_e) {}
+    } catch (_e) { }
 
     let modal = document.getElementById('bloctag-pro-confirm-modal');
     if (!modal) {
@@ -298,9 +298,9 @@
         if (!hasPosts && typeof window.loadSpaceFeed === 'function') {
           window.loadSpaceFeed().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
-      } catch (_e) {}
+      } catch (_e) { }
     } else {
       html.classList.remove('bloctag-simple-mode');
     }
@@ -312,7 +312,7 @@
     const nextState = typeof forceState === 'boolean' ? forceState : !simpleState.enabled;
     try {
       localStorage.setItem(SIMPLE_MODE_STORAGE_KEY, nextState ? 'true' : 'false');
-    } catch (_e) {}
+    } catch (_e) { }
 
     // Close menu drawer smoothly if open so the user sees the animated design update immediately
     try {
@@ -320,7 +320,7 @@
       if (mobMenu && !mobMenu.classList.contains('hidden') && typeof window.closeMobileMenuModal === 'function') {
         window.closeMobileMenuModal();
       }
-    } catch (_e) {}
+    } catch (_e) { }
 
     applySimpleModeState(nextState, true);
 
@@ -385,7 +385,7 @@
         if (typeof window.loadSpaceFeed === 'function') {
           window.loadSpaceFeed().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
       } else if (target === 'SCR-SPC-04') {
         const activePid = simpleState.activePostId;
@@ -399,25 +399,25 @@
                 renderSimpleMode(false);
               }
             }
-          }).catch(() => {});
+          }).catch(() => { });
         } else if (typeof window.loadSpaceFeed === 'function') {
           window.loadSpaceFeed().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
       } else if (target === 'SCR-WLT-HOME' || target === 'SCR-WLT-SEND') {
         if (typeof window.refreshCurrentAccountBalance === 'function') {
           window.refreshCurrentAccountBalance().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
         if (typeof window.refreshPersonalTransactions === 'function') {
           window.refreshPersonalTransactions().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
-          }).catch(() => {});
+          }).catch(() => { });
         }
       }
-    } catch (_e) {}
+    } catch (_e) { }
   }
 
   function navigateSimpleBack() {
@@ -436,10 +436,10 @@
         simpleState.seedMnemonic = previewMnemonicPhrase.trim();
       } else if (typeof LockTraceCrypto !== 'undefined' && typeof LockTraceCrypto.generateMnemonic12 === 'function') {
         simpleState.seedMnemonic = LockTraceCrypto.generateMnemonic12();
-        try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) {}
+        try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) { }
       }
       simpleState.seedSavedConfirmed = false;
-    } catch (_e) {}
+    } catch (_e) { }
   }
 
   // ==========================================================================
@@ -469,6 +469,13 @@
 
           <div class="flex items-center gap-1.5 shrink-0">
             ${rightActionHtml}
+            <!-- Quick Simple/Pro Mode Switch Pill -->
+            <button type="button" onclick="window.toggleSimpleModeSetting(false)"
+              title="Pro Moda Geç (Tam Görünüm)"
+              class="h-7 px-2.5 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary font-mono text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[13px]" translate="no">auto_awesome</span>
+              <span>Simple</span>
+              <span class="text-on-surface-variant font-normal">→ Pro</span>
             <!-- Compact Icon-Only Simple/Pro Mode Switch Button -->
             <button type="button" onclick="window.BlocTagSimpleMode.requestProMode()"
               title="Pro Moda Geç (Tam Görünüm)" aria-label="Pro Moda Geç"
@@ -479,6 +486,7 @@
             <!-- Profile Avatar Pill -->
             <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
               title="Profilim"
+              class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer">
               class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer shrink-0">
               ${avatarChar ? esc(avatarChar) : '<span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>'}
             </button>
@@ -499,9 +507,13 @@
 
     return `
       <nav class="simple-bottom-nav" aria-label="Simple Mode Navigation">
+        <div class="flex justify-around items-center h-16 px-2">
         <div class="flex justify-around items-center h-14 px-1.5">
           ${backBtnEnabled ? `
             <button type="button" onclick="window.BlocTagSimpleMode.back()"
+              class="flex flex-col items-center justify-center gap-1 min-w-[52px] min-h-[44px] text-on-surface-variant hover:text-primary active:scale-90 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[21px]" translate="no">arrow_back</span>
+              <span class="font-label-sm text-[10px]">Geri</span>
               class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 text-on-surface-variant hover:text-primary active:scale-90 transition-all cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_back</span>
               <span class="font-label-sm text-[9.5px] leading-none">Geri</span>
@@ -509,18 +521,28 @@
           ` : ''}
 
           <button type="button" onclick="window.BlocTagSimpleMode.openWalletTab()"
+            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">account_balance_wallet</span>
+            <span class="font-label-sm text-[10.5px]">Cüzdan</span>
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">account_balance_wallet</span>
             <span class="font-label-sm text-[10px] leading-none">Cüzdan</span>
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
+            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[23px]" translate="no">tag</span>
+            <span class="font-label-sm text-[10.5px]">Space</span>
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[22px]" translate="no">tag</span>
             <span class="font-label-sm text-[10px] leading-none">Space</span>
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
+            class="relative flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isNotif ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">notifications</span>
+            <span class="font-label-sm text-[10.5px]">Bildirimler</span>
+            ${unread > 0 ? `<span class="absolute top-1 right-2.5 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center">${unread}</span>` : ''}
             class="relative flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isNotif ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">notifications</span>
             <span class="font-label-sm text-[10px] leading-none">Bildirim</span>
@@ -528,12 +550,18 @@
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
+            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">person</span>
+            <span class="font-label-sm text-[10.5px]">Profil</span>
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>
             <span class="font-label-sm text-[10px] leading-none">Profil</span>
           </button>
 
           <button type="button" onclick="if(typeof openMobileMenuModal==='function') openMobileMenuModal();"
+            class="flex flex-col items-center justify-center gap-1 min-w-[52px] min-h-[44px] text-primary hover:brightness-110 active:scale-95 transition-all cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">widgets</span>
+            <span class="font-label-sm text-[10.5px] font-semibold">Menü</span>
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 text-primary hover:brightness-110 active:scale-95 transition-all cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">widgets</span>
             <span class="font-label-sm text-[10px] leading-none font-semibold">Menü</span>
@@ -596,6 +624,7 @@
           </div>
 
           <div class="flex items-start gap-3.5 p-3.5 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer"
+               onclick="if(typeof switchTab==='function'){ window.toggleSimpleModeSetting(false); switchTab('bns'); }">
                onclick="window.BlocTagSimpleMode.requestProMode('bns')">
             <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-secondary shrink-0">
               <span class="material-symbols-outlined notranslate text-[20px]" style="font-variation-settings: 'FILL' 1;" translate="no">alternate_email</span>
@@ -840,13 +869,13 @@
             </button>
           </div>
           <div class="flex items-baseline justify-center gap-1.5">
-            <span class="text-[36px] leading-[42px] text-on-surface tracking-tight font-bold font-mono">${esc(balFormatted)}</span>
+            <span id="simple-wallet-balance-val" class="text-[36px] leading-[42px] text-on-surface tracking-tight font-bold font-mono">${esc(balFormatted)}</span>
             <span class="text-lg font-bold text-primary">BCT</span>
           </div>
           <div class="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-surface-container text-primary text-xs font-mono">
             <span class="material-symbols-outlined notranslate text-[14px]" translate="no">trending_up</span>
-            <span class="font-semibold">≈ ${esc(usdFormatted)}</span>
-            <span class="text-on-surface-variant ml-0.5">• Nonce #${Number(acc.nonce || 0)}</span>
+            <span id="simple-wallet-usd-val" class="font-semibold">≈ ${esc(usdFormatted)}</span>
+            <span id="simple-wallet-nonce-val" class="text-on-surface-variant ml-0.5">• Nonce #${Number(acc.nonce || 0)}</span>
           </div>
         </div>
 
@@ -916,15 +945,15 @@
                 Bu filtrede henüz işlem bulunmuyor.
               </div>
             ` : filteredTxs.slice(0, 25).map((tx) => {
-              const meta = typeof window.classifyPersonalTx === 'function'
-                ? window.classifyPersonalTx(tx, acc.address)
-                : { title: 'BCT Transfer', icon: 'swap_horiz', iconColor: 'text-primary', isIncoming: true, sign: '+', displayAmount: Number(tx.amount || 0), counterparty: tx.receiver || '--' };
-              const amtStr = typeof window.formatBct === 'function' ? window.formatBct(Math.abs(meta.displayAmount), 4) : Number(meta.displayAmount || 0).toFixed(4);
-              const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(tx.timestamp) : '';
-              const cpShort = typeof window.shortAddr === 'function' ? window.shortAddr(meta.counterparty) : String(meta.counterparty || '');
-              const txHashAttr = escAttr(tx.tx_hash || tx.hash || '');
+      const meta = typeof window.classifyPersonalTx === 'function'
+        ? window.classifyPersonalTx(tx, acc.address)
+        : { title: 'BCT Transfer', icon: 'swap_horiz', iconColor: 'text-primary', isIncoming: true, sign: '+', displayAmount: Number(tx.amount || 0), counterparty: tx.receiver || '--' };
+      const amtStr = typeof window.formatBct === 'function' ? window.formatBct(Math.abs(meta.displayAmount), 4) : Number(meta.displayAmount || 0).toFixed(4);
+      const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(tx.timestamp) : '';
+      const cpShort = typeof window.shortAddr === 'function' ? window.shortAddr(meta.counterparty) : String(meta.counterparty || '');
+      const txHashAttr = escAttr(tx.tx_hash || tx.hash || '');
 
-              return `
+      return `
                 <div onclick="window.BlocTagSimpleMode.openTxByHash('${txHashAttr}')"
                   class="flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
                   <div class="flex items-center gap-3 min-w-0">
@@ -949,7 +978,7 @@
                   </div>
                 </div>
               `;
-            }).join('')}
+    }).join('')}
           </div>
         </div>
       </main>
@@ -1130,7 +1159,7 @@
                   ${esc(displayTag)}
                 </span>
               </div>
-              <span class="text-[11px] text-on-surface-variant truncate">
+              <span id="simple-space-bal-subtitle" class="text-[11px] text-on-surface-variant truncate">
                 ${acc ? (typeof window.formatBct === 'function' ? window.formatBct(acc.balance || 0, 2) + ' BCT • Zincir Üstü Aktif' : 'Zincir Üstü Aktif') : 'Cüzdan oluşturun (+1.00 BCT bonus)'}
               </span>
             </div>
@@ -1425,12 +1454,12 @@
               İlk zincir üstü yorumu aşağıdan siz yazın!
             </div>
           ` : comments.slice().reverse().map(c => {
-            const cAddr = String(c.commenter || '');
-            const cBns = (c.commenter_bns && c.commenter_bns !== 'anonymous') ? String(c.commenter_bns).replace(/^@/, '') : '';
-            const cName = cBns ? ('@' + cBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(cAddr) : cAddr);
-            const cTime = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(c.timestamp) : '';
-            const cBody = typeof window.formatSpaceBodyHtml === 'function' ? window.formatSpaceBodyHtml(c.content || '') : esc(c.content || '');
-            return `
+      const cAddr = String(c.commenter || '');
+      const cBns = (c.commenter_bns && c.commenter_bns !== 'anonymous') ? String(c.commenter_bns).replace(/^@/, '') : '';
+      const cName = cBns ? ('@' + cBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(cAddr) : cAddr);
+      const cTime = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(c.timestamp) : '';
+      const cBody = typeof window.formatSpaceBodyHtml === 'function' ? window.formatSpaceBodyHtml(c.content || '') : esc(c.content || '');
+      return `
               <article class="bg-surface-container rounded-2xl px-3.5 py-3 flex flex-col gap-1.5 border border-outline-variant/10">
                 <div class="flex items-center justify-between">
                   <div class="flex items-center gap-2 min-w-0 cursor-pointer"
@@ -1452,10 +1481,11 @@
                 </div>
               </article>
             `;
-          }).join('')}
+    }).join('')}
         </section>
 
         <!-- Sticky Bottom Reply Bar (Above bottom nav) -->
+        <div class="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40 bg-surface-dim/95 backdrop-blur-xl px-4 py-2.5 border-t border-outline-variant/15">
         <div class="fixed bottom-14 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-surface-dim/95 backdrop-blur-xl px-4 py-2.5 border-t border-outline-variant/15" style="padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));">
           <form class="flex items-center gap-2 bg-surface-container rounded-full p-1.5 shadow-md border border-outline-variant/20"
                 onsubmit="event.preventDefault(); window.BlocTagSimpleMode.submitComment('${pid}');">
@@ -1641,9 +1671,9 @@
               Henüz zincir üstü gönderi paylaşılmamış.
             </div>
           ` : (simpleState.profileTab === 'likes'
-              ? [...userPosts].sort((a, b) => Number(b.likes_count || 0) - Number(a.likes_count || 0))
-              : userPosts
-            ).map(p => renderSimplePostCard(p, acc)).join('')}
+        ? [...userPosts].sort((a, b) => Number(b.likes_count || 0) - Number(a.likes_count || 0))
+        : userPosts
+      ).map(p => renderSimplePostCard(p, acc)).join('')}
         </div>
       </main>
     `;
@@ -1718,10 +1748,10 @@
               </p>
             </div>
           ` : filtered.slice(0, 30).map(item => {
-            const timeSec = Number(item.time || Date.now()) / 1000;
-            const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(timeSec) : '';
-            const icon = item.icon || (item.category === 'transfer' ? 'payments' : (item.category === 'space' ? 'forum' : 'verified_user'));
-            return `
+      const timeSec = Number(item.time || Date.now()) / 1000;
+      const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(timeSec) : '';
+      const icon = item.icon || (item.category === 'transfer' ? 'payments' : (item.category === 'space' ? 'forum' : 'verified_user'));
+      return `
               <div class="relative flex items-start gap-3 p-3.5 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all">
                 ${!item.read ? '<span class="absolute left-2 top-5 w-1.5 h-1.5 rounded-full bg-primary ring-4 ring-primary/10"></span>' : ''}
                 <div class="shrink-0 w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-primary ml-1">
@@ -1736,20 +1766,148 @@
                 </div>
               </div>
             `;
-          }).join('')}
+    }).join('')}
         </div>
       </main>
     `;
   }
 
   // ==========================================================================
-  // 4. MASTER RENDER DISPATCHER
+  // 4. MASTER RENDER DISPATCHER (ZERO-FLICKER DIFF & SILENT BACKGROUND SYNC)
   // ==========================================================================
-  function renderSimpleMode() {
+  let _lastRenderedScreen = null;
+  let _lastRenderedFingerprint = '';
+  let _lastNavHtml = '';
+  let _lastKnownWalletAddr = '';
+
+  function isUserTypingInSimpleMode() {
+    const ae = document.activeElement;
+    if (!ae) return false;
+    const tag = (ae.tagName || '').toUpperCase();
+    if (tag !== 'INPUT' && tag !== 'TEXTAREA' && tag !== 'SELECT') return false;
+    const shell = document.getElementById('bloctag-simple-mode-shell');
+    return Boolean(shell && shell.contains(ae));
+  }
+
+  function computeSimpleScreenFingerprint() {
+    const acc = getActiveWallet();
+    const addr = acc ? String(acc.address || '') : '';
+    const bal = acc ? Number(acc.balance || 0).toFixed(6) : '0';
+    const nonce = acc ? Number(acc.nonce || 0) : 0;
+    const hidden = typeof isBalanceHidden !== 'undefined' && isBalanceHidden ? '1' : '0';
+    const unread = getUnreadNotificationsCount();
+    const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
+    const txs = (typeof personalTxCache !== 'undefined' && Array.isArray(personalTxCache)) ? personalTxCache : [];
+
+    if (simpleState.activeScreen === 'SCR-SPC-03') {
+      const feedSig = posts.slice(0, 35).map(p => `${p.post_id || p.id}:${p.likes_count || (p.likes ? p.likes.length : 0)}:${p.comments_count || (p.comments ? p.comments.length : 0)}`).join(',');
+      return `SPC03|${addr}|${bal}|${unread}|${simpleState.feedFilter}|${simpleState.searchBarOpen}|${simpleState.searchQuery}|${feedSig}`;
+    }
+    if (simpleState.activeScreen === 'SCR-SPC-04') {
+      const post = posts.find(p => String(p.post_id || p.id) === String(simpleState.activePostId)) || posts[0];
+      const cmts = post && Array.isArray(post.comments) ? post.comments : [];
+      const cmtSig = cmts.map(c => c.comment_id || c.tx_hash || c.timestamp).join(',');
+      return `SPC04|${addr}|${simpleState.activePostId}|${post ? (post.likes_count || 0) : 0}|${cmts.length}|${cmtSig}|${unread}`;
+    }
+    if (simpleState.activeScreen === 'SCR-WLT-HOME') {
+      const txSig = txs.slice(0, 20).map(t => `${t.tx_hash || t.hash}:${t.status || ''}`).join(',');
+      return `WLTHOME|${addr}|${bal}|${nonce}|${hidden}|${simpleState.txFilter}|${txSig}|${unread}`;
+    }
+    return `${simpleState.activeScreen}|${addr}|${bal}|${nonce}|${hidden}|${unread}|${simpleState.profileTarget}|${simpleState.profileTab}|${simpleState.notifFilter}|${simpleState.importModeOpen}|${simpleState.seedSavedConfirmed}`;
+  }
+
+  function patchSimpleLiveValuesInPlace() {
+    if (!simpleState.enabled) return;
+    const acc = getActiveWallet();
+    const bal = acc ? Number(acc.balance || 0) : 0;
+    const price = (typeof window.currentWbctPriceUsd === 'number' && window.currentWbctPriceUsd > 0)
+      ? window.currentWbctPriceUsd
+      : 0.01;
+    const hidden = typeof isBalanceHidden !== 'undefined' && isBalanceHidden;
+    const balFormatted = hidden ? '••••••' : (typeof window.formatBct === 'function' ? window.formatBct(bal, 4) : bal.toFixed(4));
+    const usdFormatted = hidden ? '••••' : (typeof window.formatUsdValue === 'function' ? window.formatUsdValue(bal * price) : ('$' + (bal * price).toFixed(2)));
+
+    const balEl = document.getElementById('simple-wallet-balance-val');
+    if (balEl && balEl.textContent !== balFormatted) balEl.textContent = balFormatted;
+
+    const usdEl = document.getElementById('simple-wallet-usd-val');
+    if (usdEl && usdEl.textContent !== ('≈ ' + usdFormatted)) usdEl.textContent = '≈ ' + usdFormatted;
+
+    const nonceEl = document.getElementById('simple-wallet-nonce-val');
+    const nonceTxt = '• Nonce #' + Number(acc ? (acc.nonce || 0) : 0);
+    if (nonceEl && nonceEl.textContent !== nonceTxt) nonceEl.textContent = nonceTxt;
+
+    const spaceSubEl = document.getElementById('simple-space-bal-subtitle');
+    if (spaceSubEl) {
+      const nextSub = acc
+        ? (typeof window.formatBct === 'function' ? window.formatBct(bal, 2) + ' BCT • Zincir Üstü Aktif' : 'Zincir Üstü Aktif')
+        : 'Cüzdan oluşturun (+1.00 BCT bonus)';
+      if (spaceSubEl.textContent.trim() !== nextSub) spaceSubEl.textContent = nextSub;
+    }
+
+    const navPortal = document.getElementById('bloctag-simple-bottom-nav-portal');
+    if (navPortal) {
+      const nextNavHtml = renderBottomNav();
+      if (nextNavHtml !== _lastNavHtml) {
+        navPortal.innerHTML = nextNavHtml;
+        _lastNavHtml = nextNavHtml;
+      }
+    }
+  }
+
+  function renderSimpleMode(animate = true) {
     if (!simpleState.enabled) return;
     const shell = ensureSimpleModeShell();
-    let screenHtml = '';
+    const isSameScreen = (_lastRenderedScreen === simpleState.activeScreen);
+    const shouldAnimate = Boolean(animate && !isSameScreen);
+    const currentFp = computeSimpleScreenFingerprint();
 
+    // Background sync optimization: if nothing changed, do ZERO DOM work (no flicker!)
+    if (!animate && isSameScreen && currentFp === _lastRenderedFingerprint) {
+      return;
+    }
+
+    // Never tear down DOM while user is actively typing in an input/textarea
+    if (!animate && isSameScreen && isUserTypingInSimpleMode()) {
+      patchSimpleLiveValuesInPlace();
+      return;
+    }
+
+    // Targeted in-place feed patch on SCR-SPC-03 (preserves composer text, scroll position, and zero flicker)
+    if (!animate && isSameScreen && simpleState.activeScreen === 'SCR-SPC-03') {
+      const feedContainer = document.getElementById('simple-feed-container');
+      if (feedContainer) {
+        const acc = getActiveWallet();
+        const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
+        const q = String(simpleState.searchQuery || '').trim().toLowerCase();
+        const filteredPosts = posts.filter(p => {
+          if (!p) return false;
+          if (simpleState.feedFilter === 'following' && acc && acc.address) {
+            const isMine = String(p.author || '').toLowerCase() === acc.address.toLowerCase();
+            const hasBns = Boolean(p.author_bns && p.author_bns !== 'anonymous');
+            if (!isMine && !hasBns) return false;
+          }
+          if (q) {
+            const content = String(p.content || '').toLowerCase();
+            const author = String(p.author || '').toLowerCase();
+            const bns = String(p.author_bns || '').toLowerCase();
+            return content.includes(q) || author.includes(q) || bns.includes(q);
+          }
+          return true;
+        });
+        feedContainer.innerHTML = filteredPosts.length === 0 ? `
+          <div class="p-8 rounded-2xl bg-surface-container-low text-center flex flex-col items-center gap-2 text-on-surface-variant">
+            <span class="material-symbols-outlined notranslate text-[28px] text-primary" translate="no">forum</span>
+            <span class="text-xs">Gönderiler yükleniyor veya bu filtrede gönderi yok...</span>
+          </div>
+        ` : filteredPosts.slice(0, 35).map(post => renderSimplePostCard(post, acc)).join('');
+        patchSimpleLiveValuesInPlace();
+        _lastRenderedFingerprint = currentFp;
+        return;
+      }
+    }
+
+    let screenHtml = '';
     switch (simpleState.activeScreen) {
       case 'SCR-ONB-01':
         screenHtml = renderScreenOnboardingWelcome();
@@ -1778,16 +1936,30 @@
         break;
     }
 
+    if (!shouldAnimate) {
+      screenHtml = screenHtml.replace(/\bsimple-screen-animate\b/g, '');
+    }
+
     shell.innerHTML = `
       <div class="simple-app-frame">
         ${screenHtml}
+        ${renderBottomNav()}
       </div>
     `;
 
     const navPortal = document.getElementById('bloctag-simple-bottom-nav-portal');
     if (navPortal) {
-      navPortal.innerHTML = renderBottomNav();
+      const nextNavHtml = renderBottomNav();
+      if (nextNavHtml !== _lastNavHtml) {
+        navPortal.innerHTML = nextNavHtml;
+        _lastNavHtml = nextNavHtml;
+      }
     }
+
+    _lastRenderedScreen = simpleState.activeScreen;
+    _lastRenderedFingerprint = currentFp;
+    const accNow = getActiveWallet();
+    _lastKnownWalletAddr = accNow ? String(accNow.address || '') : '';
 
     if (simpleState.activeScreen === 'SCR-WLT-SEND') {
       updateSimpleSendPreview();
@@ -1832,11 +2004,11 @@
       try {
         if (typeof LockTraceCrypto !== 'undefined' && typeof LockTraceCrypto.generateMnemonic12 === 'function') {
           simpleState.seedMnemonic = LockTraceCrypto.generateMnemonic12();
-          try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) {}
+          try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) { }
           simpleState.seedSavedConfirmed = false;
           renderSimpleMode();
         }
-      } catch (_e) {}
+      } catch (_e) { }
     },
 
     copySeed: () => {
@@ -1845,7 +2017,7 @@
       if (typeof window.copyText === 'function') {
         window.copyText(phrase, 'Kurtarma kelimeleri panoya kopyalandı!');
       } else if (navigator.clipboard) {
-        navigator.clipboard.writeText(phrase).catch(() => {});
+        navigator.clipboard.writeText(phrase).catch(() => { });
       }
       const ic = document.getElementById('simple-copy-seed-icon');
       const tx = document.getElementById('simple-copy-seed-text');
@@ -1869,7 +2041,7 @@
         try {
           previewMnemonicPhrase = simpleState.seedMnemonic;
           isTermsAccepted = true;
-        } catch (_e) {}
+        } catch (_e) { }
 
         if (typeof window.requestNewWallet === 'function') {
           await window.requestNewWallet();
@@ -1952,7 +2124,7 @@
           const inp = document.getElementById('simple-send-recipient');
           if (inp && text) inp.value = text;
         }
-      } catch (_e) {}
+      } catch (_e) { }
     },
 
     executeSend: async () => {
@@ -2062,7 +2234,7 @@
       if (!text) return;
       try {
         activeDetailPostId = postId;
-      } catch (_e) {}
+      } catch (_e) { }
       const proCommentInput = document.getElementById('detailCommentInput');
       if (proCommentInput && typeof window.submitDetailSpaceComment === 'function') {
         proCommentInput.value = text;
@@ -2123,13 +2295,19 @@
       applySimpleModeState(true, false);
     }
 
-    // Wrap QR scanner callback so scanning a QR in Simple Mode also populates #simple-send-recipient
+    // Wrap wallet state updates so 15s background balance polls patch in-place with zero flicker
     const origSaveWalletState = window.saveWalletState;
     if (typeof origSaveWalletState === 'function' && !origSaveWalletState._simpleHooked) {
       const wrappedSave = function (acc) {
         const res = origSaveWalletState.apply(this, arguments);
         if (simpleState.enabled) {
-          renderSimpleMode();
+          const nextAddr = acc ? String(acc.address || '') : '';
+          if (nextAddr !== _lastKnownWalletAddr) {
+            _lastKnownWalletAddr = nextAddr;
+            renderSimpleMode(false);
+          } else {
+            patchSimpleLiveValuesInPlace();
+          }
         }
         return res;
       };
@@ -2142,7 +2320,7 @@
       const wrappedRenderSpace = function () {
         const res = origRenderSpacePosts.apply(this, arguments);
         if (simpleState.enabled && (simpleState.activeScreen === 'SCR-SPC-03' || simpleState.activeScreen === 'SCR-SPC-04' || simpleState.activeScreen === 'SCR-PRF-05')) {
-          renderSimpleMode();
+          renderSimpleMode(false);
         }
         return res;
       };
