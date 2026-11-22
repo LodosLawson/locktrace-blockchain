@@ -7173,11 +7173,20 @@
               <p class="text-[12px] text-on-surface-variant">BlocTag Decentralized Web3 Mainnet</p>
             </div>
           </div>
-          <button
-            class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
-            onclick="closeMobileMenuModal()" type="button">
-            <span class="material-symbols-outlined notranslate text-[20px]" translate="no">close</span>
-          </button>
+          <div class="flex items-center gap-1.5">
+            <button
+              id="mobileMenuResetSlotBtn"
+              class="hidden px-2.5 py-1 rounded-lg bg-surface-container-high hover:bg-surface-variant text-[11px] font-mono text-on-surface-variant hover:text-primary transition-colors flex items-center gap-1"
+              onclick="resetMobileNavMenuSlot()" type="button" title="Varsayılan menü ikonuna sıfırla">
+              <span class="material-symbols-outlined notranslate text-[14px]" translate="no">refresh</span>
+              <span>Reset</span>
+            </button>
+            <button
+              class="w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant flex items-center justify-center text-on-surface-variant hover:text-on-surface transition-colors"
+              onclick="closeMobileMenuModal()" type="button">
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">close</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -7212,7 +7221,7 @@
           <div class="grid grid-cols-2 gap-2">
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('cuzdanim');" type="button">
+              onclick="selectTabFromMenu('cuzdanim');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">account_balance_wallet</span>
               </div>
@@ -7223,7 +7232,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('para-gonder');" type="button">
+              onclick="selectTabFromMenu('para-gonder');" type="button">
               <div
                 class="w-8 h-8 rounded-lg bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">send</span>
@@ -7235,7 +7244,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('yeni-cuzdan');" type="button">
+              onclick="selectTabFromMenu('yeni-cuzdan');" type="button">
               <div
                 class="w-8 h-8 rounded-lg bg-surface-container text-on-surface flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">add_circle</span>
@@ -7247,7 +7256,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('bns');" type="button">
+              onclick="selectTabFromMenu('bns');" type="button">
               <div
                 class="w-8 h-8 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">badge</span>
@@ -7268,7 +7277,7 @@
           <div class="grid grid-cols-2 gap-2">
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('ana-sayfa');" type="button">
+              onclick="selectTabFromMenu('ana-sayfa');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">explore</span>
               </div>
@@ -7279,7 +7288,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('space');" type="button">
+              onclick="selectTabFromMenu('space');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">forum</span>
               </div>
@@ -7299,7 +7308,7 @@
           <div class="grid grid-cols-2 gap-2">
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('ag-ve-explorer');" type="button">
+              onclick="selectTabFromMenu('ag-ve-explorer');" type="button">
               <div class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">hub</span>
               </div>
@@ -7310,7 +7319,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-primary/20 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('system-wallets');" type="button">
+              onclick="selectTabFromMenu('system-wallets');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">account_balance</span>
               </div>
@@ -7322,7 +7331,7 @@
 
             <button
               class="col-span-2 p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('kopru');" type="button">
+              onclick="selectTabFromMenu('kopru');" type="button">
               <div class="w-8 h-8 rounded-lg bg-secondary/15 text-secondary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">swap_horiz</span>
               </div>
@@ -7343,7 +7352,7 @@
           <div class="grid grid-cols-2 gap-2">
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('api-docs');" type="button">
+              onclick="selectTabFromMenu('api-docs');" type="button">
               <div
                 class="w-8 h-8 rounded-lg bg-surface-container text-on-surface flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">terminal</span>
@@ -7355,7 +7364,7 @@
             </button>
             <button
               class="p-2.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 flex items-start gap-2 text-left transition-all active:scale-[0.98]"
-              onclick="closeMobileMenuModal(); switchTab('guvenlik');" type="button">
+              onclick="selectTabFromMenu('guvenlik');" type="button">
               <div class="w-8 h-8 rounded-lg bg-primary/15 text-primary flex items-center justify-center shrink-0">
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">security</span>
               </div>
@@ -7412,7 +7421,7 @@
 
         <button
           class="w-full p-2.5 rounded-xl hover:bg-surface-container-high flex items-center justify-between text-left transition-colors"
-          onclick="closeMobileMenuModal(); switchTab('yeni-cuzdan');" type="button">
+          onclick="selectTabFromMenu('yeni-cuzdan');" type="button">
           <div class="flex items-center gap-2.5">
             <span class="material-symbols-outlined notranslate text-primary text-[19px]" translate="no">vpn_key</span>
             <div class="flex flex-col">
@@ -11795,6 +11804,10 @@
           : 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors';
       });
 
+      if (typeof updateMobileNavMenuButtonState === 'function') {
+        updateMobileNavMenuButtonState();
+      }
+
       if (updateHash) {
         history.replaceState(null, '', '#' + target);
       }
@@ -13067,6 +13080,14 @@
       if (typeof applyPwaBackButtonUI === 'function') applyPwaBackButtonUI();
       const modal = document.getElementById('mobileMenuModal');
       const card = document.getElementById('mobileMenuDrawerCard');
+      const resetBtn = document.getElementById('mobileMenuResetSlotBtn');
+      if (resetBtn) {
+        if (lastMenuSelectedTab) {
+          resetBtn.classList.remove('hidden');
+        } else {
+          resetBtn.classList.add('hidden');
+        }
+      }
       if (!modal || !card) return;
       modal.classList.remove('hidden');
       modal.classList.add('flex');
@@ -22257,40 +22278,123 @@
     }
 
     // =========================================================================
-    // ITEM 4: SMART DUAL-ACTION 2-CLICK MENU BUTTON CONTROLLER
-    // 1st click: returns to the menu-selected tool
-    // 2nd click: opens the full service menu drawer
+    // ITEM 4: DYNAMIC MOBILE MENU SLOT & DUAL-ACTION CONTROLLER
+    // - Selecting a page from the menu transforms the 5th nav button into that page's icon/label.
+    // - Navigating to another page retains the shortcut; 1st click returns to the menu page.
+    // - 2nd click (or clicking while already on that page) opens the full menu drawer widget.
     // =========================================================================
+    const MENU_TAB_CONFIG = {
+      'cuzdanim': { icon: 'account_balance_wallet', label: 'Wallet' },
+      'para-gonder': { icon: 'send', label: 'Send' },
+      'yeni-cuzdan': { icon: 'add_circle', label: 'New' },
+      'bns': { icon: 'badge', label: 'BNS' },
+      'ana-sayfa': { icon: 'explore', label: 'Home' },
+      'space': { icon: 'forum', label: 'Space' },
+      'ag-ve-explorer': { icon: 'hub', label: 'Explorer' },
+      'dugum-paneli': { icon: 'dns', label: 'Nodes' },
+      'system-wallets': { icon: 'account_balance', label: 'System' },
+      'kopru': { icon: 'swap_horiz', label: 'Bridge' },
+      'api-docs': { icon: 'terminal', label: 'Docs' },
+      'guvenlik': { icon: 'verified_user', label: 'Security' }
+    };
+    const DEFAULT_MENU_CONFIG = { icon: 'widgets', label: 'Menu' };
+    const MENU_TAB_STORAGE_KEY = 'locktrace_last_menu_tab_v1';
     let lastMenuSelectedTab = null;
 
-    function recordMenuTabSelection(tabId) {
-      if (!tabId) return;
-      lastMenuSelectedTab = tabId;
+    function initMobileNavDynamicMenu() {
+      try {
+        const saved = localStorage.getItem(MENU_TAB_STORAGE_KEY);
+        if (saved && MENU_TAB_CONFIG[saved]) {
+          lastMenuSelectedTab = saved;
+        }
+      } catch (_e) {}
       updateMobileNavMenuButtonState();
     }
 
+    function selectTabFromMenu(tabId) {
+      if (!tabId) return;
+      lastMenuSelectedTab = tabId;
+      try {
+        localStorage.setItem(MENU_TAB_STORAGE_KEY, tabId);
+      } catch (_e) {}
+      closeMobileMenuModal();
+      switchTab(tabId);
+    }
+
+    function resetMobileNavMenuSlot() {
+      lastMenuSelectedTab = null;
+      try {
+        localStorage.removeItem(MENU_TAB_STORAGE_KEY);
+      } catch (_e) {}
+      updateMobileNavMenuButtonState();
+      closeMobileMenuModal();
+      showToast('Menü ikonu varsayılana sıfırlandı', 'info');
+    }
+
     function handleMobileNavMenuClick() {
+      // 1. If user hasn't selected any menu tool yet, open menu drawer directly
+      if (!lastMenuSelectedTab) {
+        openMobileMenuModal();
+        return;
+      }
+
+      // 2. Identify currently active tab
+      let activeTabId = null;
+      const activeEl = document.querySelector('.tab-content.active');
+      if (activeEl && activeEl.id) {
+        activeTabId = activeEl.id.replace('tab-', '');
+      }
+
+      // 3. 1st click: If user is on a different page, switch back to the menu-selected page!
+      if (activeTabId !== lastMenuSelectedTab) {
+        switchTab(lastMenuSelectedTab);
+        return;
+      }
+
+      // 4. 2nd click (user is already on the menu-selected page): Open the menu drawer widget!
       openMobileMenuModal();
     }
 
     function updateMobileNavMenuButtonState() {
-      const indicator = document.getElementById('mobileNavMenuIndicator');
+      const btn = document.getElementById('mobileNavMenuBtn');
+      const icon = document.getElementById('mobileNavMenuIcon');
       const label = document.getElementById('mobileNavMenuLabel');
-      if (!indicator) return;
+      const indicator = document.getElementById('mobileNavMenuIndicator');
+      if (!btn || !icon || !label) return;
 
       let activeTabId = null;
-      document.querySelectorAll('.tab-content').forEach(el => {
-        if (!el.classList.contains('hidden')) {
-          activeTabId = el.id.replace('tab-', '');
-        }
-      });
+      const activeEl = document.querySelector('.tab-content.active');
+      if (activeEl && activeEl.id) {
+        activeTabId = activeEl.id.replace('tab-', '');
+      }
 
-      if (lastMenuSelectedTab && activeTabId && activeTabId !== lastMenuSelectedTab) {
-        indicator.classList.remove('hidden');
-        if (label) label.textContent = 'Dön / Menü';
+      const config = (lastMenuSelectedTab && MENU_TAB_CONFIG[lastMenuSelectedTab])
+        ? MENU_TAB_CONFIG[lastMenuSelectedTab]
+        : DEFAULT_MENU_CONFIG;
+
+      icon.textContent = config.icon;
+      label.textContent = config.label;
+
+      const isMenuTabActive = lastMenuSelectedTab && (activeTabId === lastMenuSelectedTab);
+
+      if (isMenuTabActive) {
+        btn.className = 'mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-primary font-semibold transition-colors active:scale-95 cursor-pointer';
+        icon.className = 'material-symbols-outlined notranslate text-[23px] text-primary';
+        label.className = 'font-label-sm text-[10px] font-semibold text-primary leading-none';
+        btn.setAttribute('title', `${config.label} (Tekrar dokununca menüyü açar)`);
+        if (indicator) indicator.classList.add('hidden');
       } else {
-        indicator.classList.add('hidden');
-        if (label) label.textContent = 'Menu';
+        btn.className = 'mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 cursor-pointer';
+        icon.className = 'material-symbols-outlined notranslate text-[23px] text-on-surface-variant';
+        label.className = 'font-label-sm text-[10px] font-medium text-on-surface-variant leading-none';
+        btn.setAttribute('title', lastMenuSelectedTab ? `${config.label} sayfasına dön` : 'Menu');
+        if (indicator) {
+          if (lastMenuSelectedTab) {
+            indicator.classList.remove('hidden');
+          } else {
+            indicator.classList.add('hidden');
+          }
+        }
       }
     }
 
@@ -22486,6 +22590,7 @@
     function initNotificationSystem() {
       initNotificationMutePreferences();
       initBottomSheetTouchGestures();
+      initMobileNavDynamicMenu();
       try {
         const stored = localStorage.getItem(NOTIF_STORAGE_KEY);
         notificationsCache = stored ? JSON.parse(stored) : [];
