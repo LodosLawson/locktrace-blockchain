@@ -211,10 +211,18 @@ html.bloctag-simple-mode #bloctag-simple-bottom-nav-portal {
 html.bloctag-mobile-gate-open,
 html.bloctag-mobile-gate-open body {
   overflow: hidden !important;
+  background-color: #131315 !important;
 }
 
+/* Completely hide ALL background page content while Mobile Gate is active (zero text bleed-through!) */
+html.bloctag-mobile-gate-open #bloctag-simple-mode-shell,
 html.bloctag-mobile-gate-open #bloctag-simple-bottom-nav-portal,
-html.bloctag-mobile-gate-open #pwaBannerContainer {
+html.bloctag-mobile-gate-open #desktopSidebar,
+html.bloctag-mobile-gate-open #mobileTopHeader,
+html.bloctag-mobile-gate-open #desktopTopHeader,
+html.bloctag-mobile-gate-open #mobile-nav,
+html.bloctag-mobile-gate-open #pwaBannerContainer,
+html.bloctag-mobile-gate-open body > div.md\:pl-64 {
   display: none !important;
 }
 
@@ -226,7 +234,8 @@ html.bloctag-mobile-gate-open #toast {
   position: fixed;
   inset: 0;
   z-index: 120;
-  background: radial-gradient(circle at top center, rgba(78, 222, 163, 0.12) 0%, #131315 52%, #0d0d0f 100%);
+  background-color: #131315 !important;
+  background-image: radial-gradient(circle at top center, #182c23 0%, #131315 52%, #0b0b0d 100%) !important;
   color: #e5e1e4;
   display: none;
   flex-direction: column;

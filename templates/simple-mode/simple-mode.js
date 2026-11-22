@@ -34,6 +34,15 @@
   let _capturedPwaPrompt = null;
   let _mobileGateStep = null; // 'web3' | 'pwa' | 'pwa-installed' | null
   let _pwaManualGuideOpen = false;
+  let _pwaInstallWaiting = false;
+  let _pwaAutoTriggerPending = false;
+
+  // Eagerly register Service Worker so Chromium fires beforeinstallprompt as fast as possible
+  try {
+    if ('serviceWorker' in navigator && !navigator.serviceWorker.controller) {
+      navigator.serviceWorker.register('/sw.js').catch(() => { });
+    }
+  } catch (_e) { }
 
   function isMobileDevice() {
     try {
@@ -93,6 +102,12 @@
         deferredPwaPrompt = e;
       }
     } catch (_err) { }
+    if (_pwaAutoTriggerPending) {
+      _pwaAutoTriggerPending = false;
+      _pwaInstallWaiting = false;
+      handleTriggerMandatoryPwaInstall();
+      return;
+    }
     if (_mobileGateStep === 'pwa') {
       renderMobileOnboardingGate('pwa');
     }
@@ -2333,7 +2348,7 @@
     triggerMandatoryPwaInstall: () => handleTriggerMandatoryPwaInstall(),
     markManualPwaInstalled: () => handleMarkManualPwaInstalled(),
     showPwaInstallStepsAgain: () => handleShowPwaInstallStepsAgain(),
-    openInstalledAppHint: () => handleOpenInstalledAppHint()
+    openInstalledAppHint: (ev) => handleOpenInstalledAppHint(ev)
   };
 
   // ==========================================================================
@@ -2510,19 +2525,25 @@
             <!-- Android / Chromium One-Tap Auto-Install CTA -->
             <div class="flex flex-col gap-3">
               <button type="button" id="bloctag-mandatory-pwa-btn" onclick="window.BlocTagSimpleMode.triggerMandatoryPwaInstall()"
-                class="w-full h-[54px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(78,222,163,0.3)] hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer">
-                <span class="material-symbols-outlined notranslate text-[21px]" translate="no">download</span>
-                <span>${hasNativePrompt ? 'Uygulamayı İndir & Ana Ekrana Ekle' : 'BlocTag Uygulamasını Yükle'}</span>
+                ${_pwaInstallWaiting ? 'disabled' : ''}
+                class="w-full h-[54px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(78,222,163,0.3)] hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer disabled:opacity-85">
+                ${_pwaInstallWaiting ? `
+                  <span class="material-symbols-outlined notranslate text-[21px] animate-spin" translate="no">progress_activity</span>
+                  <span>Otomatik Kurulum Başlatılıyor...</span>
+                ` : `
+                  <span class="material-symbols-outlined notranslate text-[21px]" translate="no">download</span>
+                  <span>${hasNativePrompt ? 'Uygulamayı İndir & Ana Ekrana Ekle' : 'BlocTag Uygulamasını Otomatik İndir'}</span>
+                `}
               </button>
 
               ${_pwaManualGuideOpen ? `
                 <div class="p-3.5 rounded-2xl bg-surface-container border border-outline-variant/25 flex flex-col gap-2 text-xs text-on-surface-variant">
                   <div class="font-semibold text-on-surface flex items-center gap-1.5">
                     <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">info</span>
-                    <span>Tarayıcı Menüsünden Yükleme</span>
+                    <span>Tarayıcı Otomatik Onayı Desteklemiyor</span>
                   </div>
                   <p class="leading-relaxed">
-                    Otomatik pencere açılmadıysa tarayıcınızın sağ üst köşesindeki <strong class="text-on-surface">Menü (⋮)</strong> simgesine dokunun ve <strong class="text-primary">"Uygulamayı Yükle"</strong> veya <strong class="text-primary">"Ana ekrana ekle"</strong> seçeneğini onaylayın.
+                    Bu tarayıcıda sağ üst köşedeki <strong class="text-on-surface">Menü (⋮)</strong> → <strong class="text-primary">"Uygulamayı Yükle"</strong> veya <strong class="text-primary">"Ana ekrana ekle"</strong> seçeneğine dokunun.
                   </p>
                   <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
                     class="mt-1 h-9 px-3 rounded-full bg-surface-container-high hover:bg-surface-bright text-primary text-xs font-semibold cursor-pointer">
@@ -2531,7 +2552,7 @@
                 </div>
               ` : `
                 <p class="text-center text-[11px] text-on-surface-variant/80 leading-relaxed">
-                  Butona bastığınızda cihazınızda kurulum onayı açılır; onayladığınızda <strong class="text-on-surface">BlocTag</strong> otomatik olarak ana ekranınıza eklenir.
+                  Butona bastığınızda cihazınızda kurulum onayı otomatik açılır; onayladığınızda <strong class="text-on-surface">BlocTag</strong> ana ekranınıza eklenir.
                 </p>
               `}
             </div>
@@ -2572,11 +2593,12 @@
           </div>
 
           <div class="w-full flex flex-col gap-2.5">
-            <button type="button" onclick="window.BlocTagSimpleMode.openInstalledAppHint()"
-              class="w-full h-[52px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
+            <a href="${esc(window.location.origin + '/?pwa_launch=1')}" target="_blank" rel="noopener"
+              onclick="window.BlocTagSimpleMode.openInstalledAppHint(event)"
+              class="w-full h-[52px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer no-underline">
               <span class="material-symbols-outlined notranslate text-[20px]" translate="no">open_in_new</span>
-              <span>Uygulamayı Ana Ekrandan Aç</span>
-            </button>
+              <span>Uygulamayı Aç</span>
+            </a>
             <button type="button" onclick="window.BlocTagSimpleMode.showPwaInstallStepsAgain()"
               class="w-full h-10 rounded-full bg-transparent hover:bg-surface-container text-on-surface-variant text-xs font-medium transition-colors cursor-pointer">
               Uygulama ekrana düşmediyse tekrar yükle
@@ -2624,6 +2646,8 @@
   async function handleTriggerMandatoryPwaInstall() {
     const promptEv = getAvailablePwaPrompt();
     if (promptEv) {
+      _pwaInstallWaiting = false;
+      _pwaAutoTriggerPending = false;
       try {
         promptEv.prompt();
         const choice = await promptEv.userChoice;
@@ -2641,6 +2665,8 @@
           }
           return;
         }
+        renderMobileOnboardingGate('pwa');
+        return;
       } catch (_e) { }
     }
 
@@ -2656,7 +2682,32 @@
       }
     } catch (_e) { }
 
-    // Fallback: reveal manual browser menu install steps
+    // Wait briefly for Service Worker & beforeinstallprompt to become ready and auto-trigger
+    _pwaInstallWaiting = true;
+    _pwaAutoTriggerPending = true;
+    renderMobileOnboardingGate('pwa');
+
+    try {
+      if ('serviceWorker' in navigator) {
+        await navigator.serviceWorker.register('/sw.js').catch(() => { });
+      }
+    } catch (_e) { }
+
+    const deadline = Date.now() + 4200;
+    while (Date.now() < deadline) {
+      if (!_pwaAutoTriggerPending) return; // Already triggered by beforeinstallprompt listener
+      const latePrompt = getAvailablePwaPrompt();
+      if (latePrompt) {
+        _pwaAutoTriggerPending = false;
+        _pwaInstallWaiting = false;
+        return handleTriggerMandatoryPwaInstall();
+      }
+      await new Promise(r => setTimeout(r, 250));
+    }
+
+    // Only if browser truly doesn't emit beforeinstallprompt (e.g. Firefox or already installed)
+    _pwaInstallWaiting = false;
+    _pwaAutoTriggerPending = false;
     _pwaManualGuideOpen = true;
     renderMobileOnboardingGate('pwa');
   }
@@ -2673,12 +2724,23 @@
       localStorage.removeItem(PWA_INSTALLED_STORAGE_KEY);
     } catch (_e) { }
     _pwaManualGuideOpen = false;
+    _pwaInstallWaiting = false;
+    _pwaAutoTriggerPending = false;
     renderMobileOnboardingGate('pwa');
   }
 
-  function handleOpenInstalledAppHint() {
+  function handleOpenInstalledAppHint(ev) {
+    // On iOS Safari, browsers cannot programmatically launch a Home Screen WebClip
+    if (isIosDeviceLocal()) {
+      if (ev) ev.preventDefault();
+      if (typeof window.showToast === 'function') {
+        window.showToast('Safari\'yi kapatıp telefonunuzun ana ekranındaki BlocTag ikonuna dokunun.', 'install_mobile');
+      }
+      return;
+    }
+    // On Android/Chromium, let the native <a href="/?pwa_launch=1" target="_blank"> link trigger WebAPK / launch_handler!
     if (typeof window.showToast === 'function') {
-      window.showToast('Tarayıcıyı kapatıp telefonunuzun ana ekranındaki BlocTag ikonuna dokunun.', 'install_mobile');
+      window.showToast('BlocTag uygulaması başlatılıyor... Açılmazsa ana ekranınızdan dokunun.', 'open_in_new');
     }
   }
 
