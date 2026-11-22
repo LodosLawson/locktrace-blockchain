@@ -540,7 +540,13 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Unblocked Mobile WebKit Intent Gestures:** Removed synthetic asynchronous `a.click()` background navigation that caused iOS Safari and Standalone PWAs to queue deep links until app exit; replaced with an interactive synchronous user tap model.
    - **1-Tap In-App DApp Browser Quick Launch:** Added direct 1-tap launchers for MetaMask (`metamask.app.link/dapp/...`), Coinbase Wallet, and Trust Wallet DApp browsers for instant zero-timeout Web3 connections.
    - **Interactive Cross-Chain Routing:** Real-time bidirectional route indicator for Layer-1 and Base EVM, with instant 1-tap 0x address pasting for L1 -> EVM bridging without requiring EVM signatures.
-33. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+33. **Concurrency & Lock-Order Hardening, Mempool Anti-Race Shield, Cooldown DoS Mitigation & Dynamic 2-Click Drawer Navigation (v2.12.2):**
+   - **AB-BA Deadlock & Concurrency Lock-Order Resolution:** Re-ordered critical mutex locks across mempool, UTXO/balance state, and validator blocks, eliminating circular lock waiting under high concurrent transaction load.
+   - **TOCTOU Nonce Race Hardening:** Enforced atomic compare-and-swap on sender account nonces during transaction admission and block assembly, preventing parallel transaction replay or collision.
+   - **P2P & Faucet Cooldown DoS Protection:** Implemented adaptive per-IP/per-address rate-limiters with bounded sliding windows for faucet claims and peer block/transaction queries.
+   - **DOM XSS Sanitization & Strict CSP Integrity:** Hardened user profile rendering, post feeds, and external URLs against script injection, keeping CSP script hashes in lockstep with the self-hosted frontend release.
+   - **Mobile 2-Click Drawer Navigation & Event Interception Fix:** Refined dynamic mobile bottom drawer so opening requires two distinct clicks or deliberate double tap, preventing accidental swipe/touch triggers, and unblocked touch event propagation for smooth profile and explorer browsing.
+34. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

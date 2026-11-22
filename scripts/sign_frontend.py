@@ -185,7 +185,7 @@ def sign_release(version: str, key_file: str):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="LockTrace Frontend SHA-256 & ECDSA Release Signer")
-    parser.add_argument("--version", default="2.12.0", help="Frontend release version string")
+    parser.add_argument("--version", default="2.12.2", help="Frontend release version string")
     parser.add_argument(
         "--key-file",
         default=os.path.expanduser("~/.locktrace/release_signing_key.json"),

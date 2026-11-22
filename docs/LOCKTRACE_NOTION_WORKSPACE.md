@@ -214,7 +214,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.12.1` | Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.12.2` | Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
 | **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -696,3 +696,16 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - Web3 Modal penceresine MetaMask (`metamask.app.link`), Coinbase Wallet ve Trust Wallet için 1-dokunuşla dahili tarayıcıda açma bağlantıları eklendi (Sıfır gecikme ve anında yerleşik Web3 sağlayıcısı).
 4. **Çift Yönlü Köprü Yönlendirme & L1 -> EVM İmzasız Kolay Transfer:**
    - Hedef ağ seçim kartı (Base Mainnet, Base Sepolia, Arbitrum One) optimize edildi; Layer-1'den Base'e BCT gönderiminde EVM imzasının gerekmediği açıklanarak panodan 0x adresi yapıştırma akışı kolaylaştırıldı.
+
+## 🛡️ 33. BlocTag / LockTrace v2.12.2: AB-BA Deadlock Çözümü, TOCTOU Nonce Yarışı Koruması, Cooldown DoS Engellemesi, DOM XSS & İki Tıklamalı Dinamik Menü Çekmecesi
+
+1. **AB-BA Deadlock & Eşzamanlılık Kilit Sıralaması Sıkılaştırması:**
+   - Mempool, UTXO/bakiye durumu ve blok üretici arasındaki karşılıklı kilit (mutex) edinme sırası hiyerarşik olarak standartlaştırıldı; yüksek işlem hacminde meydana gelebilecek dairesel kilitlenme (circular lock wait) riski sıfırlandı.
+2. **TOCTOU Nonce Yarışı ve İşlem Replay Engellemesi:**
+   - Mempool kabulü ve blok montajı esnasında gönderici hesap nonce değerleri için atomik Compare-And-Swap (CAS) kontrolleri zorunlu kılındı.
+3. **P2P Ağ ve Musluk (Faucet) Cooldown DoS Koruması:**
+   - P2P blok/işlem sorguları ve testnet/ana ağ musluk talepleri için IP ve adres bazlı, kayan pencereli (sliding-window) adaptif hız sınırlayıcılar uygulandı.
+4. **DOM XSS Sanitizasyonu ve Katı CSP Bütünlüğü:**
+   - Profil oluşturma, sosyal akışlar ve harici URL yönlendirmelerinde DOM injection yüzeyleri temizlendi; CSP script hash'leri yerel frontend derlemesiyle tam senkronize kılındı.
+5. **İki Tıklamalı Dinamik Menü Çekmecesi & Dokunma Olayı İyileştirmesi:**
+   - Mobil gezinme deneyiminde kazara açılmaları önlemek adına alt çekmece iki ardışık tıklama veya çift dokunuşla açılacak şekilde optimize edildi; profil ve blok gezgini arasındaki dokunma olay akışı akıcılaştırıldı.

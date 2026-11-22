@@ -1,7 +1,7 @@
-# BlocTag (BCT) Technical Whitepaper — v2.12.1
+# BlocTag (BCT) Technical Whitepaper — v2.12.2
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.12.1 — November 2026*  
+*Version 2.12.2 — November 2026*  
 *Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
@@ -20,7 +20,8 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **BlocTag (Ticker: BCT)**, developed by LockTrace, introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (BlocTag Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.12.1**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+In **Version 2.12.2**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+0. **Concurrency & Lock-Order Hardening, Mempool Anti-Race Shield, Cooldown DoS Mitigation & Dynamic 2-Click Drawer Navigation (v2.12.2):** Resolved AB-BA deadlock scenarios across mempool and state locks, eliminated TOCTOU nonce race conditions with atomic CAS validations, implemented adaptive sliding-window cooldown protection against P2P and faucet DoS vectors, strictly sanitized DOM injection surfaces with CSP script hash enforcement, and added touch-safe 2-click drawer navigation.
 0. **Cross-Chain Bridge Mobile & PWA Optimization (v2.12.1):** Eliminated SDK recursive reset loops in mobile environments, unblocked deferred iOS/Android WebKit deep-link navigation by establishing direct user-touch gesture flows, added 1-tap direct launchers for MetaMask, Coinbase Wallet, and Trust Wallet DApp browsers, and introduced bidirectional L1 <-> Base EVM routing with 1-tap destination address population.
 0. **Base L2 WrappedBlocTag Contract Migration & MetaMask SDK Direct Native Signing (v2.11.0):** Deployed the audit-hardened `WrappedBlocTag` (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) on Base Mainnet with Multi-Relayer Quorum Consensus and live Uniswap v4 liquidity (`0xf38d2770...`). Integrated self-hosted MetaMask SDK (`@metamask/sdk` IIFE with Proxy private-field binding fix) and EIP-6963 multi-wallet discovery so mobile and desktop users sign `burnToBridge` transactions directly in their wallet's native signing sheet without redirecting into an in-app browser.
 0. **Wallet Security & Vault Modal Mobile Alignment (v2.10.1):** Resolved DOM tree hierarchy clash in `#vault-modal` caused by duplicate closing tags, and enforced clean `flex-col` stacking on narrow mobile viewports.
@@ -460,7 +461,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.10.0 (Completed):** Dedicated Receive BCT Widget (`#receive-bct-modal`), Live Payment Radar with on-chain polling, and Profile Navigation History Stack (`userProfileHistoryStack`, `navigateBackUserProfile`, `closeUserProfileDirectly`).
 - **v2.10.1 (Completed):** Wallet Security & Vault Modal Mobile Alignment, DOM hierarchy parity, and responsive single-column mobile stacking.
 - **v2.11.0 (Completed):** Base L2 `WrappedBlocTag` (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) Multi-Relayer Quorum Consensus & Uniswap v4 DEX integration, MetaMask SDK Direct Native Mobile Signing, EIP-6963 multi-wallet discovery, and 100% English UI unification.
-- **v2.12.1 (Current Production Release):** Cross-Chain Bridge Mobile & PWA Optimization, unblocking WebKit standalone deep links, eliminating SDK recursive reset traps, adding 1-tap in-app DApp browser launchers, and real-time bidirectional route indicators.
+- **v2.12.1 (Completed):** Cross-Chain Bridge Mobile & PWA Optimization, unblocking WebKit standalone deep links, eliminating SDK recursive reset traps, adding 1-tap in-app DApp browser launchers, and real-time bidirectional route indicators.
+- **v2.12.2 (Current Production Release):** Concurrency & Lock-Order Hardening (AB-BA deadlock fix), TOCTOU nonce race mitigation, adaptive cooldown DoS protection, DOM XSS sanitization, and 2-click mobile drawer navigation.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---
