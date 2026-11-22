@@ -424,15 +424,1124 @@
 
   // ── Language Selector Modal & Preferences (SCR-MNU-07) ───────────────────────
   const SIMPLE_LANGUAGES = [
-    { code: 'tr', flag: '🇹🇷', name: 'Türkçe', desc: 'Varsayılan Türkçe arayüz' },
-    { code: 'en', flag: '🌐', name: 'English', desc: 'Default English UI' },
-    { code: 'az', flag: '🇦🇿', name: 'Azərbaycanca', desc: 'Azərbaycan dili' },
+    { code: 'en', flag: '🌐', name: 'English (Default)', desc: 'Official international interface' },
+    { code: 'tr', flag: '🇹🇷', name: 'Türkçe', desc: 'Türkçe kullanıcı arayüzü' },
+    { code: 'az', flag: '🇦🇿', name: 'Azərbaycanca', desc: 'Azərbaycan dili interfeysi' },
     { code: 'ru', flag: '🇷🇺', name: 'Русский', desc: 'Русскоязычный интерфейс' },
-    { code: 'de', flag: '🇩🇪', name: 'Deutsch', desc: 'Deutsche Sprache' },
-    { code: 'es', flag: '🇪🇸', name: 'Español', desc: 'Idioma español' },
-    { code: 'fr', flag: '🇫🇷', name: 'Français', desc: 'Langue française' },
-    { code: 'ar', flag: '🇸🇦', name: 'العربية', desc: 'واجهة عربية (RTL)' },
+    { code: 'de', flag: '🇩🇪', name: 'Deutsch', desc: 'Deutsche Benutzeroberfläche' },
+    { code: 'es', flag: '🇪🇸', name: 'Español', desc: 'Interfaz en español' },
+    { code: 'fr', flag: '🇫🇷', name: 'Français', desc: 'Interface en français' },
+    { code: 'ar', flag: '🇸🇦', name: 'العربية', desc: 'الواجهة العربية (RTL)' },
   ];
+
+  const SIMPLE_I18N = {
+    tr: {
+      nav_space: 'Space',
+      nav_wallet: 'Cüzdan',
+      nav_profile: 'Profil',
+      nav_menu: 'Menü',
+      top_welcome: 'BlocTag',
+      top_recovery: 'Kurtarma Anahtarı',
+      top_wallet: 'Cüzdanım',
+      top_send: 'Kripto Gönder',
+      top_space: 'BlocTag Space',
+      top_post_detail: 'Gönderi Detayı',
+      top_profile: 'Profil',
+      top_notifications: 'Bildirimler',
+      top_menu: 'Menü',
+      onb_title_1: 'Kripto ve Topluluk',
+      onb_title_2: 'Tek Bir Yerde.',
+      onb_sub: 'Karmaşık terimler yok. Tek tıkla cüzdan oluşturun, varlıklarınızı yönetin ve Space ile Web3 topluluklarına katılın.',
+      onb_feat1_title: 'Kolay & Güvenli',
+      onb_feat1_desc: 'Kendi anahtarınız, tam kontrolünüz. Aracı kurum veya riskli sunucular olmadan doğrudan cihazınızda saklanır.',
+      onb_feat2_title: 'BlocTag Kimliği',
+      onb_feat2_badge: 'Yeni',
+      onb_feat2_desc: 'Uzun, karmaşık 42 karakterlik adresler yerine sade kullanıcı adınızı kullanın (örn. @kullanici.bct).',
+      onb_feat3_title: 'Space Topluluğu',
+      onb_feat3_desc: 'Doğrulanmış token sahipleriyle fikir paylaşın, projeleri keşfedin ve içerik üreticilerini tek tıkla ödüllendirin.',
+      onb_import_title: '12 Kelime veya Özel Anahtar ile Bağlan',
+      onb_import_ph: '12 kurtarma kelimenizi veya 64 haneli özel anahtarınızı girin...',
+      onb_import_btn: 'Cüzdanı Geri Yükle ve Bağlan',
+      onb_create_btn: 'Cüzdan Aç (+1.00 BCT Bonus)',
+      onb_existing_btn: 'Mevcut Cüzdanla Bağlan',
+      onb_footer: 'Uçtan Uca Şifreli • Non-Custodial Güvenlik',
+      seed_hero_title: 'Cüzdan Anahtarlarınız',
+      seed_hero_sub: 'Bu 12 kelime cüzdanınızın tek şifresidir. Güvenli bir yere not edin ve kimseyle paylaşmayın.',
+      seed_tip: 'Etrafınızda kimsenin izlemediğinden emin olun',
+      seed_private: 'Gizli',
+      seed_copy_btn: 'Kelimeleri Kopyala',
+      seed_copied_toast: '12 kurtarma kelimesi kopyalandı!',
+      seed_rec_title: 'Tavsiye Edilen Yöntem',
+      seed_rec_desc: 'Kelimeleri tercihen fiziksel bir kağıda yazın ve güvenli bir yerde saklayın. Ekran görüntüsü almaktan kaçının.',
+      seed_saved_label: 'Kelimelerimi güvenli bir yere kaydettim',
+      seed_saved_sub: 'Kurtarma kelimelerim olmadan hesabıma erişemem',
+      seed_launch_btn: "Cüzdanı Başlat & Space'e Git (+1.00 BCT)",
+      seed_footer: 'Merkeziyetsiz ve bağımsız mülkiyet protokolü',
+      seed_refresh_title: 'Yeni Kelime Üret',
+      wlt_net_worth: 'Net Portföy Değeri',
+      wlt_balance_title: 'Toplam Varlık',
+      wlt_send_btn: 'Gönder',
+      wlt_receive_btn: 'Al (QR)',
+      wlt_vault_btn: 'PIN Kasası',
+      wlt_switch_wallet: 'Cüzdan Değiştir',
+      wlt_audit_btn: 'Ağ Güvenliği',
+      wlt_txs_title: 'İşlem Geçmişi',
+      wlt_filter_all: 'Tümü',
+      wlt_filter_in: 'Gelenler',
+      wlt_filter_out: 'Gidenler',
+      wlt_empty_txs: 'Bu filtrede henüz işlem bulunmuyor.',
+      wlt_tx_pending: 'Mempool',
+      wlt_tx_confirmed: 'Onaylandı',
+      send_badge: 'İşlem',
+      send_title: 'BCT Gönder',
+      send_fast_mode: 'Hızlı Mod',
+      send_active_asset: 'Aktif Varlık',
+      send_recipient: 'Alıcı Adresi veya .bct İsmi',
+      send_recipient_label: 'Alıcı Adresi veya @isim.bct',
+      send_recipient_ph: 'BCT... veya kullanici.bct',
+      send_paste: 'Yapıştır',
+      send_qr_scan: 'QR Tara',
+      send_amount: 'Gönderilecek Miktar',
+      send_available: 'Kullanılabilir:',
+      send_net_received: 'Net Alıcıya Geçen:',
+      send_pct_all: 'Tümü',
+      send_network_fee: 'Ağ Ücreti (%1 Protokol):',
+      send_zero_fee: 'Ağ Ücreti: 0.00 BCT (Sıfır Komisyon)',
+      send_instant_conf: 'Anlık Onay',
+      send_submit: 'Devam Et ve İmzala',
+      send_submit_btn: 'Devam Et ve İmzala',
+      send_ecdsa_signed: 'Uçtan Uca ECDSA İmzalı',
+      send_instant_block: 'Anlık Blok Kaydı',
+      space_ph: 'Bir şeyler paylaş... (0.10 BCT)',
+      space_composer_ph: 'Bir şeyler paylaş... (0.10 BCT)',
+      space_publish: 'Paylaş',
+      space_filter_all: 'Hepsi',
+      space_filter_following: 'Doğrulanmış & Takip',
+      space_empty: 'Henüz zincir üstü gönderi paylaşılmamış.',
+      space_empty_posts: 'Gönderiler yükleniyor veya bu filtrede gönderi yok...',
+      space_like: 'Beğen',
+      space_liked: 'Beğenildi',
+      space_reply: 'Yorum',
+      space_share: 'Paylaş',
+      space_tip: 'Bahşiş',
+      space_follow: 'Takip Et',
+      space_active_l1: 'Aktif L1',
+      space_compose_fab: 'Yaz',
+      space_create_wallet_hint: 'Cüzdan oluşturun (+1.00 BCT bonus)',
+      space_search_ph: 'Gönderi, #etiket veya @kullanici ara...',
+      space_search_btn: 'Arama',
+      space_share_btn: 'Paylaş',
+      post_not_found: 'Gönderi bulunamadı veya yükleniyor.',
+      post_back_to_feed: 'Space Akışına Dön',
+      post_block_label: 'Blok',
+      post_likes_label: 'Beğeni',
+      post_comments_label: 'Yorum',
+      post_royalties_label: 'Telif',
+      post_comments_title: 'Yorumlar',
+      post_author_royalty_hint: '+0.004 BCT Yazar Telifi',
+      post_be_first_comment: 'İlk zincir üstü yorumu aşağıdan siz yazın!',
+      post_comment_ph: 'Düşünceni yaz... (0.02 BCT)',
+      post_comment_send: 'Gönder',
+      profile_security_btn: 'Güvenlik',
+      profile_follow_btn: 'Takip Et',
+      profile_tip_btn: 'Bahşiş',
+      profile_bns_title: 'Kayıtlı BNS İsimleriniz (.bct)',
+      profile_bns_count: 'isim',
+      profile_bns_hint: 'Profilinizde ve paylaşımlarınızda görünecek aktif kimliğinizi seçin:',
+      profile_bns_active: '(Aktif)',
+      profile_bns_none: 'Henüz bir .bct alan adı almadınız. Cüzdan adresiniz yerine havalı bir isim kullanın.',
+      profile_bns_claim: 'İsim Al',
+      profile_bio: 'Doğrulanmış BlocTag Space üreticisi ✦ Sansüre dayanıklı Layer-1 blokzincir üzerinde içerik paylaşıyor ve anlık telif kazanıyor.',
+      profile_stat_posts: 'Gönderi',
+      profile_stat_likes: 'Beğeni',
+      profile_stat_followers: 'Takipçi',
+      profile_stat_following: 'Takip',
+      profile_tab_posts: 'Gönderiler',
+      profile_tab_popular: 'Popüler',
+      profile_empty_posts: 'Henüz zincir üstü gönderi paylaşılmamış.',
+      profile_view_followers: 'Takipçileri Görüntüle',
+      profile_view_following: 'Takip Edilenleri Görüntüle',
+      notif_new_badge: 'yeni',
+      notif_mark_all: 'Okundu Say',
+      notif_all: 'Tümü',
+      notif_tips: 'Transfer & Bahşiş',
+      notif_mentions: 'Space & Yanıtlar',
+      notif_system: 'Sistem',
+      notif_empty_title: 'Henüz bildirim yok',
+      notif_empty_desc: 'Gönderilerinize etkileşim geldiğinde veya token transferi olduğunda burada görünecektir.',
+      menu_not_connected: 'Cüzdan bağlı değil',
+      menu_wallet: 'Cüzdanım',
+      menu_profile: 'Profilim',
+      menu_validator: 'VALİDATOR',
+      menu_pro_title: 'Pro Mod (Tam Görünüm)',
+      menu_pro_desc: 'Ağ Explorer, Düğümler ve Geliştirici Araçları',
+      menu_pro_switch: 'Geçiş Yap',
+      menu_services: 'İşlemler & Hizmetler',
+      menu_send: 'Kripto Gönder',
+      menu_send_desc: 'Sıfır komisyonlu anında BCT transferi',
+      menu_bns: 'BNS Kullanıcı Adı (.bct)',
+      menu_bns_desc: 'Kimlik ve Web3 profilinizi yönetin',
+      menu_sec: 'Güvenlik & Kurtarma Anahtarı',
+      menu_sec_desc: '12 kelimelik gizli kurtarma ifadesi (Seed Phrase)',
+      menu_notif: 'Bildirimler & Uyarılar',
+      menu_notif_desc: 'İşlem ve Space güncellemeleri',
+      menu_lang: 'Dil Seçimi (Language)',
+      menu_lang_desc: 'Uygulama arayüz dili',
+      menu_wp: 'LockTrace Whitepaper',
+      menu_wp_desc: 'Protokol mimarisi ve teknik dokümantasyon',
+      lang_modal_title: 'Dil Seçimi (Language)',
+      lang_modal_sub: 'Uygulama dilinizi belirleyin',
+      lang_modal_hint: 'Tarayıcınızın Çevir (Translate) özelliği ve çok dilli PWA desteği ile tam uyumludur.'
+    },
+    az: {
+      nav_space: 'Space',
+      nav_wallet: 'Cüzdan',
+      nav_profile: 'Profil',
+      nav_menu: 'Menyu',
+      top_welcome: 'BlocTag',
+      top_recovery: 'Bərpa Açarı',
+      top_wallet: 'Cüzdanım',
+      top_send: 'Kripto Göndər',
+      top_space: 'BlocTag Space',
+      top_post_detail: 'Paylaşım Detalı',
+      top_profile: 'Profil',
+      top_notifications: 'Bildirişlər',
+      top_menu: 'Menyu',
+      onb_title_1: 'Kripto və İcma',
+      onb_title_2: 'Tək Bir Yerdə.',
+      onb_sub: 'Mürəkkəb terminlər yoxdur. Bir kliklə cüzdan yaradın, aktivlərinizi idarə edin və Space ilə Web3 icmalarına qoşulun.',
+      onb_feat1_title: 'Asan və Təhlükəsiz',
+      onb_feat1_desc: 'Öz açarınız, tam nəzarətiniz. Vasitəçilər olmadan birbaşa cihazınızda saxlanılır.',
+      onb_feat2_title: 'BlocTag Kimliyi',
+      onb_feat2_badge: 'Yeni',
+      onb_feat2_desc: 'Uzun 42 simvollu ünvanlar yerinə sadə istifadəçi adınızı istifadə edin (məs. @istifadeci.bct).',
+      onb_feat3_title: 'Space İcması',
+      onb_feat3_desc: 'Təsdiqlənmiş istifadəçilərlə fikir paylaşın, layihələri kəşf edin və müəlliflərə bəxşiş göndərin.',
+      onb_import_title: '12 Söz və ya Şəxsi Açar ilə Bərpa',
+      onb_import_ph: '12 bərpa sözünüzü və ya şəxsi açarınızı daxil edin...',
+      onb_import_btn: 'Cüzdanı Bərpa Et və Daxil Ol',
+      onb_create_btn: 'Cüzdan Yarat (+1.00 BCT Bonus)',
+      onb_existing_btn: 'Mövcud Cüzdanla Daxil Ol',
+      onb_footer: 'Ucdan-Uca Şifrələnmiş • Non-Custodial Təhlükəsizlik',
+      seed_hero_title: 'Cüzdan Açarlarınız',
+      seed_hero_sub: 'Bu 12 söz cüzdanınızın tək şifrəsidir. Təhlükəsiz yerdə saxlayın və heç kimlə bölüşməyin.',
+      seed_tip: 'Ətrafınızda heç kimin baxmadığından əmin olun',
+      seed_private: 'Məxfi',
+      seed_copy_btn: 'Sözləri Kopyala',
+      seed_copied_toast: '12 bərpa sözü kopyalandı!',
+      seed_rec_title: 'Tövsiyə Edilən Metod',
+      seed_rec_desc: 'Sözləri kağıza yazın və etibarlı yerdə saxlayın. Ekran görüntüsü çəkməkdən çəkinin.',
+      seed_saved_label: 'Sözlərimi təhlükəsiz yerdə saxladım',
+      seed_saved_sub: 'Bərpa sözlərim olmadan cüzdanıma daxil ola bilmərəm',
+      seed_launch_btn: "Cüzdanı Başlat & Space-ə Get (+1.00 BCT)",
+      seed_footer: 'Mərkəzsiz və müstəqil mülkiyyət protokolu',
+      seed_refresh_title: 'Yeni Sözlər Yarat',
+      wlt_net_worth: 'Net Portfel Dəyəri',
+      wlt_balance_title: 'Ümumi Balans',
+      wlt_send_btn: 'Göndər',
+      wlt_receive_btn: 'Qəbul Et (QR)',
+      wlt_vault_btn: 'PIN Kassası',
+      wlt_switch_wallet: 'Cüzdanı Dəyiş',
+      wlt_audit_btn: 'Şəbəkə Təhlükəsizliyi',
+      wlt_txs_title: 'Əməliyyat Tarixçəsi',
+      wlt_filter_all: 'Hamısı',
+      wlt_filter_in: 'Gələnlər',
+      wlt_filter_out: 'Gedənlər',
+      wlt_empty_txs: 'Bu filtrdə hələ ki əməliyyat qeydi yoxdur.',
+      wlt_tx_pending: 'Mempool',
+      wlt_tx_confirmed: 'Təsdiqləndi',
+      send_badge: 'Əməliyyat',
+      send_title: 'BCT Göndər',
+      send_fast_mode: 'Sürətli Rejim',
+      send_active_asset: 'Aktiv Varlıq',
+      send_recipient: 'Qəbuledici Ünvanı və ya .bct Adı',
+      send_recipient_label: 'Qəbuledici Ünvanı və ya @ad.bct',
+      send_recipient_ph: 'BCT... və ya istifadeci.bct',
+      send_paste: 'Yapışdır',
+      send_qr_scan: 'QR Skan',
+      send_amount: 'Göndəriləcək Məbləğ',
+      send_available: 'Mövcud:',
+      send_net_received: 'Qəbulediciyə Çatan Xalis:',
+      send_pct_all: 'Hamısı',
+      send_network_fee: 'Şəbəkə Haqqı (%1 Protokol):',
+      send_zero_fee: 'Şəbəkə Haqqı: 0.00 BCT (Komissiyasız)',
+      send_instant_conf: 'Ani Təsdiq',
+      send_submit: 'Davam Et və İmzala',
+      send_submit_btn: 'Davam Et və İmzala',
+      send_ecdsa_signed: 'Ucdan-Uca ECDSA İmzalı',
+      send_instant_block: 'Ani Blok Qeydiyyatı',
+      space_ph: 'Bir şeylər paylaşın... (0.10 BCT)',
+      space_composer_ph: 'Bir şeylər paylaşın... (0.10 BCT)',
+      space_publish: 'Paylaş',
+      space_filter_all: 'Hamısı',
+      space_filter_following: 'Təsdiqlənmiş & İzlənilən',
+      space_empty: 'Hələ zəncir üzərində paylaşım edilməyib.',
+      space_empty_posts: 'Paylaşımlar yüklənir və ya bu filtrdə paylaşım yoxdur...',
+      space_like: 'Bəyən',
+      space_liked: 'Bəyənildi',
+      space_reply: 'Şərh',
+      space_share: 'Paylaş',
+      space_tip: 'Bəxşiş',
+      space_follow: 'İzlə',
+      space_active_l1: 'Aktiv L1',
+      space_compose_fab: 'Yaz',
+      space_create_wallet_hint: 'Cüzdan yaradın (+1.00 BCT bonus)',
+      space_search_ph: 'Paylaşım, #teq və ya @istifadəçi axtar...',
+      space_search_btn: 'Axtarış',
+      space_share_btn: 'Paylaş',
+      post_not_found: 'Paylaşım tapılmadı və ya yüklənir.',
+      post_back_to_feed: 'Space Axınına Qayıt',
+      post_block_label: 'Blok',
+      post_likes_label: 'Bəyənmə',
+      post_comments_label: 'Şərh',
+      post_royalties_label: 'Qonorar',
+      post_comments_title: 'Şərhlər',
+      post_author_royalty_hint: '+0.004 BCT Müəllif Qonorarı',
+      post_be_first_comment: 'İlk zəncir üzərində şərhi aşağıdan siz yazın!',
+      post_comment_ph: 'Fikrinizi yazın... (0.02 BCT)',
+      post_comment_send: 'Göndər',
+      profile_security_btn: 'Təhlükəsizlik',
+      profile_follow_btn: 'İzlə',
+      profile_tip_btn: 'Bəxşiş',
+      profile_bns_title: 'Qeydiyyatdan Keçmiş BNS Adlarınız (.bct)',
+      profile_bns_count: 'ad',
+      profile_bns_hint: 'Profilinizdə və Space paylaşımlarınızda görünəcək aktiv kimliyinizi seçin:',
+      profile_bns_active: '(Aktiv)',
+      profile_bns_none: 'Hələ .bct adı almamısınız. Cüzdan ünvanı yerinə gözəl bir ad istifadə edin.',
+      profile_bns_claim: 'Ad Al',
+      profile_bio: 'Təsdiqlənmiş BlocTag Space müəllifi ✦ Senzuraya davamlı Layer-1 blokçeynində məzmun paylaşır və ani qonorar qazanır.',
+      profile_stat_posts: 'Paylaşım',
+      profile_stat_likes: 'Bəyənmə',
+      profile_stat_followers: 'İzləyici',
+      profile_stat_following: 'İzlənilən',
+      profile_tab_posts: 'Paylaşımlar',
+      profile_tab_popular: 'Populyar',
+      profile_empty_posts: 'Hələ zəncir üzərində paylaşım edilməyib.',
+      profile_view_followers: 'İzləyicilərə Bax',
+      profile_view_following: 'İzlənilənlərə Bax',
+      notif_new_badge: 'yeni',
+      notif_mark_all: 'Oxunmuş Say',
+      notif_all: 'Hamısı',
+      notif_tips: 'Köçürmə & Bəxşiş',
+      notif_mentions: 'Space & Cavablar',
+      notif_system: 'Sistem',
+      notif_empty_title: 'Hələ bildiriş yoxdur',
+      notif_empty_desc: 'Paylaşımlarınıza qarşılıqlı əlaqə gəldikdə və ya köçürmə olduqda burada görünəcək.',
+      menu_not_connected: 'Cüzdan qoşulmayıb',
+      menu_wallet: 'Cüzdanım',
+      menu_profile: 'Profilim',
+      menu_validator: 'VALİDATOR',
+      menu_pro_title: 'Pro Rejim (Tam Görünüş)',
+      menu_pro_desc: 'Blok Explorer, Node və Tərtibatçı Alətləri',
+      menu_pro_switch: 'Keçid Et',
+      menu_services: 'Əməliyyatlar & Xidmətlər',
+      menu_send: 'Kripto Göndər',
+      menu_send_desc: 'Komissiyasız ani BCT köçürməsi',
+      menu_bns: 'BNS İstifadəçi Adı (.bct)',
+      menu_bns_desc: 'Kimlik və Web3 profilinizi idarə edin',
+      menu_sec: 'Təhlükəsizlik & Bərpa Açarı',
+      menu_sec_desc: '12 sözlük gizli bərpa ifadəsi (Seed Phrase)',
+      menu_notif: 'Bildirişlər & Xəbərdarlıqlar',
+      menu_notif_desc: 'Əməliyyat və Space yenilikləri',
+      menu_lang: 'Dil Seçimi (Language)',
+      menu_lang_desc: 'Tətbiq interfeys dili',
+      menu_wp: 'LockTrace Whitepaper',
+      menu_wp_desc: 'Protokol arxitekturası və texniki sənədlər',
+      lang_modal_title: 'Dil Seçimi (Language)',
+      lang_modal_sub: 'Tətbiq dilinizi seçin',
+      lang_modal_hint: 'Brauzerinizin tərcümə funksiyası və çoxdilli PWA ilə tam uyğundur.'
+    },
+    ru: {
+      nav_space: 'Space',
+      nav_wallet: 'Кошелек',
+      nav_profile: 'Профиль',
+      nav_menu: 'Меню',
+      top_welcome: 'BlocTag',
+      top_recovery: 'Ключи восстановления',
+      top_wallet: 'Мой кошелек',
+      top_send: 'Отправить крипту',
+      top_space: 'BlocTag Space',
+      top_post_detail: 'Детали публикации',
+      top_profile: 'Профиль',
+      top_notifications: 'Уведомления',
+      top_menu: 'Меню',
+      onb_title_1: 'Криптовалюта и сообщество',
+      onb_title_2: 'В одном месте.',
+      onb_sub: 'Без сложных терминов. Создайте кошелек в один клик, управляйте активами и присоединяйтесь к Web3-сообществам Space.',
+      onb_feat1_title: 'Просто и безопасно',
+      onb_feat1_desc: 'Ваши ключи — ваш полный контроль. Хранятся прямо на вашем устройстве без посредников.',
+      onb_feat2_title: 'Имя BlocTag',
+      onb_feat2_badge: 'Новое',
+      onb_feat2_desc: 'Используйте простое имя вместо 42-значных адресов (например, @user.bct).',
+      onb_feat3_title: 'Сообщество Space',
+      onb_feat3_desc: 'Делитесь мыслями, открывайте децентрализованные проекты и отправляйте чаевые создателям.',
+      onb_import_title: 'Восстановление по 12 словам или ключу',
+      onb_import_ph: 'Введите 12 слов восстановления или приватный ключ...',
+      onb_import_btn: 'Восстановить кошелек и войти',
+      onb_create_btn: 'Создать кошелек (+1.00 BCT Бонус)',
+      onb_existing_btn: 'Войти с существующим кошельком',
+      onb_footer: 'Сквозное шифрование • Полный контроль (Non-Custodial)',
+      seed_hero_title: 'Ключи вашего кошелька',
+      seed_hero_sub: 'Эти 12 слов — единственный пароль к вашему кошельку. Запишите их и никому не показывайте.',
+      seed_tip: 'Убедитесь, что никто не смотрит на экран',
+      seed_private: 'Секретно',
+      seed_copy_btn: 'Скопировать слова',
+      seed_copied_toast: '12 слов восстановления скопированы!',
+      seed_rec_title: 'Рекомендуемый способ',
+      seed_rec_desc: 'Запишите слова на бумаге и храните в надежном месте. Избегайте скриншотов.',
+      seed_saved_label: 'Я сохранил слова в надежном месте',
+      seed_saved_sub: 'Без этих слов восстановить доступ к кошельку невозможно',
+      seed_launch_btn: 'Запустить кошелек и перейти в Space (+1.00 BCT)',
+      seed_footer: 'Децентрализованный протокол суверенного владения',
+      seed_refresh_title: 'Сгенерировать новые слова',
+      wlt_net_worth: 'Чистая стоимость портфеля',
+      wlt_balance_title: 'Общий баланс',
+      wlt_send_btn: 'Отправить',
+      wlt_receive_btn: 'Получить (QR)',
+      wlt_vault_btn: 'Сейф PIN',
+      wlt_switch_wallet: 'Сменить кошелек',
+      wlt_audit_btn: 'Безопасность сети',
+      wlt_txs_title: 'История транзакций',
+      wlt_filter_all: 'Все',
+      wlt_filter_in: 'Входящие',
+      wlt_filter_out: 'Исходящие',
+      wlt_empty_txs: 'В этом фильтре транзакций пока нет.',
+      wlt_tx_pending: 'В мемпуле',
+      wlt_tx_confirmed: 'Подтверждено',
+      send_badge: 'Транзакция',
+      send_title: 'Отправить BCT',
+      send_fast_mode: 'Быстрый режим',
+      send_active_asset: 'Активный актив',
+      send_recipient: 'Адрес получателя или имя .bct',
+      send_recipient_label: 'Адрес получателя или @имя.bct',
+      send_recipient_ph: 'BCT... или user.bct',
+      send_paste: 'Вставить',
+      send_qr_scan: 'Сканировать QR',
+      send_amount: 'Сумма перевода',
+      send_available: 'Доступно:',
+      send_net_received: 'Чистая сумма получателю:',
+      send_pct_all: 'Все',
+      send_network_fee: 'Комиссия сети (1% Протокол):',
+      send_zero_fee: 'Комиссия сети: 0.00 BCT (Без комиссии)',
+      send_instant_conf: 'Мгновенное подтверждение',
+      send_submit: 'Продолжить и подписать',
+      send_submit_btn: 'Продолжить и подписать',
+      send_ecdsa_signed: 'Подписано сквозным ECDSA',
+      send_instant_block: 'Мгновенная запись в блок',
+      space_ph: 'Поделитесь мыслями... (0.10 BCT)',
+      space_composer_ph: 'Поделитесь мыслями... (0.10 BCT)',
+      space_publish: 'Опубликовать',
+      space_filter_all: 'Все',
+      space_filter_following: 'Проверенные и подписки',
+      space_empty: 'В блокчейне пока нет публикаций.',
+      space_empty_posts: 'Посты загружаются или отсутствуют в этом фильтре...',
+      space_like: 'Нравится',
+      space_liked: 'Понравилось',
+      space_reply: 'Комментарий',
+      space_share: 'Поделиться',
+      space_tip: 'Чаевые',
+      space_follow: 'Читать',
+      space_active_l1: 'Активен L1',
+      space_compose_fab: 'Написать',
+      space_create_wallet_hint: 'Создайте кошелек (+1.00 BCT бонус)',
+      space_search_ph: 'Поиск постов, #тегов или @пользователей...',
+      space_search_btn: 'Поиск',
+      space_share_btn: 'Поделиться',
+      post_not_found: 'Публикация не найдена или загружается.',
+      post_back_to_feed: 'Вернуться в ленту Space',
+      post_block_label: 'Блок',
+      post_likes_label: 'Лайки',
+      post_comments_label: 'Комментарии',
+      post_royalties_label: 'Роялти',
+      post_comments_title: 'Комментарии',
+      post_author_royalty_hint: '+0.004 BCT Роялти автору',
+      post_be_first_comment: 'Напишите первый ончейн-комментарий ниже!',
+      post_comment_ph: 'Напишите комментарий... (0.02 BCT)',
+      post_comment_send: 'Отправить',
+      profile_security_btn: 'Безопасность',
+      profile_follow_btn: 'Читать',
+      profile_tip_btn: 'Чаевые',
+      profile_bns_title: 'Ваши имена BNS (.bct)',
+      profile_bns_count: 'имен',
+      profile_bns_hint: 'Выберите имя, которое будет отображаться в профиле и ленте Space:',
+      profile_bns_active: '(Активно)',
+      profile_bns_none: 'У вас пока нет имени .bct. Зарегистрируйте красивое имя вместо адреса кошелька.',
+      profile_bns_claim: 'Получить имя',
+      profile_bio: 'Верифицированный автор BlocTag Space ✦ Публикует контент и зарабатывает мгновенные роялти на Layer-1 блокчейне.',
+      profile_stat_posts: 'Посты',
+      profile_stat_likes: 'Лайки',
+      profile_stat_followers: 'Подписчики',
+      profile_stat_following: 'Подписки',
+      profile_tab_posts: 'Посты',
+      profile_tab_popular: 'Популярное',
+      profile_empty_posts: 'В блокчейне пока нет публикаций.',
+      profile_view_followers: 'Смотреть подписчиков',
+      profile_view_following: 'Смотреть подписки',
+      notif_new_badge: 'новых',
+      notif_mark_all: 'Прочитать все',
+      notif_all: 'Все',
+      notif_tips: 'Переводы и чаевые',
+      notif_mentions: 'Space и ответы',
+      notif_system: 'Система',
+      notif_empty_title: 'Пока нет уведомлений',
+      notif_empty_desc: 'Здесь появятся уведомления о реакциях на ваши посты и поступлениях токенов.',
+      menu_not_connected: 'Кошелек не подключен',
+      menu_wallet: 'Мой кошелек',
+      menu_profile: 'Мой профиль',
+      menu_validator: 'ВАЛИДАТОР',
+      menu_pro_title: 'Pro Mode (Полный интерфейс)',
+      menu_pro_desc: 'Обозреватель сети, узлы и инструменты разработчика',
+      menu_pro_switch: 'Переключить',
+      menu_services: 'Операции и сервисы',
+      menu_send: 'Отправить крипту',
+      menu_send_desc: 'Мгновенные переводы BCT без комиссии',
+      menu_bns: 'Имя BNS (.bct)',
+      menu_bns_desc: 'Управление Web3-именем и профилем',
+      menu_sec: 'Безопасность и ключи',
+      menu_sec_desc: 'Секретная фраза из 12 слов (Seed Phrase)',
+      menu_notif: 'Уведомления и оповещения',
+      menu_notif_desc: 'Обновления транзакций и ленты Space',
+      menu_lang: 'Выбор языка (Language)',
+      menu_lang_desc: 'Язык интерфейса приложения',
+      menu_wp: 'LockTrace Whitepaper',
+      menu_wp_desc: 'Архитектура протокола и документация',
+      lang_modal_title: 'Выбор языка (Language)',
+      lang_modal_sub: 'Выберите язык интерфейса',
+      lang_modal_hint: 'Полная совместимость со встроенным переводом браузера и PWA.'
+    },
+    de: {
+      nav_space: 'Space',
+      nav_wallet: 'Wallet',
+      nav_profile: 'Profil',
+      nav_menu: 'Menü',
+      top_welcome: 'BlocTag',
+      top_recovery: 'Wiederherstellungsschlüssel',
+      top_wallet: 'Meine Wallet',
+      top_send: 'Krypto senden',
+      top_space: 'BlocTag Space',
+      top_post_detail: 'Beitragsdetails',
+      top_profile: 'Profil',
+      top_notifications: 'Benachrichtigungen',
+      top_menu: 'Menü',
+      onb_title_1: 'Krypto und Community',
+      onb_title_2: 'An einem Ort.',
+      onb_sub: 'Kein Fachchinesisch. Erstellen Sie mit einem Klick eine Wallet, verwalten Sie Guthaben und treten Sie Space-Communities bei.',
+      onb_feat1_title: 'Einfach & Sicher',
+      onb_feat1_desc: 'Ihre Schlüssel, Ihre volle Kontrolle. Sicher direkt auf Ihrem Gerät ohne Zwischenhändler gespeichert.',
+      onb_feat2_title: 'BlocTag-Identität',
+      onb_feat2_badge: 'Neu',
+      onb_feat2_desc: 'Verwenden Sie Ihren einfachen Benutzernamen anstelle von 42-Zeichen-Adressen (z. B. @user.bct).',
+      onb_feat3_title: 'Space-Community',
+      onb_feat3_desc: 'Teilen Sie Gedanken, entdecken Sie Web3-Projekte und senden Sie Trinkgelder an Autoren.',
+      onb_import_title: 'Wiederherstellung mit 12 Wörtern oder Key',
+      onb_import_ph: 'Geben Sie 12 Wiederherstellungswörter oder den Private Key ein...',
+      onb_import_btn: 'Wallet wiederherstellen & verbinden',
+      onb_create_btn: 'Wallet erstellen (+1.00 BCT Bonus)',
+      onb_existing_btn: 'Mit bestehender Wallet anmelden',
+      onb_footer: 'Ende-zu-Ende verschlüsselt • Non-Custodial Sicherheit',
+      seed_hero_title: 'Ihre Wallet-Schlüssel',
+      seed_hero_sub: 'Diese 12 Wörter sind das einzige Passwort zu Ihrer Wallet. Notieren Sie sie sicher und teilen Sie sie niemals.',
+      seed_tip: 'Stellen Sie sicher, dass niemand auf Ihren Bildschirm schaut',
+      seed_private: 'Vertraulich',
+      seed_copy_btn: 'Wörter kopieren',
+      seed_copied_toast: '12 Wiederherstellungswörter in die Zwischenablage kopiert!',
+      seed_rec_title: 'Empfohlene Methode',
+      seed_rec_desc: 'Schreiben Sie die Wörter auf Papier und verwahren Sie sie sicher. Vermeiden Sie Screenshots.',
+      seed_saved_label: 'Ich habe meine Wörter sicher gespeichert',
+      seed_saved_sub: 'Ohne Wiederherstellungswörter verliere ich den Zugriff auf mein Konto',
+      seed_launch_btn: 'Wallet starten & zu Space gehen (+1.00 BCT)',
+      seed_footer: 'Dezentrales Protokoll für souveränes Eigentum',
+      seed_refresh_title: 'Neue Wörter generieren',
+      wlt_net_worth: 'Netto-Portfoliowert',
+      wlt_balance_title: 'Gesamtsaldo',
+      wlt_send_btn: 'Senden',
+      wlt_receive_btn: 'Empfangen (QR)',
+      wlt_vault_btn: 'PIN-Tresor',
+      wlt_switch_wallet: 'Wallet wechseln',
+      wlt_audit_btn: 'Netzwerksicherheit',
+      wlt_txs_title: 'Transaktionsverlauf',
+      wlt_filter_all: 'Alle',
+      wlt_filter_in: 'Eingehend',
+      wlt_filter_out: 'Ausgehend',
+      wlt_empty_txs: 'Keine Transaktionen in diesem Filter gefunden.',
+      wlt_tx_pending: 'Mempool',
+      wlt_tx_confirmed: 'Bestätigt',
+      send_badge: 'Transaktion',
+      send_title: 'BCT senden',
+      send_fast_mode: 'Schnellmodus',
+      send_active_asset: 'Aktiver Vermögenswert',
+      send_recipient: 'Empfängeradresse oder .bct-Name',
+      send_recipient_label: 'Empfängeradresse oder @name.bct',
+      send_recipient_ph: 'BCT... oder user.bct',
+      send_paste: 'Einfügen',
+      send_qr_scan: 'QR scannen',
+      send_amount: 'Betrag',
+      send_available: 'Verfügbar:',
+      send_net_received: 'Netto beim Empfänger:',
+      send_pct_all: 'Alle',
+      send_network_fee: 'Netzwerkgebühr (1% Protokoll):',
+      send_zero_fee: 'Netzwerkgebühr: 0.00 BCT (Gebührenfrei)',
+      send_instant_conf: 'Sofortige Bestätigung',
+      send_submit: 'Fortfahren und signieren',
+      send_submit_btn: 'Fortfahren und signieren',
+      send_ecdsa_signed: 'Ende-zu-Ende ECDSA-signiert',
+      send_instant_block: 'Sofortige Blockversiegelung',
+      space_ph: 'Teile etwas im Netzwerk... (0.10 BCT)',
+      space_composer_ph: 'Teile etwas im Netzwerk... (0.10 BCT)',
+      space_publish: 'Veröffentlichen',
+      space_filter_all: 'Alle',
+      space_filter_following: 'Verifiziert & Gefolgt',
+      space_empty: 'Noch keine On-Chain-Beiträge vorhanden.',
+      space_empty_posts: 'Beiträge werden geladen oder keine vorhanden...',
+      space_like: 'Gefällt mir',
+      space_liked: 'Gefällt mir',
+      space_reply: 'Kommentar',
+      space_share: 'Teilen',
+      space_tip: 'Trinkgeld',
+      space_follow: 'Folgen',
+      space_active_l1: 'Aktiv L1',
+      space_compose_fab: 'Schreiben',
+      space_create_wallet_hint: 'Wallet erstellen (+1.00 BCT Bonus)',
+      space_search_ph: 'Beiträge, #Tags oder @Nutzer suchen...',
+      space_search_btn: 'Suchen',
+      space_share_btn: 'Teilen',
+      post_not_found: 'Beitrag nicht gefunden oder lädt.',
+      post_back_to_feed: 'Zurück zum Space-Feed',
+      post_block_label: 'Block',
+      post_likes_label: 'Gefällt mir',
+      post_comments_label: 'Kommentare',
+      post_royalties_label: 'Tantiemen',
+      post_comments_title: 'Kommentare',
+      post_author_royalty_hint: '+0.004 BCT Autorentantieme',
+      post_be_first_comment: 'Schreibe den ersten On-Chain-Kommentar!',
+      post_comment_ph: 'Schreibe deine Gedanken... (0.02 BCT)',
+      post_comment_send: 'Senden',
+      profile_security_btn: 'Sicherheit',
+      profile_follow_btn: 'Folgen',
+      profile_tip_btn: 'Trinkgeld',
+      profile_bns_title: 'Ihre registrierten BNS-Namen (.bct)',
+      profile_bns_count: 'Namen',
+      profile_bns_hint: 'Wählen Sie Ihre aktive Identität für Profil und Beiträge:',
+      profile_bns_active: '(Aktiv)',
+      profile_bns_none: 'Sie haben noch keinen .bct-Namen. Sichern Sie sich einen einprägsamen Namen.',
+      profile_bns_claim: 'Namen holen',
+      profile_bio: 'Verifizierter BlocTag Space Creator ✦ Veröffentlicht Inhalte auf der zensurresistenten Layer-1-Blockchain mit Echtzeit-Tantiemen.',
+      profile_stat_posts: 'Beiträge',
+      profile_stat_likes: 'Likes',
+      profile_stat_followers: 'Follower',
+      profile_stat_following: 'Folge ich',
+      profile_tab_posts: 'Beiträge',
+      profile_tab_popular: 'Beliebt',
+      profile_empty_posts: 'Noch keine On-Chain-Beiträge veröffentlicht.',
+      profile_view_followers: 'Follower anzeigen',
+      profile_view_following: 'Gefolgte anzeigen',
+      notif_new_badge: 'neu',
+      notif_mark_all: 'Als gelesen markieren',
+      notif_all: 'Alle',
+      notif_tips: 'Überweisungen & Trinkgelder',
+      notif_mentions: 'Space & Antworten',
+      notif_system: 'System',
+      notif_empty_title: 'Noch keine Benachrichtigungen',
+      notif_empty_desc: 'Interaktionen mit Ihren Beiträgen oder Token-Transfers werden hier in Echtzeit angezeigt.',
+      menu_not_connected: 'Wallet nicht verbunden',
+      menu_wallet: 'Meine Wallet',
+      menu_profile: 'Mein Profil',
+      menu_validator: 'VALIDATOR',
+      menu_pro_title: 'Pro Mode (Vollansicht)',
+      menu_pro_desc: 'Netzwerk-Explorer, Nodes und Entwickler-Tools',
+      menu_pro_switch: 'Modus wechseln',
+      menu_services: 'Operationen & Dienste',
+      menu_send: 'Krypto senden',
+      menu_send_desc: 'Sofortige gebührenfreie BCT-Transfers',
+      menu_bns: 'BNS-Benutzername (.bct)',
+      menu_bns_desc: 'Verwalten Sie Ihre Web3-Identität und Ihr Profil',
+      menu_sec: 'Sicherheit & Wiederherstellung',
+      menu_sec_desc: 'Geheime 12-Wörter-Wiederherstellungsphrase (Seed Phrase)',
+      menu_notif: 'Benachrichtigungen & Hinweise',
+      menu_notif_desc: 'Transaktions- und Space-Updates',
+      menu_lang: 'Sprachauswahl (Language)',
+      menu_lang_desc: 'Sprache der Benutzeroberfläche',
+      menu_wp: 'LockTrace Whitepaper',
+      menu_wp_desc: 'Protokollarchitektur und technische Dokumentation',
+      lang_modal_title: 'Sprachauswahl (Language)',
+      lang_modal_sub: 'Wählen Sie Ihre Anwendungssprache',
+      lang_modal_hint: 'Voll kompatibel mit integrierter Browser-Übersetzung und PWA.'
+    },
+    es: {
+      nav_space: 'Space',
+      nav_wallet: 'Billetera',
+      nav_profile: 'Perfil',
+      nav_menu: 'Menú',
+      top_welcome: 'BlocTag',
+      top_recovery: 'Clave de Recuperación',
+      top_wallet: 'Mi Billetera',
+      top_send: 'Enviar Cripto',
+      top_space: 'BlocTag Space',
+      top_post_detail: 'Detalle de Publicación',
+      top_profile: 'Perfil',
+      top_notifications: 'Notificaciones',
+      top_menu: 'Menú',
+      onb_title_1: 'Cripto y Comunidad',
+      onb_title_2: 'En un Solo Lugar.',
+      onb_sub: 'Sin términos complejos. Crea una billetera con un clic, gestiona activos y únete a las comunidades de Space en Web3.',
+      onb_feat1_title: 'Fácil y Seguro',
+      onb_feat1_desc: 'Tus claves, tu control total. Guardadas directamente en tu dispositivo sin intermediarios.',
+      onb_feat2_title: 'Identidad BlocTag',
+      onb_feat2_badge: 'Nuevo',
+      onb_feat2_desc: 'Usa tu nombre de usuario simple en lugar de direcciones de 42 caracteres (ej. @usuario.bct).',
+      onb_feat3_title: 'Comunidad Space',
+      onb_feat3_desc: 'Comparte ideas, descubre proyectos Web3 y envía propinas directas a los creadores.',
+      onb_import_title: 'Recuperar con 12 Palabras o Clave Privada',
+      onb_import_ph: 'Introduce tus 12 palabras o clave privada...',
+      onb_import_btn: 'Recuperar Billetera e Ingresar',
+      onb_create_btn: 'Crear Billetera (+1.00 BCT Bono)',
+      onb_existing_btn: 'Ingresar con Billetera Existente',
+      onb_footer: 'Cifrado de Extremo a Extremo • Seguridad Non-Custodial',
+      seed_hero_title: 'Claves de tu Billetera',
+      seed_hero_sub: 'Estas 12 palabras son la única contraseña de tu billetera. Anótalas en un lugar seguro y no las compartas con nadie.',
+      seed_tip: 'Asegúrate de que nadie esté mirando tu pantalla',
+      seed_private: 'Confidencial',
+      seed_copy_btn: 'Copiar Palabras',
+      seed_copied_toast: '¡12 palabras de recuperación copiadas al portapapeles!',
+      seed_rec_title: 'Método Recomendado',
+      seed_rec_desc: 'Escribe las palabras en papel físico y guárdalas en un lugar seguro. Evita capturas de pantalla.',
+      seed_saved_label: 'He guardado mis palabras en un lugar seguro',
+      seed_saved_sub: 'Sin mis palabras de recuperación no podré acceder a mi cuenta',
+      seed_launch_btn: 'Iniciar Billetera e ir a Space (+1.00 BCT)',
+      seed_footer: 'Protocolo descentralizado de propiedad soberana',
+      seed_refresh_title: 'Generar Nuevas Palabras',
+      wlt_net_worth: 'Valor Neto del Portafolio',
+      wlt_balance_title: 'Saldo Total',
+      wlt_send_btn: 'Enviar',
+      wlt_receive_btn: 'Recibir (QR)',
+      wlt_vault_btn: 'Bóveda PIN',
+      wlt_switch_wallet: 'Cambiar Billetera',
+      wlt_audit_btn: 'Seguridad de Red',
+      wlt_txs_title: 'Historial de Transacciones',
+      wlt_filter_all: 'Todas',
+      wlt_filter_in: 'Entrantes',
+      wlt_filter_out: 'Salientes',
+      wlt_empty_txs: 'No se encontraron transacciones en este filtro.',
+      wlt_tx_pending: 'Mempool',
+      wlt_tx_confirmed: 'Confirmado',
+      send_badge: 'Transacción',
+      send_title: 'Enviar BCT',
+      send_fast_mode: 'Modo Rápido',
+      send_active_asset: 'Activo Seleccionado',
+      send_recipient: 'Dirección de Destino o Nombre .bct',
+      send_recipient_label: 'Dirección o @nombre.bct',
+      send_recipient_ph: 'BCT... o usuario.bct',
+      send_paste: 'Pegar',
+      send_qr_scan: 'Escanear QR',
+      send_amount: 'Monto a Enviar',
+      send_available: 'Disponible:',
+      send_net_received: 'Neto a Recibir:',
+      send_pct_all: 'Todo',
+      send_network_fee: 'Tarifa de Red (1% Protocolo):',
+      send_zero_fee: 'Tarifa de Red: 0.00 BCT (Sin Comisión)',
+      send_instant_conf: 'Confirmación Instantánea',
+      send_submit: 'Continuar y Firmar',
+      send_submit_btn: 'Continuar y Firmar',
+      send_ecdsa_signed: 'Firmado de Extremo a Extremo con ECDSA',
+      send_instant_block: 'Sellado Instantáneo en Bloque',
+      space_ph: 'Comparte algo en la red... (0.10 BCT)',
+      space_composer_ph: 'Comparte algo en la red... (0.10 BCT)',
+      space_publish: 'Publicar',
+      space_filter_all: 'Todo',
+      space_filter_following: 'Verificados y Seguidos',
+      space_empty: 'Aún no hay publicaciones en la red.',
+      space_empty_posts: 'Cargando publicaciones o no hay en este filtro...',
+      space_like: 'Me gusta',
+      space_liked: 'Te gusta',
+      space_reply: 'Comentar',
+      space_share: 'Compartir',
+      space_tip: 'Propina',
+      space_follow: 'Seguir',
+      space_active_l1: 'Activo L1',
+      space_compose_fab: 'Publicar',
+      space_create_wallet_hint: 'Crea una billetera (+1.00 BCT bono)',
+      space_search_ph: 'Buscar publicaciones, #etiquetas o @usuarios...',
+      space_search_btn: 'Buscar',
+      space_share_btn: 'Compartir',
+      post_not_found: 'Publicación no encontrada o cargando.',
+      post_back_to_feed: 'Volver a la лента de Space',
+      post_block_label: 'Bloque',
+      post_likes_label: 'Me gusta',
+      post_comments_label: 'Comentarios',
+      post_royalties_label: 'Regalías',
+      post_comments_title: 'Comentarios',
+      post_author_royalty_hint: '+0.004 BCT Regalía al Autor',
+      post_be_first_comment: '¡Sé el primero en dejar un comentario on-chain abajo!',
+      post_comment_ph: 'Escribe tu opinión... (0.02 BCT)',
+      post_comment_send: 'Enviar',
+      profile_security_btn: 'Seguridad',
+      profile_follow_btn: 'Seguir',
+      profile_tip_btn: 'Propina',
+      profile_bns_title: 'Tus Nombres BNS Registrados (.bct)',
+      profile_bns_count: 'nombres',
+      profile_bns_hint: 'Elige tu identidad activa para tu perfil y publicaciones:',
+      profile_bns_active: '(Activo)',
+      profile_bns_none: 'Aún no tienes un nombre .bct. Consigue un nombre fácil de recordar.',
+      profile_bns_claim: 'Obtener Nombre',
+      profile_bio: 'Creador verificado de BlocTag Space ✦ Publica en la blockchain Layer-1 resistente a la censura con regalías instantáneas.',
+      profile_stat_posts: 'Publicaciones',
+      profile_stat_likes: 'Me gusta',
+      profile_stat_followers: 'Seguidores',
+      profile_stat_following: 'Siguiendo',
+      profile_tab_posts: 'Publicaciones',
+      profile_tab_popular: 'Populares',
+      profile_empty_posts: 'Aún no se han publicado mensajes en la red.',
+      profile_view_followers: 'Ver Seguidores',
+      profile_view_following: 'Ver Seguidos',
+      notif_new_badge: 'nuevas',
+      notif_mark_all: 'Marcar como Leídas',
+      notif_all: 'Todas',
+      notif_tips: 'Transferencias y Propinas',
+      notif_mentions: 'Space y Respuestas',
+      notif_system: 'Sistema',
+      notif_empty_title: 'Aún no hay notificaciones',
+      notif_empty_desc: 'Las interacciones con tus publicaciones y transferencias de tokens aparecerán aquí en tiempo real.',
+      menu_not_connected: 'Billetera no conectada',
+      menu_wallet: 'Mi Billetera',
+      menu_profile: 'Mi Perfil',
+      menu_validator: 'VALIDADOR',
+      menu_pro_title: 'Modo Pro (Vista Completa)',
+      menu_pro_desc: 'Explorador de red, nodos y herramientas de desarrollo',
+      menu_pro_switch: 'Cambiar Modo',
+      menu_services: 'Operaciones y Servicios',
+      menu_send: 'Enviar Cripto',
+      menu_send_desc: 'Transferencias BCT instantáneas sin comisión',
+      menu_bns: 'Nombre de Usuario BNS (.bct)',
+      menu_bns_desc: 'Gestiona tu identidad Web3 y perfil',
+      menu_sec: 'Seguridad y Clave de Recuperación',
+      menu_sec_desc: 'Frase secreta de 12 palabras (Seed Phrase)',
+      menu_notif: 'Notificaciones y Alertas',
+      menu_notif_desc: 'Actualizaciones de transacciones y Space',
+      menu_lang: 'Selección de Idioma (Language)',
+      menu_lang_desc: 'Idioma de la interfaz de la aplicación',
+      menu_wp: 'LockTrace Whitepaper',
+      menu_wp_desc: 'Arquitectura del protocolo y documentación técnica',
+      lang_modal_title: 'Selección de Idioma (Language)',
+      lang_modal_sub: 'Elige el idioma de tu aplicación',
+      lang_modal_hint: 'Totalmente compatible con la función de traducción del navegador y PWA.'
+    },
+    fr: {
+      nav_space: 'Space',
+      nav_wallet: 'Portefeuille',
+      nav_profile: 'Profil',
+      nav_menu: 'Menu',
+      top_welcome: 'BlocTag',
+      top_recovery: 'Clé de Récupération',
+      top_wallet: 'Mon Portefeuille',
+      top_send: 'Envoyer Crypto',
+      top_space: 'BlocTag Space',
+      top_post_detail: 'Détail de la Publication',
+      top_profile: 'Profil',
+      top_notifications: 'Notifications',
+      top_menu: 'Menu',
+      onb_title_1: 'Crypto et Communauté',
+      onb_title_2: 'En Un Seul Lieu.',
+      onb_sub: 'Sans jargon complexe. Créez un portefeuille en un clic, gérez vos actifs et rejoignez les communautés Web3 de Space.',
+      onb_feat1_title: 'Simple et Sécurisé',
+      onb_feat1_desc: 'Vos clés, votre contrôle total. Conservées directement sur votre appareil sans intermédiaire.',
+      onb_feat2_title: 'Identité BlocTag',
+      onb_feat2_badge: 'Nouveau',
+      onb_feat2_desc: 'Utilisez un nom simple au lieu d\'adresses de 42 caractères (ex. @utilisateur.bct).',
+      onb_feat3_title: 'Communauté Space',
+      onb_feat3_desc: 'Partagez des idées, découvrez des projets Web3 et envoyez des pourboires aux créateurs.',
+      onb_import_title: 'Restaurer avec 12 Mots ou Clé Privée',
+      onb_import_ph: 'Entrez vos 12 mots ou votre clé privée...',
+      onb_import_btn: 'Restaurer le Portefeuille & Se Connecter',
+      onb_create_btn: 'Créer un Portefeuille (+1.00 BCT Bonus)',
+      onb_existing_btn: 'Se Connecter avec un Portefeuille Existant',
+      onb_footer: 'Chiffré de Bout en Bout • Sécurité Non-Custodial',
+      seed_hero_title: 'Vos Clés de Portefeuille',
+      seed_hero_sub: 'Ces 12 mots sont le mot de passe unique de votre portefeuille. Notez-les en lieu sûr et ne les partagez jamais.',
+      seed_tip: 'Assurez-vous que personne ne regarde votre écran',
+      seed_private: 'Confidentiel',
+      seed_copy_btn: 'Copier les Mots',
+      seed_copied_toast: '12 mots de récupération copiés dans le presse-papiers !',
+      seed_rec_title: 'Méthode Recommandée',
+      seed_rec_desc: 'Écrivez les mots sur un papier et conservez-le en sécurité. Évitez les captures d\'écran.',
+      seed_saved_label: 'J\'ai enregistré mes mots en lieu sûr',
+      seed_saved_sub: 'Sans mes mots de récupération, je ne pourrai pas accéder à mon compte',
+      seed_launch_btn: 'Lancer le Portefeuille & Aller à Space (+1.00 BCT)',
+      seed_footer: 'Protocole décentralisé de propriété souveraine',
+      seed_refresh_title: 'Générer de Nouveaux Mots',
+      wlt_net_worth: 'Valeur Nette du Portefeuille',
+      wlt_balance_title: 'Solde Total',
+      wlt_send_btn: 'Envoyer',
+      wlt_receive_btn: 'Recevoir (QR)',
+      wlt_vault_btn: 'Coffre-fort PIN',
+      wlt_switch_wallet: 'Changer de Portefeuille',
+      wlt_audit_btn: 'Sécurité Réseau',
+      wlt_txs_title: 'Historique des Transactions',
+      wlt_filter_all: 'Toutes',
+      wlt_filter_in: 'Entrantes',
+      wlt_filter_out: 'Sortantes',
+      wlt_empty_txs: 'Aucune transaction trouvée dans ce filtre.',
+      wlt_tx_pending: 'Mempool',
+      wlt_tx_confirmed: 'Confirmé',
+      send_badge: 'Transaction',
+      send_title: 'Envoyer BCT',
+      send_fast_mode: 'Mode Rapide',
+      send_active_asset: 'Actif Sélectionné',
+      send_recipient: 'Adresse du Destinataire ou Nom .bct',
+      send_recipient_label: 'Adresse ou @nom.bct',
+      send_recipient_ph: 'BCT... ou utilisateur.bct',
+      send_paste: 'Coller',
+      send_qr_scan: 'Scanner QR',
+      send_amount: 'Montant à Envoyer',
+      send_available: 'Disponible :',
+      send_net_received: 'Net Reçu par le Destinataire :',
+      send_pct_all: 'Tout',
+      send_network_fee: 'Frais de Réseau (1 % Protocole) :',
+      send_zero_fee: 'Frais de Réseau : 0.00 BCT (Sans Commission)',
+      send_instant_conf: 'Confirmation Instantanée',
+      send_submit: 'Continuer et Signer',
+      send_submit_btn: 'Continuer et Signer',
+      send_ecdsa_signed: 'Signé ECDSA de Bout en Bout',
+      send_instant_block: 'Sceau de Bloc Instantané',
+      space_ph: 'Partagez quelque chose... (0.10 BCT)',
+      space_composer_ph: 'Partagez quelque chose... (0.10 BCT)',
+      space_publish: 'Publier',
+      space_filter_all: 'Tout',
+      space_filter_following: 'Vérifiés & Suivis',
+      space_empty: 'Aucune publication on-chain pour le moment.',
+      space_empty_posts: 'Chargement des publications ou aucune trouvée...',
+      space_like: 'J\'aime',
+      space_liked: 'Aimé',
+      space_reply: 'Commenter',
+      space_share: 'Partager',
+      space_tip: 'Pourboire',
+      space_follow: 'Suivre',
+      space_active_l1: 'Actif L1',
+      space_compose_fab: 'Écrire',
+      space_create_wallet_hint: 'Créer un portefeuille (+1.00 BCT bonus)',
+      space_search_ph: 'Rechercher publications, #tags ou @utilisateurs...',
+      space_search_btn: 'Rechercher',
+      space_share_btn: 'Partager',
+      post_not_found: 'Publication introuvable ou en cours de chargement.',
+      post_back_to_feed: 'Retour au flux Space',
+      post_block_label: 'Bloc',
+      post_likes_label: 'J\'aime',
+      post_comments_label: 'Commentaires',
+      post_royalties_label: 'Redevances',
+      post_comments_title: 'Commentaires',
+      post_author_royalty_hint: '+0.004 BCT Redevance Auteur',
+      post_be_first_comment: 'Soyez le premier à commenter on-chain ci-dessous !',
+      post_comment_ph: 'Partagez votre avis... (0.02 BCT)',
+      post_comment_send: 'Envoyer',
+      profile_security_btn: 'Sécurité',
+      profile_follow_btn: 'Suivre',
+      profile_tip_btn: 'Pourboire',
+      profile_bns_title: 'Vos Noms BNS Enregistrés (.bct)',
+      profile_bns_count: 'noms',
+      profile_bns_hint: 'Choisissez votre identité active pour votre profil et vos posts :',
+      profile_bns_active: '(Actif)',
+      profile_bns_none: 'Vous n\'avez pas encore de nom .bct. Obtenez un nom facile à retenir.',
+      profile_bns_claim: 'Obtenir un Nom',
+      profile_bio: 'Créateur vérifié BlocTag Space ✦ Publie sur la blockchain Layer-1 résistante à la censure avec redevances en direct.',
+      profile_stat_posts: 'Publications',
+      profile_stat_likes: 'J\'aime',
+      profile_stat_followers: 'Abonnés',
+      profile_stat_following: 'Abonnements',
+      profile_tab_posts: 'Publications',
+      profile_tab_popular: 'Populaires',
+      profile_empty_posts: 'Aucune publication on-chain pour le moment.',
+      profile_view_followers: 'Voir les Abonnés',
+      profile_view_following: 'Voir les Abonnements',
+      notif_new_badge: 'nouveaux',
+      notif_mark_all: 'Tout Marquer comme Lu',
+      notif_all: 'Tous',
+      notif_tips: 'Transferts & Pourboires',
+      notif_mentions: 'Space & Réponses',
+      notif_system: 'Système',
+      notif_empty_title: 'Aucune notification pour l\'instant',
+      notif_empty_desc: 'Les interactions avec vos publications et les réceptions de jetons apparaîtront ici en temps réel.',
+      menu_not_connected: 'Portefeuille non connecté',
+      menu_wallet: 'Mon Portefeuille',
+      menu_profile: 'Mon Profil',
+      menu_validator: 'VALIDATEUR',
+      menu_pro_title: 'Mode Pro (Vue Complète)',
+      menu_pro_desc: 'Explorateur de réseau, nœuds et outils pour développeurs',
+      menu_pro_switch: 'Changer de Mode',
+      menu_services: 'Opérations & Services',
+      menu_send: 'Envoyer Crypto',
+      menu_send_desc: 'Transferts BCT instantanés sans commission',
+      menu_bns: 'Nom d\'Utilisateur BNS (.bct)',
+      menu_bns_desc: 'Gérez votre identité Web3 et votre profil',
+      menu_sec: 'Sécurité & Clé de Récupération',
+      menu_sec_desc: 'Phrase secrète de 12 mots (Seed Phrase)',
+      menu_notif: 'Notifications & Alertes',
+      menu_notif_desc: 'Mises à jour des transactions et de Space',
+      menu_lang: 'Sélection de la Langue (Language)',
+      menu_lang_desc: 'Langue de l\'interface de l\'application',
+      menu_wp: 'LockTrace Whitepaper',
+      menu_wp_desc: 'Architecture du protocole et documentation technique',
+      lang_modal_title: 'Sélection de la Langue (Language)',
+      lang_modal_sub: 'Choisissez la langue de votre application',
+      lang_modal_hint: 'Entièrement compatible avec la traduction native du navigateur et la PWA.'
+    },
+    ar: {
+      nav_space: 'Space',
+      nav_wallet: 'المحفظة',
+      nav_profile: 'الملف الشخصي',
+      nav_menu: 'القائمة',
+      top_welcome: 'BlocTag',
+      top_recovery: 'مفتاح الاسترداد',
+      top_wallet: 'محفظتي',
+      top_send: 'إرسال العملات',
+      top_space: 'BlocTag Space',
+      top_post_detail: 'تفاصيل المنشور',
+      top_profile: 'الملف الشخصي',
+      top_notifications: 'الإشعارات',
+      top_menu: 'القائمة',
+      onb_title_1: 'العملات الرقمية والمجتمع',
+      onb_title_2: 'في مكان واحد.',
+      onb_sub: 'دون مصطلحات معقدة. أنشئ محفظتك بنقرة واحدة، وأدر أصولك وانضم إلى مجتمعات Space اللامركزية.',
+      onb_feat1_title: 'سهل وآمن',
+      onb_feat1_desc: 'مفاتيحك تحت سيطرتك الكاملة. مخزنة مباشرة على جهازك دون وسطاء أو خوادم وسيطة.',
+      onb_feat2_title: 'هوية BlocTag',
+      onb_feat2_badge: 'جديد',
+      onb_feat2_desc: 'استخدم اسماً بسيطاً بدلاً من العناوين الطويلة المكونة من 42 حرفاً (مثل @user.bct).',
+      onb_feat3_title: 'مجتمع Space',
+      onb_feat3_desc: 'شارك أفكارك مع الموثقين واكتشف مشاريع Web3 وقدم إكراميات مباشرة للمبدعين.',
+      onb_import_title: 'استرداد بواسطة 12 كلمة أو مفتاح خاص',
+      onb_import_ph: 'أدخل كلمات الاسترداد الـ 12 أو المفتاح الخاص...',
+      onb_import_btn: 'استرداد المحفظة وتسجيل الدخول',
+      onb_create_btn: 'إنشاء محفظة (+1.00 BCT مكافأة)',
+      onb_existing_btn: 'تسجيل الدخول بمحفظة موجودة',
+      onb_footer: 'مشفر من طرف لطرف • أمان بدون وسيط (Non-Custodial)',
+      seed_hero_title: 'مفاتيح محفظتك',
+      seed_hero_sub: 'هذه الكلمات الـ 12 هي كلمة المرور الوحيدة لمحفظتك. احفظها في مكان آمن ولا تشاركها مع أحد.',
+      seed_tip: 'تأكد من عدم وجود أحد يراقب شاشتك',
+      seed_private: 'سري',
+      seed_copy_btn: 'نسخ الكلمات',
+      seed_copied_toast: 'تم نسخ كلمات الاسترداد الـ 12 إلى الحافظة!',
+      seed_rec_title: 'الطريقة الموصى بها',
+      seed_rec_desc: 'اكتب الكلمات على ورقة واحتفظ بها في مكان آمن. تجنب أخذ لقطات شاشة.',
+      seed_saved_label: 'لقد حفظت كلماتي في مكان آمن',
+      seed_saved_sub: 'بدون كلمات الاسترداد لن أتمكن من الوصول إلى حسابي',
+      seed_launch_btn: 'بدء تشغيل المحفظة والانتقال إلى Space (+1.00 BCT)',
+      seed_footer: 'بروتوكول ملكية سيادي ولامركزي',
+      seed_refresh_title: 'توليد كلمات جديدة',
+      wlt_net_worth: 'صافي قيمة المحفظة',
+      wlt_balance_title: 'إجمالي الرصيد',
+      wlt_send_btn: 'إرسال',
+      wlt_receive_btn: 'استلام (QR)',
+      wlt_vault_btn: 'خزنة PIN',
+      wlt_switch_wallet: 'تبديل المحفظة',
+      wlt_audit_btn: 'أمان الشبكة',
+      wlt_txs_title: 'سجل المعاملات',
+      wlt_filter_all: 'الكل',
+      wlt_filter_in: 'الواردة',
+      wlt_filter_out: 'الصادرة',
+      wlt_empty_txs: 'لا توجد معاملات في هذا التصفية.',
+      wlt_tx_pending: 'في قائمة الانتظار',
+      wlt_tx_confirmed: 'مؤكد',
+      send_badge: 'معاملة',
+      send_title: 'إرسال BCT',
+      send_fast_mode: 'الوضع السريع',
+      send_active_asset: 'الأصل النشط',
+      send_recipient: 'عنوان المستلم أو اسم .bct',
+      send_recipient_label: 'عنوان المستلم أو @اسم.bct',
+      send_recipient_ph: 'BCT... أو user.bct',
+      send_paste: 'لصق',
+      send_qr_scan: 'مسح QR',
+      send_amount: 'المبلغ المراد إرساله',
+      send_available: 'المتاح:',
+      send_net_received: 'صافي المستلم:',
+      send_pct_all: 'الكل',
+      send_network_fee: 'رسوم الشبكة (1% بروتوكول):',
+      send_zero_fee: 'رسوم الشبكة: 0.00 BCT (بدون عمولة)',
+      send_instant_conf: 'تأكيد فوري',
+      send_submit: 'متابعة وتوقيع',
+      send_submit_btn: 'متابعة وتوقيع',
+      send_ecdsa_signed: 'موقّع بتقنية ECDSA من طرف لطرف',
+      send_instant_block: 'تسجيل فوري على البلوك',
+      space_ph: 'شارك شيئاً على الشبكة... (0.10 BCT)',
+      space_composer_ph: 'شارك شيئاً على الشبكة... (0.10 BCT)',
+      space_publish: 'نشر',
+      space_filter_all: 'الكل',
+      space_filter_following: 'الموثقون والمتابعون',
+      space_empty: 'لا توجد منشورات على السلسلة بعد.',
+      space_empty_posts: 'جارٍ تحميل المنشورات أو لا توجد منشورات...',
+      space_like: 'إعجاب',
+      space_liked: 'تم الإعجاب',
+      space_reply: 'تعليق',
+      space_share: 'مشاركة',
+      space_tip: 'إكرامية',
+      space_follow: 'متابعة',
+      space_active_l1: 'نشط L1',
+      space_compose_fab: 'كتابة',
+      space_create_wallet_hint: 'أنشئ محفظة (+1.00 BCT مكافأة)',
+      space_search_ph: 'بحث في المنشورات، #الوسوم أو @المستخدمين...',
+      space_search_btn: 'بحث',
+      space_share_btn: 'مشاركة',
+      post_not_found: 'المنشور غير موجود أو قيد التحميل.',
+      post_back_to_feed: 'العودة إلى موجز Space',
+      post_block_label: 'كتلة',
+      post_likes_label: 'إعجابات',
+      post_comments_label: 'تعليقات',
+      post_royalties_label: 'عوائد',
+      post_comments_title: 'التعليقات',
+      post_author_royalty_hint: '+0.004 BCT عوائد الكاتب',
+      post_be_first_comment: 'كن أول من يكتب تعليقاً على السلسلة بالأسفل!',
+      post_comment_ph: 'اكتب رأيك... (0.02 BCT)',
+      post_comment_send: 'إرسال',
+      profile_security_btn: 'الأمان',
+      profile_follow_btn: 'متابعة',
+      profile_tip_btn: 'إكرامية',
+      profile_bns_title: 'أسماء BNS المسجلة الخاصة بك (.bct)',
+      profile_bns_count: 'أسماء',
+      profile_bns_hint: 'اختر هويتك النشطة لتظهر في ملفك الشخصي ومنشوراتك:',
+      profile_bns_active: '(نشط)',
+      profile_bns_none: 'لم تسجل اسم .bct بعد. احصل على اسم مميز بدلاً من عنوان محفظتك.',
+      profile_bns_claim: 'تسجيل اسم',
+      profile_bio: 'صانع محتوى موثق على BlocTag Space ✦ ينشر على بلوكشين Layer-1 المقاوم للرقابة مع أرباح فورية.',
+      profile_stat_posts: 'منشورات',
+      profile_stat_likes: 'إعجابات',
+      profile_stat_followers: 'متابعون',
+      profile_stat_following: 'متابَعون',
+      profile_tab_posts: 'المنشورات',
+      profile_tab_popular: 'الشائع',
+      profile_empty_posts: 'لم يتم نشر أي منشورات على السلسلة بعد.',
+      profile_view_followers: 'عرض المتابعين',
+      profile_view_following: 'عرض المتابَعين',
+      notif_new_badge: 'جديد',
+      notif_mark_all: 'تحديد الكل كمقروء',
+      notif_all: 'الكل',
+      notif_tips: 'التحويلات والإكراميات',
+      notif_mentions: 'Space والردود',
+      notif_system: 'النظام',
+      notif_empty_title: 'لا توجد إشعارات بعد',
+      notif_empty_desc: 'ستظهر هنا التفاعلات مع منشوراتك وتحويلات العملات في الوقت الفعلي.',
+      menu_not_connected: 'المحفظة غير متصلة',
+      menu_wallet: 'محفظتي',
+      menu_profile: 'ملفي الشخصي',
+      menu_validator: 'المدقق',
+      menu_pro_title: 'وضع المحترفين Pro (عرض كامل)',
+      menu_pro_desc: 'مستكشف الشبكة والعقد وأدوات المطورين',
+      menu_pro_switch: 'تبديل الوضع',
+      menu_services: 'العمليات والخدمات',
+      menu_send: 'إرسال العملات',
+      menu_send_desc: 'تحويلات BCT فورية وبدون عمولة',
+      menu_bns: 'اسم مستخدم BNS (.bct)',
+      menu_bns_desc: 'إدارة هويتك وملفك في Web3',
+      menu_sec: 'الأمان ومفتاح الاسترداد',
+      menu_sec_desc: 'عبارة الاسترداد السرية المكونة من 12 كلمة (Seed Phrase)',
+      menu_notif: 'الإشعارات والتنبيهات',
+      menu_notif_desc: 'تحديثات المعاملات وموجز Space',
+      menu_lang: 'اختيار اللغة (Language)',
+      menu_lang_desc: 'لغة واجهة التطبيق',
+      menu_wp: 'LockTrace Whitepaper',
+      menu_wp_desc: 'بنية البروتوكول والوثائق الفنية',
+      lang_modal_title: 'اختيار اللغة (Language)',
+      lang_modal_sub: 'حدد لغة التطبيق الخاصة بك',
+      lang_modal_hint: 'متوافق تماماً مع ميزة الترجمة التلقائية للمتصفح وتطبيق PWA.'
+    }
+  };
 
   function getActiveLanguageCode() {
     try {
@@ -441,7 +1550,16 @@
     } catch (_e) { }
     const htmlLang = (document.documentElement.lang || '').slice(0, 2).toLowerCase();
     if (htmlLang && SIMPLE_LANGUAGES.some(l => l.code === htmlLang)) return htmlLang;
-    return 'tr';
+    return 'en';
+  }
+
+  function t(key, defaultEn) {
+    const lang = getActiveLanguageCode();
+    if (lang === 'en') return defaultEn;
+    if (typeof SIMPLE_I18N !== 'undefined' && SIMPLE_I18N[lang] && SIMPLE_I18N[lang][key]) {
+      return SIMPLE_I18N[lang][key];
+    }
+    return defaultEn;
   }
 
   function openSimpleLanguageModal() {
@@ -464,8 +1582,8 @@
               <span class="material-symbols-outlined notranslate text-[20px]" translate="no">language</span>
             </div>
             <div class="flex flex-col">
-              <h3 class="text-base font-bold text-on-surface">Dil Seçimi (Language)</h3>
-              <p class="text-[11px] text-on-surface-variant">Uygulama dilinizi belirleyin</p>
+              <h3 class="text-base font-bold text-on-surface">${t('lang_modal_title', 'Language Selection')}</h3>
+              <p class="text-[11px] text-on-surface-variant">${t('lang_modal_sub', 'Choose your application language')}</p>
             </div>
           </div>
           <button type="button" onclick="window.BlocTagSimpleMode.closeLanguageModal()"
@@ -503,7 +1621,7 @@
         <!-- Browser Translate Tip -->
         <div class="p-3 rounded-xl bg-surface-container-lowest border border-outline-variant/10 flex items-center gap-2.5 text-on-surface-variant text-[11px]">
           <span class="material-symbols-outlined notranslate text-primary text-[17px] shrink-0" translate="no">translate</span>
-          <span>Tarayıcınızın Çevir (Translate) özelliği ve çok dilli PWA desteği ile tam uyumludur.</span>
+          <span>${t('lang_modal_hint', 'Fully compatible with browser Translate features and multilingual PWA support.')}</span>
         </div>
       </div>
     `;
@@ -540,7 +1658,7 @@
     const langObj = SIMPLE_LANGUAGES.find(l => l.code === code);
     const langLabel = langObj ? `${langObj.flag} ${langObj.name}` : code.toUpperCase();
     if (typeof window.showToast === 'function') {
-      window.showToast(`${langLabel} aktif dil olarak seçildi.`, 'translate');
+      window.showToast(`${langLabel} ${t('lang_selected_toast', 'selected as active language.')}`, 'translate');
     }
   }
 
@@ -744,7 +1862,7 @@
         <div class="h-14 px-4 flex items-center justify-between gap-2">
           <div class="flex items-center gap-2.5 min-w-0">
             ${showBack ? `
-              <button type="button" aria-label="Geri" onclick="window.BlocTagSimpleMode.back()"
+              <button type="button" aria-label="${t('common_back', 'Back')}" onclick="window.BlocTagSimpleMode.back()"
                 class="w-9 h-9 -ml-1.5 rounded-full flex items-center justify-center text-on-surface hover:text-primary active:scale-95 transition-all cursor-pointer">
                 <span class="material-symbols-outlined notranslate text-[21px]" translate="no">arrow_back_ios_new</span>
               </button>
@@ -757,18 +1875,18 @@
           <div class="flex items-center gap-1.5 shrink-0">
             ${rightActionHtml}
 
-            <!-- Notification Bell Icon (Yukarıda Bildirim Butonu) -->
+            <!-- Notification Bell Icon -->
             <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
-              title="Bildirimler" aria-label="Bildirimler"
+              title="${t('top_notifications', 'Notifications')}" aria-label="${t('top_notifications', 'Notifications')}"
               class="relative w-8 h-8 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface-variant hover:text-primary flex items-center justify-center active:scale-90 transition-all cursor-pointer shrink-0">
               <span class="material-symbols-outlined notranslate text-[18px]" translate="no">notifications</span>
               ${unread > 0 ? `<span class="absolute -top-1 -right-1 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center ring-2 ring-surface">${unread}</span>` : ''}
             </button>
 
-            <!-- Profile Avatar Pill (Profil dışındaki ekranlarda göster) -->
-            ${title !== 'Profil' ? `
+            <!-- Profile Avatar Pill (Shown on non-profile screens) -->
+            ${simpleState.activeScreen !== 'SCR-PRF-05' ? `
               <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
-                title="Profilim"
+                title="${t('top_my_profile', 'My Profile')}"
                 class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer shrink-0">
                 ${avatarChar ? esc(avatarChar) : '<span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>'}
               </button>
@@ -789,32 +1907,32 @@
     return `
       <nav class="simple-bottom-nav" aria-label="Simple Mode Navigation">
         <div class="flex justify-around items-center h-14 px-1.5">
-          <!-- 1. Space (Soldan Sağa İlk) -->
+          <!-- 1. Space -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[22px]" translate="no">tag</span>
-            <span class="font-label-sm text-[10px] leading-none">Space</span>
+            <span class="font-label-sm text-[10px] leading-none">${t('nav_space', 'Space')}</span>
           </button>
 
-          <!-- 2. Cüzdan -->
+          <!-- 2. Wallet -->
           <button type="button" onclick="window.BlocTagSimpleMode.openWalletTab()"
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">account_balance_wallet</span>
-            <span class="font-label-sm text-[10px] leading-none">Cüzdan</span>
+            <span class="font-label-sm text-[10px] leading-none">${t('nav_wallet', 'Wallet')}</span>
           </button>
 
-          <!-- 3. Profil -->
+          <!-- 3. Profile -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>
-            <span class="font-label-sm text-[10px] leading-none">Profil</span>
+            <span class="font-label-sm text-[10px] leading-none">${t('nav_profile', 'Profile')}</span>
           </button>
 
-          <!-- 4. Menü -->
+          <!-- 4. Menu -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-MNU-07')"
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isMenu ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[21px]" translate="no">widgets</span>
-            <span class="font-label-sm text-[10px] leading-none font-semibold">Menü</span>
+            <span class="font-label-sm text-[10px] leading-none font-semibold">${t('nav_menu', 'Menu')}</span>
           </button>
         </div>
       </nav>
@@ -851,11 +1969,11 @@
         <!-- Editorial Headline Section -->
         <div class="flex flex-col items-center text-center px-2 mb-4">
           <h1 class="text-[30px] leading-[36px] font-bold text-on-surface tracking-tight mb-1.5">
-            Kripto ve Topluluk <br/>
-            <span class="text-primary">Tek Bir Yerde.</span>
+            ${t('onb_title_1', 'Crypto & Community')} <br/>
+            <span class="text-primary">${t('onb_title_2', 'All in One Place.')}</span>
           </h1>
           <p class="text-sm text-on-surface-variant max-w-sm leading-relaxed">
-            Karmaşık terimler yok. Tek tıkla cüzdan oluşturun, varlıklarınızı yönetin ve Space ile Web3 topluluklarına katılın.
+            ${t('onb_sub', 'No complex jargon. Create a non-custodial wallet in one click, manage your assets, and connect with Web3 communities on Space.')}
           </p>
         </div>
 
@@ -866,9 +1984,9 @@
               <span class="material-symbols-outlined notranslate text-[20px]" style="font-variation-settings: 'FILL' 1;" translate="no">lock_open</span>
             </div>
             <div class="flex flex-col min-w-0">
-              <h3 class="text-xs font-semibold text-on-surface">Kolay &amp; Güvenli</h3>
+              <h3 class="text-xs font-semibold text-on-surface">${t('onb_feat1_title', 'Easy & Secure')}</h3>
               <p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
-                Kendi anahtarınız, tam kontrolünüz. Aracı kurum veya riskli sunucular olmadan doğrudan cihazınızda saklanır.
+                ${t('onb_feat1_desc', 'Your keys, your complete control. Stored directly on your device with no intermediaries or custody risk.')}
               </p>
             </div>
           </div>
@@ -880,11 +1998,11 @@
             </div>
             <div class="flex flex-col min-w-0">
               <div class="flex items-center gap-2">
-                <h3 class="text-xs font-semibold text-on-surface">BlocTag Kimliği</h3>
-                <span class="px-1.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold">Yeni</span>
+                <h3 class="text-xs font-semibold text-on-surface">${t('onb_feat2_title', 'BlocTag Identity')}</h3>
+                <span class="px-1.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold">${t('onb_feat2_badge', 'New')}</span>
               </div>
               <p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
-                Uzun, karmaşık 42 karakterlik adresler yerine sade kullanıcı adınızı kullanın (örn. <span class="text-primary font-medium">@kullanici.bct</span>).
+                ${t('onb_feat2_desc', 'Use a clean username instead of raw hex addresses (e.g. @user.bct).')}
               </p>
             </div>
           </div>
@@ -895,9 +2013,9 @@
               <span class="material-symbols-outlined notranslate text-[20px]" style="font-variation-settings: 'FILL' 1;" translate="no">groups</span>
             </div>
             <div class="flex flex-col min-w-0">
-              <h3 class="text-xs font-semibold text-on-surface">Space Topluluğu</h3>
+              <h3 class="text-xs font-semibold text-on-surface">${t('onb_feat3_title', 'Space Community')}</h3>
               <p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
-                Doğrulanmış token sahipleriyle fikir paylaşın, projeleri keşfedin ve içerik üreticilerini tek tıkla ödüllendirin.
+                ${t('onb_feat3_desc', 'Share on-chain thoughts with peers, explore decentralized projects, and tip creators in one click.')}
               </p>
             </div>
           </div>
@@ -906,9 +2024,9 @@
         <!-- Interactive Tag Preview Badge -->
         <div class="flex items-center justify-center mb-4">
           <div class="inline-flex items-center gap-2 py-1.5 px-3.5 rounded-full bg-surface-container-low text-on-surface-variant text-xs border border-outline-variant/15 shadow-sm">
-            <span class="text-primary font-semibold font-mono">${myHandle ? '@' + esc(myHandle) : '@seninismin.bct'}</span>
+            <span class="text-primary font-semibold font-mono">${myHandle ? '@' + esc(myHandle) : '@yourname.bct'}</span>
             <span class="opacity-40">•</span>
-            <span class="text-on-surface">${myHandle ? 'aktif zincir üstü kimliğin' : (acc ? 'cüzdanın bağlı ve aktif' : '+1.00 BCT hoş geldin bonusu hazır')}</span>
+            <span class="text-on-surface">${myHandle ? (t('onb_active_id', 'active on-chain identity')) : (acc ? t('onb_connected_active', 'wallet connected & active') : t('onb_bonus_ready', '+1.00 BCT welcome bonus ready'))}</span>
           </div>
         </div>
 
@@ -918,19 +2036,19 @@
             <div class="flex items-center justify-between">
               <span class="text-xs font-semibold text-on-surface flex items-center gap-1.5">
                 <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">vpn_key</span>
-                <span>12 Kelime veya Özel Anahtar ile Bağlan</span>
+                <span>${t('onb_import_title', 'Restore with 12 Words or Private Key')}</span>
               </span>
               <button type="button" onclick="window.BlocTagSimpleMode.toggleImport(false)" class="text-on-surface-variant hover:text-on-surface">
                 <span class="material-symbols-outlined notranslate text-[16px]" translate="no">close</span>
               </button>
             </div>
             <textarea id="simpleImportInput" rows="3"
-              placeholder="12 kurtarma kelimenizi veya 64 haneli özel anahtarınızı girin..."
+              placeholder="${t('onb_import_ph', 'Enter your 12 recovery words or 64-char private key...')}"
               class="w-full bg-surface-container rounded-xl p-3 text-xs font-mono text-on-surface placeholder:text-outline/60 border border-outline-variant/20 focus:border-primary focus:outline-none resize-none"></textarea>
             <button type="button" onclick="window.BlocTagSimpleMode.submitImport()"
               class="w-full h-11 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md active:scale-98 transition-all cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[17px]" translate="no">login</span>
-              <span>Cüzdanı Geri Yükle ve Bağlan</span>
+              <span>${t('onb_import_btn', 'Restore Wallet & Connect')}</span>
             </button>
           </div>
         ` : ''}
@@ -939,21 +2057,21 @@
         <div class="flex flex-col gap-2.5 w-full mt-auto">
           <button type="button" onclick="window.BlocTagSimpleMode.startCreateWallet()"
             class="w-full h-[50px] rounded-full bg-primary-container text-on-primary-container text-sm font-semibold flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all cursor-pointer">
-            <span>Cüzdan Aç (+1.00 BCT Bonus)</span>
+            <span>${t('onb_create_btn', 'Create Wallet (+1.00 BCT Bonus)')}</span>
             <span class="material-symbols-outlined notranslate text-[18px]" translate="no">arrow_forward</span>
           </button>
 
           <button type="button" onclick="window.BlocTagSimpleMode.toggleImport()"
             class="w-full h-[50px] rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-sm font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[18px] text-primary" translate="no">wallet</span>
-            <span>${acc ? 'Mevcut Cüzdana Git (' + esc(getDisplayHandleOrAddr(acc.address, myHandle)) + ')' : 'Mevcut Cüzdanla Bağlan'}</span>
+            <span>${acc ? (t('onb_existing_btn', 'Connect with Existing Wallet') + ' (' + esc(getDisplayHandleOrAddr(acc.address, myHandle)) + ')') : t('onb_existing_btn', 'Connect with Existing Wallet')}</span>
           </button>
         </div>
 
         <!-- Bottom Trust & Security Footnote -->
         <div class="flex items-center justify-center gap-1.5 pt-3 text-on-surface-variant/70 mt-2">
           <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">verified_user</span>
-          <span class="text-[11px] tracking-wide">Uçtan Uca Şifreli • Non-Custodial Güvenlik</span>
+          <span class="text-[11px] tracking-wide">${t('onb_footer', 'End-to-End Encrypted • Non-Custodial Security')}</span>
         </div>
       </main>
     `;
@@ -968,7 +2086,7 @@
     const isSaved = Boolean(simpleState.seedSavedConfirmed);
 
     return `
-      ${renderTopBar('Kurtarma Anahtarı', true)}
+      ${renderTopBar(t('top_recovery', 'Recovery Key'), true)}
       <main class="flex-1 flex flex-col w-full px-5 pt-3 pb-24 simple-screen-animate">
         <div class="flex flex-col w-full gap-3.5">
           <!-- Warm Visual Illustration & Human Context (Exact Stitch SCR-WLT-02) -->
@@ -980,9 +2098,9 @@
               </div>
             </div>
             <div class="flex flex-col">
-              <h2 class="text-base font-semibold text-on-surface">Cüzdan Anahtarlarınız</h2>
+              <h2 class="text-base font-semibold text-on-surface">${t('seed_hero_title', 'Your Wallet Keys')}</h2>
               <p class="text-xs text-on-surface-variant leading-snug">
-                Bu 12 kelime cüzdanınızın tek şifresidir. Güvenli bir yere not edin ve kimseyle paylaşmayın.
+                ${t('seed_hero_sub', 'These 12 words are the sole password to your wallet. Write them down securely and never share them.')}
               </p>
             </div>
           </div>
@@ -991,9 +2109,9 @@
           <div class="flex items-center justify-between px-3.5 py-2 rounded-full bg-surface-container text-on-surface-variant text-xs">
             <div class="flex items-center gap-1.5">
               <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">visibility_off</span>
-              <span>Etrafınızda kimsenin izlemediğinden emin olun</span>
+              <span>${t('seed_tip', 'Make sure no one is watching your screen')}</span>
             </div>
-            <span class="text-primary text-[10px] font-bold uppercase tracking-wider">Gizli</span>
+            <span class="text-primary text-[10px] font-bold uppercase tracking-wider">${t('seed_private', 'Confidential')}</span>
           </div>
 
           <!-- 12-Word Grid Container (2 Symmetrical Columns) -->
@@ -1013,9 +2131,9 @@
                 <button type="button" onclick="window.BlocTagSimpleMode.copySeed()"
                   class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-surface-container-highest hover:bg-surface-bright text-on-surface active:scale-95 transition-all cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[16px] text-primary" id="simple-copy-seed-icon" translate="no">content_copy</span>
-                  <span class="text-xs font-medium" id="simple-copy-seed-text">Kelimeleri Kopyala</span>
+                  <span class="text-xs font-medium" id="simple-copy-seed-text">${t('seed_copy_btn', 'Copy Words')}</span>
                 </button>
-                <button type="button" onclick="window.BlocTagSimpleMode.refreshSeed()" title="Yeni Kelime Üret"
+                <button type="button" onclick="window.BlocTagSimpleMode.refreshSeed()" title="${t('seed_refresh_title', 'Generate New Words')}"
                   class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center active:scale-95 transition-all cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[16px]" translate="no">refresh</span>
                 </button>
@@ -1031,9 +2149,9 @@
           <div class="flex items-start gap-2.5 p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/10">
             <span class="material-symbols-outlined notranslate text-secondary text-[20px] shrink-0 mt-0.5" translate="no">draw</span>
             <div class="flex flex-col gap-0.5">
-              <span class="text-xs font-semibold text-on-surface">Tavsiye Edilen Yöntem</span>
+              <span class="text-xs font-semibold text-on-surface">${t('seed_rec_title', 'Recommended Method')}</span>
               <span class="text-xs text-on-surface-variant leading-relaxed">
-                Kelimeleri tercihen fiziksel bir kağıda yazın ve güvenli bir yerde saklayın. Ekran görüntüsü almaktan kaçının.
+                ${t('seed_rec_desc', 'Write down the words on physical paper and store in a safe place. Avoid taking screenshots.')}
               </span>
             </div>
           </div>
@@ -1042,8 +2160,8 @@
           <div class="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 select-none cursor-pointer"
                onclick="window.BlocTagSimpleMode.toggleSeedSaved()">
             <div class="flex flex-col pr-3">
-              <span class="text-xs font-semibold text-on-surface">Kelimelerimi güvenli bir yere kaydettim</span>
-              <span class="text-[11px] text-on-surface-variant/80">Kurtarma kelimelerim olmadan hesabıma erişemem</span>
+              <span class="text-xs font-semibold text-on-surface">${t('seed_saved_label', 'I have safely saved my recovery words')}</span>
+              <span class="text-[11px] text-on-surface-variant/80">${t('seed_saved_sub', 'Without recovery words I cannot access my wallet')}</span>
             </div>
             <div class="relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${isSaved ? 'bg-primary-container' : 'bg-surface-container-highest'}">
               <div class="absolute top-1 left-1 w-5 h-5 rounded-full transition-transform duration-200 flex items-center justify-center ${isSaved ? 'translate-x-5 bg-on-primary-container' : 'bg-outline'}">
@@ -1058,11 +2176,11 @@
               ${isSaved ? '' : 'disabled'}
               onclick="window.BlocTagSimpleMode.finalizeCreateWallet()"
               class="w-full h-[52px] rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${isSaved ? 'bg-primary text-on-primary shadow-md active:scale-[0.98] hover:brightness-95 cursor-pointer' : 'bg-surface-container-highest text-on-surface/40 cursor-not-allowed'}">
-              <span>Cüzdanı Başlat &amp; Space'e Git (+1.00 BCT)</span>
+              <span>${t('seed_launch_btn', "Launch Wallet & Go to Space (+1.00 BCT)")}</span>
               <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_forward</span>
             </button>
             <p class="text-center text-[11px] text-on-surface-variant/60">
-              Merkeziyetsiz ve bağımsız mülkiyet protokolü
+              ${t('seed_footer', 'Decentralized and sovereign ownership protocol')}
             </p>
           </div>
         </div>
@@ -1106,12 +2224,12 @@
     `;
 
     return `
-      ${renderTopBar('Cüzdanım', false, addressPillHtml)}
+      ${renderTopBar(t('top_wallet', 'My Wallet'), false, addressPillHtml)}
       <main class="flex-1 flex flex-col w-full px-5 pt-3 pb-24 simple-screen-animate">
         <!-- Net Portfolio Hero (Exact Stitch Cüzdanım ve Geçmiş Mobil) -->
         <div class="flex flex-col items-center justify-center pt-4 pb-5 text-center">
           <div class="flex items-center gap-1.5 mb-1">
-            <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Net Portföy Değeri</span>
+            <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">${t('wlt_net_worth', 'Net Portfolio Value')}</span>
             <button type="button" onclick="if(typeof toggleBalanceVisibility==='function'){ toggleBalanceVisibility(); window.BlocTagSimpleMode.refresh(); }"
               class="text-on-surface-variant hover:text-on-surface flex items-center cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[15px]" translate="no">${hidden ? 'visibility_off' : 'visibility'}</span>
@@ -1133,12 +2251,12 @@
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-WLT-SEND')"
             class="flex items-center justify-center gap-2 h-[50px] bg-primary-container text-on-primary-container rounded-full text-sm font-semibold active:scale-[0.98] transition-all shadow-sm cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_upward</span>
-            <span>Gönder</span>
+            <span>${t('wlt_send_btn', 'Send')}</span>
           </button>
           <button type="button" onclick="if(typeof openReceiveModal==='function') openReceiveModal();"
             class="flex items-center justify-center gap-2 h-[50px] bg-surface-container-high hover:bg-surface-bright text-on-surface rounded-full text-sm font-semibold active:scale-[0.98] transition-all cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_downward</span>
-            <span>Al (QR)</span>
+            <span>${t('wlt_receive_btn', 'Receive (QR)')}</span>
           </button>
         </div>
 
@@ -1147,43 +2265,43 @@
           <button type="button" onclick="if(typeof openWalletVaultModal==='function') openWalletVaultModal();"
             class="p-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col items-center gap-1 text-center transition-colors cursor-pointer">
             <span class="material-symbols-outlined notranslate text-primary text-[18px]" translate="no">shield_lock</span>
-            <span class="text-[11px] font-medium text-on-surface">PIN Kasası</span>
+            <span class="text-[11px] font-medium text-on-surface">${t('wlt_vault_btn', 'PIN Vault')}</span>
           </button>
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-ONB-01')"
             class="p-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col items-center gap-1 text-center transition-colors cursor-pointer">
             <span class="material-symbols-outlined notranslate text-secondary text-[18px]" translate="no">add_circle</span>
-            <span class="text-[11px] font-medium text-on-surface">Cüzdan Değiştir</span>
+            <span class="text-[11px] font-medium text-on-surface">${t('wlt_switch_wallet', 'Switch Wallet')}</span>
           </button>
           <button type="button" onclick="if(typeof openNetworkSecurityModal==='function') openNetworkSecurityModal();"
             class="p-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col items-center gap-1 text-center transition-colors cursor-pointer">
             <span class="material-symbols-outlined notranslate text-emerald-400 text-[18px]" translate="no">verified_user</span>
-            <span class="text-[11px] font-medium text-on-surface">Ağ Güvenliği</span>
+            <span class="text-[11px] font-medium text-on-surface">${t('wlt_audit_btn', 'Network Security')}</span>
           </button>
         </div>
 
         <!-- İşlem Geçmişi Section -->
         <div class="flex flex-col w-full">
           <div class="flex items-center justify-between mb-3">
-            <h2 class="text-base font-semibold text-on-surface">İşlem Geçmişi</h2>
+            <h2 class="text-base font-semibold text-on-surface">${t('wlt_txs_title', 'Transaction History')}</h2>
             <button type="button" onclick="if(typeof refreshCurrentAccountBalance==='function') refreshCurrentAccountBalance(); if(typeof refreshPersonalTransactions==='function') refreshPersonalTransactions().then(()=>window.BlocTagSimpleMode.refresh());"
-              class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer" title="Yenile">
+              class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer" title="Refresh">
               <span class="material-symbols-outlined notranslate text-[18px]" translate="no">sync</span>
             </button>
           </div>
 
-          <!-- Filter Pills (Tümü, Gelenler, Gidenler) -->
+          <!-- Filter Pills (All, Incoming, Outgoing) -->
           <div class="flex items-center gap-1 p-1 bg-surface-container-low rounded-full mb-3.5">
             <button type="button" onclick="window.BlocTagSimpleMode.setTxFilter('all')"
               class="flex-1 py-1.5 px-3 rounded-full text-center text-xs transition-all cursor-pointer ${simpleState.txFilter === 'all' ? 'bg-surface-container-high text-on-surface font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
-              Tümü
+              ${t('wlt_filter_all', 'All')}
             </button>
             <button type="button" onclick="window.BlocTagSimpleMode.setTxFilter('incoming')"
               class="flex-1 py-1.5 px-3 rounded-full text-center text-xs transition-all cursor-pointer ${simpleState.txFilter === 'incoming' ? 'bg-surface-container-high text-on-surface font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
-              Gelenler
+              ${t('wlt_filter_in', 'Incoming')}
             </button>
             <button type="button" onclick="window.BlocTagSimpleMode.setTxFilter('outgoing')"
               class="flex-1 py-1.5 px-3 rounded-full text-center text-xs transition-all cursor-pointer ${simpleState.txFilter === 'outgoing' ? 'bg-surface-container-high text-on-surface font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
-              Gidenler
+              ${t('wlt_filter_out', 'Outgoing')}
             </button>
           </div>
 
@@ -1191,7 +2309,7 @@
           <div class="flex flex-col gap-2 w-full">
             ${filteredTxs.length === 0 ? `
               <div class="p-6 rounded-2xl bg-surface-container-low text-center text-xs text-on-surface-variant">
-                Bu filtrede henüz işlem bulunmuyor.
+                ${t('wlt_empty_txs', 'No transactions found in this filter.')}
               </div>
             ` : filteredTxs.slice(0, 25).map((tx) => {
       const meta = typeof window.classifyPersonalTx === 'function'
@@ -1221,7 +2339,7 @@
                   <div class="flex flex-col items-end shrink-0 pl-2">
                     <span class="text-xs font-mono font-semibold ${meta.isIncoming ? 'text-primary' : 'text-on-surface'}">${meta.displayAmount > 0 ? esc(meta.sign) : ''}${esc(amtStr)} BCT</span>
                     <div class="flex items-center gap-1">
-                      <span class="text-[10px] text-on-surface-variant">${tx.status === 'mempool' ? 'Mempool' : 'Onaylandı'}</span>
+                      <span class="text-[10px] text-on-surface-variant">${tx.status === 'mempool' ? t('wlt_tx_pending', 'Pending') : t('wlt_tx_confirmed', 'Confirmed')}</span>
                       <span class="w-1.5 h-1.5 rounded-full ${tx.status === 'mempool' ? 'bg-secondary animate-pulse' : 'bg-primary'}"></span>
                     </div>
                   </div>
@@ -1245,24 +2363,24 @@
     const preRec = simpleState.sendPrefillRecipient || '';
 
     return `
-      ${renderTopBar('Kripto Gönder', true)}
+      ${renderTopBar(t('top_send', 'Send Crypto'), true)}
       <main class="flex-1 flex flex-col w-full px-5 pt-2 pb-24 simple-screen-animate">
         <div class="flex items-center justify-between py-2">
           <div class="flex flex-col">
-            <span class="text-[10px] text-outline uppercase tracking-wider font-mono">İşlem</span>
-            <h1 class="text-xl font-semibold text-on-surface">BCT Gönder</h1>
+            <span class="text-[10px] text-outline uppercase tracking-wider font-mono">${t('send_badge', 'Transaction')}</span>
+            <h1 class="text-xl font-semibold text-on-surface">${t('send_title', 'Send BCT')}</h1>
           </div>
           <div class="flex items-center gap-1.5 bg-surface-container-high px-2.5 py-1 rounded-full text-on-surface-variant text-[11px]">
             <span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
-            <span>Hızlı Mod</span>
+            <span>${t('send_fast_mode', 'Fast Mode')}</span>
           </div>
         </div>
 
         <!-- Asset Selector Chip -->
         <section class="flex flex-col gap-1.5 mt-1">
           <div class="flex items-center justify-between px-1">
-            <span class="text-xs text-on-surface-variant font-medium">Aktif Varlık</span>
-            <span class="text-xs text-primary font-mono">Kullanılabilir: ${esc(balStr)} BCT</span>
+            <span class="text-xs text-on-surface-variant font-medium">${t('send_active_asset', 'Active Asset')}</span>
+            <span class="text-xs text-primary font-mono">${t('send_available', 'Available:')} ${esc(balStr)} BCT</span>
           </div>
           <div class="flex gap-2 py-1">
             <div class="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-surface-container-high text-on-surface border border-primary/25">
@@ -1288,7 +2406,7 @@
               class="bg-transparent text-[38px] leading-[42px] font-bold text-on-surface text-center focus:outline-none w-52 caret-primary tracking-tight font-mono" />
           </div>
           <div class="flex items-center gap-1 mt-1.5 text-on-surface-variant text-xs font-mono">
-            <span>Net Alıcıya Geçen:</span>
+            <span>${t('send_net_received', 'Net Received by Recipient:')}</span>
             <strong class="text-primary" id="simple-send-net-preview">0.00 BCT</strong>
           </div>
           <div class="grid grid-cols-4 gap-2 w-full max-w-xs mt-5">
@@ -1299,27 +2417,27 @@
             <button type="button" onclick="window.BlocTagSimpleMode.setSendPct(0.75)"
               class="py-2 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium active:scale-95 transition-all cursor-pointer">%75</button>
             <button type="button" onclick="window.BlocTagSimpleMode.setSendPct(1.00)"
-              class="py-2 rounded-full bg-surface-container-highest text-primary text-xs font-semibold active:scale-95 transition-all cursor-pointer">Tümü</button>
+              class="py-2 rounded-full bg-surface-container-highest text-primary text-xs font-semibold active:scale-95 transition-all cursor-pointer">${t('send_pct_all', 'All')}</button>
           </div>
         </section>
 
         <!-- Recipient Input -->
         <section class="flex flex-col gap-1.5 mb-3">
-          <label class="text-xs text-on-surface-variant font-medium px-1" for="simple-send-recipient">Alıcı Adresi veya @isim.bct</label>
+          <label class="text-xs text-on-surface-variant font-medium px-1" for="simple-send-recipient">${t('send_recipient_label', 'Recipient Address or @name.bct')}</label>
           <div class="flex items-center bg-surface-container-low rounded-2xl px-3.5 py-3 border border-outline-variant/15 focus-within:border-primary transition-colors">
             <span class="material-symbols-outlined notranslate text-outline text-[20px] mr-2" translate="no">alternate_email</span>
             <input id="simple-send-recipient" type="text" autocomplete="off" spellcheck="false"
               value="${esc(preRec)}"
-              placeholder="BCT... veya kullanici.bct"
+              placeholder="${t('send_recipient_ph', 'BCT... or user.bct')}"
               class="bg-transparent flex-1 text-xs font-mono text-on-surface placeholder:text-outline/60 focus:outline-none min-w-0" />
             <div class="flex items-center gap-1.5 shrink-0 ml-2">
               <button type="button" onclick="window.BlocTagSimpleMode.pasteRecipient()"
                 class="flex items-center gap-1 bg-surface-container-highest px-2.5 py-1 rounded-full text-on-surface text-[11px] font-medium hover:brightness-110 active:scale-95 transition-all cursor-pointer">
                 <span class="material-symbols-outlined notranslate text-[13px]" translate="no">content_paste</span>
-                <span>Yapıştır</span>
+                <span>${t('send_paste', 'Paste')}</span>
               </button>
               <button type="button" onclick="if(typeof openQrScannerModal==='function') openQrScannerModal();"
-                class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface hover:brightness-110 active:scale-95 transition-all cursor-pointer" title="QR Tara">
+                class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface hover:brightness-110 active:scale-95 transition-all cursor-pointer" title="Scan QR">
                 <span class="material-symbols-outlined notranslate text-[17px]" translate="no">qr_code_scanner</span>
               </button>
             </div>
@@ -1330,12 +2448,12 @@
         <div class="flex items-center justify-between bg-surface-container-low/50 px-4 py-2.5 rounded-2xl mb-5 text-on-surface-variant text-xs">
           <div class="flex items-center gap-2">
             <span class="material-symbols-outlined notranslate text-[17px] text-primary" translate="no">local_gas_station</span>
-            <span>Ağ Ücreti (%1 Protokol):</span>
+            <span>${t('send_network_fee', 'Network Fee (1% Protocol):')}</span>
             <span class="text-on-surface font-mono font-medium" id="simple-send-fee-preview">0.00 BCT</span>
           </div>
           <div class="flex items-center gap-1">
             <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-            <span class="text-[11px]">Anlık Onay</span>
+            <span class="text-[11px]">${t('send_instant_conf', 'Instant Confirmation')}</span>
           </div>
         </div>
 
@@ -1343,18 +2461,18 @@
         <div class="flex flex-col gap-2 mt-auto">
           <button type="button" id="simple-send-submit-btn" onclick="window.BlocTagSimpleMode.executeSend()"
             class="w-full h-[52px] rounded-full bg-primary text-on-primary text-base font-semibold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform cursor-pointer">
-            <span>Devam Et ve İmzala</span>
+            <span>${t('send_submit_btn', 'Continue and Sign')}</span>
             <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_forward</span>
           </button>
           <div class="flex items-center justify-center gap-3 py-1 text-outline text-[11px]">
             <span class="flex items-center gap-1">
               <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">verified_user</span>
-              <span>Uçtan Uca ECDSA İmzalı</span>
+              <span>${t('send_ecdsa_signed', 'End-to-End ECDSA Signed')}</span>
             </span>
             <span>•</span>
             <span class="flex items-center gap-1">
               <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">timer</span>
-              <span>Anlık Blok Kaydı</span>
+              <span>${t('send_instant_block', 'Instant On-Chain Seal')}</span>
             </span>
           </div>
         </div>
@@ -1409,17 +2527,17 @@
                 </span>
               </div>
               <span id="simple-space-bal-subtitle" class="text-[11px] text-on-surface-variant truncate">
-                ${acc ? (typeof window.formatBct === 'function' ? window.formatBct(acc.balance || 0, 2) + ' BCT • Zincir Üstü Aktif' : 'Zincir Üstü Aktif') : 'Cüzdan oluşturun (+1.00 BCT bonus)'}
+                ${acc ? (typeof window.formatBct === 'function' ? window.formatBct(acc.balance || 0, 2) + ' BCT • ' + t('space_active_l1', 'Active L1') : t('space_active_l1', 'Active L1')) : t('space_create_wallet_hint', 'Create wallet (+1.00 BCT bonus)')}
               </span>
             </div>
           </div>
 
           <div class="flex items-center gap-1.5 shrink-0">
-            <button type="button" aria-label="Bildirimler" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
+            <button type="button" aria-label="${t('top_notifications', 'Notifications')}" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
               class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[20px]" translate="no">notifications</span>
             </button>
-            <button type="button" aria-label="Arama" onclick="window.BlocTagSimpleMode.toggleSearch()"
+            <button type="button" aria-label="${t('space_search_btn', 'Search')}" onclick="window.BlocTagSimpleMode.toggleSearch()"
               class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[20px]" translate="no">search</span>
             </button>
@@ -1431,7 +2549,7 @@
             <span class="material-symbols-outlined notranslate text-[17px] text-outline mr-2" translate="no">search</span>
             <input id="simple-space-search-input" type="search" value="${esc(simpleState.searchQuery)}"
               oninput="window.BlocTagSimpleMode.setSearchQuery(this.value)"
-              placeholder="Gönderi, #etiket veya @kullanici ara..."
+              placeholder="${t('space_search_ph', 'Search posts, #tags or @users...')}"
               class="w-full bg-transparent text-xs text-on-surface placeholder:text-outline focus:outline-none" />
           </div>
         ` : ''}
@@ -1444,7 +2562,7 @@
             </div>
             <div class="flex-1 min-w-0">
               <textarea id="simple-composer-input" rows="2" maxlength="280"
-                placeholder="Bir şeyler paylaş... (0.10 BCT)"
+                placeholder="${t('space_composer_ph', 'Share something on-chain... (0.10 BCT)')}"
                 class="w-full bg-transparent text-sm text-on-surface placeholder:text-outline resize-none focus:outline-none leading-relaxed"></textarea>
               <div class="flex items-center justify-between pt-1.5 border-t border-outline-variant/10">
                 <div class="flex items-center gap-1 text-on-surface-variant">
@@ -1463,22 +2581,22 @@
                 </div>
                 <button type="button" id="simple-post-submit-btn" onclick="window.BlocTagSimpleMode.submitPost()"
                   class="h-9 px-4 bg-primary text-on-primary text-xs rounded-full flex items-center justify-center font-semibold hover:brightness-95 active:scale-95 transition-all shadow-sm cursor-pointer">
-                  Paylaş
+                  ${t('space_publish', 'Publish')}
                 </button>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- Segmented Feed Switcher (Hepsi / Takip Edilenler) -->
+        <!-- Segmented Feed Switcher (All / Verified & Following) -->
         <div class="flex p-1 bg-surface-container-low rounded-full mt-3 border border-outline-variant/10">
           <button type="button" onclick="window.BlocTagSimpleMode.setFeedFilter('all')"
             class="flex-1 text-center rounded-full text-xs font-medium transition-all py-1.5 cursor-pointer ${simpleState.feedFilter === 'all' ? 'bg-surface-container text-on-surface font-semibold shadow-xs' : 'text-on-surface-variant hover:text-on-surface'}">
-            Hepsi
+            ${t('space_filter_all', 'All')}
           </button>
           <button type="button" onclick="window.BlocTagSimpleMode.setFeedFilter('following')"
             class="flex-1 text-center rounded-full text-xs font-medium transition-all py-1.5 cursor-pointer ${simpleState.feedFilter === 'following' ? 'bg-surface-container text-on-surface font-semibold shadow-xs' : 'text-on-surface-variant hover:text-on-surface'}">
-            Doğrulanmış &amp; Takip
+            ${t('space_filter_following', 'Verified & Following')}
           </button>
         </div>
 
@@ -1487,17 +2605,17 @@
           ${filteredPosts.length === 0 ? `
             <div class="p-8 rounded-2xl bg-surface-container-low text-center flex flex-col items-center gap-2 text-on-surface-variant">
               <span class="material-symbols-outlined notranslate text-[28px] text-primary" translate="no">forum</span>
-              <span class="text-xs">Gönderiler yükleniyor veya bu filtrede gönderi yok...</span>
+              <span class="text-xs">${t('space_empty_posts', 'Posts are loading or none found in this filter...')}</span>
             </div>
           ` : filteredPosts.slice(0, 35).map(post => renderSimplePostCard(post, acc)).join('')}
         </div>
 
-        <!-- Floating Action Button (+ Yaz) -->
+        <!-- Floating Action Button (+ Post) -->
         <div class="fixed z-40" style="bottom: calc(var(--simple-bottom-nav-h, 64px) + 14px); right: max(16px, calc(50% - 224px));">
           <button type="button" onclick="window.BlocTagSimpleMode.focusComposer()"
             class="h-11 px-4 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center gap-1.5 shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[18px]" translate="no">edit</span>
-            <span>Yaz</span>
+            <span>${t('space_compose_fab', 'Post')}</span>
           </button>
         </div>
       </main>
@@ -1550,7 +2668,7 @@
               <span class="text-[11px] text-on-surface-variant truncate block">${esc(subHandle)} • ${esc(timeAgo)}</span>
             </div>
           </div>
-          <button type="button" aria-label="Paylaş"
+          <button type="button" aria-label="${t('space_share_btn', 'Share')}"
             onclick="event.stopPropagation(); if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
             class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer shrink-0">
             <span class="material-symbols-outlined notranslate text-[18px]" translate="no">more_horiz</span>
@@ -1581,7 +2699,7 @@
             onclick="event.stopPropagation(); window.BlocTagSimpleMode.tipAuthor('${escAttr(authorAddr)}')"
             class="px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-primary hover:text-on-primary text-primary transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[15px]" translate="no">volunteer_activism</span>
-            <span class="text-[11px] font-semibold">Bahşiş</span>
+            <span class="text-[11px] font-semibold">${t('space_tip', 'Tip')}</span>
           </button>
         </div>
       </article>
@@ -1596,12 +2714,12 @@
 
     if (!post) {
       return `
-        ${renderTopBar('Gönderi Detayı', true)}
+        ${renderTopBar(t('top_post_detail', 'Post Details'), true)}
         <main class="flex-1 flex flex-col items-center justify-center p-6 text-center simple-screen-animate">
-          <p class="text-xs text-on-surface-variant mb-3">Gönderi bulunamadı veya yükleniyor.</p>
+          <p class="text-xs text-on-surface-variant mb-3">${t('post_not_found', 'Post not found or loading.')}</p>
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
             class="px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-semibold cursor-pointer">
-            Space Akışına Dön
+            ${t('post_back_to_feed', 'Return to Space Feed')}
           </button>
         </main>
       `;
@@ -1621,7 +2739,7 @@
     const profileTargetAttr = escAttr(authorBns || authorAddr);
 
     return `
-      ${renderTopBar('Gönderi Detayı', true)}
+      ${renderTopBar(t('top_post_detail', 'Post Details'), true)}
       <main class="flex-1 flex flex-col w-full min-w-0 px-4 pt-3 pb-36 simple-screen-animate">
         <!-- Main Post Card (Exact Stitch SCR-SPC-04) -->
         <section class="simple-post-card bg-surface-container rounded-2xl flex flex-col shadow-sm p-4 gap-3 border border-outline-variant/15">
@@ -1653,7 +2771,7 @@
             <span class="text-on-surface-variant">${esc(fullDate)}</span>
             <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high">
               <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-              <span class="text-[11px] text-on-surface-variant font-medium">Blok #${esc(post.block_index ?? '--')}</span>
+              <span class="text-[11px] text-on-surface-variant font-medium">${t('post_block_label', 'Block')} #${esc(post.block_index ?? '--')}</span>
             </div>
           </div>
 
@@ -1661,15 +2779,15 @@
           <div class="flex items-center justify-between py-2.5 px-3.5 rounded-xl bg-surface-container-low text-xs">
             <div class="flex items-center gap-1.5">
               <span class="font-semibold text-on-surface tabular-nums">${likesCount}</span>
-              <span class="text-on-surface-variant">Beğeni</span>
+              <span class="text-on-surface-variant">${t('post_likes_label', 'Likes')}</span>
             </div>
             <div class="flex items-center gap-1.5">
               <span class="font-semibold text-on-surface tabular-nums">${comments.length}</span>
-              <span class="text-on-surface-variant">Yorum</span>
+              <span class="text-on-surface-variant">${t('post_comments_label', 'Comments')}</span>
             </div>
             <div class="flex items-center gap-1.5">
               <span class="font-semibold text-primary font-mono tabular-nums">+${typeof window.formatBct === 'function' ? window.formatBct(earned, 3) : earned.toFixed(3)} BCT</span>
-              <span class="text-on-surface-variant">Telif</span>
+              <span class="text-on-surface-variant">${t('post_royalties_label', 'Royalties')}</span>
             </div>
           </div>
 
@@ -1678,22 +2796,22 @@
             <button type="button" onclick="window.BlocTagSimpleMode.likePost('${pid}', event)"
               class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest transition-all active:scale-95 cursor-pointer ${isLiked ? 'text-tertiary font-semibold' : 'text-on-surface-variant'}">
               <span class="material-symbols-outlined notranslate text-[19px]" ${isLiked ? 'style="font-variation-settings: \'FILL\' 1;"' : ''} translate="no">favorite</span>
-              <span class="text-[10.5px]">Beğen</span>
+              <span class="text-[10.5px]">${t('space_like', 'Like')}</span>
             </button>
             <button type="button" onclick="document.getElementById('simple-comment-input')?.focus()"
               class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-primary transition-all active:scale-95 cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[19px]" translate="no">chat_bubble</span>
-              <span class="text-[10.5px]">Yorum</span>
+              <span class="text-[10.5px]">${t('space_reply', 'Comment')}</span>
             </button>
             <button type="button" onclick="if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
               class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-primary transition-all active:scale-95 cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[19px]" translate="no">repeat</span>
-              <span class="text-[10.5px]">Paylaş</span>
+              <span class="text-[10.5px]">${t('space_share', 'Share')}</span>
             </button>
             <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(authorAddr)}')"
               class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-primary transition-all active:scale-95 cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[19px]" style="font-variation-settings: 'FILL' 1;" translate="no">payments</span>
-              <span class="text-[10.5px] font-semibold">Bahşiş</span>
+              <span class="text-[10.5px] font-semibold">${t('space_tip', 'Tip')}</span>
             </button>
           </div>
         </section>
@@ -1701,17 +2819,17 @@
         <!-- Comments Section Header -->
         <div class="flex items-center justify-between pt-4 pb-2 px-1">
           <div class="flex items-center gap-2">
-            <h2 class="text-sm font-semibold text-on-surface">Yorumlar</h2>
+            <h2 class="text-sm font-semibold text-on-surface">${t('post_comments_title', 'Comments')}</h2>
             <span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-xs font-semibold">${comments.length}</span>
           </div>
-          <span class="text-[11px] text-primary">+0.004 BCT Yazar Telifi</span>
+          <span class="text-[11px] text-primary">${t('post_author_royalty_hint', '+0.004 BCT Author Royalty')}</span>
         </div>
 
         <!-- Comments List -->
         <section class="flex flex-col gap-2">
           ${comments.length === 0 ? `
             <div class="p-6 rounded-2xl bg-surface-container-low text-center text-xs text-on-surface-variant">
-              İlk zincir üstü yorumu aşağıdan siz yazın!
+              ${t('post_be_first_comment', 'Be the first to leave an on-chain comment below!')}
             </div>
           ` : comments.slice().reverse().map(c => {
       const cAddr = String(c.commenter || '');
@@ -1734,7 +2852,7 @@
                     </div>
                   </div>
                   <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(cAddr)}')"
-                    class="text-[11px] text-primary hover:underline font-medium cursor-pointer shrink-0">Bahşiş</button>
+                    class="text-[11px] text-primary hover:underline font-medium cursor-pointer shrink-0">${t('space_tip', 'Tip')}</button>
                 </div>
                 <div class="simple-post-body text-xs text-on-surface pl-10">
                   ${cBody}
@@ -1752,11 +2870,11 @@
               <span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>
             </div>
             <input id="simple-comment-input" type="text" maxlength="140" autocomplete="off"
-              placeholder="Düşünceni yaz... (0.02 BCT)"
+              placeholder="${t('post_comment_ph', 'Write your comment... (0.02 BCT)')}"
               class="flex-1 bg-transparent text-xs text-on-surface placeholder:text-outline focus:outline-none px-1.5 min-w-0" />
             <button type="submit" id="simple-comment-submit-btn"
               class="h-8 px-3.5 rounded-full bg-primary-container text-on-primary text-xs font-semibold flex items-center justify-center gap-1 hover:brightness-95 active:scale-95 transition-all shrink-0 cursor-pointer">
-              <span>Gönder</span>
+              <span>${t('post_comment_send', 'Send')}</span>
               <span class="material-symbols-outlined notranslate text-[15px]" translate="no">arrow_upward</span>
             </button>
           </form>
@@ -1817,7 +2935,7 @@
     const myOwnedHandles = isMyProfile ? getMyOwnedBnsHandles() : [];
 
     return `
-      ${renderTopBar('Profil', !isMyProfile)}
+      ${renderTopBar(t('top_profile', 'Profile'), !isMyProfile)}
       <main class="flex-1 flex flex-col w-full pb-24 simple-screen-animate">
         <!-- Minimalist Cover Scrim (Exact Stitch SCR-PRF-05) -->
         <div class="relative w-full h-32 bg-gradient-to-b from-surface-container to-surface overflow-hidden">
@@ -1851,21 +2969,21 @@
                 <button type="button" onclick="if(typeof openWalletVaultModal==='function') openWalletVaultModal();"
                   class="h-8.5 px-3 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[15px]" translate="no">tune</span>
-                  <span>Güvenlik</span>
+                  <span>${t('profile_security_btn', 'Security')}</span>
                 </button>
               ` : `
-                <!-- Takip Et Butonu (Diğer profiller için) -->
+                <!-- Follow Button (For Other Profiles) -->
                 <button type="button" id="simple-profile-follow-btn"
                   onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(resolvedAddress)}', '${escAttr(resolvedBns)}')"
                   class="h-8.5 px-3 rounded-full bg-primary text-on-primary text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm cursor-pointer hover:brightness-95">
                   <span class="material-symbols-outlined notranslate text-[15px]" translate="no">person_add</span>
-                  <span>Takip Et</span>
+                  <span>${t('profile_follow_btn', 'Follow')}</span>
                 </button>
 
                 <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(resolvedAddress)}')"
                   class="h-8.5 px-2.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">volunteer_activism</span>
-                  <span>Bahşiş</span>
+                  <span>${t('profile_tip_btn', 'Tip')}</span>
                 </button>
               `}
             </div>
@@ -1882,7 +3000,7 @@
 
             <!-- Handle & Status Badge -->
             <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-              <button type="button" onclick="if(typeof copyText==='function') copyText('${escAttr(resolvedBns ? ('@' + resolvedBns.replace(/^@/, '')) : resolvedAddress)}', 'Kimlik kopyalandı!');"
+              <button type="button" onclick="if(typeof copyText==='function') copyText('${escAttr(resolvedBns ? ('@' + resolvedBns.replace(/^@/, '')) : resolvedAddress)}', 'Identity copied!');"
                 class="group flex items-center gap-1 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
                 <span class="text-xs text-primary font-mono font-medium">${esc(resolvedBns ? '@' + resolvedBns.replace(/^@/, '') : shortWallet)}</span>
                 <span class="material-symbols-outlined notranslate text-[14px] text-outline group-hover:text-primary" translate="no">content_copy</span>
@@ -1890,7 +3008,7 @@
               <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-primary text-[10.5px] font-medium">
                 <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
-                <span>Aktif L1</span>
+                <span>${t('space_active_l1', 'Active L1')}</span>
               </span>
               ${totalRoyalties > 0 ? `
                 <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10.5px] font-mono font-semibold">
@@ -1902,7 +3020,7 @@
 
             <!-- Compact Wallet Strip -->
             <div class="mt-2.5 flex items-center gap-2 flex-wrap">
-              <button type="button" onclick="if(typeof copyText==='function') copyText('${escAttr(resolvedAddress)}', 'Cüzdan adresi kopyalandı!');"
+              <button type="button" onclick="if(typeof copyText==='function') copyText('${escAttr(resolvedAddress)}', 'Wallet address copied!');"
                 class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant transition-all active:scale-95 cursor-pointer border border-outline-variant/15">
                 <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">account_balance_wallet</span>
                 <span class="text-xs tracking-wider font-mono">${esc(shortWallet)}</span>
@@ -1910,20 +3028,20 @@
               </button>
             </div>
 
-            <!-- BNS Handle Selector & Switcher (Kendi Profilinizdeyken Alınmış İsimleri Seçme ve Değiştirme) -->
+            <!-- BNS Handle Selector & Switcher -->
             ${isMyProfile ? `
               <div class="mt-3.5 p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 shadow-sm">
                 <div class="flex items-center justify-between mb-2">
                   <div class="flex items-center gap-1.5">
                     <span class="material-symbols-outlined notranslate text-primary text-[17px]" translate="no">badge</span>
-                    <span class="text-xs font-bold text-on-surface">Kayıtlı BNS İsimleriniz (.bct)</span>
+                    <span class="text-xs font-bold text-on-surface">${t('profile_bns_title', 'Your Registered BNS Names (.bct)')}</span>
                   </div>
-                  <span class="text-[10px] text-on-surface-variant font-mono">${myOwnedHandles.length} isim</span>
+                  <span class="text-[10px] text-on-surface-variant font-mono">${myOwnedHandles.length} ${t('profile_bns_count', 'names')}</span>
                 </div>
 
                 ${myOwnedHandles.length > 0 ? `
                   <p class="text-[11px] text-on-surface-variant mb-2 leading-relaxed">
-                    Profilinizde ve paylaşımlarınızda görünecek aktif kimliğinizi seçin:
+                    ${t('profile_bns_hint', 'Select your active identity to display across your profile and Space posts:')}
                   </p>
                   <div class="flex flex-wrap gap-1.5">
                     ${myOwnedHandles.map(h => {
@@ -1934,7 +3052,7 @@
                           class="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${isCurrent ? 'bg-primary text-on-primary font-bold shadow-xs ring-1 ring-primary' : 'bg-surface-container text-on-surface hover:bg-surface-container-high border border-outline-variant/20'}">
                           ${isCurrent ? '<span class="material-symbols-outlined notranslate text-[12px]" translate="no">check</span>' : ''}
                           <span>@${esc(clean)}</span>
-                          ${isCurrent ? '<span class="text-[9px] opacity-90 font-sans font-normal">(Aktif)</span>' : ''}
+                          ${isCurrent ? `<span class="text-[9px] opacity-90 font-sans font-normal">${t('profile_bns_active', '(Active)')}</span>` : ''}
                         </button>
                       `;
                     }).join('')}
@@ -1942,11 +3060,11 @@
                 ` : `
                   <div class="flex items-center justify-between gap-3 pt-0.5">
                     <p class="text-[11px] text-on-surface-variant leading-relaxed">
-                      Henüz bir .bct alan adı almadınız. Cüzdan adresiniz yerine havalı bir isim kullanın.
+                      ${t('profile_bns_none', "You haven't claimed a .bct domain yet. Use a memorable name instead of your wallet address.")}
                     </p>
                     <button type="button" onclick="if(typeof openBnsRegisterModal==='function') openBnsRegisterModal(); else window.BlocTagSimpleMode.requestProMode('bns');"
                       class="px-3 py-1 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary text-[11px] font-semibold shrink-0 cursor-pointer active:scale-95 transition-all">
-                      İsim Al
+                      ${t('profile_bns_claim', 'Get Name')}
                     </button>
                   </div>
                 `}
@@ -1955,30 +3073,30 @@
 
             <!-- Bio Statement -->
             <p class="text-xs text-on-surface/90 leading-relaxed mt-2.5">
-              Doğrulanmış BlocTag Space üreticisi ✦ Sansüre dayanıklı Layer-1 blokzincir üzerinde içerik paylaşıyor ve anlık telif kazanıyor.
+              ${t('profile_bio', 'Verified BlocTag Space creator ✦ Publishing content on censorship-resistant Layer-1 blockchain with instant royalties.')}
             </p>
 
-            <!-- Metrics 4-Col Grid (Gönderi, Beğeni, Takipçi, Takip) -->
+            <!-- Metrics 4-Col Grid (Posts, Likes, Followers, Following) -->
             <div class="grid grid-cols-4 gap-2 mt-3.5">
               <div class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-surface-container-low border border-outline-variant/10 text-center">
                 <span class="font-bold text-on-surface font-mono text-sm">${userPosts.length}</span>
-                <span class="text-[10.5px] text-on-surface-variant mt-0.5">Gönderi</span>
+                <span class="text-[10.5px] text-on-surface-variant mt-0.5">${t('profile_stat_posts', 'Posts')}</span>
               </div>
               <div class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-surface-container-low border border-outline-variant/10 text-center">
                 <span class="font-bold text-on-surface font-mono text-sm">${totalLikesReceived}</span>
-                <span class="text-[10.5px] text-on-surface-variant mt-0.5">Beğeni</span>
+                <span class="text-[10.5px] text-on-surface-variant mt-0.5">${t('profile_stat_likes', 'Likes')}</span>
               </div>
               <div class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-surface-container-low border border-outline-variant/10 text-center cursor-pointer group active:scale-95 transition-transform"
                    onclick="window.BlocTagSimpleMode.openFollowersList('${escAttr(resolvedAddress)}', 'followers')"
-                   title="Takipçileri Görüntüle">
+                   title="${t('profile_view_followers', 'View Followers')}">
                 <span class="font-bold text-emerald-400 font-mono text-sm group-hover:underline" id="simple-profile-followers-count">${followersCount}</span>
-                <span class="text-[10.5px] text-on-surface-variant group-hover:text-emerald-400 transition-colors mt-0.5">Takipçi</span>
+                <span class="text-[10.5px] text-on-surface-variant group-hover:text-emerald-400 transition-colors mt-0.5">${t('profile_stat_followers', 'Followers')}</span>
               </div>
               <div class="flex flex-col items-center justify-center py-2 px-1 rounded-xl bg-surface-container-low border border-outline-variant/10 text-center cursor-pointer group active:scale-95 transition-transform"
                    onclick="window.BlocTagSimpleMode.openFollowersList('${escAttr(resolvedAddress)}', 'following')"
-                   title="Takip Edilenleri Görüntüle">
+                   title="${t('profile_view_following', 'View Following')}">
                 <span class="font-bold text-on-surface font-mono text-sm group-hover:underline" id="simple-profile-following-count">${followingCount}</span>
-                <span class="text-[10.5px] text-on-surface-variant group-hover:text-on-surface transition-colors mt-0.5">Takip</span>
+                <span class="text-[10.5px] text-on-surface-variant group-hover:text-on-surface transition-colors mt-0.5">${t('profile_stat_following', 'Following')}</span>
               </div>
             </div>
           </div>
@@ -1989,11 +3107,11 @@
           <div class="w-full flex items-center justify-between bg-surface-container-lowest rounded-full p-1 border border-outline-variant/15">
             <button type="button" onclick="window.BlocTagSimpleMode.setProfileTab('posts')"
               class="flex-1 py-1.5 text-center rounded-full text-xs transition-all cursor-pointer ${simpleState.profileTab === 'posts' ? 'bg-surface-container text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
-              Gönderiler
+              ${t('profile_tab_posts', 'Posts')}
             </button>
             <button type="button" onclick="window.BlocTagSimpleMode.setProfileTab('likes')"
               class="flex-1 py-1.5 text-center rounded-full text-xs transition-all cursor-pointer ${simpleState.profileTab === 'likes' ? 'bg-surface-container text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
-              Popüler
+              ${t('profile_tab_popular', 'Popular')}
             </button>
           </div>
         </div>
@@ -2002,7 +3120,7 @@
         <div class="px-5 flex flex-col mt-3 gap-2.5">
           ${userPosts.length === 0 ? `
             <div class="p-6 rounded-2xl bg-surface-container-low text-center text-xs text-on-surface-variant">
-              Henüz zincir üstü gönderi paylaşılmamış.
+              ${t('profile_empty_posts', 'No on-chain posts published yet.')}
             </div>
           ` : (simpleState.profileTab === 'likes'
         ? [...userPosts].sort((a, b) => Number(b.likes_count || 0) - Number(a.likes_count || 0))
@@ -2028,20 +3146,20 @@
     });
 
     return `
-      ${renderTopBar('BlocTag Space', false)}
+      ${renderTopBar(t('top_notifications', 'Notifications'), false)}
       <main class="flex-1 flex flex-col w-full px-5 pt-2 pb-24 simple-screen-animate">
         <!-- Header & Actions (Exact Stitch SCR-NTF-06) -->
         <div class="flex items-center justify-between pt-1 pb-3">
           <div class="flex items-center gap-2">
-            <h1 class="text-xl font-bold text-on-surface">Bildirimler</h1>
+            <h1 class="text-xl font-bold text-on-surface">${t('top_notifications', 'Notifications')}</h1>
             <span class="px-2 py-0.5 rounded-full bg-primary-container/20 text-primary text-[11px] font-semibold">
-              ${unreadCount} yeni
+              ${unreadCount} ${t('notif_new_badge', 'new')}
             </span>
           </div>
           <button type="button" onclick="window.BlocTagSimpleMode.markAllNotifsRead()"
             class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-xs active:scale-95 transition-all cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[16px]" translate="no">done_all</span>
-            <span>Okundu Say</span>
+            <span>${t('notif_mark_all', 'Mark All Read')}</span>
           </button>
         </div>
 
@@ -2049,23 +3167,23 @@
         <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 mb-3">
           <button type="button" onclick="window.BlocTagSimpleMode.setNotifFilter('all')"
             class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${simpleState.notifFilter === 'all' ? 'bg-surface-container-high text-on-surface font-semibold' : 'bg-surface-container text-on-surface-variant'}">
-            <span>Tümü</span>
+            <span>${t('notif_all', 'All')}</span>
             <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
           </button>
           <button type="button" onclick="window.BlocTagSimpleMode.setNotifFilter('tips')"
             class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${simpleState.notifFilter === 'tips' ? 'bg-surface-container-high text-on-surface font-semibold' : 'bg-surface-container text-on-surface-variant'}">
             <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">volunteer_activism</span>
-            <span>Transfer &amp; Bahşiş</span>
+            <span>${t('notif_tips', 'Transfers & Tips')}</span>
           </button>
           <button type="button" onclick="window.BlocTagSimpleMode.setNotifFilter('mentions')"
             class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${simpleState.notifFilter === 'mentions' ? 'bg-surface-container-high text-on-surface font-semibold' : 'bg-surface-container text-on-surface-variant'}">
             <span class="material-symbols-outlined notranslate text-[15px]" translate="no">chat_bubble</span>
-            <span>Space &amp; Yanıtlar</span>
+            <span>${t('notif_mentions', 'Space & Replies')}</span>
           </button>
           <button type="button" onclick="window.BlocTagSimpleMode.setNotifFilter('system')"
             class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${simpleState.notifFilter === 'system' ? 'bg-surface-container-high text-on-surface font-semibold' : 'bg-surface-container text-on-surface-variant'}">
             <span class="material-symbols-outlined notranslate text-[15px] text-secondary" translate="no">verified_user</span>
-            <span>Sistem</span>
+            <span>${t('notif_system', 'System')}</span>
           </button>
         </div>
 
@@ -2076,9 +3194,9 @@
               <div class="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center text-primary mb-3">
                 <span class="material-symbols-outlined notranslate text-[28px]" translate="no">mark_chat_read</span>
               </div>
-              <h3 class="text-sm font-semibold text-on-surface mb-1">Henüz bildirim yok</h3>
+              <h3 class="text-sm font-semibold text-on-surface mb-1">${t('notif_empty_title', 'No notifications yet')}</h3>
               <p class="text-xs text-on-surface-variant max-w-xs">
-                Cüzdanınıza gelen transferler, Space beğenileri, yorumlar ve bahşişler anlık olarak burada görünür.
+                ${t('notif_empty_desc', 'Incoming transfers, Space likes, comments and tips will appear here in real time.')}
               </p>
             </div>
           ` : filtered.slice(0, 30).map(item => {
@@ -2093,7 +3211,7 @@
                 </div>
                 <div class="flex-1 min-w-0">
                   <div class="flex items-center justify-between gap-2 mb-0.5">
-                    <span class="text-xs font-semibold text-on-surface truncate">${esc(item.title || 'BlocTag Bildirimi')}</span>
+                    <span class="text-xs font-semibold text-on-surface truncate">${esc(item.title || 'BlocTag Notification')}</span>
                     <span class="shrink-0 text-[10.5px] text-on-surface-variant/80">${esc(timeStr)}</span>
                   </div>
                   <p class="text-xs text-on-surface-variant leading-relaxed break-words">${esc(item.body || '')}</p>
@@ -2117,7 +3235,7 @@
     const activeLangObj = SIMPLE_LANGUAGES.find(l => l.code === activeLangCode) || SIMPLE_LANGUAGES[0];
 
     return `
-      ${renderTopBar('Menü', false)}
+      ${renderTopBar(t('top_menu', 'Menu'), false)}
       <main class="flex-1 flex flex-col w-full px-4 pt-3 pb-24 simple-screen-animate">
         <!-- Account Summary Card -->
         <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/15 shadow-sm mb-3.5">
@@ -2131,24 +3249,24 @@
                 ${isValidator ? '<span class="px-1.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 font-mono text-[9px] font-bold">VALİDATOR</span>' : ''}
               </div>
               <span class="text-xs font-mono text-primary font-semibold">${balanceStr}</span>
-              <p class="text-[10.5px] text-on-surface-variant font-mono truncate mt-0.5">${acc ? esc(acc.address) : 'Cüzdan bağlı değil'}</p>
+              <p class="text-[10.5px] text-on-surface-variant font-mono truncate mt-0.5">${acc ? esc(acc.address) : t('menu_not_connected', 'Wallet not connected')}</p>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2 mt-3 pt-3 border-t border-outline-variant/10">
             <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-WLT-HOME')"
               class="h-9 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[16px] text-primary" translate="no">account_balance_wallet</span>
-              <span>Cüzdanım</span>
+              <span>${t('menu_wallet', 'My Wallet')}</span>
             </button>
             <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
               class="h-9 rounded-xl bg-surface-container hover:bg-surface-container-high text-xs font-semibold text-on-surface flex items-center justify-center gap-1.5 transition-colors cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[16px] text-primary" translate="no">person</span>
-              <span>Profilim</span>
+              <span>${t('menu_profile', 'My Profile')}</span>
             </button>
           </div>
         </div>
 
-        <!-- Mode Switch Banner (Pro Moda Geçiş) -->
+        <!-- Mode Switch Banner (Pro Mode Switch) -->
         <div class="bg-gradient-to-r from-primary/15 via-surface-container-low to-secondary/15 rounded-2xl p-4 border border-primary/25 shadow-sm mb-3.5">
           <div class="flex items-center justify-between gap-3">
             <div class="flex items-center gap-2.5 min-w-0">
@@ -2156,20 +3274,20 @@
                 <span class="material-symbols-outlined notranslate text-[20px]" translate="no">bolt</span>
               </div>
               <div class="flex flex-col min-w-0">
-                <span class="text-xs font-bold text-on-surface">Pro Mod (Tam Görünüm)</span>
-                <span class="text-[10px] text-on-surface-variant">Ağ Explorer, Düğümler ve Geliştirici Araçları</span>
+                <span class="text-xs font-bold text-on-surface">${t('menu_pro_title', 'Pro Mode (Full View)')}</span>
+                <span class="text-[10px] text-on-surface-variant">${t('menu_pro_desc', 'Network Explorer, Nodes, and Developer Tools')}</span>
               </div>
             </div>
             <button type="button" onclick="window.BlocTagSimpleMode.requestProMode()"
               class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-[11px] font-bold hover:brightness-95 active:scale-95 transition-all shadow-sm shrink-0 cursor-pointer">
-              Geçiş Yap
+              ${t('menu_pro_switch', 'Switch Mode')}
             </button>
           </div>
         </div>
 
         <!-- Quick Simple Features List -->
         <div class="flex flex-col gap-2">
-          <span class="text-[11px] font-mono uppercase font-bold text-on-surface-variant/70 px-1">İşlemler &amp; Hizmetler</span>
+          <span class="text-[11px] font-mono uppercase font-bold text-on-surface-variant/70 px-1">${t('menu_services', 'Operations & Services')}</span>
 
           <!-- Send Crypto -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-WLT-SEND')"
@@ -2179,8 +3297,8 @@
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">send</span>
               </div>
               <div class="flex flex-col">
-                <span class="text-xs font-bold text-on-surface">Kripto Gönder</span>
-                <span class="text-[10px] text-on-surface-variant">Sıfır komisyonlu anında BCT transferi</span>
+                <span class="text-xs font-bold text-on-surface">${t('menu_send', 'Send Crypto')}</span>
+                <span class="text-[10px] text-on-surface-variant">${t('menu_send_desc', 'Zero-commission instant BCT transfers')}</span>
               </div>
             </div>
             <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
@@ -2194,8 +3312,8 @@
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">badge</span>
               </div>
               <div class="flex flex-col">
-                <span class="text-xs font-bold text-on-surface">BNS Kullanıcı Adı (.bct)</span>
-                <span class="text-[10px] text-on-surface-variant">Kimlik ve Web3 profilinizi yönetin</span>
+                <span class="text-xs font-bold text-on-surface">${t('menu_bns', 'BNS Username (.bct)')}</span>
+                <span class="text-[10px] text-on-surface-variant">${t('menu_bns_desc', 'Manage your Web3 identity and profile')}</span>
               </div>
             </div>
             <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
@@ -2209,8 +3327,8 @@
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">key</span>
               </div>
               <div class="flex flex-col">
-                <span class="text-xs font-bold text-on-surface">Güvenlik &amp; Kurtarma Anahtarı</span>
-                <span class="text-[10px] text-on-surface-variant">12 kelimelik gizli kurtarma ifadesi (Seed Phrase)</span>
+                <span class="text-xs font-bold text-on-surface">${t('menu_sec', 'Security & Recovery Key')}</span>
+                <span class="text-[10px] text-on-surface-variant">${t('menu_sec_desc', '12-word secret recovery phrase (Seed Phrase)')}</span>
               </div>
             </div>
             <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
@@ -2224,8 +3342,8 @@
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">notifications</span>
               </div>
               <div class="flex flex-col">
-                <span class="text-xs font-bold text-on-surface">Bildirimler &amp; Uyarılar</span>
-                <span class="text-[10px] text-on-surface-variant">İşlem ve Space güncellemeleri</span>
+                <span class="text-xs font-bold text-on-surface">${t('menu_notif', 'Notifications & Alerts')}</span>
+                <span class="text-[10px] text-on-surface-variant">${t('menu_notif_desc', 'Transaction and Space updates')}</span>
               </div>
             </div>
             <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
@@ -2239,8 +3357,8 @@
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">language</span>
               </div>
               <div class="flex flex-col">
-                <span class="text-xs font-bold text-on-surface">Dil Seçimi (Language)</span>
-                <span class="text-[10px] text-on-surface-variant">Uygulama arayüz dili</span>
+                <span class="text-xs font-bold text-on-surface">${t('menu_lang', 'Language Selection')}</span>
+                <span class="text-[10px] text-on-surface-variant">${t('menu_lang_desc', 'Application interface language')}</span>
               </div>
             </div>
             <div class="flex items-center gap-1.5">
@@ -2257,8 +3375,8 @@
                 <span class="material-symbols-outlined notranslate text-[18px]" translate="no">description</span>
               </div>
               <div class="flex flex-col">
-                <span class="text-xs font-bold text-on-surface">LockTrace Whitepaper</span>
-                <span class="text-[10px] text-on-surface-variant">Protokol mimarisi ve teknik dokümantasyon</span>
+                <span class="text-xs font-bold text-on-surface">${t('menu_wp', 'LockTrace Whitepaper')}</span>
+                <span class="text-[10px] text-on-surface-variant">${t('menu_wp_desc', 'Protocol architecture and technical documentation')}</span>
               </div>
             </div>
             <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">open_in_new</span>
@@ -2271,7 +3389,7 @@
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
             <span class="font-mono">LockTrace Mainnet v2.12.2</span>
           </div>
-          <span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">Simple Mod</span>
+          <span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">Simple Mode</span>
         </div>
       </main>
     `;
@@ -2542,7 +3660,7 @@
       const btn = document.getElementById('simple-finalize-wallet-btn');
       if (btn) {
         btn.disabled = true;
-        btn.innerHTML = '<span class="material-symbols-outlined notranslate animate-spin text-[18px]" translate="no">progress_activity</span><span>Cüzdan Hazırlanıyor...</span>';
+        btn.innerHTML = `<span class="material-symbols-outlined notranslate animate-spin text-[18px]" translate="no">progress_activity</span><span>${t('seed_prep_wallet', 'Preparing Wallet...')}</span>`;
       }
       try {
         try {
@@ -2556,7 +3674,7 @@
         }
       } catch (err) {
         if (typeof window.showToast === 'function') {
-          window.showToast(err.message || 'Cüzdan oluşturulamadı', 'error', true);
+          window.showToast(err.message || t('wallet_create_failed', 'Could not create wallet'), 'error', true);
         }
         renderSimpleMode();
       }
@@ -2576,7 +3694,7 @@
       const inp = document.getElementById('simpleImportInput');
       const val = String(inp ? inp.value : '').trim();
       if (!val) {
-        if (typeof window.showToast === 'function') window.showToast('Lütfen 12 kelime veya özel anahtar girin', 'warning', true);
+        if (typeof window.showToast === 'function') window.showToast(t('import_key_required', 'Please enter 12 words or private key'), 'warning', true);
         return;
       }
       const proInput = document.getElementById('importInputKey');
@@ -2640,7 +3758,7 @@
       const amt = String(amtInp ? amtInp.value : '').trim();
       const rec = String(recInp ? recInp.value : '').trim();
       if (!amt || !rec) {
-        if (typeof window.showToast === 'function') window.showToast('Lütfen miktar ve alıcı adresini girin', 'warning', true);
+        if (typeof window.showToast === 'function') window.showToast(t('send_fields_required', 'Please enter amount and recipient address'), 'warning', true);
         return;
       }
       const proAmt = document.getElementById('sendAmountInput');
@@ -2758,7 +3876,7 @@
         return;
       }
       if (acc.address && acc.address.toLowerCase() === String(authorAddress).toLowerCase()) {
-        if (typeof window.showToast === 'function') window.showToast('Kendi gönderinize bahşiş gönderemezsiniz', 'warning', true);
+        if (typeof window.showToast === 'function') window.showToast(t('tip_self_error', 'You cannot tip your own post'), 'warning', true);
         return;
       }
       navigateToSimpleScreen('SCR-WLT-SEND', {
@@ -2766,7 +3884,7 @@
         amount: '0.25'
       });
       if (typeof window.showToast === 'function') {
-        window.showToast('Bahşiş alıcısı hazırlandı (0.25 BCT)', 'volunteer_activism');
+        window.showToast(t('tip_ready_toast', 'Tip recipient prepared (0.25 BCT)'), 'volunteer_activism');
       }
     },
 
@@ -2815,13 +3933,13 @@
         }
         renderSimpleMode(false);
         if (typeof window.showToast === 'function') {
-          window.showToast(`⭐ '@${cleanName}' aktif kimliğiniz olarak ayarlandı!`, 'verified');
+          window.showToast(`⭐ '@${cleanName}' ${t('bns_set_primary_toast', 'set as active identity!')}`, 'verified');
         }
       } catch (err) {
         console.error('setPrimaryHandle error:', err);
         renderSimpleMode(false);
         if (typeof window.showToast === 'function') {
-          window.showToast(`⭐ '@${cleanName}' aktif kimlik olarak seçildi`, 'info');
+          window.showToast(`⭐ '@${cleanName}' ${t('bns_selected_toast', 'selected as active identity')}`, 'info');
         }
       }
     },
@@ -2834,15 +3952,15 @@
         renderSimpleMode(false);
       } else {
         if (typeof window.showToast === 'function') {
-          window.showToast('Takip servisi yükleniyor...', 'info');
+          window.showToast(t('follow_loading_toast', 'Follow service loading...'), 'info');
         }
       }
     },
 
     openFollowersList: (addr, type) => {
-      const label = type === 'following' ? 'Takip Edilenler' : 'Takipçiler';
+      const label = type === 'following' ? t('profile_stat_following', 'Following') : t('profile_stat_followers', 'Followers');
       if (typeof window.showToast === 'function') {
-        window.showToast(`${label} listesi sayfası Stitch üzerinden hazırlanıyor...`, 'info');
+        window.showToast(`${label} list is being prepared...`, 'info');
       }
     },
 
