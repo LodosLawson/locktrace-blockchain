@@ -7,6 +7,7 @@
 :root {
   --simple-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --simple-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --simple-bottom-nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Mode Transition Overlay & Kinetic Morph Animation */
@@ -61,6 +62,9 @@ html.bloctag-simple-mode #desktopSidebar,
 html.bloctag-simple-mode #mobileTopHeader,
 html.bloctag-simple-mode #desktopTopHeader,
 html.bloctag-simple-mode #mobile-nav,
+html.bloctag-simple-mode.is-mobile-landscape #mobile-nav,
+html.bloctag-simple-mode.is-mobile-landscape nav.md\:hidden#mobile-nav,
+html.bloctag-simple-mode #pwaBannerContainer,
 html.bloctag-simple-mode body > div.md\:pl-64 {
   display: none !important;
 }
@@ -207,7 +211,15 @@ html.bloctag-simple-mode #bloctag-simple-bottom-nav-portal {
 html.bloctag-mobile-gate-open,
 html.bloctag-mobile-gate-open body {
   overflow: hidden !important;
-  touch-action: none;
+}
+
+html.bloctag-mobile-gate-open #bloctag-simple-bottom-nav-portal,
+html.bloctag-mobile-gate-open #pwaBannerContainer {
+  display: none !important;
+}
+
+html.bloctag-mobile-gate-open #toast {
+  z-index: 140 !important;
 }
 
 #bloctag-mobile-gate-overlay {
@@ -219,10 +231,15 @@ html.bloctag-mobile-gate-open body {
   display: none;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   padding: max(20px, env(safe-area-inset-top, 16px)) 18px max(24px, env(safe-area-inset-bottom, 20px));
   overflow-y: auto;
+  overscroll-behavior: contain;
   -webkit-overflow-scrolling: touch;
+}
+
+#bloctag-mobile-gate-overlay > div {
+  margin: auto 0;
 }
 
 #bloctag-mobile-gate-overlay.is-visible {

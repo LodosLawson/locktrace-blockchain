@@ -534,7 +534,7 @@
 
     return `
       <header class="simple-top-header">
-        <div class="h-15 px-4 flex items-center justify-between gap-2">
+        <div class="h-14 px-4 flex items-center justify-between gap-2">
           <div class="flex items-center gap-2.5 min-w-0">
             ${showBack ? `
               <button type="button" aria-label="Geri" onclick="window.BlocTagSimpleMode.back()"
@@ -901,9 +901,9 @@
 
     const addressPillHtml = `
       <button type="button" onclick="if(typeof copyCurrentAddress==='function') copyCurrentAddress();"
-        class="flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface hover:bg-surface-container-high transition-colors text-xs font-mono cursor-pointer">
-        <span>${esc(myHandle ? '@' + myHandle : shortAddress)}</span>
-        <span class="material-symbols-outlined notranslate text-[14px] text-on-surface-variant" translate="no">content_copy</span>
+        class="flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface hover:bg-surface-container-high transition-colors text-xs font-mono cursor-pointer max-w-[132px]">
+        <span class="truncate">${esc(myHandle ? '@' + myHandle : shortAddress)}</span>
+        <span class="material-symbols-outlined notranslate text-[14px] text-on-surface-variant shrink-0" translate="no">content_copy</span>
       </button>
     `;
 
@@ -1295,7 +1295,7 @@
         </div>
 
         <!-- Floating Action Button (+ Yaz) -->
-        <div class="fixed right-5 bottom-20 z-40">
+        <div class="fixed z-40" style="bottom: calc(var(--simple-bottom-nav-h, 64px) + 14px); right: max(16px, calc(50% - 224px));">
           <button type="button" onclick="window.BlocTagSimpleMode.focusComposer()"
             class="h-11 px-4 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center gap-1.5 shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer">
             <span class="material-symbols-outlined notranslate text-[18px]" translate="no">edit</span>
@@ -1536,7 +1536,7 @@
         </section>
 
         <!-- Sticky Bottom Reply Bar (Above bottom nav) -->
-        <div class="fixed bottom-14 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-surface-dim/95 backdrop-blur-xl px-4 py-2.5 border-t border-outline-variant/15" style="padding-bottom: calc(10px + env(safe-area-inset-bottom, 0px));">
+        <div class="fixed left-1/2 -translate-x-1/2 w-full max-w-[480px] z-50 bg-surface-dim/95 backdrop-blur-xl px-4 py-2.5 border-t border-outline-variant/15" style="bottom: var(--simple-bottom-nav-h, 60px);">
           <form class="flex items-center gap-2 bg-surface-container rounded-full p-1.5 shadow-md border border-outline-variant/20"
                 onsubmit="event.preventDefault(); window.BlocTagSimpleMode.submitComment('${pid}');">
             <div class="w-8 h-8 rounded-full bg-surface-container-high ml-1 flex items-center justify-center text-primary shrink-0">
@@ -2779,6 +2779,20 @@
       };
       wrappedOpenPostDetail._simpleHooked = true;
       window.openSpacePostDetail = wrappedOpenPostDetail;
+    }
+
+    // Sync Simple Mode bottom nav immediately when PWA Back Button setting is toggled
+    const origToggleBackBtn = window.togglePwaBackButtonSetting;
+    if (typeof origToggleBackBtn === 'function' && !origToggleBackBtn._simpleHooked) {
+      const wrappedToggleBackBtn = function () {
+        const res = origToggleBackBtn.apply(this, arguments);
+        if (simpleState.enabled) {
+          patchSimpleLiveValuesInPlace();
+        }
+        return res;
+      };
+      wrappedToggleBackBtn._simpleHooked = true;
+      window.togglePwaBackButtonSetting = wrappedToggleBackBtn;
     }
 
     // Intercept Pro Mode tab navigation while in Simple Mode and ask for user confirmation
