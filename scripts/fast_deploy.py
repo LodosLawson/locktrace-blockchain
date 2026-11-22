@@ -60,11 +60,12 @@ def main():
     print(f"[+] Bundle ready: {bundle_mb} MB (optimized)")
 
     print("[*] Uploading bundle in single SCP stream...")
+    subprocess.run(["ssh", "-i", SSH_KEY, "-o", "StrictHostKeyChecking=accept-new", "-o", "BatchMode=yes", VPS_HOST, "rm -f /tmp/pwa_bundle.tar.gz"], check=False)
     scp_cmd = [
         "scp", "-i", SSH_KEY,
         "-o", "StrictHostKeyChecking=accept-new",
         "-o", "BatchMode=yes",
-        "-o", "ConnectTimeout=15",
+        "-o", "ConnectTimeout=30",
         tar_path, f"{VPS_HOST}:/tmp/pwa_bundle.tar.gz"
     ]
     if not run_cmd(scp_cmd, timeout=180):
