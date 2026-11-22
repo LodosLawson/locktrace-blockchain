@@ -36,6 +36,7 @@
   let _pwaManualGuideOpen = false;
   let _pwaInstallWaiting = false;
   let _pwaAutoTriggerPending = false;
+  let _iosInstallSheetOpen = false;
 
   // Eagerly register Service Worker so Chromium fires beforeinstallprompt as fast as possible
   try {
@@ -2364,7 +2365,8 @@
 
     selectWeb3Experience: (choice) => handleSelectWeb3Experience(choice),
     triggerMandatoryPwaInstall: () => handleTriggerMandatoryPwaInstall(),
-    triggerIosShareInstall: () => handleTriggerIosShareInstall(),
+    openIosInstallSheet: () => handleToggleIosInstallSheet(true),
+    closeIosInstallSheet: () => handleToggleIosInstallSheet(false),
     copySiteLinkForSafari: () => handleCopySiteLinkForSafari(),
     markManualPwaInstalled: () => handleMarkManualPwaInstalled(),
     showPwaInstallStepsAgain: () => handleShowPwaInstallStepsAgain(),
@@ -2534,45 +2536,78 @@
                 </button>
               </div>
             ` : `
-              <!-- iOS Safari / Chrome Native Toolbar Pointer (Apple blocks JS auto-install & omits Add to Home Screen from navigator.share) -->
+              <!-- iOS Safari / Chrome Primary CTA + Animated Bottom-Sheet Spotlight Guide -->
               <div class="flex flex-col gap-3">
-                <div class="p-4 rounded-3xl bg-surface-container border border-primary/30 flex flex-col gap-3 shadow-lg">
-                  <div class="flex items-center justify-between text-xs font-bold text-primary">
-                    <span class="flex items-center gap-1.5">
-                      <span class="material-symbols-outlined notranslate text-[18px]" translate="no">phone_iphone</span>
-                      <span>iPhone Kurulumu (2 Adım)</span>
-                    </span>
-                    <span class="px-2 py-0.5 rounded-full bg-primary/15 text-[10px] font-mono text-primary">${isIosChrome() ? 'Chrome iOS' : 'Safari'}</span>
-                  </div>
-                  <div class="flex items-start gap-2.5 text-xs text-on-surface">
-                    <span class="w-5 h-5 rounded-full bg-primary text-on-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">1</span>
-                    <span>${isIosChrome() ? 'Tarayıcının <strong>sağ üst</strong> köşesindeki' : 'Safari\'nin <strong>en alt ortasındaki</strong>'} <strong class="text-primary">Paylaş</strong> (<span class="material-symbols-outlined notranslate text-[15px] align-middle text-primary" translate="no">ios_share</span>) simgesine dokunun.</span>
-                  </div>
-                  <div class="flex items-start gap-2.5 text-xs text-on-surface">
-                    <span class="w-5 h-5 rounded-full bg-primary text-on-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">2</span>
-                    <span>Açılan menüyü aşağı kaydırıp <strong class="text-primary">"Ana Ekrana Ekle"</strong> → sağ üstten <strong class="text-primary">"Ekle"</strong> butonuna basın.</span>
-                  </div>
-                </div>
-
-                <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
-                  class="w-full h-12 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
-                  <span class="material-symbols-outlined notranslate text-[19px]" translate="no">check_circle</span>
-                  <span>Ana Ekrana Ekledim</span>
+                <button type="button" onclick="window.BlocTagSimpleMode.openIosInstallSheet()"
+                  class="w-full h-[54px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(78,222,163,0.3)] hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[20px]" translate="no">add_to_home_screen</span>
+                  <span>Uygulamayı Ana Ekrana Ekle</span>
                 </button>
 
-                ${!isIosChrome() ? `
-                  <!-- Animated Bottom Pointer Aiming Directly at Safari's Native Share Button -->
-                  <div class="flex flex-col items-center gap-1 pt-2 text-primary animate-bounce">
-                    <span class="text-[11px] font-semibold tracking-wide">Safari Paylaş (↑) simgesi aşağıda</span>
-                    <span class="material-symbols-outlined notranslate text-[24px]" translate="no">keyboard_double_arrow_down</span>
-                  </div>
-                ` : `
-                  <div class="flex items-center justify-center gap-1.5 pt-1 text-primary text-[11px] font-semibold">
-                    <span class="material-symbols-outlined notranslate text-[18px]" translate="no">north_east</span>
-                    <span>Chrome Paylaş (↑) simgesi sağ üst çubukta</span>
-                  </div>
-                `}
+                <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
+                  class="w-full h-11 rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-[0.98] transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[17px] text-primary" translate="no">check_circle</span>
+                  <span>Zaten Ana Ekrana Ekledim</span>
+                </button>
               </div>
+
+              ${_iosInstallSheetOpen ? `
+                <!-- Bottom-Docked Visual Spotlight Sheet Pointing Directly to Safari/Chrome Share Icon -->
+                <div class="fixed inset-0 z-[135] bg-black/75 backdrop-blur-sm flex flex-col justify-end items-center p-3 pb-[max(16px,env(safe-area-inset-bottom,12px))]"
+                     onclick="window.BlocTagSimpleMode.closeIosInstallSheet()">
+                  <div class="w-full max-w-[400px] rounded-3xl bg-[#1b1b1e] border border-primary/40 shadow-2xl p-5 flex flex-col gap-4 animate-fade-in"
+                       onclick="event.stopPropagation()">
+                    <div class="flex items-center justify-between">
+                      <div class="flex items-center gap-2.5">
+                        <div class="w-10 h-10 rounded-2xl bg-primary/15 border border-primary/30 text-primary flex items-center justify-center shrink-0">
+                          <span class="material-symbols-outlined notranslate text-[22px]" translate="no">add_to_home_screen</span>
+                        </div>
+                        <div class="flex flex-col">
+                          <span class="text-sm font-bold text-on-surface">Ana Ekrana Ekle</span>
+                          <span class="text-[11px] font-mono text-primary">${isIosChrome() ? 'Chrome iOS • 2 Adım' : 'Safari • 2 Adım'}</span>
+                        </div>
+                      </div>
+                      <button type="button" onclick="window.BlocTagSimpleMode.closeIosInstallSheet()"
+                        class="w-8 h-8 rounded-full bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center cursor-pointer">
+                        <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
+                      </button>
+                    </div>
+
+                    <div class="flex flex-col gap-2.5">
+                      <div class="flex items-center gap-3 p-3 rounded-2xl bg-surface-container border border-outline-variant/15">
+                        <span class="w-6 h-6 rounded-full bg-primary text-on-primary font-mono font-bold text-xs flex items-center justify-center shrink-0">1</span>
+                        <span class="text-xs text-on-surface leading-snug">
+                          ${isIosChrome() ? 'Sağ üst çubuktaki' : 'Ekranın <strong>en alt ortasındaki</strong>'} <strong class="text-primary">Paylaş</strong> (<span class="material-symbols-outlined notranslate text-[16px] align-middle text-primary" translate="no">ios_share</span>) simgesine dokunun.
+                        </span>
+                      </div>
+                      <div class="flex items-center gap-3 p-3 rounded-2xl bg-surface-container border border-outline-variant/15">
+                        <span class="w-6 h-6 rounded-full bg-primary text-on-primary font-mono font-bold text-xs flex items-center justify-center shrink-0">2</span>
+                        <span class="text-xs text-on-surface leading-snug">
+                          Listede <strong class="text-primary">"Ana Ekrana Ekle"</strong> (<span class="material-symbols-outlined notranslate text-[15px] align-middle text-primary" translate="no">add_box</span>) → sağ üstten <strong class="text-primary">"Ekle"</strong> butonuna basın.
+                        </span>
+                      </div>
+                    </div>
+
+                    <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
+                      class="w-full h-12 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
+                      <span class="material-symbols-outlined notranslate text-[19px]" translate="no">check_circle</span>
+                      <span>Ana Ekrana Ekledim</span>
+                    </button>
+                  </div>
+
+                  ${!isIosChrome() ? `
+                    <div class="flex flex-col items-center gap-0.5 pt-2.5 text-primary animate-bounce pointer-events-none">
+                      <span class="text-[11px] font-bold">Safari Paylaş (↑) simgesi tam burada</span>
+                      <span class="material-symbols-outlined notranslate text-[26px]" translate="no">keyboard_double_arrow_down</span>
+                    </div>
+                  ` : `
+                    <div class="flex items-center justify-center gap-1.5 pt-2.5 text-primary text-[11px] font-bold pointer-events-none">
+                      <span class="material-symbols-outlined notranslate text-[18px]" translate="no">north_east</span>
+                      <span>Chrome Paylaş (↑) simgesi sağ üstte</span>
+                    </div>
+                  `}
+                </div>
+              ` : ''}
             `}
           ` : `
             <!-- Android / Chromium One-Tap Auto-Install CTA -->
@@ -2769,26 +2804,10 @@
     renderMobileOnboardingGate('pwa');
   }
 
-  async function handleTriggerIosShareInstall() {
-    if (navigator.share) {
-      try {
-        await navigator.share({
-          title: 'BlocTag',
-          text: 'BlocTag Web3 Platformu',
-          url: window.location.origin + '/'
-        });
-        return;
-      } catch (err) {
-        if (err && err.name === 'AbortError') return;
-      }
-    }
-    if (typeof window.showToast === 'function') {
-      window.showToast(
-        isIosChrome()
-          ? 'Sağ üstteki Paylaş simgesine dokunup "Ana Ekrana Ekle" seçeneğini seçin.'
-          : 'Safari alt çubuğundaki Paylaş simgesine dokunup "Ana Ekrana Ekle" seçeneğini seçin.',
-        'ios_share'
-      );
+  function handleToggleIosInstallSheet(open) {
+    _iosInstallSheetOpen = Boolean(open);
+    if (_mobileGateStep === 'pwa') {
+      renderMobileOnboardingGate('pwa');
     }
   }
 
@@ -2805,6 +2824,7 @@
   }
 
   function handleMarkManualPwaInstalled() {
+    _iosInstallSheetOpen = false;
     try {
       localStorage.setItem(PWA_INSTALLED_STORAGE_KEY, 'true');
     } catch (_e) { }
