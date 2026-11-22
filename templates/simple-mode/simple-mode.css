@@ -202,3 +202,30 @@ html.bloctag-simple-mode #bloctag-simple-bottom-nav-portal {
   color: #003824;
   box-shadow: 0 2px 8px rgba(78, 222, 163, 0.35);
 }
+
+/* Mobile First-Visit Web3 Onboarding & Mandatory PWA Gate */
+html.bloctag-mobile-gate-open,
+html.bloctag-mobile-gate-open body {
+  overflow: hidden !important;
+  touch-action: none;
+}
+
+#bloctag-mobile-gate-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 120;
+  background: radial-gradient(circle at top center, rgba(78, 222, 163, 0.12) 0%, #131315 52%, #0d0d0f 100%);
+  color: #e5e1e4;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: max(20px, env(safe-area-inset-top, 16px)) 18px max(24px, env(safe-area-inset-bottom, 20px));
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+#bloctag-mobile-gate-overlay.is-visible {
+  display: flex;
+  animation: bloctagSimpleMorphIn 0.35s var(--simple-ease-spring);
+}

@@ -27,6 +27,86 @@
   'use strict';
 
   const SIMPLE_MODE_STORAGE_KEY = 'locktrace_ui_simple_mode_v1';
+  const WEB3_ONBOARDING_STORAGE_KEY = 'locktrace_web3_onboarding_choice_v1';
+  const PWA_INSTALLED_STORAGE_KEY = 'locktrace_pwa_installed_v1';
+  const PWA_BACK_BTN_STORAGE_KEY = 'locktrace_pwa_back_btn_enabled_v1';
+
+  let _capturedPwaPrompt = null;
+  let _mobileGateStep = null; // 'web3' | 'pwa' | 'pwa-installed' | null
+  let _pwaManualGuideOpen = false;
+
+  function isMobileDevice() {
+    try {
+      const ua = navigator.userAgent || '';
+      const mobileUa = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(ua);
+      const coarseSmall = Boolean(
+        window.matchMedia &&
+        window.matchMedia('(pointer: coarse)').matches &&
+        window.innerWidth <= 900
+      );
+      return mobileUa || coarseSmall;
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function isStandalonePwaApp() {
+    try {
+      return Boolean(
+        (window.matchMedia && (
+          window.matchMedia('(display-mode: standalone)').matches ||
+          window.matchMedia('(display-mode: fullscreen)').matches ||
+          window.matchMedia('(display-mode: minimal-ui)').matches
+        )) ||
+        (window.navigator && window.navigator.standalone === true)
+      );
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function isIosDeviceLocal() {
+    try {
+      const ua = navigator.userAgent || '';
+      return /iPad|iPhone|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function getAvailablePwaPrompt() {
+    if (_capturedPwaPrompt) return _capturedPwaPrompt;
+    try {
+      if (typeof deferredPwaPrompt !== 'undefined' && deferredPwaPrompt) {
+        return deferredPwaPrompt;
+      }
+    } catch (_e) { }
+    return null;
+  }
+
+  // Capture native PWA install prompt & appinstalled event early
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    _capturedPwaPrompt = e;
+    try {
+      if (typeof deferredPwaPrompt !== 'undefined') {
+        deferredPwaPrompt = e;
+      }
+    } catch (_err) { }
+    if (_mobileGateStep === 'pwa') {
+      renderMobileOnboardingGate('pwa');
+    }
+  });
+
+  window.addEventListener('appinstalled', () => {
+    _capturedPwaPrompt = null;
+    try {
+      localStorage.setItem(PWA_INSTALLED_STORAGE_KEY, 'true');
+    } catch (_e) { }
+    if (isMobileDevice() && !isStandalonePwaApp()) {
+      renderMobileOnboardingGate('pwa-installed');
+    }
+  });
 
   const simpleState = {
     enabled: false,
@@ -289,7 +369,7 @@
     if (simpleState.enabled) {
       html.classList.add('bloctag-simple-mode');
       const acc = getActiveWallet();
-      if (!acc && simpleState.activeScreen === 'SCR-WLT-HOME') {
+      if (!acc && (simpleState.activeScreen === 'SCR-WLT-HOME' || simpleState.activeScreen === 'SCR-SPC-03')) {
         simpleState.activeScreen = 'SCR-ONB-01';
       }
       renderSimpleMode();
@@ -2247,8 +2327,394 @@
         window.markAllNotificationsRead();
       }
       renderSimpleMode();
-    }
+    },
+
+    selectWeb3Experience: (choice) => handleSelectWeb3Experience(choice),
+    triggerMandatoryPwaInstall: () => handleTriggerMandatoryPwaInstall(),
+    markManualPwaInstalled: () => handleMarkManualPwaInstalled(),
+    showPwaInstallStepsAgain: () => handleShowPwaInstallStepsAgain(),
+    openInstalledAppHint: () => handleOpenInstalledAppHint()
   };
+
+  // ==========================================================================
+  // 6. MOBILE FIRST-VISIT WEB3 ONBOARDING & MANDATORY PWA INSTALL GATE
+  //    (Mobile Only — Desktop/PC remains untouched with optional Windows App)
+  // ==========================================================================
+  function ensureMobileGateOverlay() {
+    let el = document.getElementById('bloctag-mobile-gate-overlay');
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'bloctag-mobile-gate-overlay';
+      el.setAttribute('role', 'dialog');
+      el.setAttribute('aria-modal', 'true');
+      document.body.appendChild(el);
+    }
+    return el;
+  }
+
+  function closeMobileOnboardingGate() {
+    _mobileGateStep = null;
+    document.documentElement.classList.remove('bloctag-mobile-gate-open');
+    const el = document.getElementById('bloctag-mobile-gate-overlay');
+    if (el) {
+      el.classList.remove('is-visible');
+      el.innerHTML = '';
+    }
+  }
+
+  function renderMobileOnboardingGate(step) {
+    if (!isMobileDevice()) {
+      closeMobileOnboardingGate();
+      return;
+    }
+
+    _mobileGateStep = step;
+    const overlay = ensureMobileGateOverlay();
+    document.documentElement.classList.add('bloctag-mobile-gate-open');
+
+    if (step === 'web3') {
+      overlay.innerHTML = `
+        <div class="w-full max-w-[400px] flex flex-col gap-5">
+          <!-- Brand Header -->
+          <div class="flex flex-col items-center text-center gap-3">
+            <div class="relative flex items-center justify-center w-20 h-20 rounded-full bg-surface-container-high shadow-xl border border-primary/25">
+              <svg class="w-10 h-10 text-primary" fill="none" viewBox="0 0 36 36">
+                <path class="opacity-95" d="M18 4L30 11V25L18 32L6 25V11L18 4Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2"></path>
+                <path d="M18 12L24 15.5V22.5L18 26L12 22.5V15.5L18 12Z" fill="currentColor" fill-opacity="0.25"></path>
+                <circle cx="18" cy="19" fill="currentColor" r="3"></circle>
+              </svg>
+              <span class="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-primary ring-2 ring-[#131315]"></span>
+            </div>
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high border border-outline-variant/20 text-[11px] font-mono text-primary">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span>BlocTag • Hoş Geldiniz</span>
+            </div>
+            <h1 class="text-[26px] leading-[32px] font-bold text-on-surface tracking-tight">
+              Web3 nedir, <span class="text-primary">biliyor musun?</span>
+            </h1>
+            <p class="text-xs text-on-surface-variant leading-relaxed max-w-[330px]">
+              Deneyimine en uygun arayüzü seç. Dilediğin zaman menüden <strong class="text-on-surface">Simple</strong> ve <strong class="text-on-surface">Pro</strong> modları arasında geçiş yapabilirsin.
+            </p>
+          </div>
+
+          <!-- Experience Choice Cards -->
+          <div class="flex flex-col gap-3">
+            <button type="button" onclick="window.BlocTagSimpleMode.selectWeb3Experience('simple')"
+              class="w-full text-left p-4 rounded-3xl bg-primary/12 hover:bg-primary/18 border border-primary/40 shadow-lg active:scale-[0.98] transition-all cursor-pointer flex items-start gap-3.5">
+              <div class="w-12 h-12 rounded-2xl bg-primary text-on-primary flex items-center justify-center shrink-0 shadow-md">
+                <span class="material-symbols-outlined notranslate text-[24px]" translate="no">auto_awesome</span>
+              </div>
+              <div class="flex flex-col flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-bold text-on-surface">Hayır, Sade Olsun</span>
+                  <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-mono text-[10px] font-bold">Simple Mod</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                  Karmaşık teknik terimler yok. Hızlı cüzdan, kolay transfer ve sade Space akışı ile başla.
+                </p>
+              </div>
+            </button>
+
+            <button type="button" onclick="window.BlocTagSimpleMode.selectWeb3Experience('pro')"
+              class="w-full text-left p-4 rounded-3xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/25 shadow-md active:scale-[0.98] transition-all cursor-pointer flex items-start gap-3.5">
+              <div class="w-12 h-12 rounded-2xl bg-surface-container-highest text-primary flex items-center justify-center shrink-0 border border-outline-variant/20">
+                <span class="material-symbols-outlined notranslate text-[24px]" translate="no">bolt</span>
+              </div>
+              <div class="flex flex-col flex-1 min-w-0">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-sm font-bold text-on-surface">Evet, Web3'ü Biliyorum</span>
+                  <span class="px-2 py-0.5 rounded-full bg-surface-container-highest text-on-surface-variant font-mono text-[10px] font-bold">Pro Mod</span>
+                </div>
+                <p class="text-xs text-on-surface-variant mt-1 leading-relaxed">
+                  Blok Explorer, Node Paneli, Köprü (Bridge), BNS ve tüm gelişmiş protokol araçlarıyla devam et.
+                </p>
+              </div>
+            </button>
+          </div>
+
+          <div class="flex items-center justify-center gap-1.5 text-[11px] text-on-surface-variant/70 pt-1">
+            <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">verified_user</span>
+            <span>%100 Non-Custodial • Anahtarlar Yalnızca Cihazınızda</span>
+          </div>
+        </div>
+      `;
+    } else if (step === 'pwa') {
+      const isIos = isIosDeviceLocal();
+      const hasNativePrompt = Boolean(getAvailablePwaPrompt());
+
+      overlay.innerHTML = `
+        <div class="w-full max-w-[400px] flex flex-col gap-5">
+          <div class="flex flex-col items-center text-center gap-3">
+            <div class="relative flex items-center justify-center w-20 h-20 rounded-3xl bg-surface-container-high shadow-xl border border-primary/30">
+              <span class="material-symbols-outlined notranslate text-primary text-[38px]" translate="no">install_mobile</span>
+              <span class="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md">
+                <span class="material-symbols-outlined notranslate text-[16px]" translate="no">download</span>
+              </span>
+            </div>
+
+            <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-[11px] font-mono text-primary font-semibold">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span>Mobil Uygulama Kurulumu Zorunludur</span>
+            </div>
+
+            <h1 class="text-[24px] leading-[30px] font-bold text-on-surface tracking-tight">
+              BlocTag Uygulamasını <span class="text-primary">Ana Ekrana Ekle</span>
+            </h1>
+            <p class="text-xs text-on-surface-variant leading-relaxed max-w-[340px]">
+              Mobil cihazlarda tam ekran performans, anlık bildirimler ve güvenli yerel kasa deneyimi için BlocTag PWA uygulamasını cihazınıza indirmeniz gerekmektedir.
+            </p>
+          </div>
+
+          <!-- Feature Mini-Strip -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="p-3 rounded-2xl bg-surface-container/90 border border-outline-variant/15 flex flex-col items-center text-center gap-1">
+              <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">shield_lock</span>
+              <span class="text-[11px] font-semibold text-on-surface">Güvenli Kasa</span>
+            </div>
+            <div class="p-3 rounded-2xl bg-surface-container/90 border border-outline-variant/15 flex flex-col items-center text-center gap-1">
+              <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">bolt</span>
+              <span class="text-[11px] font-semibold text-on-surface">Anlık Hız</span>
+            </div>
+            <div class="p-3 rounded-2xl bg-surface-container/90 border border-outline-variant/15 flex flex-col items-center text-center gap-1">
+              <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">fullscreen</span>
+              <span class="text-[11px] font-semibold text-on-surface">Tam Ekran</span>
+            </div>
+          </div>
+
+          ${isIos ? `
+            <!-- iOS Safari Native Add to Home Screen Guide -->
+            <div class="p-4 rounded-3xl bg-surface-container border border-primary/25 flex flex-col gap-3">
+              <div class="flex items-center gap-2 text-xs font-bold text-primary">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">phone_iphone</span>
+                <span>iOS (Safari) Kurulum Adımları</span>
+              </div>
+              <div class="flex items-start gap-2.5 text-xs text-on-surface">
+                <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">1</span>
+                <span>Safari alt menüsündeki <strong class="text-primary">Paylaş</strong> (<span class="material-symbols-outlined notranslate text-[14px] align-middle text-primary" translate="no">ios_share</span>) simgesine dokunun.</span>
+              </div>
+              <div class="flex items-start gap-2.5 text-xs text-on-surface">
+                <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">2</span>
+                <span>Listede aşağı kaydırıp <strong class="text-primary">"Ana Ekrana Ekle"</strong> seçeneğine dokunun.</span>
+              </div>
+              <div class="flex items-start gap-2.5 text-xs text-on-surface">
+                <span class="w-5 h-5 rounded-full bg-primary/20 text-primary font-mono font-bold text-[11px] flex items-center justify-center shrink-0">3</span>
+                <span>Sağ üstten <strong class="text-primary">"Ekle"</strong> butonuna basın; uygulama ana ekranınıza düşecektir.</span>
+              </div>
+              <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
+                class="mt-1 w-full h-12 rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">check_circle</span>
+                <span>Ana Ekrana Ekledim</span>
+              </button>
+            </div>
+          ` : `
+            <!-- Android / Chromium One-Tap Auto-Install CTA -->
+            <div class="flex flex-col gap-3">
+              <button type="button" id="bloctag-mandatory-pwa-btn" onclick="window.BlocTagSimpleMode.triggerMandatoryPwaInstall()"
+                class="w-full h-[54px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-[0_8px_24px_rgba(78,222,163,0.3)] hover:brightness-95 active:scale-[0.98] transition-all cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[21px]" translate="no">download</span>
+                <span>${hasNativePrompt ? 'Uygulamayı İndir & Ana Ekrana Ekle' : 'BlocTag Uygulamasını Yükle'}</span>
+              </button>
+
+              ${_pwaManualGuideOpen ? `
+                <div class="p-3.5 rounded-2xl bg-surface-container border border-outline-variant/25 flex flex-col gap-2 text-xs text-on-surface-variant">
+                  <div class="font-semibold text-on-surface flex items-center gap-1.5">
+                    <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">info</span>
+                    <span>Tarayıcı Menüsünden Yükleme</span>
+                  </div>
+                  <p class="leading-relaxed">
+                    Otomatik pencere açılmadıysa tarayıcınızın sağ üst köşesindeki <strong class="text-on-surface">Menü (⋮)</strong> simgesine dokunun ve <strong class="text-primary">"Uygulamayı Yükle"</strong> veya <strong class="text-primary">"Ana ekrana ekle"</strong> seçeneğini onaylayın.
+                  </p>
+                  <button type="button" onclick="window.BlocTagSimpleMode.markManualPwaInstalled()"
+                    class="mt-1 h-9 px-3 rounded-full bg-surface-container-high hover:bg-surface-bright text-primary text-xs font-semibold cursor-pointer">
+                    Uygulamayı Yükledim
+                  </button>
+                </div>
+              ` : `
+                <p class="text-center text-[11px] text-on-surface-variant/80 leading-relaxed">
+                  Butona bastığınızda cihazınızda kurulum onayı açılır; onayladığınızda <strong class="text-on-surface">BlocTag</strong> otomatik olarak ana ekranınıza eklenir.
+                </p>
+              `}
+            </div>
+          `}
+        </div>
+      `;
+    } else if (step === 'pwa-installed') {
+      overlay.innerHTML = `
+        <div class="w-full max-w-[400px] flex flex-col items-center text-center gap-5">
+          <div class="relative flex items-center justify-center w-22 h-22 rounded-full bg-primary/15 border border-primary/40 shadow-[0_0_40px_rgba(78,222,163,0.22)]">
+            <span class="material-symbols-outlined notranslate text-primary text-[44px]" style="font-variation-settings: 'FILL' 1;" translate="no">task_alt</span>
+          </div>
+
+          <div class="flex flex-col gap-2">
+            <div class="inline-flex items-center justify-center gap-1.5 px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-[11px] font-mono text-primary font-semibold mx-auto">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span>Kurulum Tamamlandı</span>
+            </div>
+            <h1 class="text-[24px] leading-[30px] font-bold text-on-surface tracking-tight">
+              Uygulamayı <span class="text-primary">Açabilirsiniz!</span>
+            </h1>
+            <p class="text-xs text-on-surface-variant leading-relaxed max-w-[330px] mx-auto">
+              <strong class="text-on-surface">BlocTag</strong> ana ekranınıza eklendi. Şu anda hâlâ mobil tarayıcı üzerindesiniz — tarayıcıyı kapatıp telefonunuzun ana ekranındaki <strong class="text-primary">BlocTag</strong> simgesine dokunarak uygulamayı açabilirsiniz.
+            </p>
+          </div>
+
+          <div class="w-full p-4 rounded-3xl bg-surface-container border border-outline-variant/20 flex items-center gap-3 text-left">
+            <div class="w-12 h-12 rounded-2xl bg-[#131315] border border-primary/35 flex items-center justify-center shrink-0">
+              <svg class="w-7 h-7 text-primary" fill="none" viewBox="0 0 36 36">
+                <path d="M18 4L30 11V25L18 32L6 25V11L18 4Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2"></path>
+                <circle cx="18" cy="19" fill="currentColor" r="3"></circle>
+              </svg>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <span class="text-xs font-bold text-on-surface">BlocTag Uygulaması Hazır</span>
+              <span class="text-[11px] text-on-surface-variant">Ana ekranınızdan uygulamayı başlatın</span>
+            </div>
+          </div>
+
+          <div class="w-full flex flex-col gap-2.5">
+            <button type="button" onclick="window.BlocTagSimpleMode.openInstalledAppHint()"
+              class="w-full h-[52px] rounded-full bg-primary text-on-primary text-sm font-bold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">open_in_new</span>
+              <span>Uygulamayı Ana Ekrandan Aç</span>
+            </button>
+            <button type="button" onclick="window.BlocTagSimpleMode.showPwaInstallStepsAgain()"
+              class="w-full h-10 rounded-full bg-transparent hover:bg-surface-container text-on-surface-variant text-xs font-medium transition-colors cursor-pointer">
+              Uygulama ekrana düşmediyse tekrar yükle
+            </button>
+          </div>
+        </div>
+      `;
+    }
+
+    overlay.classList.add('is-visible');
+  }
+
+  function handleSelectWeb3Experience(choice) {
+    const isSimple = choice === 'simple';
+    try {
+      localStorage.setItem(WEB3_ONBOARDING_STORAGE_KEY, isSimple ? 'simple' : 'pro');
+      localStorage.setItem(SIMPLE_MODE_STORAGE_KEY, isSimple ? 'true' : 'false');
+      if (isSimple) {
+        // Simple Mode default: Back button OFF
+        localStorage.setItem(PWA_BACK_BTN_STORAGE_KEY, 'false');
+        if (typeof window.applyPwaBackButtonUI === 'function') {
+          window.applyPwaBackButtonUI(false);
+        }
+      }
+    } catch (_e) { }
+
+    if (isSimple) {
+      if (!getActiveWallet()) {
+        simpleState.activeScreen = 'SCR-ONB-01';
+      }
+      applySimpleModeState(true, true);
+    } else {
+      applySimpleModeState(false, false);
+    }
+
+    // Next step: if on mobile browser (not standalone PWA), show mandatory PWA install gate
+    if (isMobileDevice() && !isStandalonePwaApp()) {
+      const alreadyInstalled = localStorage.getItem(PWA_INSTALLED_STORAGE_KEY) === 'true';
+      renderMobileOnboardingGate(alreadyInstalled ? 'pwa-installed' : 'pwa');
+    } else {
+      closeMobileOnboardingGate();
+    }
+  }
+
+  async function handleTriggerMandatoryPwaInstall() {
+    const promptEv = getAvailablePwaPrompt();
+    if (promptEv) {
+      try {
+        promptEv.prompt();
+        const choice = await promptEv.userChoice;
+        _capturedPwaPrompt = null;
+        try {
+          if (typeof deferredPwaPrompt !== 'undefined') deferredPwaPrompt = null;
+        } catch (_e) { }
+        if (choice && choice.outcome === 'accepted') {
+          try {
+            localStorage.setItem(PWA_INSTALLED_STORAGE_KEY, 'true');
+          } catch (_e) { }
+          renderMobileOnboardingGate('pwa-installed');
+          if (typeof window.showToast === 'function') {
+            window.showToast('BlocTag ana ekranınıza eklendi! Uygulamayı açabilirsiniz.', 'check_circle');
+          }
+          return;
+        }
+      } catch (_e) { }
+    }
+
+    // Check if browser already reports the PWA as installed
+    try {
+      if (navigator.getInstalledRelatedApps) {
+        const related = await navigator.getInstalledRelatedApps();
+        if (Array.isArray(related) && related.length > 0) {
+          localStorage.setItem(PWA_INSTALLED_STORAGE_KEY, 'true');
+          renderMobileOnboardingGate('pwa-installed');
+          return;
+        }
+      }
+    } catch (_e) { }
+
+    // Fallback: reveal manual browser menu install steps
+    _pwaManualGuideOpen = true;
+    renderMobileOnboardingGate('pwa');
+  }
+
+  function handleMarkManualPwaInstalled() {
+    try {
+      localStorage.setItem(PWA_INSTALLED_STORAGE_KEY, 'true');
+    } catch (_e) { }
+    renderMobileOnboardingGate('pwa-installed');
+  }
+
+  function handleShowPwaInstallStepsAgain() {
+    try {
+      localStorage.removeItem(PWA_INSTALLED_STORAGE_KEY);
+    } catch (_e) { }
+    _pwaManualGuideOpen = false;
+    renderMobileOnboardingGate('pwa');
+  }
+
+  function handleOpenInstalledAppHint() {
+    if (typeof window.showToast === 'function') {
+      window.showToast('Tarayıcıyı kapatıp telefonunuzun ana ekranındaki BlocTag ikonuna dokunun.', 'install_mobile');
+    }
+  }
+
+  function evaluateMobileGates() {
+    // Desktop / PC: do NOT show Web3 gate or mandatory PWA gate
+    if (!isMobileDevice()) {
+      closeMobileOnboardingGate();
+      return;
+    }
+
+    let onboardingChoice = null;
+    try {
+      onboardingChoice = localStorage.getItem(WEB3_ONBOARDING_STORAGE_KEY);
+    } catch (_e) { }
+
+    if (!onboardingChoice) {
+      renderMobileOnboardingGate('web3');
+      return;
+    }
+
+    if (!isStandalonePwaApp()) {
+      let alreadyInstalled = false;
+      try {
+        alreadyInstalled = localStorage.getItem(PWA_INSTALLED_STORAGE_KEY) === 'true';
+      } catch (_e) { }
+      renderMobileOnboardingGate(alreadyInstalled ? 'pwa-installed' : 'pwa');
+      return;
+    }
+
+    // Running inside Standalone PWA! Close gate and ensure welcome screen if no wallet exists
+    closeMobileOnboardingGate();
+    if (simpleState.enabled && !getActiveWallet()) {
+      simpleState.activeScreen = 'SCR-ONB-01';
+      renderSimpleMode(false);
+    }
+  }
 
   // Expose globally for inline handlers & menu toggles
   window.BlocTagSimpleMode = BlocTagSimpleMode;
@@ -2258,11 +2724,16 @@
 
   // Boot & Hook into Core App Lifecycle
   function initSimpleModeModule() {
-    const saved = isSimpleModeEnabled();
+    const mobile = isMobileDevice();
+    const saved = mobile ? isSimpleModeEnabled() : false;
     syncModeToggleControls(saved);
     if (saved) {
+      if (!getActiveWallet()) {
+        simpleState.activeScreen = 'SCR-ONB-01';
+      }
       applySimpleModeState(true, false);
     }
+    evaluateMobileGates();
 
     // Wrap wallet state updates so 15s background balance polls patch in-place with zero flicker
     const origSaveWalletState = window.saveWalletState;
