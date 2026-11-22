@@ -23,7 +23,30 @@ def run_cmd(cmd_list, timeout=120):
     res = subprocess.run(cmd_list, timeout=timeout)
     return res.returncode == 0
 
+def sync_local_templates():
+    pairs = [
+        ("frontend/index.html", "templates/index.html"),
+        ("frontend/sw.js", "templates/sw.js"),
+    ]
+    if os.path.isdir("frontend/simple-mode"):
+        os.makedirs("templates/simple-mode", exist_ok=True)
+        for fname in os.listdir("frontend/simple-mode"):
+            src = os.path.join("frontend/simple-mode", fname)
+            dst = os.path.join("templates/simple-mode", fname)
+            if os.path.isfile(src):
+                pairs.append((src, dst))
+    for src, dst in pairs:
+        if os.path.exists(src):
+            with open(src, "rb") as f:
+                data = f.read().replace(b"\r\n", b"\n")
+            with open(src, "wb") as f:
+                f.write(data)
+            os.makedirs(os.path.dirname(dst), exist_ok=True)
+            with open(dst, "wb") as f:
+                f.write(data)
+
 def main():
+    sync_local_templates()
     # F-07: keep CSP script hashes in lock-step with the inline scripts being shipped
     if subprocess.run([sys.executable, "scripts/sync_csp.py"]).returncode != 0:
         print("[!] CSP hash sync failed")
@@ -35,10 +58,14 @@ def main():
         tar.add("frontend/sw.js", arcname="frontend/sw.js")
         tar.add("frontend/icons", arcname="frontend/icons")
         tar.add("frontend/vendor", arcname="frontend/vendor")
+        if os.path.isdir("frontend/simple-mode"):
+            tar.add("frontend/simple-mode", arcname="frontend/simple-mode")
         if os.path.exists("frontend/favicon.ico"):
             tar.add("frontend/favicon.ico", arcname="frontend/favicon.ico")
         tar.add("templates/index.html", arcname="templates/index.html")
         tar.add("templates/sw.js", arcname="templates/sw.js")
+        if os.path.isdir("templates/simple-mode"):
+            tar.add("templates/simple-mode", arcname="templates/simple-mode")
         tar.add("core", arcname="core")
         tar.add("docs", arcname="docs")
         tar.add("server.py", arcname="server.py")
@@ -118,6 +145,12 @@ sudo cp -r /tmp/frontend/icons/* /var/www/locktrace/icons/
 sudo mkdir -p /opt/blockchaint/frontend/vendor /var/www/locktrace/vendor
 sudo cp -r /tmp/frontend/vendor/* /opt/blockchaint/frontend/vendor/
 sudo cp -r /tmp/frontend/vendor/* /var/www/locktrace/vendor/
+if [ -d /tmp/frontend/simple-mode ]; then
+    sudo mkdir -p /opt/blockchaint/frontend/simple-mode /opt/blockchaint/templates/simple-mode /var/www/locktrace/simple-mode
+    sudo cp -r /tmp/frontend/simple-mode/* /opt/blockchaint/frontend/simple-mode/
+    sudo cp -r /tmp/frontend/simple-mode/* /opt/blockchaint/templates/simple-mode/
+    sudo cp -r /tmp/frontend/simple-mode/* /var/www/locktrace/simple-mode/
+fi
 if [ -f /tmp/frontend/favicon.ico ]; then
     sudo cp /tmp/frontend/favicon.ico /opt/blockchaint/frontend/favicon.ico
     sudo cp /tmp/frontend/favicon.ico /var/www/locktrace/favicon.ico

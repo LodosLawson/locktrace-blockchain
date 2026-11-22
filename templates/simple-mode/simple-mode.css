@@ -1,0 +1,183 @@
+/* =========================================================================
+   BLOCTAG & SPACE — STITCH SIMPLIFIED MOBILE UI MODULE (v2.12.2)
+   Isolated Simple Mode stylesheet. Can be toggled or removed cleanly without
+   affecting the core Pro Mode layout.
+   ========================================================================= */
+
+:root {
+  --simple-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
+  --simple-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* Mode Transition Overlay & Kinetic Morph Animation */
+@keyframes bloctagSimpleMorphIn {
+  0% {
+    opacity: 0;
+    transform: translateY(14px) scale(0.985);
+    filter: blur(4px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    filter: blur(0);
+  }
+}
+
+@keyframes bloctagProMorphIn {
+  0% {
+    opacity: 0.25;
+    transform: scale(0.99);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes bloctagScreenSlideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(10px) scale(0.992);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes bloctagPulseGlow {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(78, 222, 163, 0.35);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(78, 222, 163, 0);
+  }
+}
+
+html.bloctag-mode-switching body {
+  animation: bloctagProMorphIn 0.36s var(--simple-ease-spring) forwards;
+}
+
+/* Hide Pro Mode primary shell when Simple Mode is active (Keep all modals z-[80]+ intact!) */
+html.bloctag-simple-mode #desktopSidebar,
+html.bloctag-simple-mode #mobileTopHeader,
+html.bloctag-simple-mode #desktopTopHeader,
+html.bloctag-simple-mode #mobile-nav,
+html.bloctag-simple-mode body > div.md\:pl-64 {
+  display: none !important;
+}
+
+/* Simple Mode Root Shell */
+#bloctag-simple-mode-shell {
+  display: none;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
+  background-color: #131315;
+  color: #e5e1e4;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  overflow-x: hidden;
+}
+
+html.bloctag-simple-mode #bloctag-simple-mode-shell {
+  display: flex !important;
+  animation: bloctagSimpleMorphIn 0.42s var(--simple-ease-spring) forwards;
+}
+
+/* Responsive Centered Mobile-First Frame (390px-480px on mobile, sleek centered app frame on tablet/desktop) */
+.simple-app-frame {
+  width: 100%;
+  max-width: 480px;
+  min-height: 100vh;
+  min-height: 100dvh;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  background-color: #131315;
+  position: relative;
+}
+
+@media (min-width: 640px) {
+  .simple-app-frame {
+    border-left: 1px solid rgba(60, 74, 66, 0.22);
+    border-right: 1px solid rgba(60, 74, 66, 0.22);
+    box-shadow: 0 0 60px rgba(0, 0, 0, 0.55);
+  }
+}
+
+.simple-screen-animate {
+  animation: bloctagScreenSlideIn 0.28s var(--simple-ease-spring) forwards;
+}
+
+/* Stitch Top & Bottom Fixed Bars inside Simple Mode */
+.simple-top-header {
+  position: sticky;
+  top: 0;
+  width: 100%;
+  z-index: 45;
+  background-color: rgba(19, 19, 21, 0.85);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  padding-top: env(safe-area-inset-top, 0px);
+  border-bottom: 1px solid rgba(60, 74, 66, 0.14);
+}
+
+.simple-bottom-nav {
+  position: fixed;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100%;
+  max-width: 480px;
+  z-index: 45;
+  background-color: rgba(19, 19, 21, 0.88);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+  border-top: 1px solid rgba(60, 74, 66, 0.18);
+  box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.35);
+}
+
+/* Pro / Simple Mode Toggle Pill Styling in Menu */
+.bloctag-mode-pill-switch {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  padding: 2px;
+  border-radius: 9999px;
+  background-color: #2a2a2c;
+  border: 1px solid rgba(78, 222, 163, 0.25);
+  cursor: pointer;
+  user-select: none;
+  transition: all 0.25s var(--simple-ease-smooth);
+}
+
+.bloctag-mode-pill-switch.is-simple {
+  background-color: rgba(16, 185, 129, 0.18);
+  border-color: rgba(78, 222, 163, 0.55);
+  animation: bloctagPulseGlow 2.4s infinite;
+}
+
+.bloctag-mode-pill-option {
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 10.5px;
+  font-family: 'JetBrains Mono', monospace;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  transition: all 0.25s var(--simple-ease-spring);
+}
+
+.bloctag-mode-pill-option.active-pro {
+  background-color: #353437;
+  color: #e5e1e4;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+}
+
+.bloctag-mode-pill-option.active-simple {
+  background-color: #4edea3;
+  color: #003824;
+  box-shadow: 0 2px 8px rgba(78, 222, 163, 0.35);
+}

@@ -1,0 +1,2033 @@
+/**
+ * ============================================================================
+ * BLOCTAG & SPACE — STITCH SIMPLIFIED MOBILE UI ENGINE (v2.12.2)
+ * ============================================================================
+ * Modular, self-contained Simple Mode implementation based on the Stitch
+ * "Kinetic Minimalist Crypto" mobile design system:
+ *   - SCR-ONB-01: BlocTag - Hoş Geldiniz & Giriş (/onboarding/welcome)
+ *   - SCR-WLT-02: Cüzdan Aç - Anahtar Kelimeler (/wallet/seed-phrase)
+ *   - SCR-WLT-HOME: Cüzdanım ve Geçmiş (Mobil) (/wallet/home)
+ *   - SCR-WLT-SEND: Para Gönder (Mobil) (/wallet/send)
+ *   - SCR-SPC-03: Space - Sade Sosyal Akış (/space/feed - Default)
+ *   - SCR-SPC-04: Space - Gönderi Detayı (/space/post/:id)
+ *   - SCR-PRF-05: Space - Kullanıcı Profili (/space/profile/:handle)
+ *   - SCR-NTF-06: Space - Bildirimler (/notifications)
+ *
+ * Security & Architecture Guarantees:
+ *   - 100% Non-Custodial: Delegates all key generation, AES-256-GCM PIN Vault,
+ *     and SECP256k1 ECDSA signing to the core LockTraceCrypto & app engine.
+ *   - Strict XSS Defense: All dynamic values pass through escapeHtml() and
+ *     sanitizeJsAttr() before rendering.
+ *   - Zero Destructive Coupling: Leaves the Pro Mode DOM untouched so the user
+ *     can switch between Pro and Simple Mode with an animated transition at any
+ *     time, or remove `/simple-mode/` cleanly in the future.
+ * ============================================================================
+ */
+(function () {
+  'use strict';
+
+  const SIMPLE_MODE_STORAGE_KEY = 'locktrace_ui_simple_mode_v1';
+
+  const simpleState = {
+    enabled: false,
+    activeScreen: 'SCR-SPC-03', // Default launch screen per Stitch MCP manifest
+    screenHistory: ['SCR-SPC-03'],
+    feedFilter: 'all',          // 'all' | 'following'
+    txFilter: 'all',            // 'all' | 'incoming' | 'outgoing'
+    notifFilter: 'all',         // 'all' | 'tips' | 'mentions' | 'likes'
+    profileTab: 'posts',        // 'posts' | 'replies' | 'likes' | 'tips'
+    profileTarget: '',          // '' means current user
+    activePostId: null,
+    seedSavedConfirmed: false,
+    seedMnemonic: '',
+    importModeOpen: false,
+    searchBarOpen: false,
+    searchQuery: '',
+    sendPrefillRecipient: '',
+    sendPrefillAmount: ''
+  };
+
+  // Safe HTML & Attribute Escaping (Defense-in-Depth)
+  function esc(str) {
+    if (typeof window.escapeHtml === 'function') {
+      return window.escapeHtml(str);
+    }
+    return String(str ?? '')
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#39;');
+  }
+
+  function escAttr(val) {
+    if (typeof window.sanitizeJsAttr === 'function') {
+      return window.sanitizeJsAttr(val);
+    }
+    if (val === null || val === undefined) return '';
+    return String(val).replace(/[^a-zA-Z0-9._\-@]/g, '');
+  }
+
+  function getActiveWallet() {
+    try {
+      if (typeof currentAccount !== 'undefined' && currentAccount && currentAccount.address) {
+        return currentAccount;
+      }
+    } catch (_e) {}
+    return null;
+  }
+
+  function getMyPrimaryHandle() {
+    try {
+      if (typeof currentBnsHandle === 'string' && currentBnsHandle) {
+        return currentBnsHandle.replace(/^@/, '');
+      }
+      if (typeof bnsMyHandlesCache !== 'undefined' && Array.isArray(bnsMyHandlesCache) && bnsMyHandlesCache.length > 0) {
+        const first = bnsMyHandlesCache[0];
+        const h = typeof first === 'string' ? first : (first && first.name ? first.name : '');
+        if (h) return h.replace(/^@/, '');
+      }
+      const acc = getActiveWallet();
+      if (acc && acc.bns_name) return String(acc.bns_name).replace(/^@/, '');
+    } catch (_e) {}
+    return '';
+  }
+
+  function getDisplayHandleOrAddr(addr, bns) {
+    if (bns && bns !== 'anonymous') {
+      const clean = String(bns).replace(/^@/, '');
+      return '@' + clean;
+    }
+    if (!addr) return '@kullanici';
+    const s = String(addr).trim();
+    if (s.length <= 14) return s;
+    return s.slice(0, 6) + '...' + s.slice(-4);
+  }
+
+  function getUnreadNotificationsCount() {
+    try {
+      const raw = localStorage.getItem('locktrace_notifications_v1');
+      if (!raw) return 0;
+      const list = JSON.parse(raw);
+      if (!Array.isArray(list)) return 0;
+      return list.filter(n => n && !n.read).length;
+    } catch (_e) {
+      return 0;
+    }
+  }
+
+  function getStoredNotifications() {
+    try {
+      const raw = localStorage.getItem('locktrace_notifications_v1');
+      if (!raw) return [];
+      const list = JSON.parse(raw);
+      return Array.isArray(list) ? list : [];
+    } catch (_e) {
+      return [];
+    }
+  }
+
+  // ==========================================================================
+  // 1. PERSISTENCE & MODE TOGGLE CONTROLLER
+  // ==========================================================================
+  function isSimpleModeEnabled() {
+    try {
+      const v = localStorage.getItem(SIMPLE_MODE_STORAGE_KEY);
+      return v === 'true' || v === '1';
+    } catch (_e) {
+      return false;
+    }
+  }
+
+  function syncModeToggleControls(enabled) {
+    const checkboxes = [
+      document.getElementById('settingSimpleModeToggle'),
+      document.getElementById('settingSimpleModeVault'),
+      document.getElementById('settingSimpleModeFeed')
+    ];
+    checkboxes.forEach(cb => {
+      if (cb) cb.checked = Boolean(enabled);
+    });
+
+    const pillSwitches = document.querySelectorAll('.bloctag-mode-pill-switch');
+    pillSwitches.forEach(sw => {
+      sw.classList.toggle('is-simple', Boolean(enabled));
+      const proOpt = sw.querySelector('[data-mode-opt="pro"]');
+      const simpleOpt = sw.querySelector('[data-mode-opt="simple"]');
+      if (proOpt) {
+        proOpt.className = 'bloctag-mode-pill-option ' + (!enabled ? 'active-pro' : 'text-on-surface-variant');
+      }
+      if (simpleOpt) {
+        simpleOpt.className = 'bloctag-mode-pill-option ' + (enabled ? 'active-simple' : 'text-on-surface-variant');
+      }
+    });
+
+    const badgeEls = document.querySelectorAll('.bloctag-active-mode-badge');
+    badgeEls.forEach(b => {
+      b.textContent = enabled ? 'SIMPLE MODE' : 'PRO MODE';
+      b.className = 'bloctag-active-mode-badge px-2 py-0.5 rounded-full font-mono text-[9.5px] font-bold transition-all ' +
+        (enabled ? 'bg-primary text-on-primary shadow-xs' : 'bg-surface-container-highest text-on-surface-variant');
+    });
+  }
+
+  function ensureSimpleModeShell() {
+    let shell = document.getElementById('bloctag-simple-mode-shell');
+    if (!shell) {
+      shell = document.createElement('div');
+      shell.id = 'bloctag-simple-mode-shell';
+      shell.setAttribute('aria-label', 'BlocTag Simple Mode Interface');
+      document.body.appendChild(shell);
+    }
+    return shell;
+  }
+
+  function applySimpleModeState(enabled, withAnimation = true) {
+    simpleState.enabled = Boolean(enabled);
+    const html = document.documentElement;
+    ensureSimpleModeShell();
+
+    if (withAnimation) {
+      html.classList.add('bloctag-mode-switching');
+      setTimeout(() => html.classList.remove('bloctag-mode-switching'), 420);
+    }
+
+    if (simpleState.enabled) {
+      html.classList.add('bloctag-simple-mode');
+      const acc = getActiveWallet();
+      if (!acc && simpleState.activeScreen === 'SCR-WLT-HOME') {
+        simpleState.activeScreen = 'SCR-ONB-01';
+      }
+      renderSimpleMode();
+    } else {
+      html.classList.remove('bloctag-simple-mode');
+    }
+
+    syncModeToggleControls(simpleState.enabled);
+  }
+
+  function toggleSimpleModeSetting(forceState) {
+    const nextState = typeof forceState === 'boolean' ? forceState : !simpleState.enabled;
+    try {
+      localStorage.setItem(SIMPLE_MODE_STORAGE_KEY, nextState ? 'true' : 'false');
+    } catch (_e) {}
+
+    // Close menu drawer smoothly if open so the user sees the animated design update immediately
+    try {
+      const mobMenu = document.getElementById('mobileMenuModal');
+      if (mobMenu && !mobMenu.classList.contains('hidden') && typeof window.closeMobileMenuModal === 'function') {
+        window.closeMobileMenuModal();
+      }
+    } catch (_e) {}
+
+    applySimpleModeState(nextState, true);
+
+    if (typeof window.showToast === 'function') {
+      window.showToast(
+        nextState
+          ? '✨ Simple Mod aktif edildi (Stitch Sade Mobil Tasarım)'
+          : '⚡ Pro Mod aktif edildi (Tam Protokol Arayüzü)',
+        nextState ? 'auto_awesome' : 'bolt'
+      );
+    }
+  }
+
+  // ==========================================================================
+  // 2. NAVIGATION ROUTER FOR STITCH SIMPLE MODE SCREENS
+  // ==========================================================================
+  function navigateToSimpleScreen(screenCode, opts = {}) {
+    const valid = [
+      'SCR-ONB-01',
+      'SCR-WLT-02',
+      'SCR-WLT-HOME',
+      'SCR-WLT-SEND',
+      'SCR-SPC-03',
+      'SCR-SPC-04',
+      'SCR-PRF-05',
+      'SCR-NTF-06'
+    ];
+    const target = valid.includes(screenCode) ? screenCode : 'SCR-SPC-03';
+
+    if (opts.postId !== undefined) {
+      simpleState.activePostId = opts.postId;
+    }
+    if (opts.profileTarget !== undefined) {
+      simpleState.profileTarget = opts.profileTarget;
+    }
+    if (opts.recipient !== undefined) {
+      simpleState.sendPrefillRecipient = opts.recipient;
+    }
+    if (opts.amount !== undefined) {
+      simpleState.sendPrefillAmount = opts.amount;
+    }
+
+    if (target === 'SCR-WLT-02' && !simpleState.seedMnemonic) {
+      generateSimpleSeedPreview();
+    }
+
+    if (opts.pushHistory !== false) {
+      const last = simpleState.screenHistory[simpleState.screenHistory.length - 1];
+      if (last !== target) {
+        simpleState.screenHistory.push(target);
+        if (simpleState.screenHistory.length > 25) simpleState.screenHistory.shift();
+      }
+    }
+
+    simpleState.activeScreen = target;
+    renderSimpleMode();
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    // Trigger background data sync on screen entry
+    try {
+      if (target === 'SCR-SPC-03' || target === 'SCR-SPC-04') {
+        if (typeof window.loadSpaceFeed === 'function') {
+          window.loadSpaceFeed().then(() => {
+            if (simpleState.enabled) renderSimpleMode(false);
+          }).catch(() => {});
+        }
+      } else if (target === 'SCR-WLT-HOME' || target === 'SCR-WLT-SEND') {
+        if (typeof window.refreshCurrentAccountBalance === 'function') {
+          window.refreshCurrentAccountBalance().then(() => {
+            if (simpleState.enabled) renderSimpleMode(false);
+          }).catch(() => {});
+        }
+        if (typeof window.refreshPersonalTransactions === 'function') {
+          window.refreshPersonalTransactions().then(() => {
+            if (simpleState.enabled) renderSimpleMode(false);
+          }).catch(() => {});
+        }
+      }
+    } catch (_e) {}
+  }
+
+  function navigateSimpleBack() {
+    if (simpleState.screenHistory.length > 1) {
+      simpleState.screenHistory.pop();
+      const prev = simpleState.screenHistory[simpleState.screenHistory.length - 1];
+      navigateToSimpleScreen(prev, { pushHistory: false });
+    } else {
+      navigateToSimpleScreen('SCR-SPC-03', { pushHistory: false });
+    }
+  }
+
+  function generateSimpleSeedPreview() {
+    try {
+      if (typeof previewMnemonicPhrase === 'string' && previewMnemonicPhrase.trim().split(/\s+/).length === 12) {
+        simpleState.seedMnemonic = previewMnemonicPhrase.trim();
+      } else if (typeof LockTraceCrypto !== 'undefined' && typeof LockTraceCrypto.generateMnemonic12 === 'function') {
+        simpleState.seedMnemonic = LockTraceCrypto.generateMnemonic12();
+        try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) {}
+      }
+      simpleState.seedSavedConfirmed = false;
+    } catch (_e) {}
+  }
+
+  // ==========================================================================
+  // 3. STITCH SCREEN RENDERERS (EXACT STITCH MOBILE DESIGNS)
+  // ==========================================================================
+
+  // ── Shared Top Header & Bottom Navigation ──────────────────────────────────
+  function renderTopBar(title, showBack = false, rightActionHtml = '') {
+    const acc = getActiveWallet();
+    const myHandle = getMyPrimaryHandle();
+    const avatarChar = myHandle ? myHandle[0].toUpperCase() : (acc && acc.address ? acc.address.slice(3, 4).toUpperCase() : '');
+
+    return `
+      <header class="simple-top-header">
+        <div class="h-15 px-4 flex items-center justify-between gap-2">
+          <div class="flex items-center gap-2.5 min-w-0">
+            ${showBack ? `
+              <button type="button" aria-label="Geri" onclick="window.BlocTagSimpleMode.back()"
+                class="w-9 h-9 -ml-1.5 rounded-full flex items-center justify-center text-on-surface hover:text-primary active:scale-95 transition-all cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[21px]" translate="no">arrow_back_ios_new</span>
+              </button>
+            ` : `
+              <span class="w-2.5 h-2.5 rounded-full bg-primary animate-pulse shrink-0"></span>
+            `}
+            <span class="font-headline-sm text-[18px] font-semibold tracking-tight text-on-surface truncate">${esc(title)}</span>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            ${rightActionHtml}
+            <!-- Quick Simple/Pro Mode Switch Pill -->
+            <button type="button" onclick="window.toggleSimpleModeSetting(false)"
+              title="Pro Moda Geç (Tam Görünüm)"
+              class="h-7 px-2.5 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary font-mono text-[10px] font-bold flex items-center gap-1 active:scale-95 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[13px]" translate="no">auto_awesome</span>
+              <span>Simple</span>
+              <span class="text-on-surface-variant font-normal">→ Pro</span>
+            </button>
+
+            <!-- Profile Avatar Pill -->
+            <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
+              title="Profilim"
+              class="w-8 h-8 rounded-full bg-primary text-on-primary flex items-center justify-center font-mono font-bold text-xs shadow-sm active:scale-95 transition-transform cursor-pointer">
+              ${avatarChar ? esc(avatarChar) : '<span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>'}
+            </button>
+          </div>
+        </div>
+      </header>
+    `;
+  }
+
+  function renderBottomNav() {
+    const active = simpleState.activeScreen;
+    const isWallet = active === 'SCR-WLT-HOME' || active === 'SCR-WLT-SEND' || active === 'SCR-ONB-01' || active === 'SCR-WLT-02';
+    const isSpace = active === 'SCR-SPC-03' || active === 'SCR-SPC-04';
+    const isNotif = active === 'SCR-NTF-06';
+    const isProfile = active === 'SCR-PRF-05';
+    const unread = getUnreadNotificationsCount();
+    const backBtnEnabled = typeof window.isPwaBackButtonEnabled === 'function' ? window.isPwaBackButtonEnabled() : true;
+
+    return `
+      <nav class="simple-bottom-nav" aria-label="Simple Mode Navigation">
+        <div class="flex justify-around items-center h-16 px-2">
+          ${backBtnEnabled ? `
+            <button type="button" onclick="window.BlocTagSimpleMode.back()"
+              class="flex flex-col items-center justify-center gap-1 min-w-[52px] min-h-[44px] text-on-surface-variant hover:text-primary active:scale-90 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[21px]" translate="no">arrow_back</span>
+              <span class="font-label-sm text-[10px]">Geri</span>
+            </button>
+          ` : ''}
+
+          <button type="button" onclick="window.BlocTagSimpleMode.openWalletTab()"
+            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">account_balance_wallet</span>
+            <span class="font-label-sm text-[10.5px]">Cüzdan</span>
+          </button>
+
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
+            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[23px]" translate="no">tag</span>
+            <span class="font-label-sm text-[10.5px]">Space</span>
+          </button>
+
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
+            class="relative flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isNotif ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">notifications</span>
+            <span class="font-label-sm text-[10.5px]">Bildirimler</span>
+            ${unread > 0 ? `<span class="absolute top-1 right-2.5 min-w-[15px] h-[15px] px-1 rounded-full bg-rose-500 text-white font-mono text-[9px] font-bold flex items-center justify-center">${unread}</span>` : ''}
+          </button>
+
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
+            class="flex flex-col items-center justify-center gap-1 min-w-[56px] min-h-[44px] transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">person</span>
+            <span class="font-label-sm text-[10.5px]">Profil</span>
+          </button>
+
+          <button type="button" onclick="if(typeof openMobileMenuModal==='function') openMobileMenuModal();"
+            class="flex flex-col items-center justify-center gap-1 min-w-[52px] min-h-[44px] text-primary hover:brightness-110 active:scale-95 transition-all cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">widgets</span>
+            <span class="font-label-sm text-[10.5px] font-semibold">Menü</span>
+          </button>
+        </div>
+      </nav>
+    `;
+  }
+
+  // ── SCR-ONB-01: BlocTag - Hoş Geldiniz & Giriş ──────────────────────────────
+  function renderScreenOnboardingWelcome() {
+    const acc = getActiveWallet();
+    const myHandle = getMyPrimaryHandle();
+
+    return `
+      ${renderTopBar('BlocTag', false)}
+      <main class="flex-1 flex flex-col w-full px-5 pt-3 pb-24 simple-screen-animate select-none">
+        <!-- Top Visual & Identity Cluster (Exact Stitch SCR-ONB-01) -->
+        <div class="flex flex-col items-center justify-center pt-3 relative mb-3">
+          <div class="absolute w-36 h-36 rounded-full bg-primary-container/20 blur-3xl -z-10 pointer-events-none transform -translate-y-2"></div>
+          <div class="relative flex items-center justify-center w-20 h-20 rounded-full bg-surface-container-high shadow-lg border border-outline-variant/20">
+            <div class="w-12 h-12 rounded-full bg-surface-container flex items-center justify-center relative overflow-hidden">
+              <svg class="w-8 h-8 text-primary" fill="none" viewBox="0 0 36 36">
+                <path class="opacity-90" d="M18 4L30 11V25L18 32L6 25V11L18 4Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2"></path>
+                <path d="M18 12L24 15.5V22.5L18 26L12 22.5V15.5L18 12Z" fill="currentColor" fill-opacity="0.25"></path>
+                <circle cx="18" cy="19" fill="currentColor" r="3"></circle>
+              </svg>
+            </div>
+            <span class="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-primary ring-2 ring-surface"></span>
+          </div>
+          <div class="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[11px]">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+            <span>BlocTag Mainnet v2.12.2</span>
+          </div>
+        </div>
+
+        <!-- Editorial Headline Section -->
+        <div class="flex flex-col items-center text-center px-2 mb-4">
+          <h1 class="text-[30px] leading-[36px] font-bold text-on-surface tracking-tight mb-1.5">
+            Kripto ve Topluluk <br/>
+            <span class="text-primary">Tek Bir Yerde.</span>
+          </h1>
+          <p class="text-sm text-on-surface-variant max-w-sm leading-relaxed">
+            Karmaşık terimler yok. Tek tıkla cüzdan oluşturun, varlıklarınızı yönetin ve Space ile Web3 topluluklarına katılın.
+          </p>
+        </div>
+
+        <!-- Feature Highlights (Card Stack) -->
+        <div class="flex flex-col gap-2.5 mb-4">
+          <div class="flex items-start gap-3.5 p-3.5 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-colors">
+            <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0">
+              <span class="material-symbols-outlined notranslate text-[20px]" style="font-variation-settings: 'FILL' 1;" translate="no">lock_open</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <h3 class="text-xs font-semibold text-on-surface">Kolay &amp; Güvenli</h3>
+              <p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+                Kendi anahtarınız, tam kontrolünüz. Aracı kurum veya riskli sunucular olmadan doğrudan cihazınızda saklanır.
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3.5 p-3.5 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer"
+               onclick="if(typeof switchTab==='function'){ window.toggleSimpleModeSetting(false); switchTab('bns'); }">
+            <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-secondary shrink-0">
+              <span class="material-symbols-outlined notranslate text-[20px]" style="font-variation-settings: 'FILL' 1;" translate="no">alternate_email</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-2">
+                <h3 class="text-xs font-semibold text-on-surface">BlocTag Kimliği</h3>
+                <span class="px-1.5 py-0.5 rounded-full bg-secondary-container text-on-secondary-container text-[10px] font-bold">Yeni</span>
+              </div>
+              <p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+                Uzun, karmaşık 42 karakterlik adresler yerine sade kullanıcı adınızı kullanın (örn. <span class="text-primary font-medium">@kullanici.bct</span>).
+              </p>
+            </div>
+          </div>
+
+          <div class="flex items-start gap-3.5 p-3.5 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-colors cursor-pointer"
+               onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')">
+            <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center text-primary-fixed shrink-0">
+              <span class="material-symbols-outlined notranslate text-[20px]" style="font-variation-settings: 'FILL' 1;" translate="no">groups</span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <h3 class="text-xs font-semibold text-on-surface">Space Topluluğu</h3>
+              <p class="text-xs text-on-surface-variant mt-0.5 leading-relaxed">
+                Doğrulanmış token sahipleriyle fikir paylaşın, projeleri keşfedin ve içerik üreticilerini tek tıkla ödüllendirin.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <!-- Interactive Tag Preview Badge -->
+        <div class="flex items-center justify-center mb-4">
+          <div class="inline-flex items-center gap-2 py-1.5 px-3.5 rounded-full bg-surface-container-low text-on-surface-variant text-xs border border-outline-variant/15 shadow-sm">
+            <span class="text-primary font-semibold font-mono">${myHandle ? '@' + esc(myHandle) : '@seninismin.bct'}</span>
+            <span class="opacity-40">•</span>
+            <span class="text-on-surface">${myHandle ? 'aktif zincir üstü kimliğin' : (acc ? 'cüzdanın bağlı ve aktif' : '+1.00 BCT hoş geldin bonusu hazır')}</span>
+          </div>
+        </div>
+
+        <!-- Inline Import Box (Toggled by 'BlocTag Bağlan') -->
+        ${simpleState.importModeOpen ? `
+          <div class="mb-4 p-4 rounded-2xl bg-surface-container-low border border-primary/30 flex flex-col gap-2.5 animate-fadeIn">
+            <div class="flex items-center justify-between">
+              <span class="text-xs font-semibold text-on-surface flex items-center gap-1.5">
+                <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">vpn_key</span>
+                <span>12 Kelime veya Özel Anahtar ile Bağlan</span>
+              </span>
+              <button type="button" onclick="window.BlocTagSimpleMode.toggleImport(false)" class="text-on-surface-variant hover:text-on-surface">
+                <span class="material-symbols-outlined notranslate text-[16px]" translate="no">close</span>
+              </button>
+            </div>
+            <textarea id="simpleImportInput" rows="3"
+              placeholder="12 kurtarma kelimenizi veya 64 haneli özel anahtarınızı girin..."
+              class="w-full bg-surface-container rounded-xl p-3 text-xs font-mono text-on-surface placeholder:text-outline/60 border border-outline-variant/20 focus:border-primary focus:outline-none resize-none"></textarea>
+            <button type="button" onclick="window.BlocTagSimpleMode.submitImport()"
+              class="w-full h-11 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center justify-center gap-1.5 shadow-md active:scale-98 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[17px]" translate="no">login</span>
+              <span>Cüzdanı Geri Yükle ve Bağlan</span>
+            </button>
+          </div>
+        ` : ''}
+
+        <!-- Action CTA Area -->
+        <div class="flex flex-col gap-2.5 w-full mt-auto">
+          <button type="button" onclick="window.BlocTagSimpleMode.startCreateWallet()"
+            class="w-full h-[50px] rounded-full bg-primary-container text-on-primary-container text-sm font-semibold flex items-center justify-center gap-2 shadow-md active:scale-[0.98] transition-all cursor-pointer">
+            <span>Cüzdan Aç (+1.00 BCT Bonus)</span>
+            <span class="material-symbols-outlined notranslate text-[18px]" translate="no">arrow_forward</span>
+          </button>
+
+          <button type="button" onclick="window.BlocTagSimpleMode.toggleImport()"
+            class="w-full h-[50px] rounded-full bg-surface-container-high hover:bg-surface-bright text-on-surface text-sm font-medium flex items-center justify-center gap-2 active:scale-[0.98] transition-all cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[18px] text-primary" translate="no">wallet</span>
+            <span>${acc ? 'Mevcut Cüzdana Git (' + esc(getDisplayHandleOrAddr(acc.address, myHandle)) + ')' : 'Mevcut Cüzdanla Bağlan'}</span>
+          </button>
+        </div>
+
+        <!-- Bottom Trust & Security Footnote -->
+        <div class="flex items-center justify-center gap-1.5 pt-3 text-on-surface-variant/70 mt-2">
+          <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">verified_user</span>
+          <span class="text-[11px] tracking-wide">Uçtan Uca Şifreli • Non-Custodial Güvenlik</span>
+        </div>
+      </main>
+    `;
+  }
+
+  // ── SCR-WLT-02: Cüzdan Aç - Anahtar Kelimeler ──────────────────────────────
+  function renderScreenSeedPhrase() {
+    if (!simpleState.seedMnemonic) {
+      generateSimpleSeedPreview();
+    }
+    const words = String(simpleState.seedMnemonic || '').trim().split(/\s+/).filter(Boolean);
+    const isSaved = Boolean(simpleState.seedSavedConfirmed);
+
+    return `
+      ${renderTopBar('Kurtarma Anahtarı', true)}
+      <main class="flex-1 flex flex-col w-full px-5 pt-3 pb-24 simple-screen-animate">
+        <div class="flex flex-col w-full gap-3.5">
+          <!-- Warm Visual Illustration & Human Context (Exact Stitch SCR-WLT-02) -->
+          <div class="flex items-center gap-3.5 p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 shadow-sm">
+            <div class="relative w-12 h-12 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined notranslate text-primary text-[24px]" style="font-variation-settings: 'FILL' 1;" translate="no">shield_with_heart</span>
+              <div class="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full bg-primary flex items-center justify-center">
+                <span class="material-symbols-outlined notranslate text-on-primary text-[10px]" translate="no">check</span>
+              </div>
+            </div>
+            <div class="flex flex-col">
+              <h2 class="text-base font-semibold text-on-surface">Cüzdan Anahtarlarınız</h2>
+              <p class="text-xs text-on-surface-variant leading-snug">
+                Bu 12 kelime cüzdanınızın tek şifresidir. Güvenli bir yere not edin ve kimseyle paylaşmayın.
+              </p>
+            </div>
+          </div>
+
+          <!-- Security Tip Pill -->
+          <div class="flex items-center justify-between px-3.5 py-2 rounded-full bg-surface-container text-on-surface-variant text-xs">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">visibility_off</span>
+              <span>Etrafınızda kimsenin izlemediğinden emin olun</span>
+            </div>
+            <span class="text-primary text-[10px] font-bold uppercase tracking-wider">Gizli</span>
+          </div>
+
+          <!-- 12-Word Grid Container (2 Symmetrical Columns) -->
+          <div class="relative rounded-2xl bg-surface-container-low p-3.5 shadow-md border border-outline-variant/15 flex flex-col gap-3">
+            <div class="grid grid-cols-2 gap-2" id="simple-seed-grid">
+              ${words.map((w, idx) => `
+                <div class="flex items-center gap-2 px-3 py-2 rounded-xl bg-surface-container hover:bg-surface-container-high transition-colors">
+                  <span class="font-mono text-[11px] text-on-surface-variant/60 w-5">${String(idx + 1).padStart(2, '0')}</span>
+                  <span class="font-mono text-sm text-on-surface font-medium select-all">${esc(w)}</span>
+                </div>
+              `).join('')}
+            </div>
+
+            <!-- Quick Copy & Refresh Action Bar -->
+            <div class="flex items-center justify-between pt-1">
+              <div class="flex items-center gap-1.5">
+                <button type="button" onclick="window.BlocTagSimpleMode.copySeed()"
+                  class="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-surface-container-highest hover:bg-surface-bright text-on-surface active:scale-95 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[16px] text-primary" id="simple-copy-seed-icon" translate="no">content_copy</span>
+                  <span class="text-xs font-medium" id="simple-copy-seed-text">Kelimeleri Kopyala</span>
+                </button>
+                <button type="button" onclick="window.BlocTagSimpleMode.refreshSeed()" title="Yeni Kelime Üret"
+                  class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface flex items-center justify-center active:scale-95 transition-all cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">refresh</span>
+                </button>
+              </div>
+              <span class="text-[11px] font-mono text-on-surface-variant/70 flex items-center gap-1">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                <span>128-bit BIP39</span>
+              </span>
+            </div>
+          </div>
+
+          <!-- Friendly Physical Backup Tips Badge -->
+          <div class="flex items-start gap-2.5 p-3.5 rounded-2xl bg-surface-container-lowest border border-outline-variant/10">
+            <span class="material-symbols-outlined notranslate text-secondary text-[20px] shrink-0 mt-0.5" translate="no">draw</span>
+            <div class="flex flex-col gap-0.5">
+              <span class="text-xs font-semibold text-on-surface">Tavsiye Edilen Yöntem</span>
+              <span class="text-xs text-on-surface-variant leading-relaxed">
+                Kelimeleri tercihen fiziksel bir kağıda yazın ve güvenli bir yerde saklayın. Ekran görüntüsü almaktan kaçının.
+              </span>
+            </div>
+          </div>
+
+          <!-- Custom Animated Switch Confirmation -->
+          <div class="flex items-center justify-between p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 select-none cursor-pointer"
+               onclick="window.BlocTagSimpleMode.toggleSeedSaved()">
+            <div class="flex flex-col pr-3">
+              <span class="text-xs font-semibold text-on-surface">Kelimelerimi güvenli bir yere kaydettim</span>
+              <span class="text-[11px] text-on-surface-variant/80">Kurtarma kelimelerim olmadan hesabıma erişemem</span>
+            </div>
+            <div class="relative w-12 h-7 rounded-full transition-colors duration-200 shrink-0 ${isSaved ? 'bg-primary-container' : 'bg-surface-container-highest'}">
+              <div class="absolute top-1 left-1 w-5 h-5 rounded-full transition-transform duration-200 flex items-center justify-center ${isSaved ? 'translate-x-5 bg-on-primary-container' : 'bg-outline'}">
+                <span class="material-symbols-outlined notranslate text-[14px] text-primary transition-opacity ${isSaved ? 'opacity-100' : 'opacity-0'}" translate="no">check</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Primary CTA Button -->
+          <div class="pt-1 flex flex-col gap-2">
+            <button type="button" id="simple-finalize-wallet-btn"
+              ${isSaved ? '' : 'disabled'}
+              onclick="window.BlocTagSimpleMode.finalizeCreateWallet()"
+              class="w-full h-[52px] rounded-full text-sm font-semibold flex items-center justify-center gap-2 transition-all duration-200 ${isSaved ? 'bg-primary text-on-primary shadow-md active:scale-[0.98] hover:brightness-95 cursor-pointer' : 'bg-surface-container-highest text-on-surface/40 cursor-not-allowed'}">
+              <span>Cüzdanı Başlat &amp; Space'e Git (+1.00 BCT)</span>
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_forward</span>
+            </button>
+            <p class="text-center text-[11px] text-on-surface-variant/60">
+              Merkeziyetsiz ve bağımsız mülkiyet protokolü
+            </p>
+          </div>
+        </div>
+      </main>
+    `;
+  }
+
+  // ── SCR-WLT-HOME: Cüzdanım ve Geçmiş (Mobil) ───────────────────────────────
+  function renderScreenWalletHome() {
+    const acc = getActiveWallet();
+    if (!acc) {
+      return renderScreenOnboardingWelcome();
+    }
+
+    const myHandle = getMyPrimaryHandle();
+    const bal = Number(acc.balance || 0);
+    const price = (typeof window.currentWbctPriceUsd === 'number' && window.currentWbctPriceUsd > 0)
+      ? window.currentWbctPriceUsd
+      : 0.01;
+    const usdVal = bal * price;
+    const hidden = typeof isBalanceHidden !== 'undefined' && isBalanceHidden;
+    const balFormatted = hidden ? '••••••' : (typeof window.formatBct === 'function' ? window.formatBct(bal, 4) : bal.toFixed(4));
+    const usdFormatted = hidden ? '••••' : (typeof window.formatUsdValue === 'function' ? window.formatUsdValue(usdVal) : ('$' + usdVal.toFixed(2)));
+    const shortAddress = typeof window.shortAddr === 'function' ? window.shortAddr(acc.address) : (acc.address.slice(0, 6) + '...' + acc.address.slice(-4));
+
+    const allTxs = (typeof personalTxCache !== 'undefined' && Array.isArray(personalTxCache)) ? personalTxCache : [];
+    const filteredTxs = allTxs.filter(tx => {
+      if (typeof window.classifyPersonalTx !== 'function') return true;
+      const meta = window.classifyPersonalTx(tx, acc.address);
+      if (simpleState.txFilter === 'incoming') return meta.isIncoming;
+      if (simpleState.txFilter === 'outgoing') return !meta.isIncoming;
+      return true;
+    });
+
+    const addressPillHtml = `
+      <button type="button" onclick="if(typeof copyCurrentAddress==='function') copyCurrentAddress();"
+        class="flex items-center gap-1 bg-surface-container px-2.5 py-1 rounded-full text-on-surface hover:bg-surface-container-high transition-colors text-xs font-mono cursor-pointer">
+        <span>${esc(myHandle ? '@' + myHandle : shortAddress)}</span>
+        <span class="material-symbols-outlined notranslate text-[14px] text-on-surface-variant" translate="no">content_copy</span>
+      </button>
+    `;
+
+    return `
+      ${renderTopBar('Cüzdanım', false, addressPillHtml)}
+      <main class="flex-1 flex flex-col w-full px-5 pt-3 pb-24 simple-screen-animate">
+        <!-- Net Portfolio Hero (Exact Stitch Cüzdanım ve Geçmiş Mobil) -->
+        <div class="flex flex-col items-center justify-center pt-4 pb-5 text-center">
+          <div class="flex items-center gap-1.5 mb-1">
+            <span class="text-[11px] font-semibold text-on-surface-variant uppercase tracking-wider">Net Portföy Değeri</span>
+            <button type="button" onclick="if(typeof toggleBalanceVisibility==='function'){ toggleBalanceVisibility(); window.BlocTagSimpleMode.refresh(); }"
+              class="text-on-surface-variant hover:text-on-surface flex items-center cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[15px]" translate="no">${hidden ? 'visibility_off' : 'visibility'}</span>
+            </button>
+          </div>
+          <div class="flex items-baseline justify-center gap-1.5">
+            <span class="text-[36px] leading-[42px] text-on-surface tracking-tight font-bold font-mono">${esc(balFormatted)}</span>
+            <span class="text-lg font-bold text-primary">BCT</span>
+          </div>
+          <div class="inline-flex items-center gap-1.5 mt-2 px-3 py-1 rounded-full bg-surface-container text-primary text-xs font-mono">
+            <span class="material-symbols-outlined notranslate text-[14px]" translate="no">trending_up</span>
+            <span class="font-semibold">≈ ${esc(usdFormatted)}</span>
+            <span class="text-on-surface-variant ml-0.5">• Nonce #${Number(acc.nonce || 0)}</span>
+          </div>
+        </div>
+
+        <!-- Primary 2-Button Action Row (Gönder & Al) -->
+        <div class="grid grid-cols-2 gap-2.5 mb-6">
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-WLT-SEND')"
+            class="flex items-center justify-center gap-2 h-[50px] bg-primary-container text-on-primary-container rounded-full text-sm font-semibold active:scale-[0.98] transition-all shadow-sm cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_upward</span>
+            <span>Gönder</span>
+          </button>
+          <button type="button" onclick="if(typeof openReceiveModal==='function') openReceiveModal();"
+            class="flex items-center justify-center gap-2 h-[50px] bg-surface-container-high hover:bg-surface-bright text-on-surface rounded-full text-sm font-semibold active:scale-[0.98] transition-all cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_downward</span>
+            <span>Al (QR)</span>
+          </button>
+        </div>
+
+        <!-- Quick Utility Chips (PIN Vault, Yeni Cüzdan, BNS) -->
+        <div class="grid grid-cols-3 gap-2 mb-5">
+          <button type="button" onclick="if(typeof openWalletVaultModal==='function') openWalletVaultModal();"
+            class="p-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col items-center gap-1 text-center transition-colors cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-primary text-[18px]" translate="no">shield_lock</span>
+            <span class="text-[11px] font-medium text-on-surface">PIN Kasası</span>
+          </button>
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-ONB-01')"
+            class="p-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col items-center gap-1 text-center transition-colors cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-secondary text-[18px]" translate="no">add_circle</span>
+            <span class="text-[11px] font-medium text-on-surface">Cüzdan Değiştir</span>
+          </button>
+          <button type="button" onclick="if(typeof openNetworkSecurityModal==='function') openNetworkSecurityModal();"
+            class="p-2.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex flex-col items-center gap-1 text-center transition-colors cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-emerald-400 text-[18px]" translate="no">verified_user</span>
+            <span class="text-[11px] font-medium text-on-surface">Ağ Güvenliği</span>
+          </button>
+        </div>
+
+        <!-- İşlem Geçmişi Section -->
+        <div class="flex flex-col w-full">
+          <div class="flex items-center justify-between mb-3">
+            <h2 class="text-base font-semibold text-on-surface">İşlem Geçmişi</h2>
+            <button type="button" onclick="if(typeof refreshCurrentAccountBalance==='function') refreshCurrentAccountBalance(); if(typeof refreshPersonalTransactions==='function') refreshPersonalTransactions().then(()=>window.BlocTagSimpleMode.refresh());"
+              class="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors cursor-pointer" title="Yenile">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">sync</span>
+            </button>
+          </div>
+
+          <!-- Filter Pills (Tümü, Gelenler, Gidenler) -->
+          <div class="flex items-center gap-1 p-1 bg-surface-container-low rounded-full mb-3.5">
+            <button type="button" onclick="window.BlocTagSimpleMode.setTxFilter('all')"
+              class="flex-1 py-1.5 px-3 rounded-full text-center text-xs transition-all cursor-pointer ${simpleState.txFilter === 'all' ? 'bg-surface-container-high text-on-surface font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
+              Tümü
+            </button>
+            <button type="button" onclick="window.BlocTagSimpleMode.setTxFilter('incoming')"
+              class="flex-1 py-1.5 px-3 rounded-full text-center text-xs transition-all cursor-pointer ${simpleState.txFilter === 'incoming' ? 'bg-surface-container-high text-on-surface font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
+              Gelenler
+            </button>
+            <button type="button" onclick="window.BlocTagSimpleMode.setTxFilter('outgoing')"
+              class="flex-1 py-1.5 px-3 rounded-full text-center text-xs transition-all cursor-pointer ${simpleState.txFilter === 'outgoing' ? 'bg-surface-container-high text-on-surface font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
+              Gidenler
+            </button>
+          </div>
+
+          <!-- Transactions Stream -->
+          <div class="flex flex-col gap-2 w-full">
+            ${filteredTxs.length === 0 ? `
+              <div class="p-6 rounded-2xl bg-surface-container-low text-center text-xs text-on-surface-variant">
+                Bu filtrede henüz işlem bulunmuyor.
+              </div>
+            ` : filteredTxs.slice(0, 25).map((tx) => {
+              const meta = typeof window.classifyPersonalTx === 'function'
+                ? window.classifyPersonalTx(tx, acc.address)
+                : { title: 'BCT Transfer', icon: 'swap_horiz', iconColor: 'text-primary', isIncoming: true, sign: '+', displayAmount: Number(tx.amount || 0), counterparty: tx.receiver || '--' };
+              const amtStr = typeof window.formatBct === 'function' ? window.formatBct(Math.abs(meta.displayAmount), 4) : Number(meta.displayAmount || 0).toFixed(4);
+              const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(tx.timestamp) : '';
+              const cpShort = typeof window.shortAddr === 'function' ? window.shortAddr(meta.counterparty) : String(meta.counterparty || '');
+              const txHashAttr = escAttr(tx.tx_hash || tx.hash || '');
+
+              return `
+                <div onclick="window.BlocTagSimpleMode.openTxByHash('${txHashAttr}')"
+                  class="flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors cursor-pointer">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center shrink-0 ${esc(meta.iconColor)}">
+                      <span class="material-symbols-outlined notranslate text-[20px]" translate="no">${esc(meta.icon)}</span>
+                    </div>
+                    <div class="flex flex-col min-w-0">
+                      <span class="text-xs font-semibold text-on-surface truncate">${esc(meta.title)}</span>
+                      <div class="flex items-center gap-1.5 text-[11px] text-on-surface-variant truncate font-mono">
+                        <span>${esc(cpShort)}</span>
+                        <span class="opacity-40">•</span>
+                        <span class="font-sans">${esc(timeStr)}</span>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="flex flex-col items-end shrink-0 pl-2">
+                    <span class="text-xs font-mono font-semibold ${meta.isIncoming ? 'text-primary' : 'text-on-surface'}">${meta.displayAmount > 0 ? esc(meta.sign) : ''}${esc(amtStr)} BCT</span>
+                    <div class="flex items-center gap-1">
+                      <span class="text-[10px] text-on-surface-variant">${tx.status === 'mempool' ? 'Mempool' : 'Onaylandı'}</span>
+                      <span class="w-1.5 h-1.5 rounded-full ${tx.status === 'mempool' ? 'bg-secondary animate-pulse' : 'bg-primary'}"></span>
+                    </div>
+                  </div>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </div>
+      </main>
+    `;
+  }
+
+  // ── SCR-WLT-SEND: Para Gönder (Mobil) ──────────────────────────────────────
+  function renderScreenWalletSend() {
+    const acc = getActiveWallet();
+    if (!acc) return renderScreenOnboardingWelcome();
+
+    const bal = Number(acc.balance || 0);
+    const balStr = typeof window.formatBct === 'function' ? window.formatBct(bal, 4) : bal.toFixed(4);
+    const preAmt = simpleState.sendPrefillAmount || '';
+    const preRec = simpleState.sendPrefillRecipient || '';
+
+    return `
+      ${renderTopBar('Kripto Gönder', true)}
+      <main class="flex-1 flex flex-col w-full px-5 pt-2 pb-24 simple-screen-animate">
+        <div class="flex items-center justify-between py-2">
+          <div class="flex flex-col">
+            <span class="text-[10px] text-outline uppercase tracking-wider font-mono">İşlem</span>
+            <h1 class="text-xl font-semibold text-on-surface">BCT Gönder</h1>
+          </div>
+          <div class="flex items-center gap-1.5 bg-surface-container-high px-2.5 py-1 rounded-full text-on-surface-variant text-[11px]">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary animate-ping"></span>
+            <span>Hızlı Mod</span>
+          </div>
+        </div>
+
+        <!-- Asset Selector Chip -->
+        <section class="flex flex-col gap-1.5 mt-1">
+          <div class="flex items-center justify-between px-1">
+            <span class="text-xs text-on-surface-variant font-medium">Aktif Varlık</span>
+            <span class="text-xs text-primary font-mono">Kullanılabilir: ${esc(balStr)} BCT</span>
+          </div>
+          <div class="flex gap-2 py-1">
+            <div class="flex items-center gap-2.5 px-4 py-2.5 rounded-2xl bg-surface-container-high text-on-surface border border-primary/25">
+              <div class="w-8 h-8 rounded-full bg-primary-container/20 flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">currency_exchange</span>
+              </div>
+              <div class="flex flex-col text-left">
+                <span class="text-xs font-semibold text-on-surface leading-tight">BCT (BlocTag L1)</span>
+                <span class="text-[11px] font-mono text-on-surface-variant leading-tight">${esc(balStr)} BCT</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Hero Amount Card (Exact Stitch Para Gönder Mobil) -->
+        <section class="flex flex-col items-center justify-center my-4 bg-surface-container-low/70 rounded-2xl py-6 px-4 shadow-sm relative overflow-hidden border border-outline-variant/15">
+          <div class="absolute -right-8 -top-8 w-28 h-28 rounded-full bg-primary/5 blur-2xl pointer-events-none"></div>
+          <div class="flex items-baseline justify-center gap-1.5 w-full">
+            <span class="text-2xl font-bold text-outline">BCT</span>
+            <input id="simple-send-amount" type="text" inputmode="decimal" placeholder="0"
+              value="${esc(preAmt)}"
+              oninput="window.BlocTagSimpleMode.updateSendPreview()"
+              class="bg-transparent text-[38px] leading-[42px] font-bold text-on-surface text-center focus:outline-none w-52 caret-primary tracking-tight font-mono" />
+          </div>
+          <div class="flex items-center gap-1 mt-1.5 text-on-surface-variant text-xs font-mono">
+            <span>Net Alıcıya Geçen:</span>
+            <strong class="text-primary" id="simple-send-net-preview">0.00 BCT</strong>
+          </div>
+          <div class="grid grid-cols-4 gap-2 w-full max-w-xs mt-5">
+            <button type="button" onclick="window.BlocTagSimpleMode.setSendPct(0.25)"
+              class="py-2 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium active:scale-95 transition-all cursor-pointer">%25</button>
+            <button type="button" onclick="window.BlocTagSimpleMode.setSendPct(0.50)"
+              class="py-2 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium active:scale-95 transition-all cursor-pointer">%50</button>
+            <button type="button" onclick="window.BlocTagSimpleMode.setSendPct(0.75)"
+              class="py-2 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium active:scale-95 transition-all cursor-pointer">%75</button>
+            <button type="button" onclick="window.BlocTagSimpleMode.setSendPct(1.00)"
+              class="py-2 rounded-full bg-surface-container-highest text-primary text-xs font-semibold active:scale-95 transition-all cursor-pointer">Tümü</button>
+          </div>
+        </section>
+
+        <!-- Recipient Input -->
+        <section class="flex flex-col gap-1.5 mb-3">
+          <label class="text-xs text-on-surface-variant font-medium px-1" for="simple-send-recipient">Alıcı Adresi veya @isim.bct</label>
+          <div class="flex items-center bg-surface-container-low rounded-2xl px-3.5 py-3 border border-outline-variant/15 focus-within:border-primary transition-colors">
+            <span class="material-symbols-outlined notranslate text-outline text-[20px] mr-2" translate="no">alternate_email</span>
+            <input id="simple-send-recipient" type="text" autocomplete="off" spellcheck="false"
+              value="${esc(preRec)}"
+              placeholder="BCT... veya kullanici.bct"
+              class="bg-transparent flex-1 text-xs font-mono text-on-surface placeholder:text-outline/60 focus:outline-none min-w-0" />
+            <div class="flex items-center gap-1.5 shrink-0 ml-2">
+              <button type="button" onclick="window.BlocTagSimpleMode.pasteRecipient()"
+                class="flex items-center gap-1 bg-surface-container-highest px-2.5 py-1 rounded-full text-on-surface text-[11px] font-medium hover:brightness-110 active:scale-95 transition-all cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[13px]" translate="no">content_paste</span>
+                <span>Yapıştır</span>
+              </button>
+              <button type="button" onclick="if(typeof openQrScannerModal==='function') openQrScannerModal();"
+                class="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center text-on-surface hover:brightness-110 active:scale-95 transition-all cursor-pointer" title="QR Tara">
+                <span class="material-symbols-outlined notranslate text-[17px]" translate="no">qr_code_scanner</span>
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Fee Info -->
+        <div class="flex items-center justify-between bg-surface-container-low/50 px-4 py-2.5 rounded-2xl mb-5 text-on-surface-variant text-xs">
+          <div class="flex items-center gap-2">
+            <span class="material-symbols-outlined notranslate text-[17px] text-primary" translate="no">local_gas_station</span>
+            <span>Ağ Ücreti (%1 Protokol):</span>
+            <span class="text-on-surface font-mono font-medium" id="simple-send-fee-preview">0.00 BCT</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+            <span class="text-[11px]">Anlık Onay</span>
+          </div>
+        </div>
+
+        <!-- Submit Button -->
+        <div class="flex flex-col gap-2 mt-auto">
+          <button type="button" id="simple-send-submit-btn" onclick="window.BlocTagSimpleMode.executeSend()"
+            class="w-full h-[52px] rounded-full bg-primary text-on-primary text-base font-semibold flex items-center justify-center gap-2 shadow-lg active:scale-[0.98] transition-transform cursor-pointer">
+            <span>Devam Et ve İmzala</span>
+            <span class="material-symbols-outlined notranslate text-[20px]" translate="no">arrow_forward</span>
+          </button>
+          <div class="flex items-center justify-center gap-3 py-1 text-outline text-[11px]">
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">verified_user</span>
+              <span>Uçtan Uca ECDSA İmzalı</span>
+            </span>
+            <span>•</span>
+            <span class="flex items-center gap-1">
+              <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">timer</span>
+              <span>Anlık Blok Kaydı</span>
+            </span>
+          </div>
+        </div>
+      </main>
+    `;
+  }
+
+  // ── SCR-SPC-03: Space - Sade Sosyal Akış (Default Simple Screen) ───────────
+  function renderScreenSpaceFeed() {
+    const acc = getActiveWallet();
+    const myHandle = getMyPrimaryHandle();
+    const displayTag = getDisplayHandleOrAddr(acc ? acc.address : '', myHandle);
+
+    const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
+    const q = String(simpleState.searchQuery || '').trim().toLowerCase();
+
+    const filteredPosts = posts.filter(p => {
+      if (!p) return false;
+      if (simpleState.feedFilter === 'following' && acc && acc.address) {
+        // Show user's own posts or posts from verified BNS handles
+        const isMine = String(p.author || '').toLowerCase() === acc.address.toLowerCase();
+        const hasBns = Boolean(p.author_bns && p.author_bns !== 'anonymous');
+        if (!isMine && !hasBns) return false;
+      }
+      if (q) {
+        const content = String(p.content || '').toLowerCase();
+        const author = String(p.author || '').toLowerCase();
+        const bns = String(p.author_bns || '').toLowerCase();
+        return content.includes(q) || author.includes(q) || bns.includes(q);
+      }
+      return true;
+    });
+
+    return `
+      ${renderTopBar('Space', false)}
+      <main class="flex-1 flex flex-col w-full px-4 pt-2 pb-24 simple-screen-animate">
+        <!-- Community Space Sub-Header & Live Status (Exact Stitch SCR-SPC-03) -->
+        <div class="flex items-center justify-between py-2">
+          <div class="flex items-center gap-2.5 min-w-0 cursor-pointer"
+               onclick="window.BlocTagSimpleMode.go('${acc ? 'SCR-PRF-05' : 'SCR-ONB-01'}', { profileTarget: '' })">
+            <div class="relative shrink-0">
+              <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden">
+                <span class="material-symbols-outlined notranslate text-primary text-[22px]" translate="no">account_circle</span>
+              </div>
+              <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-primary ring-2 ring-surface"></span>
+            </div>
+            <div class="flex flex-col min-w-0">
+              <div class="flex items-center gap-1.5">
+                <span class="text-base font-semibold text-on-surface">Space</span>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-mono text-[11px] font-semibold truncate max-w-[150px]">
+                  ${esc(displayTag)}
+                </span>
+              </div>
+              <span class="text-[11px] text-on-surface-variant truncate">
+                ${acc ? (typeof window.formatBct === 'function' ? window.formatBct(acc.balance || 0, 2) + ' BCT • Zincir Üstü Aktif' : 'Zincir Üstü Aktif') : 'Cüzdan oluşturun (+1.00 BCT bonus)'}
+              </span>
+            </div>
+          </div>
+
+          <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" aria-label="Bildirimler" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
+              class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">notifications</span>
+            </button>
+            <button type="button" aria-label="Arama" onclick="window.BlocTagSimpleMode.toggleSearch()"
+              class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">search</span>
+            </button>
+          </div>
+        </div>
+
+        ${simpleState.searchBarOpen ? `
+          <div class="mb-2.5 flex items-center bg-surface-container-low rounded-full px-3.5 py-2 border border-outline-variant/25">
+            <span class="material-symbols-outlined notranslate text-[17px] text-outline mr-2" translate="no">search</span>
+            <input id="simple-space-search-input" type="search" value="${esc(simpleState.searchQuery)}"
+              oninput="window.BlocTagSimpleMode.setSearchQuery(this.value)"
+              placeholder="Gönderi, #etiket veya @kullanici ara..."
+              class="w-full bg-transparent text-xs text-on-surface placeholder:text-outline focus:outline-none" />
+          </div>
+        ` : ''}
+
+        <!-- Share Quick Composer Card (Exact Stitch SCR-SPC-03) -->
+        <div class="mt-1 bg-surface-container-low rounded-2xl shadow-sm p-3.5 border border-outline-variant/15">
+          <div class="flex items-start gap-2.5">
+            <div class="w-9 h-9 rounded-full bg-surface-container-high overflow-hidden shrink-0 flex items-center justify-center text-primary">
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">person</span>
+            </div>
+            <div class="flex-1 min-w-0">
+              <textarea id="simple-composer-input" rows="2" maxlength="280"
+                placeholder="Bir şeyler paylaş... (0.10 BCT)"
+                class="w-full bg-transparent text-sm text-on-surface placeholder:text-outline resize-none focus:outline-none leading-relaxed"></textarea>
+              <div class="flex items-center justify-between pt-1.5 border-t border-outline-variant/10">
+                <div class="flex items-center gap-1 text-on-surface-variant">
+                  <button type="button" onclick="window.BlocTagSimpleMode.insertComposerTag('$BCT ')"
+                    class="px-2 py-1 rounded-full hover:bg-surface-container-high text-primary font-mono text-[11px] font-semibold transition-colors active:scale-95 cursor-pointer">
+                    $BCT
+                  </button>
+                  <button type="button" onclick="window.BlocTagSimpleMode.insertComposerTag('🔥 ')"
+                    class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high hover:text-primary transition-colors active:scale-95 cursor-pointer">
+                    <span class="material-symbols-outlined notranslate text-[18px]" translate="no">sentiment_satisfied</span>
+                  </button>
+                  <button type="button" onclick="window.BlocTagSimpleMode.insertComposerTag('@')"
+                    class="w-8 h-8 rounded-full flex items-center justify-center hover:bg-surface-container-high hover:text-primary transition-colors active:scale-95 cursor-pointer">
+                    <span class="material-symbols-outlined notranslate text-[18px]" translate="no">alternate_email</span>
+                  </button>
+                </div>
+                <button type="button" id="simple-post-submit-btn" onclick="window.BlocTagSimpleMode.submitPost()"
+                  class="h-9 px-4 bg-primary text-on-primary text-xs rounded-full flex items-center justify-center font-semibold hover:brightness-95 active:scale-95 transition-all shadow-sm cursor-pointer">
+                  Paylaş
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Segmented Feed Switcher (Hepsi / Takip Edilenler) -->
+        <div class="flex p-1 bg-surface-container-low rounded-full mt-3 border border-outline-variant/10">
+          <button type="button" onclick="window.BlocTagSimpleMode.setFeedFilter('all')"
+            class="flex-1 text-center rounded-full text-xs font-medium transition-all py-1.5 cursor-pointer ${simpleState.feedFilter === 'all' ? 'bg-surface-container text-on-surface font-semibold shadow-xs' : 'text-on-surface-variant hover:text-on-surface'}">
+            Hepsi
+          </button>
+          <button type="button" onclick="window.BlocTagSimpleMode.setFeedFilter('following')"
+            class="flex-1 text-center rounded-full text-xs font-medium transition-all py-1.5 cursor-pointer ${simpleState.feedFilter === 'following' ? 'bg-surface-container text-on-surface font-semibold shadow-xs' : 'text-on-surface-variant hover:text-on-surface'}">
+            Doğrulanmış &amp; Takip
+          </button>
+        </div>
+
+        <!-- Feed List Stream (Exact Stitch Post Cards) -->
+        <div class="flex flex-col gap-2.5 mt-3" id="simple-feed-container">
+          ${filteredPosts.length === 0 ? `
+            <div class="p-8 rounded-2xl bg-surface-container-low text-center flex flex-col items-center gap-2 text-on-surface-variant">
+              <span class="material-symbols-outlined notranslate text-[28px] text-primary" translate="no">forum</span>
+              <span class="text-xs">Gönderiler yükleniyor veya bu filtrede gönderi yok...</span>
+            </div>
+          ` : filteredPosts.slice(0, 35).map(post => renderSimplePostCard(post, acc)).join('')}
+        </div>
+
+        <!-- Floating Action Button (+ Yaz) -->
+        <div class="fixed right-5 bottom-20 z-40">
+          <button type="button" onclick="window.BlocTagSimpleMode.focusComposer()"
+            class="h-11 px-4 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center gap-1.5 shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[18px]" translate="no">edit</span>
+            <span>Yaz</span>
+          </button>
+        </div>
+      </main>
+    `;
+  }
+
+  function renderSimplePostCard(post, acc) {
+    const pid = escAttr(post.post_id || post.id || '');
+    const authorAddr = String(post.author || '');
+    const authorBns = (post.author_bns && post.author_bns !== 'anonymous') ? String(post.author_bns).replace(/^@/, '') : '';
+    const displayName = authorBns ? ('@' + authorBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : authorAddr.slice(0, 10));
+    const subHandle = authorBns ? (typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : '') : '@onchain';
+    const timeAgo = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(post.timestamp) : '';
+    const myAddr = acc ? acc.address : '';
+    const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr));
+    const likesCount = Number(post.likes_count || (Array.isArray(post.likes) ? post.likes.length : 0));
+    const commentsCount = Number(post.comments_count || (Array.isArray(post.comments) ? post.comments.length : 0));
+    const bodyHtml = typeof window.formatSpaceBodyHtml === 'function'
+      ? window.formatSpaceBodyHtml(post.content || '')
+      : esc(post.content || '');
+    const profileTargetAttr = escAttr(authorBns || authorAddr);
+
+    return `
+      <article onclick="window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: '${pid}' })"
+        class="bg-surface-container-low rounded-2xl shadow-sm transition-all hover:bg-surface-container p-3.5 border border-outline-variant/10 cursor-pointer">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center gap-2.5 min-w-0"
+               onclick="event.stopPropagation(); window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${profileTargetAttr}' })">
+            <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary shrink-0">
+              <span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>
+            </div>
+            <div class="min-w-0">
+              <div class="flex items-center gap-1">
+                <span class="text-xs font-semibold text-on-surface truncate">${esc(displayName)}</span>
+                <span class="material-symbols-outlined notranslate text-primary text-[15px] shrink-0" style="font-variation-settings: 'FILL' 1;" translate="no">verified</span>
+              </div>
+              <span class="text-[11px] text-on-surface-variant truncate block">${esc(subHandle)} • ${esc(timeAgo)}</span>
+            </div>
+          </div>
+          <button type="button" aria-label="Paylaş"
+            onclick="event.stopPropagation(); if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
+            class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[18px]" translate="no">more_horiz</span>
+          </button>
+        </div>
+
+        <div class="mt-2.5 text-sm text-on-surface leading-relaxed break-words">
+          ${bodyHtml}
+        </div>
+
+        <div class="mt-3.5 flex items-center justify-between pt-2 border-t border-outline-variant/10 text-on-surface-variant">
+          <div class="flex items-center gap-4">
+            <button type="button"
+              onclick="event.stopPropagation(); window.BlocTagSimpleMode.likePost('${pid}', event)"
+              class="flex items-center gap-1.5 ${isLiked ? 'text-tertiary font-semibold' : 'hover:text-tertiary'} transition-colors group cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[19px] group-hover:scale-110 transition-transform"
+                ${isLiked ? 'style="font-variation-settings: \'FILL\' 1;"' : ''} translate="no">favorite</span>
+              <span class="text-xs tabular-nums">${likesCount}</span>
+            </button>
+            <button type="button"
+              onclick="event.stopPropagation(); window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: '${pid}' })"
+              class="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[19px]" translate="no">chat_bubble</span>
+              <span class="text-xs tabular-nums">${commentsCount}</span>
+            </button>
+          </div>
+          <button type="button"
+            onclick="event.stopPropagation(); window.BlocTagSimpleMode.tipAuthor('${escAttr(authorAddr)}')"
+            class="px-3 py-1.5 rounded-full bg-surface-container-high hover:bg-primary hover:text-on-primary text-primary transition-all flex items-center gap-1.5 active:scale-95 cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[15px]" translate="no">volunteer_activism</span>
+            <span class="text-[11px] font-semibold">Bahşiş</span>
+          </button>
+        </div>
+      </article>
+    `;
+  }
+
+  // ── SCR-SPC-04: Space - Gönderi Detayı ─────────────────────────────────────
+  function renderScreenPostDetail() {
+    const acc = getActiveWallet();
+    const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
+    const post = posts.find(p => String(p.post_id || p.id) === String(simpleState.activePostId)) || posts[0];
+
+    if (!post) {
+      return `
+        ${renderTopBar('Gönderi Detayı', true)}
+        <main class="flex-1 flex flex-col items-center justify-center p-6 text-center simple-screen-animate">
+          <p class="text-xs text-on-surface-variant mb-3">Gönderi bulunamadı veya yükleniyor.</p>
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
+            class="px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-semibold cursor-pointer">
+            Space Akışına Dön
+          </button>
+        </main>
+      `;
+    }
+
+    const pid = escAttr(post.post_id || post.id || '');
+    const authorAddr = String(post.author || '');
+    const authorBns = (post.author_bns && post.author_bns !== 'anonymous') ? String(post.author_bns).replace(/^@/, '') : '';
+    const displayName = authorBns ? ('@' + authorBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : authorAddr);
+    const myAddr = acc ? acc.address : '';
+    const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr));
+    const likesCount = Number(post.likes_count || (Array.isArray(post.likes) ? post.likes.length : 0));
+    const comments = Array.isArray(post.comments) ? post.comments : [];
+    const earned = Number(post.author_earnings || 0);
+    const fullDate = typeof window.formatFullDate === 'function' ? window.formatFullDate(post.timestamp) : '';
+    const bodyHtml = typeof window.formatSpaceBodyHtml === 'function'
+      ? window.formatSpaceBodyHtml(post.content || '')
+      : esc(post.content || '');
+    const profileTargetAttr = escAttr(authorBns || authorAddr);
+
+    return `
+      ${renderTopBar('Gönderi Detayı', true)}
+      <main class="flex-1 flex flex-col w-full px-4 pt-3 pb-36 simple-screen-animate">
+        <!-- Main Post Card (Exact Stitch SCR-SPC-04) -->
+        <section class="bg-surface-container rounded-2xl flex flex-col shadow-sm p-4 gap-3 border border-outline-variant/15">
+          <div class="flex items-center justify-between">
+            <div class="flex items-center gap-2.5 min-w-0 cursor-pointer"
+                 onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${profileTargetAttr}' })">
+              <div class="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0">
+                <span class="material-symbols-outlined notranslate text-[24px]" translate="no">person</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-1">
+                  <span class="text-sm font-semibold text-on-surface truncate">${esc(displayName)}</span>
+                  <span class="material-symbols-outlined notranslate text-[16px] text-primary" style="font-variation-settings: 'FILL' 1;" translate="no">verified</span>
+                </div>
+                <span class="text-[11px] font-mono text-on-surface-variant truncate">${esc(typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : authorAddr)}</span>
+              </div>
+            </div>
+            <button type="button" onclick="if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
+              class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">ios_share</span>
+            </button>
+          </div>
+
+          <div class="text-base text-on-surface leading-relaxed break-words pt-1">
+            ${bodyHtml}
+          </div>
+
+          <div class="flex items-center justify-between pt-1 text-xs">
+            <span class="text-on-surface-variant">${esc(fullDate)}</span>
+            <div class="flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-surface-container-high">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span class="text-[11px] text-on-surface-variant font-medium">Blok #${esc(post.block_index ?? '--')}</span>
+            </div>
+          </div>
+
+          <!-- Metrics Strip -->
+          <div class="flex items-center justify-between py-2.5 px-3.5 rounded-xl bg-surface-container-low text-xs">
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold text-on-surface tabular-nums">${likesCount}</span>
+              <span class="text-on-surface-variant">Beğeni</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold text-on-surface tabular-nums">${comments.length}</span>
+              <span class="text-on-surface-variant">Yorum</span>
+            </div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-semibold text-primary font-mono tabular-nums">+${typeof window.formatBct === 'function' ? window.formatBct(earned, 3) : earned.toFixed(3)} BCT</span>
+              <span class="text-on-surface-variant">Telif</span>
+            </div>
+          </div>
+
+          <!-- 4-Action Cluster -->
+          <div class="grid grid-cols-4 gap-1.5 pt-1">
+            <button type="button" onclick="window.BlocTagSimpleMode.likePost('${pid}', event)"
+              class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest transition-all active:scale-95 cursor-pointer ${isLiked ? 'text-tertiary font-semibold' : 'text-on-surface-variant'}">
+              <span class="material-symbols-outlined notranslate text-[19px]" ${isLiked ? 'style="font-variation-settings: \'FILL\' 1;"' : ''} translate="no">favorite</span>
+              <span class="text-[10.5px]">Beğen</span>
+            </button>
+            <button type="button" onclick="document.getElementById('simple-comment-input')?.focus()"
+              class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-primary transition-all active:scale-95 cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[19px]" translate="no">chat_bubble</span>
+              <span class="text-[10.5px]">Yorum</span>
+            </button>
+            <button type="button" onclick="if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
+              class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface-variant hover:text-primary transition-all active:scale-95 cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[19px]" translate="no">repeat</span>
+              <span class="text-[10.5px]">Paylaş</span>
+            </button>
+            <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(authorAddr)}')"
+              class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-primary transition-all active:scale-95 cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[19px]" style="font-variation-settings: 'FILL' 1;" translate="no">payments</span>
+              <span class="text-[10.5px] font-semibold">Bahşiş</span>
+            </button>
+          </div>
+        </section>
+
+        <!-- Comments Section Header -->
+        <div class="flex items-center justify-between pt-4 pb-2 px-1">
+          <div class="flex items-center gap-2">
+            <h2 class="text-sm font-semibold text-on-surface">Yorumlar</h2>
+            <span class="px-2 py-0.5 rounded-full bg-surface-container text-on-surface-variant text-xs font-semibold">${comments.length}</span>
+          </div>
+          <span class="text-[11px] text-primary">+0.004 BCT Yazar Telifi</span>
+        </div>
+
+        <!-- Comments List -->
+        <section class="flex flex-col gap-2">
+          ${comments.length === 0 ? `
+            <div class="p-6 rounded-2xl bg-surface-container-low text-center text-xs text-on-surface-variant">
+              İlk zincir üstü yorumu aşağıdan siz yazın!
+            </div>
+          ` : comments.slice().reverse().map(c => {
+            const cAddr = String(c.commenter || '');
+            const cBns = (c.commenter_bns && c.commenter_bns !== 'anonymous') ? String(c.commenter_bns).replace(/^@/, '') : '';
+            const cName = cBns ? ('@' + cBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(cAddr) : cAddr);
+            const cTime = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(c.timestamp) : '';
+            const cBody = typeof window.formatSpaceBodyHtml === 'function' ? window.formatSpaceBodyHtml(c.content || '') : esc(c.content || '');
+            return `
+              <article class="bg-surface-container rounded-2xl px-3.5 py-3 flex flex-col gap-1.5 border border-outline-variant/10">
+                <div class="flex items-center justify-between">
+                  <div class="flex items-center gap-2 min-w-0 cursor-pointer"
+                       onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${escAttr(cBns || cAddr)}' })">
+                    <div class="w-8 h-8 rounded-full bg-surface-container-high flex items-center justify-center text-secondary shrink-0">
+                      <span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>
+                    </div>
+                    <div class="flex items-center gap-1.5 min-w-0">
+                      <span class="text-xs font-semibold text-on-surface truncate">${esc(cName)}</span>
+                      <span class="material-symbols-outlined notranslate text-[13px] text-primary" style="font-variation-settings: 'FILL' 1;" translate="no">verified</span>
+                      <span class="text-[11px] text-on-surface-variant">· ${esc(cTime)}</span>
+                    </div>
+                  </div>
+                  <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(cAddr)}')"
+                    class="text-[11px] text-primary hover:underline font-medium cursor-pointer">Bahşiş</button>
+                </div>
+                <div class="text-xs text-on-surface leading-relaxed pl-10 break-words">
+                  ${cBody}
+                </div>
+              </article>
+            `;
+          }).join('')}
+        </section>
+
+        <!-- Sticky Bottom Reply Bar (Above bottom nav) -->
+        <div class="fixed bottom-16 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-40 bg-surface-dim/95 backdrop-blur-xl px-4 py-2.5 border-t border-outline-variant/15">
+          <form class="flex items-center gap-2 bg-surface-container rounded-full p-1.5 shadow-md border border-outline-variant/20"
+                onsubmit="event.preventDefault(); window.BlocTagSimpleMode.submitComment('${pid}');">
+            <div class="w-8 h-8 rounded-full bg-surface-container-high ml-1 flex items-center justify-center text-primary shrink-0">
+              <span class="material-symbols-outlined notranslate text-[17px]" translate="no">person</span>
+            </div>
+            <input id="simple-comment-input" type="text" maxlength="140" autocomplete="off"
+              placeholder="Düşünceni yaz... (0.02 BCT)"
+              class="flex-1 bg-transparent text-xs text-on-surface placeholder:text-outline focus:outline-none px-1.5 min-w-0" />
+            <button type="submit" id="simple-comment-submit-btn"
+              class="h-8 px-3.5 rounded-full bg-primary-container text-on-primary text-xs font-semibold flex items-center justify-center gap-1 hover:brightness-95 active:scale-95 transition-all shrink-0 cursor-pointer">
+              <span>Gönder</span>
+              <span class="material-symbols-outlined notranslate text-[15px]" translate="no">arrow_upward</span>
+            </button>
+          </form>
+        </div>
+      </main>
+    `;
+  }
+
+  // ── SCR-PRF-05: Space - Kullanıcı Profili ──────────────────────────────────
+  function renderScreenProfile() {
+    const acc = getActiveWallet();
+    const myHandle = getMyPrimaryHandle();
+    const targetRaw = String(simpleState.profileTarget || '').trim();
+    const isMyProfile = !targetRaw ||
+      (acc && targetRaw.toLowerCase() === acc.address.toLowerCase()) ||
+      (myHandle && targetRaw.toLowerCase() === myHandle.toLowerCase());
+
+    if (isMyProfile && !acc) {
+      return renderScreenOnboardingWelcome();
+    }
+
+    const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
+    const targetAddr = isMyProfile ? (acc ? acc.address : '') : targetRaw;
+    const userPosts = posts.filter(p => {
+      if (!p) return false;
+      const pAddr = String(p.author || '').toLowerCase();
+      const pBns = String(p.author_bns || '').toLowerCase().replace(/^@/, '');
+      const tLow = targetAddr.toLowerCase().replace(/^@/, '');
+      if (isMyProfile && acc) {
+        return pAddr === acc.address.toLowerCase() || (myHandle && pBns === myHandle.toLowerCase());
+      }
+      return pAddr === tLow || pBns === tLow;
+    });
+
+    const resolvedBns = isMyProfile
+      ? myHandle
+      : (userPosts.find(p => p.author_bns && p.author_bns !== 'anonymous')?.author_bns || (targetRaw.endsWith('.bct') ? targetRaw : ''));
+    const resolvedAddress = isMyProfile
+      ? (acc ? acc.address : '')
+      : (userPosts[0]?.author || targetRaw);
+
+    const displayTitle = resolvedBns ? ('@' + resolvedBns.replace(/^@/, '')) : (typeof window.shortAddr === 'function' ? window.shortAddr(resolvedAddress) : resolvedAddress);
+    const shortWallet = typeof window.shortAddr === 'function' ? window.shortAddr(resolvedAddress) : resolvedAddress;
+    const totalLikesReceived = userPosts.reduce((accSum, p) => accSum + Number(p.likes_count || (p.likes ? p.likes.length : 0)), 0);
+    const totalRoyalties = userPosts.reduce((accSum, p) => accSum + Number(p.author_earnings || 0), 0);
+
+    return `
+      ${renderTopBar('Profil', !isMyProfile)}
+      <main class="flex-1 flex flex-col w-full pb-24 simple-screen-animate">
+        <!-- Minimalist Cover Scrim (Exact Stitch SCR-PRF-05) -->
+        <div class="relative w-full h-32 bg-gradient-to-b from-surface-container to-surface overflow-hidden">
+          <div class="absolute inset-0 opacity-30 bg-[radial-gradient(circle_at_top,_var(--tw-gradient-stops))] from-primary/40 via-transparent to-transparent"></div>
+          <div class="absolute top-3.5 right-4 flex items-center gap-2">
+            <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high/85 backdrop-blur-md text-primary text-[11px] font-semibold shadow-sm">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span>Mainnet</span>
+            </span>
+          </div>
+        </div>
+
+        <!-- Profile Identity Cluster -->
+        <div class="px-5 -mt-12 flex flex-col relative z-10">
+          <div class="flex items-end justify-between">
+            <div class="relative">
+              <div class="w-22 h-22 rounded-full p-1 bg-surface shadow-xl">
+                <div class="w-20 h-20 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary">
+                  <span class="material-symbols-outlined notranslate text-[42px]" translate="no">person</span>
+                </div>
+              </div>
+              <div class="absolute bottom-1.5 right-1.5 w-4 h-4 rounded-full bg-surface p-0.5 flex items-center justify-center">
+                <div class="w-full h-full rounded-full bg-primary"></div>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2 pb-1">
+              ${isMyProfile ? `
+                <button type="button" onclick="if(typeof openWalletVaultModal==='function') openWalletVaultModal();"
+                  class="h-9 px-3.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">tune</span>
+                  <span>Güvenlik &amp; Kasa</span>
+                </button>
+              ` : `
+                <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(resolvedAddress)}')"
+                  class="h-9 px-3.5 rounded-full bg-primary text-on-primary text-xs font-semibold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">volunteer_activism</span>
+                  <span>Bahşiş Gönder</span>
+                </button>
+              `}
+              <button type="button" onclick="if(typeof openUserProfile==='function') openUserProfile('${escAttr(resolvedBns || resolvedAddress)}');"
+                title="Detaylı Zincir Üstü Profili Aç"
+                class="w-9 h-9 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center transition-all active:scale-90 cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[17px]" translate="no">open_in_full</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- User Meta Info -->
+          <div class="flex flex-col mt-3">
+            <div class="flex items-center gap-1.5">
+              <h1 class="text-xl font-bold text-on-surface tracking-tight truncate">${esc(displayTitle)}</h1>
+              <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-primary/10 text-primary">
+                <span class="material-symbols-outlined notranslate text-[14px]" style="font-variation-settings: 'FILL' 1;" translate="no">verified</span>
+              </span>
+            </div>
+
+            <!-- Handle & Status Badge -->
+            <div class="flex items-center gap-2 mt-1.5 flex-wrap">
+              <button type="button" onclick="if(typeof copyText==='function') copyText('${escAttr(resolvedBns || resolvedAddress)}', 'Kimlik kopyalandı!');"
+                class="group flex items-center gap-1 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+                <span class="text-xs text-primary font-mono font-medium">${esc(resolvedBns ? '@' + resolvedBns.replace(/^@/, '') : shortWallet)}</span>
+                <span class="material-symbols-outlined notranslate text-[14px] text-outline group-hover:text-primary" translate="no">content_copy</span>
+              </button>
+              <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+              <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-primary text-[10.5px] font-medium">
+                <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+                <span>Aktif L1</span>
+              </span>
+            </div>
+
+            <!-- Compact Wallet Strip -->
+            <div class="mt-2.5 flex items-center gap-2 flex-wrap">
+              <button type="button" onclick="if(typeof copyText==='function') copyText('${escAttr(resolvedAddress)}', 'Cüzdan adresi kopyalandı!');"
+                class="flex items-center gap-2 px-3 py-1.5 rounded-full bg-surface-container-low hover:bg-surface-container text-on-surface-variant transition-all active:scale-95 cursor-pointer border border-outline-variant/15">
+                <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">account_balance_wallet</span>
+                <span class="text-xs tracking-wider font-mono">${esc(shortWallet)}</span>
+                <span class="material-symbols-outlined notranslate text-[13px]" translate="no">file_copy</span>
+              </button>
+            </div>
+
+            <!-- Bio Statement -->
+            <p class="text-xs text-on-surface/90 leading-relaxed mt-2.5">
+              Doğrulanmış BlocTag Space üreticisi ✦ Sansüre dayanıklı Layer-1 blokzincir üzerinde içerik paylaşıyor ve anlık telif kazanıyor.
+            </p>
+
+            <!-- Metrics Row -->
+            <div class="flex items-center gap-5 mt-3 text-xs">
+              <div class="flex items-center gap-1">
+                <span class="font-bold text-on-surface font-mono">${userPosts.length}</span>
+                <span class="text-on-surface-variant">Gönderi</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="font-bold text-on-surface font-mono">${totalLikesReceived}</span>
+                <span class="text-on-surface-variant">Beğeni</span>
+              </div>
+              <div class="flex items-center gap-1">
+                <span class="font-bold text-primary font-mono">+${typeof window.formatBct === 'function' ? window.formatBct(totalRoyalties, 3) : totalRoyalties.toFixed(3)} BCT</span>
+                <span class="text-on-surface-variant">Telif</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Space Minimal Segmented Nav -->
+        <div class="px-5 mt-4">
+          <div class="w-full flex items-center justify-between bg-surface-container-lowest rounded-full p-1 border border-outline-variant/15">
+            <button type="button" onclick="window.BlocTagSimpleMode.setProfileTab('posts')"
+              class="flex-1 py-1.5 text-center rounded-full text-xs transition-all cursor-pointer ${simpleState.profileTab === 'posts' ? 'bg-surface-container text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
+              Gönderiler
+            </button>
+            <button type="button" onclick="window.BlocTagSimpleMode.setProfileTab('likes')"
+              class="flex-1 py-1.5 text-center rounded-full text-xs transition-all cursor-pointer ${simpleState.profileTab === 'likes' ? 'bg-surface-container text-primary font-semibold shadow-sm' : 'text-on-surface-variant hover:text-on-surface'}">
+              Popüler
+            </button>
+          </div>
+        </div>
+
+        <!-- User Content Stream -->
+        <div class="px-5 flex flex-col mt-3 gap-2.5">
+          ${userPosts.length === 0 ? `
+            <div class="p-6 rounded-2xl bg-surface-container-low text-center text-xs text-on-surface-variant">
+              Henüz zincir üstü gönderi paylaşılmamış.
+            </div>
+          ` : (simpleState.profileTab === 'likes'
+              ? [...userPosts].sort((a, b) => Number(b.likes_count || 0) - Number(a.likes_count || 0))
+              : userPosts
+            ).map(p => renderSimplePostCard(p, acc)).join('')}
+        </div>
+      </main>
+    `;
+  }
+
+  // ── SCR-NTF-06: Space - Bildirimler ────────────────────────────────────────
+  function renderScreenNotifications() {
+    const stored = getStoredNotifications();
+    const unreadCount = stored.filter(n => n && !n.read).length;
+
+    const filtered = stored.filter(n => {
+      if (!n) return false;
+      const cat = String(n.category || 'system').toLowerCase();
+      if (simpleState.notifFilter === 'tips') return cat === 'transfer' || cat === 'tips';
+      if (simpleState.notifFilter === 'mentions') return cat === 'space' || cat === 'mentions';
+      if (simpleState.notifFilter === 'system') return cat === 'system' || cat === 'bns_offer';
+      return true;
+    });
+
+    return `
+      ${renderTopBar('BlocTag Space', false)}
+      <main class="flex-1 flex flex-col w-full px-5 pt-2 pb-24 simple-screen-animate">
+        <!-- Header & Actions (Exact Stitch SCR-NTF-06) -->
+        <div class="flex items-center justify-between pt-1 pb-3">
+          <div class="flex items-center gap-2">
+            <h1 class="text-xl font-bold text-on-surface">Bildirimler</h1>
+            <span class="px-2 py-0.5 rounded-full bg-primary-container/20 text-primary text-[11px] font-semibold">
+              ${unreadCount} yeni
+            </span>
+          </div>
+          <button type="button" onclick="window.BlocTagSimpleMode.markAllNotifsRead()"
+            class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-xs active:scale-95 transition-all cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[16px]" translate="no">done_all</span>
+            <span>Okundu Say</span>
+          </button>
+        </div>
+
+        <!-- Filter Chips -->
+        <div class="flex items-center gap-2 overflow-x-auto no-scrollbar py-1 mb-3">
+          <button type="button" onclick="window.BlocTagSimpleMode.setNotifFilter('all')"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${simpleState.notifFilter === 'all' ? 'bg-surface-container-high text-on-surface font-semibold' : 'bg-surface-container text-on-surface-variant'}">
+            <span>Tümü</span>
+            <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
+          </button>
+          <button type="button" onclick="window.BlocTagSimpleMode.setNotifFilter('tips')"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${simpleState.notifFilter === 'tips' ? 'bg-surface-container-high text-on-surface font-semibold' : 'bg-surface-container text-on-surface-variant'}">
+            <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">volunteer_activism</span>
+            <span>Transfer &amp; Bahşiş</span>
+          </button>
+          <button type="button" onclick="window.BlocTagSimpleMode.setNotifFilter('mentions')"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${simpleState.notifFilter === 'mentions' ? 'bg-surface-container-high text-on-surface font-semibold' : 'bg-surface-container text-on-surface-variant'}">
+            <span class="material-symbols-outlined notranslate text-[15px]" translate="no">chat_bubble</span>
+            <span>Space &amp; Yanıtlar</span>
+          </button>
+          <button type="button" onclick="window.BlocTagSimpleMode.setNotifFilter('system')"
+            class="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs whitespace-nowrap transition-colors cursor-pointer ${simpleState.notifFilter === 'system' ? 'bg-surface-container-high text-on-surface font-semibold' : 'bg-surface-container text-on-surface-variant'}">
+            <span class="material-symbols-outlined notranslate text-[15px] text-secondary" translate="no">verified_user</span>
+            <span>Sistem</span>
+          </button>
+        </div>
+
+        <!-- Notifications List -->
+        <div class="flex flex-col gap-2.5">
+          ${filtered.length === 0 ? `
+            <div class="flex flex-col items-center justify-center text-center py-12 px-4 rounded-2xl bg-surface-container-low">
+              <div class="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center text-primary mb-3">
+                <span class="material-symbols-outlined notranslate text-[28px]" translate="no">mark_chat_read</span>
+              </div>
+              <h3 class="text-sm font-semibold text-on-surface mb-1">Henüz bildirim yok</h3>
+              <p class="text-xs text-on-surface-variant max-w-xs">
+                Cüzdanınıza gelen transferler, Space beğenileri, yorumlar ve bahşişler anlık olarak burada görünür.
+              </p>
+            </div>
+          ` : filtered.slice(0, 30).map(item => {
+            const timeSec = Number(item.time || Date.now()) / 1000;
+            const timeStr = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(timeSec) : '';
+            const icon = item.icon || (item.category === 'transfer' ? 'payments' : (item.category === 'space' ? 'forum' : 'verified_user'));
+            return `
+              <div class="relative flex items-start gap-3 p-3.5 rounded-2xl bg-surface-container hover:bg-surface-container-high transition-all">
+                ${!item.read ? '<span class="absolute left-2 top-5 w-1.5 h-1.5 rounded-full bg-primary ring-4 ring-primary/10"></span>' : ''}
+                <div class="shrink-0 w-10 h-10 rounded-full bg-primary/15 flex items-center justify-center text-primary ml-1">
+                  <span class="material-symbols-outlined notranslate text-[20px]" translate="no">${esc(icon)}</span>
+                </div>
+                <div class="flex-1 min-w-0">
+                  <div class="flex items-center justify-between gap-2 mb-0.5">
+                    <span class="text-xs font-semibold text-on-surface truncate">${esc(item.title || 'BlocTag Bildirimi')}</span>
+                    <span class="shrink-0 text-[10.5px] text-on-surface-variant/80">${esc(timeStr)}</span>
+                  </div>
+                  <p class="text-xs text-on-surface-variant leading-relaxed break-words">${esc(item.body || '')}</p>
+                </div>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      </main>
+    `;
+  }
+
+  // ==========================================================================
+  // 4. MASTER RENDER DISPATCHER
+  // ==========================================================================
+  function renderSimpleMode() {
+    if (!simpleState.enabled) return;
+    const shell = ensureSimpleModeShell();
+    let screenHtml = '';
+
+    switch (simpleState.activeScreen) {
+      case 'SCR-ONB-01':
+        screenHtml = renderScreenOnboardingWelcome();
+        break;
+      case 'SCR-WLT-02':
+        screenHtml = renderScreenSeedPhrase();
+        break;
+      case 'SCR-WLT-HOME':
+        screenHtml = renderScreenWalletHome();
+        break;
+      case 'SCR-WLT-SEND':
+        screenHtml = renderScreenWalletSend();
+        break;
+      case 'SCR-SPC-04':
+        screenHtml = renderScreenPostDetail();
+        break;
+      case 'SCR-PRF-05':
+        screenHtml = renderScreenProfile();
+        break;
+      case 'SCR-NTF-06':
+        screenHtml = renderScreenNotifications();
+        break;
+      case 'SCR-SPC-03':
+      default:
+        screenHtml = renderScreenSpaceFeed();
+        break;
+    }
+
+    shell.innerHTML = `
+      <div class="simple-app-frame">
+        ${screenHtml}
+        ${renderBottomNav()}
+      </div>
+    `;
+
+    if (simpleState.activeScreen === 'SCR-WLT-SEND') {
+      updateSimpleSendPreview();
+    }
+  }
+
+  // ==========================================================================
+  // 5. NON-CUSTODIAL ACTIONS & EVENT HANDLERS
+  // ==========================================================================
+  function updateSimpleSendPreview() {
+    const inp = document.getElementById('simple-send-amount');
+    const netEl = document.getElementById('simple-send-net-preview');
+    const feeEl = document.getElementById('simple-send-fee-preview');
+    if (!inp) return;
+    const raw = String(inp.value || '').replace(',', '.').replace(/[^0-9.]/g, '');
+    const amt = parseFloat(raw) || 0;
+    const fee = amt > 0 ? Math.max(0.001, Number((amt * 0.01).toFixed(8))) : 0;
+    const net = Math.max(0, Number((amt - fee).toFixed(8)));
+    if (netEl) netEl.textContent = (typeof window.formatBct === 'function' ? window.formatBct(net, 4) : net.toFixed(4)) + ' BCT';
+    if (feeEl) feeEl.textContent = (typeof window.formatBct === 'function' ? window.formatBct(fee, 4) : fee.toFixed(4)) + ' BCT';
+  }
+
+  const BlocTagSimpleMode = {
+    go: (screen, opts) => navigateToSimpleScreen(screen, opts),
+    back: () => navigateSimpleBack(),
+    refresh: () => renderSimpleMode(),
+
+    openWalletTab: () => {
+      const acc = getActiveWallet();
+      navigateToSimpleScreen(acc ? 'SCR-WLT-HOME' : 'SCR-ONB-01');
+    },
+
+    startCreateWallet: () => {
+      generateSimpleSeedPreview();
+      navigateToSimpleScreen('SCR-WLT-02');
+    },
+
+    refreshSeed: () => {
+      try {
+        if (typeof LockTraceCrypto !== 'undefined' && typeof LockTraceCrypto.generateMnemonic12 === 'function') {
+          simpleState.seedMnemonic = LockTraceCrypto.generateMnemonic12();
+          try { previewMnemonicPhrase = simpleState.seedMnemonic; } catch (_e) {}
+          simpleState.seedSavedConfirmed = false;
+          renderSimpleMode();
+        }
+      } catch (_e) {}
+    },
+
+    copySeed: () => {
+      const phrase = simpleState.seedMnemonic;
+      if (!phrase) return;
+      if (typeof window.copyText === 'function') {
+        window.copyText(phrase, 'Kurtarma kelimeleri panoya kopyalandı!');
+      } else if (navigator.clipboard) {
+        navigator.clipboard.writeText(phrase).catch(() => {});
+      }
+      const ic = document.getElementById('simple-copy-seed-icon');
+      const tx = document.getElementById('simple-copy-seed-text');
+      if (ic) ic.textContent = 'check';
+      if (tx) tx.textContent = 'Kopyalandı!';
+    },
+
+    toggleSeedSaved: () => {
+      simpleState.seedSavedConfirmed = !simpleState.seedSavedConfirmed;
+      renderSimpleMode();
+    },
+
+    finalizeCreateWallet: async () => {
+      if (!simpleState.seedSavedConfirmed || !simpleState.seedMnemonic) return;
+      const btn = document.getElementById('simple-finalize-wallet-btn');
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = '<span class="material-symbols-outlined notranslate animate-spin text-[18px]" translate="no">progress_activity</span><span>Cüzdan Hazırlanıyor...</span>';
+      }
+      try {
+        try {
+          previewMnemonicPhrase = simpleState.seedMnemonic;
+          isTermsAccepted = true;
+        } catch (_e) {}
+
+        if (typeof window.requestNewWallet === 'function') {
+          await window.requestNewWallet();
+          navigateToSimpleScreen('SCR-SPC-03');
+        }
+      } catch (err) {
+        if (typeof window.showToast === 'function') {
+          window.showToast(err.message || 'Cüzdan oluşturulamadı', 'error', true);
+        }
+        renderSimpleMode();
+      }
+    },
+
+    toggleImport: (force) => {
+      const acc = getActiveWallet();
+      if (force === undefined && acc && !simpleState.importModeOpen) {
+        navigateToSimpleScreen('SCR-WLT-HOME');
+        return;
+      }
+      simpleState.importModeOpen = typeof force === 'boolean' ? force : !simpleState.importModeOpen;
+      renderSimpleMode();
+    },
+
+    submitImport: async () => {
+      const inp = document.getElementById('simpleImportInput');
+      const val = String(inp ? inp.value : '').trim();
+      if (!val) {
+        if (typeof window.showToast === 'function') window.showToast('Lütfen 12 kelime veya özel anahtar girin', 'warning', true);
+        return;
+      }
+      const proInput = document.getElementById('importInputKey');
+      if (proInput && typeof window.executeImportWallet === 'function') {
+        const words = val.split(/\s+/).filter(Boolean);
+        if (typeof window.setImportTab === 'function') {
+          window.setImportTab(words.length === 12 ? 'words' : 'key');
+        }
+        proInput.value = val;
+        if (typeof window.handleImportInputLive === 'function') {
+          await window.handleImportInputLive(val);
+        }
+        await window.executeImportWallet();
+        if (getActiveWallet()) {
+          simpleState.importModeOpen = false;
+          navigateToSimpleScreen('SCR-WLT-HOME');
+        }
+      }
+    },
+
+    setTxFilter: (f) => {
+      simpleState.txFilter = f;
+      renderSimpleMode();
+    },
+
+    openTxByHash: (hash) => {
+      if (!hash) return;
+      const txs = (typeof personalTxCache !== 'undefined' && Array.isArray(personalTxCache)) ? personalTxCache : [];
+      const found = txs.find(t => String(t.tx_hash || t.hash) === String(hash));
+      if (found && typeof window.openTxDetail === 'function') {
+        window.openTxDetail(found);
+      }
+    },
+
+    updateSendPreview: () => updateSimpleSendPreview(),
+
+    setSendPct: (pct) => {
+      const acc = getActiveWallet();
+      const bal = acc ? Number(acc.balance || 0) : 0;
+      const inp = document.getElementById('simple-send-amount');
+      if (inp) {
+        const val = Math.max(0, bal * Number(pct || 0));
+        inp.value = val > 0 ? val.toFixed(4).replace(/\.?0+$/, '') : '0';
+        updateSimpleSendPreview();
+      }
+    },
+
+    pasteRecipient: async () => {
+      try {
+        if (navigator.clipboard && navigator.clipboard.readText) {
+          const text = (await navigator.clipboard.readText() || '').trim();
+          const inp = document.getElementById('simple-send-recipient');
+          if (inp && text) inp.value = text;
+        }
+      } catch (_e) {}
+    },
+
+    executeSend: async () => {
+      const amtInp = document.getElementById('simple-send-amount');
+      const recInp = document.getElementById('simple-send-recipient');
+      const amt = String(amtInp ? amtInp.value : '').trim();
+      const rec = String(recInp ? recInp.value : '').trim();
+      if (!amt || !rec) {
+        if (typeof window.showToast === 'function') window.showToast('Lütfen miktar ve alıcı adresini girin', 'warning', true);
+        return;
+      }
+      const proAmt = document.getElementById('sendAmountInput');
+      const proRec = document.getElementById('sendRecipientInput');
+      if (proAmt && proRec && typeof window.executeSendTransaction === 'function') {
+        proAmt.value = amt;
+        proRec.value = rec;
+        if (typeof window.sanitizeAndPreviewSendAmount === 'function') window.sanitizeAndPreviewSendAmount(proAmt);
+        if (typeof window.validateRecipientInput === 'function') await window.validateRecipientInput();
+        await window.executeSendTransaction();
+        simpleState.sendPrefillAmount = '';
+        simpleState.sendPrefillRecipient = '';
+        navigateToSimpleScreen('SCR-WLT-HOME');
+      }
+    },
+
+    setFeedFilter: (f) => {
+      simpleState.feedFilter = f;
+      renderSimpleMode();
+    },
+
+    toggleSearch: () => {
+      simpleState.searchBarOpen = !simpleState.searchBarOpen;
+      if (!simpleState.searchBarOpen) simpleState.searchQuery = '';
+      renderSimpleMode();
+      if (simpleState.searchBarOpen) {
+        setTimeout(() => document.getElementById('simple-space-search-input')?.focus(), 50);
+      }
+    },
+
+    setSearchQuery: (q) => {
+      simpleState.searchQuery = String(q || '');
+      renderSimpleMode();
+      const inp = document.getElementById('simple-space-search-input');
+      if (inp) {
+        inp.focus();
+        inp.setSelectionRange(inp.value.length, inp.value.length);
+      }
+    },
+
+    focusComposer: () => {
+      const inp = document.getElementById('simple-composer-input');
+      if (inp) {
+        inp.focus();
+        inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    },
+
+    insertComposerTag: (tag) => {
+      const inp = document.getElementById('simple-composer-input');
+      if (!inp) return;
+      inp.value = (inp.value ? inp.value + ' ' : '') + tag;
+      inp.focus();
+    },
+
+    submitPost: async () => {
+      const acc = getActiveWallet();
+      if (!acc) {
+        navigateToSimpleScreen('SCR-ONB-01');
+        return;
+      }
+      const inp = document.getElementById('simple-composer-input');
+      const text = String(inp ? inp.value : '').trim();
+      if (!text) {
+        if (inp) inp.focus();
+        return;
+      }
+      const proInput = document.getElementById('spacePostInput');
+      if (proInput && typeof window.publishSpacePost === 'function') {
+        proInput.value = text;
+        if (typeof window.updateSpaceCharCount === 'function') window.updateSpaceCharCount();
+        await window.publishSpacePost();
+        renderSimpleMode();
+      }
+    },
+
+    likePost: async (postId, ev) => {
+      if (ev) ev.stopPropagation();
+      const acc = getActiveWallet();
+      if (!acc) {
+        navigateToSimpleScreen('SCR-ONB-01');
+        return;
+      }
+      if (typeof window.likeSpacePost === 'function') {
+        await window.likeSpacePost(postId, ev);
+        renderSimpleMode();
+      }
+    },
+
+    submitComment: async (postId) => {
+      const acc = getActiveWallet();
+      if (!acc) {
+        navigateToSimpleScreen('SCR-ONB-01');
+        return;
+      }
+      const inp = document.getElementById('simple-comment-input');
+      const text = String(inp ? inp.value : '').trim();
+      if (!text) return;
+      try {
+        activeDetailPostId = postId;
+      } catch (_e) {}
+      const proCommentInput = document.getElementById('detailCommentInput');
+      if (proCommentInput && typeof window.submitDetailSpaceComment === 'function') {
+        proCommentInput.value = text;
+        await window.submitDetailSpaceComment();
+        renderSimpleMode();
+      }
+    },
+
+    tipAuthor: (authorAddress) => {
+      if (!authorAddress) return;
+      const acc = getActiveWallet();
+      if (!acc) {
+        navigateToSimpleScreen('SCR-ONB-01');
+        return;
+      }
+      if (acc.address && acc.address.toLowerCase() === String(authorAddress).toLowerCase()) {
+        if (typeof window.showToast === 'function') window.showToast('Kendi gönderinize bahşiş gönderemezsiniz', 'warning', true);
+        return;
+      }
+      navigateToSimpleScreen('SCR-WLT-SEND', {
+        recipient: authorAddress,
+        amount: '0.25'
+      });
+      if (typeof window.showToast === 'function') {
+        window.showToast('Bahşiş alıcısı hazırlandı (0.25 BCT)', 'volunteer_activism');
+      }
+    },
+
+    setProfileTab: (tab) => {
+      simpleState.profileTab = tab;
+      renderSimpleMode();
+    },
+
+    setNotifFilter: (f) => {
+      simpleState.notifFilter = f;
+      renderSimpleMode();
+    },
+
+    markAllNotifsRead: () => {
+      if (typeof window.markAllNotificationsRead === 'function') {
+        window.markAllNotificationsRead();
+      }
+      renderSimpleMode();
+    }
+  };
+
+  // Expose globally for inline handlers & menu toggles
+  window.BlocTagSimpleMode = BlocTagSimpleMode;
+  window.isSimpleModeEnabled = isSimpleModeEnabled;
+  window.toggleSimpleModeSetting = toggleSimpleModeSetting;
+  window.applySimpleModeState = applySimpleModeState;
+
+  // Boot & Hook into Core App Lifecycle
+  function initSimpleModeModule() {
+    const saved = isSimpleModeEnabled();
+    syncModeToggleControls(saved);
+    if (saved) {
+      applySimpleModeState(true, false);
+    }
+
+    // Wrap QR scanner callback so scanning a QR in Simple Mode also populates #simple-send-recipient
+    const origSaveWalletState = window.saveWalletState;
+    if (typeof origSaveWalletState === 'function' && !origSaveWalletState._simpleHooked) {
+      const wrappedSave = function (acc) {
+        const res = origSaveWalletState.apply(this, arguments);
+        if (simpleState.enabled) {
+          renderSimpleMode();
+        }
+        return res;
+      };
+      wrappedSave._simpleHooked = true;
+      window.saveWalletState = wrappedSave;
+    }
+
+    const origRenderSpacePosts = window.renderSpacePosts;
+    if (typeof origRenderSpacePosts === 'function' && !origRenderSpacePosts._simpleHooked) {
+      const wrappedRenderSpace = function () {
+        const res = origRenderSpacePosts.apply(this, arguments);
+        if (simpleState.enabled && (simpleState.activeScreen === 'SCR-SPC-03' || simpleState.activeScreen === 'SCR-SPC-04' || simpleState.activeScreen === 'SCR-PRF-05')) {
+          renderSimpleMode();
+        }
+        return res;
+      };
+      wrappedRenderSpace._simpleHooked = true;
+      window.renderSpacePosts = wrappedRenderSpace;
+    }
+  }
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => setTimeout(initSimpleModeModule, 60));
+  } else {
+    setTimeout(initSimpleModeModule, 60);
+  }
+})();

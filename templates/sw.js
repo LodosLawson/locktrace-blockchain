@@ -1,8 +1,10 @@
-const CACHE_NAME = 'locktrace-pwa-v76';
+const CACHE_NAME = 'locktrace-pwa-v77';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
+  '/simple-mode/simple-mode.css',
+  '/simple-mode/simple-mode.js',
   '/icons/icon-192.png',
   '/icons/icon-512.png',
   '/icons/icon-maskable-192.png',

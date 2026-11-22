@@ -141,6 +141,21 @@ def sign_release(version: str, key_file: str):
         with open(template_manifest_pwa, "wb") as f:
             f.write(pwa_bytes)
 
+    # Sync frontend/simple-mode/* to templates/simple-mode/*
+    simple_dir = os.path.join(ROOT_DIR, "frontend", "simple-mode")
+    template_simple_dir = os.path.join(ROOT_DIR, "templates", "simple-mode")
+    if os.path.isdir(simple_dir):
+        os.makedirs(template_simple_dir, exist_ok=True)
+        for fname in os.listdir(simple_dir):
+            src_f = os.path.join(simple_dir, fname)
+            dst_f = os.path.join(template_simple_dir, fname)
+            if os.path.isfile(src_f):
+                s_bytes = canonical_file_bytes(src_f)
+                with open(src_f, "wb") as f:
+                    f.write(s_bytes)
+                with open(dst_f, "wb") as f:
+                    f.write(s_bytes)
+
     index_sha256 = hashlib.sha256(index_bytes).hexdigest()
     sw_sha256 = hashlib.sha256(sw_bytes).hexdigest() if sw_bytes else ""
     ipfs_cid = compute_ipfs_cid_v1(index_sha256)
