@@ -208,6 +208,15 @@
     return '';
   }
 
+  function getMyOwnedBnsHandles() {
+    try {
+      if (typeof bnsMyHandlesCache !== 'undefined' && Array.isArray(bnsMyHandlesCache)) {
+        return bnsMyHandlesCache.map(x => typeof x === 'string' ? x : (x && x.name ? x.name : '')).filter(Boolean);
+      }
+    } catch (_e) { }
+    return [];
+  }
+
   function getDisplayHandleOrAddr(addr, bns) {
     if (bns && bns !== 'anonymous') {
       const clean = String(bns).replace(/^@/, '');
@@ -530,6 +539,23 @@
         if (typeof window.refreshPersonalTransactions === 'function') {
           window.refreshPersonalTransactions().then(() => {
             if (simpleState.enabled) renderSimpleMode(false);
+          }).catch(() => { });
+        }
+      } else if (target === 'SCR-PRF-05') {
+        if (typeof window.fetchAndSyncMyBnsHandles === 'function') {
+          window.fetchAndSyncMyBnsHandles().then(() => {
+            if (simpleState.enabled) renderSimpleMode(false);
+          }).catch(() => { });
+        }
+        const pTarget = simpleState.profileTarget || (getActiveWallet() ? getActiveWallet().address : '');
+        if (pTarget && typeof window.apiFetch === 'function') {
+          window.apiFetch('/bns/lookup/' + encodeURIComponent(pTarget)).then(({ ok, body }) => {
+            if (ok && body && body.data) {
+              if (typeof window.currentProfileData !== 'undefined') {
+                window.currentProfileData = Object.assign(window.currentProfileData || {}, body.data);
+              }
+              if (simpleState.enabled) renderSimpleMode(false);
+            }
           }).catch(() => { });
         }
       }
@@ -1633,10 +1659,23 @@
       ? (acc ? acc.address : '')
       : (userPosts[0]?.author || targetRaw);
 
-    const displayTitle = resolvedBns ? ('@' + resolvedBns.replace(/^@/, '')) : (typeof window.shortAddr === 'function' ? window.shortAddr(resolvedAddress) : resolvedAddress);
+    const resolvedTitleHandle = resolvedBns ? ('@' + resolvedBns.replace(/^@/, '')) : (typeof window.shortAddr === 'function' ? window.shortAddr(resolvedAddress) : resolvedAddress);
+    const displayTitle = resolvedTitleHandle;
     const shortWallet = typeof window.shortAddr === 'function' ? window.shortAddr(resolvedAddress) : resolvedAddress;
     const totalLikesReceived = userPosts.reduce((accSum, p) => accSum + Number(p.likes_count || (p.likes ? p.likes.length : 0)), 0);
     const totalRoyalties = userPosts.reduce((accSum, p) => accSum + Number(p.author_earnings || 0), 0);
+
+    // Follower & Following metrics
+    let followersCount = 0;
+    let followingCount = 0;
+    if (typeof currentProfileData !== 'undefined' && currentProfileData &&
+      String(currentProfileData.address || '').toLowerCase() === resolvedAddress.toLowerCase()) {
+      followersCount = Number(currentProfileData.followers_count || (Array.isArray(currentProfileData.followers) ? currentProfileData.followers.length : 0));
+      followingCount = Number(currentProfileData.following_count || (Array.isArray(currentProfileData.following) ? currentProfileData.following.length : 0));
+    }
+
+    // Owned BNS handles for current user
+    const myOwnedHandles = isMyProfile ? getMyOwnedBnsHandles() : [];
 
     return `
       ${renderTopBar('Profil', !isMyProfile)}
@@ -1657,8 +1696,8 @@
           <div class="flex items-end justify-between">
             <div class="relative">
               <div class="w-22 h-22 rounded-full p-1 bg-surface shadow-xl">
-                <div class="w-20 h-20 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary">
-                  <span class="material-symbols-outlined notranslate text-[42px]" translate="no">person</span>
+                <div class="w-20 h-20 rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-mono font-bold text-2xl">
+                  ${resolvedBns ? esc(resolvedBns.replace(/^@/, '')[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[42px]" translate="no">person</span>'}
                 </div>
               </div>
               <div class="absolute bottom-1.5 right-1.5 w-4 h-4 rounded-full bg-surface p-0.5 flex items-center justify-center">
@@ -1671,19 +1710,29 @@
                 <button type="button" onclick="if(typeof openWalletVaultModal==='function') openWalletVaultModal();"
                   class="h-9 px-3.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[16px]" translate="no">tune</span>
-                  <span>Güvenlik &amp; Kasa</span>
+                  <span>Güvenlik</span>
                 </button>
               ` : `
+                <!-- Takip Et Butonu (Diğer profiller için) -->
+                <button type="button" id="simple-profile-follow-btn"
+                  onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(resolvedAddress)}', '${escAttr(resolvedBns)}')"
+                  class="h-9 px-3.5 rounded-full bg-primary text-on-primary text-xs font-bold transition-all active:scale-95 flex items-center gap-1.5 shadow-sm cursor-pointer hover:brightness-95">
+                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">person_add</span>
+                  <span>Takip Et (1.00 BCT)</span>
+                </button>
+
                 <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(resolvedAddress)}')"
-                  class="h-9 px-3.5 rounded-full bg-primary text-on-primary text-xs font-semibold transition-all active:scale-95 flex items-center gap-1.5 cursor-pointer">
-                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">volunteer_activism</span>
-                  <span>Bahşiş Gönder</span>
+                  class="h-9 px-3 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-semibold transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[16px] text-primary" translate="no">volunteer_activism</span>
+                  <span>Bahşiş</span>
                 </button>
               `}
-              <button type="button" onclick="if(typeof openUserProfile==='function') openUserProfile('${escAttr(resolvedBns || resolvedAddress)}');"
-                title="Detaylı Zincir Üstü Profili Aç"
-                class="w-9 h-9 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center justify-center transition-all active:scale-90 cursor-pointer">
-                <span class="material-symbols-outlined notranslate text-[17px]" translate="no">open_in_full</span>
+
+              <!-- Genişletme İkonu: Tıklandığında Detaylı Pro Moda Geçilir -->
+              <button type="button" onclick="window.BlocTagSimpleMode.openDetailedProProfile('${escAttr(resolvedBns || resolvedAddress)}')"
+                title="Detaylı Pro Görünüme Geç"
+                class="w-9 h-9 rounded-full bg-surface-container-high hover:bg-primary/20 text-on-surface hover:text-primary border border-outline-variant/20 flex items-center justify-center transition-all active:scale-90 cursor-pointer shrink-0">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">open_in_full</span>
               </button>
             </div>
           </div>
@@ -1721,22 +1770,83 @@
               </button>
             </div>
 
+            <!-- BNS Handle Selector & Switcher (Kendi Profilinizdeyken Alınmış İsimleri Seçme ve Değiştirme) -->
+            ${isMyProfile ? `
+              <div class="mt-3 p-3.5 rounded-2xl bg-surface-container-low border border-outline-variant/15 shadow-sm">
+                <div class="flex items-center justify-between mb-2">
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined notranslate text-primary text-[17px]" translate="no">badge</span>
+                    <span class="text-xs font-bold text-on-surface">Kayıtlı BNS İsimleriniz (.bct)</span>
+                  </div>
+                  <span class="text-[10px] text-on-surface-variant font-mono">${myOwnedHandles.length} isim</span>
+                </div>
+
+                ${myOwnedHandles.length > 0 ? `
+                  <p class="text-[10.5px] text-on-surface-variant mb-2">
+                    Profilinizde ve Space akışında görünecek aktif kimliğinizi dokunarak değiştirin:
+                  </p>
+                  <div class="flex flex-wrap gap-1.5">
+                    ${myOwnedHandles.map(h => {
+                      const clean = String(h).replace(/^@/, '');
+                      const isCurrent = clean.toLowerCase() === (resolvedBns || '').toLowerCase().replace(/^@/, '');
+                      return `
+                        <button type="button" onclick="window.BlocTagSimpleMode.setPrimaryHandle('${escAttr(clean)}')"
+                          class="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${isCurrent ? 'bg-primary text-on-primary font-bold shadow-xs' : 'bg-surface-container text-on-surface hover:bg-surface-container-high border border-outline-variant/20'}">
+                          ${isCurrent ? '<span class="material-symbols-outlined notranslate text-[12px]" translate="no">star</span>' : ''}
+                          <span>@${esc(clean)}</span>
+                          ${isCurrent ? '<span class="text-[9px] opacity-90 font-sans font-normal">(Aktif)</span>' : ''}
+                        </button>
+                      `;
+                    }).join('')}
+                  </div>
+                ` : `
+                  <div class="flex items-center justify-between gap-3 pt-0.5">
+                    <p class="text-[10.5px] text-on-surface-variant">
+                      Henüz bir .bct alan adı almadınız. Cüzdan adresiniz yerine havalı bir isim kullanın.
+                    </p>
+                    <button type="button" onclick="if(typeof openBnsRegisterModal==='function') openBnsRegisterModal(); else window.BlocTagSimpleMode.requestProMode('bns');"
+                      class="px-3 py-1 rounded-full bg-primary/15 hover:bg-primary/25 border border-primary/30 text-primary text-[11px] font-semibold shrink-0 cursor-pointer active:scale-95 transition-all">
+                      İsim Al
+                    </button>
+                  </div>
+                `}
+              </div>
+            ` : ''}
+
             <!-- Bio Statement -->
             <p class="text-xs text-on-surface/90 leading-relaxed mt-2.5">
               Doğrulanmış BlocTag Space üreticisi ✦ Sansüre dayanıklı Layer-1 blokzincir üzerinde içerik paylaşıyor ve anlık telif kazanıyor.
             </p>
 
-            <!-- Metrics Row -->
-            <div class="flex items-center gap-5 mt-3 text-xs">
-              <div class="flex items-center gap-1">
+            <!-- Metrics Row (Gönderi, Beğeni, Takipçi, Takip, Telif) -->
+            <div class="flex items-center gap-4 mt-3 text-xs overflow-x-auto no-scrollbar py-0.5">
+              <div class="flex items-center gap-1 shrink-0">
                 <span class="font-bold text-on-surface font-mono">${userPosts.length}</span>
                 <span class="text-on-surface-variant">Gönderi</span>
               </div>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1 shrink-0">
                 <span class="font-bold text-on-surface font-mono">${totalLikesReceived}</span>
                 <span class="text-on-surface-variant">Beğeni</span>
               </div>
-              <div class="flex items-center gap-1">
+              <div class="flex items-center gap-1 shrink-0 cursor-pointer group"
+                   onclick="window.BlocTagSimpleMode.openFollowersList('${escAttr(resolvedAddress)}', 'followers')"
+                   title="Takipçileri Görüntüle">
+                <span class="font-bold text-emerald-400 font-mono group-hover:underline" id="simple-profile-followers-count">${followersCount}</span>
+                <span class="text-on-surface-variant group-hover:text-emerald-400 transition-colors">Takipçi</span>
+              </div>
+              <div class="flex items-center gap-1 shrink-0 cursor-pointer group"
+                   onclick="window.BlocTagSimpleMode.openFollowersList('${escAttr(resolvedAddress)}', 'following')"
+                   title="Takip Edilenleri Görüntüle">
+                <span class="font-bold text-on-surface font-mono group-hover:underline" id="simple-profile-following-count">${followingCount}</span>
+                <span class="text-on-surface-variant group-hover:text-on-surface transition-colors">Takip</span>
+              </div>
+              <div class="flex items-center gap-1 shrink-0">
+                <span class="font-bold text-primary font-mono">+${typeof window.formatBct === 'function' ? window.formatBct(totalRoyalties, 3) : totalRoyalties.toFixed(3)} BCT</span>
+                <span class="text-on-surface-variant">Telif</span>
+              </div>
+            </div>
+          </div>
+        </div>
                 <span class="font-bold text-primary font-mono">+${typeof window.formatBct === 'function' ? window.formatBct(totalRoyalties, 3) : totalRoyalties.toFixed(3)} BCT</span>
                 <span class="text-on-surface-variant">Telif</span>
               </div>
@@ -2528,6 +2638,70 @@
     setProfileTab: (tab) => {
       simpleState.profileTab = tab;
       renderSimpleMode();
+    },
+
+    openDetailedProProfile: (target) => {
+      applySimpleModeState(false, true);
+      toggleSimpleModeSetting(false);
+      setTimeout(() => {
+        if (typeof window.openUserProfile === 'function') {
+          window.openUserProfile(target);
+        } else if (typeof window.openMyUserProfile === 'function') {
+          window.openMyUserProfile();
+        }
+      }, 80);
+    },
+
+    setPrimaryHandle: async (cleanName) => {
+      if (!cleanName) return;
+      try {
+        if (typeof window.setPrimaryBnsHandle === 'function') {
+          await window.setPrimaryBnsHandle(cleanName);
+        } else if (typeof window.apiFetch === 'function') {
+          const acc = getActiveWallet();
+          if (acc && acc.address) {
+            await window.apiFetch('/bns/set-primary', {
+              method: 'POST',
+              body: JSON.stringify({ name: cleanName, owner: acc.address })
+            });
+          }
+        }
+        if (typeof currentBnsHandle !== 'undefined') {
+          currentBnsHandle = cleanName;
+        }
+        if (typeof window.fetchAndSyncMyBnsHandles === 'function') {
+          await window.fetchAndSyncMyBnsHandles();
+        }
+        renderSimpleMode(false);
+        if (typeof window.showToast === 'function') {
+          window.showToast(`⭐ '@${cleanName}' aktif kimliğiniz olarak ayarlandı!`, 'verified');
+        }
+      } catch (err) {
+        console.error('setPrimaryHandle error:', err);
+        if (typeof window.showToast === 'function') {
+          window.showToast(err.message || 'Kimlik ayarlanamadı', 'error', true);
+        }
+      }
+    },
+
+    followProfileAuthor: async (targetAddress, bnsName) => {
+      if (!targetAddress) return;
+      const btn = document.getElementById('simple-profile-follow-btn');
+      if (typeof window.followVoiceOnChain === 'function') {
+        await window.followVoiceOnChain(btn, targetAddress, bnsName);
+        renderSimpleMode(false);
+      } else {
+        if (typeof window.showToast === 'function') {
+          window.showToast('Takip servisi yükleniyor...', 'info');
+        }
+      }
+    },
+
+    openFollowersList: (addr, type) => {
+      const label = type === 'following' ? 'Takip Edilenler' : 'Takipçiler';
+      if (typeof window.showToast === 'function') {
+        window.showToast(`${label} listesi sayfası Stitch üzerinden hazırlanıyor...`, 'info');
+      }
     },
 
     setNotifFilter: (f) => {
