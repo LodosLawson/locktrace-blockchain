@@ -143,10 +143,16 @@
     }
   });
 
+  let _savedFeedLayout = 'snap';
+  try {
+    _savedFeedLayout = localStorage.getItem('bloctag_simple_feed_layout') || 'snap';
+  } catch (_e) { }
+
   const simpleState = {
     enabled: false,
     activeScreen: 'SCR-SPC-03', // Default launch screen per Stitch MCP manifest
     screenHistory: ['SCR-SPC-03'],
+    feedLayout: _savedFeedLayout, // 'snap' (TikTok/Instagram Reels centered snap) | 'classic' (list)
     feedFilter: 'all',          // 'all' | 'following'
     txFilter: 'all',            // 'all' | 'incoming' | 'outgoing'
     notifFilter: 'all',         // 'all' | 'tips' | 'mentions' | 'likes'
@@ -586,6 +592,10 @@
       querying_ledger: 'Kriptografik defter ve merkeziyetsiz ağ sorgulanıyor...',
       switch_to_main_feed: 'Ana Space Akışına Geç',
       switched_to_main_feed_toast: 'Ana Space akışına geçildi',
+      feed_layout_snap: 'Reels / TikTok Görünümü',
+      feed_layout_list: 'Liste Görünümü',
+      swipe_up_hint: 'Sonraki için yukarı kaydır',
+      feed_reached_end: 'Tüm gönderileri gördünüz',
       notif_new_badge: 'yeni',
       notif_mark_all: 'Okundu Say',
       notif_all: 'Tümü',
@@ -761,6 +771,10 @@
       querying_ledger: 'Kriptoqrafik dəftər və mərkəzsiz şəbəkə sorğulanır...',
       switch_to_main_feed: 'Əsas Space Axınına Keç',
       switched_to_main_feed_toast: 'Əsas Space axınına keçildi',
+      feed_layout_snap: 'Reels / TikTok Görünüşü',
+      feed_layout_list: 'Siyahı Görünüşü',
+      swipe_up_hint: 'Növbəti üçün yuxarı sürüşdürün',
+      feed_reached_end: 'Bütün paylaşımları gördünüz',
       notif_new_badge: 'yeni',
       notif_mark_all: 'Oxunmuş Say',
       notif_all: 'Hamısı',
@@ -936,6 +950,10 @@
       querying_ledger: 'Опрос криптографического реестра и сети...',
       switch_to_main_feed: 'Перейти к основной ленте Space',
       switched_to_main_feed_toast: 'Переключено на основную ленту Space',
+      feed_layout_snap: 'Режим Reels / TikTok',
+      feed_layout_list: 'Режим списка',
+      swipe_up_hint: 'Смахните вверх для следующего',
+      feed_reached_end: 'Вы просмотрели все посты',
       notif_new_badge: 'новых',
       notif_mark_all: 'Прочитать все',
       notif_all: 'Все',
@@ -1111,6 +1129,10 @@
       querying_ledger: 'Abfrage des dezentralen Ledgers...',
       switch_to_main_feed: 'Zum Haupt-Feed wechseln',
       switched_to_main_feed_toast: 'Zum Haupt-Space-Feed gewechselt',
+      feed_layout_snap: 'Reels / TikTok-Modus',
+      feed_layout_list: 'Listenansicht',
+      swipe_up_hint: 'Nach oben wischen für nächsten',
+      feed_reached_end: 'Alle Beiträge gesehen',
       notif_new_badge: 'neu',
       notif_mark_all: 'Als gelesen markieren',
       notif_all: 'Alle',
@@ -1286,6 +1308,10 @@
       querying_ledger: 'Consultando el registro criptográfico...',
       switch_to_main_feed: 'Cambiar al Feed Principal de Space',
       switched_to_main_feed_toast: 'Cambiado al feed principal de Space',
+      feed_layout_snap: 'Modo Reels / TikTok',
+      feed_layout_list: 'Vista de lista',
+      swipe_up_hint: 'Desliza hacia arriba para el siguiente',
+      feed_reached_end: 'Has visto todas las publicaciones',
       notif_new_badge: 'nuevas',
       notif_mark_all: 'Marcar como Leídas',
       notif_all: 'Todas',
@@ -1461,6 +1487,10 @@
       querying_ledger: 'Interrogation du registre décentralisé...',
       switch_to_main_feed: 'Passer au fil principal Space',
       switched_to_main_feed_toast: 'Basculé vers le fil principal Space',
+      feed_layout_snap: 'Mode Reels / TikTok',
+      feed_layout_list: 'Vue en liste',
+      swipe_up_hint: 'Glissez vers le haut pour le suivant',
+      feed_reached_end: 'Vous avez tout vu',
       notif_new_badge: 'nouveaux',
       notif_mark_all: 'Tout Marquer comme Lu',
       notif_all: 'Tous',
@@ -1636,6 +1666,10 @@
       querying_ledger: 'استعلام عن دفتر الأستاذ التشفيري والشبكة اللامركزية...',
       switch_to_main_feed: 'التبديل إلى موجز Space الرئيسي',
       switched_to_main_feed_toast: 'تم الانتقال إلى موجز Space الرئيسي',
+      feed_layout_snap: 'وضع Reels / TikTok',
+      feed_layout_list: 'عرض القائمة',
+      swipe_up_hint: 'اسحب لأعلى للمنشور التالي',
+      feed_reached_end: 'لقد شاهدت جميع المنشورات',
       notif_new_badge: 'جديد',
       notif_mark_all: 'تحديد الكل كمقروء',
       notif_all: 'الكل',
@@ -2707,6 +2741,118 @@
     `;
   }
 
+  // ── SCR-SPC-REEL: TikTok / Instagram Style Vertical Snap Card ──────────────
+  function renderSimpleReelCard(post, acc, index, total) {
+    if (!post || typeof post !== 'object') return '';
+    const pid = escAttr(post.post_id || post.id || '');
+    const authorAddr = String(post.author || '');
+    const authorBns = (post.author_bns && post.author_bns !== 'anonymous') ? String(post.author_bns).replace(/^@/, '') : '';
+    const displayName = authorBns ? ('@' + authorBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : authorAddr.slice(0, 10));
+    const subHandle = authorBns ? (typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : '') : '@onchain';
+    const timeAgo = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(post.timestamp) : '';
+    const myAddr = acc ? String(acc.address || '').toLowerCase() : '';
+    const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr));
+    const likesCount = Number(post.likes_count || (Array.isArray(post.likes) ? post.likes.length : 0));
+    const commentsCount = Number(post.comments_count || (Array.isArray(post.comments) ? post.comments.length : 0));
+    const bodyHtml = safeFormatSimpleBody(post.content || '');
+    const profileTargetAttr = escAttr(authorBns || authorAddr);
+    const avatarChar = (authorBns || authorAddr || 'B').replace(/^@/, '')[0].toUpperCase();
+
+    return `
+      <section class="simple-reel-slide w-full h-full min-h-full max-h-full snap-start snap-always flex flex-col items-center justify-center p-3 relative shrink-0 select-none" data-post-index="${index}">
+        <!-- Centered Card (Fixed Viewport • Single Post Focus) -->
+        <article class="w-full max-w-[430px] rounded-3xl bg-surface-container-low border border-outline-variant/15 shadow-2xl p-5 flex flex-col justify-between relative h-[86%] max-h-[540px] overflow-hidden"
+                 onclick="window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: '${pid}' })">
+
+          <!-- Top Author Cluster -->
+          <div class="flex items-center justify-between gap-2 shrink-0 pb-3 border-b border-outline-variant/10">
+            <div class="flex items-center gap-2.5 min-w-0 cursor-pointer"
+                 onclick="event.stopPropagation(); window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${profileTargetAttr}' })">
+              <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary font-bold font-mono text-sm shrink-0 ring-1 ring-primary/25">
+                ${avatarChar}
+              </div>
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1 min-w-0">
+                  <span class="text-xs font-bold text-on-surface truncate">${esc(displayName)}</span>
+                  <span class="material-symbols-outlined notranslate text-primary text-[15px] shrink-0" style="font-variation-settings: 'FILL' 1;" translate="no">verified</span>
+                </div>
+                <div class="flex items-center gap-1.5 text-[10.5px] text-on-surface-variant">
+                  <span class="font-mono truncate">${esc(subHandle)}</span>
+                  <span>•</span>
+                  <span>${esc(timeAgo)}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Slide Counter Badge & Options -->
+            <div class="flex items-center gap-1 shrink-0">
+              <span class="px-2 py-0.5 rounded-full bg-surface-container text-primary text-[10.5px] font-mono font-bold">
+                ${index + 1}/${total}
+              </span>
+              <button type="button" aria-label="${t('space_share_btn', 'Share')}"
+                onclick="event.stopPropagation(); if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
+                class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">more_horiz</span>
+              </button>
+            </div>
+          </div>
+
+          <!-- Middle Tweet Content (Centered, Large, Immersive) -->
+          <div class="simple-post-body flex-1 flex flex-col justify-center py-4 my-auto text-base sm:text-lg text-on-surface font-normal leading-relaxed overflow-y-auto no-scrollbar">
+            ${bodyHtml}
+          </div>
+
+          <!-- Bottom Action Bar & Status Strip -->
+          <div class="shrink-0 pt-3 border-t border-outline-variant/10 flex items-center justify-between text-on-surface-variant">
+            <!-- Left Meta Stats -->
+            <div class="flex items-center gap-2">
+              <span class="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-primary/10 text-primary text-[11px] font-mono font-semibold">
+                <span class="material-symbols-outlined notranslate text-[13px]" translate="no">monetization_on</span>
+                <span>+0.004 BCT</span>
+              </span>
+              <span class="text-[10px] text-outline font-mono">#${post.block_index || 'L1'}</span>
+            </div>
+
+            <!-- Right Interactive Actions (TikTok / Instagram style) -->
+            <div class="flex items-center gap-2">
+              <!-- Like Button -->
+              <button type="button"
+                onclick="event.stopPropagation(); window.BlocTagSimpleMode.likePost('${pid}', event)"
+                class="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-surface-container transition-all group cursor-pointer ${isLiked ? 'text-tertiary font-bold' : 'text-on-surface-variant hover:text-tertiary'}">
+                <span class="material-symbols-outlined notranslate text-[20px] group-hover:scale-125 active:scale-95 transition-transform"
+                  ${isLiked ? 'style="font-variation-settings: \'FILL\' 1;"' : ''} translate="no">favorite</span>
+                <span class="text-xs font-mono tabular-nums">${likesCount}</span>
+              </button>
+
+              <!-- Comment Button -->
+              <button type="button"
+                onclick="event.stopPropagation(); window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: '${pid}' })"
+                class="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all group cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[20px] group-hover:scale-110 active:scale-95 transition-transform" translate="no">chat_bubble</span>
+                <span class="text-xs font-mono tabular-nums">${commentsCount}</span>
+              </button>
+
+              <!-- Tip Button -->
+              <button type="button"
+                onclick="event.stopPropagation(); window.BlocTagSimpleMode.tipAuthor('${escAttr(authorAddr)}')"
+                class="w-8 h-8 rounded-full bg-primary/15 text-primary hover:bg-primary hover:text-on-primary transition-all flex items-center justify-center active:scale-90 cursor-pointer"
+                title="${t('space_tip', 'Tip')}">
+                <span class="material-symbols-outlined notranslate text-[16px]" translate="no">volunteer_activism</span>
+              </button>
+            </div>
+          </div>
+        </article>
+
+        <!-- Subtle Animated Swipe-Up Indicator (TikTok style) -->
+        <div class="flex items-center justify-center gap-1 text-[11px] text-outline/80 font-medium animate-pulse mt-2 cursor-pointer"
+             onclick="window.BlocTagSimpleMode.reelNext()">
+          <span class="material-symbols-outlined notranslate text-[16px]" translate="no">keyboard_arrow_up</span>
+          <span>${index < total - 1 ? t('swipe_up_hint', 'Swipe up for next') : t('feed_reached_end', 'You are all caught up')}</span>
+        </div>
+      </section>
+    `;
+  }
+
   // ── SCR-SPC-03: Space - Sade Sosyal Akış (Default Simple Screen) ───────────
   function renderScreenSpaceFeed() {
     const acc = getActiveWallet();
@@ -2732,6 +2878,92 @@
       }
       return true;
     });
+
+    const isSnap = (simpleState.feedLayout !== 'classic');
+
+    if (isSnap) {
+      return `
+        ${renderTopBar('Space', false)}
+        <main class="flex-1 flex flex-col w-full h-[calc(100dvh-120px)] max-h-[calc(100dvh-120px)] overflow-hidden relative simple-screen-animate">
+          <!-- Minimal Sub-Header Strip -->
+          <div class="flex items-center justify-between px-4 py-2 shrink-0 border-b border-outline-variant/10 bg-surface/90 backdrop-blur-md z-10">
+            <div class="flex items-center gap-2.5 min-w-0 cursor-pointer"
+                 onclick="window.BlocTagSimpleMode.go('${acc ? 'SCR-PRF-05' : 'SCR-ONB-01'}', { profileTarget: '' })">
+              <div class="relative shrink-0">
+                <div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden">
+                  <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">account_circle</span>
+                </div>
+                <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-surface"></span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary font-mono text-xs font-semibold truncate max-w-[170px]">
+                  ${esc(displayTag)}
+                </span>
+                <span id="simple-space-bal-subtitle" class="text-[10.5px] text-on-surface-variant truncate">
+                  ${acc ? (typeof window.formatBct === 'function' ? window.formatBct(acc.balance || 0, 2) + ' BCT • ' + t('space_active_l1', 'Active L1') : t('space_active_l1', 'Active L1')) : t('space_create_wallet_hint', 'Create wallet (+1.00 BCT bonus)')}
+                </span>
+              </div>
+            </div>
+
+            <!-- Top Control Actions -->
+            <div class="flex items-center gap-1.5 shrink-0">
+              <!-- Feed Filter Pill (All / Following) -->
+              <button type="button"
+                onclick="window.BlocTagSimpleMode.setFeedFilter('${simpleState.feedFilter === 'following' ? 'all' : 'following'}')"
+                class="px-2.5 py-1 rounded-full text-[11px] font-semibold transition-all cursor-pointer flex items-center gap-1 ${simpleState.feedFilter === 'following' ? 'bg-primary text-on-primary' : 'bg-surface-container-low text-on-surface-variant hover:text-on-surface'}">
+                <span class="material-symbols-outlined notranslate text-[13px]" translate="no">${simpleState.feedFilter === 'following' ? 'verified' : 'public'}</span>
+                <span>${simpleState.feedFilter === 'following' ? t('space_filter_following', 'Following') : t('space_filter_all', 'All')}</span>
+              </button>
+
+              <!-- Toggle between TikTok/Reels Snap and Classic List View -->
+              <button type="button" aria-label="${t('feed_layout_list', 'Switch to List View')}"
+                title="${t('feed_layout_list', 'Switch to List View')}"
+                onclick="window.BlocTagSimpleMode.toggleFeedLayout()"
+                class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">view_agenda</span>
+              </button>
+
+              <!-- Search Toggle -->
+              <button type="button" aria-label="${t('space_search_btn', 'Search')}" onclick="window.BlocTagSimpleMode.toggleSearch()"
+                class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">search</span>
+              </button>
+            </div>
+          </div>
+
+          ${simpleState.searchBarOpen ? `
+            <div class="px-4 py-2 bg-surface shrink-0 border-b border-outline-variant/10 z-10">
+              <div class="flex items-center bg-surface-container-low rounded-full px-3.5 py-1.5 border border-outline-variant/25">
+                <span class="material-symbols-outlined notranslate text-[17px] text-outline mr-2" translate="no">search</span>
+                <input id="simple-space-search-input" type="search" value="${esc(simpleState.searchQuery)}"
+                  oninput="window.BlocTagSimpleMode.setSearchQuery(this.value)"
+                  placeholder="${t('space_search_ph', 'Search posts, #tags or @users...')}"
+                  class="w-full bg-transparent text-xs text-on-surface placeholder:text-outline focus:outline-none" />
+              </div>
+            </div>
+          ` : ''}
+
+          <!-- Vertical Snap Reel (TikTok / Reels Immersion Container) -->
+          <div id="simple-reel-container" class="simple-reel-viewport flex-1 w-full overflow-y-scroll snap-y snap-mandatory no-scrollbar">
+            ${filteredPosts.length === 0 ? `
+              <div class="h-full flex flex-col items-center justify-center p-8 text-center text-on-surface-variant">
+                <span class="material-symbols-outlined notranslate text-[36px] text-primary mb-2" translate="no">forum</span>
+                <span class="text-xs font-semibold">${t('space_empty_posts', 'Posts are loading or none found in this filter...')}</span>
+              </div>
+            ` : filteredPosts.map((post, idx) => renderSimpleReelCard(post, acc, idx, filteredPosts.length)).join('')}
+          </div>
+
+          <!-- Floating Action Button (+ Post Compose) -->
+          <div class="fixed z-40" style="bottom: calc(var(--simple-bottom-nav-h, 64px) + 14px); right: max(16px, calc(50% - 224px));">
+            <button type="button" onclick="window.BlocTagSimpleMode.focusComposer()"
+              class="h-11 px-4 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center gap-1.5 shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">edit</span>
+              <span>${t('space_compose_fab', 'Post')}</span>
+            </button>
+          </div>
+        </main>
+      `;
+    }
 
     return `
       ${renderTopBar('Space', false)}
@@ -2759,11 +2991,11 @@
           </div>
 
           <div class="flex items-center gap-1.5 shrink-0">
-            <button type="button" aria-label="${t('switch_to_main_feed', 'Switch to Main Space Feed')}"
-              title="${t('switch_to_main_feed', 'Switch to Main Space Feed')}"
-              onclick="window.BlocTagSimpleMode.switchToMainFeed()"
+            <button type="button" aria-label="${t('feed_layout_snap', 'Switch to TikTok / Reels View')}"
+              title="${t('feed_layout_snap', 'Switch to TikTok / Reels View')}"
+              onclick="window.BlocTagSimpleMode.toggleFeedLayout()"
               class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">dynamic_feed</span>
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">movie</span>
             </button>
             <button type="button" aria-label="${t('space_search_btn', 'Search')}" onclick="window.BlocTagSimpleMode.toggleSearch()"
               class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
@@ -3926,7 +4158,7 @@
 
     if (simpleState.activeScreen === 'SCR-SPC-03') {
       const feedSig = posts.slice(0, 35).map(p => `${p.post_id || p.id}:${p.likes_count || (p.likes ? p.likes.length : 0)}:${p.comments_count || (p.comments ? p.comments.length : 0)}`).join(',');
-      return `SPC03|${addr}|${bal}|${unread}|${simpleState.feedFilter}|${simpleState.searchBarOpen}|${simpleState.searchQuery}|${feedSig}`;
+      return `SPC03|${addr}|${bal}|${unread}|${simpleState.feedFilter}|${simpleState.feedLayout}|${simpleState.searchBarOpen}|${simpleState.searchQuery}|${feedSig}`;
     }
     if (simpleState.activeScreen === 'SCR-SPC-04') {
       const post = posts.find(p => String(p.post_id || p.id) === String(simpleState.activePostId)) || posts[0];
@@ -4003,8 +4235,9 @@
 
     // Targeted in-place feed patch on SCR-SPC-03 (preserves composer text, scroll position, and zero flicker)
     if (!animate && isSameScreen && simpleState.activeScreen === 'SCR-SPC-03') {
+      const reelContainer = document.getElementById('simple-reel-container');
       const feedContainer = document.getElementById('simple-feed-container');
-      if (feedContainer) {
+      if (reelContainer || feedContainer) {
         const acc = getActiveWallet();
         const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
         const q = String(simpleState.searchQuery || '').trim().toLowerCase();
@@ -4023,12 +4256,21 @@
           }
           return true;
         });
-        feedContainer.innerHTML = filteredPosts.length === 0 ? `
-          <div class="p-8 rounded-2xl bg-surface-container-low text-center flex flex-col items-center gap-2 text-on-surface-variant">
-            <span class="material-symbols-outlined notranslate text-[28px] text-primary" translate="no">forum</span>
-            <span class="text-xs">Gönderiler yükleniyor veya bu filtrede gönderi yok...</span>
-          </div>
-        ` : filteredPosts.slice(0, 35).map(post => renderSimplePostCard(post, acc)).join('');
+        if (reelContainer) {
+          reelContainer.innerHTML = filteredPosts.length === 0 ? `
+            <div class="h-full flex flex-col items-center justify-center p-8 text-center text-on-surface-variant">
+              <span class="material-symbols-outlined notranslate text-[36px] text-primary mb-2" translate="no">forum</span>
+              <span class="text-xs font-semibold">${t('space_empty_posts', 'Posts are loading or none found in this filter...')}</span>
+            </div>
+          ` : filteredPosts.map((post, idx) => renderSimpleReelCard(post, acc, idx, filteredPosts.length)).join('');
+        } else if (feedContainer) {
+          feedContainer.innerHTML = filteredPosts.length === 0 ? `
+            <div class="p-8 rounded-2xl bg-surface-container-low text-center flex flex-col items-center gap-2 text-on-surface-variant">
+              <span class="material-symbols-outlined notranslate text-[28px] text-primary" translate="no">forum</span>
+              <span class="text-xs">${t('space_empty_posts', 'Posts are loading or none found in this filter...')}</span>
+            </div>
+          ` : filteredPosts.slice(0, 35).map(post => renderSimplePostCard(post, acc)).join('');
+        }
         patchSimpleLiveValuesInPlace();
         _lastRenderedFingerprint = currentFp;
         return;
@@ -4132,6 +4374,37 @@
       }
       if (typeof window.showToast === 'function') {
         window.showToast(t('switched_to_main_feed_toast', 'Switched to Main Space Feed'), 'auto_awesome');
+      }
+    },
+
+    toggleFeedLayout: () => {
+      simpleState.feedLayout = (simpleState.feedLayout === 'classic') ? 'snap' : 'classic';
+      try {
+        localStorage.setItem('bloctag_simple_feed_layout', simpleState.feedLayout);
+      } catch (_e) { }
+      _lastRenderedFingerprint = '';
+      renderSimpleMode(true);
+      if (typeof window.showToast === 'function') {
+        window.showToast(
+          simpleState.feedLayout === 'snap'
+            ? t('feed_layout_snap', 'Reels / TikTok View active')
+            : t('feed_layout_list', 'List View active'),
+          'auto_awesome'
+        );
+      }
+    },
+
+    reelNext: () => {
+      const container = document.getElementById('simple-reel-container');
+      if (container) {
+        container.scrollBy({ top: container.clientHeight || 450, behavior: 'smooth' });
+      }
+    },
+
+    reelPrev: () => {
+      const container = document.getElementById('simple-reel-container');
+      if (container) {
+        container.scrollBy({ top: -(container.clientHeight || 450), behavior: 'smooth' });
       }
     },
 
@@ -4324,6 +4597,80 @@
       if (inp) {
         inp.focus();
         inp.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      } else {
+        window.BlocTagSimpleMode.openComposerModal();
+      }
+    },
+
+    openComposerModal: () => {
+      let modal = document.getElementById('simple-composer-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'simple-composer-modal';
+        document.body.appendChild(modal);
+      }
+      modal.className = 'fixed inset-0 z-[90] bg-black/75 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4 transition-all duration-200';
+      modal.innerHTML = `
+        <div class="w-full sm:max-w-lg bg-surface-container-high rounded-t-2xl sm:rounded-2xl border border-outline-variant/30 shadow-2xl p-5 flex flex-col gap-3">
+          <div class="flex items-center justify-between pb-2 border-b border-outline-variant/15">
+            <div class="flex items-center gap-2">
+              <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">edit_square</span>
+              <span class="text-sm font-semibold text-on-surface">${t('space_compose_title', 'New Post')}</span>
+            </div>
+            <button type="button" onclick="window.BlocTagSimpleMode.closeComposerModal()" class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
+            </button>
+          </div>
+          <textarea id="simple-modal-composer-input" rows="4" placeholder="${t('space_whats_happening', "What's happening on LockTrace?")}"
+            class="w-full bg-surface-container-lowest rounded-xl p-3 text-sm text-on-surface placeholder:text-outline border border-outline-variant/20 focus:outline-none focus:border-primary resize-none"></textarea>
+          <div class="flex items-center justify-between pt-1">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <button type="button" onclick="window.BlocTagSimpleMode.insertModalComposerTag('#locktrace')" class="px-2 py-0.5 rounded-full bg-surface-container text-[11px] font-mono text-primary border border-primary/20 hover:bg-primary/10">#locktrace</button>
+              <button type="button" onclick="window.BlocTagSimpleMode.insertModalComposerTag('#crypto')" class="px-2 py-0.5 rounded-full bg-surface-container text-[11px] font-mono text-primary border border-primary/20 hover:bg-primary/10">#crypto</button>
+              <button type="button" onclick="window.BlocTagSimpleMode.insertModalComposerTag('#web3')" class="px-2 py-0.5 rounded-full bg-surface-container text-[11px] font-mono text-primary border border-primary/20 hover:bg-primary/10">#web3</button>
+            </div>
+            <button type="button" onclick="window.BlocTagSimpleMode.submitModalPost()" class="h-9 px-5 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center gap-1 shadow-md hover:scale-105 active:scale-95 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[16px]" translate="no">send</span>
+              <span>${t('space_btn_post', 'Post')}</span>
+            </button>
+          </div>
+        </div>
+      `;
+      setTimeout(() => document.getElementById('simple-modal-composer-input')?.focus(), 50);
+    },
+
+    closeComposerModal: () => {
+      const modal = document.getElementById('simple-composer-modal');
+      if (modal) modal.remove();
+    },
+
+    insertModalComposerTag: (tag) => {
+      const inp = document.getElementById('simple-modal-composer-input');
+      if (!inp) return;
+      inp.value = (inp.value ? inp.value + ' ' : '') + tag;
+      inp.focus();
+    },
+
+    submitModalPost: async () => {
+      const acc = getActiveWallet();
+      if (!acc) {
+        window.BlocTagSimpleMode.closeComposerModal();
+        navigateToSimpleScreen('SCR-ONB-01');
+        return;
+      }
+      const inp = document.getElementById('simple-modal-composer-input');
+      const text = String(inp ? inp.value : '').trim();
+      if (!text) {
+        if (inp) inp.focus();
+        return;
+      }
+      const proInput = document.getElementById('spacePostInput');
+      if (proInput && typeof window.publishSpacePost === 'function') {
+        proInput.value = text;
+        if (typeof window.updateSpaceCharCount === 'function') window.updateSpaceCharCount();
+        window.BlocTagSimpleMode.closeComposerModal();
+        await window.publishSpacePost();
+        renderSimpleMode();
       }
     },
 
