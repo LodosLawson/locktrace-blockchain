@@ -3056,7 +3056,7 @@
     const subHandle = authorBns ? (typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : '') : '@onchain';
     const timeAgo = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(post.timestamp) : '';
     const myAddr = acc ? String(acc.address || '').toLowerCase() : '';
-    const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr));
+    const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.some(a => String(a || '').toLowerCase() === myAddr));
     const likesCount = Number(post.likes_count || (Array.isArray(post.likes) ? post.likes.length : 0));
     const commentsCount = Number(post.comments_count || (Array.isArray(post.comments) ? post.comments.length : 0));
     const bodyHtml = safeFormatSimpleBody(post.content || '');
@@ -3120,21 +3120,22 @@
             </div>
 
             <!-- Right Interactive Actions (TikTok / Instagram style) -->
-            <div class="flex items-center gap-2">
+            <div class="flex items-center gap-1.5">
               <!-- Like Button -->
               <button type="button"
+                data-simple-like-btn="${pid}"
                 onclick="event.stopPropagation(); window.BlocTagSimpleMode.likePost('${pid}', event)"
-                class="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-surface-container transition-all group cursor-pointer ${isLiked ? 'text-tertiary font-bold' : 'text-on-surface-variant hover:text-tertiary'}">
-                <span class="material-symbols-outlined notranslate text-[20px] group-hover:scale-125 active:scale-95 transition-transform"
+                class="flex items-center gap-1 min-h-[36px] py-1.5 px-2.5 rounded-full hover:bg-surface-container active:scale-90 transition-all group cursor-pointer ${isLiked ? 'text-rose-500 font-bold bg-rose-500/10' : 'text-on-surface-variant hover:text-rose-400'}">
+                <span class="material-symbols-outlined notranslate text-[20px] group-hover:scale-125 transition-transform"
                   ${isLiked ? 'style="font-variation-settings: \'FILL\' 1;"' : ''} translate="no">favorite</span>
-                <span class="text-xs font-mono tabular-nums">${likesCount}</span>
+                <span class="text-xs font-mono tabular-nums" data-like-count="${pid}">${likesCount}</span>
               </button>
 
               <!-- Comment Button -->
               <button type="button"
                 onclick="event.stopPropagation(); window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: '${pid}' })"
-                class="flex items-center gap-1 py-1 px-2 rounded-full hover:bg-surface-container text-on-surface-variant hover:text-primary transition-all group cursor-pointer">
-                <span class="material-symbols-outlined notranslate text-[20px] group-hover:scale-110 active:scale-95 transition-transform" translate="no">chat_bubble</span>
+                class="flex items-center gap-1 min-h-[36px] py-1.5 px-2.5 rounded-full hover:bg-surface-container active:scale-90 text-on-surface-variant hover:text-primary transition-all group cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[20px] group-hover:scale-110 transition-transform" translate="no">chat_bubble</span>
                 <span class="text-xs font-mono tabular-nums">${commentsCount}</span>
               </button>
 
@@ -3419,8 +3420,8 @@
     const displayName = authorBns ? ('@' + authorBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : authorAddr.slice(0, 10));
     const subHandle = authorBns ? (typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : '') : '@onchain';
     const timeAgo = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(post.timestamp) : '';
-    const myAddr = acc ? acc.address : '';
-    const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr));
+    const myAddr = acc ? String(acc.address || '').toLowerCase() : '';
+    const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.some(a => String(a || '').toLowerCase() === myAddr));
     const likesCount = Number(post.likes_count || (Array.isArray(post.likes) ? post.likes.length : 0));
     const commentsCount = Number(post.comments_count || (Array.isArray(post.comments) ? post.comments.length : 0));
     const bodyHtml = safeFormatSimpleBody(post.content || '');
@@ -3459,19 +3460,20 @@
         </div>
 
         <div class="mt-3.5 flex items-center justify-between pt-2 border-t border-outline-variant/10 text-on-surface-variant">
-          <div class="flex items-center gap-4">
+          <div class="flex items-center gap-2">
             <button type="button"
+              data-simple-like-btn="${pid}"
               onclick="event.stopPropagation(); window.BlocTagSimpleMode.likePost('${pid}', event)"
-              class="flex items-center gap-1.5 ${isLiked ? 'text-tertiary font-semibold' : 'hover:text-tertiary'} transition-colors group cursor-pointer">
+              class="flex items-center gap-1.5 min-h-[36px] px-2.5 py-1.5 rounded-full hover:bg-surface-container active:scale-90 transition-all group cursor-pointer ${isLiked ? 'text-rose-500 font-semibold bg-rose-500/10' : 'hover:text-rose-400'}">
               <span class="material-symbols-outlined notranslate text-[19px] group-hover:scale-110 transition-transform"
                 ${isLiked ? 'style="font-variation-settings: \'FILL\' 1;"' : ''} translate="no">favorite</span>
-              <span class="text-xs tabular-nums">${likesCount}</span>
+              <span class="text-xs font-mono tabular-nums" data-like-count="${pid}">${likesCount}</span>
             </button>
             <button type="button"
               onclick="event.stopPropagation(); window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: '${pid}' })"
-              class="flex items-center gap-1.5 hover:text-primary transition-colors cursor-pointer">
+              class="flex items-center gap-1.5 min-h-[36px] px-2.5 py-1.5 rounded-full hover:bg-surface-container hover:text-primary active:scale-90 transition-all cursor-pointer">
               <span class="material-symbols-outlined notranslate text-[19px]" translate="no">chat_bubble</span>
-              <span class="text-xs tabular-nums">${commentsCount}</span>
+              <span class="text-xs font-mono tabular-nums">${commentsCount}</span>
             </button>
           </div>
           <button type="button"
@@ -3508,8 +3510,8 @@
     const authorAddr = String(post.author || '');
     const authorBns = (post.author_bns && post.author_bns !== 'anonymous') ? String(post.author_bns).replace(/^@/, '') : '';
     const displayName = authorBns ? ('@' + authorBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : authorAddr);
-    const myAddr = acc ? acc.address : '';
-    const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr));
+    const myAddr = acc ? String(acc.address || '').toLowerCase() : '';
+    const isLiked = Boolean(myAddr && Array.isArray(post.likes) && post.likes.some(a => String(a || '').toLowerCase() === myAddr));
     const likesCount = Number(post.likes_count || (Array.isArray(post.likes) ? post.likes.length : 0));
     const comments = Array.isArray(post.comments) ? post.comments : [];
     const earned = Number(post.author_earnings || 0);
@@ -3573,8 +3575,8 @@
 
           <!-- 4-Action Cluster -->
           <div class="grid grid-cols-4 gap-1.5 pt-1">
-            <button type="button" onclick="window.BlocTagSimpleMode.likePost('${pid}', event)"
-              class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest transition-all active:scale-95 cursor-pointer ${isLiked ? 'text-tertiary font-semibold' : 'text-on-surface-variant'}">
+            <button type="button" data-simple-like-btn="${pid}" onclick="window.BlocTagSimpleMode.likePost('${pid}', event)"
+              class="flex flex-col items-center justify-center gap-1 py-2 rounded-xl bg-surface-container-high hover:bg-surface-container-highest transition-all active:scale-95 cursor-pointer ${isLiked ? 'text-rose-500 font-semibold ring-1 ring-rose-500/30' : 'text-on-surface-variant hover:text-rose-400'}">
               <span class="material-symbols-outlined notranslate text-[19px]" ${isLiked ? 'style="font-variation-settings: \'FILL\' 1;"' : ''} translate="no">favorite</span>
               <span class="text-[10.5px]">${t('space_like', 'Like')}</span>
             </button>
@@ -5769,6 +5771,9 @@
       }
     },
 
+    _inFlightSimpleLikes: new Set(),
+    _inFlightSimpleComment: false,
+
     likePost: async (postId, ev) => {
       if (ev) ev.stopPropagation();
       const acc = getActiveWallet();
@@ -5776,29 +5781,78 @@
         navigateToSimpleScreen('SCR-ONB-01');
         return;
       }
-      if (typeof window.likeSpacePost === 'function') {
-        await window.likeSpacePost(postId, ev);
-        renderSimpleMode();
+      const key = String(postId || '');
+      if (!key || window.BlocTagSimpleMode._inFlightSimpleLikes.has(key)) return;
+
+      // Instant 0ms optimistic visual feedback on tapped heart button
+      const btn = ev && ev.currentTarget ? ev.currentTarget : document.querySelector(`[data-simple-like-btn="${CSS.escape(key)}"]`);
+      const iconEl = btn ? btn.querySelector('.material-symbols-outlined') : null;
+      const cntEl = btn ? btn.querySelector('[data-like-count]') : null;
+      const alreadyLiked = Boolean(btn && btn.classList.contains('text-rose-500'));
+      if (!alreadyLiked && btn) {
+        btn.classList.add('text-rose-500', 'font-bold', 'bg-rose-500/10');
+        btn.classList.remove('text-on-surface-variant');
+        if (iconEl) {
+          iconEl.style.fontVariationSettings = "'FILL' 1";
+          iconEl.classList.add('scale-125');
+          setTimeout(() => iconEl.classList.remove('scale-125'), 220);
+        }
+        if (cntEl) cntEl.textContent = String((parseInt(cntEl.textContent || '0', 10) || 0) + 1);
+      }
+
+      window.BlocTagSimpleMode._inFlightSimpleLikes.add(key);
+      if (btn) btn.style.opacity = '0.75';
+      try {
+        if (typeof window.likeSpacePost === 'function') {
+          await window.likeSpacePost(postId, ev);
+        }
+      } finally {
+        window.BlocTagSimpleMode._inFlightSimpleLikes.delete(key);
+        if (btn) btn.style.opacity = '';
+        renderSimpleMode(true);
       }
     },
 
     submitComment: async (postId) => {
+      if (window.BlocTagSimpleMode._inFlightSimpleComment) return;
       const acc = getActiveWallet();
       if (!acc) {
         navigateToSimpleScreen('SCR-ONB-01');
         return;
       }
       const inp = document.getElementById('simple-comment-input');
+      const btn = document.getElementById('simple-comment-submit-btn');
       const text = String(inp ? inp.value : '').trim();
-      if (!text) return;
+      if (!text) {
+        if (typeof window.showToast === 'function') window.showToast(t('post_comment_empty', 'Please enter your comment'), 'warning', true);
+        return;
+      }
+
+      window.BlocTagSimpleMode._inFlightSimpleComment = true;
+      const origBtnHtml = btn ? btn.innerHTML : '';
+      if (inp) inp.disabled = true;
+      if (btn) {
+        btn.disabled = true;
+        btn.innerHTML = `<span class="material-symbols-outlined notranslate text-[16px] animate-spin" translate="no">progress_activity</span>`;
+      }
+
       try {
-        activeDetailPostId = postId;
-      } catch (_e) { }
-      const proCommentInput = document.getElementById('detailCommentInput');
-      if (proCommentInput && typeof window.submitDetailSpaceComment === 'function') {
-        proCommentInput.value = text;
-        await window.submitDetailSpaceComment();
-        renderSimpleMode();
+        try { activeDetailPostId = postId; } catch (_e) { }
+        const proCommentInput = document.getElementById('detailCommentInput');
+        if (proCommentInput && typeof window.submitDetailSpaceComment === 'function') {
+          proCommentInput.value = text;
+          await window.submitDetailSpaceComment();
+          // Clear Simple Mode input if Pro Mode cleared its input (meaning comment succeeded)
+          if (!proCommentInput.value && inp) inp.value = '';
+        }
+      } finally {
+        window.BlocTagSimpleMode._inFlightSimpleComment = false;
+        if (inp) inp.disabled = false;
+        if (btn) {
+          btn.disabled = false;
+          btn.innerHTML = origBtnHtml;
+        }
+        renderSimpleMode(true);
       }
     },
 
