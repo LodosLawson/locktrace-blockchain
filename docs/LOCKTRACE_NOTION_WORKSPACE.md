@@ -214,7 +214,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.12.2` | Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.12.3` | Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
 | **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -709,3 +709,16 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - Profil oluşturma, sosyal akışlar ve harici URL yönlendirmelerinde DOM injection yüzeyleri temizlendi; CSP script hash'leri yerel frontend derlemesiyle tam senkronize kılındı.
 5. **İki Tıklamalı Dinamik Menü Çekmecesi & Dokunma Olayı İyileştirmesi:**
    - Mobil gezinme deneyiminde kazara açılmaları önlemek adına alt çekmece iki ardışık tıklama veya çift dokunuşla açılacak şekilde optimize edildi; profil ve blok gezgini arasındaki dokunma olay akışı akıcılaştırıldı.
+
+## 🛡️ 34. BlocTag / LockTrace v2.12.3: Simple Mod Stitch Takipçi / Takip Listesi Ekranları, Çoklu Dil Entegrasyonu & Modern Crypto Wallet Tasarım Senkronizasyonu
+
+1. **Stitch "Modern Crypto Wallet App" Ekran Uyumu:**
+   - Simple Mod profil sayfasındaki Takipçi ve Takip metrik sayaçlarına tıklandığında Stitch tasarımındaki özel `Space - Takipçiler` ve `Space - Takip Edilenler` mobil ekranlarına pürüzsüz geçiş sağlandı.
+2. **Akışkan Segment Sekmeleri ve Canlı Ağ Göstergesi:**
+   - Sayfa yenilemesi olmadan "Takipçiler" ve "Takip Edilen" arasında tek dokunuşla geçiş yapan hap sekme kontrolü, canlı ağ durum göstergesi ve bağlantı sayısı sayaçları uygulandı.
+3. **Hızlı Filtreleme ve Anlık Kullanıcı Arama:**
+   - Tümü, Karşılıklı Takip ve Doğrulanmış profil filtreleme butonları ile kullanıcı adı, cüzdan adresi ve bio açıklamasını anlık süzen minimalist arama alanı entegre edildi.
+4. **Zincir Üstü Takip / Geri Takip Aksiyonları & Profil Yönlendirmesi:**
+   - Kullanıcı kartları üzerinden tek dokunuşla zincir üstü `followVoiceOnChain` işlemi, "Geri Takip" ve "Takip Ediliyor" durumları bağlandı; kartlara tıklandığında ilgili kullanıcının profil sayfasına doğrudan yönlendirme aktifleştirildi.
+5. **Kapsamlı 8 Dil Desteği & Uluslararası Parite:**
+   - İngilizce (varsayılan), Türkçe, Azerbaycan dili, Rusça, Almanca, İspanyolca, Fransızca ve Arapça dillerinde tam yerelleştirme sağlandı.

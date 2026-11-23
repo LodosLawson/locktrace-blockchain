@@ -5,6 +5,9 @@
 - **Default Branch**: `master`
 - **MCP Server**: `github` (Model Context Protocol)
 - **Live Mainnet**: `https://locktrace.space`
+- **Stitch MCP Design Project**: `Modern Crypto Wallet App` (`projects/3922358138058284555`)
+  - Space - Takipçiler (Followers): `projects/3922358138058284555/screens/8eaf844dee6a4e35af88efa9367b5f7a`
+  - Space - Takip Edilenler (Following): `projects/3922358138058284555/screens/ddf7194e85b64ccaab2e59cf3d82aba4`
 
 ## Mandatory Synchronization Policy
 

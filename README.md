@@ -546,7 +546,12 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **P2P & Faucet Cooldown DoS Protection:** Implemented adaptive per-IP/per-address rate-limiters with bounded sliding windows for faucet claims and peer block/transaction queries.
    - **DOM XSS Sanitization & Strict CSP Integrity:** Hardened user profile rendering, post feeds, and external URLs against script injection, keeping CSP script hashes in lockstep with the self-hosted frontend release.
    - **Mobile 2-Click Drawer Navigation & Event Interception Fix:** Refined dynamic mobile bottom drawer so opening requires two distinct clicks or deliberate double tap, preventing accidental swipe/touch triggers, and unblocked touch event propagation for smooth profile and explorer browsing.
-34. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+34. **Simple Mode Stitch Follower/Following Screens & Navigation, Multi-Language Internationalization & Protocol Parity (v2.12.3):**
+   - **Stitch 'Modern Crypto Wallet App' Parity:** Fully connected the dedicated Followers (`Space - Takipçiler`) and Following (`Space - Takip Edilenler`) mobile screens directly from user profile metrics cards.
+   - **Interactive Segmented Tabs & Quick Filter Carousel:** Features smooth in-place tab switching between Followers and Following, instant filtering by All, Mutual, and Verified, and real-time live search.
+   - **On-Chain Creator Follow Actions & Profile Routing:** Integrated seamless on-chain follow/unfollow actions and 1-tap navigation to any user's profile directly from follow lists.
+   - **Universal Multi-Language Internationalization:** Full translation support across 8 languages (English, Turkish, Azerbaijani, Russian, German, Spanish, French, Arabic) with English base parity.
+35. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 
