@@ -361,7 +361,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-bb9nhsNrg4NsPnh/4l3/eymPeHWcdfWvKGGgNC7XqRQ=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-A96QTnhMlsngYVREv44xL+6+raY73JDsblG64MKTISs=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -3734,6 +3734,8 @@ def api_bridge_claim_burn():
             chain="base",
             tx_hash_evm=evm_tx_hash
         )
+        if not order_res.get("success"):
+            return api_response(False, message=order_res.get("error", "Invalid bridge claim order."), status=400)
         bridge_id = order_res.get("data", {}).get("bridge_id", "")
 
         # 2. Cryptographic On-Chain Verification on Base Mainnet
@@ -3763,7 +3765,10 @@ def api_bridge_claim_burn():
             else:
                 if bridge_id:
                     with bridge_manager._get_connection() as conn:
-                        conn.execute("UPDATE bridge_transactions SET status = 'FAILED', error_message = ?, updated_at = ? WHERE bridge_id = ?", (v_msg, time.time(), bridge_id))
+                        conn.execute(
+                            "UPDATE bridge_transactions SET status = 'FAILED', error_message = ?, updated_at = ? WHERE bridge_id = ? AND direction = 'EVM_TO_L1' AND status != 'COMPLETED'",
+                            (v_msg, time.time(), bridge_id)
+                        )
                 return api_response(False, message=f"Burn could not be verified on Base Mainnet: {v_msg}", status=400)
         else:
             verified_sender = str(event_data.get("sender") or "").strip().lower()

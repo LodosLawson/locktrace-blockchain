@@ -384,7 +384,7 @@ class BridgeManager:
         net = round(amount_bct - fee, 8)
         now = time.time()
 
-        # Deduplication check: if order with this tx_hash already exists, return existing order
+        # Deduplication check: if order with this tx_hash already exists, validate direction match
         if tx_hash_evm:
             with self._get_connection() as conn:
                 existing = conn.execute(
@@ -392,7 +392,13 @@ class BridgeManager:
                     (tx_hash_evm,)
                 ).fetchone()
                 if existing:
-                    return {"success": True, "data": dict(existing)}
+                    ex = dict(existing)
+                    if str(ex.get("direction", "")).upper() != direction:
+                        return {
+                            "success": False,
+                            "error": f"This EVM transaction hash already belongs to a {ex.get('direction')} order and cannot be used for {direction}."
+                        }
+                    return {"success": True, "data": ex}
 
         if tx_hash_l1:
             with self._get_connection() as conn:
