@@ -485,6 +485,7 @@ class Blockchain:
         self._bns_index_key: Optional[tuple] = None
         self._space_index_key: Optional[tuple] = None
         self.finalized_height: int = 0
+        self._removed_mempool_hashes: List[str] = []
         self.slashed_validators: Dict[str, dict] = {}
         self._attestations_by_validator: Dict[str, str] = {}
         self._pending_auth_nonces: Dict[str, int] = {}
@@ -908,6 +909,7 @@ class Blockchain:
         new_fee = float(getattr(tx, "fee", 0.0) or 0.0)
         if new_fee > min_fee_val and min_fee_idx >= 0:
             evicted = self.pending_transactions.pop(min_fee_idx)
+            self._removed_mempool_hashes.append(evicted.hash())
             logger.info(
                 f"Mempool RBF Eviction: Evicted tx {evicted.hash()[:10]} (fee {min_fee_val:.6f}) "
                 f"for higher priority tx {tx.hash()[:10]} (fee {new_fee:.6f})"
@@ -3478,48 +3480,70 @@ class Blockchain:
             eligible.sort(key=lambda x: (-x[1], x[0]))
             return eligible[:100]
 
+    @staticmethod
+    def _leading_zero_count(hex_hash: str) -> int:
+        s = str(hex_hash or "")
+        cnt = 0
+        for ch in s:
+            if ch == "0":
+                cnt += 1
+            else:
+                break
+        return cnt
+
+    def compute_lwma_difficulty(self, chain_slice: List[Block], now_ts: Optional[float] = None) -> int:
+        """
+        Deterministic Cumulative LWMA (Linearly Weighted Moving Average) Difficulty.
+        Tracks effective difficulty from the median leading-zero work of the recent LWMA_WINDOW
+        so difficulty scales cumulatively across [MIN_DIFFICULTY=2 .. MAX_DIFFICULTY=8] instead
+        of being clamped to base_difficulty +/- 1.
+        """
+        max_diff = max(self.difficulty, int(os.environ.get("BCT_MAX_DIFFICULTY", "8")))
+        min_diff = min(2, self.difficulty)
+
+        if len(chain_slice) < LWMA_WINDOW:
+            eff_diff = self.difficulty
+        else:
+            recent = chain_slice[-LWMA_WINDOW:]
+            # Observed effective difficulty via median leading zeros in window (immune to single lucky hash)
+            lz_counts = sorted(self._leading_zero_count(b.hash) for b in recent)
+            median_lz = lz_counts[len(lz_counts) // 2]
+            eff_diff = max(min_diff, min(max_diff, max(self.difficulty, median_lz)))
+
+            time_diffs = []
+            for i in range(1, len(recent)):
+                dt = float(recent[i].timestamp) - float(recent[i - 1].timestamp)
+                time_diffs.append(max(0.1, min(dt, TARGET_BLOCK_TIME * 6.0)))
+
+            if time_diffs:
+                weighted_sum = sum((idx + 1) * dt for idx, dt in enumerate(time_diffs))
+                weight_total = sum(idx + 1 for idx in range(len(time_diffs)))
+                avg_solve_time = weighted_sum / max(1.0, weight_total)
+
+                if avg_solve_time < (TARGET_BLOCK_TIME * 0.5):
+                    eff_diff = min(max_diff, eff_diff + 1)
+                elif avg_solve_time > (TARGET_BLOCK_TIME * 1.8) and eff_diff > min_diff:
+                    eff_diff = max(min_diff, eff_diff - 1)
+
+        # Emergency Stall Recovery (Anti-Freeze Guard):
+        # If the network has stalled without a block for > 6x target time (120s) due to hashrate collapse,
+        # dynamically relax difficulty so miners can recover block generation immediately.
+        if now_ts is not None and chain_slice:
+            tip_time = float(chain_slice[-1].timestamp)
+            time_since_tip = float(now_ts) - tip_time
+            if time_since_tip > (TARGET_BLOCK_TIME * 6.0):
+                stall_drop = int((time_since_tip - (TARGET_BLOCK_TIME * 6.0)) // 60.0) + 1
+                return max(1, eff_diff - stall_drop)
+
+        return max(1, eff_diff)
+
     def get_current_difficulty(self) -> int:
         """
-        Adaptive PoW Difficulty using LWMA (Linearly Weighted Moving Average).
+        Adaptive PoW Difficulty using cumulative LWMA (Linearly Weighted Moving Average).
         Dynamically adjusts difficulty target based on block solve times over LWMA_WINDOW.
         Suitable for both CPU and GPU miners while maintaining smooth block intervals.
         """
-        if len(self.chain) < LWMA_WINDOW:
-            return self.difficulty
-
-        # Calculate solve times across the last LWMA_WINDOW blocks
-        recent = self.chain[-LWMA_WINDOW:]
-        time_diffs = []
-        for i in range(1, len(recent)):
-            dt = recent[i].timestamp - recent[i - 1].timestamp
-            time_diffs.append(max(0.1, min(dt, TARGET_BLOCK_TIME * 6.0)))
-
-        if not time_diffs:
-            return self.difficulty
-
-        weighted_sum = sum((idx + 1) * dt for idx, dt in enumerate(time_diffs))
-        weight_total = sum(idx + 1 for idx in range(len(time_diffs)))
-        avg_solve_time = weighted_sum / max(1.0, weight_total)
-
-        # v2.5.0 Emergency Stall Recovery (Anti-Freeze Guard):
-        # If the network has stalled without a block for > 6x target time (120s) due to hashrate collapse,
-        # dynamically relax difficulty so miners can recover block generation immediately.
-        if self.chain:
-            tip_time = self.chain[-1].timestamp
-            time_since_tip = time.time() - tip_time
-            if time_since_tip > (TARGET_BLOCK_TIME * 6.0):
-                stall_drop = int((time_since_tip - (TARGET_BLOCK_TIME * 6.0)) // 60.0) + 1
-                return max(1, self.difficulty - stall_drop)
-
-        # Scale difficulty smoothly:
-        # If solve time is too fast (< 50% of target), increase difficulty
-        # If solve time is too slow (> 180% of target), decrease difficulty
-        if avg_solve_time < (TARGET_BLOCK_TIME * 0.5):
-            return self.difficulty + 1
-        elif avg_solve_time > (TARGET_BLOCK_TIME * 1.8) and self.difficulty > 2:
-            return max(2, self.difficulty - 1)
-
-        return self.difficulty
+        return self.compute_lwma_difficulty(self.chain, now_ts=time.time())
 
     def _should_defer_to_peer_miners(self) -> bool:
         """When external peer miners are actively online, queue transactions in mempool so peer nodes forge PoW blocks."""
@@ -6143,7 +6167,10 @@ class Blockchain:
                 total_fees_collected=self.total_fees_collected,
                 pending_dicts=pending_dicts,
                 dirty_wallets=dirty_wallets,
+                finalized_height=self.finalized_height,
+                removed_mempool_hashes=list(self._removed_mempool_hashes),
             )
+            self._removed_mempool_hashes.clear()
             self._loaded_revision = new_rev
 
             now = time.time()
@@ -6236,6 +6263,7 @@ class Blockchain:
             merkle_root=b_merkle,
             attestations_count=int(b_data.get("attestations_count", 0)),
             precomputed_hash=str(b_data.get("hash", "")),
+            finalized=bool(b_data.get("finalized", False)),
             raw_tx_dicts=b_data.get("transactions") if isinstance(b_data.get("transactions"), list) else None,
         )
 
@@ -6278,9 +6306,12 @@ class Blockchain:
                             self.chain.append(blk)
 
                     att_counts = d_state.get("attestation_counts", {})
+                    self.finalized_height = max(self.finalized_height, int(d_state.get("finalized_height", 0) or 0))
                     for b in self.chain[-10:]:
                         if b.index in att_counts:
                             b.attestations_count = att_counts[b.index]
+                        if self.finalized_height > 0 and b.index <= self.finalized_height:
+                            b.finalized = True
 
                     self.pending_transactions = [
                         Transaction(
@@ -6333,6 +6364,11 @@ class Blockchain:
             ]
 
             self.chain = new_chain
+            self.finalized_height = max(self.finalized_height, int(state.get("finalized_height", 0) or 0))
+            if self.finalized_height > 0:
+                for b in self.chain:
+                    if b.index <= self.finalized_height:
+                        b.finalized = True
             self.pending_transactions = new_pending
             self._loaded_revision = rev
             self._saved_wallet_nonces = {

@@ -97,10 +97,14 @@ def verify_evm_burn_receipt(
     if to_addr != target_contract and not has_contract_log:
         return False, f"Transaction was not sent to the official wBCT contract ({target_contract}).", {}
 
-    # 2b. Check EVM confirmation depth (reorg protection - LT-02 Fail-Closed Hardening)
+    # 2b. Check EVM confirmation depth + canonical blockHash (reorg protection - LT-02 Fail-Closed Hardening)
     receipt_block = receipt.get("blockNumber")
+    receipt_block_hash = str(receipt.get("blockHash") or "").strip().lower()
     if not receipt_block:
         return False, "EVM blockNumber missing from transaction receipt.", {}
+    if not (receipt_block_hash.startswith("0x") and len(receipt_block_hash) == 66):
+        return False, "EVM blockHash missing or invalid in transaction receipt.", {}
+    confs = 0
     try:
         rb_int = int(receipt_block, 16) if isinstance(receipt_block, str) and receipt_block.startswith("0x") else int(receipt_block)
         b_data = _call_base_rpc(
@@ -115,6 +119,20 @@ def verify_evm_burn_receipt(
         min_confs = int(os.environ.get("MIN_EVM_CONFIRMATIONS", "12"))
         if confs < min_confs:
             return False, f"EVM transaction has {confs} confirmation(s); at least {min_confs} required for reorg security.", {"confirmations": confs, "required": min_confs}
+
+        # 2c. Verify receipt.blockHash matches the canonical Base block at receipt_block height
+        canon_blk_res = _call_base_rpc(
+            {"jsonrpc": "2.0", "method": "eth_getBlockByNumber", "params": [hex(rb_int), False], "id": 3},
+            primary_rpc=rpc_url or "https://mainnet.base.org",
+            timeout=8
+        )
+        canon_blk = (canon_blk_res or {}).get("result") if isinstance(canon_blk_res, dict) else None
+        if not isinstance(canon_blk, dict) or not canon_blk.get("hash"):
+            return False, "Could not verify canonical Base block hash; RPC failed.", {"network_error": True}
+        canonical_hash = str(canon_blk.get("hash") or "").strip().lower()
+        if canonical_hash != receipt_block_hash:
+            logger.warning(f"Base reorg/hash mismatch for burn tx {clean_hash}: receipt={receipt_block_hash}, canonical={canonical_hash}")
+            return False, "EVM receipt blockHash does not match canonical Base block (reorg protection).", {"reorg_detected": True}
     except Exception as e:
         logger.warning(f"Could not verify confirmation depth: {e}")
         return False, "Could not verify Base EVM confirmation depth; reorg guard failed.", {"network_error": True}
@@ -164,7 +182,9 @@ def verify_evm_burn_receipt(
                         "sender": sender_addr,
                         "amount_bct": float((Decimal(amount_wei) / Decimal(10 ** 18)).quantize(Decimal("0.00000001"))),
                         "recipient": canon_recip,
-                        "block_number": receipt.get("blockNumber")
+                        "block_number": receipt.get("blockNumber"),
+                        "block_hash": canonical_hash,
+                        "confirmations": confs,
                     }
                     break
             except Exception as ex:

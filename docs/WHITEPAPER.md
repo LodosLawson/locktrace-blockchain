@@ -287,6 +287,14 @@ BlocTag embeds social interactions directly into the Layer-1 state machine, guar
    - Distribution: $+0.50\text{ BCT}$ ($50\%$) deposited directly to the target creator's wallet; $0.40\text{ BCT}$ ($40\%$) locks into Treasury; $0.10\text{ BCT}$ ($10\%$) rewards validators.
    - Canonical Signature Template: `{follower_address}:{target_address}`
 
+### 6.2 On-Chain Soulbound Profile Avatars (Bonding Curve)
+
+LockTrace natively supports non-transferable, non-sellable (**Soulbound**) profile avatars addressed by deterministic Variant IDs (`<BASE_ID>-<RRGGBB>`, e.g. `ANM-001-10B981`):
+- **Bonding Curve Minting (`avatar_mint`):** Every unminted Variant ID opens at $0.10\text{ BCT}$ and scales exponentially by $+25\%$ per mint: $\text{price}(n) = 0.10 \times 1.25^n$.
+- **Equip / Unequip (`avatar_equip`):** $0.20\text{ BCT}$ per on-chain equip or unequip action.
+- **Avatar Swap (`avatar_equip`):** $0.40\text{ BCT}$ to replace an already-equipped avatar ($0.20\text{ BCT}$ unequip + $0.20\text{ BCT}$ equip).
+- **Revenue Split:** $30\%$ returns to the Genesis Treasury Vault; $70\%$ flows to the Block Reward Pool ($50\%$ PoW Miner, $40\%$ Active Validator Quorum, $10\%$ Observer Stakers).
+
 ---
 
 ## 7. BCT Naming System (BNS): Sovereign `.bct` Identity & Marketplace
@@ -326,8 +334,9 @@ LockTrace connects to Ethereum Layer-2 via a decentralized 1:1 asset bridge to t
 $$\text{Supply}_{\text{wBCT}}(\text{Base}) \equiv \text{Balance}_{\text{native}}(\text{BCT\_BRIDGE\_VAULT\_...})$$
 Every minted wBCT is backed 1:1 by native BCT escrowed on Layer-1. Arbitrary minting without matching L1 deposit is cryptographically blocked.
 
-### 9.2 Reorg Depth & Mutex Concurrency Guards (LT-02)
+### 9.2 Reorg Depth, Canonical Block Hash & Mutex Concurrency Guards (LT-02)
 - **L1 to Base Minting:** Relayers require a minimum confirmation depth of **8-to-10 blocks** on LockTrace Layer-1 prior to initiating an EVM mint transaction.
+- **Base to L1 Unlocking:** Unlock claims fail-closed unless Base RPC confirms `status == 0x1`, at least **12 confirmations** (`MIN_EVM_CONFIRMATIONS`), and exact `receipt.blockHash == eth_getBlockByNumber(blockNumber).hash` canonical chain parity.
 - **Base to L1 Unlocking:** Relayers require **12 confirmed Base blocks** before releasing native BCT from `BCT_BRIDGE_VAULT_...`.
 - In-flight mutex locks and SQLite unique transaction indices prevent race conditions and double-spending across bridge operations.
 

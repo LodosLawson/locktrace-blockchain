@@ -52,6 +52,8 @@ Aşağıdaki modüllerin tamamı sıfırdan geliştirilmiş, güvenlik testlerin
 - [x] **Hibrit Batching Sequencer (Zaman + Kota):** Beğeniler 20 saniye veya 15 adet kotasıyla, yorumlar 15 saniye veya 5 adet kotasıyla tek blokta birleştirilerek zincir şişmesi (bloat) önlenir.
 - [x] **Akıllı `#` Etiketleme & Bahsetme (Mention) Sistemi:** Gönderi veya yorumlarda `#BCT...` cüzdan adresi ya da `#isim.bct` alan adı etiketlendiğinde, ilgili cüzdan veya alan adı sahibine anında bildirim gönderilir.
 - [x] **Gelişmiş Kullanıcı Profili Modalı:** Kullanıcının `@handle.bct` kimliği, rol rozeti (Validator / Community Member), cüzdan bakiyesi, kazandığı telif gelirleri, gönderileri, sahip olduğu `.bct` alan adları ve zincir üstü işlem geçmişi tek ekranda sunulur.
+- [x] **On-Chain Soulbound Profil Avatarları (Bonding Curve):** Devredilemez/satılamaz zincir üstü avatar varyantları (`0.10 BCT` başlangıç + her mint'te `%25` artış; donatma/çıkarma `0.20 BCT`, değiştirme `0.40 BCT`; gelir dağılımı `%30 Hazine / %70 Blok Ödül Havuzu`).
+- [x] **Konsensüs & Depolama Sertleştirmesi:** Kümülatif LWMA zorluk ayarlaması, SQLite'a kalıcı yazılan Post-Block `2/3` BFT Finality checkpoint'i (`finalized_height`), çoklu worker uyumlu artımlı mempool birleştirmesi ve Base L2 köprü `blockHash` kanonik doğrulaması.
 
 ### ✅ D. BNS (`.bct` Blokzincir Alan Adı Sistemi & İkincil Pazar Yeri)
 - [x] **Kademeli Alan Adı Fiyatlandırması:** 3 karakter (500 BCT), 4 karakter (150 BCT), 5+ karakter (25 BCT).

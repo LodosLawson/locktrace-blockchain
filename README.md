@@ -95,6 +95,16 @@ LockTrace features a native on-chain domain and identity protocol that maps huma
 
 ---
 
+## 🎨 On-Chain Soulbound Profile Avatars (Bonding Curve)
+
+LockTrace supports non-transferable, non-sellable (**Soulbound**) on-chain profile avatars with deterministic variant IDs (`BASE_ID-HEXCOLOR`, e.g. `ANM-001-FFFFFF`):
+- **Bonding Curve Minting (`avatar_mint`):** Any unminted Variant ID opens at **`0.10 BCT`** and rises **`+25%`** per subsequent mint (`price(n) = 0.10 × 1.25^n`).
+- **Equip / Unequip Fee (`avatar_equip`):** **`0.20 BCT`** per on-chain equip or unequip action.
+- **Swap Fee (`avatar_equip`):** **`0.40 BCT`** to replace an already-equipped avatar (`0.20` unequip + `0.20` equip).
+- **Revenue Split (Atomic Precision):** **30%** returns to the Genesis Treasury Vault and **70%** flows into the Block Reward Pool (`50%` PoW Miner, `40%` Active Validator Quorum, `10%` Observer Stakers).
+
+---
+
 ## 🥩 Non-Custodial Validator Staking & Yield Model (v2.4.0)
 
 LockTrace v2.4.0 features an on-chain **Validator Staking Vault** that empowers participants to stake collateral, attest block headers, participate in the $2/3$ Quorum Finality checkpoint mechanism, and earn automated protocol rewards without trusting any third party or centralized custodian.
@@ -143,7 +153,7 @@ LockTrace features a native, non-custodial cross-chain bridge architecture linki
 - **Wrapped BCT Contract (Base):** [`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`](https://basescan.org/token/0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28)
 - **Collateral Vault (L1):** `BCT_BRIDGE_VAULT_0000000000000000000000000000000`
 - **Bridge-In (L1 &rarr; Base L2):** Native BCT is locked into the verifiable L1 bridge vault. The bridge relayer oracles verify finality and mint the exact 1:1 equivalent wBCT on Base.
-- **Bridge-Out (Base L2 &rarr; L1):** User calls `burn()` on the wBCT ERC-20 contract. The relayer verifies the burn transaction on Base and releases the equivalent native BCT from the L1 bridge vault.
+- **Bridge-Out (Base L2 &rarr; L1):** User calls `burn()` on the wBCT ERC-20 contract. The relayer verifies the burn transaction on Base (minimum 12 confirmations + canonical `blockHash` verification via `eth_getBlockByNumber`) and releases the equivalent native BCT from the L1 bridge vault.
 - **DEX Liquidity Pool:** Integrated with **Uniswap v4** on Base Mainnet for decentralized trading pairs (wBCT / ETH, wBCT / USDC).
 
 ---

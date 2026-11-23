@@ -383,6 +383,7 @@ class SQLiteStorage:
             attestation_counts: Dict[int, int] = {int(r["block_index"]): int(r["cnt"]) for r in att_rows}
 
             chain_dicts: List[dict] = []
+            finalized_height = int(meta.get("finalized_height", "0"))
             for r in block_rows:
                 b_idx = int(r["block_index"])
                 chain_dicts.append({
@@ -395,6 +396,7 @@ class SQLiteStorage:
                     "miner": r["miner"],
                     "version": r["version"],
                     "attestations_count": attestation_counts.get(b_idx, 0),
+                    "finalized": b_idx <= finalized_height and finalized_height > 0,
                     "transactions": json.loads(r["transactions_json"]),
                 })
 
@@ -402,6 +404,7 @@ class SQLiteStorage:
                 "chain": chain_dicts,
                 "pending_transactions": pending_txs,
                 "attestation_counts": attestation_counts,
+                "finalized_height": finalized_height,
                 "wallets": wallets,
                 "nodes": nodes,
                 "total_transactions": int(meta.get("total_transactions", "0")),
@@ -470,6 +473,7 @@ class SQLiteStorage:
             attestation_counts: Dict[int, int] = {int(r["block_index"]): int(r["cnt"]) for r in att_rows}
 
             new_chain_dicts: List[dict] = []
+            finalized_height = int(meta.get("finalized_height", "0"))
             for r in new_block_rows:
                 b_idx = int(r["block_index"])
                 new_chain_dicts.append({
@@ -482,6 +486,7 @@ class SQLiteStorage:
                     "miner": r["miner"],
                     "version": r["version"],
                     "attestations_count": attestation_counts.get(b_idx, 0),
+                    "finalized": b_idx <= finalized_height and finalized_height > 0,
                     "transactions": json.loads(r["transactions_json"]),
                 })
 
@@ -489,6 +494,7 @@ class SQLiteStorage:
                 "new_blocks": new_chain_dicts,
                 "pending_transactions": pending_txs,
                 "attestation_counts": attestation_counts,
+                "finalized_height": finalized_height,
                 "wallets": wallets,
                 "nodes": nodes,
                 "total_transactions": int(meta.get("total_transactions", "0")),
@@ -503,7 +509,9 @@ class SQLiteStorage:
                    nodes: Dict[str, dict], total_transactions: int,
                    total_fees_collected: float,
                    pending_dicts: Optional[List[dict]] = None,
-                   dirty_wallets: Optional[Dict[str, dict]] = None) -> int:
+                   dirty_wallets: Optional[Dict[str, dict]] = None,
+                   finalized_height: Optional[int] = None,
+                   removed_mempool_hashes: Optional[List[str]] = None) -> int:
         """
         Persists new blocks incrementally, synchronizes shared mempool,
         and upserts wallets/nodes inside a single ACID WAL transaction.
@@ -556,15 +564,30 @@ class SQLiteStorage:
                             (tx_h, int(b["index"]), sender, recip, amt, fee, ttype, tstamp, extra),
                         )
 
-            # Synchronize shared multi-worker mempool
-            if pending_dicts is not None:
-                conn.execute("DELETE FROM mempool;")
-                for p_tx in pending_dicts:
-                    tx_h = str(p_tx.get("tx_hash") or "")
-                    conn.execute(
-                        "INSERT OR REPLACE INTO mempool (tx_hash, tx_json, created_at) VALUES (?, ?, ?);",
-                        (tx_h, json.dumps(p_tx, ensure_ascii=False), float(p_tx.get("timestamp", time.time()))),
-                    )
+            # Concurrency-safe incremental multi-worker mempool merge (never wipes unmined txs from concurrent workers)
+            if pending_dicts is not None or removed_mempool_hashes:
+                # 1. Remove any mempool transactions that are now confirmed in tx_lookup (mined by this or another worker)
+                conn.execute("DELETE FROM mempool WHERE tx_hash IN (SELECT tx_hash FROM tx_lookup);")
+                # 2. Remove explicitly evicted/dropped mempool hashes (e.g. RBF eviction)
+                if removed_mempool_hashes:
+                    for rm_h in removed_mempool_hashes:
+                        if rm_h:
+                            conn.execute("DELETE FROM mempool WHERE tx_hash = ?;", (str(rm_h),))
+                # 3. Insert only unconfirmed pending transactions without deleting concurrent workers' unmined entries
+                if pending_dicts:
+                    for p_tx in pending_dicts:
+                        tx_h = str(p_tx.get("tx_hash") or "")
+                        if not tx_h:
+                            continue
+                        already_mined = conn.execute(
+                            "SELECT 1 FROM tx_lookup WHERE tx_hash = ? LIMIT 1;",
+                            (tx_h,),
+                        ).fetchone()
+                        if already_mined is None:
+                            conn.execute(
+                                "INSERT OR IGNORE INTO mempool (tx_hash, tx_json, created_at) VALUES (?, ?, ?);",
+                                (tx_h, json.dumps(p_tx, ensure_ascii=False), float(p_tx.get("timestamp", time.time()))),
+                            )
 
             wallets_to_upsert = dirty_wallets if dirty_wallets is not None else wallets
             for addr, w_info in wallets_to_upsert.items():
@@ -606,6 +629,11 @@ class SQLiteStorage:
 
             conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('total_transactions', ?);", (str(int(total_transactions)),))
             conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('total_fees_collected', ?);", (str(float(total_fees_collected)),))
+            if finalized_height is not None:
+                fin_row = conn.execute("SELECT value FROM meta WHERE key = 'finalized_height';").fetchone()
+                prev_fin = int(fin_row["value"]) if fin_row else 0
+                next_fin = max(prev_fin, int(finalized_height))
+                conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('finalized_height', ?);", (str(next_fin),))
             conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('state_revision', ?);", (str(next_rev),))
             conn.execute("COMMIT;")
             return next_rev
