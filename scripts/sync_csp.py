@@ -70,14 +70,51 @@ def build_directive(hashes):
     return "script-src 'self' " + " ".join(hashes) + f" {EXTERNAL_SCRIPT_HOSTS}; script-src-attr 'unsafe-inline';"
 
 
+def sync_simple_mode_sri(check: bool) -> bool:
+    """
+    Computes canonical LF SHA-256 Subresource Integrity (SRI) hash for frontend/simple-mode/simple-mode.js
+    and pins `integrity="sha256-..." crossorigin="anonymous"` in both index.html files so that
+    simple-mode.js is transitively sealed on-chain via the signed index.html manifest.
+    Returns True if stale (out of sync).
+    """
+    sm_path = os.path.join(ROOT, "frontend", "simple-mode", "simple-mode.js")
+    if not os.path.exists(sm_path):
+        return False
+    raw_bytes = open(sm_path, "rb").read()
+    lf_bytes = raw_bytes.replace(b"\r\n", b"\n")
+    if not check and raw_bytes != lf_bytes:
+        open(sm_path, "wb").write(lf_bytes)
+    sri_val = "sha256-" + base64.b64encode(hashlib.sha256(lf_bytes).digest()).decode("ascii")
+    tag_re = re.compile(r'<script\s+src="(/simple-mode/simple-mode\.js[^"]*)"[^>]*></script>')
+    stale = False
+    for rel in INDEXES:
+        idx_path = os.path.join(ROOT, rel)
+        raw_html = open(idx_path, encoding="utf-8", newline="").read()
+        new_html, n = tag_re.subn(
+            lambda m: f'<script src="{m.group(1)}" integrity="{sri_val}" crossorigin="anonymous" defer></script>',
+            raw_html,
+        )
+        if n == 0:
+            continue
+        if new_html != raw_html:
+            stale = True
+            if not check:
+                open(idx_path, "w", encoding="utf-8", newline="").write(new_html)
+                print(f"[+] pinned simple-mode.js SRI ({sri_val[:20]}...) in {rel}")
+            else:
+                print(f"[!] simple-mode.js SRI out of sync in {rel}")
+    return stale
+
+
 def main():
     check = "--check" in sys.argv
+    sri_stale = sync_simple_mode_sri(check)
     hs = [inline_hashes(p) for p in INDEXES]
     if hs[0] != hs[1]:
         print("[!] frontend/index.html and templates/index.html inline scripts differ")
         return 1
     directive = build_directive(hs[0])
-    stale = False
+    stale = sri_stale
     for rel in TARGETS:
         path = os.path.join(ROOT, rel)
         raw = open(path, encoding="utf-8", newline="").read()
@@ -95,7 +132,7 @@ def main():
                 print(f"[!] out of sync: {rel}")
     if check:
         return 1 if stale else 0
-    print(f"[SUCCESS] {len(hs[0])} inline script hash(es) pinned; unsafe-inline removed from script-src.")
+    print(f"[SUCCESS] {len(hs[0])} inline script hash(es) + simple-mode.js SRI pinned; unsafe-inline removed from script-src.")
     return 0
 
 
