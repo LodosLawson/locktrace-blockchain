@@ -101,6 +101,32 @@ class TestProtocolRooms(unittest.TestCase):
         self.assertEqual(q_std["tier"], "standard")
         self.assertEqual(q_std["total_cost"], 10.0)
 
+    def test_developer_room_verification(self):
+        ok_q, _, q = self.bc.get_room_create_quote("Official Room", has_avatar=False)
+        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}")
+        ok, _, r = self.bc.create_room(
+            creator=self.creator.address,
+            name="Official Room",
+            description="Dogrulama testi odasi.",
+            signature=sig,
+            public_key=self.creator.pub_hex,
+        )
+        self.assertTrue(ok)
+        rid = r["room_id"]
+        self.assertFalse(self.bc.rooms[rid]["is_verified"])
+
+        # Non-authority attempt rejected
+        sig_alice = self.alice.sign(f"ROOM_VERIFY:{self.alice.address}:{rid}:true")
+        ok_a, _, _ = self.bc.verify_protocol_room(
+            authority_address=self.alice.address,
+            room_id=rid,
+            verified=True,
+            signature=sig_alice,
+            public_key=self.alice.pub_hex,
+        )
+        self.assertFalse(ok_a)
+        self.assertFalse(self.bc.rooms[rid]["is_verified"])
+
     def test_strict_avatar_immutability(self):
         # Case A: Room created WITH avatar -> set_room_avatar MUST fail
         ok_q, _, q1 = self.bc.get_room_create_quote("Sealed Room Alpha", has_avatar=True)

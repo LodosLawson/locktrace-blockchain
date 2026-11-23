@@ -25089,6 +25089,16 @@
         return `${Math.floor(diff / 86400)}g`;
       }
 
+      function renderVerifiedBadge(isVerified) {
+        if (!isVerified) return '';
+        return `
+          <span class="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold select-none" title="Doğrulanmış Resmi BlocTag Odası">
+            <span class="material-symbols-outlined notranslate text-[13px]" translate="no">verified</span>
+            <span>Doğrulanmış</span>
+          </span>
+        `;
+      }
+
       function renderRoomAvatar(room, sizeClass = 'w-10 h-10') {
         const av = room && room.avatar;
         if (av && av.image_url) {
@@ -25122,14 +25132,18 @@
       }
 
       async function ensureAvatarCatalog() {
-        if (state.avatarCatalog) return state.avatarCatalog;
+        if (state.avatarCatalog && (Array.isArray(state.avatarCatalog.catalog) || Array.isArray(state.avatarCatalog.items))) {
+          return state.avatarCatalog;
+        }
         try {
           const { ok, body } = await apiFetch('/avatars/catalog');
           if (ok && body && body.data) {
-            state.avatarCatalog = body.data;
-            if (!state.createForm.avatarBaseId && Array.isArray(body.data.items) && body.data.items.length > 0) {
-              state.createForm.avatarBaseId = body.data.items[0].base_id;
-              state.sealAvatarForm.avatarBaseId = body.data.items[0].base_id;
+            const d = body.data;
+            const items = Array.isArray(d.catalog) ? d.catalog : (Array.isArray(d.items) ? d.items : []);
+            state.avatarCatalog = Object.assign({}, d, { items: items });
+            if (!state.createForm.avatarBaseId && items.length > 0) {
+              state.createForm.avatarBaseId = items[0].base_id;
+              state.sealAvatarForm.avatarBaseId = items[0].base_id;
             }
           }
         } catch (e) {
@@ -25169,6 +25183,7 @@
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1.5">
                   <span class="text-xs font-bold text-on-surface group-hover:text-primary truncate">${esc(r.name)}</span>
+                  ${renderVerifiedBadge(r.is_verified)}
                   <span class="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant shrink-0">${esc(r.room_id)}</span>
                 </div>
                 <p class="text-[11px] text-on-surface-variant truncate mt-0.5">${esc(r.description)}</p>
@@ -25578,10 +25593,13 @@
 
       function renderAvatarPicker(selectedBaseId, selectedBg, onSelectBaseFn, onSelectColorFn) {
         const cat = state.avatarCatalog;
-        if (!cat || !Array.isArray(cat.items)) {
+        const items = cat ? (Array.isArray(cat.items) ? cat.items : (Array.isArray(cat.catalog) ? cat.catalog : [])) : [];
+        if (!items || items.length === 0) {
           return `<div class="text-xs text-on-surface-variant py-3 text-center">Avatar kataloğu yükleniyor...</div>`;
         }
-        const colors = Array.isArray(cat.curated_colors) ? cat.curated_colors : [{ hex: '#10B981' }, { hex: '#3B82F6' }, { hex: '#8B5CF6' }, { hex: '#F59E0B' }, { hex: '#FFFFFF' }];
+        const colors = (cat && Array.isArray(cat.curated_colors) && cat.curated_colors.length > 0)
+          ? cat.curated_colors
+          : [{ hex: '#10B981', name_tr: 'Zümrüt' }, { hex: '#3B82F6', name_tr: 'Mavi' }, { hex: '#8B5CF6', name_tr: 'Mor' }, { hex: '#F59E0B', name_tr: 'Altın' }, { hex: '#EF4444', name_tr: 'Kırmızı' }, { hex: '#FFFFFF', name_tr: 'Beyaz' }];
         return `
           <div class="flex flex-col gap-2.5 p-3 rounded-xl bg-surface-container border border-outline-variant/20">
             <div class="flex items-center justify-between gap-2">
@@ -25598,8 +25616,8 @@
                   style="background-color:${esc(c.hex)};" title="${esc(c.name_tr || c.hex)}"></button>
               `).join('')}
             </div>
-            <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-40 overflow-y-auto pr-1">
-              ${cat.items.map(it => {
+            <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1">
+              ${items.map(it => {
                 const isSel = it.base_id === selectedBaseId;
                 return `
                   <button type="button" onclick="${onSelectBaseFn}('${esc(it.base_id)}')"
@@ -25656,7 +25674,10 @@
                     ${renderRoomAvatar(r, 'w-12 h-12')}
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center justify-between gap-2">
-                        <span class="text-sm font-bold text-on-surface truncate">${esc(r.name)}</span>
+                        <div class="flex items-center gap-1.5 min-w-0">
+                          <span class="text-sm font-bold text-on-surface truncate">${esc(r.name)}</span>
+                          ${renderVerifiedBadge(r.is_verified)}
+                        </div>
                         <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/15 text-primary shrink-0">${esc(r.room_id)}</span>
                       </div>
                       <p class="text-xs text-on-surface-variant line-clamp-2 mt-1">${esc(r.description)}</p>
@@ -25724,6 +25745,7 @@
             headerTitle = r.name;
             headerSub = `Özel ID: ${r.room_id} • r/${r.slug}`;
             const isCreator = currentAccount && currentAccount.address && currentAccount.address.toLowerCase() === String(r.creator || '').toLowerCase();
+            const isReleaseAuthority = currentAccount && currentAccount.address && currentAccount.address.toLowerCase() === RELEASE_AUTHORITY_ADDRESS.toLowerCase();
             const topics = Array.isArray(r.topics) ? r.topics : [];
             bodyHtml = `
               <div class="flex flex-col gap-4">
@@ -25733,6 +25755,7 @@
                   <div class="flex-1 min-w-0">
                     <div class="flex flex-wrap items-center gap-2">
                       <h3 class="text-base font-bold text-on-surface">${esc(r.name)}</h3>
+                      ${renderVerifiedBadge(r.is_verified)}
                       <button type="button" onclick="navigator.clipboard && navigator.clipboard.writeText('${esc(r.room_id)}'); showToast('Özel ID kopyalandı: ${esc(r.room_id)}');"
                         class="text-[10.5px] font-mono px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 cursor-pointer" title="Kopyala">
                         ${esc(r.room_id)}
@@ -25751,6 +25774,13 @@
                         class="mt-2.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-[11px] font-bold cursor-pointer inline-flex items-center gap-1">
                         <span class="material-symbols-outlined notranslate text-[15px]" translate="no">lock</span>
                         Tek Seferlik Kalıcı Avatar Mühürle (2.00 BCT)
+                      </button>
+                    ` : ''}
+                    ${isReleaseAuthority ? `
+                      <button type="button" onclick="window.ProtocolRoomsUI.toggleVerifyRoom('${esc(r.room_id)}', ${!r.is_verified})"
+                        class="mt-2.5 ml-1.5 px-3 py-1.5 rounded-xl ${r.is_verified ? 'bg-error/15 text-error border-error/30' : 'bg-emerald-500/15 text-emerald-400 border-emerald-500/30'} border text-[11px] font-bold cursor-pointer inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined notranslate text-[15px]" translate="no">${r.is_verified ? 'remove_moderator' : 'verified'}</span>
+                        ${r.is_verified ? 'Doğrulamayı Kaldır (Geliştirici)' : 'Odayı Doğrula (Geliştirici)'}
                       </button>
                     ` : ''}
                   </div>
@@ -25799,7 +25829,10 @@
                         <span class="text-[11px] font-mono font-bold">${Number(t.upvotes_count || 0)}</span>
                       </button>
                       <div class="min-w-0 flex-1">
-                        <div class="text-sm font-bold text-on-surface">${esc(t.title)}</div>
+                        <div class="flex items-center gap-1.5 flex-wrap">
+                          <span class="text-sm font-bold text-on-surface">${esc(t.title)}</span>
+                          ${renderVerifiedBadge(t.room_is_verified)}
+                        </div>
                         <p class="text-xs text-on-surface-variant line-clamp-2 mt-1">${esc(t.content)}</p>
                         <div class="flex items-center gap-3 mt-2 text-[10.5px] font-mono text-on-surface-variant/80">
                           <span>${esc(t.author_bns ? '@' + t.author_bns : shortAddr(t.author))}</span>
@@ -25833,7 +25866,10 @@
                 <div class="p-4 rounded-2xl bg-surface-container-low border border-primary/20">
                   <div class="flex items-start justify-between gap-3">
                     <div>
-                      <h3 class="text-base font-bold text-on-surface">${esc(t.title)}</h3>
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <h3 class="text-base font-bold text-on-surface">${esc(t.title)}</h3>
+                        ${renderVerifiedBadge(t.room && t.room.is_verified)}
+                      </div>
                       <div class="text-[11px] font-mono text-on-surface-variant mt-0.5">
                         ${esc(t.author_bns ? '@' + t.author_bns : shortAddr(t.author))} • ${fmtTime(t.timestamp)}
                       </div>
@@ -25961,6 +25997,38 @@
         close,
         submitCreateRoom,
         submitSealRoomAvatar,
+        toggleVerifyRoom: async (roomId, targetStatus) => {
+          if (state.busy) return;
+          if (!currentAccount || !currentAccount.address) {
+            showToast('Geliştirici cüzdanı gerekli.', 'warning', true);
+            return;
+          }
+          state.busy = true;
+          try {
+            const canonical = `ROOM_VERIFY:${currentAccount.address}:${roomId}:${String(targetStatus).toLowerCase()}`;
+            const authFields = await buildSignedAuthPayload(canonical);
+            const { ok, body } = await apiFetch(`/rooms/${encodeURIComponent(roomId)}/verify`, {
+              method: 'POST',
+              body: JSON.stringify(Object.assign({
+                authority: currentAccount.address,
+                verified: targetStatus,
+              }, authFields)),
+            });
+            if (ok) {
+              showToast(targetStatus ? 'Oda başarıyla doğrulandı!' : 'Doğrulama kaldırıldı.', 'verified');
+              loadSidebar();
+              await fetchRoomDetail(roomId);
+            } else {
+              showToast((body && body.message) || 'Doğrulama işlemi başarısız.', 'error', true);
+            }
+          } catch (e) {
+            console.error(e);
+            showToast('Doğrulama imza hatası.', 'error', true);
+          } finally {
+            state.busy = false;
+            render();
+          }
+        },
         submitTopic,
         submitReply,
         upvoteTopic,
@@ -25970,7 +26038,15 @@
         _setRoomSort: (s) => { state.roomSort = s; if (state.activeRoom) fetchRoomDetail(state.activeRoom.room_id); },
         _onCreateName: onCreateNameInput,
         _onCreateDesc: (v) => { state.createForm.description = String(v || ''); },
-        _toggleCreateAvatar: (checked) => { state.createForm.useAvatar = !!checked; fetchCreateQuote(); render(); },
+        _toggleCreateAvatar: async (checked) => {
+          state.createForm.useAvatar = !!checked;
+          fetchCreateQuote();
+          render();
+          if (state.createForm.useAvatar && (!state.avatarCatalog || !Array.isArray(state.avatarCatalog.items) || state.avatarCatalog.items.length === 0)) {
+            await ensureAvatarCatalog();
+            render();
+          }
+        },
         _selCreateAvatarBase: (b) => { state.createForm.avatarBaseId = b; render(); },
         _selCreateAvatarBg: (c) => { state.createForm.avatarBgColor = c; render(); },
         _selSealAvatarBase: (b) => { state.sealAvatarForm.avatarBaseId = b; render(); },

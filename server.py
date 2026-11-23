@@ -366,7 +366,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-qFchZwZP1R7Rwuw70648DP6gis6WScsy117qksFZfo4=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-zjXJvQh3ZPzte5GzV+TlmMrlRUkHkllQAobCQKjqmJQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -2800,6 +2800,41 @@ def api_rooms_get_detail(room_id):
     if not detail:
         return api_response(False, message="Protocol room not found.", status=404)
     return api_response(True, data=detail)
+
+
+@app.route("/api/v1/rooms/<room_id>/verify", methods=["POST"])
+def api_rooms_verify(room_id):
+    """
+    Developer / Release Authority only: sets or revokes the verified badge on a room.
+    """
+    data = request.get_json(silent=True) or {}
+    authority = str(data.get("authority", "") or "").strip()
+    verified = bool(data.get("verified", True))
+
+    from core.blockchain import RELEASE_AUTHORITY_ADDRESS
+    if authority != RELEASE_AUTHORITY_ADDRESS:
+        return api_response(False, message="Unauthorized: Only the release authority can verify rooms.", status=403)
+
+    rid = str(room_id or "").strip().upper()[:32]
+    canonical = f"ROOM_VERIFY:{authority}:{rid}:{str(verified).lower()}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, authority, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.verify_protocol_room(
+        authority_address=authority,
+        room_id=rid,
+        verified=verified,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    return api_response(True, message=message, data=result, status=200)
 
 
 @app.route("/api/v1/rooms/<room_id>/avatar", methods=["POST"])

@@ -631,12 +631,13 @@ class Blockchain:
             "transfer", "space_post", "space_like", "space_comment", "space_follow",
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
             "bns_accept_offer", "avatar_mint", "avatar_equip",
-            "room_create", "room_set_avatar", "room_topic", "room_reply", "room_upvote"
+            "room_create", "room_set_avatar", "room_topic", "room_reply", "room_upvote",
+            "room_verify"
         }
         net_credit_types = {
             "transfer", "space_post", "bns_register", "bns_buy",
             "validator_stake", "validator_unstake", "avatar_mint", "avatar_equip",
-            "room_create", "room_set_avatar"
+            "room_create", "room_set_avatar", "room_verify"
         }
         social_treasury_types = {
             "space_like", "space_comment", "space_follow",
@@ -5896,6 +5897,7 @@ class Blockchain:
                 "status": status_lbl,
                 "creation_cost": float(tx.amount or 0.0),
                 "tier": str(extra.get("tier", "standard") or "standard"),
+                "is_verified": bool(extra.get("is_verified", False)) or (snd == RELEASE_AUTHORITY_ADDRESS),
                 "topics_count": 0,
                 "replies_count": 0,
                 "upvotes_count": 0,
@@ -5903,6 +5905,18 @@ class Blockchain:
                 "topic_ids": [],
             }
             slug_index[slug] = room_id
+
+        elif ttype == "room_verify":
+            room_id = str(extra.get("room_id", "") or "").strip().upper()
+            room = rooms.get(room_id)
+            if not room:
+                return
+            # Developer / Release Authority ONLY verification
+            if snd != RELEASE_AUTHORITY_ADDRESS:
+                return
+            room["is_verified"] = bool(extra.get("verified", True))
+            room["verified_at"] = tx.timestamp
+            room["verified_by"] = snd
 
         elif ttype == "room_set_avatar":
             room_id = str(extra.get("room_id", "") or "").strip().upper()
@@ -5944,6 +5958,7 @@ class Blockchain:
                 "room_id": room_id,
                 "room_name": room["name"],
                 "room_slug": room["slug"],
+                "room_is_verified": bool(room.get("is_verified", False)),
                 "title": str(extra.get("title", "") or ""),
                 "content": str(extra.get("content", "") or ""),
                 "author": snd,
@@ -6214,6 +6229,64 @@ class Blockchain:
                 "block_index": block.index if block else "Mempool",
                 "status": "confirmed" if block else "mempool",
                 "new_balance": self.balances[clean_creator],
+            }
+
+    def verify_protocol_room(
+        self,
+        authority_address: str,
+        room_id: str,
+        verified: bool = True,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Grants or revokes the verified room badge (Developer / Release Authority ONLY).
+        """
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+
+            clean_auth = normalize_bct_address(authority_address)
+            if clean_auth != RELEASE_AUTHORITY_ADDRESS:
+                return False, "Unauthorized: Only the developer release authority can verify rooms.", None
+
+            rid = str(room_id or "").strip().upper()
+            room = self.rooms.get(rid)
+            if not room:
+                return False, "Target protocol room not found.", None
+
+            expected_payload = signed_payload or f"ROOM_VERIFY:{clean_auth}:{rid}:{str(verified).lower()}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_auth, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            tx = Transaction(
+                sender=clean_auth,
+                receiver=TREASURY_ADDRESS,
+                amount=0.0,
+                fee=0.0,
+                signature=signature,
+                tx_type="room_verify",
+                extra_data={
+                    "room_id": rid,
+                    "verified": bool(verified),
+                },
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_rooms_index()
+            self._save_state()
+
+            status_txt = "verified" if verified else "unverified"
+            return True, f"Room {rid} marked as {status_txt} by Release Authority.", {
+                "room_id": rid,
+                "is_verified": bool(verified),
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
             }
 
     def set_room_avatar(
@@ -6748,6 +6821,7 @@ class Blockchain:
                 "description": room["description"],
                 "avatar": room.get("avatar"),
                 "avatar_locked": bool(room.get("avatar_locked")),
+                "is_verified": bool(room.get("is_verified", False)),
                 "creator": room["creator"],
             } if room else None
             out["tokenomics"] = get_rooms_tokenomics_summary()
