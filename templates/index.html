@@ -8682,6 +8682,12 @@
 
           <!-- Quick Action Buttons: Safe container without negative margins (Never overlaps banner) -->
           <div class="flex items-center gap-1.5 flex-wrap sm:justify-end min-w-0 pt-0.5 sm:pt-0">
+            <button id="btnProfileAvatarStudio"
+              class="hidden px-3 py-1.5 rounded-full bg-primary/15 text-primary hover:bg-primary hover:text-on-primary border border-primary/35 font-semibold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer shrink-0"
+              onclick="if(window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.openAvatarStudio === 'function') window.BlocTagSimpleMode.openAvatarStudio();" type="button" title="On-Chain Avatar Studio">
+              <span class="material-symbols-outlined notranslate text-[14px]" translate="no">palette</span>
+              <span>Avatar</span>
+            </button>
             <button id="btnProfileFollow"
               class="px-3 py-1.5 rounded-full bg-primary/20 text-primary hover:bg-primary hover:text-on-primary border border-primary/40 font-semibold text-xs flex items-center justify-center gap-1 transition-all active:scale-95 shadow-sm cursor-pointer shrink-0"
               onclick="profileFollowClicked()" type="button">
@@ -15320,10 +15326,15 @@
             <!-- Author Header (Mobile-First 2-Line Hierarchy) -->
             <div class="flex items-center justify-between gap-3">
               <div class="flex items-center gap-3 min-w-0">
-                <!-- Avatar with Initial & Subtle Glow -->
-                <div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full ${isAnon ? 'bg-gradient-to-br from-purple-500/25 via-indigo-500/20 to-surface-container-highest ring-purple-500/30' : 'bg-gradient-to-br from-primary/25 via-emerald-500/20 to-surface-container-highest ring-outline-variant/20 hover:ring-2 hover:ring-primary/50'} flex items-center justify-center shrink-0 ${isAnon ? '' : 'cursor-pointer'} ring-1 transition-all select-none shadow-xs" ${isAnon ? '' : `onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author)}')"`} title="${isAnon ? 'Anonymous Author' : 'View Profile'}">
-                  ${isAnon ? '<span class="material-symbols-outlined notranslate text-purple-400 text-[20px]" translate="no">visibility_off</span>' : `<span class="font-mono font-bold text-sm sm:text-base text-primary">${escapeHtml(initialLetter)}</span>`}
-                </div>
+                <!-- Avatar with Equipped On-Chain Photo or Initial -->
+                ${(() => {
+                  const pav = (!isAnon && post.author_avatar && typeof post.author_avatar.image_url === 'string' && post.author_avatar.image_url.startsWith('/avatars/') && !post.author_avatar.image_url.includes('..')) ? post.author_avatar : null;
+                  const pBg = pav && /^#[0-9A-F]{6}$/i.test(String(pav.bg_color || '')) ? String(pav.bg_color).toUpperCase() : '#FFFFFF';
+                  if (pav) {
+                    return `<div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full overflow-hidden flex items-center justify-center shrink-0 cursor-pointer ring-1 ring-outline-variant/25 hover:ring-2 hover:ring-primary/60 transition-all select-none shadow-xs" style="background-color:${pBg};" onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author)}')" title="View Profile"><img src="${escapeHtml(pav.image_url)}" alt="${escapeHtml(pav.name || 'Avatar')}" class="w-full h-full object-contain p-0.5 select-none pointer-events-none" loading="lazy" /></div>`;
+                  }
+                  return `<div class="w-10 h-10 sm:w-11 sm:h-11 rounded-full ${isAnon ? 'bg-gradient-to-br from-purple-500/25 via-indigo-500/20 to-surface-container-highest ring-purple-500/30' : 'bg-gradient-to-br from-primary/25 via-emerald-500/20 to-surface-container-highest ring-outline-variant/20 hover:ring-2 hover:ring-primary/50'} flex items-center justify-center shrink-0 ${isAnon ? '' : 'cursor-pointer'} ring-1 transition-all select-none shadow-xs" ${isAnon ? '' : `onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author)}')"`} title="${isAnon ? 'Anonymous Author' : 'View Profile'}">${isAnon ? '<span class="material-symbols-outlined notranslate text-purple-400 text-[20px]" translate="no">visibility_off</span>' : `<span class="font-mono font-bold text-sm sm:text-base text-primary">${escapeHtml(initialLetter)}</span>`}</div>`;
+                })()}
 
                 <!-- Info Stack: Primary Name on Top, Sub-data Below -->
                 <div class="flex flex-col min-w-0 justify-center">
@@ -21485,6 +21496,14 @@
       const handleEl = document.getElementById('userProfileHandle');
       const addrEl = document.getElementById('userProfileAddress');
       const addrShortEl = document.getElementById('userProfileAddressShort');
+      const _resetAvatarBox = document.getElementById('userProfileAvatarBox');
+      if (_resetAvatarBox) {
+        _resetAvatarBox.style.backgroundColor = '';
+        _resetAvatarBox.innerHTML = `<span class="material-symbols-outlined notranslate text-[36px] sm:text-[42px]" id="userProfileAvatarIcon" translate="no">person</span>`;
+        _resetAvatarBox.onclick = null;
+      }
+      const _resetBtnAv = document.getElementById('btnProfileAvatarStudio');
+      if (_resetBtnAv) _resetBtnAv.classList.add('hidden');
       const tagEl = document.getElementById('userProfileTagBadge');
       const valIconEl = document.getElementById('userProfileValidatorIcon');
       if (topNavTitle) topNavTitle.textContent = displayFallback;
@@ -21933,6 +21952,45 @@
       const handleEl = document.getElementById('userProfileHandle');
       const addrEl = document.getElementById('userProfileAddress');
       const addrShortEl = document.getElementById('userProfileAddressShort');
+      const avatarBoxEl = document.getElementById('userProfileAvatarBox');
+      const btnAvatarStudio = document.getElementById('btnProfileAvatarStudio');
+      const isSelfProProfile = Boolean(currentAccount && currentAccount.address && String(currentAccount.address).toLowerCase() === String(data.address || '').toLowerCase());
+
+      if (btnAvatarStudio) {
+        btnAvatarStudio.classList.toggle('hidden', !isSelfProProfile);
+      }
+      if (avatarBoxEl) {
+        const av = data.avatar;
+        if (av && typeof av === 'object' && typeof av.image_url === 'string' && av.image_url.startsWith('/avatars/') && !av.image_url.includes('..')) {
+          const rawBg = String(av.bg_color || '#FFFFFF').trim().toUpperCase();
+          const safeBg = /^#[0-9A-F]{6}$/.test(rawBg) ? rawBg : '#FFFFFF';
+          avatarBoxEl.style.backgroundColor = safeBg;
+          avatarBoxEl.innerHTML = `<img src="${escapeHtml(av.image_url)}" alt="${escapeHtml(av.name || 'Avatar')}" class="w-full h-full object-contain p-1 select-none" />`;
+          avatarBoxEl.classList.add('cursor-pointer', 'hover:ring-2', 'hover:ring-primary/60', 'transition-all');
+          avatarBoxEl.title = 'Click to enlarge avatar';
+          avatarBoxEl.onclick = () => {
+            if (window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.openAvatarLightbox === 'function') {
+              window.BlocTagSimpleMode.openAvatarLightbox(av, isSelfProProfile);
+            }
+          };
+        } else {
+          avatarBoxEl.style.backgroundColor = '';
+          avatarBoxEl.innerHTML = `<span class="material-symbols-outlined notranslate text-[36px] sm:text-[42px]" id="userProfileAvatarIcon" translate="no">person</span>`;
+          if (isSelfProProfile) {
+            avatarBoxEl.classList.add('cursor-pointer', 'hover:ring-2', 'hover:ring-primary/60', 'transition-all');
+            avatarBoxEl.title = 'Open On-Chain Avatar Studio';
+            avatarBoxEl.onclick = () => {
+              if (window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.openAvatarStudio === 'function') {
+                window.BlocTagSimpleMode.openAvatarStudio();
+              }
+            };
+          } else {
+            avatarBoxEl.classList.remove('cursor-pointer', 'hover:ring-2', 'hover:ring-primary/60');
+            avatarBoxEl.title = '';
+            avatarBoxEl.onclick = null;
+          }
+        }
+      }
       const tagEl = document.getElementById('userProfileTagBadge');
       const balEl = document.getElementById('userProfileBalance');
       const pctEl = document.getElementById('userProfilePct');

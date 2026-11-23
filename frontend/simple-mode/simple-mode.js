@@ -3454,9 +3454,11 @@
         <div class="px-5 -mt-10 flex flex-col relative z-10">
           <div class="flex items-end justify-between gap-3">
             <!-- Avatar -->
-            <div class="relative shrink-0 ${isMyProfile ? 'cursor-pointer group' : ''}"
-                 ${isMyProfile ? 'onclick="window.BlocTagSimpleMode.openAvatarStudio()"' : ''}>
-              <div class="w-20 h-20 rounded-full p-1 bg-surface shadow-xl ring-2 ring-surface ${isMyProfile ? 'group-hover:ring-primary/50 transition-all' : ''}">
+            <div class="relative shrink-0 ${(pData?.avatar || isMyProfile) ? 'cursor-pointer group' : ''}"
+                 ${pData?.avatar
+                   ? `onclick="window.BlocTagSimpleMode.openAvatarLightbox(${escAttr(JSON.stringify(pData.avatar))}, ${isMyProfile ? 'true' : 'false'})"`
+                   : (isMyProfile ? 'onclick="window.BlocTagSimpleMode.openAvatarStudio()"' : '')}>
+              <div class="w-20 h-20 rounded-full p-1 bg-surface shadow-xl ring-2 ring-surface ${(pData?.avatar || isMyProfile) ? 'group-hover:ring-primary/50 transition-all' : ''}">
                 <div class="w-full h-full rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-mono font-bold text-2xl">
                   ${renderAvatarCircleHtml(
                     pData?.avatar,
@@ -3465,10 +3467,11 @@
                 </div>
               </div>
               ${isMyProfile ? `
-                <div class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-on-primary shadow-md ring-2 ring-surface flex items-center justify-center group-hover:scale-110 transition-transform"
-                     title="${t('avatar_studio_title', 'Avatar Studio')}">
+                <button type="button" onclick="event.stopPropagation(); window.BlocTagSimpleMode.openAvatarStudio();"
+                  class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-on-primary shadow-md ring-2 ring-surface flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+                  title="${t('avatar_studio_title', 'Avatar Studio')}">
                   <span class="material-symbols-outlined notranslate text-[15px]" translate="no">photo_camera</span>
-                </div>
+                </button>
               ` : `
                 <div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-surface p-0.5 flex items-center justify-center">
                   <div class="w-full h-full rounded-full bg-primary"></div>
@@ -4743,6 +4746,68 @@
       if (modal) modal.remove();
     },
 
+    openAvatarLightbox: (avatarObj, isOwner = false) => {
+      if (!avatarObj || typeof avatarObj !== 'object' || typeof avatarObj.image_url !== 'string') return;
+      const url = avatarObj.image_url.trim();
+      if (!url.startsWith('/avatars/') || url.includes('..') || url.includes('"') || url.includes("'")) return;
+      const rawBg = String(avatarObj.bg_color || '#FFFFFF').trim().toUpperCase();
+      const safeBg = /^#[0-9A-F]{6}$/.test(rawBg) ? rawBg : '#FFFFFF';
+      const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+      const displayName = isTr ? (avatarObj.name_tr || avatarObj.name || 'Avatar') : (avatarObj.name || 'Avatar');
+      const vid = String(avatarObj.variant_id || (avatarObj.base_id ? `${avatarObj.base_id}-${safeBg.slice(1)}` : '')).toUpperCase();
+
+      let lb = document.getElementById('simple-avatar-lightbox-modal');
+      if (!lb) {
+        lb = document.createElement('div');
+        lb.id = 'simple-avatar-lightbox-modal';
+        document.body.appendChild(lb);
+      }
+      lb.className = 'fixed inset-0 z-[115] bg-black/88 backdrop-blur-md flex items-center justify-center p-5 animate-fade-in';
+      lb.onclick = (e) => { if (e.target === lb) window.BlocTagSimpleMode.closeAvatarLightbox(); };
+      lb.innerHTML = `
+        <div class="relative w-full max-w-sm flex flex-col items-center gap-4">
+          <button type="button" onclick="window.BlocTagSimpleMode.closeAvatarLightbox()"
+            class="absolute -top-2 right-0 w-9 h-9 rounded-full bg-surface-container-high/90 text-on-surface hover:text-primary flex items-center justify-center shadow-lg cursor-pointer transition-colors">
+            <span class="material-symbols-outlined notranslate text-[20px]" translate="no">close</span>
+          </button>
+
+          <!-- Enlarged High-Res Avatar Showcase -->
+          <div class="w-64 h-64 sm:w-80 sm:h-80 rounded-3xl overflow-hidden shadow-[0_20px_60px_rgba(0,0,0,0.65)] ring-4 ring-white/15 flex items-center justify-center p-3"
+               style="background-color:${safeBg};">
+            <img src="${url}" alt="${esc(displayName)}" class="w-full h-full object-contain select-none" />
+          </div>
+
+          <!-- Metadata Pill Card -->
+          <div class="w-full rounded-2xl bg-surface-container-high/95 border border-outline-variant/25 p-4 flex flex-col items-center gap-2 text-center shadow-xl">
+            <div class="flex items-center gap-2">
+              <span class="text-base font-bold text-on-surface">${esc(displayName)}</span>
+              ${vid ? `<span class="px-2 py-0.5 rounded-md bg-primary/15 text-primary font-mono text-[11px] font-bold">${esc(vid)}</span>` : ''}
+            </div>
+            <div class="flex items-center justify-center gap-2 text-[11px] text-on-surface-variant flex-wrap">
+              <span class="inline-flex items-center gap-1.5">
+                <span class="w-3 h-3 rounded-full ring-1 ring-outline-variant/50 inline-block" style="background-color:${safeBg};"></span>
+                <span class="font-mono">${safeBg}</span>
+              </span>
+              <span>•</span>
+              <span>${isTr ? 'On-Chain Soulbound Avatar' : 'On-Chain Soulbound Avatar'}</span>
+            </div>
+            ${isOwner ? `
+              <button type="button" onclick="window.BlocTagSimpleMode.closeAvatarLightbox(); window.BlocTagSimpleMode.openAvatarStudio();"
+                class="mt-1 w-full h-10 rounded-full bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1.5 shadow-md hover:brightness-95 transition-all cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[17px]" translate="no">palette</span>
+                <span>${isTr ? 'Avatar Stüdyosunu Aç' : 'Open Avatar Studio'}</span>
+              </button>
+            ` : ''}
+          </div>
+        </div>
+      `;
+    },
+
+    closeAvatarLightbox: () => {
+      const lb = document.getElementById('simple-avatar-lightbox-modal');
+      if (lb) lb.remove();
+    },
+
     setAvatarStudioTab: (tab) => {
       const st = window.BlocTagSimpleMode._avatarStudioState;
       st.tab = (tab === 'owned') ? 'owned' : 'catalog';
@@ -4837,7 +4902,17 @@
         if (typeof window.showToast === 'function') {
           window.showToast(resp.body.message || `Avatar ${variantId} minted & equipped!`, 'verified');
         }
-        // Refresh catalog, quote, profile, and space feed
+        // Refresh catalog, quote, profile, Pro Mode profile, and space feed
+        if (window.currentProfileData && String(window.currentProfileData.address || '').toLowerCase() === addrKey) {
+          window.currentProfileData.avatar = d.equipped_avatar || d.avatar || null;
+          window.currentProfileData.owned_avatars = d.owned_avatars || [];
+          if (typeof window.renderUserProfileData === 'function') window.renderUserProfileData(window.currentProfileData);
+        }
+        if (window.currentProfileData && String(window.currentProfileData.address || '').toLowerCase() === addrKey) {
+          window.currentProfileData.avatar = d.equipped_avatar || null;
+          window.currentProfileData.owned_avatars = d.owned_avatars || [];
+          if (typeof window.renderUserProfileData === 'function') window.renderUserProfileData(window.currentProfileData);
+        }
         await window.BlocTagSimpleMode.openAvatarStudio();
         fetchSimpleProfile(acc.address);
         if (typeof window.loadSpaceFeed === 'function') window.loadSpaceFeed();
@@ -4973,6 +5048,11 @@
         if (typeof window.showToast === 'function') {
           window.showToast(resp.body.message || (cleanVid ? 'Avatar equipped!' : 'Avatar removed from profile.'), 'check_circle');
         }
+        if (window.currentProfileData && String(window.currentProfileData.address || '').toLowerCase() === addrKey) {
+          window.currentProfileData.avatar = d.equipped_avatar || null;
+          window.currentProfileData.owned_avatars = d.owned_avatars || [];
+          if (typeof window.renderUserProfileData === 'function') window.renderUserProfileData(window.currentProfileData);
+        }
         await window.BlocTagSimpleMode.openAvatarStudio();
         fetchSimpleProfile(acc.address);
         if (typeof window.loadSpaceFeed === 'function') window.loadSpaceFeed();
@@ -5093,7 +5173,9 @@
                     const isEq = Boolean(equippedAvatar && equippedAvatar.variant_id === av.variant_id);
                     return `
                       <div class="p-3 rounded-2xl bg-surface-container-low border ${isEq ? 'border-primary ring-1 ring-primary/40' : 'border-outline-variant/15'} flex flex-col items-center gap-2">
-                        <div class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-surface shadow-md">
+                        <div class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-surface shadow-md cursor-pointer hover:scale-105 transition-transform"
+                             title="${isTr ? 'Büyütmek için dokun' : 'Tap to enlarge'}"
+                             onclick="window.BlocTagSimpleMode.openAvatarLightbox(${escAttr(JSON.stringify(av))}, false)">
                           ${renderAvatarCircleHtml(av, '')}
                         </div>
                         <div class="text-center min-w-0 w-full">
@@ -5124,9 +5206,15 @@
               ${selectedItem ? `
                 <div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/20 space-y-3.5">
                   <div class="flex items-center gap-4">
-                    <!-- Live Circular Preview -->
-                    <div class="w-24 h-24 rounded-full overflow-hidden shrink-0 shadow-xl ring-4 ring-surface" style="background-color:${st.selectedColor};">
+                    <!-- Live Circular Preview (Tap to Enlarge) -->
+                    <div class="w-24 h-24 rounded-full overflow-hidden shrink-0 shadow-xl ring-4 ring-surface cursor-pointer hover:scale-105 transition-transform relative group"
+                         style="background-color:${st.selectedColor};"
+                         title="${isTr ? 'Büyütmek için dokun' : 'Tap to enlarge'}"
+                         onclick="window.BlocTagSimpleMode.openAvatarLightbox({ image_url: '${escAttr(selectedItem.image_url)}', bg_color: '${escAttr(st.selectedColor)}', name: '${escAttr(selectedItem.name)}', name_tr: '${escAttr(selectedItem.name_tr)}', base_id: '${escAttr(selectedItem.base_id)}', variant_id: '${escAttr(liveVariantId)}' }, false)">
                       <img src="${selectedItem.image_url}" alt="${esc(selectedItem.name)}" class="w-full h-full object-contain p-1 select-none pointer-events-none" />
+                      <div class="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-80 group-hover:opacity-100">
+                        <span class="material-symbols-outlined notranslate text-[14px]" translate="no">zoom_in</span>
+                      </div>
                     </div>
                     <div class="flex-1 min-w-0 space-y-1">
                       <div class="flex items-center gap-1.5 flex-wrap">
