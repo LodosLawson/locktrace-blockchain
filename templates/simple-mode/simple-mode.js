@@ -38,6 +38,8 @@
   let _pwaInstallWaiting = false;
   let _pwaAutoTriggerPending = false;
   let _iosInstallSheetOpen = false;
+  let _guestSharedLinkBypass = false;
+  let _guestSharedTarget = null;
 
   // Eagerly register Service Worker so Chromium fires beforeinstallprompt as fast as possible
   try {
@@ -74,6 +76,62 @@
     } catch (_e) {
       return false;
     }
+  }
+
+  /**
+   * Detects whether the visitor arrived via a shared Space Post or Profile link.
+   * Supported formats:
+   *   - /?post=<id>, /post/<id>, /space/post/<id>, #post=<id>
+   *   - /?profile=<handleOrAddr>, /profile/<handleOrAddr>, /space/profile/<handleOrAddr>, #profile=<handleOrAddr>
+   */
+  function getSharedDeepLinkTarget() {
+    try {
+      const sp = new URLSearchParams(window.location.search || '');
+      const qPost = String(sp.get('post') || '').trim();
+      if (qPost) return { type: 'post', id: qPost };
+      const qProfile = String(sp.get('profile') || '').trim();
+      if (qProfile) return { type: 'profile', id: qProfile };
+
+      const path = String(window.location.pathname || '').trim();
+      const postPathMatch = path.match(/^\/(?:space\/)?post\/([^\/?#]+)/i);
+      if (postPathMatch && postPathMatch[1]) {
+        return { type: 'post', id: decodeURIComponent(postPathMatch[1]) };
+      }
+      const profilePathMatch = path.match(/^\/(?:space\/)?profile\/([^\/?#]+)/i);
+      if (profilePathMatch && profilePathMatch[1]) {
+        return { type: 'profile', id: decodeURIComponent(profilePathMatch[1]) };
+      }
+
+      const hash = String(window.location.hash || '').replace(/^#/, '');
+      if (hash.startsWith('post=')) {
+        const hid = decodeURIComponent(hash.slice(5).split('&')[0] || '').trim();
+        if (hid) return { type: 'post', id: hid };
+      }
+      if (hash.startsWith('profile=')) {
+        const hprof = decodeURIComponent(hash.slice(8).split('&')[0] || '').trim();
+        if (hprof) return { type: 'profile', id: hprof };
+      }
+    } catch (_e) { }
+    return null;
+  }
+
+  function renderGuestSharedBanner() {
+    if (!_guestSharedLinkBypass || !isMobileDevice() || isStandalonePwaApp()) return '';
+    const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+    return `
+      <div class="mx-4 mt-2.5 mb-1 px-3.5 py-2.5 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-between gap-2.5">
+        <div class="flex items-center gap-2 min-w-0">
+          <span class="material-symbols-outlined notranslate text-primary text-[18px] shrink-0" translate="no">install_mobile</span>
+          <span class="text-[11px] font-medium text-on-surface leading-snug">
+            ${isTr ? 'Misafir önizlemesi • Tüm özellikler için LockTrace uygulamasını kur' : 'Guest preview • Install LockTrace app for full access'}
+          </span>
+        </div>
+        <button type="button" onclick="window.BlocTagSimpleMode.promptPwaInstallFromGuest()"
+          class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-[11px] font-bold shrink-0 cursor-pointer active:scale-95 transition-transform">
+          ${isTr ? 'Uygulamayı Kur' : 'Install'}
+        </button>
+      </div>
+    `;
   }
 
   function isIosDeviceLocal() {
@@ -1990,6 +2048,23 @@
     ];
     const target = valid.includes(screenCode) ? screenCode : 'SCR-SPC-03';
 
+    // Guest Shared Link Mode: allow viewing shared posts & profiles freely without PWA gate,
+    // but prompt PWA install if a mobile browser guest tries to enter the full app.
+    if (_guestSharedLinkBypass && isMobileDevice() && !isStandalonePwaApp()) {
+      const targetProf = opts.profileTarget !== undefined ? String(opts.profileTarget || '').trim() : String(simpleState.profileTarget || '').trim();
+      const isAllowedGuestScreen = (
+        target === 'SCR-SPC-04' ||
+        (target === 'SCR-PRF-05' && Boolean(targetProf)) ||
+        target === 'SCR-PRF-FOLLOW' ||
+        target === 'SCR-PRF-FOLLOWERS' ||
+        target === 'SCR-PRF-FOLLOWING'
+      );
+      if (!isAllowedGuestScreen) {
+        evaluateMobileGates(true);
+        return;
+      }
+    }
+
     if (opts.postId !== undefined) {
       simpleState.activePostId = opts.postId;
     }
@@ -3295,14 +3370,15 @@
 
     return `
       ${renderTopBar(t('top_post_detail', 'Post Details'), true)}
+      ${renderGuestSharedBanner()}
       <main class="flex-1 flex flex-col w-full min-w-0 px-4 pt-3 pb-36 simple-screen-animate">
         <!-- Main Post Card (Exact Stitch SCR-SPC-04) -->
         <section class="simple-post-card bg-surface-container rounded-2xl flex flex-col shadow-sm p-4 gap-3 border border-outline-variant/15">
           <div class="flex items-center justify-between">
             <div class="flex items-center gap-2.5 min-w-0 cursor-pointer"
                  onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${profileTargetAttr}' })">
-              <div class="w-11 h-11 rounded-full bg-surface-container-high flex items-center justify-center text-primary shrink-0">
-                <span class="material-symbols-outlined notranslate text-[24px]" translate="no">person</span>
+              <div class="w-11 h-11 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary shrink-0">
+                ${renderAvatarCircleHtml(post.author_avatar, '<span class="material-symbols-outlined notranslate text-[24px]" translate="no">person</span>')}
               </div>
               <div class="flex flex-col min-w-0">
                 <div class="flex items-center gap-1">
@@ -3505,6 +3581,7 @@
 
     return `
       ${renderTopBar(t('top_profile', 'Profile'), !isMyProfile)}
+      ${renderGuestSharedBanner()}
       <main class="flex-1 flex flex-col w-full pb-24 simple-screen-animate">
         <!-- Minimalist Cover Scrim (Exact Stitch SCR-PRF-05) -->
         <div class="relative w-full h-32 bg-gradient-to-b from-surface-container to-surface overflow-hidden">
@@ -5651,7 +5728,8 @@
     copySiteLinkForSafari: () => handleCopySiteLinkForSafari(),
     markManualPwaInstalled: () => handleMarkManualPwaInstalled(),
     showPwaInstallStepsAgain: () => handleShowPwaInstallStepsAgain(),
-    openInstalledAppHint: (ev) => handleOpenInstalledAppHint(ev)
+    openInstalledAppHint: (ev) => handleOpenInstalledAppHint(ev),
+    promptPwaInstallFromGuest: () => evaluateMobileGates(true)
   };
 
   // Global helper fallback
@@ -6593,9 +6671,19 @@
     }
   }
 
-  function evaluateMobileGates() {
+  function evaluateMobileGates(forceRequirePwa = false) {
     // Desktop / PC: do NOT show Web3 gate or mandatory PWA gate
     if (!isMobileDevice()) {
+      closeMobileOnboardingGate();
+      return;
+    }
+
+    // Shared Post / Profile Guest Bypass: let mobile visitors immediately read shared content
+    // without being blocked by the Web3 onboarding or mandatory PWA install wall!
+    const sharedTarget = _guestSharedTarget || getSharedDeepLinkTarget();
+    if (!forceRequirePwa && (sharedTarget || _guestSharedLinkBypass)) {
+      _guestSharedLinkBypass = true;
+      if (sharedTarget) _guestSharedTarget = sharedTarget;
       closeMobileOnboardingGate();
       return;
     }
@@ -6630,7 +6718,7 @@
 
     // Running inside Standalone PWA! Close gate and ensure welcome screen if no wallet exists
     closeMobileOnboardingGate();
-    if (simpleState.enabled && !getActiveWallet()) {
+    if (simpleState.enabled && !getActiveWallet() && !_guestSharedLinkBypass) {
       simpleState.activeScreen = 'SCR-ONB-01';
       renderSimpleMode(false);
     }
@@ -6645,15 +6733,29 @@
   // Boot & Hook into Core App Lifecycle
   function initSimpleModeModule() {
     const mobile = isMobileDevice();
+    const sharedTarget = getSharedDeepLinkTarget();
+    if (sharedTarget) {
+      _guestSharedLinkBypass = true;
+      _guestSharedTarget = sharedTarget;
+    }
     const saved = mobile ? isSimpleModeEnabled() : false;
     syncModeToggleControls(saved);
     if (saved) {
-      if (!getActiveWallet()) {
-        simpleState.activeScreen = 'SCR-ONB-01';
+      if (sharedTarget) {
+        applySimpleModeState(true, false);
+        if (sharedTarget.type === 'post') {
+          navigateToSimpleScreen('SCR-SPC-04', { postId: sharedTarget.id, pushHistory: false });
+        } else if (sharedTarget.type === 'profile') {
+          navigateToSimpleScreen('SCR-PRF-05', { profileTarget: sharedTarget.id, pushHistory: false });
+        }
+      } else {
+        if (!getActiveWallet()) {
+          simpleState.activeScreen = 'SCR-ONB-01';
+        }
+        applySimpleModeState(true, false);
       }
-      applySimpleModeState(true, false);
     }
-    evaluateMobileGates();
+    evaluateMobileGates(false);
 
     // Wrap wallet state updates so 15s background balance polls patch in-place with zero flicker
     const origSaveWalletState = window.saveWalletState;
