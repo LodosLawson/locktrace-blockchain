@@ -1887,23 +1887,23 @@
   const _simpleProfileFetching = window._simpleProfileFetching || {};
   window._simpleProfileFetching = _simpleProfileFetching;
 
-  function fetchSimpleProfile(target) {
+  function fetchSimpleProfile(target, forceRefresh = false) {
     if (!target) return Promise.resolve(null);
     const key = String(target).trim().toLowerCase().replace(/^@/, '');
     if (!key) return Promise.resolve(null);
 
     const cached = _simpleProfileCache[key];
-    if (cached && (Date.now() - (cached._cachedAt || 0) < 45000)) {
+    if (!forceRefresh && cached && (Date.now() - (cached._cachedAt || 0) < 45000)) {
       return Promise.resolve(cached);
     }
 
-    if (_simpleProfileFetching[key]) {
+    if (!forceRefresh && _simpleProfileFetching[key]) {
       return _simpleProfileFetching[key];
     }
 
     const fetcher = (typeof window.apiFetch === 'function')
-      ? window.apiFetch('/profile/' + encodeURIComponent(key))
-      : fetch('/api/v1/profile/' + encodeURIComponent(key)).then(r => r.json().then(b => ({ ok: r.ok, body: b })));
+      ? window.apiFetch('/profile/' + encodeURIComponent(key) + (forceRefresh ? '?_nc=' + Date.now() : ''))
+      : fetch('/api/v1/profile/' + encodeURIComponent(key) + (forceRefresh ? '?_nc=' + Date.now() : '')).then(r => r.json().then(b => ({ ok: r.ok, body: b })));
 
     const p = fetcher.then(({ ok, body }) => {
       delete _simpleProfileFetching[key];
@@ -1932,7 +1932,7 @@
 
         if (simpleState.enabled) {
           const act = simpleState.activeScreen;
-          if (act === 'SCR-PRF-05' || act === 'SCR-PRF-FOLLOW' || act === 'SCR-PRF-FOLLOWERS' || act === 'SCR-PRF-FOLLOWING') {
+          if (act === 'SCR-PRF-05' || act === 'SCR-PRF-FOLLOW' || act === 'SCR-PRF-FOLLOWERS' || act === 'SCR-PRF-FOLLOWING' || act === 'SCR-MNU-07' || act === 'SCR-SPC-03') {
             renderSimpleMode(false);
           }
         }
@@ -2741,7 +2741,74 @@
     `;
   }
 
-  // ── ON-CHAIN AVATAR RENDER HELPER (Strict XSS & Color Sanitization) ───────
+  // ── ON-CHAIN AVATAR RENDER & LIGHTBOX REGISTRY (Zero-Escaping Fragility) ──
+  const _avatarLightboxRegistry = {};
+  let _avatarLightboxSeq = 0;
+
+  function registerAvatarForZoom(avatarObj) {
+    if (!avatarObj || typeof avatarObj !== 'object' || typeof avatarObj.image_url !== 'string') return '';
+    const key = 'avz_' + (++_avatarLightboxSeq);
+    _avatarLightboxRegistry[key] = avatarObj;
+    // Keep registry bounded
+    if (_avatarLightboxSeq > 400) {
+      const oldest = Object.keys(_avatarLightboxRegistry).slice(0, 200);
+      oldest.forEach(k => delete _avatarLightboxRegistry[k]);
+    }
+    return key;
+  }
+
+  function syncAvatarAcrossCaches(address, equippedAvatar, ownedAvatars) {
+    const addrLow = String(address || '').trim().toLowerCase();
+    if (!addrLow) return;
+    // 1. Update EVERY matching entry in _simpleProfileCache (by address, handle, primary_bns, etc.)
+    let updatedAny = false;
+    Object.keys(_simpleProfileCache).forEach(k => {
+      const entry = _simpleProfileCache[k];
+      if (!entry || typeof entry !== 'object') return;
+      if (k === addrLow || String(entry.address || '').toLowerCase() === addrLow) {
+        entry.avatar = equippedAvatar || null;
+        if (Array.isArray(ownedAvatars)) entry.owned_avatars = ownedAvatars;
+        entry._cachedAt = Date.now();
+        updatedAny = true;
+      }
+    });
+    if (!updatedAny) {
+      _simpleProfileCache[addrLow] = {
+        address: address,
+        avatar: equippedAvatar || null,
+        owned_avatars: Array.isArray(ownedAvatars) ? ownedAvatars : [],
+        _cachedAt: 0
+      };
+    }
+    // 2. Patch Space feed posts & comments in-place for instant 0ms UI update
+    if (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) {
+      spacePostsCache.forEach(p => {
+        if (!p) return;
+        if (String(p.author || '').toLowerCase() === addrLow && !p.is_anonymous) {
+          p.author_avatar = equippedAvatar || null;
+        }
+        if (Array.isArray(p.comments)) {
+          p.comments.forEach(c => {
+            if (c && String(c.commenter || '').toLowerCase() === addrLow && !c.is_anonymous) {
+              c.commenter_avatar = equippedAvatar || null;
+            }
+          });
+        }
+      });
+    }
+    // 3. Patch Pro Mode active profile modal if open for this user
+    if (window.currentProfileData && String(window.currentProfileData.address || '').toLowerCase() === addrLow) {
+      window.currentProfileData.avatar = equippedAvatar || null;
+      if (Array.isArray(ownedAvatars)) window.currentProfileData.owned_avatars = ownedAvatars;
+      if (typeof window.renderUserProfileData === 'function') {
+        window.renderUserProfileData(window.currentProfileData);
+      }
+    }
+    // 4. Force immediate zero-flicker Simple Mode re-render
+    _lastRenderedFingerprint = '';
+    if (simpleState.enabled) renderSimpleMode(false);
+  }
+
   function renderAvatarCircleHtml(avatarObj, fallbackHtml) {
     if (avatarObj && typeof avatarObj === 'object' && typeof avatarObj.image_url === 'string') {
       const url = avatarObj.image_url.trim();
@@ -2749,7 +2816,7 @@
         const rawBg = String(avatarObj.bg_color || '#FFFFFF').trim().toUpperCase();
         const safeBg = /^#[0-9A-F]{6}$/.test(rawBg) ? rawBg : '#FFFFFF';
         const altName = esc(avatarObj.name || 'Avatar');
-        return `<div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center" style="background-color:${safeBg};"><img src="${url}" alt="${altName}" class="w-full h-full object-contain p-0.5 select-none pointer-events-none" loading="lazy" /></div>`;
+        return `<div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center" style="background-color:${safeBg};"><img src="${url}" alt="${altName}" decoding="async" class="w-full h-full object-contain p-0.5 select-none pointer-events-none" loading="lazy" /></div>`;
       }
     }
     return fallbackHtml;
@@ -3453,31 +3520,36 @@
         <!-- Profile Identity Cluster -->
         <div class="px-5 -mt-10 flex flex-col relative z-10">
           <div class="flex items-end justify-between gap-3">
-            <!-- Avatar -->
-            <div class="relative shrink-0 ${(pData?.avatar || isMyProfile) ? 'cursor-pointer group' : ''}"
-                 ${pData?.avatar
-                   ? `onclick="window.BlocTagSimpleMode.openAvatarLightbox(${escAttr(JSON.stringify(pData.avatar))}, ${isMyProfile ? 'true' : 'false'})"`
-                   : (isMyProfile ? 'onclick="window.BlocTagSimpleMode.openAvatarStudio()"' : '')}>
-              <div class="w-20 h-20 rounded-full p-1 bg-surface shadow-xl ring-2 ring-surface ${(pData?.avatar || isMyProfile) ? 'group-hover:ring-primary/50 transition-all' : ''}">
-                <div class="w-full h-full rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-mono font-bold text-2xl">
-                  ${renderAvatarCircleHtml(
-                    pData?.avatar,
-                    resolvedBns ? esc(resolvedBns.replace(/^@/, '')[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[36px]" translate="no">person</span>'
-                  )}
+            <!-- Avatar (Tap to Enlarge Any User's Avatar) -->
+            ${(() => {
+              const zoomKey = pData?.avatar ? registerAvatarForZoom(pData.avatar) : '';
+              return `
+                <div class="relative shrink-0 ${(pData?.avatar || isMyProfile) ? 'cursor-pointer group' : ''}"
+                     ${zoomKey
+                       ? `onclick="window.BlocTagSimpleMode.openAvatarLightboxByKey('${zoomKey}', ${isMyProfile ? 'true' : 'false'})"`
+                       : (isMyProfile ? 'onclick="window.BlocTagSimpleMode.openAvatarStudio()"' : '')}>
+                  <div class="w-20 h-20 rounded-full p-1 bg-surface shadow-xl ring-2 ring-surface ${(pData?.avatar || isMyProfile) ? 'group-hover:ring-primary/50 transition-all' : ''}">
+                    <div class="w-full h-full rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-mono font-bold text-2xl">
+                      ${renderAvatarCircleHtml(
+                        pData?.avatar,
+                        resolvedBns ? esc(resolvedBns.replace(/^@/, '')[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[36px]" translate="no">person</span>'
+                      )}
+                    </div>
+                  </div>
+                  ${isMyProfile ? `
+                    <button type="button" onclick="event.stopPropagation(); window.BlocTagSimpleMode.openAvatarStudio();"
+                      class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-on-primary shadow-md ring-2 ring-surface flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
+                      title="${t('avatar_studio_title', 'Avatar Studio')}">
+                      <span class="material-symbols-outlined notranslate text-[15px]" translate="no">photo_camera</span>
+                    </button>
+                  ` : `
+                    <div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-surface p-0.5 flex items-center justify-center">
+                      <div class="w-full h-full rounded-full bg-primary"></div>
+                    </div>
+                  `}
                 </div>
-              </div>
-              ${isMyProfile ? `
-                <button type="button" onclick="event.stopPropagation(); window.BlocTagSimpleMode.openAvatarStudio();"
-                  class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-on-primary shadow-md ring-2 ring-surface flex items-center justify-center hover:scale-110 transition-transform cursor-pointer"
-                  title="${t('avatar_studio_title', 'Avatar Studio')}">
-                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">photo_camera</span>
-                </button>
-              ` : `
-                <div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-surface p-0.5 flex items-center justify-center">
-                  <div class="w-full h-full rounded-full bg-primary"></div>
-                </div>
-              `}
-            </div>
+              `;
+            })()}
 
             <!-- Profile Action Buttons -->
             <div class="flex items-center gap-1.5 pb-1 flex-wrap justify-end">
@@ -4017,6 +4089,12 @@
     const isValidator = acc && Array.isArray(window.knownValidators) && window.knownValidators.includes(acc.address);
     const activeLangCode = getActiveLanguageCode();
     const activeLangObj = SIMPLE_LANGUAGES.find(l => l.code === activeLangCode) || SIMPLE_LANGUAGES[0];
+    const myMenuProf = acc ? getSimpleProfileData(acc.address) : null;
+    if (!myMenuProf && acc && acc.address) {
+      fetchSimpleProfile(acc.address);
+    }
+    const menuAvatarObj = myMenuProf?.avatar || null;
+    const menuZoomKey = menuAvatarObj ? registerAvatarForZoom(menuAvatarObj) : '';
 
     return `
       ${renderTopBar(t('top_menu', 'Menu'), false)}
@@ -4024,8 +4102,12 @@
         <!-- Account Summary Card -->
         <div class="bg-surface-container-low rounded-2xl p-4 border border-outline-variant/15 shadow-sm mb-3.5">
           <div class="flex items-center gap-3">
-            <div class="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono font-bold text-base shrink-0">
-              ${myHandle ? esc(myHandle[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[24px]" translate="no">person</span>'}
+            <div class="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono font-bold text-base shrink-0 overflow-hidden ring-1 ring-primary/25 cursor-pointer hover:ring-2 hover:ring-primary/60 transition-all"
+                 onclick="${menuZoomKey ? `window.BlocTagSimpleMode.openAvatarLightboxByKey('${menuZoomKey}', true)` : `window.BlocTagSimpleMode.openAvatarStudio()`}">
+              ${renderAvatarCircleHtml(
+                menuAvatarObj,
+                myHandle ? esc(myHandle[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[24px]" translate="no">person</span>'
+              )}
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5">
@@ -4746,6 +4828,11 @@
       if (modal) modal.remove();
     },
 
+    openAvatarLightboxByKey: (key, isOwner = false) => {
+      const av = _avatarLightboxRegistry[String(key || '')];
+      if (av) window.BlocTagSimpleMode.openAvatarLightbox(av, isOwner);
+    },
+
     openAvatarLightbox: (avatarObj, isOwner = false) => {
       if (!avatarObj || typeof avatarObj !== 'object' || typeof avatarObj.image_url !== 'string') return;
       const url = avatarObj.image_url.trim();
@@ -4888,35 +4975,18 @@
           throw new Error((resp.body && resp.body.message) || 'Avatar mint failed');
         }
         const d = resp.body.data || {};
-        // Update local wallet balance & profile cache immediately
+        // Update local wallet balance & sync avatar across ALL caches (Profile, Menu, Space, Pro Mode) in 0ms
         if (typeof d.new_balance === 'number') {
           acc.balance = d.new_balance;
           if (typeof window.saveWalletState === 'function') window.saveWalletState(acc);
         }
-        const addrKey = acc.address.toLowerCase();
-        if (_simpleProfileCache[addrKey]) {
-          _simpleProfileCache[addrKey].avatar = d.equipped_avatar || d.avatar || null;
-          _simpleProfileCache[addrKey].owned_avatars = d.owned_avatars || [];
-          _simpleProfileCache[addrKey]._cachedAt = 0;
-        }
+        syncAvatarAcrossCaches(acc.address, d.equipped_avatar || d.avatar || null, d.owned_avatars || []);
         if (typeof window.showToast === 'function') {
           window.showToast(resp.body.message || `Avatar ${variantId} minted & equipped!`, 'verified');
         }
-        // Refresh catalog, quote, profile, Pro Mode profile, and space feed
-        if (window.currentProfileData && String(window.currentProfileData.address || '').toLowerCase() === addrKey) {
-          window.currentProfileData.avatar = d.equipped_avatar || d.avatar || null;
-          window.currentProfileData.owned_avatars = d.owned_avatars || [];
-          if (typeof window.renderUserProfileData === 'function') window.renderUserProfileData(window.currentProfileData);
-        }
-        if (window.currentProfileData && String(window.currentProfileData.address || '').toLowerCase() === addrKey) {
-          window.currentProfileData.avatar = d.equipped_avatar || null;
-          window.currentProfileData.owned_avatars = d.owned_avatars || [];
-          if (typeof window.renderUserProfileData === 'function') window.renderUserProfileData(window.currentProfileData);
-        }
         await window.BlocTagSimpleMode.openAvatarStudio();
-        fetchSimpleProfile(acc.address);
+        fetchSimpleProfile(acc.address, true);
         if (typeof window.loadSpaceFeed === 'function') window.loadSpaceFeed();
-        renderSimpleMode();
       } catch (err) {
         if (typeof window.showToast === 'function') {
           window.showToast(err.message || 'Avatar purchase canceled or failed.', 'error');
@@ -5039,24 +5109,13 @@
           acc.balance = d.new_balance;
           if (typeof window.saveWalletState === 'function') window.saveWalletState(acc);
         }
-        const addrKey = acc.address.toLowerCase();
-        if (_simpleProfileCache[addrKey]) {
-          _simpleProfileCache[addrKey].avatar = d.equipped_avatar || null;
-          _simpleProfileCache[addrKey].owned_avatars = d.owned_avatars || [];
-          _simpleProfileCache[addrKey]._cachedAt = 0;
-        }
+        syncAvatarAcrossCaches(acc.address, d.equipped_avatar || null, d.owned_avatars || []);
         if (typeof window.showToast === 'function') {
           window.showToast(resp.body.message || (cleanVid ? 'Avatar equipped!' : 'Avatar removed from profile.'), 'check_circle');
         }
-        if (window.currentProfileData && String(window.currentProfileData.address || '').toLowerCase() === addrKey) {
-          window.currentProfileData.avatar = d.equipped_avatar || null;
-          window.currentProfileData.owned_avatars = d.owned_avatars || [];
-          if (typeof window.renderUserProfileData === 'function') window.renderUserProfileData(window.currentProfileData);
-        }
         await window.BlocTagSimpleMode.openAvatarStudio();
-        fetchSimpleProfile(acc.address);
+        fetchSimpleProfile(acc.address, true);
         if (typeof window.loadSpaceFeed === 'function') window.loadSpaceFeed();
-        renderSimpleMode();
       } catch (err) {
         if (typeof window.showToast === 'function') {
           window.showToast(err.message || 'Avatar equip failed.', 'error');
@@ -5173,11 +5232,14 @@
                     const isEq = Boolean(equippedAvatar && equippedAvatar.variant_id === av.variant_id);
                     return `
                       <div class="p-3 rounded-2xl bg-surface-container-low border ${isEq ? 'border-primary ring-1 ring-primary/40' : 'border-outline-variant/15'} flex flex-col items-center gap-2">
-                        <div class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-surface shadow-md cursor-pointer hover:scale-105 transition-transform"
-                             title="${isTr ? 'Büyütmek için dokun' : 'Tap to enlarge'}"
-                             onclick="window.BlocTagSimpleMode.openAvatarLightbox(${escAttr(JSON.stringify(av))}, false)">
-                          ${renderAvatarCircleHtml(av, '')}
-                        </div>
+                        ${(() => {
+                          const oZoomKey = registerAvatarForZoom(av);
+                          return `<div class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-surface shadow-md cursor-pointer hover:scale-105 transition-transform"
+                               title="${isTr ? 'Büyütmek için dokun' : 'Tap to enlarge'}"
+                               onclick="window.BlocTagSimpleMode.openAvatarLightboxByKey('${oZoomKey}', false)">
+                            ${renderAvatarCircleHtml(av, '')}
+                          </div>`;
+                        })()}
                         <div class="text-center min-w-0 w-full">
                           <div class="text-xs font-bold text-on-surface truncate">${esc(isTr ? (av.name_tr || av.name) : av.name)}</div>
                           <div class="text-[10px] font-mono text-primary truncate">${esc(av.variant_id)}</div>
@@ -5207,15 +5269,27 @@
                 <div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/20 space-y-3.5">
                   <div class="flex items-center gap-4">
                     <!-- Live Circular Preview (Tap to Enlarge) -->
-                    <div class="w-24 h-24 rounded-full overflow-hidden shrink-0 shadow-xl ring-4 ring-surface cursor-pointer hover:scale-105 transition-transform relative group"
-                         style="background-color:${st.selectedColor};"
-                         title="${isTr ? 'Büyütmek için dokun' : 'Tap to enlarge'}"
-                         onclick="window.BlocTagSimpleMode.openAvatarLightbox({ image_url: '${escAttr(selectedItem.image_url)}', bg_color: '${escAttr(st.selectedColor)}', name: '${escAttr(selectedItem.name)}', name_tr: '${escAttr(selectedItem.name_tr)}', base_id: '${escAttr(selectedItem.base_id)}', variant_id: '${escAttr(liveVariantId)}' }, false)">
-                      <img src="${selectedItem.image_url}" alt="${esc(selectedItem.name)}" class="w-full h-full object-contain p-1 select-none pointer-events-none" />
-                      <div class="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-80 group-hover:opacity-100">
-                        <span class="material-symbols-outlined notranslate text-[14px]" translate="no">zoom_in</span>
-                      </div>
-                    </div>
+                    ${(() => {
+                      const prevZoomKey = registerAvatarForZoom({
+                        image_url: selectedItem.image_url,
+                        bg_color: st.selectedColor,
+                        name: selectedItem.name,
+                        name_tr: selectedItem.name_tr,
+                        base_id: selectedItem.base_id,
+                        variant_id: liveVariantId
+                      });
+                      return `
+                        <div class="w-24 h-24 rounded-full overflow-hidden shrink-0 shadow-xl ring-4 ring-surface cursor-pointer hover:scale-105 transition-transform relative group"
+                             style="background-color:${st.selectedColor};"
+                             title="${isTr ? 'Büyütmek için dokun' : 'Tap to enlarge'}"
+                             onclick="window.BlocTagSimpleMode.openAvatarLightboxByKey('${prevZoomKey}', false)">
+                          <img src="${selectedItem.image_url}" alt="${esc(selectedItem.name)}" decoding="async" class="w-full h-full object-contain p-1 select-none pointer-events-none" />
+                          <div class="absolute bottom-1 right-1 w-6 h-6 rounded-full bg-black/60 text-white flex items-center justify-center opacity-80 group-hover:opacity-100">
+                            <span class="material-symbols-outlined notranslate text-[14px]" translate="no">zoom_in</span>
+                          </div>
+                        </div>
+                      `;
+                    })()}
                     <div class="flex-1 min-w-0 space-y-1">
                       <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="text-base font-bold text-on-surface">${esc(isTr ? selectedItem.name_tr : selectedItem.name)}</span>

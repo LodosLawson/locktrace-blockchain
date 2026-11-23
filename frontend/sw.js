@@ -1,4 +1,4 @@
-const CACHE_NAME = 'locktrace-pwa-v97';
+const CACHE_NAME = 'locktrace-pwa-v98';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
@@ -69,6 +69,23 @@ self.addEventListener('fetch', (event) => {
             return caches.match('/index.html').then((r) => r || caches.match('/'));
           }
           return new Response('', { status: 504, statusText: 'Offline' });
+        });
+      })
+    );
+    return;
+  }
+
+  // 3b. Immutable On-Chain Avatar Assets: Cache-First (0ms repeat load)
+  if (url.pathname.startsWith('/avatars/')) {
+    event.respondWith(
+      caches.match(event.request).then((cachedResponse) => {
+        if (cachedResponse) return cachedResponse;
+        return fetch(event.request).then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const clone = networkResponse.clone();
+            caches.open(CACHE_NAME).then((cache) => cache.put(event.request, clone));
+          }
+          return networkResponse;
         });
       })
     );

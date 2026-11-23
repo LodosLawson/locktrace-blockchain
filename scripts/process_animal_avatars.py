@@ -131,13 +131,16 @@ def main():
                 side = int(max(cw, ch) * 1.18)
                 canvas = Image.new("RGBA", (side, side), (0, 0, 0, 0))
                 canvas.paste(cropped, ((side - cw) // 2, (side - ch) // 2), cropped)
-                final_img = canvas.resize((512, 512), Image.Resampling.LANCZOS)
+                final_img = canvas.resize((256, 256), Image.Resampling.LANCZOS)
             else:
-                final_img = out
+                final_img = out.resize((256, 256), Image.Resampling.LANCZOS)
+
+            # Quantize RGBA pixel-art to compact palette PNG (~12-22 KB instead of ~150 KB, visually identical)
+            quantized = final_img.quantize(colors=128, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
 
             for d in DST_DIRS:
                 dst_path = os.path.join(d, dst_name)
-                final_img.save(dst_path, format="PNG", optimize=True)
+                quantized.save(dst_path, format="PNG", optimize=True)
             kb = os.path.getsize(os.path.join(DST_DIRS[0], dst_name)) / 1024.0
             print(f"[OK] {src_name:16s} -> {dst_name:14s} ({kb:.1f} KB)")
 
