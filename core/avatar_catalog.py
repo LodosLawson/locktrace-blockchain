@@ -27,6 +27,8 @@ ATOMIC_UNIT = 100_000_000  # 1 BCT = 10^8 atomic units
 
 AVATAR_BASE_PRICE = Decimal("0.10")
 AVATAR_PRICE_MULTIPLIER = Decimal("1.25")
+AVATAR_EQUIP_FEE = Decimal("0.20")       # 0.20 BCT per on-chain equip or unequip action
+AVATAR_SWAP_FEE = Decimal("0.40")        # 0.40 BCT to replace an already-equipped avatar (0.20 remove + 0.20 equip)
 AVATAR_TREASURY_RATIO = Decimal("0.30")
 AVATAR_POOL_RATIO = Decimal("0.70")
 DEFAULT_BG_COLOR = "#FFFFFF"

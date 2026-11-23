@@ -4852,6 +4852,87 @@
       }
     },
 
+    confirmEquipAvatar: (variantId) => {
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      if (st.busy) return;
+      const cleanVid = String(variantId || '').trim().toUpperCase();
+      const cat = st.catalogData || {};
+      const currentEq = cat.equipped_avatar || null;
+      const hasEquipped = Boolean(currentEq && currentEq.variant_id);
+      const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+
+      let title = '';
+      let desc = '';
+      let feeLabel = '0.20 BCT';
+      let confirmBtnText = '';
+
+      if (!cleanVid) {
+        // Unequip / Remove warning (explicitly informs user about 0.20 remove + 0.20 re-equip = 0.40 total)
+        feeLabel = '0.20 BCT';
+        title = isTr ? 'Profil Fotoğrafını Kaldır (0.20 BCT)' : 'Remove Profile Photo (0.20 BCT)';
+        desc = isTr
+          ? 'Bu işlem blokzincirde bir hareket olduğu için fotoğrafı kaldırma ücreti <b>0.20 BCT</b>\'dir. Daha sonra yeni bir fotoğraf takmak istediğinizde tekrar <b>0.20 BCT</b> ödersiniz — yani fotoğraf değiştirmenin toplam maliyeti <b>0.40 BCT</b>\'dir.'
+          : 'Because this is an on-chain blockchain transaction, removing your photo costs <b>0.20 BCT</b>. Equipping another photo afterwards also costs <b>0.20 BCT</b> — for a total of <b>0.40 BCT</b> to change your profile photo.';
+        confirmBtnText = isTr ? 'Onayla ve Kaldır (0.20 BCT)' : 'Confirm & Remove (0.20 BCT)';
+      } else if (hasEquipped) {
+        // Direct Swap (0.20 remove old + 0.20 equip new = 0.40 BCT)
+        feeLabel = '0.40 BCT';
+        title = isTr ? 'Profil Fotoğrafını Değiştir (0.40 BCT)' : 'Change Profile Photo (0.40 BCT)';
+        desc = isTr
+          ? `Mevcut fotoğrafı kaldırıp <b>${esc(cleanVid)}</b> avatarını takmak toplam <b>0.40 BCT</b> (0.20 BCT çıkarma + 0.20 BCT takma) on-chain işlem ücreti gerektirir.`
+          : `Removing your current photo and equipping <b>${esc(cleanVid)}</b> costs <b>0.40 BCT</b> total (0.20 BCT unequip + 0.20 BCT equip) on-chain.`;
+        confirmBtnText = isTr ? 'Onayla ve Değiştir (0.40 BCT)' : 'Confirm & Change (0.40 BCT)';
+      } else {
+        // Fresh Equip (0.20 BCT)
+        feeLabel = '0.20 BCT';
+        title = isTr ? 'Profil Fotoğrafını Tak (0.20 BCT)' : 'Equip Profile Photo (0.20 BCT)';
+        desc = isTr
+          ? `<b>${esc(cleanVid)}</b> avatarını profilinize takmak blokzincir işlemi olduğu için <b>0.20 BCT</b> ücretlidir. (İleride kaldırmak isterseniz kaldırma da 0.20 BCT, toplam değişim 0.40 BCT\'dir.)`
+          : `Equipping <b>${esc(cleanVid)}</b> to your profile is an on-chain transaction costing <b>0.20 BCT</b>. (Removing later also costs 0.20 BCT; total photo change is 0.40 BCT.)`;
+        confirmBtnText = isTr ? 'Onayla ve Tak (0.20 BCT)' : 'Confirm & Equip (0.20 BCT)';
+      }
+
+      let dlg = document.getElementById('simple-avatar-fee-confirm-modal');
+      if (!dlg) {
+        dlg = document.createElement('div');
+        dlg.id = 'simple-avatar-fee-confirm-modal';
+        document.body.appendChild(dlg);
+      }
+      dlg.className = 'fixed inset-0 z-[105] bg-black/80 backdrop-blur-sm flex items-center justify-center p-4';
+      dlg.innerHTML = `
+        <div class="w-full max-w-sm bg-surface-container-high rounded-3xl border border-outline-variant/30 shadow-2xl p-5 space-y-4">
+          <div class="flex items-start gap-3">
+            <div class="w-10 h-10 rounded-full bg-amber-500/15 text-amber-400 flex items-center justify-center shrink-0">
+              <span class="material-symbols-outlined notranslate text-[22px]" translate="no">info</span>
+            </div>
+            <div class="min-w-0">
+              <h4 class="text-sm font-bold text-on-surface">${title}</h4>
+              <p class="text-xs text-on-surface-variant mt-1.5 leading-relaxed">${desc}</p>
+            </div>
+          </div>
+          <div class="px-3 py-2 rounded-xl bg-surface-container text-[10.5px] text-on-surface-variant flex items-center justify-between">
+            <span>${isTr ? 'On-Chain İşlem Ücreti:' : 'On-Chain Tx Fee:'}</span>
+            <span class="font-mono font-bold text-primary">${feeLabel}</span>
+          </div>
+          <div class="flex items-center gap-2 pt-1">
+            <button type="button" onclick="window.BlocTagSimpleMode.closeAvatarFeeConfirm()"
+              class="flex-1 h-10 rounded-full bg-surface-container text-on-surface text-xs font-semibold hover:bg-surface-container-highest transition-colors cursor-pointer">
+              ${isTr ? 'Vazgeç' : 'Cancel'}
+            </button>
+            <button type="button" onclick="window.BlocTagSimpleMode.closeAvatarFeeConfirm(); window.BlocTagSimpleMode.equipAvatarVariant('${escAttr(cleanVid)}');"
+              class="flex-1 h-10 rounded-full bg-primary text-on-primary text-xs font-bold shadow-md hover:brightness-95 transition-all cursor-pointer">
+              ${confirmBtnText}
+            </button>
+          </div>
+        </div>
+      `;
+    },
+
+    closeAvatarFeeConfirm: () => {
+      const dlg = document.getElementById('simple-avatar-fee-confirm-modal');
+      if (dlg) dlg.remove();
+    },
+
     equipAvatarVariant: async (variantId) => {
       const acc = getActiveWallet();
       const st = window.BlocTagSimpleMode._avatarStudioState;
@@ -4879,6 +4960,10 @@
           throw new Error((resp.body && resp.body.message) || 'Avatar update failed');
         }
         const d = resp.body.data || {};
+        if (typeof d.new_balance === 'number') {
+          acc.balance = d.new_balance;
+          if (typeof window.saveWalletState === 'function') window.saveWalletState(acc);
+        }
         const addrKey = acc.address.toLowerCase();
         if (_simpleProfileCache[addrKey]) {
           _simpleProfileCache[addrKey].avatar = d.equipped_avatar || null;
@@ -4989,9 +5074,9 @@
                       <span class="text-[10.5px] font-mono text-on-surface-variant">${esc(equippedAvatar.variant_id)}</span>
                     </div>
                   </div>
-                  <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('')"
+                  <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.confirmEquipAvatar('')"
                     class="h-8 px-3 rounded-full bg-surface-container-highest text-on-surface text-[11px] font-semibold hover:bg-error/20 hover:text-error transition-colors cursor-pointer shrink-0">
-                    ${isTr ? 'Kaldır' : 'Remove'}
+                    ${isTr ? 'Kaldır (0.20 BCT)' : 'Remove (0.20 BCT)'}
                   </button>
                 </div>
               ` : ''}
@@ -5017,14 +5102,16 @@
                           <div class="text-[9.5px] text-outline mt-0.5">${isTr ? 'Soulbound • Kişiye Özel' : 'Soulbound • Non-transferable'}</div>
                         </div>
                         ${isEq ? `
-                          <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('')"
+                          <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.confirmEquipAvatar('')"
                             class="w-full h-8 rounded-full bg-surface-container-highest text-on-surface text-[11px] font-semibold hover:bg-error/20 hover:text-error transition-colors cursor-pointer">
-                            ${isTr ? 'Profilden Kaldır' : 'Unequip (Free)'}
+                            ${isTr ? 'Kaldır (0.20 BCT)' : 'Unequip (0.20 BCT)'}
                           </button>
                         ` : `
-                          <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('${escAttr(av.variant_id)}')"
+                          <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.confirmEquipAvatar('${escAttr(av.variant_id)}')"
                             class="w-full h-8 rounded-full bg-primary text-on-primary text-[11px] font-semibold hover:brightness-95 transition-all cursor-pointer">
-                            ${isTr ? 'Profile Tak (Ücretsiz)' : 'Equip (Free)'}
+                            ${equippedAvatar
+                              ? (isTr ? 'Değiştir (0.40 BCT)' : 'Swap (0.40 BCT)')
+                              : (isTr ? 'Profile Tak (0.20 BCT)' : 'Equip (0.20 BCT)')}
                           </button>
                         `}
                       </div>
@@ -5098,20 +5185,26 @@
                       <span>${isTr ? 'Sonraki Alım Fiyatı (+%25):' : 'Next Mint Price (+25%):'}</span>
                       <span class="font-mono text-amber-400">${nextPriceDisplay} BCT</span>
                     </div>
+                    <div class="flex items-center justify-between">
+                      <span>${isTr ? 'Takma / Çıkarma (On-Chain):' : 'Equip / Remove (On-Chain):'}</span>
+                      <span class="font-mono text-on-surface">${isTr ? '0.20 BCT (Değişim: 0.40 BCT)' : '0.20 BCT (Swap: 0.40 BCT)'}</span>
+                    </div>
                   </div>
 
                   <!-- Primary Action CTA -->
                   ${isEquipped ? `
-                    <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('')"
+                    <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.confirmEquipAvatar('')"
                       class="w-full h-11 rounded-full bg-surface-container-highest text-on-surface text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-error/20 hover:text-error transition-all cursor-pointer">
                       <span class="material-symbols-outlined notranslate text-[17px]" translate="no">hide_image</span>
-                      <span>${st.busy ? (isTr ? 'İşleniyor...' : 'Processing...') : (isTr ? 'Profilde Takılı — Kaldır (Ücretsiz)' : 'Equipped — Remove from Profile (Free)')}</span>
+                      <span>${st.busy ? (isTr ? 'İşleniyor...' : 'Processing...') : (isTr ? 'Profilde Takılı — Kaldır (0.20 BCT)' : 'Equipped — Remove (0.20 BCT)')}</span>
                     </button>
                   ` : (alreadyOwned ? `
-                    <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('${escAttr(liveVariantId)}')"
+                    <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.confirmEquipAvatar('${escAttr(liveVariantId)}')"
                       class="w-full h-11 rounded-full bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1.5 shadow-md hover:brightness-95 transition-all cursor-pointer">
                       <span class="material-symbols-outlined notranslate text-[17px]" translate="no">check_circle</span>
-                      <span>${st.busy ? (isTr ? 'İşleniyor...' : 'Processing...') : (isTr ? 'Sende Var — Profile Tak (Ücretsiz)' : 'Owned — Equip to Profile (Free)')}</span>
+                      <span>${st.busy ? (isTr ? 'İşleniyor...' : 'Processing...') : (equippedAvatar
+                        ? (isTr ? 'Sende Var — Fotoğrafı Değiştir (0.40 BCT)' : 'Owned — Change Photo (0.40 BCT)')
+                        : (isTr ? 'Sende Var — Profile Tak (0.20 BCT)' : 'Owned — Equip to Profile (0.20 BCT)'))}</span>
                     </button>
                   ` : `
                     <button type="button" ${(st.busy || st.loadingQuote) ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.mintSelectedAvatar()"

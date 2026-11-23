@@ -28,6 +28,8 @@ from core.avatar_catalog import (
     AVATAR_COLLECTIONS,
     AVATAR_CATALOG,
     AVATAR_CATALOG_BY_ID,
+    AVATAR_EQUIP_FEE,
+    AVATAR_SWAP_FEE,
     CURATED_BG_COLORS,
     DEFAULT_BG_COLOR,
     normalize_hex_color,
@@ -579,7 +581,7 @@ class Blockchain:
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
             "bns_accept_offer", "avatar_mint", "avatar_equip"
         }
-        net_credit_types = {"transfer", "space_post", "bns_register", "bns_buy", "validator_stake", "validator_unstake", "avatar_mint"}
+        net_credit_types = {"transfer", "space_post", "bns_register", "bns_buy", "validator_stake", "validator_unstake", "avatar_mint", "avatar_equip"}
         social_treasury_types = {"space_like", "space_comment", "space_follow"}
 
         amt_u = _to_units(tx.amount)
@@ -3696,7 +3698,7 @@ class Blockchain:
 
         transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(
-            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "space_follow", "bns_register", "bns_transfer", "avatar_mint")
+            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "space_follow", "bns_register", "bns_transfer", "avatar_mint", "avatar_equip")
         )
         miner_fee_cut_u = (transfer_fees_u // 2) + space_and_bns_fees_u
 
@@ -5804,6 +5806,9 @@ class Blockchain:
                     "base_price_bct": 0.10,
                     "step_multiplier": 1.25,
                     "step_percent": 25,
+                    "equip_fee_bct": float(AVATAR_EQUIP_FEE),
+                    "unequip_fee_bct": float(AVATAR_EQUIP_FEE),
+                    "swap_fee_bct": float(AVATAR_SWAP_FEE),
                     "treasury_percent": 30,
                     "network_pool_percent": 70,
                     "pool_breakdown": {
@@ -5996,16 +6001,31 @@ class Blockchain:
         signed_payload: str = "",
     ) -> Tuple[bool, str, Optional[dict]]:
         """
-        Equips an owned Soulbound avatar on the user's profile, or unequips when `variant_id == ""`.
-        Zero fee, cryptographically signed on-chain transaction.
+        Equips an owned Soulbound avatar on the user's profile, swaps an existing one,
+        or unequips when `variant_id == ""`.
+        On-chain fee rules:
+          - Equip (when none currently equipped): 0.20 BCT
+          - Unequip (removing current avatar): 0.20 BCT
+          - Swap (replacing an already-equipped avatar with another owned avatar): 0.40 BCT (0.20 + 0.20)
+        Revenue Split: 30% Treasury Vault, 70% Block Reward Pool (50% Miner, 40% Validators, 10% Observer Stakers).
         """
         with self.lock:
             self._load_state()
             clean_owner = normalize_bct_address(owner)
-            if not is_valid_bct_address(clean_owner):
+            if not is_valid_bct_address(clean_owner) or clean_owner.upper() in (
+                TREASURY_ADDRESS, "GENESIS_VAULT", "GENESIS", BRIDGE_VAULT_ADDRESS, VALIDATOR_STAKE_VAULT_ADDRESS
+            ):
                 return False, f"Invalid owner address: '{clean_owner}'", None
 
             clean_vid = str(variant_id or "").strip().upper()
+            current_eq = self.avatar_equipped.get(clean_owner)
+            current_vid = str(current_eq.get("variant_id", "") or "").upper() if isinstance(current_eq, dict) else ""
+
+            if not clean_vid and not current_vid:
+                return False, "No avatar is currently equipped on your profile.", None
+            if clean_vid and clean_vid == current_vid:
+                return False, "This avatar is already equipped on your profile.", None
+
             if clean_vid:
                 base_id, bg_color = parse_variant_id(clean_vid)
                 if not base_id or not bg_color:
@@ -6019,27 +6039,68 @@ class Blockchain:
             if not sig_ok:
                 return False, sig_msg, None
 
+            # Determine exact on-chain action fee: 0.20 BCT (equip or unequip) or 0.40 BCT (swap)
+            if clean_vid and current_vid:
+                action_type = "swap"
+                action_fee = float(AVATAR_SWAP_FEE)
+            elif clean_vid:
+                action_type = "equip"
+                action_fee = float(AVATAR_EQUIP_FEE)
+            else:
+                action_type = "unequip"
+                action_fee = float(AVATAR_EQUIP_FEE)
+
+            owner_bal = self.verify_and_recalc_balance(clean_owner)
+            if owner_bal < action_fee:
+                return False, f"Insufficient balance! On-chain avatar {action_type} fee is {action_fee:.2f} BCT. Current balance: {owner_bal:.4f} BCT.", None
+
+            split = compute_revenue_split(action_fee)
+            treasury_cut = split["treasury_cut"]
+            pool_cut = split["pool_cut"]
+
             tx = Transaction(
                 sender=clean_owner,
-                receiver=clean_owner,
-                amount=0.0,
-                fee=0.0,
+                receiver=TREASURY_ADDRESS,
+                amount=split["price"],
+                fee=pool_cut,
                 signature=signature,
                 tx_type="avatar_equip",
-                extra_data={"variant_id": clean_vid},
+                extra_data={
+                    "variant_id": clean_vid,
+                    "previous_variant_id": current_vid,
+                    "action": action_type,
+                    "fee_paid": split["price"],
+                    "treasury_cut": treasury_cut,
+                    "pool_cut": pool_cut,
+                },
             )
 
             self.pending_transactions.append(tx)
             self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + pool_cut, 8)
 
             block = self._seal_or_queue_mempool()
             self._load_in_memory_avatar_index()
+
+            self.balances[clean_owner] = self.verify_and_recalc_balance(clean_owner)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._loaded_revision += 1
             self._profile_cache.clear()
             self._save_state()
 
-            msg = f"Avatar {clean_vid} equipped to your profile!" if clean_vid else "Profile avatar removed."
+            if action_type == "swap":
+                msg = f"Profile avatar changed to {clean_vid} ({action_fee:.2f} BCT on-chain fee)."
+            elif action_type == "equip":
+                msg = f"Avatar {clean_vid} equipped to your profile ({action_fee:.2f} BCT on-chain fee)."
+            else:
+                msg = f"Profile avatar removed ({action_fee:.2f} BCT on-chain fee)."
+
             return True, msg, {
+                "action": action_type,
+                "fee_paid": split["price"],
+                "treasury_cut": treasury_cut,
+                "pool_cut": pool_cut,
+                "new_balance": self.balances[clean_owner],
                 "equipped_avatar": self.avatar_equipped.get(clean_owner),
                 "owned_avatars": list(self.avatar_owners.get(clean_owner, [])),
                 "tx_hash": tx.hash(),
