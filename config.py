@@ -90,6 +90,7 @@ class Config:
     # ── Sybil Koruması & Staking Kademeleri (Stake Limits) ───
     MIN_OBSERVER_STAKE = 100.0      # Pasif gözlemci staking alt limiti (Min 100 BCT)
     MAX_OBSERVER_STAKE = 100_000.0  # Pasif gözlemci staking üst limiti (Max 100.000 BCT)
+    OBSERVER_PAYOUT_THRESHOLD = 0.25 # Toz işlemleri önlemek için pasif gözlemci ödülü ödeme eşiği (0.25 BCT)
     MIN_VALIDATOR_STAKE = 1000.0    # Aktif Validator Düğümü olmak için gereken min bakiye/stake
     EQUIVOCATION_SLASH_PERCENT = 100 # Çift imza / çelişkili blok tasdikinde %100 slashing
 

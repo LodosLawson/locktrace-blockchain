@@ -511,6 +511,7 @@ class Blockchain:
         self._bns_index_key: Optional[tuple] = None
         self._space_index_key: Optional[tuple] = None
         self.finalized_height: int = 0
+        self.observer_pending_units: Dict[str, int] = {}
         self._removed_mempool_hashes: List[str] = []
         self.slashed_validators: Dict[str, dict] = {}
         self._attestations_by_validator: Dict[str, str] = {}
@@ -3792,16 +3793,23 @@ class Blockchain:
         validators_breakdown: List[dict] = []
         observers_breakdown: List[dict] = []
 
-        # Tier 3: 10% Observer Stakers Pool (Pro-rata to locked stake)
+        # Tier 3: 10% Observer Stakers Pool (Threshold-Batched Payouts >= 0.25 BCT to eliminate dust tx bloat)
         actual_obs_total_u = 0
+        next_observer_pending = dict(self.observer_pending_units)
+        obs_threshold_bct = float(getattr(Config, "OBSERVER_PAYOUT_THRESHOLD", 0.25))
+        obs_threshold_u = max(1, _to_units(obs_threshold_bct))
         if observers and total_pool_u >= 100:
             obs_pool_u = (total_pool_u * 10) // 100
             total_obs_stake_u = sum(stk_u for _, stk_u in observers)
             if total_obs_stake_u > 0:
+                avail_treasury_u = max(0, treasury_units - total_pool_u)
                 for o_addr, o_stake_u in observers:
                     o_cut_u = (obs_pool_u * o_stake_u) // total_obs_stake_u
-                    if o_cut_u > 0:
-                        obs_amt = float(Decimal(o_cut_u) / Decimal(ATOMIC_UNIT))
+                    if o_cut_u <= 0:
+                        continue
+                    accrued_u = int(next_observer_pending.get(o_addr, 0)) + o_cut_u
+                    if accrued_u >= obs_threshold_u and (avail_treasury_u + obs_pool_u) >= accrued_u:
+                        obs_amt = float(Decimal(accrued_u) / Decimal(ATOMIC_UNIT))
                         reward_txs.append(
                             Transaction(
                                 sender=TREASURY_ADDRESS,
@@ -3811,11 +3819,19 @@ class Blockchain:
                                 signature=f"observer_stake_reward_block_{block_index}_{o_addr[:8]}",
                                 timestamp=det_ts,
                                 tx_type="observer_reward",
-                                extra_data={"staked_bct": float(Decimal(o_stake_u) / Decimal(ATOMIC_UNIT)), "proposer": clean_miner or "Genesis-Validator"},
+                                extra_data={
+                                    "staked_bct": float(Decimal(o_stake_u) / Decimal(ATOMIC_UNIT)),
+                                    "proposer": clean_miner or "Genesis-Validator",
+                                    "batched_threshold_bct": obs_threshold_bct,
+                                },
                             )
                         )
-                        actual_obs_total_u += o_cut_u
+                        actual_obs_total_u += accrued_u
+                        avail_treasury_u = max(0, avail_treasury_u - max(0, accrued_u - o_cut_u))
+                        next_observer_pending.pop(o_addr, None)
                         observers_breakdown.append({"address": o_addr, "reward": obs_amt})
+                    else:
+                        next_observer_pending[o_addr] = accrued_u
 
         # Tier 2: 40% Active Attesting Validator Quorum Pool (Equally split among online attested nodes)
         actual_val_total_u = 0
@@ -3864,12 +3880,17 @@ class Blockchain:
             "validators_rewarded": validators_breakdown,
             "observer_pool_reward": float(Decimal(actual_obs_total_u) / Decimal(ATOMIC_UNIT)),
             "observers_rewarded": observers_breakdown,
+            "observer_pending_after": next_observer_pending,
         }
         return reward_txs, breakdown
 
     def _apply_reward_accounting(self, clean_miner: str, breakdown: dict):
         """Updates node mining & validator reward counters and registers newly rewarded addresses."""
         now = time.time()
+        if isinstance(breakdown.get("observer_pending_after"), dict):
+            self.observer_pending_units = {
+                str(k): int(v) for k, v in breakdown["observer_pending_after"].items() if int(v) > 0
+            }
         proposer_reward = float(breakdown.get("proposer_reward", 0.0))
         if clean_miner and is_valid_bct_address(clean_miner) and clean_miner != TREASURY_ADDRESS:
             if clean_miner not in self.wallets:
@@ -6213,6 +6234,7 @@ class Blockchain:
                 dirty_wallets=dirty_wallets,
                 finalized_height=self.finalized_height,
                 removed_mempool_hashes=list(self._removed_mempool_hashes),
+                observer_pending_units=self.observer_pending_units,
             )
             self._removed_mempool_hashes.clear()
             self._loaded_revision = new_rev
@@ -6351,6 +6373,8 @@ class Blockchain:
 
                     att_counts = d_state.get("attestation_counts", {})
                     self.finalized_height = max(self.finalized_height, int(d_state.get("finalized_height", 0) or 0))
+                    if isinstance(d_state.get("observer_pending_units"), dict):
+                        self.observer_pending_units = dict(d_state["observer_pending_units"])
                     for b in self.chain[-10:]:
                         if b.index in att_counts:
                             b.attestations_count = att_counts[b.index]
@@ -6409,6 +6433,8 @@ class Blockchain:
 
             self.chain = new_chain
             self.finalized_height = max(self.finalized_height, int(state.get("finalized_height", 0) or 0))
+            if isinstance(state.get("observer_pending_units"), dict):
+                self.observer_pending_units = dict(state["observer_pending_units"])
             if self.finalized_height > 0:
                 for b in self.chain:
                     if b.index <= self.finalized_height:
