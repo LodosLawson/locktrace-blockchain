@@ -341,7 +341,33 @@ class Block:
         block_data = json.dumps(payload, sort_keys=True)
         return hashlib.sha256(block_data.encode()).hexdigest()
 
+    def _header_hash(self) -> str:
+        """Canonical v2 header-only SHA-256 hash (matches Block.mine(); merkle_root commits all transactions)."""
+        payload = {
+            "version": self.version,
+            "index": self.index,
+            "merkle_root": self.merkle_root,
+            "previous_hash": self.previous_hash,
+            "timestamp": self.timestamp,
+            "miner": self.miner,
+            "nonce": self.nonce,
+        }
+        return hashlib.sha256(json.dumps(payload, sort_keys=True).encode()).hexdigest()
+
     def calculate_hash(self, precomputed_tx_dicts: Optional[List[dict]] = None) -> str:
+        if self.version >= 2 and precomputed_tx_dicts is None:
+            h_header = self._header_hash()
+            if not getattr(self, "hash", "") or h_header == self.hash:
+                return h_header
+            # Backwards compatibility for historical v2 blocks (#0-#884) hashed with full transaction body
+            h_legacy = self._hash_payload([tx.to_dict() for tx in self.transactions])
+            if h_legacy == self.hash:
+                return h_legacy
+            if self._raw_tx_dicts:
+                h_raw = self._hash_payload(self._raw_tx_dicts)
+                if h_raw == self.hash:
+                    return h_raw
+            return h_header
         if precomputed_tx_dicts is not None:
             return self._hash_payload(precomputed_tx_dicts)
         h = self._hash_payload([tx.to_dict() for tx in self.transactions])
@@ -608,11 +634,17 @@ class Blockchain:
                     used_sigs.add(tx.signature.strip())
             return
 
+        is_sender_pays_transfer = (
+            ttype == "transfer" and isinstance(extra, dict) and extra.get("fee_mode") == "sender_pays"
+        )
+
         if rec:
             tx_counts[rec] = tx_counts.get(rec, 0) + 1
             if ttype == "reward":
                 rewarded.add(rec)
-            if ttype in net_credit_types:
+            if is_sender_pays_transfer:
+                units_map[rec] = units_map.get(rec, 0) + amt_u
+            elif ttype in net_credit_types:
                 units_map[rec] = units_map.get(rec, 0) + (amt_u - fee_u)
             elif ttype == "bns_transfer":
                 if rec == TREASURY_ADDRESS:
@@ -632,7 +664,10 @@ class Blockchain:
             else:
                 sender_nonces[snd] = sender_nonces.get(snd, 0) + 1
             tx_counts[snd] = tx_counts.get(snd, 0) + 1
-            units_map[snd] = units_map.get(snd, 0) - amt_u
+            if is_sender_pays_transfer:
+                units_map[snd] = units_map.get(snd, 0) - (amt_u + fee_u)
+            else:
+                units_map[snd] = units_map.get(snd, 0) - amt_u
 
         if extra:
             if ttype in ("space_like", "space_comment"):
@@ -979,25 +1014,25 @@ class Blockchain:
                     "created_at": time.time()
                 }
 
-            spendable_balance = self.verify_and_recalc_balance(clean_sender)
-            if spendable_balance < amount:
-                return (
-                    False,
-                    f"Insufficient spendable balance. Spendable (mempool-adjusted): {spendable_balance:.8f} BCT (attempted: {amount:.8f} BCT)",
-                    None
-                )
-
             # Bridge Vault L1->EVM deposits are exempt from the 1% L1 transfer fee because the bridge
             # protocol collects its 0.2% bridge fee directly inside BRIDGE_VAULT_ADDRESS, preserving the
             # strict 1:1 Proof-of-Reserve invariant (vault_credit >= wBCT_minted).
+            # Standard transfers use sender-pays fee model: receiver gets 100% of `amount`, sender pays `amount + fee`.
             if clean_receiver == BRIDGE_VAULT_ADDRESS:
                 fee = 0.0
             else:
-                # Calculate 1% fee returned to treasury (minimum min_fee BCT to prevent zero-fee dust spam)
                 fee = max(min_fee, round(amount * FEE_PERCENT, 8))
-                if amount <= fee:
-                    return False, f"Transfer amount must exceed the minimum network fee ({min_fee} BCT).", None
-            net_amount = round(amount - fee, 8)
+
+            total_required = round(amount + fee, 8)
+            spendable_balance = self.verify_and_recalc_balance(clean_sender)
+            if spendable_balance < total_required:
+                return (
+                    False,
+                    f"Insufficient spendable balance. Required: {total_required:.8f} BCT ({amount:.8f} BCT + {fee:.8f} BCT fee), available: {spendable_balance:.8f} BCT",
+                    None
+                )
+
+            net_amount = amount
 
             tx = Transaction(
                 sender=clean_sender,
@@ -1005,7 +1040,8 @@ class Blockchain:
                 amount=amount,
                 fee=fee,
                 signature=signature,
-                tx_type="transfer"
+                tx_type="transfer",
+                extra_data={"fee_mode": "sender_pays"}
             )
 
             admitted, adm_msg = self._admit_or_evict_mempool(tx)

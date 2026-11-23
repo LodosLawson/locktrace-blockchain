@@ -4724,10 +4724,14 @@
     if (!inp) return;
     const raw = String(inp.value || '').replace(',', '.').replace(/[^0-9.]/g, '');
     const amt = parseFloat(raw) || 0;
-    const fee = amt > 0 ? Math.max(0.001, Number((amt * 0.01).toFixed(8))) : 0;
-    const net = Math.max(0, Number((amt - fee).toFixed(8)));
-    if (netEl) netEl.textContent = (typeof window.formatBct === 'function' ? window.formatBct(net, 4) : net.toFixed(4)) + ' BCT';
-    if (feeEl) feeEl.textContent = (typeof window.formatBct === 'function' ? window.formatBct(fee, 4) : fee.toFixed(4)) + ' BCT';
+    const recEl = document.getElementById('simple-send-recipient');
+    const isBridgeVault = String(recEl?.value || '').trim().startsWith('BCT_BRIDGE_VAULT');
+    const fee = (amt > 0 && !isBridgeVault) ? Math.max(0.001, Number((amt * 0.01).toFixed(8))) : 0;
+    const net = Math.max(0, Number(amt.toFixed(8)));
+    const total = Number((amt + fee).toFixed(8));
+    const fmt = (val) => (typeof window.formatBct === 'function' ? window.formatBct(val, 4) : val.toFixed(4));
+    if (netEl) netEl.textContent = fmt(net) + ' BCT';
+    if (feeEl) feeEl.textContent = isBridgeVault ? '0.0000 BCT' : `${fmt(fee)} BCT (Total: ${fmt(total)} BCT)`;
   }
 
   const BlocTagSimpleMode = {

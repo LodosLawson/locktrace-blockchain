@@ -13526,14 +13526,21 @@
       inputEl.value = v;
 
       const amt = Number(v || 0);
-      const fee = amt > 0 ? Math.max(0.00000001, Number((amt * 0.01).toFixed(8))) : 0;
-      const netToReceiver = Math.max(0, Number((amt - fee).toFixed(8)));
+      const recInput = (document.getElementById('sendRecipientInput')?.value || '').trim();
+      const isBridgeVault = recInput.startsWith('BCT_BRIDGE_VAULT');
+      const fee = (amt > 0 && !isBridgeVault) ? Math.max(0.001, Number((amt * 0.01).toFixed(8))) : 0;
+      const netToReceiver = Math.max(0, Number(amt.toFixed(8)));
+      const totalFromWallet = Number((amt + fee).toFixed(8));
 
       const netEl = document.getElementById('sendNetPreview');
       const feeEl = document.getElementById('sendFeePreview');
 
       if (netEl) netEl.textContent = `${formatBct(netToReceiver, 4)} BCT`;
-      if (feeEl) feeEl.textContent = `${formatBct(fee, 4)} BCT (%1)`;
+      if (feeEl) {
+        feeEl.textContent = isBridgeVault
+          ? `0.00 BCT (Bridge Vault)`
+          : `${formatBct(fee, 4)} BCT (%1 · Total: ${formatBct(totalFromWallet, 4)} BCT)`;
+      }
     }
 
     function setSendPercent(pct) {
@@ -13544,8 +13551,16 @@
         showToast('Your available BCT balance is 0', 'warning', true);
         return;
       }
-      // 1% fee is deducted inside the transfer amount (receiver gets 99%), so full balance is sendable
-      const rawAmt = pct >= 1 ? Number(bal.toFixed(8)) : Math.floor(bal * pct * 1e6) / 1e6;
+      const recInput = (document.getElementById('sendRecipientInput')?.value || '').trim();
+      const isBridgeVault = recInput.startsWith('BCT_BRIDGE_VAULT');
+      // Sender-pays 1% fee: reserve 1% (min 0.001 BCT) in wallet so receiver gets 100% of entered amount
+      let maxSendable = bal;
+      if (!isBridgeVault) {
+        maxSendable = Math.max(0, Math.min(bal - 0.001, bal / 1.01));
+      }
+      const rawAmt = pct >= 1
+        ? Math.floor(maxSendable * 1e6) / 1e6
+        : Math.floor(maxSendable * pct * 1e6) / 1e6;
       inputEl.value = rawAmt > 0 ? String(rawAmt) : '0';
       sanitizeAndPreviewSendAmount(inputEl);
     }
