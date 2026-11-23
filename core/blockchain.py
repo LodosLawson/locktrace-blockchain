@@ -436,7 +436,7 @@ class Block:
             "attestations_count": att_cnt,
             "finalized": getattr(self, "finalized", False),
             "transaction_count": len(self.transactions),
-            "transactions": [tx.to_dict() for tx in self.transactions]
+            "transactions": self._raw_tx_dicts if self._raw_tx_dicts is not None else [tx.to_dict() for tx in self.transactions]
         }
         self._cached_dict = d
         return d

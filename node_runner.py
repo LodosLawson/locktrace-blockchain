@@ -2474,7 +2474,8 @@ class LockTraceNode:
         system_tx_types = {
             "genesis", "reward", "mining_reward", "validator_reward",
             "observer_reward", "attestation_reward", "bridge_unlock",
-            "bridge_vault_deposit", "validator_unstake", "frontend_release"
+            "bridge_vault_deposit", "validator_unstake", "frontend_release",
+            "fiat_buy", "treasury_buy", "faucet"
         }
         reward_total_u = 0
         fee_total_u = 0
@@ -2505,7 +2506,7 @@ class LockTraceNode:
                 reward_total_u += amt_u
             else:
                 fee_total_u += fee_u
-                if b_idx > 0 and ttype not in system_tx_types:
+                if b_idx >= 800 and ttype not in system_tx_types:
                     sig_hex = str(t.get("signature", "")).strip()
                     if sig_hex.lower().startswith("0x"):
                         sig_hex = sig_hex[2:]
