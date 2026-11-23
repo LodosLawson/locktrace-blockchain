@@ -3183,7 +3183,7 @@
         return content.includes(q) || author.includes(q) || bns.includes(q);
       }
       return true;
-    });
+    }).sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
 
     const myProfileForHeader = acc ? getSimpleProfileData(acc.address) : null;
     if (!myProfileForHeader && acc && acc.address) {
@@ -4626,7 +4626,7 @@
             return content.includes(q) || author.includes(q) || bns.includes(q);
           }
           return true;
-        });
+        }).sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
         if (reelContainer) {
           reelContainer.innerHTML = filteredPosts.length === 0 ? `
             <div class="h-full flex flex-col items-center justify-center p-8 text-center text-on-surface-variant">
@@ -4724,10 +4724,14 @@
     if (!inp) return;
     const raw = String(inp.value || '').replace(',', '.').replace(/[^0-9.]/g, '');
     const amt = parseFloat(raw) || 0;
-    const fee = amt > 0 ? Math.max(0.001, Number((amt * 0.01).toFixed(8))) : 0;
-    const net = Math.max(0, Number((amt - fee).toFixed(8)));
-    if (netEl) netEl.textContent = (typeof window.formatBct === 'function' ? window.formatBct(net, 4) : net.toFixed(4)) + ' BCT';
-    if (feeEl) feeEl.textContent = (typeof window.formatBct === 'function' ? window.formatBct(fee, 4) : fee.toFixed(4)) + ' BCT';
+    const recEl = document.getElementById('simple-send-recipient');
+    const isBridgeVault = String(recEl?.value || '').trim().startsWith('BCT_BRIDGE_VAULT');
+    const fee = (amt > 0 && !isBridgeVault) ? Math.max(0.001, Number((amt * 0.01).toFixed(8))) : 0;
+    const net = Math.max(0, Number(amt.toFixed(8)));
+    const total = Number((amt + fee).toFixed(8));
+    const fmt = (val) => (typeof window.formatBct === 'function' ? window.formatBct(val, 4) : val.toFixed(4));
+    if (netEl) netEl.textContent = fmt(net) + ' BCT';
+    if (feeEl) feeEl.textContent = isBridgeVault ? '0.0000 BCT' : `${fmt(fee)} BCT (Total: ${fmt(total)} BCT)`;
   }
 
   const BlocTagSimpleMode = {
@@ -5152,36 +5156,82 @@
       await window.BlocTagSimpleMode._fetchAvatarQuote();
     },
 
+    _avatarColorDebounceTimer: null,
+
+    previewAvatarColorInPlace: (hexColor) => {
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      let c = String(hexColor || '#FFFFFF').trim().toUpperCase();
+      if (!c.startsWith('#')) c = '#' + c;
+      if (!/^#[0-9A-F]{6}$/.test(c)) return;
+      st.selectedColor = c;
+      // Smooth 60fps in-place DOM update without destroying <input type="color"> (prevents mobile OS color-picker freeze)
+      const circle = document.getElementById('avatar-studio-preview-circle');
+      if (circle) circle.style.backgroundColor = c;
+      const hexLbl = document.getElementById('avatar-studio-hex-label');
+      if (hexLbl) hexLbl.textContent = c;
+      const hexInp = document.getElementById('avatar-studio-hex-input');
+      if (hexInp && document.activeElement !== hexInp) hexInp.value = c;
+      const vidLbl = document.getElementById('avatar-studio-variant-id');
+      if (vidLbl && st.selectedBaseId) vidLbl.textContent = `ID: ${st.selectedBaseId}-${c.slice(1)}`;
+    },
+
+    onAvatarCustomColorChange: (hexColor) => {
+      window.BlocTagSimpleMode.previewAvatarColorInPlace(hexColor);
+      if (window.BlocTagSimpleMode._avatarColorDebounceTimer) {
+        clearTimeout(window.BlocTagSimpleMode._avatarColorDebounceTimer);
+      }
+      window.BlocTagSimpleMode._avatarColorDebounceTimer = setTimeout(() => {
+        window.BlocTagSimpleMode._fetchAvatarQuote();
+      }, 280);
+    },
+
     selectAvatarColor: async (hexColor) => {
       const st = window.BlocTagSimpleMode._avatarStudioState;
       let c = String(hexColor || '#FFFFFF').trim().toUpperCase();
       if (!c.startsWith('#')) c = '#' + c;
       if (!/^#[0-9A-F]{6}$/.test(c)) return;
       st.selectedColor = c;
-      window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      window.BlocTagSimpleMode.previewAvatarColorInPlace(c);
       await window.BlocTagSimpleMode._fetchAvatarQuote();
     },
 
     _fetchAvatarQuote: async () => {
       const acc = getActiveWallet();
       const st = window.BlocTagSimpleMode._avatarStudioState;
+      const reqColor = st.selectedColor;
+      const reqBase = st.selectedBaseId;
       st.loadingQuote = true;
-      window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      const statusEl = document.getElementById('avatar-studio-price-status');
+      const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+      if (statusEl) statusEl.textContent = isTr ? 'Fiyat hesaplanıyor...' : 'Calculating live price...';
       try {
-        const qUrl = '/avatars/price?base_id=' + encodeURIComponent(st.selectedBaseId)
-          + '&bg_color=' + encodeURIComponent(st.selectedColor)
+        const qUrl = '/avatars/price?base_id=' + encodeURIComponent(reqBase)
+          + '&bg_color=' + encodeURIComponent(reqColor)
           + (acc && acc.address ? '&address=' + encodeURIComponent(acc.address) : '');
         const res = (typeof window.apiFetch === 'function')
           ? await window.apiFetch(qUrl)
           : await fetch('/api/v1' + qUrl).then(r => r.json().then(b => ({ ok: r.ok, body: b })));
+        if (st.selectedColor !== reqColor || st.selectedBaseId !== reqBase) return;
         if (res.ok && res.body && res.body.data) {
           st.quote = res.body.data;
         }
       } catch (err) {
         console.error('Avatar quote error:', err);
       } finally {
-        st.loadingQuote = false;
-        window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+        if (st.selectedColor === reqColor && st.selectedBaseId === reqBase) {
+          st.loadingQuote = false;
+          // Only full-re-render if native color picker is NOT focused (prevents mobile picker dismissal/stutter)
+          const activeEl = document.activeElement;
+          const isPickerOpen = activeEl && (activeEl.id === 'avatar-studio-color-picker' || activeEl.id === 'avatar-studio-hex-input');
+          if (!isPickerOpen) {
+            window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+          } else if (st.quote && statusEl) {
+            const mc = Number(st.quote.mint_count || 0);
+            statusEl.textContent = mc === 0
+              ? (isTr ? '✨ Yeni renk ID! Açılış fiyatı: 0.10 BCT' : '✨ Fresh Variant ID! Opens at 0.10 BCT')
+              : (isTr ? `🔥 ${mc} kez alındı (+%25)` : `🔥 ${mc} minted (+25% curve)`);
+          }
+        }
       }
     },
 
@@ -5523,7 +5573,7 @@
                         variant_id: liveVariantId
                       });
                       return `
-                        <div class="w-24 h-24 rounded-full overflow-hidden shrink-0 shadow-xl ring-4 ring-surface cursor-pointer hover:scale-105 transition-transform relative group"
+                        <div id="avatar-studio-preview-circle" class="w-24 h-24 rounded-full overflow-hidden shrink-0 shadow-xl ring-4 ring-surface cursor-pointer hover:scale-105 transition-transform relative group"
                              style="background-color:${st.selectedColor};"
                              title="${isTr ? 'Büyütmek için dokun' : 'Tap to enlarge'}"
                              onclick="window.BlocTagSimpleMode.openAvatarLightboxByKey('${prevZoomKey}', false)">
@@ -5540,9 +5590,9 @@
                         <span class="px-2 py-0.5 rounded-full bg-surface-container text-[10px] font-mono text-on-surface-variant">${esc(selectedItem.base_id)}</span>
                       </div>
                       <div class="flex items-center gap-1.5">
-                        <span class="text-[10.5px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">ID: ${esc(liveVariantId)}</span>
+                        <span id="avatar-studio-variant-id" class="text-[10.5px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">ID: ${esc(liveVariantId)}</span>
                       </div>
-                      <div class="text-[11px] ${mintCount === 0 ? 'text-primary' : 'text-amber-400'} font-medium">
+                      <div id="avatar-studio-price-status" class="text-[11px] ${mintCount === 0 ? 'text-primary' : 'text-amber-400'} font-medium">
                         ${st.loadingQuote ? (isTr ? 'Fiyat hesaplanıyor...' : 'Calculating live price...') : (
                           mintCount === 0
                             ? (isTr ? '✨ Yeni renk ID! Açılış fiyatı: 0.10 BCT' : '✨ Fresh Variant ID! Opens at 0.10 BCT')
@@ -5556,9 +5606,17 @@
 
                   <!-- Background Color Selector -->
                   <div class="space-y-2">
-                    <div class="flex items-center justify-between">
+                    <div class="flex items-center justify-between gap-2">
                       <span class="text-[11px] font-semibold text-on-surface-variant">${isTr ? 'Arka Plan Rengi (Yeni ID & Fiyat)' : 'Background Color (Creates Unique ID)'}</span>
-                      <span class="text-[10.5px] font-mono text-primary">${st.selectedColor}</span>
+                      <div class="flex items-center gap-1.5">
+                        <input id="avatar-studio-hex-input" type="text" maxlength="7" value="${st.selectedColor}"
+                          oninput="window.BlocTagSimpleMode.previewAvatarColorInPlace(this.value)"
+                          onchange="window.BlocTagSimpleMode.onAvatarCustomColorChange(this.value)"
+                          onblur="window.BlocTagSimpleMode._renderAvatarStudioModal(false)"
+                          class="w-[74px] h-6 px-1.5 rounded-md bg-surface-container border border-outline-variant/25 font-mono text-[10.5px] text-primary text-center uppercase outline-none focus:border-primary"
+                          aria-label="Custom Hex Color" />
+                        <span id="avatar-studio-hex-label" class="hidden">${st.selectedColor}</span>
+                      </div>
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
                       ${curatedColors.map(c => {
@@ -5570,12 +5628,14 @@
                             style="background-color:${c.hex};"></button>
                         `;
                       }).join('')}
-                      <!-- Custom Any-Color Picker -->
+                      <!-- Custom Any-Color Picker (60fps mobile-safe: in-place preview on drag, debounced quote on commit) -->
                       <label title="${isTr ? 'Özel Renk Seç' : 'Pick Custom Hex Color'}"
                         class="w-7 h-7 rounded-full bg-gradient-to-tr from-rose-500 via-amber-400 to-emerald-400 flex items-center justify-center cursor-pointer ring-1 ring-outline-variant/40 hover:scale-105 transition-transform relative overflow-hidden">
                         <span class="material-symbols-outlined notranslate text-[14px] text-white drop-shadow" translate="no">colorize</span>
-                        <input type="color" value="${st.selectedColor}"
-                          onchange="window.BlocTagSimpleMode.selectAvatarColor(this.value)"
+                        <input id="avatar-studio-color-picker" type="color" value="${st.selectedColor}"
+                          oninput="window.BlocTagSimpleMode.previewAvatarColorInPlace(this.value)"
+                          onchange="window.BlocTagSimpleMode.onAvatarCustomColorChange(this.value)"
+                          onblur="window.BlocTagSimpleMode._renderAvatarStudioModal(false)"
                           class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
                       </label>
                     </div>
