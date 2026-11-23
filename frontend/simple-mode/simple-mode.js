@@ -2774,9 +2774,9 @@
     const authorAvatarHtml = renderAvatarCircleHtml(post.author_avatar, avatarChar);
 
     return `
-      <section class="simple-reel-slide w-full h-full min-h-full max-h-full snap-start snap-always flex flex-col items-center justify-center p-3 relative shrink-0 select-none" data-post-index="${index}">
-        <!-- Centered Card (Fixed Viewport • Single Post Focus) -->
-        <article class="w-full max-w-[430px] rounded-3xl bg-surface-container-low border border-outline-variant/15 shadow-2xl p-5 flex flex-col justify-between relative h-[86%] max-h-[540px] overflow-hidden"
+      <section class="simple-reel-slide w-full h-full min-h-full max-h-full snap-start snap-always flex flex-col items-center justify-center px-3 pt-2.5 pb-[76px] relative shrink-0 select-none" data-post-index="${index}">
+        <!-- Centered Card (Fixed Viewport • Safe Clearance Above Floating Compose Button) -->
+        <article class="w-full max-w-[430px] flex-1 max-h-[500px] rounded-3xl bg-surface-container-low border border-outline-variant/15 shadow-2xl p-5 flex flex-col justify-between relative overflow-hidden"
                  onclick="window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: '${pid}' })">
 
           <!-- Top Author Cluster -->
@@ -2978,10 +2978,10 @@
           </div>
 
           <!-- Floating Action Button (+ Post Compose) -->
-          <div class="fixed z-40" style="bottom: calc(var(--simple-bottom-nav-h, 64px) + 14px); right: max(16px, calc(50% - 224px));">
+          <div class="fixed z-40" style="bottom: calc(var(--simple-bottom-nav-h, 64px) + 12px); right: max(16px, calc(50% - 224px));">
             <button type="button" onclick="window.BlocTagSimpleMode.focusComposer()"
-              class="h-11 px-4 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center gap-1.5 shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">edit</span>
+              class="h-10 px-4 rounded-full bg-primary text-on-primary text-xs font-semibold flex items-center gap-1.5 shadow-[0_8px_20px_rgba(16,185,129,0.35)] hover:scale-105 active:scale-95 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[17px]" translate="no">edit</span>
               <span>${t('space_compose_fab', 'Post')}</span>
             </button>
           </div>
