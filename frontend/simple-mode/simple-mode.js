@@ -3183,7 +3183,7 @@
         return content.includes(q) || author.includes(q) || bns.includes(q);
       }
       return true;
-    });
+    }).sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
 
     const myProfileForHeader = acc ? getSimpleProfileData(acc.address) : null;
     if (!myProfileForHeader && acc && acc.address) {
@@ -4626,7 +4626,7 @@
             return content.includes(q) || author.includes(q) || bns.includes(q);
           }
           return true;
-        });
+        }).sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
         if (reelContainer) {
           reelContainer.innerHTML = filteredPosts.length === 0 ? `
             <div class="h-full flex flex-col items-center justify-center p-8 text-center text-on-surface-variant">

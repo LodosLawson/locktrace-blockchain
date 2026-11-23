@@ -7395,7 +7395,7 @@
   <!-- ========================================================================= -->
   <div
     class="fixed inset-0 z-[80] bg-background/85 backdrop-blur-sm hidden items-end sm:items-center justify-center transition-all opacity-0"
-    id="mobileMenuModal" onclick="if(event.target===this) closeMobileMenuModal();">
+    id="mobileMenuModal" onclick="if(event.target===this && Date.now() >= Number(this.dataset.openGuardUntil||0)) closeMobileMenuModal();">
     <div
       class="w-full max-w-lg bg-surface-container rounded-t-3xl sm:rounded-3xl border border-outline-variant/20 p-5 pb-safe flex flex-col gap-4 shadow-2xl max-h-[85dvh] overflow-y-auto overscroll-contain no-scrollbar transform translate-y-full sm:translate-y-0 transition-transform duration-200"
       id="mobileMenuDrawerCard">
@@ -13409,6 +13409,14 @@
         }
       }
       if (!modal || !card) return;
+      // 1-second touch/click guard so rapid double-taps opening the menu never accidentally trigger a menu item
+      if (window._mobileMenuGuardTimer) clearTimeout(window._mobileMenuGuardTimer);
+      modal.dataset.openGuardUntil = String(Date.now() + 1000);
+      card.style.pointerEvents = 'none';
+      window._mobileMenuGuardTimer = setTimeout(() => {
+        card.style.pointerEvents = '';
+        window._mobileMenuGuardTimer = null;
+      }, 1000);
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       card.style.transform = '';
@@ -13424,6 +13432,11 @@
       const modal = document.getElementById('mobileMenuModal');
       const card = document.getElementById('mobileMenuDrawerCard');
       if (!modal || !card) return;
+      if (window._mobileMenuGuardTimer) {
+        clearTimeout(window._mobileMenuGuardTimer);
+        window._mobileMenuGuardTimer = null;
+      }
+      card.style.pointerEvents = '';
       modal.classList.add('opacity-0');
       card.classList.add('translate-y-full');
       setTimeout(() => {

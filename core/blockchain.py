@@ -1626,14 +1626,13 @@ class Blockchain:
 
             now_sec = time.time()
             if feed_type == "for_you":
-                # Time-Decay Gravity scoring with discovery jitter
+                # Time-Decay Gravity scoring (strict recency + real engagement, no large static MD5 jitter)
                 def _calc_for_you_score(p):
                     age_h = max(0.05, (now_sec - float(p.get("timestamp", now_sec))) / 3600.0)
                     likes = len(p.get("likes", [])) if isinstance(p.get("likes"), list) else int(p.get("likes_count", 0))
                     comments = len(p.get("comments", [])) if isinstance(p.get("comments"), list) else int(p.get("comments_count", 0))
                     eng = (likes * 2) + (comments * 3) + 1.0
-                    jitter = (int(hashlib.md5(str(p.get("post_id", "")).encode()).hexdigest()[:4], 16) % 5) * 0.15
-                    return (eng / ((age_h + 1.5) ** 1.25)) + jitter
+                    return (eng / ((age_h + 1.5) ** 1.25)), float(p.get("timestamp", 0))
 
                 feed.sort(key=_calc_for_you_score, reverse=True)
             elif feed_type == "trending":
