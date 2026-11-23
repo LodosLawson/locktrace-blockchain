@@ -4977,10 +4977,7 @@ class Blockchain:
                     return False
                 dt = cur_ts - prev_ts
                 req_diff = self.difficulty
-                if dt > (TARGET_BLOCK_TIME * 6.0):
-                    stall_drop = int((dt - (TARGET_BLOCK_TIME * 6.0)) // 60.0) + 1
-                    req_diff = max(1, self.difficulty - stall_drop)
-                elif i >= LWMA_WINDOW:
+                if i >= LWMA_WINDOW:
                     recent = self.chain[i - LWMA_WINDOW:i]
                     time_diffs = [
                         max(0.1, min(float(recent[k].timestamp) - float(recent[k - 1].timestamp), TARGET_BLOCK_TIME * 6.0))
@@ -4990,8 +4987,11 @@ class Blockchain:
                         w_sum = sum((idx + 1) * d for idx, d in enumerate(time_diffs))
                         w_tot = sum(idx + 1 for idx in range(len(time_diffs)))
                         avg_solve = w_sum / max(1.0, w_tot)
-                        if avg_solve > (TARGET_BLOCK_TIME * 1.8) and self.difficulty > 2:
-                            req_diff = max(2, self.difficulty - 1)
+                        if avg_solve > (TARGET_BLOCK_TIME * 1.8) and req_diff > 2:
+                            req_diff = max(2, req_diff - 1)
+                if dt > (TARGET_BLOCK_TIME * 6.0):
+                    stall_drop = int((dt - (TARGET_BLOCK_TIME * 6.0)) // 60.0) + 1
+                    req_diff = max(1, req_diff - stall_drop)
                 req_target = "0" * max(1, req_diff)
                 if not current.hash.startswith(req_target):
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
