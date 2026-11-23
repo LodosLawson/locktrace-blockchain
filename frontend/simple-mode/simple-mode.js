@@ -578,6 +578,10 @@
       no_users_found_desc: 'Aradığınız kriterlere uygun kullanıcı bulunamadı. Filtreleri sıfırlayabilirsiniz.',
       search_users_placeholder: 'Kullanıcı adı veya cüzdan ara...',
       user_self_tag: 'Sen',
+      followers_empty_title: 'Henüz takipçi yok',
+      followers_empty_desc: 'Space üzerinde düşüncelerinizi paylaşarak zincir üstü takipçi kitlenizi oluşturun.',
+      following_empty_title: 'Henüz kimse takip edilmiyor',
+      following_empty_desc: 'Space akışındaki üreticileri keşfedip takip ederek gönderilerini kaçırmayın.',
       notif_new_badge: 'yeni',
       notif_mark_all: 'Okundu Say',
       notif_all: 'Tümü',
@@ -3106,12 +3110,14 @@
 
             <!-- Handle & Status Badge -->
             <div class="flex items-center gap-2 mt-1.5 flex-wrap">
-              <button type="button" onclick="if(typeof copyText==='function') copyText('${escAttr(resolvedBns ? ('@' + resolvedBns.replace(/^@/, '')) : resolvedAddress)}', 'Identity copied!');"
-                class="group flex items-center gap-1 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
-                <span class="text-xs text-primary font-mono font-medium">${esc(resolvedBns ? '@' + resolvedBns.replace(/^@/, '') : shortWallet)}</span>
-                <span class="material-symbols-outlined notranslate text-[14px] text-outline group-hover:text-primary" translate="no">content_copy</span>
-              </button>
-              <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+              ${resolvedBns ? `
+                <button type="button" onclick="if(typeof copyText==='function') copyText('@${escAttr(resolvedBns.replace(/^@/, ''))}', 'Identity copied!');"
+                  class="group flex items-center gap-1 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer">
+                  <span class="text-xs text-primary font-mono font-medium">@${esc(resolvedBns.replace(/^@/, ''))}</span>
+                  <span class="material-symbols-outlined notranslate text-[14px] text-outline group-hover:text-primary" translate="no">content_copy</span>
+                </button>
+                <span class="w-1 h-1 rounded-full bg-outline-variant"></span>
+              ` : ''}
               <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-surface-container text-primary text-[10.5px] font-medium">
                 <span class="w-1.5 h-1.5 rounded-full bg-primary"></span>
                 <span>${t('space_active_l1', 'Active L1')}</span>
@@ -3251,7 +3257,7 @@
     const currentFilter = simpleState.followFilter || 'all';
     const searchQuery = String(simpleState.followSearch || '').trim().toLowerCase();
 
-    // 1. Check live profile data
+    // 1. Get Live Profile Data strictly from on-chain state (NO mock/curated data)
     let pData = null;
     if (typeof window.currentProfileData !== 'undefined' && window.currentProfileData &&
       String(window.currentProfileData.address || '').toLowerCase() === targetAddr.toLowerCase()) {
@@ -3261,129 +3267,27 @@
     const liveFollowers = (pData && Array.isArray(pData.followers)) ? pData.followers : [];
     const liveFollowing = (pData && Array.isArray(pData.following)) ? pData.following : [];
 
-    // Fallback/Curated accounts matching Stitch "Modern Crypto Wallet App"
-    const curatedFollowers = [
-      {
-        address: 'BCT71829a8f2c3104e76b4d5a9c0e2f1837461a',
-        bns_name: 'kullanici_1',
-        display_name: 'Kullanıcı 1',
-        bio: 'Web3 & sade arayüz meraklısı',
-        is_verified: false,
-        is_validator: false,
-        follows_you: true,
-        is_following: false
-      },
-      {
-        address: 'BCT1d48c0892f3984e76a10bc39e12847a982',
-        bns_name: 'vitalik_eth',
-        display_name: 'Kullanıcı 2',
-        bio: 'L2 araştırmacısı',
-        is_verified: true,
-        is_validator: true,
-        follows_you: false,
-        is_following: true
-      },
-      {
-        address: 'BCT5903b4172f89a3c0e1847192a839d01248',
-        bns_name: 'deniz.tag',
-        display_name: 'Kullanıcı 3',
-        bio: 'BlocTag geliştiricisi',
-        is_verified: true,
-        is_validator: false,
-        follows_you: true,
-        is_following: false
-      },
-      {
-        address: 'BCT93847a02b1c839d4e5f0a129384756c01',
-        bns_name: 'merve.lens',
-        display_name: 'Kullanıcı 4',
-        bio: 'Minimalist tasarımcı',
-        is_verified: false,
-        is_validator: false,
-        follows_you: false,
-        is_following: true
-      },
-      {
-        address: 'BCT3049581a0e9f82b7c4d5a109283746e5b',
-        bns_name: 'selin_dev',
-        display_name: 'Kullanıcı 5',
-        bio: 'Akıllı sözleşmeler & DeFi',
-        is_verified: true,
-        is_validator: true,
-        follows_you: true,
-        is_following: false
-      }
-    ];
-
-    const curatedFollowing = [
-      {
-        address: 'BCT1d48c0892f3984e76a10bc39e12847a982',
-        bns_name: 'kullanici_2',
-        display_name: 'Kullanıcı 2',
-        bio: 'Web3 ve sade tasarım kılavuzları yazarı',
-        is_verified: true,
-        is_validator: true,
-        follows_you: true,
-        is_following: true
-      },
-      {
-        address: 'BCT93847a02b1c839d4e5f0a129384756c01',
-        bns_name: 'kullanici_4',
-        display_name: 'Kullanıcı 4',
-        bio: 'L2 ve gizlilik protokolleri',
-        is_verified: false,
-        is_validator: false,
-        follows_you: true,
-        is_following: true
-      },
-      {
-        address: 'BCT3049581a0e9f82b7c4d5a109283746e5b',
-        bns_name: 'kullanici_dev',
-        display_name: 'Kullanıcı 5',
-        bio: 'Açık kaynak blokzincir araçları',
-        is_verified: true,
-        is_validator: true,
-        follows_you: false,
-        is_following: true
-      },
-      {
-        address: 'BCT8291048572019a84b72c9103e48102938',
-        bns_name: 'aether_vault',
-        display_name: 'Kullanıcı 6',
-        bio: 'Kendi kendine velayet & güvenlik',
-        is_verified: false,
-        is_validator: false,
-        follows_you: true,
-        is_following: true
-      },
-      {
-        address: 'BCT049182740192837461029384710293847',
-        bns_name: 'space_core',
-        display_name: 'Kullanıcı 7',
-        bio: 'Merkeziyetsiz topluluk protokolü',
-        is_verified: true,
-        is_validator: true,
-        follows_you: false,
-        is_following: true
-      }
-    ];
-
     function normalizeUser(item, defaultType) {
-      const addr = String(item.address || '').trim();
-      const bns = String(item.bns_name || '').replace(/^@/, '');
-      const dName = item.display_name || (bns ? ('@' + bns) : (typeof window.shortAddr === 'function' ? window.shortAddr(addr) : addr));
-      const myAddr = acc ? acc.address.toLowerCase() : '';
-      const isSelf = myAddr && addr.toLowerCase() === myAddr;
-      const isFollowing = (defaultType === 'following') || Boolean(item.is_following);
-      const followsYou = (defaultType === 'followers') || Boolean(item.follows_you);
-      const isMutual = isFollowing && followsYou;
+      const addr = typeof item === 'string' ? item.trim() : String(item.address || '').trim();
+      const bns = typeof item === 'object' ? String(item.bns_name || '').replace(/^@/, '') : '';
+      const dName = (typeof item === 'object' && item.display_name)
+        ? item.display_name
+        : (bns ? ('@' + bns) : (typeof window.shortAddr === 'function' ? window.shortAddr(addr) : addr));
+      const myAddr = acc ? String(acc.address || '').toLowerCase() : '';
+      const isSelf = Boolean(myAddr && addr.toLowerCase() === myAddr);
+
+      // Check if current user is following this person:
+      const isFollowing = (defaultType === 'following') || (liveFollowing.some(f => (typeof f === 'string' ? f : (f && f.address ? f.address : '')).toLowerCase() === addr.toLowerCase()));
+      const followsYou = (defaultType === 'followers') || (liveFollowers.some(f => (typeof f === 'string' ? f : (f && f.address ? f.address : '')).toLowerCase() === addr.toLowerCase()));
+      const isMutual = Boolean(isFollowing && followsYou);
+
       return {
         address: addr,
         bns_name: bns,
         display_name: dName,
-        bio: item.bio || (item.is_validator ? 'Active Verified Validator Node' : 'LockTrace Community Member'),
-        is_verified: Boolean(item.is_verified || item.is_validator),
-        is_validator: Boolean(item.is_validator),
+        bio: (typeof item === 'object' && item.bio) ? item.bio : ((typeof item === 'object' && item.is_validator) ? 'Verified Validator Node' : 'BlocTag On-Chain Account'),
+        is_verified: Boolean(typeof item === 'object' && (item.is_verified || item.is_validator)),
+        is_validator: Boolean(typeof item === 'object' && item.is_validator),
         is_self: isSelf,
         is_following: isFollowing,
         follows_you: followsYou,
@@ -3391,13 +3295,8 @@
       };
     }
 
-    const followersList = (liveFollowers.length > 0)
-      ? liveFollowers.map(u => normalizeUser(u, 'followers'))
-      : curatedFollowers.map(u => normalizeUser(u, 'followers'));
-
-    const followingList = (liveFollowing.length > 0)
-      ? liveFollowing.map(u => normalizeUser(u, 'following'))
-      : curatedFollowing.map(u => normalizeUser(u, 'following'));
+    const followersList = liveFollowers.map(u => normalizeUser(u, 'followers'));
+    const followingList = liveFollowing.map(u => normalizeUser(u, 'following'));
 
     const activeList = currentTab === 'followers' ? followersList : followingList;
     const mutualCount = activeList.filter(u => u.is_mutual).length;
@@ -3413,8 +3312,10 @@
       return true;
     });
 
+    const pageTitle = currentTab === 'following' ? t('profile_stat_following', 'Following') : t('profile_stat_followers', 'Followers');
+
     return `
-      ${renderTopBar(t('connections_title', 'Connected Accounts'), true)}
+      ${renderTopBar(pageTitle, true)}
       <main class="flex-1 flex flex-col w-full px-5 pt-3 pb-24 simple-screen-animate">
         <!-- Dynamic Stats & Network Sub-Bar (Stitch Modern Crypto Wallet App) -->
         <div class="flex items-center justify-between py-1.5">
@@ -3424,23 +3325,23 @@
               <span>${t('live_network_community', 'Live Network • Community')}</span>
             </span>
             <span class="px-2 py-0.5 rounded-full bg-primary/10 text-primary font-label-md text-[11px] font-mono">
-              +18 today
+              ${activeList.length} ${pageTitle}
             </span>
           </div>
           <span class="text-[11px] font-mono text-outline">${activeList.length} total</span>
         </div>
 
-        <!-- Segmented Control Pill Bar (Exact Stitch Design) -->
+        <!-- Segmented Control Pill Bar (Interactive Stitch Tab Switching) -->
         <div class="w-full p-1 rounded-full bg-surface-container-lowest flex items-center gap-1 mt-2.5 border border-outline-variant/15 shadow-sm">
           <button type="button" onclick="window.BlocTagSimpleMode.setFollowTab('followers')"
-            class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full transition-all duration-200 cursor-pointer ${currentTab === 'followers' ? 'bg-surface-container-high text-on-surface shadow-xs font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="text-xs ${currentTab === 'followers' ? 'text-primary' : ''}">${t('profile_stat_followers', 'Followers')}</span>
-            <span class="px-2 py-0.5 rounded-full ${currentTab === 'followers' ? 'bg-primary/15 text-primary' : 'bg-surface-container text-on-surface-variant'} text-[10px] font-mono">${followersList.length}</span>
+            class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full transition-all duration-200 cursor-pointer ${currentTab === 'followers' ? 'bg-surface-container-high text-primary font-bold shadow-xs' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="text-xs ${currentTab === 'followers' ? 'text-primary font-bold' : ''}">${t('profile_stat_followers', 'Followers')}</span>
+            <span class="px-2 py-0.5 rounded-full ${currentTab === 'followers' ? 'bg-primary/15 text-primary font-bold' : 'bg-surface-container text-on-surface-variant'} text-[10px] font-mono">${followersList.length}</span>
           </button>
           <button type="button" onclick="window.BlocTagSimpleMode.setFollowTab('following')"
-            class="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-full transition-all duration-200 cursor-pointer ${currentTab === 'following' ? 'bg-surface-container-high text-on-surface shadow-xs font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="text-xs ${currentTab === 'following' ? 'text-primary' : ''}">${t('profile_stat_following', 'Following')}</span>
-            <span class="px-2 py-0.5 rounded-full ${currentTab === 'following' ? 'bg-primary/15 text-primary' : 'bg-surface-container text-on-surface-variant'} text-[10px] font-mono">${followingList.length}</span>
+            class="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-full transition-all duration-200 cursor-pointer ${currentTab === 'following' ? 'bg-surface-container-high text-primary font-bold shadow-xs' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="text-xs ${currentTab === 'following' ? 'text-primary font-bold' : ''}">${t('profile_stat_following', 'Following')}</span>
+            <span class="px-2 py-0.5 rounded-full ${currentTab === 'following' ? 'bg-primary/15 text-primary font-bold' : 'bg-surface-container text-on-surface-variant'} text-[10px] font-mono">${followingList.length}</span>
           </button>
         </div>
 
@@ -3486,20 +3387,33 @@
         <!-- Users Stream Container -->
         <div class="flex flex-col gap-2 mt-2">
           ${filteredList.length === 0 ? `
-            <div class="flex flex-col items-center justify-center py-14 px-4 text-center">
+            <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
               <div class="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center mb-3">
-                <span class="material-symbols-outlined notranslate text-outline text-[28px]" translate="no">person_search</span>
+                <span class="material-symbols-outlined notranslate text-outline text-[28px]" translate="no">
+                  ${searchQuery ? 'person_search' : (currentTab === 'following' ? 'person_add' : 'group')}
+                </span>
               </div>
-              <span class="font-headline-sm text-sm font-semibold text-on-surface">${t('no_users_found', 'No users found')}</span>
-              <p class="text-xs text-on-surface-variant mt-1 max-w-xs leading-relaxed">
-                ${t('no_users_found_desc', 'No users matching your search criteria. You can reset filters.')}
+              <span class="font-headline-sm text-sm font-semibold text-on-surface">
+                ${searchQuery
+                  ? t('no_users_found', 'No users found')
+                  : (currentTab === 'following' ? t('following_empty_title', 'Not following anyone yet') : t('followers_empty_title', 'No followers yet'))}
+              </span>
+              <p class="text-xs text-on-surface-variant mt-1.5 max-w-xs leading-relaxed">
+                ${searchQuery
+                  ? t('no_users_found_desc', 'No users matching your search criteria. You can reset filters.')
+                  : (currentTab === 'following' ? t('following_empty_desc', 'Explore creators on Space and follow them to see their latest updates.') : t('followers_empty_desc', 'Share your thoughts on Space to build your on-chain audience.'))}
               </p>
-              ${(searchQuery || currentFilter !== 'all') ? `
+              ${searchQuery ? `
                 <button type="button" onclick="window.BlocTagSimpleMode.clearFollowSearch(); window.BlocTagSimpleMode.setFollowFilter('all');"
                   class="mt-3 px-3.5 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-variant text-primary text-xs font-semibold transition-all cursor-pointer">
                   Reset
                 </button>
-              ` : ''}
+              ` : `
+                <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
+                  class="mt-4 px-4 py-2 rounded-full bg-primary text-on-primary text-xs font-semibold shadow-xs active:scale-95 transition-all cursor-pointer">
+                  ${t('nav_space', 'Go to Space')}
+                </button>
+              `}
             </div>
           ` : filteredList.map(u => `
             <div class="flex items-center justify-between p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container transition-colors group">
@@ -3851,6 +3765,9 @@
     if (simpleState.activeScreen === 'SCR-WLT-HOME') {
       const txSig = txs.slice(0, 20).map(t => `${t.tx_hash || t.hash}:${t.status || ''}`).join(',');
       return `WLTHOME|${addr}|${bal}|${nonce}|${hidden}|${simpleState.txFilter}|${txSig}|${unread}`;
+    }
+    if (simpleState.activeScreen === 'SCR-PRF-FOLLOW' || simpleState.activeScreen === 'SCR-PRF-FOLLOWERS' || simpleState.activeScreen === 'SCR-PRF-FOLLOWING') {
+      return `PRFFOLLOW|${addr}|${simpleState.followTargetAddr}|${simpleState.followTab}|${simpleState.followFilter}|${simpleState.followSearch}|${unread}`;
     }
     return `${simpleState.activeScreen}|${addr}|${bal}|${nonce}|${hidden}|${unread}|${simpleState.profileTarget}|${simpleState.profileTab}|${simpleState.notifFilter}|${simpleState.importModeOpen}|${simpleState.seedSavedConfirmed}`;
   }
@@ -4384,17 +4301,21 @@
       simpleState.followTab = (type === 'following') ? 'following' : 'followers';
       simpleState.followFilter = 'all';
       simpleState.followSearch = '';
+      _lastRenderedFingerprint = '';
       navigateToSimpleScreen('SCR-PRF-FOLLOW', { profileTarget: target, followTab: simpleState.followTab });
     },
 
     setFollowTab: (tab) => {
       simpleState.followTab = (tab === 'following') ? 'following' : 'followers';
-      renderSimpleMode(false);
+      simpleState.followSearch = '';
+      _lastRenderedFingerprint = '';
+      renderSimpleMode(true);
     },
 
     setFollowFilter: (f) => {
       simpleState.followFilter = f || 'all';
-      renderSimpleMode(false);
+      _lastRenderedFingerprint = '';
+      renderSimpleMode(true);
     },
 
     onFollowSearchInput: (val) => {
@@ -4404,7 +4325,8 @@
 
     clearFollowSearch: () => {
       simpleState.followSearch = '';
-      renderSimpleMode(false);
+      _lastRenderedFingerprint = '';
+      renderSimpleMode(true);
     },
 
     setNotifFilter: (f) => {

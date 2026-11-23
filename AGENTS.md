@@ -24,3 +24,9 @@ Whenever significant updates, security fixes, whitepaper revisions, or version b
 
 3. **Production Deployment:**
    - Run `python scripts/fast_deploy.py` to deploy hardened code to the VPS host (`https://locktrace.space`).
+
+4. **No Stitch Sample/Mock Data Policy:**
+   - Stitch templates default to sample/mock data (e.g. `Kullanıcı 1`, `vitalik_eth`, fake followers, fake counts).
+   - NEVER include hardcoded sample/mock data from Stitch in production code.
+   - Always connect real on-chain ledger/API data (`currentProfileData.followers`, `currentProfileData.following`, real balances and counts).
+   - If no on-chain data exists yet, always display a clean, contextual empty state.
