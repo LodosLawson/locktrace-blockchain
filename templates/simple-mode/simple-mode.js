@@ -2713,6 +2713,9 @@
           </button>
         </div>
 
+        <!-- On-Chain Soulbound Avatars Announcement Banner (Simple Mode) -->
+        ${renderSimpleAvatarShowcaseBanner()}
+
         <!-- İşlem Geçmişi Section -->
         <div class="flex flex-col w-full">
           <div class="flex items-center justify-between mb-3">
@@ -2980,6 +2983,54 @@
     // 4. Force immediate zero-flicker Simple Mode re-render
     _lastRenderedFingerprint = '';
     if (simpleState.enabled) renderSimpleMode(false);
+  }
+
+  function renderSimpleAvatarShowcaseBanner() {
+    const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+    const showcaseItems = [
+      { id: 'ANM-001', img: '/avatars/animals/octopus.png', bg: '#14B8A6', name: isTr ? 'Ahtapot' : 'Octopus' },
+      { id: 'ANM-002', img: '/avatars/animals/bee.png', bg: '#FDE68A', name: isTr ? 'Arı' : 'Bee' },
+      { id: 'ANM-003', img: '/avatars/animals/flamingo.png', bg: '#FECDD3', name: 'Flamingo' },
+      { id: 'ANM-007', img: '/avatars/animals/eagle.png', bg: '#3B82F6', name: isTr ? 'Kartal' : 'Eagle' },
+      { id: 'ANM-010', img: '/avatars/animals/shark.png', bg: '#0F172A', name: isTr ? 'Köpekbalığı' : 'Shark' },
+      { id: 'ANM-009', img: '/avatars/animals/raccoon.png', bg: '#8B5CF6', name: isTr ? 'Rakun' : 'Raccoon' },
+      { id: 'ANM-012', img: '/avatars/animals/zebra.png', bg: '#FFFFFF', name: 'Zebra' },
+      { id: 'ANM-013', img: '/avatars/animals/giraffe.png', bg: '#F59E0B', name: isTr ? 'Zürafa' : 'Giraffe' },
+      { id: 'ANM-005', img: '/avatars/animals/turtle.png', bg: '#10B981', name: isTr ? 'Kaplumbağa' : 'Turtle' },
+      { id: 'ANM-011', img: '/avatars/animals/snake.png', bg: '#EC4899', name: isTr ? 'Yılan' : 'Snake' },
+      { id: 'ANM-008', img: '/avatars/animals/platypus.png', bg: '#BAE6FD', name: isTr ? 'Ornitorenk' : 'Platypus' },
+      { id: 'ANM-004', img: '/avatars/animals/weasel.png', bg: '#F59E0B', name: isTr ? 'Gelincik' : 'Weasel' },
+      { id: 'ANM-006', img: '/avatars/animals/ant.png', bg: '#EF4444', name: isTr ? 'Karınca' : 'Ant' }
+    ];
+    return `
+      <section class="w-full rounded-2xl bg-gradient-to-br from-surface-container-high via-surface-container-low to-primary/10 border border-primary/25 p-3.5 mb-4 shadow-sm overflow-hidden">
+        <div class="flex items-center justify-between gap-2 mb-2.5">
+          <div class="min-w-0">
+            <div class="inline-flex items-center gap-1.5 text-[10px] font-mono font-bold text-primary uppercase tracking-wider">
+              <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span>${isTr ? 'YENİ • ON-CHAIN AVATARLAR' : 'NEW • ON-CHAIN AVATARS'}</span>
+            </div>
+            <h3 class="text-xs font-bold text-on-surface truncate mt-0.5">${isTr ? 'Hayvanlar Koleksiyonu • 0.10 BCT' : 'Animals Collection • From 0.10 BCT'}</h3>
+          </div>
+          <button type="button" onclick="window.BlocTagSimpleMode.openAvatarStudio()"
+            class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-[11px] font-bold flex items-center gap-1 shrink-0 shadow-xs active:scale-95 transition-transform cursor-pointer">
+            <span class="material-symbols-outlined notranslate text-[14px]" translate="no">palette</span>
+            <span>${isTr ? 'Stüdyo' : 'Studio'}</span>
+          </button>
+        </div>
+        <div class="flex items-center gap-2 overflow-x-auto pb-1 no-scrollbar">
+          ${showcaseItems.map(item => `
+            <button type="button" onclick="window.BlocTagSimpleMode.openAvatarStudio('${item.id}')"
+              class="shrink-0 w-16 p-1.5 rounded-xl bg-surface-container/90 border border-outline-variant/15 hover:border-primary/45 flex flex-col items-center gap-1 active:scale-95 transition-all cursor-pointer">
+              <div class="w-10 h-10 rounded-full overflow-hidden ring-1 ring-surface shadow-xs" style="background-color:${item.bg};">
+                <img src="${item.img}" alt="${esc(item.name)}" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5 select-none pointer-events-none" />
+              </div>
+              <span class="text-[9.5px] font-semibold text-on-surface truncate w-full text-center">${esc(item.name)}</span>
+            </button>
+          `).join('')}
+        </div>
+      </section>
+    `;
   }
 
   function renderAvatarCircleHtml(avatarObj, fallbackHtml) {
@@ -4312,6 +4363,9 @@
           </div>
         </div>
 
+        <!-- On-Chain Avatars Showcase Banner -->
+        ${renderSimpleAvatarShowcaseBanner()}
+
         <!-- Mode Switch Banner (Pro Mode Switch) -->
         <div class="bg-gradient-to-r from-primary/15 via-surface-container-low to-secondary/15 rounded-2xl p-4 border border-primary/25 shadow-sm mb-3.5">
           <div class="flex items-center justify-between gap-3">
@@ -4973,15 +5027,25 @@
       busy: false,
     },
 
-    openAvatarStudio: async () => {
+    openAvatarStudio: async (initialBaseId = '') => {
       const acc = getActiveWallet();
       if (!acc || !acc.address) {
-        navigateToSimpleScreen('SCR-ONB-01');
+        if (simpleState.enabled) {
+          navigateToSimpleScreen('SCR-ONB-01');
+        } else if (typeof window.switchTab === 'function') {
+          window.switchTab('yeni-cuzdan');
+          if (typeof window.showToast === 'function') {
+            window.showToast('Create or connect a wallet (+1.00 BCT bonus) to mint your on-chain avatar!', 'account_balance_wallet');
+          }
+        }
         return;
       }
       const st = window.BlocTagSimpleMode._avatarStudioState;
       st.tab = 'catalog';
       st.busy = false;
+      if (initialBaseId && typeof initialBaseId === 'string') {
+        st.selectedBaseId = initialBaseId.trim().toUpperCase();
+      }
       window.BlocTagSimpleMode._renderAvatarStudioModal(true);
 
       try {

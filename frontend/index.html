@@ -1400,6 +1400,103 @@
             </div>
           </div>
 
+          <!-- 1B. ON-CHAIN SOULBOUND AVATARS ANNOUNCEMENT & SHOWCASE -->
+          <section class="relative overflow-hidden rounded-3xl bg-gradient-to-br from-surface-container-high via-surface-container-low to-primary/10 border border-primary/25 p-5 sm:p-7 shadow-xl">
+            <div class="absolute -top-20 -right-20 w-64 h-64 rounded-full bg-primary/15 blur-3xl pointer-events-none"></div>
+            <div class="relative z-10 flex flex-col gap-5">
+              <!-- Announcement Header -->
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div class="flex flex-col gap-1.5 max-w-2xl">
+                  <div class="inline-flex items-center gap-2 self-start px-3 py-1 rounded-full bg-primary/15 border border-primary/30 text-primary text-[11px] font-mono font-bold tracking-wider uppercase">
+                    <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+                    <span>NEW • ON-CHAIN SOULBOUND AVATARS</span>
+                  </div>
+                  <h2 class="font-headline-lg text-headline-lg text-on-surface leading-tight">
+                    Genesis Animals Collection — Custom Color Variant IDs
+                  </h2>
+                  <p class="font-body-md text-body-md text-on-surface-variant">
+                    Pick from 13 pixel-art companions (<span class="font-mono text-primary">ANM-001</span>–<span class="font-mono text-primary">ANM-013</span>) and choose any background color to mint a unique on-chain Variant ID starting at <strong class="text-on-surface">0.10 BCT</strong> (+25% bonding curve per mint • 30% Treasury, 70% Miners/Nodes/Stakers).
+                  </p>
+                </div>
+                <button type="button"
+                  onclick="if(window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.openAvatarStudio === 'function') window.BlocTagSimpleMode.openAvatarStudio();"
+                  class="h-11 px-5 rounded-full bg-primary text-on-primary text-xs sm:text-sm font-bold flex items-center justify-center gap-2 hover:brightness-105 active:scale-95 transition-all shadow-lg shadow-primary/20 shrink-0 cursor-pointer self-start sm:self-center">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">palette</span>
+                  <span>Open Avatar Studio</span>
+                </button>
+              </div>
+
+              <!-- Horizontal Showcase Strip of All 13 Real On-Chain Animals -->
+              <div class="flex items-stretch gap-3 overflow-x-auto pb-2 no-scrollbar snap-x">
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-001');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#14B8A6;"><img src="/avatars/animals/octopus.png" alt="Octopus" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Octopus</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-001</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-002');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#FDE68A;"><img src="/avatars/animals/bee.png" alt="Bee" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Bee</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-002</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-003');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#FECDD3;"><img src="/avatars/animals/flamingo.png" alt="Flamingo" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Flamingo</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-003</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-004');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#F59E0B;"><img src="/avatars/animals/weasel.png" alt="Weasel" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Weasel</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-004</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-005');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#10B981;"><img src="/avatars/animals/turtle.png" alt="Turtle" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Turtle</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-005</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-006');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#EF4444;"><img src="/avatars/animals/ant.png" alt="Ant" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Ant</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-006</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-007');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#3B82F6;"><img src="/avatars/animals/eagle.png" alt="Eagle" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Eagle</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-007</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-008');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#BAE6FD;"><img src="/avatars/animals/platypus.png" alt="Platypus" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Platypus</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-008</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-009');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#8B5CF6;"><img src="/avatars/animals/raccoon.png" alt="Raccoon" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Raccoon</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-009</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-010');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#0F172A;"><img src="/avatars/animals/shark.png" alt="Shark" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Shark</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-010</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-011');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#EC4899;"><img src="/avatars/animals/snake.png" alt="Snake" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Snake</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-011</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-012');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#FFFFFF;"><img src="/avatars/animals/zebra.png" alt="Zebra" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Zebra</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-012</span>
+                </button>
+                <button type="button" onclick="if(window.BlocTagSimpleMode) window.BlocTagSimpleMode.openAvatarStudio('ANM-013');" class="snap-start shrink-0 w-24 p-2.5 rounded-2xl bg-surface-container/90 hover:bg-surface-container-highest border border-outline-variant/20 hover:border-primary/50 flex flex-col items-center gap-1.5 transition-all active:scale-95 cursor-pointer group">
+                  <div class="w-14 h-14 rounded-full overflow-hidden shadow-md ring-2 ring-surface group-hover:scale-105 transition-transform" style="background-color:#FDE68A;"><img src="/avatars/animals/giraffe.png" alt="Giraffe" decoding="async" loading="lazy" class="w-full h-full object-contain p-0.5" /></div>
+                  <span class="text-xs font-bold text-on-surface truncate w-full text-center">Giraffe</span>
+                  <span class="text-[10px] font-mono text-primary">ANM-013</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
           <!-- 2. WHAT IS BLOCTAG? (IN-DEPTH) -->
           <div class="flex flex-col gap-4">
             <div class="flex flex-col gap-1">
