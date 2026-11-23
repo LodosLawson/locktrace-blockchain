@@ -31,6 +31,7 @@ ROOM_TIER_FEES = {
     "standard": Decimal("10.00"),   # 9+ char normalized slug
 }
 ROOM_AVATAR_SEAL_FEE = Decimal("2.00")   # One-time immutable room avatar seal fee
+ROOM_TRANSFER_FEE = Decimal("0.50")      # On-chain room ownership transfer fee
 ROOM_TOPIC_FEE = Decimal("0.25")         # Open a Topic ("Mevzu") inside a Room
 ROOM_REPLY_FEE = Decimal("0.05")         # Post a tweet/reply under a Topic
 ROOM_UPVOTE_FEE = Decimal("0.01")        # Upvote a Topic
@@ -248,6 +249,22 @@ def compute_room_avatar_seal_pricing() -> Dict[str, float]:
     }
 
 
+def compute_room_transfer_pricing() -> Dict[str, float]:
+    """
+    Room Ownership Transfer (0.50 BCT):
+      - 50% (0.25 BCT) -> Treasury Reserve
+      - 50% (0.25 BCT) -> Miner / Validator Pool
+    """
+    total_u = int(ROOM_TRANSFER_FEE * ATOMIC_UNIT)
+    pool_u = total_u // 2
+    treasury_u = total_u - pool_u
+    return {
+        "total_cost": round(total_u / ATOMIC_UNIT, 8),
+        "treasury_cut": round(treasury_u / ATOMIC_UNIT, 8),
+        "pool_cut": round(pool_u / ATOMIC_UNIT, 8),
+    }
+
+
 def compute_room_topic_pricing() -> Dict[str, float]:
     """
     Topic Creation (0.25 BCT):
@@ -317,12 +334,14 @@ def get_rooms_tokenomics_summary() -> Dict[str, object]:
             "standard_9_plus": float(ROOM_TIER_FEES["standard"]),
         },
         "room_avatar_seal_fee": float(ROOM_AVATAR_SEAL_FEE),
+        "room_transfer_fee": float(ROOM_TRANSFER_FEE),
         "room_topic_fee": float(ROOM_TOPIC_FEE),
         "room_reply_fee": float(ROOM_REPLY_FEE),
         "room_upvote_fee": float(ROOM_UPVOTE_FEE),
         "splits": {
             "room_create": "50% Treasury • 50% Miner/Validators",
             "room_avatar_seal": "50% Treasury • 50% Miner/Validators (1x Immutable)",
+            "room_transfer": "50% Treasury • 50% Miner/Validators",
             "room_topic": "30% Room Creator • 50% Treasury • 20% Miner/Validators",
             "room_reply": "20% Topic Author • 20% Room Creator • 40% Treasury • 20% Miner/Validators",
             "room_upvote": "20% Topic Author • 70% Treasury • 10% Miner/Validators",

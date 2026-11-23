@@ -49,6 +49,7 @@ from core.rooms_engine import (
     normalize_room_slug,
     compute_room_create_pricing,
     compute_room_avatar_seal_pricing,
+    compute_room_transfer_pricing,
     compute_room_topic_pricing,
     compute_room_reply_pricing,
     compute_room_upvote_pricing,
@@ -631,13 +632,13 @@ class Blockchain:
             "transfer", "space_post", "space_like", "space_comment", "space_follow",
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
             "bns_accept_offer", "avatar_mint", "avatar_equip",
-            "room_create", "room_set_avatar", "room_topic", "room_reply", "room_upvote",
+            "room_create", "room_set_avatar", "room_transfer", "room_topic", "room_reply", "room_upvote",
             "room_verify"
         }
         net_credit_types = {
             "transfer", "space_post", "bns_register", "bns_buy",
             "validator_stake", "validator_unstake", "avatar_mint", "avatar_equip",
-            "room_create", "room_set_avatar", "room_verify"
+            "room_create", "room_set_avatar", "room_transfer", "room_verify"
         }
         social_treasury_types = {
             "space_like", "space_comment", "space_follow",
@@ -3841,7 +3842,7 @@ class Blockchain:
             _to_units(tx.fee) for tx in pending_txs if tx.tx_type in (
                 "space_post", "space_like", "space_comment", "space_follow",
                 "bns_register", "bns_transfer", "avatar_mint", "avatar_equip",
-                "room_create", "room_set_avatar", "room_topic", "room_reply", "room_upvote"
+                "room_create", "room_set_avatar", "room_transfer", "room_topic", "room_reply", "room_upvote"
             )
         )
         miner_fee_cut_u = (transfer_fees_u // 2) + space_and_bns_fees_u
@@ -5885,7 +5886,10 @@ class Blockchain:
                 "name": name,
                 "description": description,
                 "creator": snd,
+                "original_creator": snd,
                 "creator_bns": creator_bns,
+                "transfer_count": 0,
+                "transfer_history": [],
                 "is_anonymous": (creator_bns == "anonymous" or bool(extra.get("is_anonymous"))),
                 "avatar": avatar_meta,
                 "avatar_variant_id": raw_vid if avatar_locked else "",
@@ -5937,6 +5941,30 @@ class Blockchain:
             room["avatar_locked"] = True
             room["avatar_sealed_at"] = tx.timestamp
             room["avatar_tx_hash"] = tx.hash()
+
+        elif ttype == "room_transfer":
+            room_id = str(extra.get("room_id", "") or "").strip().upper()
+            room = rooms.get(room_id)
+            if not room:
+                return
+            # Consensus-level ownership enforcement: current owner ONLY
+            if room["creator"] != snd:
+                return
+            to_addr = normalize_bct_address(extra.get("to_address"))
+            if not to_addr or not is_valid_bct_address(to_addr) or to_addr == snd or to_addr == TREASURY_ADDRESS:
+                return
+            room["creator"] = to_addr
+            room["creator_bns"] = self.bns_reverse.get(to_addr, "")
+            room["is_anonymous"] = False
+            room["transferred_at"] = tx.timestamp
+            room["transfer_count"] = int(room.get("transfer_count") or 0) + 1
+            hist = room.setdefault("transfer_history", [])
+            hist.append({
+                "from": snd,
+                "to": to_addr,
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+            })
 
         elif ttype == "room_topic":
             room_id = str(extra.get("room_id", "") or "").strip().upper()
@@ -6385,6 +6413,116 @@ class Blockchain:
                 "block_index": block.index if block else "Mempool",
                 "status": "confirmed" if block else "mempool",
                 "new_balance": self.balances[clean_creator],
+            }
+
+    def transfer_room(
+        self,
+        current_owner: str,
+        room_id: str,
+        to_address: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Permanently transfers ownership of a Protocol Room (and all future creator royalties)
+        to a new BCT address or resolved .bct handle.
+        Fee: 0.50 BCT (50% Treasury, 50% Miner/Validator Pool).
+        """
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+
+            clean_from = normalize_bct_address(current_owner)
+            if not is_valid_bct_address(clean_from):
+                return False, f"Invalid owner address: '{clean_from}'", None
+
+            raw_to = str(to_address or "").strip()
+            if not raw_to:
+                return False, "Recipient address or .bct handle is required.", None
+
+            clean_to = normalize_bct_address(raw_to)
+            if not is_valid_bct_address(clean_to):
+                norm_bns = self._normalize_bns_name(raw_to.lstrip("@"))
+                bns_rec = self.bns_records.get(norm_bns)
+                if bns_rec and is_valid_bct_address(bns_rec.get("owner", "")):
+                    clean_to = normalize_bct_address(bns_rec["owner"])
+                else:
+                    return False, f"Invalid recipient address or unregistered .bct handle: '{raw_to}'", None
+
+            if clean_from == clean_to:
+                return False, "Cannot transfer a room to your own address.", None
+            if clean_to in (TREASURY_ADDRESS, "BCT_BURN", "SYSTEM"):
+                return False, "Cannot transfer a room to a system or treasury address.", None
+
+            rid = str(room_id or "").strip().upper()
+            room = self.rooms.get(rid)
+            if not room:
+                return False, "Protocol room not found.", None
+
+            if room["creator"] != clean_from:
+                return False, "Only the current room owner can transfer this room.", None
+
+            # Mempool double-transfer race protection
+            has_pending = any(
+                t.tx_type == "room_transfer"
+                and isinstance(t.extra_data, dict)
+                and str(t.extra_data.get("room_id", "")).upper() == rid
+                for t in self.pending_transactions
+            )
+            if has_pending:
+                return False, "A room ownership transfer is already pending in the mempool for this room.", None
+
+            expected_payload = signed_payload or f"ROOM_TRANSFER:{clean_from}:{rid}:{clean_to}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_from, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            pricing = compute_room_transfer_pricing()
+            total_cost = pricing["total_cost"]
+            owner_bal = self.verify_and_recalc_balance(clean_from)
+            if owner_bal < total_cost:
+                return False, f"Insufficient balance! Room transfer fee is {total_cost:.2f} BCT. Current balance: {owner_bal:.4f} BCT.", None
+
+            tx = Transaction(
+                sender=clean_from,
+                receiver=TREASURY_ADDRESS,
+                amount=total_cost,
+                fee=pricing["pool_cut"],
+                signature=signature,
+                tx_type="room_transfer",
+                extra_data={
+                    "room_id": rid,
+                    "from_address": clean_from,
+                    "to_address": clean_to,
+                    "treasury_cut": pricing["treasury_cut"],
+                    "pool_cut": pricing["pool_cut"],
+                },
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + pricing["pool_cut"], 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_rooms_index()
+
+            self.balances[clean_from] = self.verify_and_recalc_balance(clean_from)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            new_owner_bns = self.bns_reverse.get(clean_to, "")
+            return True, f"Protocol Room '{room['name']}' ({rid}) transferred to {new_owner_bns or clean_to[:10] + '...'}!", {
+                "room_id": rid,
+                "name": room["name"],
+                "previous_owner": clean_from,
+                "new_owner": clean_to,
+                "new_owner_bns": new_owner_bns,
+                "cost": total_cost,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+                "new_balance": self.balances[clean_from],
             }
 
     def create_room_topic(

@@ -81,6 +81,7 @@ class Config:
         "standard": 10.0        # 9+ karakter (Topluluk)
     }
     ROOM_AVATAR_SEAL_FEE = 2.00 # Tek seferlik, asla değiştirilemeyen oda avatar mühürleme ücreti
+    ROOM_TRANSFER_FEE = 0.50    # Oda sahipliği devretme ücreti: %50 Hazine, %50 Miner/Validator
     ROOM_TOPIC_FEE = 0.25       # Mevzu açma: %30 Oda Kurucusu, %50 Hazine, %20 Miner/Validator
     ROOM_REPLY_FEE = 0.05       # Mevzu altı tweet/yanıt: %20 Mevzu Yazarı, %20 Oda Kurucusu, %40 Hazine, %20 Miner
     ROOM_UPVOTE_FEE = 0.01      # Mevzu oylama: %20 Mevzu Yazarı, %70 Hazine, %10 Miner/Validator
@@ -121,6 +122,7 @@ class Config:
         "space_follow": 3,      # Takip Etme: 3 saniye
         "room_create": 15,      # Oda Oluşturma: 15 saniye
         "room_set_avatar": 10,  # Oda Avatarı Mühürleme: 10 saniye
+        "room_transfer": 10,    # Oda Devretme: 10 saniye
         "room_topic": 10,       # Mevzu Açma: 10 saniye
         "room_reply": 5,        # Mevzu Yanıtı: 5 saniye
         "room_upvote": 0        # Mevzu Oylama: Anlık (0s) - Çift oy & IP limitleri devrede

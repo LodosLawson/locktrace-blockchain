@@ -219,6 +219,7 @@ def check_wallet_cooldown(wallet: str, action: str) -> Optional[Tuple[bool, str,
             "bns_register": "Alan adı kaydı",
             "room_create": "Oda oluşturma",
             "room_set_avatar": "Oda avatarı mühürleme",
+            "room_transfer": "Oda devretme",
             "room_topic": "Mevzu açma",
             "room_reply": "Mevzu yanıtı",
             "room_upvote": "Mevzu oylama",
@@ -366,7 +367,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-zjXJvQh3ZPzte5GzV+TlmMrlRUkHkllQAobCQKjqmJQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-EtwM6JJ7YLm13A81KVQNg3aYjNEmqdV0GJ5kAGpS5/8=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -2886,6 +2887,61 @@ def api_rooms_set_avatar(room_id):
         return api_response(False, message=message, status=400)
 
     logger.info(f"Room Avatar Permanently Sealed: {rid} -> {variant_id} by {creator[:10]}...")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/rooms/<room_id>/transfer", methods=["POST"])
+def api_rooms_transfer(room_id):
+    """
+    Transfers ownership of a Protocol Room (and all future creator royalties)
+    to a new BCT address or .bct handle (0.50 BCT).
+    """
+    if not check_rate_limit("room_transfer", limit=10, window_seconds=60):
+        return api_response(False, message="Too many room transfer requests. Please wait.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    from_address = str(data.get("from_address") or data.get("creator") or "").strip()
+    to_address = str(data.get("to_address") or "").strip()
+
+    if not from_address or not to_address:
+        return api_response(False, message="Fields 'from_address' and 'to_address' are required.", status=400)
+
+    rid = str(room_id or "").strip().upper()[:32]
+    # Support signing with either raw input (.bct handle or BCT address) or resolved BCT address
+    from core.blockchain import normalize_bct_address, is_valid_bct_address
+    resolved_to = normalize_bct_address(to_address)
+    if not is_valid_bct_address(resolved_to):
+        norm_bns = blockchain._normalize_bns_name(to_address.lstrip("@"))
+        bns_rec = blockchain.bns_records.get(norm_bns)
+        if bns_rec and is_valid_bct_address(bns_rec.get("owner", "")):
+            resolved_to = normalize_bct_address(bns_rec["owner"])
+
+    canonical = [
+        f"ROOM_TRANSFER:{from_address}:{rid}:{resolved_to}",
+        f"ROOM_TRANSFER:{from_address}:{rid}:{to_address}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, from_address, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(from_address, "room_transfer")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
+    success, message, result = blockchain.transfer_room(
+        current_owner=from_address,
+        room_id=rid,
+        to_address=to_address,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Protocol Room Transferred: {rid} from {from_address[:10]}... -> {result.get('new_owner', '')[:10]}...")
     return api_response(True, message=message, data=result, status=200)
 
 

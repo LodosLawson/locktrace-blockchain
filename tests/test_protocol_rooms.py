@@ -37,7 +37,7 @@ def _make_funded_wallet(bc: Blockchain, amount: float = 200.0) -> Wallet:
         receiver=w.address,
         amount=amount,
         fee=0.0,
-        signature="TEST_FUNDING",
+        signature=f"TEST_FUNDING_{w.address}",
         tx_type="reward",
     )
     bc.pending_transactions.append(tx)
@@ -371,6 +371,125 @@ class TestProtocolRooms(unittest.TestCase):
         self.assertEqual(room_detail["topics_count"], 1)
         self.assertEqual(room_detail["replies_count"], 2)
         self.assertAlmostEqual(room_detail["creator_earnings"], 0.095, places=6)
+
+    def test_room_ownership_transfer_and_royalty_redirection(self):
+        # 1. Creator creates a room without avatar
+        ok_q, _, q = self.bc.get_room_create_quote("Transferable Space", has_avatar=False)
+        sig_c = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}")
+        ok, _, room = self.bc.create_room(
+            creator=self.creator.address,
+            name="Transferable Space",
+            description="Sahiplik devri test odası.",
+            signature=sig_c,
+            public_key=self.creator.pub_hex,
+        )
+        self.assertTrue(ok)
+        rid = room["room_id"]
+
+        # 2. Non-owner (Alice) cannot transfer
+        sig_bad = self.alice.sign(f"ROOM_TRANSFER:{self.alice.address}:{rid}:{self.bob.address}")
+        ok_bad, _, _ = self.bc.transfer_room(
+            current_owner=self.alice.address,
+            room_id=rid,
+            to_address=self.bob.address,
+            signature=sig_bad,
+            public_key=self.alice.pub_hex,
+        )
+        self.assertFalse(ok_bad)
+
+        # 3. Self-transfer & Treasury transfer rejected
+        sig_self = self.creator.sign(f"ROOM_TRANSFER:{self.creator.address}:{rid}:{self.creator.address}")
+        ok_self, _, _ = self.bc.transfer_room(
+            current_owner=self.creator.address,
+            room_id=rid,
+            to_address=self.creator.address,
+            signature=sig_self,
+            public_key=self.creator.pub_hex,
+        )
+        self.assertFalse(ok_self)
+
+        sig_tr = self.creator.sign(f"ROOM_TRANSFER:{self.creator.address}:{rid}:{TREASURY_ADDRESS}")
+        ok_tr, _, _ = self.bc.transfer_room(
+            current_owner=self.creator.address,
+            room_id=rid,
+            to_address=TREASURY_ADDRESS,
+            signature=sig_tr,
+            public_key=self.creator.pub_hex,
+        )
+        self.assertFalse(ok_tr)
+
+        # 4. Valid transfer: Creator -> Alice (0.50 BCT fee)
+        bal_before = self.bc.verify_and_recalc_balance(self.creator.address)
+        sig_t = self.creator.sign(f"ROOM_TRANSFER:{self.creator.address}:{rid}:{self.alice.address}")
+        ok_t, msg_t, res_t = self.bc.transfer_room(
+            current_owner=self.creator.address,
+            room_id=rid,
+            to_address=self.alice.address,
+            signature=sig_t,
+            public_key=self.creator.pub_hex,
+        )
+        self.assertTrue(ok_t, msg_t)
+        self.assertEqual(res_t["new_owner"], self.alice.address)
+        self.assertAlmostEqual(bal_before - self.bc.verify_and_recalc_balance(self.creator.address), 0.50, places=6)
+
+        detail = self.bc.get_room_detail(rid)
+        self.assertEqual(detail["creator"], self.alice.address)
+        self.assertEqual(detail["original_creator"], self.creator.address)
+        self.assertEqual(detail["transfer_count"], 1)
+
+        # 5. Old owner can NO LONGER transfer or seal avatar
+        sig_old = self.creator.sign(f"ROOM_TRANSFER:{self.creator.address}:{rid}:{self.bob.address}")
+        ok_old, _, _ = self.bc.transfer_room(
+            current_owner=self.creator.address,
+            room_id=rid,
+            to_address=self.bob.address,
+            signature=sig_old,
+            public_key=self.creator.pub_hex,
+        )
+        self.assertFalse(ok_old)
+
+        # 6. New owner (Alice) CAN seal the one-time immutable avatar
+        sig_av = self.alice.sign(f"ROOM_AVATAR:{self.alice.address}:{rid}:ANM-001-10B981")
+        ok_av, msg_av, _ = self.bc.set_room_avatar(
+            creator=self.alice.address,
+            room_id=rid,
+            avatar_base_id="ANM-001",
+            avatar_bg_color="#10B981",
+            signature=sig_av,
+            public_key=self.alice.pub_hex,
+        )
+        self.assertTrue(ok_av, msg_av)
+
+        # 7. Future topic royalties (30% = 0.075 BCT) go to Alice, NOT old creator!
+        alice_bal_0 = self.bc.verify_and_recalc_balance(self.alice.address)
+        creator_bal_0 = self.bc.verify_and_recalc_balance(self.creator.address)
+        title = "Yeni sahip royalty testi"
+        sig_top = self.bob.sign(f"ROOM_TOPIC:{self.bob.address}:{rid}:{title}")
+        ok_top, msg_top, _ = self.bc.create_room_topic(
+            author=self.bob.address,
+            room_id=rid,
+            title=title,
+            content="Royalty artık Alice hesabına gitmeli.",
+            signature=sig_top,
+            public_key=self.bob.pub_hex,
+        )
+        self.assertTrue(ok_top, msg_top)
+        self.assertAlmostEqual(self.bc.verify_and_recalc_balance(self.alice.address) - alice_bal_0, 0.075, places=6)
+        self.assertAlmostEqual(self.bc.verify_and_recalc_balance(self.creator.address) - creator_bal_0, 0.0, places=6)
+
+        # 8. Consensus-level rogue room_transfer tx by non-owner is ignored
+        rogue_tx = Transaction(
+            sender=self.creator.address,
+            receiver=TREASURY_ADDRESS,
+            amount=0.50,
+            fee=0.25,
+            signature="ROGUE_TRANSFER",
+            tx_type="room_transfer",
+            extra_data={"room_id": rid, "from_address": self.creator.address, "to_address": self.bob.address},
+        )
+        self.bc.pending_transactions.append(rogue_tx)
+        self.bc._load_in_memory_rooms_index()
+        self.assertEqual(self.bc.rooms[rid]["creator"], self.alice.address)
 
 
 if __name__ == "__main__":
