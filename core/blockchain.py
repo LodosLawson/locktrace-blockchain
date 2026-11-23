@@ -987,10 +987,16 @@ class Blockchain:
                     None
                 )
 
-            # Calculate 1% fee returned to treasury (minimum min_fee BCT to prevent zero-fee dust spam)
-            fee = max(min_fee, round(amount * FEE_PERCENT, 8))
-            if amount <= fee:
-                return False, f"Transfer amount must exceed the minimum network fee ({min_fee} BCT).", None
+            # Bridge Vault L1->EVM deposits are exempt from the 1% L1 transfer fee because the bridge
+            # protocol collects its 0.2% bridge fee directly inside BRIDGE_VAULT_ADDRESS, preserving the
+            # strict 1:1 Proof-of-Reserve invariant (vault_credit >= wBCT_minted).
+            if clean_receiver == BRIDGE_VAULT_ADDRESS:
+                fee = 0.0
+            else:
+                # Calculate 1% fee returned to treasury (minimum min_fee BCT to prevent zero-fee dust spam)
+                fee = max(min_fee, round(amount * FEE_PERCENT, 8))
+                if amount <= fee:
+                    return False, f"Transfer amount must exceed the minimum network fee ({min_fee} BCT).", None
             net_amount = round(amount - fee, 8)
 
             tx = Transaction(

@@ -4574,6 +4574,135 @@
                 </div>
               </div>
 
+              <!-- 8. Historical Slashed Validator Incident Disclosure (Block #749) -->
+              <div
+                class="bg-surface-container-low p-4 rounded-2xl border border-amber-500/30 bg-gradient-to-br from-amber-500/5 via-transparent to-transparent flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between gap-2">
+                    <span
+                      class="px-2.5 py-0.5 rounded-full bg-amber-500/15 text-amber-400 text-[11px] font-mono font-bold">Slashed / Resolved Incident</span>
+                    <span class="text-[11px] text-emerald-400 font-mono font-bold">Patched v2.9.4+</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Block #749 Slashed Validator Ledger Note</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      During an early consensus audit, this validator attempted a double-unstake exploit at <strong>Block #749</strong>, leaving an immutable <strong>-989.986 BCT</strong> negative accounting artifact on-chain. The validator was permanently slashed &amp; blacklisted in protocol config, and the unstake/nonce vulnerability was permanently patched.
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate">BCTa3cf1fe94acd83ea39b247665ccb8fcee080cb44</span>
+                  <button type="button"
+                    onclick="copyToClipboard('BCTa3cf1fe94acd83ea39b247665ccb8fcee080cb44'); showToast('Slashed address copied!')"
+                    class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0"
+                    title="Copy Address">
+                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">content_copy</span>
+                  </button>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant/10 text-xs">
+                  <span class="text-amber-300 font-mono">Ledger Artifact: <strong>-989.986 BCT</strong></span>
+                  <span class="text-emerald-400 font-mono text-[11px]">Status: Slashed &amp; Patched</span>
+                </div>
+              </div>
+
+              <!-- 9. Decommissioned Legacy v1 wBCT Contract Disclosure -->
+              <div
+                class="bg-surface-container-low p-4 rounded-2xl border border-outline-variant/30 bg-gradient-to-br from-slate-500/5 via-transparent to-transparent flex flex-col justify-between gap-3">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center justify-between gap-2">
+                    <span
+                      class="px-2.5 py-0.5 rounded-full bg-slate-500/20 text-on-surface-variant text-[11px] font-mono font-bold">Deprecated / Retired</span>
+                    <span class="text-[11px] text-rose-400 font-mono font-bold">DO NOT USE</span>
+                  </div>
+                  <div>
+                    <h3 class="font-body-lg text-body-lg text-on-surface font-bold">Decommissioned Legacy wBCT v1 (Base)</h3>
+                    <p class="text-body-sm text-on-surface-variant mt-0.5">
+                      Legacy v1 ERC-20 contract on Base Mainnet still displaying <strong>60,175,825.84 wBCT</strong> on BaseScan. It was formally decommissioned at <strong>Block #835</strong> (<code>0xa79_v1_decommission</code>), permanently blocked in protocol config, and superseded by the official v2 contract (<code>0xCa6152...0EB28</code>).
+                    </p>
+                  </div>
+                </div>
+                <div
+                  class="bg-surface-container/70 p-2.5 rounded-xl border border-outline-variant/15 flex items-center justify-between gap-2">
+                  <span class="font-mono text-xs text-on-surface select-all truncate">0xa3c743113a41cfd0146917065d4578337bb77254</span>
+                  <button type="button"
+                    onclick="copyToClipboard('0xa3c743113a41cfd0146917065d4578337bb77254'); showToast('Legacy contract copied!')"
+                    class="p-1.5 rounded-lg hover:bg-surface-container-high text-on-surface-variant hover:text-primary transition-all shrink-0"
+                    title="Copy Address">
+                    <span class="material-symbols-outlined notranslate text-[16px]" translate="no">content_copy</span>
+                  </button>
+                </div>
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-outline-variant/10 text-xs">
+                  <span class="text-on-surface-variant font-mono">Retired at Block #835</span>
+                  <a href="https://basescan.org/token/0xa3c743113a41cfd0146917065d4578337bb77254" target="_blank"
+                    class="text-on-surface-variant hover:text-primary hover:underline flex items-center gap-0.5">
+                    <span>BaseScan Archive</span>
+                    <span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span>
+                  </a>
+                </div>
+              </div>
+
+            </div>
+          </div>
+
+          <!-- Section C2: Authorized Security Tests, Red-Team Probes & Protocol Incident Log -->
+          <div class="mb-space-xl" id="securityDisclosuresSection">
+            <div class="flex items-center gap-2 mb-3">
+              <span class="material-symbols-outlined notranslate text-emerald-400 text-[20px]" translate="no">shield</span>
+              <h2 class="font-headline-sm text-headline-sm text-on-surface font-semibold">Security Audit, Red-Team &amp; Mainnet Test Disclosure Log</h2>
+            </div>
+
+            <div class="bg-surface-container-low p-4 rounded-2xl border border-emerald-500/25 flex flex-col gap-3">
+              <p class="text-body-sm text-on-surface-variant">
+                For full public transparency, LockTrace publishes all authorized mainnet security stress tests, red-team penetration probes, and resolved protocol accounting incidents below. No test artifacts are hidden from the immutable ledger.
+              </p>
+
+              <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr class="border-b border-outline-variant/20 text-on-surface-variant font-mono uppercase text-[10.5px]">
+                      <th class="py-2 pr-3">Date (UTC)</th>
+                      <th class="py-2 pr-3">Category</th>
+                      <th class="py-2 pr-3">Description &amp; On-Chain Reference</th>
+                      <th class="py-2">Outcome / Resolution</th>
+                    </tr>
+                  </thead>
+                  <tbody class="divide-y divide-outline-variant/10">
+                    <tr>
+                      <td class="py-2.5 pr-3 font-mono whitespace-nowrap text-on-surface-variant">2026-11-23</td>
+                      <td class="py-2.5 pr-3"><span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 font-mono text-[10.5px]">Patch</span></td>
+                      <td class="py-2.5 pr-3 text-on-surface">
+                        <strong>Bridge 0.8% Fee Mismatch Fix:</strong> L1 transfers to <code>BCT_BRIDGE_VAULT</code> previously deducted 1.0% L1 fee while Base minted 99.8% (0.2% bridge fee), creating an 820.51 BCT vault deficit (800 BCT from the Nov 22 100k BCT test round-trip).
+                      </td>
+                      <td class="py-2.5 text-emerald-400 font-mono">Fixed: 0% L1 fee on Bridge Vault locks + relayer mint capped &le; actual L1 vault credit.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 font-mono whitespace-nowrap text-on-surface-variant">2026-11-22..23</td>
+                      <td class="py-2.5 pr-3"><span class="px-2 py-0.5 rounded bg-sky-500/15 text-sky-400 font-mono text-[10.5px]">Red-Team Test</span></td>
+                      <td class="py-2.5 pr-3 text-on-surface">
+                        <strong>Bridge Forgery &amp; Replay Probes:</strong> Synthetic <code>EVM_TO_L1</code> claims with dummy hashes (<code>0xdeadbeef...</code>, <code>0xababab...</code>, <code>0x4444...</code>, <code>0x1111...</code>, <code>0x0000...beef</code>) submitted to test fail-closed verification.
+                      </td>
+                      <td class="py-2.5 text-emerald-400 font-mono">100% Blocked — 0 BCT unlocked; verified by RPC receipt + 12-conf + canonical blockHash guard.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 font-mono whitespace-nowrap text-on-surface-variant">2026-11-18</td>
+                      <td class="py-2.5 pr-3"><span class="px-2 py-0.5 rounded bg-slate-500/20 text-on-surface-variant font-mono text-[10.5px]">Migration</span></td>
+                      <td class="py-2.5 pr-3 text-on-surface">
+                        <strong>wBCT v1 Decommission (Block #835):</strong> Retired legacy Base contract <code>0xa3c743...7254</code> and migrated bridge collateral to official v2 contract <code>0xCa6152...0EB28</code>.
+                      </td>
+                      <td class="py-2.5 text-emerald-400 font-mono">Completed — v1 permanently blocked in config &amp; UI.</td>
+                    </tr>
+                    <tr>
+                      <td class="py-2.5 pr-3 font-mono whitespace-nowrap text-on-surface-variant">2026-11-16</td>
+                      <td class="py-2.5 pr-3"><span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 font-mono text-[10.5px]">Slashed</span></td>
+                      <td class="py-2.5 pr-3 text-on-surface">
+                        <strong>Block #749 Double-Unstake Exploit Attempt:</strong> Malicious validator <code>BCTa3cf...cb44</code> left a <code>-989.986 BCT</code> ledger artifact.
+                      </td>
+                      <td class="py-2.5 text-emerald-400 font-mono">Slashed &amp; Blacklisted — atomic nonce + unstake lock patched in v2.9.4.</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
             </div>
           </div>
 

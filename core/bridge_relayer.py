@@ -270,13 +270,17 @@ class BridgeRelayer:
                 logger.warning(f"Bridge {bridge_id}: rolling 24h mint cap {DAILY_MINT_LIMIT_BCT} BCT reached. Deferring.")
                 continue
 
-            # L1 Finality Verification: Ensure lock transaction is sealed in an attested/deep block
+            # L1 Finality & Proof-of-Reserve Vault Credit Verification:
+            # Ensure lock transaction is sealed AND that minted wBCT NEVER exceeds actual BCT credited to BRIDGE_VAULT.
             # AUD17B-05: Ensure check_conn is safely closed in a finally block
             check_conn = None
             try:
                 check_conn = sqlite3.connect(self.chain_db_path, timeout=10.0)
                 check_conn.row_factory = sqlite3.Row
-                tx_row = check_conn.execute("SELECT block_index FROM tx_lookup WHERE tx_hash = ?", (l1_hash,)).fetchone()
+                tx_row = check_conn.execute(
+                    "SELECT block_index, recipient, amount, fee, tx_type FROM tx_lookup WHERE tx_hash = ?",
+                    (l1_hash,)
+                ).fetchone()
                 if not tx_row:
                     age = time.time() - float(r["created_at"] or 0)
                     if age > 7200:
@@ -286,6 +290,28 @@ class BridgeRelayer:
                     else:
                         logger.info(f"Bridge {bridge_id}: L1 lock tx {clean_l1[:16]}... not yet sealed in a block. Deferring mint.")
                     continue
+
+                # Strict 1:1 Proof-of-Reserve invariant: verify recipient is BRIDGE_VAULT and cap mint <= actual vault credit
+                from core.bridge import BRIDGE_VAULT_ADDRESS
+                if str(tx_row["recipient"] or "").strip() != BRIDGE_VAULT_ADDRESS:
+                    logger.error(f"Bridge {bridge_id}: L1 tx recipient ({tx_row['recipient']}) is not BRIDGE_VAULT. Marking FAILED.")
+                    self._mark_failed(bridge_id, "L1 lock transaction recipient does not match Bridge Vault.")
+                    continue
+                tx_amt_dec = Decimal(str(tx_row["amount"] or "0"))
+                tx_fee_dec = Decimal(str(tx_row["fee"] or "0"))
+                actual_vault_credit = (tx_amt_dec - tx_fee_dec) if str(tx_row["tx_type"] or "") == "transfer" else tx_amt_dec
+                if actual_vault_credit <= Decimal("0"):
+                    logger.error(f"Bridge {bridge_id}: Non-positive actual vault credit ({actual_vault_credit}). Marking FAILED.")
+                    self._mark_failed(bridge_id, "Actual L1 bridge vault credit is non-positive.")
+                    continue
+                if net_amt_dec > actual_vault_credit:
+                    logger.warning(
+                        f"Bridge {bridge_id}: Capping wBCT mint from {net_amt_dec} to actual L1 vault credit {actual_vault_credit} "
+                        "(Proof-of-Reserve invariant protection)."
+                    )
+                    net_amt_dec = actual_vault_credit
+                    amt_wei = int((net_amt_dec * Decimal(10 ** 18)).to_integral_value())
+
                 l1_b_idx = tx_row["block_index"]
                 att_c = check_conn.execute("SELECT COUNT(*) AS c FROM block_attestations WHERE block_index = ?", (l1_b_idx,)).fetchone()["c"]
                 max_row = check_conn.execute("SELECT MAX(block_index) AS tip FROM blocks").fetchone()
