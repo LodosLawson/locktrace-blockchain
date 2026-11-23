@@ -699,6 +699,13 @@ def serve_icons(filename):
     return send_from_directory(os.path.join(ROOT_DIR, "frontend", "icons"), filename)
 
 
+@app.route("/avatars/<path:filename>", methods=["GET"])
+def serve_avatars(filename):
+    resp = send_from_directory(os.path.join(ROOT_DIR, "frontend", "avatars"), filename)
+    resp.headers["Cache-Control"] = "public, max-age=604800, immutable"
+    return resp
+
+
 @app.route("/api/v1/frontend/integrity", methods=["GET"])
 def api_frontend_integrity():
     check = _inspect_local_frontend_integrity()
@@ -2569,6 +2576,129 @@ def api_get_user_profile(query: str):
         return api_response(False, message="User profile or address not found", status=404)
 
     return api_response(True, data=profile)
+
+
+# ══════════════════════════════════════════════════════
+# 🎨 ON-CHAIN SOULBOUND PROFILE AVATARS (Bonding Curve + Color Variants)
+# ══════════════════════════════════════════════════════
+
+@app.route("/api/v1/avatars/catalog", methods=["GET"])
+def api_avatars_catalog():
+    """
+    Returns extensible avatar collections, base artworks with canonical default IDs,
+    live default-variant pricing, curated colors, tokenomics rules, and (optionally)
+    the viewer's owned & currently equipped avatars.
+    """
+    address = str(request.args.get("address", "") or "").strip()
+    data = blockchain.get_avatar_catalog_state(address=address)
+    return api_response(True, data=data)
+
+
+@app.route("/api/v1/avatars/price", methods=["GET"])
+def api_avatars_price():
+    """
+    Computes exact live bonding-curve price & revenue split for a (base_id, bg_color) variant.
+    Any unminted Variant ID opens at 0.10 BCT and rises +25% per mint.
+    """
+    base_id = str(request.args.get("base_id", "") or "").strip()
+    bg_color = str(request.args.get("bg_color", "#FFFFFF") or "#FFFFFF").strip()
+    address = str(request.args.get("address", "") or "").strip()
+
+    ok, msg, quote = blockchain.get_avatar_variant_quote(base_id=base_id, bg_color=bg_color, address=address)
+    if not ok:
+        return api_response(False, message=msg, status=400)
+    return api_response(True, message=msg, data=quote)
+
+
+@app.route("/api/v1/avatars/mint", methods=["POST"])
+def api_avatars_mint():
+    """
+    Mints a Soulbound (non-transferable, non-sellable) profile avatar variant on-chain.
+    Requires cryptographic ECDSA wallet authentication.
+    """
+    if not check_rate_limit("avatar_mint", limit=15, window_seconds=60):
+        return api_response(False, message="Too many avatar mint requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    buyer = str(data.get("buyer", "") or "").strip()
+    base_id = str(data.get("base_id", "") or "").strip().upper()
+    bg_color = str(data.get("bg_color", "#FFFFFF") or "#FFFFFF").strip().upper()
+    if bg_color and not bg_color.startswith("#"):
+        bg_color = "#" + bg_color
+    max_price = data.get("max_price", None)
+    auto_equip = bool(data.get("auto_equip", True))
+
+    if not buyer or not base_id:
+        return api_response(False, message="Fields 'buyer' and 'base_id' are required.", status=400)
+
+    from core.avatar_catalog import make_variant_id
+    variant_id = make_variant_id(base_id, bg_color)
+    if not variant_id:
+        return api_response(False, message="Invalid 'base_id' or hex 'bg_color' (#RRGGBB).", status=400)
+
+    canonical = f"AVATAR_MINT:{buyer}:{variant_id}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, buyer, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(buyer, "avatar_mint")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
+    success, message, result = blockchain.mint_avatar(
+        buyer=buyer,
+        base_id=base_id,
+        bg_color=bg_color,
+        max_price=max_price,
+        auto_equip=auto_equip,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Avatar Minted: {variant_id} by {buyer[:10]}... for {result.get('price')} BCT")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/avatars/equip", methods=["POST"])
+def api_avatars_equip():
+    """
+    Equips an owned Soulbound avatar on the user's profile, or removes it when `variant_id` is empty.
+    Zero cost, cryptographically signed on-chain transaction.
+    """
+    if not check_rate_limit("avatar_equip", limit=30, window_seconds=60):
+        return api_response(False, message="Too many avatar equip requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    owner = str(data.get("owner", "") or "").strip()
+    variant_id = str(data.get("variant_id", "") or "").strip().upper()
+
+    if not owner:
+        return api_response(False, message="Field 'owner' is required.", status=400)
+
+    canonical = f"AVATAR_EQUIP:{owner}:{variant_id}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, owner, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.equip_avatar(
+        owner=owner,
+        variant_id=variant_id,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Avatar Equip Updated: {owner[:10]}... -> '{variant_id or 'NONE'}'")
+    return api_response(True, message=message, data=result, status=200)
 
 
 # ══════════════════════════════════════════════════════

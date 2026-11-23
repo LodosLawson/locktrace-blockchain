@@ -24,6 +24,20 @@ from decimal import Decimal, ROUND_HALF_UP
 from typing import List, Dict, Optional, Tuple
 from core.wallet import public_key_to_address, verify_signature, normalize_bct_address
 from core.storage import SQLiteStorage
+from core.avatar_catalog import (
+    AVATAR_COLLECTIONS,
+    AVATAR_CATALOG,
+    AVATAR_CATALOG_BY_ID,
+    CURATED_BG_COLORS,
+    DEFAULT_BG_COLOR,
+    normalize_hex_color,
+    get_base_avatar,
+    make_variant_id,
+    parse_variant_id,
+    compute_variant_price,
+    compute_revenue_split,
+    build_avatar_metadata,
+)
 
 logger = logging.getLogger("LockTrace")
 
@@ -419,6 +433,15 @@ class Blockchain:
         self.following: Dict[str, List[str]] = {}
         self.bns_records: Dict[str, dict] = {}
         self.bns_reverse: Dict[str, str] = {}
+        self.avatar_variant_counts: Dict[str, int] = {}
+        self.avatar_owners: Dict[str, List[dict]] = {}
+        self.avatar_equipped: Dict[str, Optional[dict]] = {}
+        self._confirmed_avatar_len: int = 0
+        self._confirmed_avatar_tip: str = ""
+        self._confirmed_avatar_variant_counts: Dict[str, int] = {}
+        self._confirmed_avatar_owners: Dict[str, List[dict]] = {}
+        self._confirmed_avatar_equipped: Dict[str, Optional[dict]] = {}
+        self._avatar_index_key: Optional[tuple] = None
         self._custom_data_dir = data_dir
         self._storage: Optional[SQLiteStorage] = None
         self._storage_dir_bound = ""
@@ -554,9 +577,9 @@ class Blockchain:
         fee_bearing_types = {
             "transfer", "space_post", "space_like", "space_comment", "space_follow",
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
-            "bns_accept_offer"
+            "bns_accept_offer", "avatar_mint", "avatar_equip"
         }
-        net_credit_types = {"transfer", "space_post", "bns_register", "bns_buy", "validator_stake", "validator_unstake"}
+        net_credit_types = {"transfer", "space_post", "bns_register", "bns_buy", "validator_stake", "validator_unstake", "avatar_mint"}
         social_treasury_types = {"space_like", "space_comment", "space_follow"}
 
         amt_u = _to_units(tx.amount)
@@ -1520,15 +1543,19 @@ class Blockchain:
             self._load_state()
             feed = list(self.space_posts.values())
 
-            # Enrich posts with entity tags and live validator status
+            # Enrich posts with entity tags, live validator status, and equipped profile avatars
             for p in feed:
                 if "entities" not in p:
                     p["entities"] = self.extract_space_entities(p.get("content", ""))
                 is_anon = bool(p.get("is_anonymous") or p.get("author_bns") == "anonymous")
-                p["author_is_validator"] = False if is_anon else self.is_active_validator(str(p.get("author", "")))
+                author_addr = normalize_bct_address(str(p.get("author", "")))
+                p["author_is_validator"] = False if is_anon else self.is_active_validator(author_addr)
+                p["author_avatar"] = None if is_anon else self.avatar_equipped.get(author_addr)
                 for cmt in p.get("comments", []):
                     c_anon = bool(cmt.get("is_anonymous") or cmt.get("commenter_bns") == "anonymous")
-                    cmt["commenter_is_validator"] = False if c_anon else self.is_active_validator(str(cmt.get("commenter", "")))
+                    cmt_addr = normalize_bct_address(str(cmt.get("commenter", "")))
+                    cmt["commenter_is_validator"] = False if c_anon else self.is_active_validator(cmt_addr)
+                    cmt["commenter_avatar"] = None if c_anon else self.avatar_equipped.get(cmt_addr)
 
             # Filter by tag (#topic, $symbol, or @user)
             if tag:
@@ -1602,10 +1629,14 @@ class Blockchain:
             p = self.space_posts.get(post_id.strip())
             if p:
                 is_anon = bool(p.get("is_anonymous") or p.get("author_bns") == "anonymous")
-                p["author_is_validator"] = False if is_anon else self.is_active_validator(str(p.get("author", "")))
+                author_addr = normalize_bct_address(str(p.get("author", "")))
+                p["author_is_validator"] = False if is_anon else self.is_active_validator(author_addr)
+                p["author_avatar"] = None if is_anon else self.avatar_equipped.get(author_addr)
                 for cmt in p.get("comments", []):
                     c_anon = bool(cmt.get("is_anonymous") or cmt.get("commenter_bns") == "anonymous")
-                    cmt["commenter_is_validator"] = False if c_anon else self.is_active_validator(str(cmt.get("commenter", "")))
+                    cmt_addr = normalize_bct_address(str(cmt.get("commenter", "")))
+                    cmt["commenter_is_validator"] = False if c_anon else self.is_active_validator(cmt_addr)
+                    cmt["commenter_avatar"] = None if c_anon else self.avatar_equipped.get(cmt_addr)
             return p
 
     def get_suggested_voices(self, viewer_address: str = "", limit: int = 5) -> List[dict]:
@@ -2734,7 +2765,8 @@ class Blockchain:
                     "address": a,
                     "bns_name": bns,
                     "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}",
-                    "is_validator": self.is_active_validator(a)
+                    "is_validator": self.is_active_validator(a),
+                    "avatar": self.avatar_equipped.get(normalize_bct_address(a))
                 })
 
             following_list = []
@@ -2744,12 +2776,18 @@ class Blockchain:
                     "address": a,
                     "bns_name": bns,
                     "display_name": f"@{bns}" if bns else f"{a[:6]}...{a[-4:]}",
-                    "is_validator": self.is_active_validator(a)
+                    "is_validator": self.is_active_validator(a),
+                    "avatar": self.avatar_equipped.get(normalize_bct_address(a))
                 })
+
+            equipped_avatar = self.avatar_equipped.get(norm_target)
+            owned_avatars = list(self.avatar_owners.get(norm_target, []))
 
             profile_res = {
                 "address": target_address,
                 "primary_handle": primary_handle,
+                "avatar": equipped_avatar,
+                "owned_avatars": owned_avatars,
                 "balance": balance,
                 "staked_amount": val_stake,
                 "is_validator": is_validator,
@@ -3658,7 +3696,7 @@ class Blockchain:
 
         transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(
-            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "space_follow", "bns_register", "bns_transfer")
+            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "space_follow", "bns_register", "bns_transfer", "avatar_mint")
         )
         miner_fee_cut_u = (transfer_fees_u // 2) + space_and_bns_fees_u
 
@@ -3976,6 +4014,7 @@ class Blockchain:
                 self._apply_reward_accounting(clean_miner, breakdown)
                 self._load_in_memory_bns_index()
                 self._load_in_memory_space_index()
+                self._load_in_memory_avatar_index()
                 self._save_state()
                 block_dict = candidate_block.to_dict()
 
@@ -4263,6 +4302,7 @@ class Blockchain:
             self._apply_reward_accounting(clean_miner, breakdown)
             self._load_in_memory_bns_index()
             self._load_in_memory_space_index()
+            self._load_in_memory_avatar_index()
             self._save_state()
             self._broadcast_block_to_peers(candidate_block.to_dict(), exclude_node_id=node_id)
 
@@ -5610,6 +5650,402 @@ class Blockchain:
             self.following = new_following
         self._space_index_key = space_key
 
+    # ── ON-CHAIN SOULBOUND PROFILE AVATARS (Bonding Curve + Color Variants) ──
+
+    @staticmethod
+    def _apply_tx_to_avatar_maps(
+        block_idx,
+        status_lbl: str,
+        tx: Transaction,
+        variant_counts: Dict[str, int],
+        owners_map: Dict[str, List[dict]],
+        equipped_map: Dict[str, Optional[dict]],
+    ):
+        snd = normalize_bct_address(tx.sender)
+        if not snd or not tx.extra_data:
+            return
+        if tx.tx_type == "avatar_mint":
+            raw_vid = str(tx.extra_data.get("variant_id", "") or "").strip().upper()
+            base_id, bg_color = parse_variant_id(raw_vid)
+            if not base_id or not bg_color:
+                base_id = str(tx.extra_data.get("base_id", "") or "").strip().upper()
+                bg_color = normalize_hex_color(tx.extra_data.get("bg_color"))
+                raw_vid = make_variant_id(base_id, bg_color) if (base_id and bg_color) else ""
+            if not raw_vid or not base_id or not bg_color:
+                return
+            item = get_base_avatar(base_id)
+            if not item:
+                return
+
+            new_count = variant_counts.get(raw_vid, 0) + 1
+            variant_counts[raw_vid] = new_count
+
+            owned = owners_map.setdefault(snd, [])
+            if not any(o.get("variant_id") == raw_vid for o in owned):
+                meta = build_avatar_metadata(base_id, bg_color, mint_count=new_count)
+                if meta:
+                    meta["minted_at"] = tx.timestamp
+                    meta["mint_price"] = float(tx.extra_data.get("price", tx.amount) or tx.amount)
+                    meta["mint_index"] = int(tx.extra_data.get("mint_index", new_count) or new_count)
+                    meta["tx_hash"] = tx.hash()
+                    meta["block_index"] = block_idx
+                    meta["status"] = status_lbl
+                    owned.append(meta)
+                    if bool(tx.extra_data.get("auto_equip", True)):
+                        equipped_map[snd] = dict(meta)
+        elif tx.tx_type == "avatar_equip":
+            vid = str(tx.extra_data.get("variant_id", "") or "").strip().upper()
+            if not vid:
+                equipped_map[snd] = None
+                return
+            owned = owners_map.get(snd, [])
+            match = next((o for o in owned if o.get("variant_id") == vid), None)
+            if match:
+                equipped_map[snd] = dict(match)
+
+    def _load_in_memory_avatar_index(self):
+        """Incremental O(Δ) On-Chain Profile Avatar indexer with O(|Mempool|) overlay."""
+        import copy
+        tip_hash = self.chain[-1].hash if self.chain else ""
+        avatar_mempool_txs = [tx for tx in self.pending_transactions if tx.tx_type in ("avatar_mint", "avatar_equip")]
+        mempool_hashes = tuple(tx.hash() for tx in avatar_mempool_txs)
+        avatar_key = (len(self.chain), tip_hash, mempool_hashes)
+        if self._avatar_index_key == avatar_key and self.avatar_variant_counts is not None:
+            return
+
+        if (
+            len(self.chain) < self._confirmed_avatar_len
+            or (
+                self._confirmed_avatar_len > 0
+                and self.chain[self._confirmed_avatar_len - 1].hash != self._confirmed_avatar_tip
+            )
+        ):
+            self._confirmed_avatar_len = 0
+            self._confirmed_avatar_tip = ""
+            self._confirmed_avatar_variant_counts = {}
+            self._confirmed_avatar_owners = {}
+            self._confirmed_avatar_equipped = {}
+
+        if self._confirmed_avatar_len < len(self.chain):
+            for b in self.chain[self._confirmed_avatar_len:]:
+                for tx in b.transactions:
+                    if tx.tx_type in ("avatar_mint", "avatar_equip"):
+                        self._apply_tx_to_avatar_maps(
+                            b.index,
+                            "confirmed",
+                            tx,
+                            self._confirmed_avatar_variant_counts,
+                            self._confirmed_avatar_owners,
+                            self._confirmed_avatar_equipped,
+                        )
+            self._confirmed_avatar_len = len(self.chain)
+            self._confirmed_avatar_tip = tip_hash
+
+        if not avatar_mempool_txs:
+            self.avatar_variant_counts = self._confirmed_avatar_variant_counts
+            self.avatar_owners = self._confirmed_avatar_owners
+            self.avatar_equipped = self._confirmed_avatar_equipped
+        else:
+            new_counts = dict(self._confirmed_avatar_variant_counts)
+            new_owners = copy.deepcopy(self._confirmed_avatar_owners)
+            new_equipped = copy.deepcopy(self._confirmed_avatar_equipped)
+            for tx in avatar_mempool_txs:
+                self._apply_tx_to_avatar_maps("Mempool", "mempool", tx, new_counts, new_owners, new_equipped)
+            self.avatar_variant_counts = new_counts
+            self.avatar_owners = new_owners
+            self.avatar_equipped = new_equipped
+        self._avatar_index_key = avatar_key
+
+    def get_equipped_avatar(self, address: str) -> Optional[dict]:
+        with self.lock:
+            self._load_state()
+            clean_addr = normalize_bct_address(address)
+            if not clean_addr:
+                return None
+            return self.avatar_equipped.get(clean_addr)
+
+    def get_avatar_catalog_state(self, address: str = "") -> dict:
+        with self.lock:
+            self._load_state()
+            clean_addr = normalize_bct_address(address) if address else ""
+            owned_list = list(self.avatar_owners.get(clean_addr, [])) if clean_addr else []
+            owned_vids = {o.get("variant_id") for o in owned_list}
+            equipped = self.avatar_equipped.get(clean_addr) if clean_addr else None
+
+            items = []
+            for item in AVATAR_CATALOG:
+                default_vid = make_variant_id(item["base_id"], DEFAULT_BG_COLOR)
+                default_mints = int(self.avatar_variant_counts.get(default_vid, 0))
+                default_price = compute_variant_price(default_mints)
+                # Count total mints across all background color variants for this base animal
+                prefix = f"{item['base_id']}-"
+                total_mints_all_colors = sum(
+                    cnt for vid, cnt in self.avatar_variant_counts.items() if vid.startswith(prefix)
+                )
+                items.append({
+                    "base_id": item["base_id"],
+                    "collection": item["collection"],
+                    "slug": item["slug"],
+                    "name": item["name"],
+                    "name_tr": item["name_tr"],
+                    "image_url": item["image_url"],
+                    "default_bg_color": DEFAULT_BG_COLOR,
+                    "default_variant_id": default_vid,
+                    "default_mint_count": default_mints,
+                    "default_price": default_price,
+                    "total_mints_all_colors": total_mints_all_colors,
+                    "owns_default": default_vid in owned_vids,
+                })
+
+            return {
+                "collections": list(AVATAR_COLLECTIONS.values()),
+                "curated_colors": CURATED_BG_COLORS,
+                "pricing_rules": {
+                    "base_price_bct": 0.10,
+                    "step_multiplier": 1.25,
+                    "step_percent": 25,
+                    "treasury_percent": 30,
+                    "network_pool_percent": 70,
+                    "pool_breakdown": {
+                        "miner_percent_of_pool": 50,
+                        "validator_percent_of_pool": 40,
+                        "observer_staking_percent_of_pool": 10,
+                    },
+                    "soulbound": True,
+                },
+                "catalog": items,
+                "owned_avatars": owned_list,
+                "equipped_avatar": equipped,
+            }
+
+    def get_avatar_variant_quote(self, base_id: str, bg_color: str = DEFAULT_BG_COLOR, address: str = "") -> Tuple[bool, str, Optional[dict]]:
+        with self.lock:
+            self._load_state()
+            item = get_base_avatar(base_id)
+            if not item:
+                return False, f"Unknown avatar base_id: '{base_id}'", None
+            color = normalize_hex_color(bg_color)
+            if not color:
+                return False, "Invalid hex background color. Use #RRGGBB format.", None
+
+            variant_id = make_variant_id(item["base_id"], color)
+            mint_count = int(self.avatar_variant_counts.get(variant_id, 0))
+            price = compute_variant_price(mint_count)
+            next_price = compute_variant_price(mint_count + 1)
+            split = compute_revenue_split(price)
+
+            clean_addr = normalize_bct_address(address) if address else ""
+            owned_list = self.avatar_owners.get(clean_addr, []) if clean_addr else []
+            already_owned = any(o.get("variant_id") == variant_id for o in owned_list)
+            equipped = self.avatar_equipped.get(clean_addr) if clean_addr else None
+            is_equipped = bool(equipped and equipped.get("variant_id") == variant_id)
+
+            return True, "Avatar variant quote calculated.", {
+                "variant_id": variant_id,
+                "base_id": item["base_id"],
+                "collection": item["collection"],
+                "name": item["name"],
+                "name_tr": item["name_tr"],
+                "image_url": item["image_url"],
+                "bg_color": color,
+                "mint_count": mint_count,
+                "is_fresh_variant": (mint_count == 0),
+                "price": split["price"],
+                "next_price": next_price,
+                "treasury_cut": split["treasury_cut"],
+                "pool_cut": split["pool_cut"],
+                "miner_share": split["miner_share"],
+                "validator_share": split["validator_share"],
+                "observer_share": split["observer_share"],
+                "already_owned": already_owned,
+                "is_equipped": is_equipped,
+                "soulbound": True,
+            }
+
+    def mint_avatar(
+        self,
+        buyer: str,
+        base_id: str,
+        bg_color: str = DEFAULT_BG_COLOR,
+        max_price: Optional[float] = None,
+        auto_equip: bool = True,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Mints a Soulbound (non-transferable, non-sellable) profile avatar variant on-chain.
+        - Unique Variant ID = `{base_id}-{HEX}` (e.g. `ANM-001-FFFFFF`).
+        - Dynamic Bonding Curve: 0.10 BCT opening price for any unminted variant, +25% per mint.
+        - Revenue Split: 30% Treasury Vault, 70% Block Reward Pool (50% Miner, 40% Validators, 10% Observer Stakers).
+        """
+        with self.lock:
+            self._load_state()
+            clean_buyer = normalize_bct_address(buyer)
+            if not is_valid_bct_address(clean_buyer) or clean_buyer.upper() in (
+                TREASURY_ADDRESS, "GENESIS_VAULT", "GENESIS", BRIDGE_VAULT_ADDRESS, VALIDATOR_STAKE_VAULT_ADDRESS
+            ):
+                return False, f"Invalid buyer address: '{clean_buyer}'", None
+
+            item = get_base_avatar(base_id)
+            if not item:
+                return False, f"Unknown avatar ID: '{base_id}'", None
+
+            color = normalize_hex_color(bg_color)
+            if not color:
+                return False, "Invalid background color. Must be a valid #RRGGBB hex code.", None
+
+            variant_id = make_variant_id(item["base_id"], color)
+            if not variant_id:
+                return False, "Could not construct canonical avatar variant ID.", None
+
+            expected_payload = signed_payload or f"AVATAR_MINT:{clean_buyer}:{variant_id}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_buyer, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            # Duplicate ownership guard (confirmed + mempool)
+            owned_list = self.avatar_owners.get(clean_buyer, [])
+            if any(o.get("variant_id") == variant_id for o in owned_list):
+                return False, "You already own this avatar variant. You can equip it for free!", None
+
+            # Canonical server-side bonding curve pricing (never trust client price)
+            current_count = int(self.avatar_variant_counts.get(variant_id, 0))
+            exact_price = compute_variant_price(current_count)
+
+            # Slippage / front-run protection
+            if max_price is not None:
+                try:
+                    mp = float(max_price)
+                    if not math.isfinite(mp) or mp <= 0:
+                        return False, "Invalid max_price slippage parameter.", None
+                    if exact_price > mp + 1e-6:
+                        return False, f"Avatar price increased to {exact_price:.6f} BCT due to another purchase. Please confirm the new price.", None
+                except (TypeError, ValueError):
+                    return False, "Invalid max_price parameter.", None
+
+            buyer_bal = self.verify_and_recalc_balance(clean_buyer)
+            if buyer_bal < exact_price:
+                return False, f"Insufficient balance! Required: {exact_price:.6f} BCT, Current: {buyer_bal:.4f} BCT.", None
+
+            split = compute_revenue_split(exact_price)
+            treasury_cut = split["treasury_cut"]
+            pool_cut = split["pool_cut"]
+
+            extra_data = {
+                "variant_id": variant_id,
+                "base_id": item["base_id"],
+                "bg_color": color,
+                "collection": item["collection"],
+                "name": item["name"],
+                "mint_index": current_count + 1,
+                "price": split["price"],
+                "treasury_cut": treasury_cut,
+                "pool_cut": pool_cut,
+                "soulbound": True,
+                "transferable": False,
+                "sellable": False,
+                "auto_equip": bool(auto_equip),
+            }
+
+            tx = Transaction(
+                sender=clean_buyer,
+                receiver=TREASURY_ADDRESS,
+                amount=split["price"],
+                fee=pool_cut,
+                signature=signature,
+                tx_type="avatar_mint",
+                extra_data=extra_data,
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + pool_cut, 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_avatar_index()
+
+            self.balances[clean_buyer] = self.verify_and_recalc_balance(clean_buyer)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._loaded_revision += 1
+            self._profile_cache.clear()
+            self._save_state()
+
+            new_meta = build_avatar_metadata(item["base_id"], color, mint_count=current_count + 1)
+            return True, f"Avatar {variant_id} minted on-chain for {split['price']:.4f} BCT!", {
+                "avatar": new_meta,
+                "variant_id": variant_id,
+                "price": split["price"],
+                "next_price": compute_variant_price(current_count + 1),
+                "treasury_cut": treasury_cut,
+                "pool_cut": pool_cut,
+                "auto_equip": bool(auto_equip),
+                "equipped_avatar": self.avatar_equipped.get(clean_buyer),
+                "owned_avatars": list(self.avatar_owners.get(clean_buyer, [])),
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "new_balance": self.balances[clean_buyer],
+            }
+
+    def equip_avatar(
+        self,
+        owner: str,
+        variant_id: str = "",
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Equips an owned Soulbound avatar on the user's profile, or unequips when `variant_id == ""`.
+        Zero fee, cryptographically signed on-chain transaction.
+        """
+        with self.lock:
+            self._load_state()
+            clean_owner = normalize_bct_address(owner)
+            if not is_valid_bct_address(clean_owner):
+                return False, f"Invalid owner address: '{clean_owner}'", None
+
+            clean_vid = str(variant_id or "").strip().upper()
+            if clean_vid:
+                base_id, bg_color = parse_variant_id(clean_vid)
+                if not base_id or not bg_color:
+                    return False, f"Invalid avatar variant ID: '{clean_vid}'", None
+                owned_list = self.avatar_owners.get(clean_owner, [])
+                if not any(o.get("variant_id") == clean_vid for o in owned_list):
+                    return False, "You do not own this avatar variant.", None
+
+            expected_payload = signed_payload or f"AVATAR_EQUIP:{clean_owner}:{clean_vid}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            tx = Transaction(
+                sender=clean_owner,
+                receiver=clean_owner,
+                amount=0.0,
+                fee=0.0,
+                signature=signature,
+                tx_type="avatar_equip",
+                extra_data={"variant_id": clean_vid},
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_avatar_index()
+            self._loaded_revision += 1
+            self._profile_cache.clear()
+            self._save_state()
+
+            msg = f"Avatar {clean_vid} equipped to your profile!" if clean_vid else "Profile avatar removed."
+            return True, msg, {
+                "equipped_avatar": self.avatar_equipped.get(clean_owner),
+                "owned_avatars": list(self.avatar_owners.get(clean_owner, [])),
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+            }
+
     def _save_state(self, force_json_backup: bool = False):
         """
         O(1) Delta Persistence Engine:
@@ -5801,6 +6237,7 @@ class Blockchain:
                     self._loaded_revision = rev
                     self._load_in_memory_bns_index()
                     self._load_in_memory_space_index()
+                    self._load_in_memory_avatar_index()
                     if sweep_overdue:
                         self._sweep_overdue_mempool()
                     return True
@@ -5844,6 +6281,7 @@ class Blockchain:
             }
             self._load_in_memory_bns_index()
             self._load_in_memory_space_index()
+            self._load_in_memory_avatar_index()
 
             if sweep_overdue:
                 self._sweep_overdue_mempool()

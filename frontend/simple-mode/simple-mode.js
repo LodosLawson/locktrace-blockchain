@@ -2741,6 +2741,20 @@
     `;
   }
 
+  // ── ON-CHAIN AVATAR RENDER HELPER (Strict XSS & Color Sanitization) ───────
+  function renderAvatarCircleHtml(avatarObj, fallbackHtml) {
+    if (avatarObj && typeof avatarObj === 'object' && typeof avatarObj.image_url === 'string') {
+      const url = avatarObj.image_url.trim();
+      if (url.startsWith('/avatars/') && !url.includes('..') && !url.includes('"') && !url.includes("'")) {
+        const rawBg = String(avatarObj.bg_color || '#FFFFFF').trim().toUpperCase();
+        const safeBg = /^#[0-9A-F]{6}$/.test(rawBg) ? rawBg : '#FFFFFF';
+        const altName = esc(avatarObj.name || 'Avatar');
+        return `<div class="w-full h-full rounded-full overflow-hidden flex items-center justify-center" style="background-color:${safeBg};"><img src="${url}" alt="${altName}" class="w-full h-full object-contain p-0.5 select-none pointer-events-none" loading="lazy" /></div>`;
+      }
+    }
+    return fallbackHtml;
+  }
+
   // ── SCR-SPC-REEL: TikTok / Instagram Style Vertical Snap Card ──────────────
   function renderSimpleReelCard(post, acc, index, total) {
     if (!post || typeof post !== 'object') return '';
@@ -2757,6 +2771,7 @@
     const bodyHtml = safeFormatSimpleBody(post.content || '');
     const profileTargetAttr = escAttr(authorBns || authorAddr);
     const avatarChar = (authorBns || authorAddr || 'B').replace(/^@/, '')[0].toUpperCase();
+    const authorAvatarHtml = renderAvatarCircleHtml(post.author_avatar, avatarChar);
 
     return `
       <section class="simple-reel-slide w-full h-full min-h-full max-h-full snap-start snap-always flex flex-col items-center justify-center p-3 relative shrink-0 select-none" data-post-index="${index}">
@@ -2769,7 +2784,7 @@
             <div class="flex items-center gap-2.5 min-w-0 cursor-pointer"
                  onclick="event.stopPropagation(); window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${profileTargetAttr}' })">
               <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary font-bold font-mono text-sm shrink-0 ring-1 ring-primary/25">
-                ${avatarChar}
+                ${authorAvatarHtml}
               </div>
               <div class="min-w-0 flex-1">
                 <div class="flex items-center gap-1 min-w-0">
@@ -2879,6 +2894,15 @@
       return true;
     });
 
+    const myProfileForHeader = acc ? getSimpleProfileData(acc.address) : null;
+    if (!myProfileForHeader && acc && acc.address) {
+      fetchSimpleProfile(acc.address);
+    }
+    const myMiniAvatarHtml = renderAvatarCircleHtml(
+      myProfileForHeader?.avatar,
+      '<span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">account_circle</span>'
+    );
+
     const isSnap = (simpleState.feedLayout !== 'classic');
 
     if (isSnap) {
@@ -2891,7 +2915,7 @@
                  onclick="window.BlocTagSimpleMode.go('${acc ? 'SCR-PRF-05' : 'SCR-ONB-01'}', { profileTarget: '' })">
               <div class="relative shrink-0">
                 <div class="w-9 h-9 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden">
-                  <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">account_circle</span>
+                  ${myMiniAvatarHtml}
                 </div>
                 <span class="absolute bottom-0 right-0 w-2.5 h-2.5 rounded-full bg-primary ring-2 ring-surface"></span>
               </div>
@@ -2974,7 +2998,7 @@
                onclick="window.BlocTagSimpleMode.go('${acc ? 'SCR-PRF-05' : 'SCR-ONB-01'}', { profileTarget: '' })">
             <div class="relative shrink-0">
               <div class="w-10 h-10 rounded-full bg-surface-container-high flex items-center justify-center overflow-hidden">
-                <span class="material-symbols-outlined notranslate text-primary text-[22px]" translate="no">account_circle</span>
+                ${myMiniAvatarHtml}
               </div>
               <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-primary ring-2 ring-surface"></span>
             </div>
@@ -3110,6 +3134,10 @@
     const commentsCount = Number(post.comments_count || (Array.isArray(post.comments) ? post.comments.length : 0));
     const bodyHtml = safeFormatSimpleBody(post.content || '');
     const profileTargetAttr = escAttr(authorBns || authorAddr);
+    const postAvatarHtml = renderAvatarCircleHtml(
+      post.author_avatar,
+      '<span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>'
+    );
 
     return `
       <article onclick="window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: '${pid}' })"
@@ -3118,7 +3146,7 @@
           <div class="flex items-center gap-2.5 min-w-0 flex-1"
                onclick="event.stopPropagation(); window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${profileTargetAttr}' })">
             <div class="w-10 h-10 rounded-full bg-surface-container-high overflow-hidden flex items-center justify-center text-primary shrink-0">
-              <span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>
+              ${postAvatarHtml}
             </div>
             <div class="min-w-0 flex-1">
               <div class="flex items-center gap-1 min-w-0">
@@ -3426,20 +3454,36 @@
         <div class="px-5 -mt-10 flex flex-col relative z-10">
           <div class="flex items-end justify-between gap-3">
             <!-- Avatar -->
-            <div class="relative shrink-0">
-              <div class="w-20 h-20 rounded-full p-1 bg-surface shadow-xl ring-2 ring-surface">
+            <div class="relative shrink-0 ${isMyProfile ? 'cursor-pointer group' : ''}"
+                 ${isMyProfile ? 'onclick="window.BlocTagSimpleMode.openAvatarStudio()"' : ''}>
+              <div class="w-20 h-20 rounded-full p-1 bg-surface shadow-xl ring-2 ring-surface ${isMyProfile ? 'group-hover:ring-primary/50 transition-all' : ''}">
                 <div class="w-full h-full rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-mono font-bold text-2xl">
-                  ${resolvedBns ? esc(resolvedBns.replace(/^@/, '')[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[36px]" translate="no">person</span>'}
+                  ${renderAvatarCircleHtml(
+                    pData?.avatar,
+                    resolvedBns ? esc(resolvedBns.replace(/^@/, '')[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[36px]" translate="no">person</span>'
+                  )}
                 </div>
               </div>
-              <div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-surface p-0.5 flex items-center justify-center">
-                <div class="w-full h-full rounded-full bg-primary"></div>
-              </div>
+              ${isMyProfile ? `
+                <div class="absolute bottom-0 right-0 w-7 h-7 rounded-full bg-primary text-on-primary shadow-md ring-2 ring-surface flex items-center justify-center group-hover:scale-110 transition-transform"
+                     title="${t('avatar_studio_title', 'Avatar Studio')}">
+                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">photo_camera</span>
+                </div>
+              ` : `
+                <div class="absolute bottom-1 right-1 w-4 h-4 rounded-full bg-surface p-0.5 flex items-center justify-center">
+                  <div class="w-full h-full rounded-full bg-primary"></div>
+                </div>
+              `}
             </div>
 
             <!-- Profile Action Buttons -->
             <div class="flex items-center gap-1.5 pb-1 flex-wrap justify-end">
               ${isMyProfile ? `
+                <button type="button" onclick="window.BlocTagSimpleMode.openAvatarStudio()"
+                  class="h-8.5 px-3 rounded-full bg-primary/15 hover:bg-primary/25 text-primary text-xs font-semibold transition-all active:scale-95 flex items-center gap-1 cursor-pointer border border-primary/25">
+                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">palette</span>
+                  <span>${t('profile_avatar_btn', 'Avatar')}</span>
+                </button>
                 <button type="button" onclick="if(typeof openWalletVaultModal==='function') openWalletVaultModal();"
                   class="h-8.5 px-3 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[15px]" translate="no">tune</span>
@@ -3824,7 +3868,10 @@
               <div class="flex items-center gap-3 min-w-0 pr-2 cursor-pointer flex-1"
                 onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${escAttr(u.bns_name || u.address)}' })">
                 <div class="relative shrink-0 w-11 h-11 rounded-full bg-surface-container-highest flex items-center justify-center font-bold text-sm text-primary ring-1 ring-primary/20">
-                  ${u.bns_name ? esc(u.bns_name[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[20px]" translate="no">person</span>'}
+                  ${renderAvatarCircleHtml(
+                    u.avatar,
+                    u.bns_name ? esc(u.bns_name[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[20px]" translate="no">person</span>'
+                  )}
                   <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-primary ring-2 ring-surface-container-low"></span>
                 </div>
                 <div class="flex flex-col min-w-0">
@@ -4156,9 +4203,14 @@
     const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
     const txs = (typeof personalTxCache !== 'undefined' && Array.isArray(personalTxCache)) ? personalTxCache : [];
 
+    const myProfSnap = addr ? getSimpleProfileData(addr) : null;
+    const myAvVid = (myProfSnap && myProfSnap.avatar && myProfSnap.avatar.variant_id) ? myProfSnap.avatar.variant_id : '';
+    const targetProfSnap = simpleState.profileTarget ? getSimpleProfileData(simpleState.profileTarget) : myProfSnap;
+    const targetAvVid = (targetProfSnap && targetProfSnap.avatar && targetProfSnap.avatar.variant_id) ? targetProfSnap.avatar.variant_id : '';
+
     if (simpleState.activeScreen === 'SCR-SPC-03') {
-      const feedSig = posts.slice(0, 35).map(p => `${p.post_id || p.id}:${p.likes_count || (p.likes ? p.likes.length : 0)}:${p.comments_count || (p.comments ? p.comments.length : 0)}`).join(',');
-      return `SPC03|${addr}|${bal}|${unread}|${simpleState.feedFilter}|${simpleState.feedLayout}|${simpleState.searchBarOpen}|${simpleState.searchQuery}|${feedSig}`;
+      const feedSig = posts.slice(0, 35).map(p => `${p.post_id || p.id}:${p.likes_count || (p.likes ? p.likes.length : 0)}:${p.comments_count || (p.comments ? p.comments.length : 0)}:${p.author_avatar ? p.author_avatar.variant_id : ''}`).join(',');
+      return `SPC03|${addr}|${myAvVid}|${bal}|${unread}|${simpleState.feedFilter}|${simpleState.feedLayout}|${simpleState.searchBarOpen}|${simpleState.searchQuery}|${feedSig}`;
     }
     if (simpleState.activeScreen === 'SCR-SPC-04') {
       const post = posts.find(p => String(p.post_id || p.id) === String(simpleState.activePostId)) || posts[0];
@@ -4173,7 +4225,7 @@
     if (simpleState.activeScreen === 'SCR-PRF-FOLLOW' || simpleState.activeScreen === 'SCR-PRF-FOLLOWERS' || simpleState.activeScreen === 'SCR-PRF-FOLLOWING') {
       return `PRFFOLLOW|${addr}|${simpleState.followTargetAddr}|${simpleState.followTab}|${simpleState.followFilter}|${simpleState.followSearch}|${unread}`;
     }
-    return `${simpleState.activeScreen}|${addr}|${bal}|${nonce}|${hidden}|${unread}|${simpleState.profileTarget}|${simpleState.profileTab}|${simpleState.notifFilter}|${simpleState.importModeOpen}|${simpleState.seedSavedConfirmed}`;
+    return `${simpleState.activeScreen}|${addr}|${myAvVid}|${targetAvVid}|${bal}|${nonce}|${hidden}|${unread}|${simpleState.profileTarget}|${simpleState.profileTab}|${simpleState.notifFilter}|${simpleState.importModeOpen}|${simpleState.seedSavedConfirmed}`;
   }
 
   function patchSimpleLiveValuesInPlace() {
@@ -4642,6 +4694,462 @@
     closeComposerModal: () => {
       const modal = document.getElementById('simple-composer-modal');
       if (modal) modal.remove();
+    },
+
+    // ── ON-CHAIN PROFILE AVATAR STUDIO (Bonding Curve + Color Variants) ─────
+    _avatarStudioState: {
+      tab: 'catalog',       // 'catalog' | 'owned'
+      collection: 'animals',
+      catalogData: null,
+      selectedBaseId: 'ANM-001',
+      selectedColor: '#FFFFFF',
+      quote: null,
+      loadingQuote: false,
+      busy: false,
+    },
+
+    openAvatarStudio: async () => {
+      const acc = getActiveWallet();
+      if (!acc || !acc.address) {
+        navigateToSimpleScreen('SCR-ONB-01');
+        return;
+      }
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      st.tab = 'catalog';
+      st.busy = false;
+      window.BlocTagSimpleMode._renderAvatarStudioModal(true);
+
+      try {
+        const apiUrl = '/avatars/catalog?address=' + encodeURIComponent(acc.address);
+        const res = (typeof window.apiFetch === 'function')
+          ? await window.apiFetch(apiUrl)
+          : await fetch('/api/v1' + apiUrl).then(r => r.json().then(b => ({ ok: r.ok, body: b })));
+        if (res.ok && res.body && res.body.data) {
+          st.catalogData = res.body.data;
+          if (!st.selectedBaseId && st.catalogData.catalog && st.catalogData.catalog.length > 0) {
+            st.selectedBaseId = st.catalogData.catalog[0].base_id;
+          }
+          window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+          await window.BlocTagSimpleMode._fetchAvatarQuote();
+        }
+      } catch (err) {
+        console.error('Avatar catalog load error:', err);
+        if (typeof window.showToast === 'function') window.showToast('Failed to load avatar catalog.', 'error');
+      }
+    },
+
+    closeAvatarStudio: () => {
+      const modal = document.getElementById('simple-avatar-studio-modal');
+      if (modal) modal.remove();
+    },
+
+    setAvatarStudioTab: (tab) => {
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      st.tab = (tab === 'owned') ? 'owned' : 'catalog';
+      window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+    },
+
+    selectAvatarItem: async (baseId) => {
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      st.selectedBaseId = String(baseId || 'ANM-001').toUpperCase();
+      window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      await window.BlocTagSimpleMode._fetchAvatarQuote();
+    },
+
+    selectAvatarColor: async (hexColor) => {
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      let c = String(hexColor || '#FFFFFF').trim().toUpperCase();
+      if (!c.startsWith('#')) c = '#' + c;
+      if (!/^#[0-9A-F]{6}$/.test(c)) return;
+      st.selectedColor = c;
+      window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      await window.BlocTagSimpleMode._fetchAvatarQuote();
+    },
+
+    _fetchAvatarQuote: async () => {
+      const acc = getActiveWallet();
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      st.loadingQuote = true;
+      window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      try {
+        const qUrl = '/avatars/price?base_id=' + encodeURIComponent(st.selectedBaseId)
+          + '&bg_color=' + encodeURIComponent(st.selectedColor)
+          + (acc && acc.address ? '&address=' + encodeURIComponent(acc.address) : '');
+        const res = (typeof window.apiFetch === 'function')
+          ? await window.apiFetch(qUrl)
+          : await fetch('/api/v1' + qUrl).then(r => r.json().then(b => ({ ok: r.ok, body: b })));
+        if (res.ok && res.body && res.body.data) {
+          st.quote = res.body.data;
+        }
+      } catch (err) {
+        console.error('Avatar quote error:', err);
+      } finally {
+        st.loadingQuote = false;
+        window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      }
+    },
+
+    mintSelectedAvatar: async () => {
+      const acc = getActiveWallet();
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      if (!acc || !acc.address || st.busy) return;
+      if (typeof window.buildSignedAuthPayload !== 'function') {
+        if (typeof window.showToast === 'function') window.showToast('Wallet signing engine unavailable.', 'error');
+        return;
+      }
+
+      const baseId = st.selectedBaseId;
+      const bgColor = st.selectedColor;
+      const variantId = `${baseId}-${bgColor.slice(1)}`;
+      const maxPrice = st.quote ? Number(st.quote.price) : 0.10;
+
+      st.busy = true;
+      window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      try {
+        const canonical = `AVATAR_MINT:${acc.address}:${variantId}`;
+        const authFields = await window.buildSignedAuthPayload(canonical);
+        const resp = await window.apiFetch('/avatars/mint', {
+          method: 'POST',
+          body: JSON.stringify({
+            buyer: acc.address,
+            base_id: baseId,
+            bg_color: bgColor,
+            max_price: maxPrice,
+            auto_equip: true,
+            ...authFields
+          })
+        });
+        if (!resp.ok || !resp.body || !resp.body.success) {
+          throw new Error((resp.body && resp.body.message) || 'Avatar mint failed');
+        }
+        const d = resp.body.data || {};
+        // Update local wallet balance & profile cache immediately
+        if (typeof d.new_balance === 'number') {
+          acc.balance = d.new_balance;
+          if (typeof window.saveWalletState === 'function') window.saveWalletState(acc);
+        }
+        const addrKey = acc.address.toLowerCase();
+        if (_simpleProfileCache[addrKey]) {
+          _simpleProfileCache[addrKey].avatar = d.equipped_avatar || d.avatar || null;
+          _simpleProfileCache[addrKey].owned_avatars = d.owned_avatars || [];
+          _simpleProfileCache[addrKey]._cachedAt = 0;
+        }
+        if (typeof window.showToast === 'function') {
+          window.showToast(resp.body.message || `Avatar ${variantId} minted & equipped!`, 'verified');
+        }
+        // Refresh catalog, quote, profile, and space feed
+        await window.BlocTagSimpleMode.openAvatarStudio();
+        fetchSimpleProfile(acc.address);
+        if (typeof window.loadSpaceFeed === 'function') window.loadSpaceFeed();
+        renderSimpleMode();
+      } catch (err) {
+        if (typeof window.showToast === 'function') {
+          window.showToast(err.message || 'Avatar purchase canceled or failed.', 'error');
+        }
+      } finally {
+        st.busy = false;
+        window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      }
+    },
+
+    equipAvatarVariant: async (variantId) => {
+      const acc = getActiveWallet();
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      if (!acc || !acc.address || st.busy) return;
+      if (typeof window.buildSignedAuthPayload !== 'function') {
+        if (typeof window.showToast === 'function') window.showToast('Wallet signing engine unavailable.', 'error');
+        return;
+      }
+
+      const cleanVid = String(variantId || '').trim().toUpperCase();
+      st.busy = true;
+      window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      try {
+        const canonical = `AVATAR_EQUIP:${acc.address}:${cleanVid}`;
+        const authFields = await window.buildSignedAuthPayload(canonical);
+        const resp = await window.apiFetch('/avatars/equip', {
+          method: 'POST',
+          body: JSON.stringify({
+            owner: acc.address,
+            variant_id: cleanVid,
+            ...authFields
+          })
+        });
+        if (!resp.ok || !resp.body || !resp.body.success) {
+          throw new Error((resp.body && resp.body.message) || 'Avatar update failed');
+        }
+        const d = resp.body.data || {};
+        const addrKey = acc.address.toLowerCase();
+        if (_simpleProfileCache[addrKey]) {
+          _simpleProfileCache[addrKey].avatar = d.equipped_avatar || null;
+          _simpleProfileCache[addrKey].owned_avatars = d.owned_avatars || [];
+          _simpleProfileCache[addrKey]._cachedAt = 0;
+        }
+        if (typeof window.showToast === 'function') {
+          window.showToast(resp.body.message || (cleanVid ? 'Avatar equipped!' : 'Avatar removed from profile.'), 'check_circle');
+        }
+        await window.BlocTagSimpleMode.openAvatarStudio();
+        fetchSimpleProfile(acc.address);
+        if (typeof window.loadSpaceFeed === 'function') window.loadSpaceFeed();
+        renderSimpleMode();
+      } catch (err) {
+        if (typeof window.showToast === 'function') {
+          window.showToast(err.message || 'Avatar equip failed.', 'error');
+        }
+      } finally {
+        st.busy = false;
+        window.BlocTagSimpleMode._renderAvatarStudioModal(false);
+      }
+    },
+
+    _renderAvatarStudioModal: (isInitialLoading) => {
+      let modal = document.getElementById('simple-avatar-studio-modal');
+      if (!modal) {
+        modal = document.createElement('div');
+        modal.id = 'simple-avatar-studio-modal';
+        document.body.appendChild(modal);
+      }
+      const st = window.BlocTagSimpleMode._avatarStudioState;
+      const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+      const cat = st.catalogData;
+      const catalogItems = (cat && Array.isArray(cat.catalog)) ? cat.catalog : [];
+      const curatedColors = (cat && Array.isArray(cat.curated_colors)) ? cat.curated_colors : [
+        { hex: '#FFFFFF', name: 'White', name_tr: 'Beyaz' },
+        { hex: '#0F172A', name: 'Obsidian', name_tr: 'Obsidyen' },
+        { hex: '#10B981', name: 'Emerald', name_tr: 'Zümrüt' },
+        { hex: '#3B82F6', name: 'Blue', name_tr: 'Mavi' },
+        { hex: '#8B5CF6', name: 'Violet', name_tr: 'Mor' },
+        { hex: '#EC4899', name: 'Pink', name_tr: 'Pembe' },
+        { hex: '#F59E0B', name: 'Gold', name_tr: 'Altın' },
+        { hex: '#EF4444', name: 'Red', name_tr: 'Kırmızı' },
+      ];
+      const ownedAvatars = (cat && Array.isArray(cat.owned_avatars)) ? cat.owned_avatars : [];
+      const equippedAvatar = (cat && cat.equipped_avatar) ? cat.equipped_avatar : null;
+
+      const selectedItem = catalogItems.find(i => i.base_id === st.selectedBaseId) || catalogItems[0] || null;
+      const liveVariantId = selectedItem ? `${selectedItem.base_id}-${st.selectedColor.slice(1)}` : '';
+      const q = (st.quote && st.quote.variant_id === liveVariantId) ? st.quote : null;
+
+      const priceDisplay = q ? Number(q.price).toFixed(q.price >= 1 ? 4 : (q.price === 0.1 ? 2 : 5)).replace(/0+$/, '').replace(/\.$/, '') : '0.10';
+      const nextPriceDisplay = q ? Number(q.next_price).toFixed(5).replace(/0+$/, '').replace(/\.$/, '') : '0.125';
+      const mintCount = q ? Number(q.mint_count || 0) : 0;
+      const alreadyOwned = Boolean(q ? q.already_owned : ownedAvatars.some(o => o.variant_id === liveVariantId));
+      const isEquipped = Boolean(q ? q.is_equipped : (equippedAvatar && equippedAvatar.variant_id === liveVariantId));
+
+      modal.className = 'fixed inset-0 z-[95] bg-black/80 backdrop-blur-md flex items-end sm:items-center justify-center p-0 sm:p-4';
+      modal.innerHTML = `
+        <div class="w-full sm:max-w-lg max-h-[92dvh] bg-surface-container-high rounded-t-3xl sm:rounded-3xl border border-outline-variant/25 shadow-2xl flex flex-col overflow-hidden">
+          <!-- Studio Header -->
+          <div class="flex items-center justify-between px-5 py-4 border-b border-outline-variant/15 shrink-0">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-9 h-9 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">palette</span>
+              </div>
+              <div class="min-w-0">
+                <h3 class="text-sm font-bold text-on-surface truncate">${isTr ? 'On-Chain Avatar Stüdyosu' : 'On-Chain Avatar Studio'}</h3>
+                <p class="text-[11px] text-on-surface-variant truncate">${isTr ? 'Soulbound (Satılamaz / Gönderilemez) • Hayvanlar Koleksiyonu' : 'Soulbound (Non-transferable) • Animals Collection'}</p>
+              </div>
+            </div>
+            <button type="button" onclick="window.BlocTagSimpleMode.closeAvatarStudio()"
+              class="w-8 h-8 rounded-full bg-surface-container flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer shrink-0">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
+            </button>
+          </div>
+
+          <!-- Tabs (Catalog / My Avatars) -->
+          <div class="px-5 pt-3 pb-2 flex items-center gap-2 shrink-0">
+            <button type="button" onclick="window.BlocTagSimpleMode.setAvatarStudioTab('catalog')"
+              class="flex-1 h-9 rounded-full text-xs font-semibold transition-all cursor-pointer ${st.tab === 'catalog' ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container text-on-surface-variant hover:text-on-surface'}">
+              ${isTr ? 'Hayvanlar (' + catalogItems.length + ')' : 'Animals (' + catalogItems.length + ')'}
+            </button>
+            <button type="button" onclick="window.BlocTagSimpleMode.setAvatarStudioTab('owned')"
+              class="flex-1 h-9 rounded-full text-xs font-semibold transition-all cursor-pointer ${st.tab === 'owned' ? 'bg-primary text-on-primary shadow-sm' : 'bg-surface-container text-on-surface-variant hover:text-on-surface'}">
+              ${isTr ? 'Avatarlarım (' + ownedAvatars.length + ')' : 'My Avatars (' + ownedAvatars.length + ')'}
+            </button>
+          </div>
+
+          <!-- Scrollable Body -->
+          <div class="flex-1 overflow-y-auto px-5 pb-5 pt-2 space-y-4">
+            ${isInitialLoading ? `
+              <div class="py-12 flex flex-col items-center justify-center gap-2 text-on-surface-variant">
+                <span class="material-symbols-outlined notranslate text-[32px] text-primary animate-spin" translate="no">progress_activity</span>
+                <span class="text-xs font-medium">${isTr ? 'Koleksiyon yükleniyor...' : 'Loading on-chain collection...'}</span>
+              </div>
+            ` : (st.tab === 'owned' ? `
+              <!-- MY OWNED AVATARS TAB -->
+              ${equippedAvatar ? `
+                <div class="p-3.5 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-between gap-3">
+                  <div class="flex items-center gap-3 min-w-0">
+                    <div class="w-12 h-12 rounded-full overflow-hidden shrink-0 ring-2 ring-primary">
+                      ${renderAvatarCircleHtml(equippedAvatar, '')}
+                    </div>
+                    <div class="min-w-0">
+                      <span class="text-[10px] font-bold uppercase tracking-wider text-primary block">${isTr ? 'Profilde Aktif' : 'Equipped on Profile'}</span>
+                      <span class="text-xs font-bold text-on-surface truncate block">${esc(isTr ? (equippedAvatar.name_tr || equippedAvatar.name) : equippedAvatar.name)}</span>
+                      <span class="text-[10.5px] font-mono text-on-surface-variant">${esc(equippedAvatar.variant_id)}</span>
+                    </div>
+                  </div>
+                  <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('')"
+                    class="h-8 px-3 rounded-full bg-surface-container-highest text-on-surface text-[11px] font-semibold hover:bg-error/20 hover:text-error transition-colors cursor-pointer shrink-0">
+                    ${isTr ? 'Kaldır' : 'Remove'}
+                  </button>
+                </div>
+              ` : ''}
+
+              ${ownedAvatars.length === 0 ? `
+                <div class="py-10 text-center flex flex-col items-center gap-2 text-on-surface-variant">
+                  <span class="material-symbols-outlined notranslate text-[36px] text-outline" translate="no">collections</span>
+                  <p class="text-xs font-semibold text-on-surface">${isTr ? 'Henüz bir avatarınız yok' : 'No avatars owned yet'}</p>
+                  <p class="text-[11px] max-w-xs">${isTr ? 'Hayvanlar sekmesinden 0.10 BCT açılış fiyatıyla kendi arka plan renginizde benzersiz bir ID oluşturabilirsiniz.' : 'Pick an animal and background color from the catalog starting at 0.10 BCT.'}</p>
+                </div>
+              ` : `
+                <div class="grid grid-cols-2 gap-3">
+                  ${ownedAvatars.map(av => {
+                    const isEq = Boolean(equippedAvatar && equippedAvatar.variant_id === av.variant_id);
+                    return `
+                      <div class="p-3 rounded-2xl bg-surface-container-low border ${isEq ? 'border-primary ring-1 ring-primary/40' : 'border-outline-variant/15'} flex flex-col items-center gap-2">
+                        <div class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-surface shadow-md">
+                          ${renderAvatarCircleHtml(av, '')}
+                        </div>
+                        <div class="text-center min-w-0 w-full">
+                          <div class="text-xs font-bold text-on-surface truncate">${esc(isTr ? (av.name_tr || av.name) : av.name)}</div>
+                          <div class="text-[10px] font-mono text-primary truncate">${esc(av.variant_id)}</div>
+                          <div class="text-[9.5px] text-outline mt-0.5">${isTr ? 'Soulbound • Kişiye Özel' : 'Soulbound • Non-transferable'}</div>
+                        </div>
+                        ${isEq ? `
+                          <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('')"
+                            class="w-full h-8 rounded-full bg-surface-container-highest text-on-surface text-[11px] font-semibold hover:bg-error/20 hover:text-error transition-colors cursor-pointer">
+                            ${isTr ? 'Profilden Kaldır' : 'Unequip (Free)'}
+                          </button>
+                        ` : `
+                          <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('${escAttr(av.variant_id)}')"
+                            class="w-full h-8 rounded-full bg-primary text-on-primary text-[11px] font-semibold hover:brightness-95 transition-all cursor-pointer">
+                            ${isTr ? 'Profile Tak (Ücretsiz)' : 'Equip (Free)'}
+                          </button>
+                        `}
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              `}
+            ` : `
+              <!-- LIVE CUSTOMIZER PREVIEW CARD -->
+              ${selectedItem ? `
+                <div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/20 space-y-3.5">
+                  <div class="flex items-center gap-4">
+                    <!-- Live Circular Preview -->
+                    <div class="w-24 h-24 rounded-full overflow-hidden shrink-0 shadow-xl ring-4 ring-surface" style="background-color:${st.selectedColor};">
+                      <img src="${selectedItem.image_url}" alt="${esc(selectedItem.name)}" class="w-full h-full object-contain p-1 select-none pointer-events-none" />
+                    </div>
+                    <div class="flex-1 min-w-0 space-y-1">
+                      <div class="flex items-center gap-1.5 flex-wrap">
+                        <span class="text-base font-bold text-on-surface">${esc(isTr ? selectedItem.name_tr : selectedItem.name)}</span>
+                        <span class="px-2 py-0.5 rounded-full bg-surface-container text-[10px] font-mono text-on-surface-variant">${esc(selectedItem.base_id)}</span>
+                      </div>
+                      <div class="flex items-center gap-1.5">
+                        <span class="text-[10.5px] font-mono font-bold text-primary bg-primary/10 px-2 py-0.5 rounded-md">ID: ${esc(liveVariantId)}</span>
+                      </div>
+                      <div class="text-[11px] ${mintCount === 0 ? 'text-primary' : 'text-amber-400'} font-medium">
+                        ${st.loadingQuote ? (isTr ? 'Fiyat hesaplanıyor...' : 'Calculating live price...') : (
+                          mintCount === 0
+                            ? (isTr ? '✨ Yeni renk ID! Açılış fiyatı: 0.10 BCT' : '✨ Fresh Variant ID! Opens at 0.10 BCT')
+                            : (isTr
+                                ? `🔥 ${mintCount} kez alındı (+%25) • Renk değiştirerek 0.10 BCT ile yeni ID açabilirsin!`
+                                : `🔥 ${mintCount} minted (+25% curve) • Pick another color for a fresh 0.10 BCT ID!`)
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <!-- Background Color Selector -->
+                  <div class="space-y-2">
+                    <div class="flex items-center justify-between">
+                      <span class="text-[11px] font-semibold text-on-surface-variant">${isTr ? 'Arka Plan Rengi (Yeni ID & Fiyat)' : 'Background Color (Creates Unique ID)'}</span>
+                      <span class="text-[10.5px] font-mono text-primary">${st.selectedColor}</span>
+                    </div>
+                    <div class="flex items-center gap-2 flex-wrap">
+                      ${curatedColors.map(c => {
+                        const active = c.hex.toUpperCase() === st.selectedColor;
+                        return `
+                          <button type="button" title="${esc(isTr ? (c.name_tr || c.name) : c.name)} (${c.hex})"
+                            onclick="window.BlocTagSimpleMode.selectAvatarColor('${c.hex}')"
+                            class="w-7 h-7 rounded-full cursor-pointer transition-transform ${active ? 'scale-115 ring-2 ring-primary ring-offset-2 ring-offset-surface-container-low' : 'ring-1 ring-outline-variant/40 hover:scale-105'}"
+                            style="background-color:${c.hex};"></button>
+                        `;
+                      }).join('')}
+                      <!-- Custom Any-Color Picker -->
+                      <label title="${isTr ? 'Özel Renk Seç' : 'Pick Custom Hex Color'}"
+                        class="w-7 h-7 rounded-full bg-gradient-to-tr from-rose-500 via-amber-400 to-emerald-400 flex items-center justify-center cursor-pointer ring-1 ring-outline-variant/40 hover:scale-105 transition-transform relative overflow-hidden">
+                        <span class="material-symbols-outlined notranslate text-[14px] text-white drop-shadow" translate="no">colorize</span>
+                        <input type="color" value="${st.selectedColor}"
+                          onchange="window.BlocTagSimpleMode.selectAvatarColor(this.value)"
+                          class="absolute inset-0 opacity-0 cursor-pointer w-full h-full" />
+                      </label>
+                    </div>
+                  </div>
+
+                  <!-- Tokenomics & Soulbound Info -->
+                  <div class="px-3 py-2 rounded-xl bg-surface-container text-[10.5px] text-on-surface-variant flex flex-col gap-1">
+                    <div class="flex items-center justify-between">
+                      <span>${isTr ? 'Dağıtım:' : 'Revenue Split:'}</span>
+                      <span class="font-mono text-on-surface">${isTr ? '%30 Hazine • %70 Miner/Node/Stake' : '30% Treasury • 70% Miner/Nodes/Stakers'}</span>
+                    </div>
+                    <div class="flex items-center justify-between">
+                      <span>${isTr ? 'Sonraki Alım Fiyatı (+%25):' : 'Next Mint Price (+25%):'}</span>
+                      <span class="font-mono text-amber-400">${nextPriceDisplay} BCT</span>
+                    </div>
+                  </div>
+
+                  <!-- Primary Action CTA -->
+                  ${isEquipped ? `
+                    <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('')"
+                      class="w-full h-11 rounded-full bg-surface-container-highest text-on-surface text-xs font-bold flex items-center justify-center gap-1.5 hover:bg-error/20 hover:text-error transition-all cursor-pointer">
+                      <span class="material-symbols-outlined notranslate text-[17px]" translate="no">hide_image</span>
+                      <span>${st.busy ? (isTr ? 'İşleniyor...' : 'Processing...') : (isTr ? 'Profilde Takılı — Kaldır (Ücretsiz)' : 'Equipped — Remove from Profile (Free)')}</span>
+                    </button>
+                  ` : (alreadyOwned ? `
+                    <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.equipAvatarVariant('${escAttr(liveVariantId)}')"
+                      class="w-full h-11 rounded-full bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1.5 shadow-md hover:brightness-95 transition-all cursor-pointer">
+                      <span class="material-symbols-outlined notranslate text-[17px]" translate="no">check_circle</span>
+                      <span>${st.busy ? (isTr ? 'İşleniyor...' : 'Processing...') : (isTr ? 'Sende Var — Profile Tak (Ücretsiz)' : 'Owned — Equip to Profile (Free)')}</span>
+                    </button>
+                  ` : `
+                    <button type="button" ${(st.busy || st.loadingQuote) ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.mintSelectedAvatar()"
+                      class="w-full h-11 rounded-full bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1.5 shadow-md hover:brightness-95 active:scale-[0.99] transition-all cursor-pointer disabled:opacity-60">
+                      <span class="material-symbols-outlined notranslate text-[17px]" translate="no">verified</span>
+                      <span>${st.busy ? (isTr ? 'İmzalanıyor & Alınıyor...' : 'Signing & Minting...') : (isTr ? `Satın Al ve Profile Tak (${priceDisplay} BCT)` : `Mint & Equip (${priceDisplay} BCT)`)}</span>
+                    </button>
+                  `)}
+                </div>
+              ` : ''}
+
+              <!-- ANIMAL COLLECTION GRID -->
+              <div>
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-xs font-bold text-on-surface">${isTr ? 'Hayvan Seç' : 'Select Animal'}</span>
+                  <span class="text-[10.5px] text-outline">${isTr ? 'Her hayvanın özel default ID’si vardır' : 'Each animal has a unique base ID'}</span>
+                </div>
+                <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
+                  ${catalogItems.map(item => {
+                    const isSel = item.base_id === st.selectedBaseId;
+                    const defP = Number(item.default_price || 0.10).toFixed(item.default_price === 0.1 ? 2 : 3);
+                    return `
+                      <button type="button" onclick="window.BlocTagSimpleMode.selectAvatarItem('${escAttr(item.base_id)}')"
+                        class="p-2 rounded-2xl bg-surface-container-low border ${isSel ? 'border-primary ring-2 ring-primary/35 bg-primary/5' : 'border-outline-variant/15 hover:border-outline-variant/40'} flex flex-col items-center gap-1.5 transition-all cursor-pointer active:scale-95">
+                        <div class="w-14 h-14 rounded-full overflow-hidden shadow-sm ring-1 ring-outline-variant/20" style="background-color:${isSel ? st.selectedColor : '#FFFFFF'};">
+                          <img src="${item.image_url}" alt="${esc(item.name)}" class="w-full h-full object-contain p-0.5 select-none pointer-events-none" loading="lazy" />
+                        </div>
+                        <span class="text-[11px] font-semibold text-on-surface truncate w-full text-center">${esc(isTr ? item.name_tr : item.name)}</span>
+                        <span class="text-[9.5px] font-mono text-outline">${esc(item.base_id)} • ${defP}</span>
+                      </button>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `)}
+          </div>
+        </div>
+      `;
     },
 
     insertModalComposerTag: (tag) => {

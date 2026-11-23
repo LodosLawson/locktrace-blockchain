@@ -57,6 +57,8 @@ def main():
         tar.add("frontend/index.html", arcname="frontend/index.html")
         tar.add("frontend/sw.js", arcname="frontend/sw.js")
         tar.add("frontend/icons", arcname="frontend/icons")
+        if os.path.isdir("frontend/avatars"):
+            tar.add("frontend/avatars", arcname="frontend/avatars")
         tar.add("frontend/vendor", arcname="frontend/vendor")
         if os.path.isdir("frontend/simple-mode"):
             tar.add("frontend/simple-mode", arcname="frontend/simple-mode")
@@ -142,6 +144,11 @@ sudo /opt/blockchaint/venv/bin/python3 scripts/sign_frontend.py --version "$VER"
 sudo mkdir -p /var/www/locktrace /var/www/locktrace/icons /opt/blockchaint/frontend/icons
 sudo cp -r /tmp/frontend/icons/* /opt/blockchaint/frontend/icons/
 sudo cp -r /tmp/frontend/icons/* /var/www/locktrace/icons/
+if [ -d /tmp/frontend/avatars ]; then
+    sudo mkdir -p /opt/blockchaint/frontend/avatars /var/www/locktrace/avatars
+    sudo cp -r /tmp/frontend/avatars/* /opt/blockchaint/frontend/avatars/
+    sudo cp -r /tmp/frontend/avatars/* /var/www/locktrace/avatars/
+fi
 sudo mkdir -p /opt/blockchaint/frontend/vendor /var/www/locktrace/vendor
 sudo cp -r /tmp/frontend/vendor/* /opt/blockchaint/frontend/vendor/
 sudo cp -r /tmp/frontend/vendor/* /var/www/locktrace/vendor/
