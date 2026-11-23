@@ -582,6 +582,8 @@
       followers_empty_desc: 'Space üzerinde düşüncelerinizi paylaşarak zincir üstü takipçi kitlenizi oluşturun.',
       following_empty_title: 'Henüz kimse takip edilmiyor',
       following_empty_desc: 'Space akışındaki üreticileri keşfedip takip ederek gönderilerini kaçırmayın.',
+      loading_connections: 'Zincir üstü bağlantılar yükleniyor...',
+      querying_ledger: 'Kriptografik defter ve merkeziyetsiz ağ sorgulanıyor...',
       notif_new_badge: 'yeni',
       notif_mark_all: 'Okundu Say',
       notif_all: 'Tümü',
@@ -753,6 +755,8 @@
       no_users_found_desc: 'Axtarış meyarlarına uyğun istifadəçi tapılmadı. Filtrləri sıfırlaya bilərsiniz.',
       search_users_placeholder: 'İstifadəçi adı və ya cüzdan axtar...',
       user_self_tag: 'Siz',
+      loading_connections: 'Zəncir üzərindəki əlaqələr yüklənir...',
+      querying_ledger: 'Kriptoqrafik dəftər və mərkəzsiz şəbəkə sorğulanır...',
       notif_new_badge: 'yeni',
       notif_mark_all: 'Oxunmuş Say',
       notif_all: 'Hamısı',
@@ -924,6 +928,8 @@
       no_users_found_desc: 'По вашему запросу ничего не найдено. Попробуйте сбросить фильтры.',
       search_users_placeholder: 'Поиск по имени или адресу...',
       user_self_tag: 'Вы',
+      loading_connections: 'Загрузка ончейн связей...',
+      querying_ledger: 'Опрос криптографического реестра и сети...',
       notif_new_badge: 'новых',
       notif_mark_all: 'Прочитать все',
       notif_all: 'Все',
@@ -1095,6 +1101,8 @@
       no_users_found_desc: 'Keine Benutzer entsprechen Ihren Suchkriterien. Sie können Filter zurücksetzen.',
       search_users_placeholder: 'Benutzername oder Adresse suchen...',
       user_self_tag: 'Du',
+      loading_connections: 'On-Chain-Verbindungen werden geladen...',
+      querying_ledger: 'Abfrage des dezentralen Ledgers...',
       notif_new_badge: 'neu',
       notif_mark_all: 'Als gelesen markieren',
       notif_all: 'Alle',
@@ -1266,6 +1274,8 @@
       no_users_found_desc: 'No se encontraron usuarios que coincidan con sus criterios de búsqueda. Puede restablecer los filtros.',
       search_users_placeholder: 'Buscar nombre de usuario o dirección...',
       user_self_tag: 'Tú',
+      loading_connections: 'Cargando conexiones on-chain...',
+      querying_ledger: 'Consultando el registro criptográfico...',
       notif_new_badge: 'nuevas',
       notif_mark_all: 'Marcar como Leídas',
       notif_all: 'Todas',
@@ -1437,6 +1447,8 @@
       no_users_found_desc: 'Aucun utilisateur ne correspond à vos critères. Vous pouvez réinitialiser les filtres.',
       search_users_placeholder: 'Rechercher un nom d\'utilisateur ou une adresse...',
       user_self_tag: 'Vous',
+      loading_connections: 'Chargement des connexions on-chain...',
+      querying_ledger: 'Interrogation du registre décentralisé...',
       notif_new_badge: 'nouveaux',
       notif_mark_all: 'Tout Marquer comme Lu',
       notif_all: 'Tous',
@@ -1608,6 +1620,8 @@
       no_users_found_desc: 'لا توجد نتائج مطابقة لبحثك. يمكنك إعادة تعيين التصفية.',
       search_users_placeholder: 'ابحث عن اسم المستخدم أو العنوان...',
       user_self_tag: 'أنت',
+      loading_connections: 'جارٍ تحميل الروابط على السلسلة...',
+      querying_ledger: 'استعلام عن دفتر الأستاذ التشفيري والشبكة اللامركزية...',
       notif_new_badge: 'جديد',
       notif_mark_all: 'تحديد الكل كمقروء',
       notif_all: 'الكل',
@@ -1819,6 +1833,95 @@
     }
   }
 
+  // ── Profile Cache & Asynchronous Fetcher for Simple Mode ──
+  const _simpleProfileCache = window._simpleProfileCache || {};
+  window._simpleProfileCache = _simpleProfileCache;
+  const _simpleProfileFetching = window._simpleProfileFetching || {};
+  window._simpleProfileFetching = _simpleProfileFetching;
+
+  function fetchSimpleProfile(target) {
+    if (!target) return Promise.resolve(null);
+    const key = String(target).trim().toLowerCase().replace(/^@/, '');
+    if (!key) return Promise.resolve(null);
+
+    const cached = _simpleProfileCache[key];
+    if (cached && (Date.now() - (cached._cachedAt || 0) < 45000)) {
+      return Promise.resolve(cached);
+    }
+
+    if (_simpleProfileFetching[key]) {
+      return _simpleProfileFetching[key];
+    }
+
+    const fetcher = (typeof window.apiFetch === 'function')
+      ? window.apiFetch('/profile/' + encodeURIComponent(key))
+      : fetch('/api/v1/profile/' + encodeURIComponent(key)).then(r => r.json().then(b => ({ ok: r.ok, body: b })));
+
+    const p = fetcher.then(({ ok, body }) => {
+      delete _simpleProfileFetching[key];
+      if (ok && body && body.data) {
+        const data = body.data;
+        data._cachedAt = Date.now();
+        const addr = String(data.address || '').toLowerCase();
+        if (addr) _simpleProfileCache[addr] = data;
+        if (data.bns_name) {
+          _simpleProfileCache[String(data.bns_name).toLowerCase().replace(/^@/, '')] = data;
+        }
+        if (data.primary_bns) {
+          _simpleProfileCache[String(data.primary_bns).toLowerCase().replace(/^@/, '')] = data;
+        }
+        if (data.primary_handle) {
+          _simpleProfileCache[String(data.primary_handle).toLowerCase().replace(/^@/, '')] = data;
+        }
+        _simpleProfileCache[key] = data;
+
+        window.currentProfileData = data;
+        try {
+          if (typeof currentProfileData !== 'undefined') {
+            currentProfileData = data;
+          }
+        } catch (_e) { }
+
+        if (simpleState.enabled) {
+          const act = simpleState.activeScreen;
+          if (act === 'SCR-PRF-05' || act === 'SCR-PRF-FOLLOW' || act === 'SCR-PRF-FOLLOWERS' || act === 'SCR-PRF-FOLLOWING') {
+            renderSimpleMode(false);
+          }
+        }
+        return data;
+      }
+      return null;
+    }).catch(err => {
+      delete _simpleProfileFetching[key];
+      console.warn('[SimpleMode] fetchSimpleProfile failed:', err);
+      return null;
+    });
+
+    _simpleProfileFetching[key] = p;
+    return p;
+  }
+
+  function getSimpleProfileData(target) {
+    if (!target) return null;
+    const key = String(target).trim().toLowerCase().replace(/^@/, '');
+    if (_simpleProfileCache[key]) return _simpleProfileCache[key];
+    if (window.currentProfileData) {
+      const c = window.currentProfileData;
+      const cAddr = String(c.address || '').toLowerCase();
+      const cBns = String(c.bns_name || c.primary_bns || c.primary_handle || '').toLowerCase().replace(/^@/, '');
+      if (cAddr === key || cBns === key) return c;
+    }
+    try {
+      if (typeof currentProfileData !== 'undefined' && currentProfileData) {
+        const c = currentProfileData;
+        const cAddr = String(c.address || '').toLowerCase();
+        const cBns = String(c.bns_name || c.primary_bns || c.primary_handle || '').toLowerCase().replace(/^@/, '');
+        if (cAddr === key || cBns === key) return c;
+      }
+    } catch (_e) { }
+    return null;
+  }
+
   // ==========================================================================
   // 2. NAVIGATION ROUTER FOR STITCH SIMPLE MODE SCREENS
   // ==========================================================================
@@ -1844,6 +1947,9 @@
     }
     if (opts.profileTarget !== undefined) {
       simpleState.profileTarget = opts.profileTarget;
+      if (!opts.profileTarget && opts.followTargetAddr === undefined) {
+        simpleState.followTargetAddr = '';
+      }
     }
     if (opts.followTab !== undefined) {
       simpleState.followTab = opts.followTab;
@@ -1917,18 +2023,15 @@
             if (simpleState.enabled) renderSimpleMode(false);
           }).catch(() => { });
         }
-        const pTarget = simpleState.followTargetAddr || simpleState.profileTarget || (getActiveWallet() ? getActiveWallet().address : '');
-        if (pTarget && typeof window.apiFetch === 'function') {
-          window.apiFetch('/profile/' + encodeURIComponent(pTarget)).then(({ ok, body }) => {
-            if (ok && body && body.data) {
-              if (typeof window.currentProfileData !== 'undefined') {
-                window.currentProfileData = Object.assign(window.currentProfileData || {}, body.data);
-              }
-              if (simpleState.enabled && (simpleState.activeScreen === 'SCR-PRF-05' || simpleState.activeScreen === 'SCR-PRF-FOLLOW' || simpleState.activeScreen === 'SCR-PRF-FOLLOWERS' || simpleState.activeScreen === 'SCR-PRF-FOLLOWING')) {
-                renderSimpleMode(false);
-              }
-            }
-          }).catch(() => { });
+        const pTarget = (target === 'SCR-PRF-FOLLOW' || target === 'SCR-PRF-FOLLOWERS' || target === 'SCR-PRF-FOLLOWING')
+          ? (simpleState.followTargetAddr || simpleState.profileTarget || (getActiveWallet() ? getActiveWallet().address : ''))
+          : (simpleState.profileTarget || (getActiveWallet() ? getActiveWallet().address : ''));
+        if (pTarget) {
+          fetchSimpleProfile(pTarget);
+        }
+        const myAcc = getActiveWallet();
+        if (myAcc && myAcc.address && myAcc.address.toLowerCase() !== String(pTarget).toLowerCase()) {
+          fetchSimpleProfile(myAcc.address);
         }
       }
     } catch (_e) { }
@@ -3007,7 +3110,17 @@
     }
 
     const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
-    const targetAddr = isMyProfile ? (acc ? acc.address : '') : targetRaw;
+    const lookupKey = isMyProfile ? (acc ? acc.address : '') : targetRaw;
+    let pData = getSimpleProfileData(lookupKey);
+    if (!pData && lookupKey) {
+      fetchSimpleProfile(lookupKey);
+    }
+    const myProfileData = acc ? getSimpleProfileData(acc.address) : null;
+    if (!myProfileData && acc && acc.address) {
+      fetchSimpleProfile(acc.address);
+    }
+
+    const targetAddr = isMyProfile ? (acc ? acc.address : '') : (pData?.address || targetRaw);
     const userPosts = posts.filter(p => {
       if (!p) return false;
       const pAddr = String(p.author || '').toLowerCase();
@@ -3021,10 +3134,10 @@
 
     const resolvedBns = isMyProfile
       ? myHandle
-      : (userPosts.find(p => p.author_bns && p.author_bns !== 'anonymous')?.author_bns || (targetRaw.endsWith('.bct') ? targetRaw : ''));
+      : (pData?.bns_name || pData?.primary_bns || pData?.primary_handle || userPosts.find(p => p.author_bns && p.author_bns !== 'anonymous')?.author_bns || (targetRaw.endsWith('.bct') ? targetRaw : ''));
     const resolvedAddress = isMyProfile
       ? (acc ? acc.address : '')
-      : (userPosts[0]?.author || targetRaw);
+      : (pData?.address || userPosts[0]?.author || targetRaw);
 
     const resolvedTitleHandle = resolvedBns ? ('@' + resolvedBns.replace(/^@/, '')) : (typeof window.shortAddr === 'function' ? window.shortAddr(resolvedAddress) : resolvedAddress);
     const displayTitle = resolvedTitleHandle;
@@ -3032,14 +3145,18 @@
     const totalLikesReceived = userPosts.reduce((accSum, p) => accSum + Number(p.likes_count || (p.likes ? p.likes.length : 0)), 0);
     const totalRoyalties = userPosts.reduce((accSum, p) => accSum + Number(p.author_earnings || 0), 0);
 
-    // Follower & Following metrics
+    // Follower & Following metrics strictly from live on-chain profile data
     let followersCount = 0;
     let followingCount = 0;
-    if (typeof currentProfileData !== 'undefined' && currentProfileData &&
-      String(currentProfileData.address || '').toLowerCase() === resolvedAddress.toLowerCase()) {
-      followersCount = Number(currentProfileData.followers_count || (Array.isArray(currentProfileData.followers) ? currentProfileData.followers.length : 0));
-      followingCount = Number(currentProfileData.following_count || (Array.isArray(currentProfileData.following) ? currentProfileData.following.length : 0));
+    if (pData) {
+      followersCount = Number(pData.followers_count ?? (Array.isArray(pData.followers) ? pData.followers.length : 0));
+      followingCount = Number(pData.following_count ?? (Array.isArray(pData.following) ? pData.following.length : 0));
     }
+
+    const amIFollowing = Boolean(myProfileData && Array.isArray(myProfileData.following) && myProfileData.following.some(f => {
+      const fAddr = typeof f === 'string' ? f : (f && f.address ? f.address : '');
+      return fAddr.toLowerCase() === resolvedAddress.toLowerCase();
+    }));
 
     // Owned BNS handles for current user
     const myOwnedHandles = isMyProfile ? getMyOwnedBnsHandles() : [];
@@ -3083,12 +3200,21 @@
                 </button>
               ` : `
                 <!-- Follow Button (For Other Profiles) -->
-                <button type="button" id="simple-profile-follow-btn"
-                  onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(resolvedAddress)}', '${escAttr(resolvedBns)}')"
-                  class="h-8.5 px-3 rounded-full bg-primary text-on-primary text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm cursor-pointer hover:brightness-95">
-                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">person_add</span>
-                  <span>${t('profile_follow_btn', 'Follow')}</span>
-                </button>
+                ${amIFollowing ? `
+                  <button type="button" id="simple-profile-follow-btn"
+                    onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(resolvedAddress)}', '${escAttr(resolvedBns)}', this)"
+                    class="h-8.5 px-3 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-medium flex items-center gap-1 transition-all active:scale-95 shadow-xs cursor-pointer">
+                    <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">check</span>
+                    <span>${t('btn_following', 'Following')}</span>
+                  </button>
+                ` : `
+                  <button type="button" id="simple-profile-follow-btn"
+                    onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(resolvedAddress)}', '${escAttr(resolvedBns)}', this)"
+                    class="h-8.5 px-3 rounded-full bg-primary text-on-primary text-xs font-bold transition-all active:scale-95 flex items-center gap-1 shadow-sm cursor-pointer hover:brightness-95">
+                    <span class="material-symbols-outlined notranslate text-[15px]" translate="no">person_add</span>
+                    <span>${t('profile_follow_btn', 'Follow')}</span>
+                  </button>
+                `}
 
                 <button type="button" onclick="window.BlocTagSimpleMode.tipAuthor('${escAttr(resolvedAddress)}')"
                   class="h-8.5 px-2.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
@@ -3258,10 +3384,14 @@
     const searchQuery = String(simpleState.followSearch || '').trim().toLowerCase();
 
     // 1. Get Live Profile Data strictly from on-chain state (NO mock/curated data)
-    let pData = null;
-    if (typeof window.currentProfileData !== 'undefined' && window.currentProfileData &&
-      String(window.currentProfileData.address || '').toLowerCase() === targetAddr.toLowerCase()) {
-      pData = window.currentProfileData;
+    let pData = getSimpleProfileData(targetAddr);
+    const isLoading = !pData && Boolean(targetAddr);
+    if (!pData && targetAddr) {
+      fetchSimpleProfile(targetAddr);
+    }
+    const myProfileData = acc ? getSimpleProfileData(acc.address) : null;
+    if (!myProfileData && acc && acc.address) {
+      fetchSimpleProfile(acc.address);
     }
 
     const liveFollowers = (pData && Array.isArray(pData.followers)) ? pData.followers : [];
@@ -3276,9 +3406,26 @@
       const myAddr = acc ? String(acc.address || '').toLowerCase() : '';
       const isSelf = Boolean(myAddr && addr.toLowerCase() === myAddr);
 
-      // Check if current user is following this person:
-      const isFollowing = (defaultType === 'following') || (liveFollowing.some(f => (typeof f === 'string' ? f : (f && f.address ? f.address : '')).toLowerCase() === addr.toLowerCase()));
-      const followsYou = (defaultType === 'followers') || (liveFollowers.some(f => (typeof f === 'string' ? f : (f && f.address ? f.address : '')).toLowerCase() === addr.toLowerCase()));
+      let isFollowing = false;
+      let followsYou = false;
+
+      if (isMyList) {
+        if (defaultType === 'following') {
+          isFollowing = true;
+          followsYou = liveFollowers.some(f => (typeof f === 'string' ? f : (f && f.address ? f.address : '')).toLowerCase() === addr.toLowerCase());
+        } else {
+          followsYou = true;
+          isFollowing = liveFollowing.some(f => (typeof f === 'string' ? f : (f && f.address ? f.address : '')).toLowerCase() === addr.toLowerCase());
+        }
+      } else {
+        if (myProfileData) {
+          const myFollowing = Array.isArray(myProfileData.following) ? myProfileData.following : [];
+          const myFollowers = Array.isArray(myProfileData.followers) ? myProfileData.followers : [];
+          isFollowing = myFollowing.some(f => (typeof f === 'string' ? f : (f && f.address ? f.address : '')).toLowerCase() === addr.toLowerCase());
+          followsYou = myFollowers.some(f => (typeof f === 'string' ? f : (f && f.address ? f.address : '')).toLowerCase() === addr.toLowerCase());
+        }
+      }
+
       const isMutual = Boolean(isFollowing && followsYou);
 
       return {
@@ -3386,7 +3533,17 @@
 
         <!-- Users Stream Container -->
         <div class="flex flex-col gap-2 mt-2">
-          ${filteredList.length === 0 ? `
+          ${isLoading ? `
+            <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
+              <div class="w-9 h-9 rounded-full border-2 border-primary border-t-transparent animate-spin mb-3"></div>
+              <span class="font-headline-sm text-xs font-semibold text-on-surface">
+                ${t('loading_connections', 'Loading on-chain connections...')}
+              </span>
+              <p class="text-[11px] text-on-surface-variant mt-1.5 max-w-xs leading-relaxed">
+                ${t('querying_ledger', 'Querying cryptographic ledger & decentralized network...')}
+              </p>
+            </div>
+          ` : (filteredList.length === 0 ? `
             <div class="flex flex-col items-center justify-center py-16 px-4 text-center">
               <div class="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center mb-3">
                 <span class="material-symbols-outlined notranslate text-outline text-[28px]" translate="no">
@@ -3436,26 +3593,26 @@
               ${u.is_self ? `
                 <span class="shrink-0 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant text-[11px] font-semibold">${t('user_self_tag', 'You')}</span>
               ` : (u.is_following ? `
-                <button type="button" onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(u.address)}', '${escAttr(u.bns_name)}')"
+                <button type="button" onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(u.address)}', '${escAttr(u.bns_name)}', this)"
                   class="shrink-0 h-8.5 px-3 rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface text-xs font-medium flex items-center gap-1 transition-all active:scale-95 shadow-xs cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[15px] text-primary" translate="no">check</span>
                   <span>${t('btn_following', 'Following')}</span>
                 </button>
               ` : (u.follows_you ? `
-                <button type="button" onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(u.address)}', '${escAttr(u.bns_name)}')"
+                <button type="button" onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(u.address)}', '${escAttr(u.bns_name)}', this)"
                   class="shrink-0 h-8.5 px-3 rounded-full bg-primary hover:bg-primary-fixed text-on-primary text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 shadow-xs cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[15px]" translate="no">add</span>
                   <span>${t('follow_back', 'Follow Back')}</span>
                 </button>
               ` : `
-                <button type="button" onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(u.address)}', '${escAttr(u.bns_name)}')"
+                <button type="button" onclick="window.BlocTagSimpleMode.followProfileAuthor('${escAttr(u.address)}', '${escAttr(u.bns_name)}', this)"
                   class="shrink-0 h-8.5 px-3 rounded-full bg-primary hover:bg-primary-fixed text-on-primary text-xs font-semibold flex items-center gap-1 transition-all active:scale-95 shadow-xs cursor-pointer">
                   <span class="material-symbols-outlined notranslate text-[15px]" translate="no">add</span>
                   <span>${t('btn_follow', 'Follow')}</span>
                 </button>
               `))}
             </div>
-          `).join('')}
+          `).join(''))}
         </div>
       </main>
     `;
@@ -4282,11 +4439,17 @@
       }
     },
 
-    followProfileAuthor: async (targetAddress, bnsName) => {
+    followProfileAuthor: async (targetAddress, bnsName, btnEl) => {
       if (!targetAddress) return;
-      const btn = document.getElementById('simple-profile-follow-btn');
+      const btn = btnEl || (window.event && window.event.currentTarget) || document.getElementById('simple-profile-follow-btn') || document.createElement('button');
       if (typeof window.followVoiceOnChain === 'function') {
         await window.followVoiceOnChain(btn, targetAddress, bnsName);
+        delete _simpleProfileCache[targetAddress.toLowerCase()];
+        if (bnsName) delete _simpleProfileCache[String(bnsName).toLowerCase().replace(/^@/, '')];
+        const acc = getActiveWallet();
+        if (acc) delete _simpleProfileCache[acc.address.toLowerCase()];
+        fetchSimpleProfile(targetAddress);
+        if (acc) fetchSimpleProfile(acc.address);
         renderSimpleMode(false);
       } else {
         if (typeof window.showToast === 'function') {
@@ -4298,11 +4461,12 @@
     openFollowersList: (addr, type) => {
       const target = addr || (getActiveWallet() ? getActiveWallet().address : '');
       simpleState.followTargetAddr = target;
+      simpleState.profileTarget = target;
       simpleState.followTab = (type === 'following') ? 'following' : 'followers';
       simpleState.followFilter = 'all';
       simpleState.followSearch = '';
       _lastRenderedFingerprint = '';
-      navigateToSimpleScreen('SCR-PRF-FOLLOW', { profileTarget: target, followTab: simpleState.followTab });
+      navigateToSimpleScreen('SCR-PRF-FOLLOW', { profileTarget: target, followTargetAddr: target, followTab: simpleState.followTab });
     },
 
     setFollowTab: (tab) => {
