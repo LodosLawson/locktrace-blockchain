@@ -1,6 +1,6 @@
 /**
  * ============================================================================
- * BLOCTAG & SPACE — STITCH SIMPLIFIED MOBILE UI ENGINE (v2.12.2)
+ * BLOCTAG & SPACE — STITCH SIMPLIFIED MOBILE UI ENGINE (v2.13.0)
  * ============================================================================
  * Modular, self-contained Simple Mode implementation based on the Stitch
  * "Kinetic Minimalist Crypto" mobile design system:
@@ -1912,8 +1912,8 @@
         <!-- Language Items -->
         <div class="flex flex-col gap-1.5 max-h-[58vh] overflow-y-auto no-scrollbar py-1">
           ${SIMPLE_LANGUAGES.map(item => {
-            const isSelected = item.code === current;
-            return `
+      const isSelected = item.code === current;
+      return `
               <button type="button" onclick="window.BlocTagSimpleMode.selectLanguage('${item.code}')"
                 class="w-full p-3 rounded-2xl flex items-center justify-between transition-all active:scale-[0.98] cursor-pointer ${isSelected ? 'bg-primary/15 border border-primary/30 text-on-surface ring-1 ring-primary/40' : 'bg-surface-container-low hover:bg-surface-container-high border border-outline-variant/15 text-on-surface'}">
                 <div class="flex items-center gap-3">
@@ -1932,7 +1932,7 @@
                 `}
               </button>
             `;
-          }).join('')}
+    }).join('')}
         </div>
 
         <!-- Browser Translate Tip -->
@@ -2396,7 +2396,7 @@
           </div>
           <div class="mt-2.5 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high text-on-surface-variant font-label-sm text-[11px]">
             <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-            <span>BlocTag Mainnet v2.12.2</span>
+            <span>BlocTag Mainnet v2.13.0</span>
           </div>
         </div>
 
@@ -3307,6 +3307,13 @@
           </div>
 
           <div class="flex items-center gap-1.5 shrink-0">
+            <button type="button" aria-label="Protocol Rooms"
+              title="Protocol Rooms (Odalar)"
+              onclick="window.ProtocolRoomsUI && window.ProtocolRoomsUI.openDirectory()"
+              class="h-9 px-2.5 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center gap-1 text-primary hover:bg-primary/25 transition-colors active:scale-95 cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[17px]" translate="no">forum</span>
+              <span class="text-[11px] font-bold">Odalar</span>
+            </button>
             <button type="button" aria-label="${t('feed_layout_snap', 'Switch to TikTok / Reels View')}"
               title="${t('feed_layout_snap', 'Switch to TikTok / Reels View')}"
               onclick="window.BlocTagSimpleMode.toggleFeedLayout()"
@@ -3750,18 +3757,18 @@
           <div class="flex items-end justify-between gap-3">
             <!-- Avatar (Tap to Enlarge Any User's Avatar) -->
             ${(() => {
-              const zoomKey = pData?.avatar ? registerAvatarForZoom(pData.avatar) : '';
-              return `
+        const zoomKey = pData?.avatar ? registerAvatarForZoom(pData.avatar) : '';
+        return `
                 <div class="relative shrink-0 ${(pData?.avatar || isMyProfile) ? 'cursor-pointer group' : ''}"
                      ${zoomKey
-                       ? `onclick="window.BlocTagSimpleMode.openAvatarLightboxByKey('${zoomKey}', ${isMyProfile ? 'true' : 'false'})"`
-                       : (isMyProfile ? 'onclick="window.BlocTagSimpleMode.openAvatarStudio()"' : '')}>
+            ? `onclick="window.BlocTagSimpleMode.openAvatarLightboxByKey('${zoomKey}', ${isMyProfile ? 'true' : 'false'})"`
+            : (isMyProfile ? 'onclick="window.BlocTagSimpleMode.openAvatarStudio()"' : '')}>
                   <div class="w-20 h-20 rounded-full p-1 bg-surface shadow-xl ring-2 ring-surface ${(pData?.avatar || isMyProfile) ? 'group-hover:ring-primary/50 transition-all' : ''}">
                     <div class="w-full h-full rounded-full overflow-hidden bg-surface-container-high flex items-center justify-center text-primary font-mono font-bold text-2xl">
                       ${renderAvatarCircleHtml(
-                        pData?.avatar,
-                        resolvedBns ? esc(resolvedBns.replace(/^@/, '')[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[36px]" translate="no">person</span>'
-                      )}
+              pData?.avatar,
+              resolvedBns ? esc(resolvedBns.replace(/^@/, '')[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[36px]" translate="no">person</span>'
+            )}
                     </div>
                   </div>
                   ${isMyProfile ? `
@@ -3777,7 +3784,7 @@
                   `}
                 </div>
               `;
-            })()}
+      })()}
 
             <!-- Profile Action Buttons -->
             <div class="flex items-center gap-1.5 pb-1 flex-wrap justify-end">
@@ -3882,9 +3889,9 @@
                   </p>
                   <div class="flex flex-wrap gap-1.5">
                     ${myOwnedHandles.map(h => {
-                      const clean = String(h).replace(/^@/, '');
-                      const isCurrent = clean.toLowerCase() === (resolvedBns || '').toLowerCase().replace(/^@/, '');
-                      return `
+        const clean = String(h).replace(/^@/, '');
+        const isCurrent = clean.toLowerCase() === (resolvedBns || '').toLowerCase().replace(/^@/, '');
+        return `
                         <button type="button" onclick="window.BlocTagSimpleMode.setPrimaryHandle('${escAttr(clean)}')"
                           class="px-2.5 py-1 rounded-full text-[11px] font-mono font-medium transition-all cursor-pointer flex items-center gap-1 active:scale-95 ${isCurrent ? 'bg-primary text-on-primary font-bold shadow-xs ring-1 ring-primary' : 'bg-surface-container text-on-surface hover:bg-surface-container-high border border-outline-variant/20'}">
                           ${isCurrent ? '<span class="material-symbols-outlined notranslate text-[12px]" translate="no">check</span>' : ''}
@@ -3892,7 +3899,7 @@
                           ${isCurrent ? `<span class="text-[9px] opacity-90 font-sans font-normal">${t('profile_bns_active', '(Active)')}</span>` : ''}
                         </button>
                       `;
-                    }).join('')}
+      }).join('')}
                   </div>
                 ` : `
                   <div class="flex items-center justify-between gap-3 pt-0.5">
@@ -4151,13 +4158,13 @@
               </div>
               <span class="font-headline-sm text-sm font-semibold text-on-surface">
                 ${searchQuery
-                  ? t('no_users_found', 'No users found')
-                  : (currentTab === 'following' ? t('following_empty_title', 'Not following anyone yet') : t('followers_empty_title', 'No followers yet'))}
+          ? t('no_users_found', 'No users found')
+          : (currentTab === 'following' ? t('following_empty_title', 'Not following anyone yet') : t('followers_empty_title', 'No followers yet'))}
               </span>
               <p class="text-xs text-on-surface-variant mt-1.5 max-w-xs leading-relaxed">
                 ${searchQuery
-                  ? t('no_users_found_desc', 'No users matching your search criteria. You can reset filters.')
-                  : (currentTab === 'following' ? t('following_empty_desc', 'Explore creators on Space and follow them to see their latest updates.') : t('followers_empty_desc', 'Share your thoughts on Space to build your on-chain audience.'))}
+          ? t('no_users_found_desc', 'No users matching your search criteria. You can reset filters.')
+          : (currentTab === 'following' ? t('following_empty_desc', 'Explore creators on Space and follow them to see their latest updates.') : t('followers_empty_desc', 'Share your thoughts on Space to build your on-chain audience.'))}
               </p>
               ${searchQuery ? `
                 <button type="button" onclick="window.BlocTagSimpleMode.clearFollowSearch(); window.BlocTagSimpleMode.setFollowFilter('all');"
@@ -4177,9 +4184,9 @@
                 onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '${escAttr(u.bns_name || u.address)}' })">
                 <div class="relative shrink-0 w-11 h-11 rounded-full bg-surface-container-highest flex items-center justify-center font-bold text-sm text-primary ring-1 ring-primary/20">
                   ${renderAvatarCircleHtml(
-                    u.avatar,
-                    u.bns_name ? esc(u.bns_name[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[20px]" translate="no">person</span>'
-                  )}
+            u.avatar,
+            u.bns_name ? esc(u.bns_name[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[20px]" translate="no">person</span>'
+          )}
                   <span class="absolute bottom-0 right-0 w-3 h-3 rounded-full bg-primary ring-2 ring-surface-container-low"></span>
                 </div>
                 <div class="flex flex-col min-w-0">
@@ -4338,9 +4345,9 @@
             <div class="w-12 h-12 rounded-full bg-primary/20 text-primary flex items-center justify-center font-mono font-bold text-base shrink-0 overflow-hidden ring-1 ring-primary/25 cursor-pointer hover:ring-2 hover:ring-primary/60 transition-all"
                  onclick="${menuZoomKey ? `window.BlocTagSimpleMode.openAvatarLightboxByKey('${menuZoomKey}', true)` : `window.BlocTagSimpleMode.openAvatarStudio()`}">
               ${renderAvatarCircleHtml(
-                menuAvatarObj,
-                myHandle ? esc(myHandle[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[24px]" translate="no">person</span>'
-              )}
+      menuAvatarObj,
+      myHandle ? esc(myHandle[0].toUpperCase()) : '<span class="material-symbols-outlined notranslate text-[24px]" translate="no">person</span>'
+    )}
             </div>
             <div class="flex-1 min-w-0">
               <div class="flex items-center gap-1.5">
@@ -4489,7 +4496,7 @@
         <div class="mt-4 p-3 rounded-2xl bg-surface-container-low/60 border border-outline-variant/10 flex items-center justify-between text-[11px] text-on-surface-variant">
           <div class="flex items-center gap-2">
             <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-            <span class="font-mono">LockTrace Mainnet v2.12.2</span>
+            <span class="font-mono">LockTrace Mainnet v2.13.0</span>
           </div>
           <span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">Simple Mode</span>
         </div>
@@ -5525,17 +5532,17 @@
               ` : `
                 <div class="grid grid-cols-2 gap-3">
                   ${ownedAvatars.map(av => {
-                    const isEq = Boolean(equippedAvatar && equippedAvatar.variant_id === av.variant_id);
-                    return `
+        const isEq = Boolean(equippedAvatar && equippedAvatar.variant_id === av.variant_id);
+        return `
                       <div class="p-3 rounded-2xl bg-surface-container-low border ${isEq ? 'border-primary ring-1 ring-primary/40' : 'border-outline-variant/15'} flex flex-col items-center gap-2">
                         ${(() => {
-                          const oZoomKey = registerAvatarForZoom(av);
-                          return `<div class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-surface shadow-md cursor-pointer hover:scale-105 transition-transform"
+            const oZoomKey = registerAvatarForZoom(av);
+            return `<div class="w-16 h-16 rounded-full overflow-hidden ring-2 ring-surface shadow-md cursor-pointer hover:scale-105 transition-transform"
                                title="${isTr ? 'Büyütmek için dokun' : 'Tap to enlarge'}"
                                onclick="window.BlocTagSimpleMode.openAvatarLightboxByKey('${oZoomKey}', false)">
                             ${renderAvatarCircleHtml(av, '')}
                           </div>`;
-                        })()}
+          })()}
                         <div class="text-center min-w-0 w-full">
                           <div class="text-xs font-bold text-on-surface truncate">${esc(isTr ? (av.name_tr || av.name) : av.name)}</div>
                           <div class="text-[10px] font-mono text-primary truncate">${esc(av.variant_id)}</div>
@@ -5550,13 +5557,13 @@
                           <button type="button" ${st.busy ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.confirmEquipAvatar('${escAttr(av.variant_id)}')"
                             class="w-full h-8 rounded-full bg-primary text-on-primary text-[11px] font-semibold hover:brightness-95 transition-all cursor-pointer">
                             ${equippedAvatar
-                              ? (isTr ? 'Değiştir (0.40 BCT)' : 'Swap (0.40 BCT)')
-                              : (isTr ? 'Profile Tak (0.20 BCT)' : 'Equip (0.20 BCT)')}
+            ? (isTr ? 'Değiştir (0.40 BCT)' : 'Swap (0.40 BCT)')
+            : (isTr ? 'Profile Tak (0.20 BCT)' : 'Equip (0.20 BCT)')}
                           </button>
                         `}
                       </div>
                     `;
-                  }).join('')}
+      }).join('')}
                 </div>
               `}
             ` : `
@@ -5566,15 +5573,15 @@
                   <div class="flex items-center gap-4">
                     <!-- Live Circular Preview (Tap to Enlarge) -->
                     ${(() => {
-                      const prevZoomKey = registerAvatarForZoom({
-                        image_url: selectedItem.image_url,
-                        bg_color: st.selectedColor,
-                        name: selectedItem.name,
-                        name_tr: selectedItem.name_tr,
-                        base_id: selectedItem.base_id,
-                        variant_id: liveVariantId
-                      });
-                      return `
+            const prevZoomKey = registerAvatarForZoom({
+              image_url: selectedItem.image_url,
+              bg_color: st.selectedColor,
+              name: selectedItem.name,
+              name_tr: selectedItem.name_tr,
+              base_id: selectedItem.base_id,
+              variant_id: liveVariantId
+            });
+            return `
                         <div id="avatar-studio-preview-circle" class="w-24 h-24 rounded-full overflow-hidden shrink-0 shadow-xl ring-4 ring-surface cursor-pointer hover:scale-105 transition-transform relative group"
                              style="background-color:${st.selectedColor};"
                              title="${isTr ? 'Büyütmek için dokun' : 'Tap to enlarge'}"
@@ -5585,7 +5592,7 @@
                           </div>
                         </div>
                       `;
-                    })()}
+          })()}
                     <div class="flex-1 min-w-0 space-y-1">
                       <div class="flex items-center gap-1.5 flex-wrap">
                         <span class="text-base font-bold text-on-surface">${esc(isTr ? selectedItem.name_tr : selectedItem.name)}</span>
@@ -5596,12 +5603,12 @@
                       </div>
                       <div id="avatar-studio-price-status" class="text-[11px] ${mintCount === 0 ? 'text-primary' : 'text-amber-400'} font-medium">
                         ${st.loadingQuote ? (isTr ? 'Fiyat hesaplanıyor...' : 'Calculating live price...') : (
-                          mintCount === 0
-                            ? (isTr ? '✨ Yeni renk ID! Açılış fiyatı: 0.10 BCT' : '✨ Fresh Variant ID! Opens at 0.10 BCT')
-                            : (isTr
-                                ? `🔥 ${mintCount} kez alındı (+%25) • Renk değiştirerek 0.10 BCT ile yeni ID açabilirsin!`
-                                : `🔥 ${mintCount} minted (+25% curve) • Pick another color for a fresh 0.10 BCT ID!`)
-                        )}
+            mintCount === 0
+              ? (isTr ? '✨ Yeni renk ID! Açılış fiyatı: 0.10 BCT' : '✨ Fresh Variant ID! Opens at 0.10 BCT')
+              : (isTr
+                ? `🔥 ${mintCount} kez alındı (+%25) • Renk değiştirerek 0.10 BCT ile yeni ID açabilirsin!`
+                : `🔥 ${mintCount} minted (+25% curve) • Pick another color for a fresh 0.10 BCT ID!`)
+          )}
                       </div>
                     </div>
                   </div>
@@ -5622,14 +5629,14 @@
                     </div>
                     <div class="flex items-center gap-2 flex-wrap">
                       ${curatedColors.map(c => {
-                        const active = c.hex.toUpperCase() === st.selectedColor;
-                        return `
+            const active = c.hex.toUpperCase() === st.selectedColor;
+            return `
                           <button type="button" title="${esc(isTr ? (c.name_tr || c.name) : c.name)} (${c.hex})"
                             onclick="window.BlocTagSimpleMode.selectAvatarColor('${c.hex}')"
                             class="w-7 h-7 rounded-full cursor-pointer transition-transform ${active ? 'scale-115 ring-2 ring-primary ring-offset-2 ring-offset-surface-container-low' : 'ring-1 ring-outline-variant/40 hover:scale-105'}"
                             style="background-color:${c.hex};"></button>
                         `;
-                      }).join('')}
+          }).join('')}
                       <!-- Custom Any-Color Picker (60fps mobile-safe: in-place preview on drag, debounced quote on commit) -->
                       <label title="${isTr ? 'Özel Renk Seç' : 'Pick Custom Hex Color'}"
                         class="w-7 h-7 rounded-full bg-gradient-to-tr from-rose-500 via-amber-400 to-emerald-400 flex items-center justify-center cursor-pointer ring-1 ring-outline-variant/40 hover:scale-105 transition-transform relative overflow-hidden">
@@ -5671,8 +5678,8 @@
                       class="w-full h-11 rounded-full bg-primary text-on-primary text-xs font-bold flex items-center justify-center gap-1.5 shadow-md hover:brightness-95 transition-all cursor-pointer">
                       <span class="material-symbols-outlined notranslate text-[17px]" translate="no">check_circle</span>
                       <span>${st.busy ? (isTr ? 'İşleniyor...' : 'Processing...') : (equippedAvatar
-                        ? (isTr ? 'Sende Var — Fotoğrafı Değiştir (0.40 BCT)' : 'Owned — Change Photo (0.40 BCT)')
-                        : (isTr ? 'Sende Var — Profile Tak (0.20 BCT)' : 'Owned — Equip to Profile (0.20 BCT)'))}</span>
+              ? (isTr ? 'Sende Var — Fotoğrafı Değiştir (0.40 BCT)' : 'Owned — Change Photo (0.40 BCT)')
+              : (isTr ? 'Sende Var — Profile Tak (0.20 BCT)' : 'Owned — Equip to Profile (0.20 BCT)'))}</span>
                     </button>
                   ` : `
                     <button type="button" ${(st.busy || st.loadingQuote) ? 'disabled' : ''} onclick="window.BlocTagSimpleMode.mintSelectedAvatar()"
@@ -5692,9 +5699,9 @@
                 </div>
                 <div class="grid grid-cols-3 sm:grid-cols-4 gap-2.5">
                   ${catalogItems.map(item => {
-                    const isSel = item.base_id === st.selectedBaseId;
-                    const defP = Number(item.default_price || 0.10).toFixed(item.default_price === 0.1 ? 2 : 3);
-                    return `
+                const isSel = item.base_id === st.selectedBaseId;
+                const defP = Number(item.default_price || 0.10).toFixed(item.default_price === 0.1 ? 2 : 3);
+                return `
                       <button type="button" onclick="window.BlocTagSimpleMode.selectAvatarItem('${escAttr(item.base_id)}')"
                         class="p-2 rounded-2xl bg-surface-container-low border ${isSel ? 'border-primary ring-2 ring-primary/35 bg-primary/5' : 'border-outline-variant/15 hover:border-outline-variant/40'} flex flex-col items-center gap-1.5 transition-all cursor-pointer active:scale-95">
                         <div class="w-14 h-14 rounded-full overflow-hidden shadow-sm ring-1 ring-outline-variant/20" style="background-color:${isSel ? st.selectedColor : '#FFFFFF'};">
@@ -5704,7 +5711,7 @@
                         <span class="text-[9.5px] font-mono text-outline">${esc(item.base_id)} • ${defP}</span>
                       </button>
                     `;
-                  }).join('')}
+              }).join('')}
                 </div>
               </div>
             `)}

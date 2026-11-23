@@ -216,7 +216,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.12.3` | Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.13.0` | Protocol Rooms (Özel ID'li Reddit Tarzı Odalar), Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
 | **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -724,3 +724,12 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - Kullanıcı kartları üzerinden tek dokunuşla zincir üstü `followVoiceOnChain` işlemi, "Geri Takip" ve "Takip Ediliyor" durumları bağlandı; kartlara tıklandığında ilgili kullanıcının profil sayfasına doğrudan yönlendirme aktifleştirildi.
 5. **Kapsamlı 8 Dil Desteği & Uluslararası Parite:**
    - İngilizce (varsayılan), Türkçe, Azerbaycan dili, Rusça, Almanca, İspanyolca, Fransızca ve Arapça dillerinde tam yerelleştirme sağlandı.
+
+## 🏛️ 35. BlocTag / LockTrace v2.13.0: Protocol Rooms — Özel ID'li Zincir Üstü Odalar, Kalıcı Avatar & Reddit Tarzı Mevzu Akışı
+
+1. **Özel ID (`RM-XXXXXXXX`) & Kademeli Anti-Squatting Fiyatlandırma:**
+   - Herkesin görebileceği zincir üstü odalar için 3–4 karakter `50 BCT`, 5–8 karakter `25 BCT`, 9+ karakter `10 BCT` kademeli fiyatlandırma (%50 Hazine, %50 Miner/Validator) ve Türkçe/homoglyph korumalı benzersiz slug doğrulaması eklendi.
+2. **Tek Seferlik ve Asla Değiştirilemeyen Oda Avatarı (`+2.00 BCT`):**
+   - Kurucu, oda açılışında veya sonradan yalnızca 1 kez kalıcı avatar mühürleyebilir; konsensüs indeksleyicisi ikinci değişiklik girişimlerini zincir seviyesinde reddeder.
+3. **Reddit Tarzı Mevzu (`0.25 BCT`), İç İçe Yanıtlar (`0.05 BCT`) & Kurucu Gelir Paylaşımı:**
+   - Açılan mevzulardan %30 oda kurucusu geliri, mevzu altı yanıtlardan %20 mevzu yazarı + %20 oda kurucusu geliri tam atomik birim hassasiyetiyle dağıtılır.

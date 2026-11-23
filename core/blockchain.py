@@ -40,6 +40,20 @@ from core.avatar_catalog import (
     compute_revenue_split,
     build_avatar_metadata,
 )
+from core.rooms_engine import (
+    validate_room_name,
+    validate_room_description,
+    validate_topic_fields,
+    validate_reply_content,
+    validate_room_avatar_spec,
+    normalize_room_slug,
+    compute_room_create_pricing,
+    compute_room_avatar_seal_pricing,
+    compute_room_topic_pricing,
+    compute_room_reply_pricing,
+    compute_room_upvote_pricing,
+    get_rooms_tokenomics_summary,
+)
 
 logger = logging.getLogger("LockTrace")
 
@@ -470,6 +484,15 @@ class Blockchain:
         self._confirmed_avatar_owners: Dict[str, List[dict]] = {}
         self._confirmed_avatar_equipped: Dict[str, Optional[dict]] = {}
         self._avatar_index_key: Optional[tuple] = None
+        self.rooms: Dict[str, dict] = {}
+        self.room_slug_index: Dict[str, str] = {}
+        self.room_topics: Dict[str, dict] = {}
+        self._confirmed_rooms_len: int = 0
+        self._confirmed_rooms_tip: str = ""
+        self._confirmed_rooms: Dict[str, dict] = {}
+        self._confirmed_room_slugs: Dict[str, str] = {}
+        self._confirmed_room_topics: Dict[str, dict] = {}
+        self._rooms_index_key: Optional[tuple] = None
         self._custom_data_dir = data_dir
         self._storage: Optional[SQLiteStorage] = None
         self._storage_dir_bound = ""
@@ -607,10 +630,18 @@ class Blockchain:
         fee_bearing_types = {
             "transfer", "space_post", "space_like", "space_comment", "space_follow",
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
-            "bns_accept_offer", "avatar_mint", "avatar_equip"
+            "bns_accept_offer", "avatar_mint", "avatar_equip",
+            "room_create", "room_set_avatar", "room_topic", "room_reply", "room_upvote"
         }
-        net_credit_types = {"transfer", "space_post", "bns_register", "bns_buy", "validator_stake", "validator_unstake", "avatar_mint", "avatar_equip"}
-        social_treasury_types = {"space_like", "space_comment", "space_follow"}
+        net_credit_types = {
+            "transfer", "space_post", "bns_register", "bns_buy",
+            "validator_stake", "validator_unstake", "avatar_mint", "avatar_equip",
+            "room_create", "room_set_avatar"
+        }
+        social_treasury_types = {
+            "space_like", "space_comment", "space_follow",
+            "room_topic", "room_reply", "room_upvote"
+        }
 
         amt_u = _to_units(tx.amount)
         fee_u = _to_units(tx.fee)
@@ -679,6 +710,21 @@ class Blockchain:
                 target = normalize_bct_address(extra.get("target"))
                 if target:
                     units_map[target] = units_map.get(target, 0) + _to_units(extra.get("creator_cut", 0.0))
+            elif ttype == "room_topic":
+                r_creator = normalize_bct_address(extra.get("room_creator"))
+                if r_creator:
+                    units_map[r_creator] = units_map.get(r_creator, 0) + _to_units(extra.get("room_creator_cut", 0.0))
+            elif ttype == "room_reply":
+                t_author = normalize_bct_address(extra.get("topic_author"))
+                if t_author:
+                    units_map[t_author] = units_map.get(t_author, 0) + _to_units(extra.get("topic_author_cut", 0.0))
+                r_creator = normalize_bct_address(extra.get("room_creator"))
+                if r_creator:
+                    units_map[r_creator] = units_map.get(r_creator, 0) + _to_units(extra.get("room_creator_cut", 0.0))
+            elif ttype == "room_upvote":
+                t_author = normalize_bct_address(extra.get("author"))
+                if t_author:
+                    units_map[t_author] = units_map.get(t_author, 0) + _to_units(extra.get("author_cut", 0.0))
 
         if ttype in fee_bearing_types and fee_u > 0:
             units_map[TREASURY_ADDRESS] = units_map.get(TREASURY_ADDRESS, 0) + fee_u
@@ -3791,7 +3837,11 @@ class Blockchain:
 
         transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(
-            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("space_post", "space_like", "space_comment", "space_follow", "bns_register", "bns_transfer", "avatar_mint", "avatar_equip")
+            _to_units(tx.fee) for tx in pending_txs if tx.tx_type in (
+                "space_post", "space_like", "space_comment", "space_follow",
+                "bns_register", "bns_transfer", "avatar_mint", "avatar_equip",
+                "room_create", "room_set_avatar", "room_topic", "room_reply", "room_upvote"
+            )
         )
         miner_fee_cut_u = (transfer_fees_u // 2) + space_and_bns_fees_u
 
@@ -4130,6 +4180,7 @@ class Blockchain:
                 self._load_in_memory_bns_index()
                 self._load_in_memory_space_index()
                 self._load_in_memory_avatar_index()
+                self._load_in_memory_rooms_index()
                 self._save_state()
                 block_dict = candidate_block.to_dict()
 
@@ -4418,6 +4469,7 @@ class Blockchain:
             self._load_in_memory_bns_index()
             self._load_in_memory_space_index()
             self._load_in_memory_avatar_index()
+            self._load_in_memory_rooms_index()
             self._save_state()
             self._broadcast_block_to_peers(candidate_block.to_dict(), exclude_node_id=node_id)
 
@@ -5765,6 +5817,942 @@ class Blockchain:
             self.following = new_following
         self._space_index_key = space_key
 
+    # ── ON-CHAIN PROTOCOL ROOMS (Reddit-Style Public Spaces) ─────────────────
+
+    def _resolve_social_bns_handle(self, clean_addr: str, bns_name: str = "") -> Tuple[bool, str, str]:
+        """Validates optional BNS / anonymous handle for Space & Room posts."""
+        clean_bns = str(bns_name or "").strip().lower()
+        if clean_bns.startswith("@"):
+            clean_bns = clean_bns[1:]
+        if clean_bns in ("anonymous", "anon"):
+            return True, "", "anonymous"
+        if clean_bns and clean_bns not in ("none", "false", "address", "public"):
+            if not clean_bns.endswith(".bct"):
+                clean_bns = f"{clean_bns}.bct"
+            rec = self.bns_records.get(clean_bns)
+            if not rec or rec.get("owner") != clean_addr:
+                return False, f"You do not own the handle '@{clean_bns}'.", ""
+            return True, "", clean_bns
+        return True, "", self.bns_reverse.get(clean_addr, "")
+
+    def _apply_tx_to_room_maps(
+        self,
+        block_idx,
+        status_lbl: str,
+        tx: Transaction,
+        rooms: Dict[str, dict],
+        slug_index: Dict[str, str],
+        topics: Dict[str, dict],
+    ):
+        extra = tx.extra_data
+        if not isinstance(extra, dict):
+            return
+        snd = normalize_bct_address(tx.sender)
+        ttype = tx.tx_type
+
+        if ttype == "room_create":
+            room_id = str(extra.get("room_id", "") or "").strip().upper()
+            slug = str(extra.get("slug", "") or "").strip().lower()
+            name = str(extra.get("name", "") or "").strip()
+            description = str(extra.get("description", "") or "").strip()
+            if not room_id or not slug or not name:
+                return
+            # Consensus first-seen uniqueness enforcement
+            if room_id in rooms or slug in slug_index:
+                return
+
+            avatar_meta = None
+            avatar_locked = False
+            raw_vid = str(extra.get("avatar_variant_id", "") or "").strip().upper()
+            if raw_vid:
+                b_id, bg_col = parse_variant_id(raw_vid)
+                if b_id and bg_col:
+                    avatar_meta = build_avatar_metadata(b_id, bg_col)
+                    avatar_locked = True
+
+            raw_bns = str(extra.get("bns_name") or "").strip().lower()
+            if raw_bns in ("anonymous", "anon"):
+                creator_bns = "anonymous"
+            elif raw_bns and self.bns_records.get(raw_bns, {}).get("owner") == snd:
+                creator_bns = raw_bns
+            else:
+                creator_bns = self.bns_reverse.get(snd, "")
+
+            rooms[room_id] = {
+                "room_id": room_id,
+                "slug": slug,
+                "name": name,
+                "description": description,
+                "creator": snd,
+                "creator_bns": creator_bns,
+                "is_anonymous": (creator_bns == "anonymous" or bool(extra.get("is_anonymous"))),
+                "avatar": avatar_meta,
+                "avatar_variant_id": raw_vid if avatar_locked else "",
+                "avatar_locked": avatar_locked,
+                "created_at": tx.timestamp,
+                "last_activity": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block_index": block_idx,
+                "status": status_lbl,
+                "creation_cost": float(tx.amount or 0.0),
+                "tier": str(extra.get("tier", "standard") or "standard"),
+                "topics_count": 0,
+                "replies_count": 0,
+                "upvotes_count": 0,
+                "creator_earnings": 0.0,
+                "topic_ids": [],
+            }
+            slug_index[slug] = room_id
+
+        elif ttype == "room_set_avatar":
+            room_id = str(extra.get("room_id", "") or "").strip().upper()
+            room = rooms.get(room_id)
+            if not room:
+                return
+            # Consensus-level immutability: creator-only & strictly one-time!
+            if room["creator"] != snd:
+                return
+            if room.get("avatar_locked") or room.get("avatar") is not None:
+                return
+            raw_vid = str(extra.get("avatar_variant_id", "") or "").strip().upper()
+            b_id, bg_col = parse_variant_id(raw_vid)
+            if not b_id or not bg_col:
+                return
+            room["avatar"] = build_avatar_metadata(b_id, bg_col)
+            room["avatar_variant_id"] = raw_vid
+            room["avatar_locked"] = True
+            room["avatar_sealed_at"] = tx.timestamp
+            room["avatar_tx_hash"] = tx.hash()
+
+        elif ttype == "room_topic":
+            room_id = str(extra.get("room_id", "") or "").strip().upper()
+            topic_id = str(extra.get("topic_id", "") or "").strip()
+            room = rooms.get(room_id)
+            if not room or not topic_id or topic_id in topics:
+                return
+
+            raw_bns = str(extra.get("bns_name") or "").strip().lower()
+            if raw_bns in ("anonymous", "anon"):
+                author_bns = "anonymous"
+            elif raw_bns and self.bns_records.get(raw_bns, {}).get("owner") == snd:
+                author_bns = raw_bns
+            else:
+                author_bns = self.bns_reverse.get(snd, "")
+
+            topics[topic_id] = {
+                "topic_id": topic_id,
+                "room_id": room_id,
+                "room_name": room["name"],
+                "room_slug": room["slug"],
+                "title": str(extra.get("title", "") or ""),
+                "content": str(extra.get("content", "") or ""),
+                "author": snd,
+                "author_bns": author_bns,
+                "is_anonymous": (author_bns == "anonymous" or bool(extra.get("is_anonymous"))),
+                "timestamp": tx.timestamp,
+                "last_activity": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block_index": block_idx,
+                "status": status_lbl,
+                "upvotes": [],
+                "upvotes_count": 0,
+                "replies": [],
+                "replies_count": 0,
+                "author_earnings": 0.0,
+            }
+            room["topic_ids"].append(topic_id)
+            room["topics_count"] += 1
+            room["last_activity"] = max(float(room.get("last_activity") or 0), float(tx.timestamp or 0))
+            room["creator_earnings"] = round(
+                room["creator_earnings"] + float(extra.get("room_creator_cut", 0.075) or 0.0), 8
+            )
+
+        elif ttype == "room_reply":
+            topic_id = str(extra.get("topic_id", "") or "").strip()
+            reply_id = str(extra.get("reply_id", "") or "").strip()
+            topic = topics.get(topic_id)
+            if not topic or not reply_id:
+                return
+            room = rooms.get(topic["room_id"])
+            if not room:
+                return
+            if any(r.get("reply_id") == reply_id for r in topic["replies"]):
+                return
+
+            parent_reply_id = str(extra.get("parent_reply_id", "") or "").strip()
+            if parent_reply_id and not any(r.get("reply_id") == parent_reply_id for r in topic["replies"]):
+                parent_reply_id = ""
+
+            raw_bns = str(extra.get("bns_name") or "").strip().lower()
+            if raw_bns in ("anonymous", "anon"):
+                author_bns = "anonymous"
+            elif raw_bns and self.bns_records.get(raw_bns, {}).get("owner") == snd:
+                author_bns = raw_bns
+            else:
+                author_bns = self.bns_reverse.get(snd, "")
+
+            rep = {
+                "reply_id": reply_id,
+                "topic_id": topic_id,
+                "room_id": topic["room_id"],
+                "parent_reply_id": parent_reply_id,
+                "author": snd,
+                "author_bns": author_bns,
+                "is_anonymous": (author_bns == "anonymous" or bool(extra.get("is_anonymous"))),
+                "content": str(extra.get("content", "") or ""),
+                "timestamp": tx.timestamp,
+                "tx_hash": tx.hash(),
+                "block_index": block_idx,
+                "status": status_lbl,
+            }
+            topic["replies"].append(rep)
+            topic["replies_count"] += 1
+            topic["last_activity"] = max(float(topic.get("last_activity") or 0), float(tx.timestamp or 0))
+            topic["author_earnings"] = round(
+                topic["author_earnings"] + float(extra.get("topic_author_cut", 0.01) or 0.0), 8
+            )
+            room["replies_count"] += 1
+            room["last_activity"] = max(float(room.get("last_activity") or 0), float(tx.timestamp or 0))
+            room["creator_earnings"] = round(
+                room["creator_earnings"] + float(extra.get("room_creator_cut", 0.01) or 0.0), 8
+            )
+
+        elif ttype == "room_upvote":
+            topic_id = str(extra.get("topic_id", "") or "").strip()
+            topic = topics.get(topic_id)
+            if not topic:
+                return
+            if snd in topic["upvotes"]:
+                return
+            topic["upvotes"].append(snd)
+            topic["upvotes_count"] += 1
+            topic["author_earnings"] = round(
+                topic["author_earnings"] + float(extra.get("author_cut", 0.002) or 0.0), 8
+            )
+            room = rooms.get(topic["room_id"])
+            if room:
+                room["upvotes_count"] += 1
+
+    def _load_in_memory_rooms_index(self):
+        """Incremental O(Δ) Protocol Rooms, Topics & Replies indexer with O(|Mempool|) overlay."""
+        import copy
+        tip_hash = self.chain[-1].hash if self.chain else ""
+        room_mempool_txs = [tx for tx in self.pending_transactions if tx.tx_type.startswith("room_")]
+        mempool_hashes = tuple(tx.hash() for tx in room_mempool_txs)
+        rooms_key = (len(self.chain), tip_hash, mempool_hashes)
+        if self._rooms_index_key == rooms_key and self.rooms is not None:
+            return
+
+        if (
+            len(self.chain) < self._confirmed_rooms_len
+            or (
+                self._confirmed_rooms_len > 0
+                and self.chain[self._confirmed_rooms_len - 1].hash != self._confirmed_rooms_tip
+            )
+        ):
+            self._confirmed_rooms_len = 0
+            self._confirmed_rooms_tip = ""
+            self._confirmed_rooms = {}
+            self._confirmed_room_slugs = {}
+            self._confirmed_room_topics = {}
+
+        if self._confirmed_rooms_len < len(self.chain):
+            for b in self.chain[self._confirmed_rooms_len:]:
+                for tx in b.transactions:
+                    if tx.tx_type.startswith("room_"):
+                        self._apply_tx_to_room_maps(
+                            b.index,
+                            "confirmed",
+                            tx,
+                            self._confirmed_rooms,
+                            self._confirmed_room_slugs,
+                            self._confirmed_room_topics,
+                        )
+            self._confirmed_rooms_len = len(self.chain)
+            self._confirmed_rooms_tip = tip_hash
+
+        if not room_mempool_txs:
+            self.rooms = self._confirmed_rooms
+            self.room_slug_index = self._confirmed_room_slugs
+            self.room_topics = self._confirmed_room_topics
+        else:
+            new_rooms = copy.deepcopy(self._confirmed_rooms)
+            new_slugs = dict(self._confirmed_room_slugs)
+            new_topics = copy.deepcopy(self._confirmed_room_topics)
+            for tx in room_mempool_txs:
+                self._apply_tx_to_room_maps("Mempool", "mempool", tx, new_rooms, new_slugs, new_topics)
+            self.rooms = new_rooms
+            self.room_slug_index = new_slugs
+            self.room_topics = new_topics
+        self._rooms_index_key = rooms_key
+
+    def get_room_create_quote(self, name: str, has_avatar: bool = False) -> Tuple[bool, str, Optional[dict]]:
+        """Computes live availability, canonical Special ID, and tiered pricing for a Room name."""
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+            ok, clean_name, slug, room_id = validate_room_name(name)
+            if not ok:
+                return False, clean_name, None
+            available = (slug not in self.room_slug_index) and (room_id not in self.rooms)
+            pricing = compute_room_create_pricing(slug, has_avatar=bool(has_avatar))
+            return True, "OK", {
+                "name": clean_name,
+                "slug": slug,
+                "room_id": room_id,
+                "available": available,
+                "has_avatar": bool(has_avatar),
+                **pricing,
+            }
+
+    def create_room(
+        self,
+        creator: str,
+        name: str,
+        description: str,
+        avatar_base_id: str = "",
+        avatar_bg_color: str = "#FFFFFF",
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+        bns_name: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Creates a public, Reddit-style Protocol Room on-chain with a unique Special ID (`RM-XXXXXXXX`).
+        If an avatar is supplied, it is permanently sealed (`avatar_locked=True`) and can never be changed.
+        """
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+
+            clean_creator = normalize_bct_address(creator)
+            if not is_valid_bct_address(clean_creator):
+                return False, f"Invalid creator address: '{clean_creator}'", None
+
+            ok_name, clean_name, slug, room_id = validate_room_name(name)
+            if not ok_name:
+                return False, clean_name, None
+
+            ok_desc, clean_desc = validate_room_description(description)
+            if not ok_desc:
+                return False, clean_desc, None
+
+            if slug in self.room_slug_index or room_id in self.rooms:
+                return False, f"A room with name/ID '{clean_name}' ({room_id}) already exists.", None
+
+            ok_av, av_err, variant_id, avatar_meta = validate_room_avatar_spec(avatar_base_id, avatar_bg_color)
+            if not ok_av:
+                return False, av_err, None
+
+            expected_payload = signed_payload or f"ROOM_CREATE:{clean_creator}:{slug}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_creator, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            bns_ok, bns_err, assigned_bns = self._resolve_social_bns_handle(clean_creator, bns_name)
+            if not bns_ok:
+                return False, bns_err, None
+
+            pricing = compute_room_create_pricing(slug, has_avatar=bool(variant_id))
+            total_cost = pricing["total_cost"]
+            creator_bal = self.verify_and_recalc_balance(clean_creator)
+            if creator_bal < total_cost:
+                return (
+                    False,
+                    f"Insufficient balance! Room creation requires {total_cost:.2f} BCT ({pricing['tier_label']}). Current balance: {creator_bal:.4f} BCT.",
+                    None,
+                )
+
+            extra_data = {
+                "room_id": room_id,
+                "slug": slug,
+                "name": clean_name,
+                "description": clean_desc,
+                "creator": clean_creator,
+                "bns_name": assigned_bns,
+                "is_anonymous": (assigned_bns == "anonymous"),
+                "avatar_variant_id": variant_id or "",
+                "avatar_locked": bool(variant_id),
+                "tier": pricing["tier"],
+                "base_fee": pricing["base_fee"],
+                "avatar_fee": pricing["avatar_fee"],
+                "treasury_cut": pricing["treasury_cut"],
+                "pool_cut": pricing["pool_cut"],
+            }
+
+            tx = Transaction(
+                sender=clean_creator,
+                receiver=TREASURY_ADDRESS,
+                amount=total_cost,
+                fee=pricing["pool_cut"],
+                signature=signature,
+                tx_type="room_create",
+                extra_data=extra_data,
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + pricing["pool_cut"], 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_rooms_index()
+
+            self.balances[clean_creator] = self.verify_and_recalc_balance(clean_creator)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            return True, f"Protocol Room '{clean_name}' ({room_id}) sealed on-chain!", {
+                "room_id": room_id,
+                "slug": slug,
+                "name": clean_name,
+                "description": clean_desc,
+                "avatar": avatar_meta,
+                "avatar_locked": bool(variant_id),
+                "cost": total_cost,
+                "tier": pricing["tier"],
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+                "new_balance": self.balances[clean_creator],
+            }
+
+    def set_room_avatar(
+        self,
+        creator: str,
+        room_id: str,
+        avatar_base_id: str,
+        avatar_bg_color: str = "#FFFFFF",
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        One-time immutable avatar seal for a room created without an avatar.
+        Creator-only. Once sealed, it can NEVER be modified or removed.
+        """
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+
+            clean_creator = normalize_bct_address(creator)
+            if not is_valid_bct_address(clean_creator):
+                return False, f"Invalid creator address: '{clean_creator}'", None
+
+            rid = str(room_id or "").strip().upper()
+            room = self.rooms.get(rid)
+            if not room:
+                return False, "Protocol room not found.", None
+
+            if room["creator"] != clean_creator:
+                return False, "Only the room creator can seal the room avatar.", None
+
+            if room.get("avatar_locked") or room.get("avatar") is not None:
+                return False, "This room's avatar is permanently locked on-chain and cannot be changed.", None
+
+            # Mempool race-condition protection
+            has_pending = any(
+                t.tx_type == "room_set_avatar"
+                and isinstance(t.extra_data, dict)
+                and str(t.extra_data.get("room_id", "")).upper() == rid
+                for t in self.pending_transactions
+            )
+            if has_pending:
+                return False, "An immutable avatar seal transaction is already pending for this room.", None
+
+            if not str(avatar_base_id or "").strip():
+                return False, "Avatar base ID is required.", None
+            ok_av, av_err, variant_id, avatar_meta = validate_room_avatar_spec(avatar_base_id, avatar_bg_color)
+            if not ok_av or not variant_id:
+                return False, av_err or "Invalid avatar specification.", None
+
+            expected_payload = signed_payload or f"ROOM_AVATAR:{clean_creator}:{rid}:{variant_id}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_creator, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            pricing = compute_room_avatar_seal_pricing()
+            total_cost = pricing["total_cost"]
+            creator_bal = self.verify_and_recalc_balance(clean_creator)
+            if creator_bal < total_cost:
+                return False, f"Insufficient balance! Permanent avatar seal fee is {total_cost:.2f} BCT.", None
+
+            tx = Transaction(
+                sender=clean_creator,
+                receiver=TREASURY_ADDRESS,
+                amount=total_cost,
+                fee=pricing["pool_cut"],
+                signature=signature,
+                tx_type="room_set_avatar",
+                extra_data={
+                    "room_id": rid,
+                    "avatar_variant_id": variant_id,
+                    "treasury_cut": pricing["treasury_cut"],
+                    "pool_cut": pricing["pool_cut"],
+                },
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + pricing["pool_cut"], 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_rooms_index()
+
+            self.balances[clean_creator] = self.verify_and_recalc_balance(clean_creator)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            return True, f"Room avatar {variant_id} permanently sealed! It can never be changed.", {
+                "room_id": rid,
+                "avatar": avatar_meta,
+                "avatar_variant_id": variant_id,
+                "avatar_locked": True,
+                "cost": total_cost,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+                "new_balance": self.balances[clean_creator],
+            }
+
+    def create_room_topic(
+        self,
+        author: str,
+        room_id: str,
+        title: str,
+        content: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+        bns_name: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Opens a new Reddit-style Topic ("Mevzu") inside a Protocol Room.
+        Cost: 0.25 BCT (30% Room Creator Royalty, 50% Treasury, 20% Miner/Validator).
+        """
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+
+            clean_author = normalize_bct_address(author)
+            if not is_valid_bct_address(clean_author):
+                return False, f"Invalid author address: '{clean_author}'", None
+
+            rid = str(room_id or "").strip().upper()
+            room = self.rooms.get(rid)
+            if not room:
+                slug_hit = self.room_slug_index.get(normalize_room_slug(room_id))
+                if slug_hit:
+                    rid = slug_hit
+                    room = self.rooms.get(rid)
+            if not room:
+                return False, "Target protocol room not found.", None
+
+            ok_f, clean_title, clean_body = validate_topic_fields(title, content)
+            if not ok_f:
+                return False, clean_title, None
+
+            expected_payload = signed_payload or f"ROOM_TOPIC:{clean_author}:{rid}:{clean_title}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_author, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            bns_ok, bns_err, assigned_bns = self._resolve_social_bns_handle(clean_author, bns_name)
+            if not bns_ok:
+                return False, bns_err, None
+
+            pricing = compute_room_topic_pricing()
+            total_cost = pricing["total_cost"]
+            author_bal = self.verify_and_recalc_balance(clean_author)
+            if author_bal < total_cost:
+                return False, f"Insufficient balance! Opening a topic costs {total_cost:.2f} BCT. Current balance: {author_bal:.4f} BCT.", None
+
+            is_dup = any(
+                t.tx_type == "room_topic"
+                and t.sender == clean_author
+                and isinstance(t.extra_data, dict)
+                and t.extra_data.get("room_id") == rid
+                and t.extra_data.get("title") == clean_title
+                and (time.time() - float(t.timestamp or 0)) < 30.0
+                for t in self.pending_transactions
+            )
+            if is_dup:
+                return False, "This topic is already queued in the mempool.", None
+
+            topic_id = f"top_{secrets.token_hex(6)}"
+            room_creator = room["creator"]
+
+            tx = Transaction(
+                sender=clean_author,
+                receiver=TREASURY_ADDRESS,
+                amount=total_cost,
+                fee=pricing["pool_cut"],
+                signature=signature,
+                tx_type="room_topic",
+                extra_data={
+                    "room_id": rid,
+                    "topic_id": topic_id,
+                    "title": clean_title,
+                    "content": clean_body,
+                    "author": clean_author,
+                    "room_creator": room_creator,
+                    "bns_name": assigned_bns,
+                    "is_anonymous": (assigned_bns == "anonymous"),
+                    "room_creator_cut": pricing["room_creator_cut"],
+                    "treasury_cut": pricing["treasury_cut"],
+                    "pool_cut": pricing["pool_cut"],
+                },
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + pricing["pool_cut"], 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_rooms_index()
+
+            self.balances[clean_author] = self.verify_and_recalc_balance(clean_author)
+            self.balances[room_creator] = self.verify_and_recalc_balance(room_creator)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            return True, "Topic published on-chain!", {
+                "topic_id": topic_id,
+                "room_id": rid,
+                "title": clean_title,
+                "content": clean_body,
+                "cost": total_cost,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+                "new_balance": self.balances[clean_author],
+            }
+
+    def create_room_reply(
+        self,
+        author: str,
+        topic_id: str,
+        content: str,
+        parent_reply_id: str = "",
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+        bns_name: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Posts a tweet/reply under a Topic ("Mevzu") in a Protocol Room.
+        Supports optional `parent_reply_id` for Reddit-style nested replies.
+        Cost: 0.05 BCT (20% Topic Author, 20% Room Creator, 40% Treasury, 20% Miner/Validator).
+        """
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+
+            clean_author = normalize_bct_address(author)
+            if not is_valid_bct_address(clean_author):
+                return False, f"Invalid author address: '{clean_author}'", None
+
+            tid = str(topic_id or "").strip()
+            topic = self.room_topics.get(tid)
+            if not topic:
+                return False, "Target topic not found.", None
+
+            rid = topic["room_id"]
+            room = self.rooms.get(rid)
+            if not room:
+                return False, "Parent room not found.", None
+
+            ok_c, clean_content = validate_reply_content(content)
+            if not ok_c:
+                return False, clean_content, None
+
+            clean_parent = str(parent_reply_id or "").strip()
+            if clean_parent:
+                if not any(r.get("reply_id") == clean_parent for r in topic.get("replies", [])):
+                    return False, "Referenced parent reply does not belong to this topic.", None
+
+            expected_payload = signed_payload or f"ROOM_REPLY:{clean_author}:{tid}:{clean_content}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_author, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            bns_ok, bns_err, assigned_bns = self._resolve_social_bns_handle(clean_author, bns_name)
+            if not bns_ok:
+                return False, bns_err, None
+
+            pricing = compute_room_reply_pricing()
+            total_cost = pricing["total_cost"]
+            author_bal = self.verify_and_recalc_balance(clean_author)
+            if author_bal < total_cost:
+                return False, f"Insufficient balance! Reply fee is {total_cost:.2f} BCT. Current balance: {author_bal:.4f} BCT.", None
+
+            is_dup = any(
+                t.tx_type == "room_reply"
+                and t.sender == clean_author
+                and isinstance(t.extra_data, dict)
+                and t.extra_data.get("topic_id") == tid
+                and t.extra_data.get("content") == clean_content
+                and (time.time() - float(t.timestamp or 0)) < 30.0
+                for t in self.pending_transactions
+            )
+            if is_dup:
+                return False, "This reply is already queued in the mempool.", None
+
+            reply_id = f"rep_{secrets.token_hex(6)}"
+            topic_author = topic["author"]
+            room_creator = room["creator"]
+
+            tx = Transaction(
+                sender=clean_author,
+                receiver=TREASURY_ADDRESS,
+                amount=total_cost,
+                fee=pricing["pool_cut"],
+                signature=signature,
+                tx_type="room_reply",
+                extra_data={
+                    "room_id": rid,
+                    "topic_id": tid,
+                    "reply_id": reply_id,
+                    "parent_reply_id": clean_parent,
+                    "content": clean_content,
+                    "author": clean_author,
+                    "topic_author": topic_author,
+                    "room_creator": room_creator,
+                    "bns_name": assigned_bns,
+                    "is_anonymous": (assigned_bns == "anonymous"),
+                    "topic_author_cut": pricing["topic_author_cut"],
+                    "room_creator_cut": pricing["room_creator_cut"],
+                    "treasury_cut": pricing["treasury_cut"],
+                    "pool_cut": pricing["pool_cut"],
+                },
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + pricing["pool_cut"], 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_rooms_index()
+
+            self.balances[clean_author] = self.verify_and_recalc_balance(clean_author)
+            self.balances[topic_author] = self.verify_and_recalc_balance(topic_author)
+            self.balances[room_creator] = self.verify_and_recalc_balance(room_creator)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            return True, "Reply sealed on-chain!", {
+                "reply_id": reply_id,
+                "topic_id": tid,
+                "room_id": rid,
+                "parent_reply_id": clean_parent,
+                "content": clean_content,
+                "cost": total_cost,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+                "new_balance": self.balances[clean_author],
+            }
+
+    def upvote_room_topic(
+        self,
+        voter: str,
+        topic_id: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Upvotes a Topic inside a Protocol Room.
+        Cost: 0.01 BCT (20% Topic Author, 70% Treasury, 10% Miner/Validator).
+        """
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+
+            clean_voter = normalize_bct_address(voter)
+            if not is_valid_bct_address(clean_voter):
+                return False, f"Invalid voter address: '{clean_voter}'", None
+
+            tid = str(topic_id or "").strip()
+            topic = self.room_topics.get(tid)
+            if not topic:
+                return False, "Target topic not found.", None
+
+            if clean_voter in topic["upvotes"]:
+                return False, "You have already upvoted this topic.", None
+
+            expected_payload = signed_payload or f"ROOM_UPVOTE:{clean_voter}:{tid}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_voter, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            pricing = compute_room_upvote_pricing()
+            total_cost = pricing["total_cost"]
+            voter_bal = self.verify_and_recalc_balance(clean_voter)
+            if voter_bal < total_cost:
+                return False, f"Insufficient balance! Upvote fee is {total_cost:.2f} BCT.", None
+
+            is_dup = any(
+                t.tx_type == "room_upvote"
+                and t.sender == clean_voter
+                and isinstance(t.extra_data, dict)
+                and t.extra_data.get("topic_id") == tid
+                for t in self.pending_transactions
+            )
+            if is_dup:
+                return False, "Upvote already queued in mempool.", None
+
+            topic_author = topic["author"]
+            tx = Transaction(
+                sender=clean_voter,
+                receiver=TREASURY_ADDRESS,
+                amount=total_cost,
+                fee=pricing["pool_cut"],
+                signature=signature,
+                tx_type="room_upvote",
+                extra_data={
+                    "room_id": topic["room_id"],
+                    "topic_id": tid,
+                    "author": topic_author,
+                    "voter": clean_voter,
+                    "author_cut": pricing["author_cut"],
+                    "treasury_cut": pricing["treasury_cut"],
+                    "pool_cut": pricing["pool_cut"],
+                },
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + pricing["pool_cut"], 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_rooms_index()
+
+            self.balances[clean_voter] = self.verify_and_recalc_balance(clean_voter)
+            self.balances[topic_author] = self.verify_and_recalc_balance(topic_author)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._save_state()
+
+            updated = self.room_topics.get(tid, topic)
+            return True, "Topic upvoted!", {
+                "topic_id": tid,
+                "upvotes_count": updated["upvotes_count"],
+                "cost": total_cost,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+                "new_balance": self.balances[clean_voter],
+            }
+
+    def list_rooms(self, limit: int = 50, sort_by: str = "active", query: str = "") -> dict:
+        """Returns public on-chain Protocol Rooms with live stats & pricing summary."""
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+            items = []
+            q = str(query or "").strip().lower()
+            for r in self.rooms.values():
+                if q:
+                    hay = f"{r['name']} {r['room_id']} {r['slug']} {r['description']}".lower()
+                    if q not in hay:
+                        continue
+                item = {k: v for k, v in r.items() if k != "topic_ids"}
+                item["creator_avatar"] = None if r.get("is_anonymous") else self.avatar_equipped.get(r["creator"])
+                items.append(item)
+
+            if sort_by == "newest":
+                items.sort(key=lambda x: float(x.get("created_at") or 0), reverse=True)
+            elif sort_by == "topics":
+                items.sort(key=lambda x: (int(x.get("topics_count") or 0), int(x.get("replies_count") or 0)), reverse=True)
+            else:
+                items.sort(
+                    key=lambda x: (
+                        int(x.get("topics_count") or 0) * 3 + int(x.get("replies_count") or 0) + int(x.get("upvotes_count") or 0),
+                        float(x.get("last_activity") or 0),
+                    ),
+                    reverse=True,
+                )
+
+            return {
+                "rooms": items[:limit],
+                "total_rooms": len(self.rooms),
+                "total_topics": len(self.room_topics),
+                "tokenomics": get_rooms_tokenomics_summary(),
+            }
+
+    def get_room_detail(self, room_key: str, sort_by: str = "hot", limit: int = 50) -> Optional[dict]:
+        """Returns a single Protocol Room with its Reddit-style Topics list."""
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+            key_raw = str(room_key or "").strip()
+            room = self.rooms.get(key_raw.upper())
+            if not room:
+                slug_hit = self.room_slug_index.get(normalize_room_slug(key_raw))
+                if slug_hit:
+                    room = self.rooms.get(slug_hit)
+            if not room:
+                return None
+
+            now_ts = time.time()
+            room_topics = []
+            for tid in room.get("topic_ids", []):
+                t = self.room_topics.get(tid)
+                if not t:
+                    continue
+                t_copy = {k: v for k, v in t.items() if k != "replies"}
+                t_copy["author_avatar"] = None if t.get("is_anonymous") else self.avatar_equipped.get(t["author"])
+                room_topics.append(t_copy)
+
+            if sort_by == "new":
+                room_topics.sort(key=lambda x: float(x.get("timestamp") or 0), reverse=True)
+            elif sort_by == "top":
+                room_topics.sort(
+                    key=lambda x: (int(x.get("upvotes_count") or 0), int(x.get("replies_count") or 0)),
+                    reverse=True,
+                )
+            else:
+                # Reddit-inspired hot ranking with gravity time-decay
+                def _hot_score(t_item):
+                    age_hrs = max(0.0, (now_ts - float(t_item.get("timestamp") or now_ts)) / 3600.0)
+                    engagement = (int(t_item.get("upvotes_count") or 0) * 2.0) + (int(t_item.get("replies_count") or 0) * 1.5) + 1.0
+                    return engagement / ((age_hrs + 2.0) ** 1.35)
+                room_topics.sort(key=_hot_score, reverse=True)
+
+            room_out = {k: v for k, v in room.items() if k != "topic_ids"}
+            room_out["creator_avatar"] = None if room.get("is_anonymous") else self.avatar_equipped.get(room["creator"])
+            room_out["topics"] = room_topics[:limit]
+            room_out["tokenomics"] = get_rooms_tokenomics_summary()
+            return room_out
+
+    def get_room_topic_detail(self, topic_id: str) -> Optional[dict]:
+        """Returns full Topic details and all nested Replies/Tweets under it."""
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_rooms_index()
+            t = self.room_topics.get(str(topic_id or "").strip())
+            if not t:
+                return None
+            room = self.rooms.get(t["room_id"])
+            out = dict(t)
+            out["author_avatar"] = None if t.get("is_anonymous") else self.avatar_equipped.get(t["author"])
+            enriched_replies = []
+            for r in t.get("replies", []):
+                rc = dict(r)
+                rc["author_avatar"] = None if r.get("is_anonymous") else self.avatar_equipped.get(r["author"])
+                enriched_replies.append(rc)
+            out["replies"] = enriched_replies
+            out["room"] = {
+                "room_id": room["room_id"],
+                "slug": room["slug"],
+                "name": room["name"],
+                "description": room["description"],
+                "avatar": room.get("avatar"),
+                "avatar_locked": bool(room.get("avatar_locked")),
+                "creator": room["creator"],
+            } if room else None
+            out["tokenomics"] = get_rooms_tokenomics_summary()
+            return out
+
     # ── ON-CHAIN SOULBOUND PROFILE AVATARS (Bonding Curve + Color Variants) ──
 
     @staticmethod
@@ -6422,6 +7410,7 @@ class Blockchain:
                     self._load_in_memory_bns_index()
                     self._load_in_memory_space_index()
                     self._load_in_memory_avatar_index()
+                    self._load_in_memory_rooms_index()
                     if sweep_overdue:
                         self._sweep_overdue_mempool()
                     return True
@@ -6473,6 +7462,7 @@ class Blockchain:
             self._load_in_memory_bns_index()
             self._load_in_memory_space_index()
             self._load_in_memory_avatar_index()
+            self._load_in_memory_rooms_index()
 
             if sweep_overdue:
                 self._sweep_overdue_mempool()

@@ -216,7 +216,12 @@ def check_wallet_cooldown(wallet: str, action: str) -> Optional[Tuple[bool, str,
             "space_like": "Beğeni",
             "space_comment": "Yorum",
             "space_follow": "Takip etme",
-            "bns_register": "Alan adı kaydı"
+            "bns_register": "Alan adı kaydı",
+            "room_create": "Oda oluşturma",
+            "room_set_avatar": "Oda avatarı mühürleme",
+            "room_topic": "Mevzu açma",
+            "room_reply": "Mevzu yanıtı",
+            "room_upvote": "Mevzu oylama",
         }
         name = action_names.get(action, action)
         return False, f"{name} için bekleme süresi aktif. Lütfen {remain:.0f} saniye sonra tekrar deneyin.", 429
@@ -361,7 +366,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-jSgNr4qPdVNUT+PcHC1inkQ6G5c0fpwuEIAIAh4eMNg=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-qFchZwZP1R7Rwuw70648DP6gis6WScsy117qksFZfo4=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -2698,6 +2703,283 @@ def api_avatars_equip():
         return api_response(False, message=message, status=400)
 
     logger.info(f"Avatar Equip Updated: {owner[:10]}... -> '{variant_id or 'NONE'}'")
+    return api_response(True, message=message, data=result, status=200)
+
+
+# ══════════════════════════════════════════════════════
+# 🏛️ PROTOCOL ROOMS (Reddit-Style Public On-Chain Spaces)
+# ══════════════════════════════════════════════════════
+
+@app.route("/api/v1/rooms", methods=["GET"])
+def api_rooms_list():
+    """Lists all public on-chain Protocol Rooms with live topic/reply metrics and pricing."""
+    limit = safe_int(request.args.get("limit", 50), default=50, min_val=1, max_val=100)
+    sort_by = str(request.args.get("sort", "active") or "active").lower().strip()
+    if sort_by not in ("active", "newest", "topics"):
+        sort_by = "active"
+    query = str(request.args.get("q", "") or "").strip()[:64]
+    data = blockchain.list_rooms(limit=limit, sort_by=sort_by, query=query)
+    return api_response(True, data=data)
+
+
+@app.route("/api/v1/rooms/quote", methods=["GET"])
+def api_rooms_quote():
+    """Returns live availability, canonical Special ID (RM-XXXXXXXX), and tiered BCT fee quote."""
+    name = str(request.args.get("name", "") or "").strip()
+    has_avatar = str(request.args.get("has_avatar", "false") or "").lower() in ("1", "true", "yes")
+    if not name:
+        return api_response(False, message="Room name is required.", status=400)
+    ok, msg, quote = blockchain.get_room_create_quote(name=name, has_avatar=has_avatar)
+    if not ok:
+        return api_response(False, message=msg, status=400)
+    return api_response(True, message=msg, data=quote)
+
+
+@app.route("/api/v1/rooms", methods=["POST"])
+def api_rooms_create():
+    """
+    Creates a public on-chain Protocol Room with a unique Special ID, description,
+    and optional one-time immutable avatar.
+    """
+    if not check_rate_limit("room_create", limit=10, window_seconds=60):
+        return api_response(False, message="Too many room creation requests. Please wait a moment.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    creator = str(data.get("creator", "") or "").strip()
+    name = str(data.get("name", "") or "").strip()
+    description = str(data.get("description", "") or "").strip()
+    avatar_base_id = str(data.get("avatar_base_id", "") or "").strip().upper()
+    avatar_bg_color = str(data.get("avatar_bg_color", "#FFFFFF") or "#FFFFFF").strip().upper()
+    bns_name = str(data.get("bns_name", "") or "").strip()
+
+    if not creator or not name or not description:
+        return api_response(False, message="Fields 'creator', 'name', and 'description' are required.", status=400)
+
+    from core.rooms_engine import validate_room_name
+    ok_n, clean_name_or_err, slug, _rid = validate_room_name(name)
+    if not ok_n:
+        return api_response(False, message=clean_name_or_err, status=400)
+
+    canonical = [f"ROOM_CREATE:{creator}:{slug}", f"ROOM_CREATE:{creator}:{clean_name_or_err}"]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, creator, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(creator, "room_create")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
+    success, message, result = blockchain.create_room(
+        creator=creator,
+        name=name,
+        description=description,
+        avatar_base_id=avatar_base_id,
+        avatar_bg_color=avatar_bg_color,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+        bns_name=bns_name,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Protocol Room Created: {result.get('room_id')} '{result.get('name')}' by {creator[:10]}... ({result.get('cost')} BCT)")
+    return api_response(True, message=message, data=result, status=201)
+
+
+@app.route("/api/v1/rooms/<room_id>", methods=["GET"])
+def api_rooms_get_detail(room_id):
+    """Returns a single Protocol Room with its Reddit-style Topics sorted by hot/new/top."""
+    sort_by = str(request.args.get("sort", "hot") or "hot").lower().strip()
+    if sort_by not in ("hot", "new", "top"):
+        sort_by = "hot"
+    limit = safe_int(request.args.get("limit", 50), default=50, min_val=1, max_val=100)
+    detail = blockchain.get_room_detail((room_id or "")[:64], sort_by=sort_by, limit=limit)
+    if not detail:
+        return api_response(False, message="Protocol room not found.", status=404)
+    return api_response(True, data=detail)
+
+
+@app.route("/api/v1/rooms/<room_id>/avatar", methods=["POST"])
+def api_rooms_set_avatar(room_id):
+    """
+    One-time permanent avatar seal for a Room created without an avatar.
+    Creator-only. Once sealed on-chain, it can NEVER be modified.
+    """
+    if not check_rate_limit("room_set_avatar", limit=10, window_seconds=60):
+        return api_response(False, message="Too many avatar seal requests. Please wait.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    creator = str(data.get("creator", "") or "").strip()
+    avatar_base_id = str(data.get("avatar_base_id", "") or "").strip().upper()
+    avatar_bg_color = str(data.get("avatar_bg_color", "#FFFFFF") or "#FFFFFF").strip().upper()
+    if avatar_bg_color and not avatar_bg_color.startswith("#"):
+        avatar_bg_color = "#" + avatar_bg_color
+
+    if not creator or not avatar_base_id:
+        return api_response(False, message="Fields 'creator' and 'avatar_base_id' are required.", status=400)
+
+    from core.avatar_catalog import make_variant_id
+    variant_id = make_variant_id(avatar_base_id, avatar_bg_color)
+    if not variant_id:
+        return api_response(False, message="Invalid 'avatar_base_id' or hex 'avatar_bg_color' (#RRGGBB).", status=400)
+
+    rid = str(room_id or "").strip().upper()[:32]
+    canonical = f"ROOM_AVATAR:{creator}:{rid}:{variant_id}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, creator, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(creator, "room_set_avatar")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
+    success, message, result = blockchain.set_room_avatar(
+        creator=creator,
+        room_id=rid,
+        avatar_base_id=avatar_base_id,
+        avatar_bg_color=avatar_bg_color,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Room Avatar Permanently Sealed: {rid} -> {variant_id} by {creator[:10]}...")
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/rooms/<room_id>/topics", methods=["POST"])
+def api_rooms_create_topic(room_id):
+    """Opens a new Reddit-style Topic ('Mevzu') inside a Protocol Room (0.25 BCT)."""
+    if not check_rate_limit("room_topic", limit=15, window_seconds=60):
+        return api_response(False, message="Posting topics too fast. Please wait.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    author = str(data.get("author", "") or "").strip()
+    title = str(data.get("title", "") or "").strip()
+    content = str(data.get("content", "") or "").strip()
+    bns_name = str(data.get("bns_name", "") or "").strip()
+
+    if not author or not title or not content:
+        return api_response(False, message="Fields 'author', 'title', and 'content' are required.", status=400)
+
+    rid = str(room_id or "").strip().upper()[:32]
+    canonical = [f"ROOM_TOPIC:{author}:{rid}:{title}", f"ROOM_TOPIC:{author}:{rid}:{title}:{bns_name}"] if bns_name else f"ROOM_TOPIC:{author}:{rid}:{title}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, author, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(author, "room_topic")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
+    success, message, result = blockchain.create_room_topic(
+        author=author,
+        room_id=rid,
+        title=title,
+        content=content,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+        bns_name=bns_name,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Room Topic Created: {result.get('topic_id')} in {rid} by {author[:10]}...")
+    return api_response(True, message=message, data=result, status=201)
+
+
+@app.route("/api/v1/rooms/topics/<topic_id>", methods=["GET"])
+def api_rooms_get_topic(topic_id):
+    """Returns full Topic details and all nested Replies/Tweets under it."""
+    detail = blockchain.get_room_topic_detail((topic_id or "")[:64])
+    if not detail:
+        return api_response(False, message="Topic not found.", status=404)
+    return api_response(True, data=detail)
+
+
+@app.route("/api/v1/rooms/topics/<topic_id>/replies", methods=["POST"])
+def api_rooms_create_reply(topic_id):
+    """Posts a tweet/reply under a Topic in a Protocol Room (0.05 BCT)."""
+    if not check_rate_limit("room_reply", limit=30, window_seconds=60):
+        return api_response(False, message="Replying too fast. Please wait.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    author = str(data.get("author", "") or "").strip()
+    content = str(data.get("content", "") or "").strip()
+    parent_reply_id = str(data.get("parent_reply_id", "") or "").strip()[:32]
+    bns_name = str(data.get("bns_name", "") or "").strip()
+
+    if not author or not content:
+        return api_response(False, message="Fields 'author' and 'content' are required.", status=400)
+
+    tid = str(topic_id or "").strip()[:64]
+    canonical = [f"ROOM_REPLY:{author}:{tid}:{content}", f"ROOM_REPLY:{author}:{tid}:{content}:{bns_name}"] if bns_name else f"ROOM_REPLY:{author}:{tid}:{content}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, author, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(author, "room_reply")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
+    success, message, result = blockchain.create_room_reply(
+        author=author,
+        topic_id=tid,
+        content=content,
+        parent_reply_id=parent_reply_id,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+        bns_name=bns_name,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(f"Room Reply Created: {result.get('reply_id')} on {tid} by {author[:10]}...")
+    return api_response(True, message=message, data=result, status=201)
+
+
+@app.route("/api/v1/rooms/topics/<topic_id>/upvote", methods=["POST"])
+def api_rooms_upvote_topic(topic_id):
+    """Upvotes a Topic inside a Protocol Room (0.01 BCT)."""
+    if not check_rate_limit("room_upvote", limit=60, window_seconds=60):
+        return api_response(False, message="Upvoting too fast. Please wait.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    voter = str(data.get("voter", "") or "").strip()
+    if not voter:
+        return api_response(False, message="Field 'voter' is required.", status=400)
+
+    tid = str(topic_id or "").strip()[:64]
+    canonical = f"ROOM_UPVOTE:{voter}:{tid}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, voter, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.upvote_room_topic(
+        voter=voter,
+        topic_id=tid,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
     return api_response(True, message=message, data=result, status=200)
 
 

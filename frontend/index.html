@@ -60,8 +60,8 @@
     crossorigin="anonymous" defer></script>
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
-  <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.12.2-r4" />
-  <script src="/simple-mode/simple-mode.js?v=2.12.3" integrity="sha256-Msppp2K3FTQXAQD8M2dmYD0YnjR9RHfK8FkYee4nFl0=" crossorigin="anonymous" defer></script>
+  <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.13.0" />
+  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-EdwPFr11Tu/eduagHd2kQVutUsIuU/gmMJXh0oLxtKQ=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -890,7 +890,7 @@
           <span
             class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight text-base tracking-tight">BlocTag</span>
           <span class="text-[9.5px] font-mono text-on-surface-variant font-medium leading-none">Developed by LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[10px] mt-0.5">Mainnet v2.12.2</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[10px] mt-0.5">Mainnet v2.13.0</span>
           <span id="sidebarBrandNodeVal" class="hidden"></span>
         </div>
       </div>
@@ -1103,7 +1103,7 @@
           <div class="flex flex-col min-w-0 leading-none">
             <span
               class="font-label-sm text-[10px] sm:text-[11px] text-on-surface tracking-wide uppercase font-semibold shrink-0"
-              id="mobileNetLabel">Mainnet v2.12.2</span>
+              id="mobileNetLabel">Mainnet v2.13.0</span>
             <span class="text-[9px] font-mono text-on-surface-variant truncate max-w-[85px] xs:max-w-[110px]"
               id="mobileNetNodeUrl">net: <span class="text-primary font-medium"
                 id="mobileNetNodeVal">locktrace.space</span></span>
@@ -1205,7 +1205,7 @@
         <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="desktopNetDot"></span>
         <div class="flex flex-col min-w-0 leading-tight">
           <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold"
-            id="desktopNetLabel">BlocTag Mainnet v2.12.2</span>
+            id="desktopNetLabel">BlocTag Mainnet v2.13.0</span>
           <span class="text-[10px] font-mono text-on-surface-variant truncate max-w-[150px]" id="desktopNetNodeUrl">net:
             <span class="text-primary font-medium" id="desktopNetNodeVal">locktrace.space</span></span>
         </div>
@@ -3505,7 +3505,7 @@
               <span>← Back to Wallet</span>
             </button>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">BlocTag PoS v2.12.2</span>
+              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">BlocTag PoS v2.13.0</span>
             </div>
           </div>
 
@@ -3516,7 +3516,7 @@
                 <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">P2P
                   Decentralized Infrastructure</span>
                 <span
-                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.12.2</span>
+                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.13.0</span>
               </div>
               <h1 class="font-headline-md text-headline-md text-on-surface tracking-tight font-semibold">Node &amp;
                 Validator Hub</h1>
@@ -3585,7 +3585,7 @@
           </div>
 
 
-          <!-- 1,000 BCT Validator Staking Vault Card (v2.12.2 PoS Collateral) -->
+          <!-- 1,000 BCT Validator Staking Vault Card (v2.13.0 PoS Collateral) -->
           <div id="validatorStakingVaultCard"
             class="p-5 sm:p-7 rounded-3xl bg-surface-container border border-primary/30 shadow-lg flex flex-col gap-6 mb-8 overflow-hidden max-w-full">
             
@@ -5052,6 +5052,11 @@
             <!-- Trending Topics & Cashtags Bar (Horizontal Carousel) -->
             <div class="px-1 sm:px-2 md:px-0 mb-3.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5"
               id="spaceTrendingTagsBar">
+              <button type="button" onclick="window.ProtocolRoomsUI && window.ProtocolRoomsUI.openDirectory()"
+                class="px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold shrink-0 flex items-center gap-1 mr-1 cursor-pointer transition-colors">
+                <span class="material-symbols-outlined notranslate text-[14px]" translate="no">forum</span>
+                <span>Protocol Rooms</span>
+              </button>
               <span
                 class="text-[11px] font-mono uppercase font-bold text-on-surface-variant/70 shrink-0 flex items-center gap-1 mr-1">
                 <span class="material-symbols-outlined notranslate text-[14px] text-amber-400" translate="no">trending_up</span>
@@ -5127,15 +5132,38 @@
               </div>
             </div>
 
-            <!-- Card 3: Inactive Widget Placeholder -->
+            <!-- Card 3: Protocol Rooms (On-Chain Reddit-Style Public Spaces) -->
             <div
-              class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col items-center justify-center gap-2.5 text-center min-h-[150px]">
-              <div class="w-10 h-10 rounded-full bg-surface-container-high border border-outline-variant/20 flex items-center justify-center text-on-surface-variant/70">
-                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">widgets</span>
+              class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
+              <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
+                <div class="flex items-center gap-2 min-w-0">
+                  <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">forum</span>
+                  <div class="min-w-0">
+                    <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight truncate">Protocol Rooms</h2>
+                    <span class="text-[10px] font-mono text-on-surface-variant/75">Özel ID'li Açık Akış Odaları</span>
+                  </div>
+                </div>
+                <div class="flex items-center gap-1.5 shrink-0">
+                  <button type="button" onclick="window.ProtocolRoomsUI && window.ProtocolRoomsUI.openCreate()"
+                    class="px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1">
+                    <span class="material-symbols-outlined notranslate text-[14px]" translate="no">add</span>
+                    <span>Oda Aç</span>
+                  </button>
+                </div>
               </div>
-              <div class="flex flex-col items-center gap-1">
-                <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Upcoming Protocol Module</h2>
-                <span class="text-[11px] font-mono text-on-surface-variant/75">This widget slot will be activated with the next on-chain governance release.</span>
+              <div id="protocolRoomsSidebarList" class="flex flex-col gap-2 min-h-[120px]">
+                <div class="flex items-center justify-center p-4 text-xs text-on-surface-variant font-mono">
+                  <span class="material-symbols-outlined notranslate text-sm animate-spin mr-1.5" translate="no">sync</span>
+                  Odalar yükleniyor...
+                </div>
+              </div>
+              <div class="pt-1.5 border-t border-outline-variant/10 flex items-center justify-between">
+                <span class="text-[10px] font-mono text-on-surface-variant/75">Oda: 10-50 BCT • Mevzu: 0.25</span>
+                <button type="button" onclick="window.ProtocolRoomsUI && window.ProtocolRoomsUI.openDirectory()"
+                  class="text-[11px] font-semibold text-primary hover:underline cursor-pointer flex items-center gap-0.5">
+                  <span>Tümünü Gör</span>
+                  <span class="material-symbols-outlined notranslate text-[14px]" translate="no">chevron_right</span>
+                </button>
               </div>
             </div>
 
@@ -5240,14 +5268,14 @@
             <div class="flex items-center gap-2">
               <span
                 class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE
-                MASTER DOCS v2.12.2</span>
+                MASTER DOCS v2.13.0</span>
               <span class="text-outline text-xs">•</span>
               <span class="text-on-surface-variant font-mono text-xs">Open Source &amp; Decentralized Protocol</span>
             </div>
             <h1 class="font-headline-md md:text-3xl text-on-surface font-bold">BlocTag Protocol Handbook (Developed by LockTrace)
             </h1>
             <p class="font-body-sm text-body-sm text-on-surface-variant max-w-2xl">
-              Comprehensive v2.12.2 architectural guide: 3-Phase Atomic CAS Consensus, O(1) Delta SQLite WAL Engine,
+              Comprehensive v2.13.0 architectural guide: 3-Phase Atomic CAS Consensus, O(1) Delta SQLite WAL Engine,
               Anti-Stall Emergency LWMA, Priority RBF Mempool, P2P Compact Block Relay, State Snapshot Warp Sync, OpenCL
               GPU Mining, Anti-DDoS &amp; Sybil /24 Subnet Defense, and REST/P2P API reference.
             </p>
@@ -5309,9 +5337,9 @@
               <div class="flex flex-col">
                 <div class="flex items-center gap-2">
                   <h2 class="font-headline-sm text-sm sm:text-base text-on-surface font-bold leading-tight">Official
-                    Technical Whitepaper (v2.12.2)</h2>
+                    Technical Whitepaper (v2.13.0)</h2>
                   <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-mono text-[10px] font-bold">PDF
-                    &bull; v2.12.2</span>
+                    &bull; v2.13.0</span>
                 </div>
                 <p class="text-xs text-on-surface-variant line-clamp-1">3-Phase Atomic CAS Consensus, Compact Block
                   Relay, State Snapshot Warp Sync, OpenCL GPU Mining, Anti-Stall LWMA &amp; RBF</p>
@@ -5445,7 +5473,7 @@
                   <span
                     class="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary font-mono text-[11px] font-semibold flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                    <span>v2.12.2 Active</span>
+                    <span>v2.13.0 Active</span>
                   </span>
                   <span
                     class="px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/20 text-on-surface-variant font-mono text-[11px]">
@@ -6631,7 +6659,7 @@
               <div class="flex flex-col">
                 <div class="flex flex-wrap items-center gap-2">
                   <h3 class="font-headline-sm text-sm sm:text-base font-semibold text-on-surface">Cryptographic
-                    Integrity Shield (v2.12.2)</h3>
+                    Integrity Shield (v2.13.0)</h3>
                   <span
                     class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">ACTIVE
                     &bull; VERIFIED</span>
@@ -8279,7 +8307,7 @@
             <span id="secModalStatusText">Verifying Signed Release...</span>
           </span>
           <span class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px]"
-            id="secModalVersionBadge">v2.12.2</span>
+            id="secModalVersionBadge">v2.13.0</span>
         </div>
         <div class="grid grid-cols-1 gap-1.5 font-mono text-[11px] text-on-surface-variant pt-1">
           <div class="flex flex-col bg-surface-container p-2 rounded-lg">
@@ -9884,7 +9912,7 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v2.12.2)     -->
+  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v2.13.0)     -->
   <!-- ========================================================================= -->
   <script>
     'use strict';
@@ -11363,7 +11391,7 @@
       const netTxt = isLocal ? 'Local Node Active' : 'BlocTag Mainnet';
       const mobLbl = document.getElementById('mobileNetLabel');
       const dskLbl = document.getElementById('desktopNetLabel');
-      const currentVer = (rpcState.integrityStatus && rpcState.integrityStatus.version) ? ('v' + rpcState.integrityStatus.version) : 'v2.12.2';
+      const currentVer = (rpcState.integrityStatus && rpcState.integrityStatus.version) ? ('v' + rpcState.integrityStatus.version) : 'v2.13.0';
       if (mobLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) mobLbl.textContent = isLocal ? `Local ${currentVer}` : `Mainnet ${currentVer}`;
       if (dskLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) dskLbl.textContent = isLocal ? `Local Node Active (${currentVer})` : `LockTrace Mainnet ${currentVer}`;
     }
@@ -12547,7 +12575,7 @@
 
 
     // =========================================================================
-    // WALLET BALANCE & REVENUE ANALYTICS CONTROLLER (v2.12.2)
+    // WALLET BALANCE & REVENUE ANALYTICS CONTROLLER (v2.13.0)
     // =========================================================================
     function toggleAnalyticsView() {
       if (currentTxFilter === 'analytics') {
@@ -15538,6 +15566,9 @@
       try {
         loadTrendingTopicsSidebar();
         loadSuggestedVoices();
+        if (window.ProtocolRoomsUI && typeof window.ProtocolRoomsUI.loadSidebar === 'function') {
+          window.ProtocolRoomsUI.loadSidebar();
+        }
         fetchLiveEthTelemetry();
         const { ok, body } = await apiFetch('/space/feed?limit=80&_nc=' + Date.now());
         if (ok && body.data && Array.isArray(body.data.posts)) {
@@ -16944,7 +16975,7 @@
           verified: allOk,
           devMode: isLocalHost,
           sigValid: sigValid || isLocalHost || Boolean(info.verified),
-          version: info.version || '2.12.2',
+          version: info.version || '2.13.0',
           sha256: info.index_html_sha256 || '--',
           ipfsCid: info.ipfs_cid_v1 || '--',
           onchainBlock: info.onchain_anchor ? info.onchain_anchor.block_index : null
@@ -24229,7 +24260,7 @@
     document.addEventListener('DOMContentLoaded', initApp);
 
     // =========================================================================
-    // LOCAL NODE & VALIDATOR HUB CONTROLLER (v2.12.2)
+    // LOCAL NODE & VALIDATOR HUB CONTROLLER (v2.13.0)
     // =========================================================================
     async function probeLocalNode() {
       const endpoints = ['http://127.0.0.1:5000', 'http://127.0.0.1:5050'];
@@ -24430,7 +24461,7 @@
 
 
     // =========================================================================
-    // VALIDATOR 1,000 BCT STAKING & COLLATERAL VAULT CONTROLLERS (v2.12.2)
+    // VALIDATOR 1,000 BCT STAKING & COLLATERAL VAULT CONTROLLERS (v2.13.0)
     // =========================================================================
     let currentValidatorStakedBCT = 0;
 
@@ -24703,7 +24734,7 @@
 
 
     // =========================================================================
-    // INTEGRATED VALIDATOR & REMOTE NODE TELEMETRY CONTROLLER (v2.12.2)
+    // INTEGRATED VALIDATOR & REMOTE NODE TELEMETRY CONTROLLER (v2.13.0)
     // =========================================================================
     let cachedValidatorTelemetry = null;
 
@@ -25002,6 +25033,950 @@
     } else {
       setTimeout(loadStakingParticipantsUI, 200);
     }
+
+    // ═══════════════════════════════════════════════════════════════════
+    // PROTOCOL ROOMS UI CONTROLLER (Reddit-Style On-Chain Public Spaces)
+    // ═══════════════════════════════════════════════════════════════════
+    window.ProtocolRoomsUI = (function () {
+      const state = {
+        view: 'list', // 'list' | 'create' | 'room' | 'topic' | 'seal_avatar'
+        rooms: [],
+        activeRoom: null,
+        activeTopic: null,
+        roomSort: 'hot',
+        listSort: 'active',
+        listQuery: '',
+        busy: false,
+        quote: null,
+        quoteError: '',
+        quoteTimer: null,
+        avatarCatalog: null,
+        createForm: {
+          name: '',
+          description: '',
+          useAvatar: false,
+          avatarBaseId: '',
+          avatarBgColor: '#10B981',
+        },
+        sealAvatarForm: {
+          avatarBaseId: '',
+          avatarBgColor: '#10B981',
+        },
+        replyTargetId: '',
+        replyTargetPreview: '',
+      };
+
+      function esc(s) {
+        return String(s == null ? '' : s)
+          .replace(/&/g, '&amp;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;');
+      }
+
+      function shortAddr(addr) {
+        const a = String(addr || '');
+        return a.length > 14 ? `${a.slice(0, 8)}...${a.slice(-4)}` : a;
+      }
+
+      function fmtTime(ts) {
+        if (!ts) return '';
+        const diff = Math.max(0, Math.floor(Date.now() / 1000 - Number(ts)));
+        if (diff < 60) return `${diff}sn`;
+        if (diff < 3600) return `${Math.floor(diff / 60)}dk`;
+        if (diff < 86400) return `${Math.floor(diff / 3600)}sa`;
+        return `${Math.floor(diff / 86400)}g`;
+      }
+
+      function renderRoomAvatar(room, sizeClass = 'w-10 h-10') {
+        const av = room && room.avatar;
+        if (av && av.image_url) {
+          const bg = /^#[0-9A-Fa-f]{6}$/.test(String(av.bg_color || '')) ? av.bg_color : '#FFFFFF';
+          return `
+            <div class="${sizeClass} rounded-xl overflow-hidden shrink-0 ring-1 ring-outline-variant/25 relative" style="background-color:${bg};" title="Mühürlü Kalıcı Oda Avatarı (${esc(av.variant_id || '')})">
+              <img src="${esc(av.image_url)}" alt="${esc(room.name || 'Room')}" class="w-full h-full object-contain p-0.5 select-none pointer-events-none" loading="lazy" />
+            </div>
+          `;
+        }
+        const initial = esc(String((room && room.name) || 'R').trim().charAt(0).toUpperCase() || 'R');
+        return `
+          <div class="${sizeClass} rounded-xl bg-primary/15 border border-primary/25 text-primary font-bold text-sm flex items-center justify-center shrink-0 select-none">
+            ${initial}
+          </div>
+        `;
+      }
+
+      function ensureModalEl() {
+        let el = document.getElementById('protocolRoomsModal');
+        if (!el) {
+          el = document.createElement('div');
+          el.id = 'protocolRoomsModal';
+          el.className = 'fixed inset-0 z-[120] hidden items-center justify-center bg-black/70 backdrop-blur-sm p-2 sm:p-4';
+          el.addEventListener('click', (ev) => {
+            if (ev.target === el) close();
+          });
+          document.body.appendChild(el);
+        }
+        return el;
+      }
+
+      async function ensureAvatarCatalog() {
+        if (state.avatarCatalog) return state.avatarCatalog;
+        try {
+          const { ok, body } = await apiFetch('/avatars/catalog');
+          if (ok && body && body.data) {
+            state.avatarCatalog = body.data;
+            if (!state.createForm.avatarBaseId && Array.isArray(body.data.items) && body.data.items.length > 0) {
+              state.createForm.avatarBaseId = body.data.items[0].base_id;
+              state.sealAvatarForm.avatarBaseId = body.data.items[0].base_id;
+            }
+          }
+        } catch (e) {
+          console.error('Avatar catalog load error:', e);
+        }
+        return state.avatarCatalog;
+      }
+
+      async function loadSidebar() {
+        const container = document.getElementById('protocolRoomsSidebarList');
+        if (!container) return;
+        try {
+          const { ok, body } = await apiFetch('/rooms?limit=5&sort=active&_nc=' + Date.now());
+          if (!ok || !body || !body.data) {
+            container.innerHTML = `<div class="text-xs text-on-surface-variant text-center py-4">Odalar yüklenemedi.</div>`;
+            return;
+          }
+          const rooms = Array.isArray(body.data.rooms) ? body.data.rooms : [];
+          state.rooms = rooms;
+          if (rooms.length === 0) {
+            container.innerHTML = `
+              <div class="flex flex-col items-center justify-center gap-2 py-4 text-center">
+                <span class="material-symbols-outlined notranslate text-primary/60 text-[24px]" translate="no">meeting_room</span>
+                <p class="text-[11.5px] text-on-surface-variant">Henüz zincir üstü oda açılmadı. İlk özel ID'li odayı sen kur!</p>
+                <button type="button" onclick="window.ProtocolRoomsUI.openCreate()"
+                  class="px-3 py-1 rounded-full bg-primary text-on-primary text-[11px] font-bold cursor-pointer hover:brightness-95 transition-all">
+                  İlk Odayı Oluştur
+                </button>
+              </div>
+            `;
+            return;
+          }
+          container.innerHTML = rooms.map((r) => `
+            <button type="button" onclick="window.ProtocolRoomsUI.openRoom('${esc(r.room_id)}')"
+              class="w-full text-left p-2.5 rounded-xl bg-surface-container/60 hover:bg-surface-container border border-outline-variant/10 hover:border-primary/30 transition-all flex items-center gap-2.5 cursor-pointer group">
+              ${renderRoomAvatar(r, 'w-9 h-9')}
+              <div class="min-w-0 flex-1">
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold text-on-surface group-hover:text-primary truncate">${esc(r.name)}</span>
+                  <span class="text-[9.5px] font-mono px-1.5 py-0.5 rounded bg-surface-container-highest text-on-surface-variant shrink-0">${esc(r.room_id)}</span>
+                </div>
+                <p class="text-[11px] text-on-surface-variant truncate mt-0.5">${esc(r.description)}</p>
+                <div class="flex items-center gap-2.5 mt-1 text-[10px] font-mono text-on-surface-variant/80">
+                  <span>${Number(r.topics_count || 0)} mevzu</span>
+                  <span>•</span>
+                  <span>${Number(r.replies_count || 0)} yanıt</span>
+                </div>
+              </div>
+            </button>
+          `).join('');
+        } catch (err) {
+          console.error('ProtocolRooms sidebar error:', err);
+          container.innerHTML = `<div class="text-xs text-on-surface-variant text-center py-4">Bağlantı hatası.</div>`;
+        }
+      }
+
+      function openModal() {
+        const el = ensureModalEl();
+        el.classList.remove('hidden');
+        el.classList.add('flex');
+      }
+
+      function close() {
+        const el = document.getElementById('protocolRoomsModal');
+        if (el) {
+          el.classList.add('hidden');
+          el.classList.remove('flex');
+        }
+      }
+
+      async function openDirectory() {
+        state.view = 'list';
+        openModal();
+        render();
+        await fetchRoomsList();
+      }
+
+      async function fetchRoomsList() {
+        try {
+          const q = encodeURIComponent(state.listQuery || '');
+          const { ok, body } = await apiFetch(`/rooms?limit=50&sort=${encodeURIComponent(state.listSort)}&q=${q}&_nc=${Date.now()}`);
+          if (ok && body && body.data) {
+            state.rooms = Array.isArray(body.data.rooms) ? body.data.rooms : [];
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        render();
+      }
+
+      async function openCreate() {
+        state.view = 'create';
+        state.quote = null;
+        state.quoteError = '';
+        openModal();
+        render();
+        await ensureAvatarCatalog();
+        render();
+      }
+
+      async function openRoom(roomId) {
+        state.view = 'room';
+        state.activeRoom = null;
+        state.replyTargetId = '';
+        state.replyTargetPreview = '';
+        openModal();
+        render();
+        await fetchRoomDetail(roomId);
+      }
+
+      async function fetchRoomDetail(roomId) {
+        try {
+          const { ok, body } = await apiFetch(`/rooms/${encodeURIComponent(roomId)}?sort=${encodeURIComponent(state.roomSort)}&_nc=${Date.now()}`);
+          if (ok && body && body.data) {
+            state.activeRoom = body.data;
+          } else {
+            showToast((body && body.message) || 'Oda bulunamadı', 'error', true);
+            state.view = 'list';
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        render();
+      }
+
+      async function openTopic(topicId) {
+        state.view = 'topic';
+        state.activeTopic = null;
+        state.replyTargetId = '';
+        state.replyTargetPreview = '';
+        openModal();
+        render();
+        await fetchTopicDetail(topicId);
+      }
+
+      async function fetchTopicDetail(topicId) {
+        try {
+          const { ok, body } = await apiFetch(`/rooms/topics/${encodeURIComponent(topicId)}?_nc=${Date.now()}`);
+          if (ok && body && body.data) {
+            state.activeTopic = body.data;
+          } else {
+            showToast((body && body.message) || 'Mevzu bulunamadı', 'error', true);
+          }
+        } catch (e) {
+          console.error(e);
+        }
+        render();
+      }
+
+      async function openSealAvatar() {
+        if (!state.activeRoom || state.activeRoom.avatar_locked) return;
+        state.view = 'seal_avatar';
+        openModal();
+        render();
+        await ensureAvatarCatalog();
+        render();
+      }
+
+      function onCreateNameInput(val) {
+        state.createForm.name = String(val || '');
+        if (state.quoteTimer) clearTimeout(state.quoteTimer);
+        state.quoteTimer = setTimeout(fetchCreateQuote, 260);
+      }
+
+      async function fetchCreateQuote() {
+        const name = String(state.createForm.name || '').trim();
+        if (name.length < 3) {
+          state.quote = null;
+          state.quoteError = name.length > 0 ? 'Oda adı en az 3 karakter olmalıdır.' : '';
+          updateQuotePreviewDOM();
+          return;
+        }
+        try {
+          const { ok, body } = await apiFetch(`/rooms/quote?name=${encodeURIComponent(name)}&has_avatar=${state.createForm.useAvatar ? 'true' : 'false'}`);
+          if (ok && body && body.data) {
+            state.quote = body.data;
+            state.quoteError = '';
+          } else {
+            state.quote = null;
+            state.quoteError = (body && body.message) || 'Geçersiz oda adı.';
+          }
+        } catch (e) {
+          state.quote = null;
+          state.quoteError = 'Fiyat sorgulanamadı.';
+        }
+        updateQuotePreviewDOM();
+      }
+
+      function updateQuotePreviewDOM() {
+        const box = document.getElementById('roomCreateQuoteBox');
+        if (!box) return;
+        if (state.quoteError) {
+          box.innerHTML = `<div class="text-xs text-error font-medium">${esc(state.quoteError)}</div>`;
+          return;
+        }
+        if (!state.quote) {
+          box.innerHTML = `<div class="text-[11px] font-mono text-on-surface-variant">Oda adını yazın — Özel ID (RM-...) ve kademeli fiyat otomatik hesaplanır.</div>`;
+          return;
+        }
+        const q = state.quote;
+        const availBadge = q.available
+          ? `<span class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 border border-emerald-500/30 text-[10px] font-bold">Müsait</span>`
+          : `<span class="px-2 py-0.5 rounded-full bg-error/15 text-error border border-error/30 text-[10px] font-bold">Kullanımda</span>`;
+        box.innerHTML = `
+          <div class="flex flex-col gap-1.5 text-xs">
+            <div class="flex items-center justify-between">
+              <span class="font-mono text-on-surface-variant">Özel ID: <strong class="text-primary">${esc(q.room_id)}</strong></span>
+              ${availBadge}
+            </div>
+            <div class="flex items-center justify-between text-[11px]">
+              <span class="text-on-surface-variant">${esc(q.tier_label_tr || q.tier_label)}</span>
+              <span class="font-mono font-bold text-on-surface">${Number(q.base_fee).toFixed(2)} BCT${q.has_avatar ? ' + 2.00 BCT (Avatar)' : ''} = <span class="text-primary">${Number(q.total_cost).toFixed(2)} BCT</span></span>
+            </div>
+            <div class="text-[10px] font-mono text-on-surface-variant/80">Dağıtım: %50 Hazine • %50 Miner/Validator • Açılan her mevzudan %30, yanıttan %20 kurucu geliri!</div>
+          </div>
+        `;
+      }
+
+      async function submitCreateRoom() {
+        if (state.busy) return;
+        if (!currentAccount || !currentAccount.address) {
+          showToast('Oda oluşturmak için cüzdan bağlamanız gerekiyor.', 'account_balance_wallet', true);
+          return;
+        }
+        const nameEl = document.getElementById('roomCreateNameInput');
+        const descEl = document.getElementById('roomCreateDescInput');
+        const name = String(nameEl ? nameEl.value : state.createForm.name).trim();
+        const desc = String(descEl ? descEl.value : state.createForm.description).trim();
+        if (name.length < 3 || desc.length < 5) {
+          showToast('Oda adı (min 3) ve açıklaması (min 5 karakter) gereklidir.', 'warning', true);
+          return;
+        }
+        if (!state.quote || !state.quote.slug) {
+          await fetchCreateQuote();
+        }
+        if (!state.quote || !state.quote.available) {
+          showToast(state.quoteError || 'Bu oda adı kullanımda veya geçersiz.', 'error', true);
+          return;
+        }
+        state.busy = true;
+        render();
+        try {
+          const canonical = `ROOM_CREATE:${currentAccount.address}:${state.quote.slug}`;
+          const authFields = await buildSignedAuthPayload(canonical);
+          const payload = Object.assign({
+            creator: currentAccount.address,
+            name,
+            description: desc,
+            avatar_base_id: state.createForm.useAvatar ? state.createForm.avatarBaseId : '',
+            avatar_bg_color: state.createForm.useAvatar ? state.createForm.avatarBgColor : '#FFFFFF',
+          }, authFields);
+
+          const { ok, body } = await apiFetch('/rooms', {
+            method: 'POST',
+            body: JSON.stringify(payload),
+          });
+          if (ok && body && body.data) {
+            showToast(`Oda mühürlendi: ${body.data.room_id}!`, 'verified');
+            state.createForm = { name: '', description: '', useAvatar: false, avatarBaseId: state.createForm.avatarBaseId, avatarBgColor: '#10B981' };
+            if (typeof refreshCurrentAccountBalance === 'function') refreshCurrentAccountBalance();
+            loadSidebar();
+            await openRoom(body.data.room_id);
+          } else {
+            showToast((body && body.message) || 'Oda oluşturulamadı.', 'error', true);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('İşlem imzalanırken hata oluştu.', 'error', true);
+        } finally {
+          state.busy = false;
+          render();
+        }
+      }
+
+      async function submitSealRoomAvatar() {
+        if (state.busy || !state.activeRoom) return;
+        if (!currentAccount || !currentAccount.address) {
+          showToast('Cüzdan gerekli.', 'warning', true);
+          return;
+        }
+        const rid = state.activeRoom.room_id;
+        const baseId = state.sealAvatarForm.avatarBaseId;
+        const bgColor = state.sealAvatarForm.avatarBgColor || '#FFFFFF';
+        if (!baseId) {
+          showToast('Lütfen bir avatar seçin.', 'warning', true);
+          return;
+        }
+        const vid = `${baseId.toUpperCase()}-${bgColor.replace('#', '').toUpperCase()}`;
+        state.busy = true;
+        render();
+        try {
+          const canonical = `ROOM_AVATAR:${currentAccount.address}:${rid}:${vid}`;
+          const authFields = await buildSignedAuthPayload(canonical);
+          const { ok, body } = await apiFetch(`/rooms/${encodeURIComponent(rid)}/avatar`, {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({
+              creator: currentAccount.address,
+              avatar_base_id: baseId,
+              avatar_bg_color: bgColor,
+            }, authFields)),
+          });
+          if (ok) {
+            showToast('Oda avatarı kalıcı olarak mühürlendi!', 'verified');
+            if (typeof refreshCurrentAccountBalance === 'function') refreshCurrentAccountBalance();
+            loadSidebar();
+            await openRoom(rid);
+          } else {
+            showToast((body && body.message) || 'Avatar mühürlenemedi.', 'error', true);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('İmza hatası.', 'error', true);
+        } finally {
+          state.busy = false;
+          render();
+        }
+      }
+
+      async function submitTopic() {
+        if (state.busy || !state.activeRoom) return;
+        if (!currentAccount || !currentAccount.address) {
+          showToast('Mevzu açmak için cüzdan bağlayın.', 'account_balance_wallet', true);
+          return;
+        }
+        const titleEl = document.getElementById('roomNewTopicTitle');
+        const bodyEl = document.getElementById('roomNewTopicBody');
+        const title = String(titleEl ? titleEl.value : '').trim();
+        const content = String(bodyEl ? bodyEl.value : '').trim();
+        if (title.length < 3 || content.length < 3) {
+          showToast('Mevzu başlığı ve içeriği en az 3 karakter olmalıdır.', 'warning', true);
+          return;
+        }
+        const rid = state.activeRoom.room_id;
+        state.busy = true;
+        render();
+        try {
+          const canonical = `ROOM_TOPIC:${currentAccount.address}:${rid}:${title}`;
+          const authFields = await buildSignedAuthPayload(canonical);
+          const { ok, body } = await apiFetch(`/rooms/${encodeURIComponent(rid)}/topics`, {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({
+              author: currentAccount.address,
+              title,
+              content,
+            }, authFields)),
+          });
+          if (ok && body && body.data) {
+            showToast('Mevzu zincire mühürlendi! (0.25 BCT)', 'verified');
+            if (typeof refreshCurrentAccountBalance === 'function') refreshCurrentAccountBalance();
+            loadSidebar();
+            await fetchRoomDetail(rid);
+          } else {
+            showToast((body && body.message) || 'Mevzu açılamadı.', 'error', true);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Mevzu imzalama hatası.', 'error', true);
+        } finally {
+          state.busy = false;
+          render();
+        }
+      }
+
+      async function submitReply() {
+        if (state.busy || !state.activeTopic) return;
+        if (!currentAccount || !currentAccount.address) {
+          showToast('Yanıt yazmak için cüzdan bağlayın.', 'account_balance_wallet', true);
+          return;
+        }
+        const inp = document.getElementById('roomReplyInput');
+        const content = String(inp ? inp.value : '').trim();
+        if (!content) {
+          showToast('Yanıt içeriği boş olamaz.', 'warning', true);
+          return;
+        }
+        const tid = state.activeTopic.topic_id;
+        state.busy = true;
+        render();
+        try {
+          const canonical = `ROOM_REPLY:${currentAccount.address}:${tid}:${content}`;
+          const authFields = await buildSignedAuthPayload(canonical);
+          const { ok, body } = await apiFetch(`/rooms/topics/${encodeURIComponent(tid)}/replies`, {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({
+              author: currentAccount.address,
+              content,
+              parent_reply_id: state.replyTargetId || '',
+            }, authFields)),
+          });
+          if (ok) {
+            showToast('Yanıt zincire mühürlendi! (0.05 BCT)', 'verified');
+            state.replyTargetId = '';
+            state.replyTargetPreview = '';
+            if (typeof refreshCurrentAccountBalance === 'function') refreshCurrentAccountBalance();
+            loadSidebar();
+            await fetchTopicDetail(tid);
+          } else {
+            showToast((body && body.message) || 'Yanıt gönderilemedi.', 'error', true);
+          }
+        } catch (err) {
+          console.error(err);
+          showToast('Yanıt imzalama hatası.', 'error', true);
+        } finally {
+          state.busy = false;
+          render();
+        }
+      }
+
+      async function upvoteTopic(topicId, ev) {
+        if (ev) ev.stopPropagation();
+        if (state.busy) return;
+        if (!currentAccount || !currentAccount.address) {
+          showToast('Oy vermek için cüzdan bağlayın.', 'account_balance_wallet', true);
+          return;
+        }
+        state.busy = true;
+        try {
+          const canonical = `ROOM_UPVOTE:${currentAccount.address}:${topicId}`;
+          const authFields = await buildSignedAuthPayload(canonical);
+          const { ok, body } = await apiFetch(`/rooms/topics/${encodeURIComponent(topicId)}/upvote`, {
+            method: 'POST',
+            body: JSON.stringify(Object.assign({ voter: currentAccount.address }, authFields)),
+          });
+          if (ok) {
+            showToast('Mevzu oylandı! (+0.01 BCT)', 'thumb_up');
+            if (typeof refreshCurrentAccountBalance === 'function') refreshCurrentAccountBalance();
+            if (state.view === 'topic' && state.activeTopic) await fetchTopicDetail(topicId);
+            else if (state.view === 'room' && state.activeRoom) await fetchRoomDetail(state.activeRoom.room_id);
+          } else {
+            showToast((body && body.message) || 'Oy verilemedi.', 'error', true);
+          }
+        } catch (err) {
+          console.error(err);
+        } finally {
+          state.busy = false;
+        }
+      }
+
+      function setReplyTarget(replyId, preview) {
+        state.replyTargetId = replyId || '';
+        state.replyTargetPreview = preview || '';
+        render();
+        const inp = document.getElementById('roomReplyInput');
+        if (inp) inp.focus();
+      }
+
+      function renderAvatarPicker(selectedBaseId, selectedBg, onSelectBaseFn, onSelectColorFn) {
+        const cat = state.avatarCatalog;
+        if (!cat || !Array.isArray(cat.items)) {
+          return `<div class="text-xs text-on-surface-variant py-3 text-center">Avatar kataloğu yükleniyor...</div>`;
+        }
+        const colors = Array.isArray(cat.curated_colors) ? cat.curated_colors : [{ hex: '#10B981' }, { hex: '#3B82F6' }, { hex: '#8B5CF6' }, { hex: '#F59E0B' }, { hex: '#FFFFFF' }];
+        return `
+          <div class="flex flex-col gap-2.5 p-3 rounded-xl bg-surface-container border border-outline-variant/20">
+            <div class="flex items-center justify-between gap-2">
+              <span class="text-[11px] font-bold text-amber-400 flex items-center gap-1">
+                <span class="material-symbols-outlined notranslate text-[15px]" translate="no">lock</span>
+                Tek Seferlik & Kalıcı — Asla Değiştirilemez!
+              </span>
+              <span class="text-[10.5px] font-mono text-primary font-bold">+2.00 BCT</span>
+            </div>
+            <div class="flex items-center gap-1.5 flex-wrap">
+              ${colors.map(c => `
+                <button type="button" onclick="${onSelectColorFn}('${esc(c.hex)}')"
+                  class="w-6 h-6 rounded-full border-2 cursor-pointer transition-transform ${selectedBg === c.hex ? 'border-primary scale-110' : 'border-outline-variant/40'}"
+                  style="background-color:${esc(c.hex)};" title="${esc(c.name_tr || c.hex)}"></button>
+              `).join('')}
+            </div>
+            <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-40 overflow-y-auto pr-1">
+              ${cat.items.map(it => {
+                const isSel = it.base_id === selectedBaseId;
+                return `
+                  <button type="button" onclick="${onSelectBaseFn}('${esc(it.base_id)}')"
+                    class="p-1.5 rounded-xl bg-surface-container-low border ${isSel ? 'border-primary ring-2 ring-primary/30' : 'border-outline-variant/15'} flex flex-col items-center gap-1 cursor-pointer">
+                    <div class="w-10 h-10 rounded-lg overflow-hidden" style="background-color:${esc(selectedBg)};">
+                      <img src="${esc(it.image_url)}" alt="${esc(it.name_tr || it.name)}" class="w-full h-full object-contain p-0.5" loading="lazy" />
+                    </div>
+                    <span class="text-[9.5px] text-on-surface truncate w-full text-center">${esc(it.name_tr || it.name)}</span>
+                  </button>
+                `;
+              }).join('')}
+            </div>
+          </div>
+        `;
+      }
+
+      function render() {
+        const el = document.getElementById('protocolRoomsModal');
+        if (!el || el.classList.contains('hidden')) return;
+
+        let headerTitle = 'Protocol Rooms';
+        let headerSub = 'Özel ID\'li Açık Zincir Üstü Odalar';
+        let bodyHtml = '';
+
+        if (state.view === 'list') {
+          bodyHtml = `
+            <div class="flex flex-col gap-3">
+              <div class="flex flex-wrap items-center gap-2">
+                <input type="text" value="${esc(state.listQuery)}" placeholder="Oda adı veya Özel ID (RM-...) ara..."
+                  oninput="window.ProtocolRoomsUI._setListQuery(this.value)"
+                  class="flex-1 min-w-[180px] px-3 py-2 rounded-xl bg-surface-container border border-outline-variant/25 text-xs text-on-surface focus:outline-none focus:border-primary" />
+                <div class="flex items-center gap-1">
+                  ${[['active', 'Aktif'], ['newest', 'Yeni'], ['topics', 'En Çok Mevzu']].map(([k, lbl]) => `
+                    <button type="button" onclick="window.ProtocolRoomsUI._setListSort('${k}')"
+                      class="px-2.5 py-1.5 rounded-lg text-[11px] font-semibold cursor-pointer ${state.listSort === k ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant hover:text-on-surface'}">${lbl}</button>
+                  `).join('')}
+                </div>
+                <button type="button" onclick="window.ProtocolRoomsUI.openCreate()"
+                  class="px-3.5 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer hover:brightness-95 flex items-center gap-1">
+                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">add_circle</span>
+                  <span>Yeni Oda Aç</span>
+                </button>
+              </div>
+              <div class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                ${state.rooms.length === 0 ? `
+                  <div class="col-span-full py-10 text-center flex flex-col items-center gap-2">
+                    <span class="material-symbols-outlined notranslate text-4xl text-primary/50" translate="no">forum</span>
+                    <div class="text-sm font-bold text-on-surface">Henüz açık oda yok</div>
+                    <p class="text-xs text-on-surface-variant max-w-sm">Kendi özel ID'li topluluk odanı oluştur; açılan her mevzudan %30, her yanıttan %20 kurucu geliri kazan!</p>
+                  </div>
+                ` : state.rooms.map(r => `
+                  <button type="button" onclick="window.ProtocolRoomsUI.openRoom('${esc(r.room_id)}')"
+                    class="text-left p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 hover:border-primary/40 transition-all flex items-start gap-3 cursor-pointer">
+                    ${renderRoomAvatar(r, 'w-12 h-12')}
+                    <div class="min-w-0 flex-1">
+                      <div class="flex items-center justify-between gap-2">
+                        <span class="text-sm font-bold text-on-surface truncate">${esc(r.name)}</span>
+                        <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-primary/15 text-primary shrink-0">${esc(r.room_id)}</span>
+                      </div>
+                      <p class="text-xs text-on-surface-variant line-clamp-2 mt-1">${esc(r.description)}</p>
+                      <div class="flex items-center gap-3 mt-2 text-[10.5px] font-mono text-on-surface-variant/80">
+                        <span>${Number(r.topics_count || 0)} mevzu</span>
+                        <span>${Number(r.replies_count || 0)} yanıt</span>
+                        ${r.avatar_locked ? `<span class="text-emerald-400">🔒 Mühürlü Avatar</span>` : ''}
+                      </div>
+                    </div>
+                  </button>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        } else if (state.view === 'create') {
+          headerTitle = 'Yeni Protocol Room Oluştur';
+          headerSub = 'Özel ID\'li, herkese açık, kalıcı zincir üstü oda';
+          bodyHtml = `
+            <div class="flex flex-col gap-3.5">
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-on-surface">Oda Adı (3–48 karakter)</label>
+                <input id="roomCreateNameInput" type="text" maxlength="48" value="${esc(state.createForm.name)}"
+                  placeholder="örn: LockTrace Analiz, Kripto TR, Yapay Zeka"
+                  oninput="window.ProtocolRoomsUI._onCreateName(this.value)"
+                  class="px-3.5 py-2.5 rounded-xl bg-surface-container border border-outline-variant/25 text-sm text-on-surface focus:outline-none focus:border-primary" />
+              </div>
+              <div id="roomCreateQuoteBox" class="p-3 rounded-xl bg-surface-container-low border border-primary/20"></div>
+              <div class="flex flex-col gap-1">
+                <label class="text-xs font-bold text-on-surface">Oda Açıklaması (5–240 karakter)</label>
+                <textarea id="roomCreateDescInput" rows="3" maxlength="240"
+                  oninput="window.ProtocolRoomsUI._onCreateDesc(this.value)"
+                  placeholder="Bu odada hangi mevzular tartışılacak? Açık ve net bir açıklama yazın..."
+                  class="px-3.5 py-2.5 rounded-xl bg-surface-container border border-outline-variant/25 text-xs text-on-surface focus:outline-none focus:border-primary resize-none">${esc(state.createForm.description)}</textarea>
+              </div>
+              <div class="flex items-center justify-between p-3 rounded-xl bg-surface-container-low border border-outline-variant/20">
+                <div>
+                  <div class="text-xs font-bold text-on-surface">Kalıcı Oda Avatarı Mühürle (+2.00 BCT)</div>
+                  <div class="text-[11px] text-on-surface-variant">Opsiyonel — 1 adet seçilebilir ve mühürlendikten sonra asla değiştirilemez.</div>
+                </div>
+                <input type="checkbox" ${state.createForm.useAvatar ? 'checked' : ''}
+                  onchange="window.ProtocolRoomsUI._toggleCreateAvatar(this.checked)"
+                  class="w-4 h-4 accent-primary cursor-pointer" />
+              </div>
+              ${state.createForm.useAvatar ? renderAvatarPicker(
+                state.createForm.avatarBaseId,
+                state.createForm.avatarBgColor,
+                'window.ProtocolRoomsUI._selCreateAvatarBase',
+                'window.ProtocolRoomsUI._selCreateAvatarBg'
+              ) : ''}
+              <div class="flex items-center justify-end gap-2 pt-2">
+                <button type="button" onclick="window.ProtocolRoomsUI.openDirectory()"
+                  class="px-4 py-2 rounded-xl bg-surface-container text-on-surface text-xs font-semibold cursor-pointer">İptal</button>
+                <button type="button" ${state.busy ? 'disabled' : ''} onclick="window.ProtocolRoomsUI.submitCreateRoom()"
+                  class="px-5 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer hover:brightness-95 disabled:opacity-50">
+                  ${state.busy ? 'İmzalanıyor...' : 'Odayı Zincire Mühürle'}
+                </button>
+              </div>
+            </div>
+          `;
+        } else if (state.view === 'room') {
+          const r = state.activeRoom;
+          if (!r) {
+            bodyHtml = `<div class="py-12 text-center text-xs text-on-surface-variant">Oda yükleniyor...</div>`;
+          } else {
+            headerTitle = r.name;
+            headerSub = `Özel ID: ${r.room_id} • r/${r.slug}`;
+            const isCreator = currentAccount && currentAccount.address && currentAccount.address.toLowerCase() === String(r.creator || '').toLowerCase();
+            const topics = Array.isArray(r.topics) ? r.topics : [];
+            bodyHtml = `
+              <div class="flex flex-col gap-4">
+                <!-- Room Header Card -->
+                <div class="p-4 rounded-2xl bg-surface-container-low border border-outline-variant/20 flex flex-col sm:flex-row items-start gap-3.5">
+                  ${renderRoomAvatar(r, 'w-16 h-16')}
+                  <div class="flex-1 min-w-0">
+                    <div class="flex flex-wrap items-center gap-2">
+                      <h3 class="text-base font-bold text-on-surface">${esc(r.name)}</h3>
+                      <button type="button" onclick="navigator.clipboard && navigator.clipboard.writeText('${esc(r.room_id)}'); showToast('Özel ID kopyalandı: ${esc(r.room_id)}');"
+                        class="text-[10.5px] font-mono px-2 py-0.5 rounded-full bg-primary/15 text-primary border border-primary/30 cursor-pointer" title="Kopyala">
+                        ${esc(r.room_id)}
+                      </button>
+                      ${r.avatar_locked ? `<span class="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400">🔒 Kalıcı Avatar</span>` : ''}
+                    </div>
+                    <p class="text-xs text-on-surface-variant mt-1.5 leading-relaxed">${esc(r.description)}</p>
+                    <div class="flex flex-wrap items-center gap-3 mt-2.5 text-[11px] font-mono text-on-surface-variant/85">
+                      <span>Kurucu: ${esc(r.creator_bns ? '@' + r.creator_bns : shortAddr(r.creator))}</span>
+                      <span>• ${Number(r.topics_count || 0)} Mevzu</span>
+                      <span>• ${Number(r.replies_count || 0)} Yanıt</span>
+                      <span class="text-primary">• Kurucu Geliri: ${Number(r.creator_earnings || 0).toFixed(3)} BCT</span>
+                    </div>
+                    ${(!r.avatar_locked && isCreator) ? `
+                      <button type="button" onclick="window.ProtocolRoomsUI.openSealAvatar()"
+                        class="mt-2.5 px-3 py-1.5 rounded-xl bg-amber-500/15 hover:bg-amber-500/25 text-amber-400 border border-amber-500/30 text-[11px] font-bold cursor-pointer inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined notranslate text-[15px]" translate="no">lock</span>
+                        Tek Seferlik Kalıcı Avatar Mühürle (2.00 BCT)
+                      </button>
+                    ` : ''}
+                  </div>
+                </div>
+
+                <!-- Open New Topic Composer -->
+                <div class="p-3.5 rounded-2xl bg-surface-container border border-outline-variant/20 flex flex-col gap-2">
+                  <div class="flex items-center justify-between">
+                    <span class="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                      <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">edit_note</span>
+                      Yeni Mevzu Aç
+                    </span>
+                    <span class="text-[10.5px] font-mono text-primary">0.25 BCT (%30 Oda Kurucusu)</span>
+                  </div>
+                  <input id="roomNewTopicTitle" type="text" maxlength="120" placeholder="Mevzu başlığı (3–120 karakter)..."
+                    class="px-3 py-2 rounded-xl bg-surface-container-low border border-outline-variant/20 text-xs text-on-surface focus:outline-none focus:border-primary" />
+                  <textarea id="roomNewTopicBody" rows="2" maxlength="500" placeholder="Mevzu detayını veya ilk tweet'ini yaz (3–500 karakter)..."
+                    class="px-3 py-2 rounded-xl bg-surface-container-low border border-outline-variant/20 text-xs text-on-surface focus:outline-none focus:border-primary resize-none"></textarea>
+                  <div class="flex justify-end">
+                    <button type="button" ${state.busy ? 'disabled' : ''} onclick="window.ProtocolRoomsUI.submitTopic()"
+                      class="px-4 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer hover:brightness-95 disabled:opacity-50">
+                      ${state.busy ? 'Mühürleniyor...' : 'Mevzu Aç (0.25 BCT)'}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Topics Sort & List -->
+                <div class="flex items-center justify-between">
+                  <span class="text-xs font-bold text-on-surface">Mevzular (${topics.length})</span>
+                  <div class="flex items-center gap-1">
+                    ${[['hot', 'Popüler'], ['new', 'Yeni'], ['top', 'En Çok Oy']].map(([k, lbl]) => `
+                      <button type="button" onclick="window.ProtocolRoomsUI._setRoomSort('${k}')"
+                        class="px-2.5 py-1 rounded-lg text-[11px] font-semibold cursor-pointer ${state.roomSort === k ? 'bg-primary text-on-primary' : 'bg-surface-container text-on-surface-variant'}">${lbl}</button>
+                    `).join('')}
+                  </div>
+                </div>
+                <div class="flex flex-col gap-2">
+                  ${topics.length === 0 ? `
+                    <div class="py-8 text-center text-xs text-on-surface-variant">Bu odada henüz mevzu açılmadı. Yukarıdan ilk mevzuyu başlat!</div>
+                  ` : topics.map(t => `
+                    <div onclick="window.ProtocolRoomsUI.openTopic('${esc(t.topic_id)}')"
+                      class="p-3.5 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 hover:border-primary/35 transition-all flex items-start gap-3 cursor-pointer">
+                      <button type="button" onclick="window.ProtocolRoomsUI.upvoteTopic('${esc(t.topic_id)}', event)"
+                        class="flex flex-col items-center justify-center px-2 py-1.5 rounded-xl bg-surface-container border border-outline-variant/20 hover:border-primary text-on-surface-variant hover:text-primary shrink-0 cursor-pointer" title="Oy Ver (0.01 BCT)">
+                        <span class="material-symbols-outlined notranslate text-[16px]" translate="no">arrow_upward</span>
+                        <span class="text-[11px] font-mono font-bold">${Number(t.upvotes_count || 0)}</span>
+                      </button>
+                      <div class="min-w-0 flex-1">
+                        <div class="text-sm font-bold text-on-surface">${esc(t.title)}</div>
+                        <p class="text-xs text-on-surface-variant line-clamp-2 mt-1">${esc(t.content)}</p>
+                        <div class="flex items-center gap-3 mt-2 text-[10.5px] font-mono text-on-surface-variant/80">
+                          <span>${esc(t.author_bns ? '@' + t.author_bns : shortAddr(t.author))}</span>
+                          <span>• ${fmtTime(t.timestamp)}</span>
+                          <span class="text-primary font-semibold">• ${Number(t.replies_count || 0)} tweet/yanıt</span>
+                        </div>
+                      </div>
+                    </div>
+                  `).join('')}
+                </div>
+              </div>
+            `;
+          }
+        } else if (state.view === 'topic') {
+          const t = state.activeTopic;
+          if (!t) {
+            bodyHtml = `<div class="py-12 text-center text-xs text-on-surface-variant">Mevzu yükleniyor...</div>`;
+          } else {
+            headerTitle = t.title;
+            headerSub = `${t.room_name || ''} (${t.room_id}) • Mevzu Akışı`;
+            const replies = Array.isArray(t.replies) ? t.replies : [];
+            const replyMap = {};
+            replies.forEach(rep => { replyMap[rep.reply_id] = rep; });
+            bodyHtml = `
+              <div class="flex flex-col gap-3.5">
+                <button type="button" onclick="window.ProtocolRoomsUI.openRoom('${esc(t.room_id)}')"
+                  class="self-start text-xs text-primary hover:underline flex items-center gap-1 cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">arrow_back</span>
+                  <span>${esc(t.room_name || t.room_id)} Odasına Dön</span>
+                </button>
+                <div class="p-4 rounded-2xl bg-surface-container-low border border-primary/20">
+                  <div class="flex items-start justify-between gap-3">
+                    <div>
+                      <h3 class="text-base font-bold text-on-surface">${esc(t.title)}</h3>
+                      <div class="text-[11px] font-mono text-on-surface-variant mt-0.5">
+                        ${esc(t.author_bns ? '@' + t.author_bns : shortAddr(t.author))} • ${fmtTime(t.timestamp)}
+                      </div>
+                    </div>
+                    <button type="button" onclick="window.ProtocolRoomsUI.upvoteTopic('${esc(t.topic_id)}', event)"
+                      class="px-3 py-1.5 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-xs font-bold flex items-center gap-1 cursor-pointer shrink-0">
+                      <span class="material-symbols-outlined notranslate text-[15px]" translate="no">arrow_upward</span>
+                      <span>${Number(t.upvotes_count || 0)}</span>
+                    </button>
+                  </div>
+                  <p class="text-xs text-on-surface mt-3 whitespace-pre-wrap leading-relaxed">${esc(t.content)}</p>
+                </div>
+
+                <!-- Reply Composer -->
+                <div class="p-3 rounded-2xl bg-surface-container border border-outline-variant/20 flex flex-col gap-2">
+                  ${state.replyTargetId ? `
+                    <div class="flex items-center justify-between px-2.5 py-1 rounded-lg bg-primary/10 text-[11px] text-primary">
+                      <span class="truncate">Yanıtlanan: "${esc(state.replyTargetPreview)}"</span>
+                      <button type="button" onclick="window.ProtocolRoomsUI.setReplyTarget('', '')" class="font-bold ml-2 cursor-pointer">✕</button>
+                    </div>
+                  ` : ''}
+                  <textarea id="roomReplyInput" rows="2" maxlength="280" placeholder="Bu mevzu altına tweet/yanıt yaz (1–280 karakter)..."
+                    class="px-3 py-2 rounded-xl bg-surface-container-low border border-outline-variant/20 text-xs text-on-surface focus:outline-none focus:border-primary resize-none"></textarea>
+                  <div class="flex items-center justify-between">
+                    <span class="text-[10.5px] font-mono text-on-surface-variant">0.05 BCT (%20 Mevzu Yazarı • %20 Oda Kurucusu)</span>
+                    <button type="button" ${state.busy ? 'disabled' : ''} onclick="window.ProtocolRoomsUI.submitReply()"
+                      class="px-4 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer hover:brightness-95 disabled:opacity-50">
+                      ${state.busy ? 'Gönderiliyor...' : 'Yanıtla (0.05 BCT)'}
+                    </button>
+                  </div>
+                </div>
+
+                <!-- Replies List -->
+                <div class="flex flex-col gap-2">
+                  <span class="text-xs font-bold text-on-surface">Mevzu Altı Tweetler (${replies.length})</span>
+                  ${replies.length === 0 ? `
+                    <div class="py-6 text-center text-xs text-on-surface-variant">Henüz yanıt yok. İlk görüşü sen paylaş!</div>
+                  ` : replies.map(rep => {
+                    const parent = rep.parent_reply_id ? replyMap[rep.parent_reply_id] : null;
+                    return `
+                      <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/15 ${parent ? 'ml-5 border-l-2 border-l-primary/50' : ''}">
+                        ${parent ? `<div class="text-[10px] font-mono text-primary/80 mb-1 truncate">↳ ${esc(parent.author_bns ? '@' + parent.author_bns : shortAddr(parent.author))}: "${esc(String(parent.content || '').slice(0, 60))}"</div>` : ''}
+                        <div class="flex items-center justify-between text-[10.5px] font-mono text-on-surface-variant">
+                          <span class="font-semibold text-on-surface">${esc(rep.author_bns ? '@' + rep.author_bns : shortAddr(rep.author))}</span>
+                          <div class="flex items-center gap-2">
+                            <span>${fmtTime(rep.timestamp)}</span>
+                            <button type="button" onclick="window.ProtocolRoomsUI.setReplyTarget('${esc(rep.reply_id)}', '${esc(String(rep.content || '').slice(0, 45))}')"
+                              class="text-primary hover:underline cursor-pointer">Yanıtla</button>
+                          </div>
+                        </div>
+                        <p class="text-xs text-on-surface mt-1.5 whitespace-pre-wrap">${esc(rep.content)}</p>
+                      </div>
+                    `;
+                  }).join('')}
+                </div>
+              </div>
+            `;
+          }
+        } else if (state.view === 'seal_avatar' && state.activeRoom) {
+          headerTitle = 'Kalıcı Oda Avatarı Mühürle';
+          headerSub = `${state.activeRoom.name} (${state.activeRoom.room_id})`;
+          bodyHtml = `
+            <div class="flex flex-col gap-3.5">
+              <div class="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-xs text-amber-300">
+                Dikkat: Bu oda için yalnızca <strong>1 kez</strong> avatar atayabilirsiniz. Mühürlendikten sonra asla değiştirilemez veya kaldırılamaz.
+              </div>
+              ${renderAvatarPicker(
+                state.sealAvatarForm.avatarBaseId,
+                state.sealAvatarForm.avatarBgColor,
+                'window.ProtocolRoomsUI._selSealAvatarBase',
+                'window.ProtocolRoomsUI._selSealAvatarBg'
+              )}
+              <div class="flex justify-end gap-2">
+                <button type="button" onclick="window.ProtocolRoomsUI.openRoom('${esc(state.activeRoom.room_id)}')"
+                  class="px-4 py-2 rounded-xl bg-surface-container text-xs font-semibold text-on-surface cursor-pointer">Geri</button>
+                <button type="button" ${state.busy ? 'disabled' : ''} onclick="window.ProtocolRoomsUI.submitSealRoomAvatar()"
+                  class="px-5 py-2 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer disabled:opacity-50">
+                  ${state.busy ? 'Mühürleniyor...' : 'Kalıcı Olarak Mühürle (2.00 BCT)'}
+                </button>
+              </div>
+            </div>
+          `;
+        }
+
+        el.innerHTML = `
+          <div class="w-full max-w-2xl max-h-[90vh] rounded-3xl bg-surface border border-outline-variant/25 shadow-2xl flex flex-col overflow-hidden">
+            <div class="px-5 py-3.5 border-b border-outline-variant/15 flex items-center justify-between gap-3 bg-surface-container-low">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <span class="material-symbols-outlined notranslate text-primary text-[22px]" translate="no">forum</span>
+                <div class="min-w-0">
+                  <div class="text-sm font-bold text-on-surface truncate">${esc(headerTitle)}</div>
+                  <div class="text-[11px] font-mono text-on-surface-variant truncate">${esc(headerSub)}</div>
+                </div>
+              </div>
+              <div class="flex items-center gap-1.5 shrink-0">
+                ${state.view !== 'list' ? `
+                  <button type="button" onclick="window.ProtocolRoomsUI.openDirectory()"
+                    class="px-2.5 py-1 rounded-lg bg-surface-container text-[11px] font-semibold text-on-surface-variant hover:text-on-surface cursor-pointer">Tüm Odalar</button>
+                ` : ''}
+                <button type="button" onclick="window.ProtocolRoomsUI.close()"
+                  class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high flex items-center justify-center text-on-surface-variant cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">close</span>
+                </button>
+              </div>
+            </div>
+            <div class="p-4 sm:p-5 overflow-y-auto flex-1">${bodyHtml}</div>
+          </div>
+        `;
+        if (state.view === 'create') updateQuotePreviewDOM();
+      }
+
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => setTimeout(loadSidebar, 350));
+      } else {
+        setTimeout(loadSidebar, 350);
+      }
+
+      return {
+        loadSidebar,
+        openDirectory,
+        openCreate,
+        openRoom,
+        openTopic,
+        openSealAvatar,
+        close,
+        submitCreateRoom,
+        submitSealRoomAvatar,
+        submitTopic,
+        submitReply,
+        upvoteTopic,
+        setReplyTarget,
+        _setListQuery: (q) => { state.listQuery = q; fetchRoomsList(); },
+        _setListSort: (s) => { state.listSort = s; fetchRoomsList(); },
+        _setRoomSort: (s) => { state.roomSort = s; if (state.activeRoom) fetchRoomDetail(state.activeRoom.room_id); },
+        _onCreateName: onCreateNameInput,
+        _onCreateDesc: (v) => { state.createForm.description = String(v || ''); },
+        _toggleCreateAvatar: (checked) => { state.createForm.useAvatar = !!checked; fetchCreateQuote(); render(); },
+        _selCreateAvatarBase: (b) => { state.createForm.avatarBaseId = b; render(); },
+        _selCreateAvatarBg: (c) => { state.createForm.avatarBgColor = c; render(); },
+        _selSealAvatarBase: (b) => { state.sealAvatarForm.avatarBaseId = b; render(); },
+        _selSealAvatarBg: (c) => { state.sealAvatarForm.avatarBgColor = c; render(); },
+      };
+    })();
 
 </script>
 </body>

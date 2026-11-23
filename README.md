@@ -561,7 +561,11 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Interactive Segmented Tabs & Quick Filter Carousel:** Features smooth in-place tab switching between Followers and Following, instant filtering by All, Mutual, and Verified, and real-time live search.
    - **On-Chain Creator Follow Actions & Profile Routing:** Integrated seamless on-chain follow/unfollow actions and 1-tap navigation to any user's profile directly from follow lists.
    - **Universal Multi-Language Internationalization:** Full translation support across 8 languages (English, Turkish, Azerbaijani, Russian, German, Spanish, French, Arabic) with English base parity.
-35. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
+35. **Protocol Rooms — On-Chain Reddit-Style Public Spaces, Immutable Room Avatars & Creator Royalties (v2.13.0):**
+   - **Deterministic Special IDs (`RM-XXXXXXXX`) & Anti-Squatting Tiered Pricing:** Users can seal public on-chain discussion rooms with unique canonical IDs and homoglyph/Turkish-normalized slugs (`50 BCT` for 3–4 chars, `25 BCT` for 5–8 chars, `10 BCT` for 9+ chars; 50% Treasury / 50% Miner-Validator pool).
+   - **One-Time Permanently Immutable Room Avatar (`+2.00 BCT`):** Rooms may seal a single catalog avatar at creation or via creator-only one-time `room_set_avatar` transaction; consensus indexer strictly enforces permanent immutability.
+   - **Reddit-Style Topics (`0.25 BCT`), Nested Replies (`0.05 BCT`) & Upvotes (`0.01 BCT`):** Room creators earn 30% royalty on topics and 20% on replies; topic authors earn 20% on replies and upvotes with exact atomic-unit conservation.
+36. **Responsible Disclosure Policy:** Security vulnerabilities should be responsibly disclosed directly to [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com) or through [GitHub Security Advisories](https://github.com/LodosLawson/locktrace-blockchain/security).
 
 ---
 

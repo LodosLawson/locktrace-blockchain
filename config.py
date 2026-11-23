@@ -40,7 +40,7 @@ if os.path.exists(env_path):
 
 class Config:
     # ── Protokol & Versiyon ───────────────────────────
-    PROTOCOL_VERSION = "2.12.3"
+    PROTOCOL_VERSION = "2.13.0"
     NETWORK_NAME = os.environ.get("BCT_NETWORK", "mainnet")
 
     # ── Anti-Stall & Resilience Parameters (v2.5.0) ───
@@ -73,6 +73,17 @@ class Config:
     SPACE_LIKE_FEE = 0.01       # 20% Creator royalty, 70% Treasury reserve, 10% Validator fee
     SPACE_COMMENT_FEE = 0.02    # 20% Creator royalty, 70% Treasury reserve, 10% Validator fee
     SPACE_FOLLOW_FEE = 1.00     # 50% Creator, 30% Miner/Validator pool, 20% Treasury reserve
+
+    # ── Protocol Rooms (Reddit-Style Public Spaces) Ücretleri (BCT) ──
+    ROOM_CREATE_FEES = {
+        "short": 50.0,          # 3-4 karakter (Premium anti-squatting)
+        "medium": 25.0,         # 5-8 karakter (Standart)
+        "standard": 10.0        # 9+ karakter (Topluluk)
+    }
+    ROOM_AVATAR_SEAL_FEE = 2.00 # Tek seferlik, asla değiştirilemeyen oda avatar mühürleme ücreti
+    ROOM_TOPIC_FEE = 0.25       # Mevzu açma: %30 Oda Kurucusu, %50 Hazine, %20 Miner/Validator
+    ROOM_REPLY_FEE = 0.05       # Mevzu altı tweet/yanıt: %20 Mevzu Yazarı, %20 Oda Kurucusu, %40 Hazine, %20 Miner
+    ROOM_UPVOTE_FEE = 0.01      # Mevzu oylama: %20 Mevzu Yazarı, %70 Hazine, %10 Miner/Validator
 
     # ── BNS Alan Adı Kayıt Ücretleri (100% Burn) ──────
     BNS_FEES = {
@@ -107,7 +118,12 @@ class Config:
         "transfer": 3,          # Para Transferi: 3 saniye
         "space_post": 10,       # Post Paylaşımı: 10 saniye
         "bns_register": 10,     # İsim Alma: 10 saniye
-        "space_follow": 3       # Takip Etme: 3 saniye
+        "space_follow": 3,      # Takip Etme: 3 saniye
+        "room_create": 15,      # Oda Oluşturma: 15 saniye
+        "room_set_avatar": 10,  # Oda Avatarı Mühürleme: 10 saniye
+        "room_topic": 10,       # Mevzu Açma: 10 saniye
+        "room_reply": 5,        # Mevzu Yanıtı: 5 saniye
+        "room_upvote": 0        # Mevzu Oylama: Anlık (0s) - Çift oy & IP limitleri devrede
     }
 
     # ── Cross-Chain Bridge Güvenliği ──────────────────
