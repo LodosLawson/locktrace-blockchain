@@ -584,6 +584,8 @@
       following_empty_desc: 'Space akışındaki üreticileri keşfedip takip ederek gönderilerini kaçırmayın.',
       loading_connections: 'Zincir üstü bağlantılar yükleniyor...',
       querying_ledger: 'Kriptografik defter ve merkeziyetsiz ağ sorgulanıyor...',
+      switch_to_main_feed: 'Ana Space Akışına Geç',
+      switched_to_main_feed_toast: 'Ana Space akışına geçildi',
       notif_new_badge: 'yeni',
       notif_mark_all: 'Okundu Say',
       notif_all: 'Tümü',
@@ -757,6 +759,8 @@
       user_self_tag: 'Siz',
       loading_connections: 'Zəncir üzərindəki əlaqələr yüklənir...',
       querying_ledger: 'Kriptoqrafik dəftər və mərkəzsiz şəbəkə sorğulanır...',
+      switch_to_main_feed: 'Əsas Space Axınına Keç',
+      switched_to_main_feed_toast: 'Əsas Space axınına keçildi',
       notif_new_badge: 'yeni',
       notif_mark_all: 'Oxunmuş Say',
       notif_all: 'Hamısı',
@@ -930,6 +934,8 @@
       user_self_tag: 'Вы',
       loading_connections: 'Загрузка ончейн связей...',
       querying_ledger: 'Опрос криптографического реестра и сети...',
+      switch_to_main_feed: 'Перейти к основной ленте Space',
+      switched_to_main_feed_toast: 'Переключено на основную ленту Space',
       notif_new_badge: 'новых',
       notif_mark_all: 'Прочитать все',
       notif_all: 'Все',
@@ -1103,6 +1109,8 @@
       user_self_tag: 'Du',
       loading_connections: 'On-Chain-Verbindungen werden geladen...',
       querying_ledger: 'Abfrage des dezentralen Ledgers...',
+      switch_to_main_feed: 'Zum Haupt-Feed wechseln',
+      switched_to_main_feed_toast: 'Zum Haupt-Space-Feed gewechselt',
       notif_new_badge: 'neu',
       notif_mark_all: 'Als gelesen markieren',
       notif_all: 'Alle',
@@ -1276,6 +1284,8 @@
       user_self_tag: 'Tú',
       loading_connections: 'Cargando conexiones on-chain...',
       querying_ledger: 'Consultando el registro criptográfico...',
+      switch_to_main_feed: 'Cambiar al Feed Principal de Space',
+      switched_to_main_feed_toast: 'Cambiado al feed principal de Space',
       notif_new_badge: 'nuevas',
       notif_mark_all: 'Marcar como Leídas',
       notif_all: 'Todas',
@@ -1449,6 +1459,8 @@
       user_self_tag: 'Vous',
       loading_connections: 'Chargement des connexions on-chain...',
       querying_ledger: 'Interrogation du registre décentralisé...',
+      switch_to_main_feed: 'Passer au fil principal Space',
+      switched_to_main_feed_toast: 'Basculé vers le fil principal Space',
       notif_new_badge: 'nouveaux',
       notif_mark_all: 'Tout Marquer comme Lu',
       notif_all: 'Tous',
@@ -1622,6 +1634,8 @@
       user_self_tag: 'أنت',
       loading_connections: 'جارٍ تحميل الروابط على السلسلة...',
       querying_ledger: 'استعلام عن دفتر الأستاذ التشفيري والشبكة اللامركزية...',
+      switch_to_main_feed: 'التبديل إلى موجز Space الرئيسي',
+      switched_to_main_feed_toast: 'تم الانتقال إلى موجز Space الرئيسي',
       notif_new_badge: 'جديد',
       notif_mark_all: 'تحديد الكل كمقروء',
       notif_all: 'الكل',
@@ -2734,21 +2748,22 @@
             </div>
             <div class="flex flex-col min-w-0">
               <div class="flex items-center gap-1.5">
-                <span class="text-base font-semibold text-on-surface">Space</span>
-                <span class="px-2 py-0.5 rounded-full bg-surface-container-high text-primary font-mono text-[11px] font-semibold truncate max-w-[150px]">
+                <span class="px-2.5 py-0.5 rounded-full bg-surface-container-high text-primary font-mono text-xs font-semibold truncate max-w-[190px]">
                   ${esc(displayTag)}
                 </span>
               </div>
-              <span id="simple-space-bal-subtitle" class="text-[11px] text-on-surface-variant truncate">
+              <span id="simple-space-bal-subtitle" class="text-[11px] text-on-surface-variant truncate mt-0.5">
                 ${acc ? (typeof window.formatBct === 'function' ? window.formatBct(acc.balance || 0, 2) + ' BCT • ' + t('space_active_l1', 'Active L1') : t('space_active_l1', 'Active L1')) : t('space_create_wallet_hint', 'Create wallet (+1.00 BCT bonus)')}
               </span>
             </div>
           </div>
 
           <div class="flex items-center gap-1.5 shrink-0">
-            <button type="button" aria-label="${t('top_notifications', 'Notifications')}" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
+            <button type="button" aria-label="${t('switch_to_main_feed', 'Switch to Main Space Feed')}"
+              title="${t('switch_to_main_feed', 'Switch to Main Space Feed')}"
+              onclick="window.BlocTagSimpleMode.switchToMainFeed()"
               class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">notifications</span>
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">dynamic_feed</span>
             </button>
             <button type="button" aria-label="${t('space_search_btn', 'Search')}" onclick="window.BlocTagSimpleMode.toggleSearch()"
               class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer">
@@ -4109,6 +4124,16 @@
     requestProMode: (targetTab) => requestSwitchToProMode(targetTab),
     confirmProSwitch: () => confirmSwitchToProMode(),
     cancelProSwitch: () => cancelSwitchToProMode(),
+
+    switchToMainFeed: () => {
+      toggleSimpleModeSetting(false);
+      if (typeof window.switchTab === 'function') {
+        window.switchTab('space');
+      }
+      if (typeof window.showToast === 'function') {
+        window.showToast(t('switched_to_main_feed_toast', 'Switched to Main Space Feed'), 'auto_awesome');
+      }
+    },
 
     openWalletTab: () => {
       const acc = getActiveWallet();
