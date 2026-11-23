@@ -13792,6 +13792,82 @@
       } catch (_e) { }
     }
 
+    function showTransferSignConfirmModal({ receiver, rawReceiver, amount, fee, total, isBridgeVault }) {
+      return new Promise((resolve) => {
+        const existing = document.getElementById('transfer-sign-confirm-modal');
+        if (existing) existing.remove();
+
+        const isTr = (typeof currentLanguage !== 'undefined' && currentLanguage === 'tr')
+          || (localStorage.getItem('locktrace_lang') === 'tr');
+
+        const overlay = document.createElement('div');
+        overlay.id = 'transfer-sign-confirm-modal';
+        overlay.className = 'fixed inset-0 z-[120] bg-black/80 backdrop-blur-sm flex items-end sm:items-center justify-center p-0 sm:p-4';
+
+        const shortRec = receiver.length > 26 ? `${receiver.slice(0, 14)}...${receiver.slice(-10)}` : receiver;
+        const bnsTag = (rawReceiver && rawReceiver !== receiver) ? `<span class="text-[11px] font-mono text-primary block">${escapeHtml(rawReceiver)}</span>` : '';
+
+        overlay.innerHTML = `
+          <div class="w-full sm:max-w-md bg-surface-container-high rounded-t-3xl sm:rounded-3xl border border-outline-variant/30 shadow-2xl p-5 space-y-4">
+            <div class="flex items-start gap-3">
+              <div class="w-10 h-10 rounded-full bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[22px]" translate="no">draw</span>
+              </div>
+              <div class="min-w-0">
+                <h4 class="text-base font-bold text-on-surface">${isTr ? 'Transfer İmza Onayı' : 'Confirm & Sign Transfer'}</h4>
+                <p class="text-xs text-on-surface-variant mt-0.5">${isTr ? 'İşlemi ECDSA özel anahtarınızla imzalamadan önce detayları kontrol edin.' : 'Review transaction details before signing with your ECDSA key.'}</p>
+              </div>
+            </div>
+
+            <div class="rounded-2xl bg-surface-container p-3.5 space-y-2.5 text-xs border border-outline-variant/15">
+              <div class="flex items-start justify-between gap-2">
+                <span class="text-on-surface-variant shrink-0">${isTr ? 'Alıcı:' : 'Recipient:'}</span>
+                <div class="text-right min-w-0">
+                  ${bnsTag}
+                  <span class="font-mono text-on-surface font-semibold break-all">${escapeHtml(shortRec)}</span>
+                </div>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-on-surface-variant">${isTr ? 'Alıcıya Gidecek Tutar:' : 'Recipient Receives:'}</span>
+                <span class="font-mono font-bold text-emerald-400">${formatBct(amount, 4)} BCT</span>
+              </div>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-on-surface-variant">${isTr ? 'Ağ Ücreti (Cüzdandan):' : 'Network Fee (From Wallet):'}</span>
+                <span class="font-mono text-on-surface">${isBridgeVault ? '0.0000 BCT (Bridge)' : formatBct(fee, 4) + ' BCT (%1)'}</span>
+              </div>
+              <div class="pt-2 border-t border-outline-variant/20 flex items-center justify-between gap-2 text-sm">
+                <span class="font-semibold text-on-surface">${isTr ? 'Cüzdandan Çekilecek Toplam:' : 'Total Deducted:'}</span>
+                <span class="font-mono font-bold text-primary">${formatBct(total, 4)} BCT</span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-2.5 pt-1">
+              <button type="button" id="btnCancelSignTransfer"
+                class="flex-1 h-11 rounded-full bg-surface-container text-on-surface text-xs font-semibold hover:bg-surface-container-highest transition-colors cursor-pointer">
+                ${isTr ? 'Vazgeç' : 'Cancel'}
+              </button>
+              <button type="button" id="btnConfirmSignTransfer"
+                class="flex-1 h-11 rounded-full bg-primary text-on-primary text-xs font-bold shadow-md hover:brightness-105 transition-all cursor-pointer flex items-center justify-center gap-1.5">
+                <span class="material-symbols-outlined notranslate text-[17px]" translate="no">verified_user</span>
+                <span>${isTr ? 'İmzala ve Gönder' : 'Confirm & Sign'}</span>
+              </button>
+            </div>
+          </div>
+        `;
+
+        document.body.appendChild(overlay);
+        const cleanup = (ans) => {
+          overlay.remove();
+          resolve(ans);
+        };
+        overlay.querySelector('#btnCancelSignTransfer')?.addEventListener('click', () => cleanup(false));
+        overlay.querySelector('#btnConfirmSignTransfer')?.addEventListener('click', () => cleanup(true));
+        overlay.addEventListener('click', (e) => {
+          if (e.target === overlay) cleanup(false);
+        });
+      });
+    }
+
     async function executeSendTransaction() {
       if (isSendingTransaction) return;
       if (!currentAccount || !currentAccount.address) {
@@ -13837,11 +13913,24 @@
         return;
       }
 
+      const isBridgeVault = receiver.startsWith('BCT_BRIDGE_VAULT');
+      const estFee = isBridgeVault ? 0 : Math.max(0.001, Number((amount * 0.01).toFixed(8)));
+      const totalRequired = Number((amount + estFee).toFixed(8));
       const userBal = Number((currentAccount && currentAccount.balance) || 0);
-      if (amount > userBal) {
-        showToast(`Insufficient balance! Available: ${formatBct(userBal, 4)} BCT`, 'warning', true);
+      if (totalRequired > userBal) {
+        showToast(`Insufficient balance! Required: ${formatBct(totalRequired, 4)} BCT (${formatBct(amount, 4)} + ${formatBct(estFee, 4)} fee), available: ${formatBct(userBal, 4)} BCT`, 'warning', true);
         return;
       }
+
+      const confirmed = await showTransferSignConfirmModal({
+        receiver,
+        rawReceiver,
+        amount,
+        fee: estFee,
+        total: totalRequired,
+        isBridgeVault
+      });
+      if (!confirmed) return;
 
       isSendingTransaction = true;
 

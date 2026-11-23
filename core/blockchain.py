@@ -3748,15 +3748,18 @@ class Blockchain:
             and clean_miner not in self.slashed_validators
         )
 
-        # Anti-Self-Loop & Sybil Dust Mining Guard: If block only contains self-transfers between miner and accomplice addresses,
-        # or transactions involving slashed validators, or zero genuine third-party transactions, zero the Treasury subsidy!
+        # Anti-Self-Loop & Zero-Fee Farming Guard: If block only contains self-transfers, slashed validators,
+        # or zero-fee system/staking transactions (frontend_release, welcome reward, stake/unstake, 0-fee bridge lock),
+        # zero the Treasury subsidy so blocks without fee-paying user activity never drain Treasury!
         slashed_set = set(normalize_bct_address(a) for a in self.slashed_validators)
+        non_subsidy_types = {"frontend_release", "reward", "validator_stake", "validator_unstake"}
         genuine_txs = [
             tx for tx in pending_txs
             if (not clean_miner or (normalize_bct_address(tx.sender) != clean_miner and normalize_bct_address(tx.receiver) != clean_miner))
             and normalize_bct_address(tx.sender) not in slashed_set
             and normalize_bct_address(tx.receiver) not in slashed_set
-            and (float(getattr(tx, "amount", 0.0) or 0.0) >= MIN_TRANSACTION or float(getattr(tx, "fee", 0.0) or 0.0) > 0)
+            and tx.tx_type not in non_subsidy_types
+            and float(getattr(tx, "fee", 0.0) or 0.0) > 0
         ]
         senders = {normalize_bct_address(tx.sender) for tx in genuine_txs if tx.sender}
         receivers = {normalize_bct_address(tx.receiver) for tx in genuine_txs if tx.receiver}
