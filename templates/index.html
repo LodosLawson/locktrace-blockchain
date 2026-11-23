@@ -15429,7 +15429,8 @@
     let _activeSharePostId = null;
 
     function _populatePostShareModalFields(post, postId) {
-      const shareUrl = `${window.location.origin}/post/${encodeURIComponent(postId)}`;
+      const activeShareMode = document.body.classList.contains('simple-mode-active') ? 'simple' : 'pro';
+      const shareUrl = `${window.location.origin}/post/${encodeURIComponent(postId)}?mode=${activeShareMode}`;
       const authorLabel = post && (post.is_anonymous || post.author_bns === 'anonymous')
         ? 'Anonymous Author'
         : (post && post.author_bns ? `@${post.author_bns}` : (post && post.author ? shortAddr(post.author) : 'BlocTag Creator'));
@@ -21643,7 +21644,8 @@
     async function shareUserProfile() {
       if (!currentProfileData || !currentProfileData.address) return;
       const param = currentProfileData.primary_bns || currentProfileData.address;
-      const url = `${window.location.origin}/?profile=${encodeURIComponent(param)}`;
+      const activeShareMode = document.body.classList.contains('simple-mode-active') ? 'simple' : 'pro';
+      const url = `${window.location.origin}/?profile=${encodeURIComponent(param)}&mode=${activeShareMode}`;
       const label = currentProfileData.primary_bns ? `@${currentProfileData.primary_bns}` : shortAddr(currentProfileData.address);
       if (navigator.share) {
         try {

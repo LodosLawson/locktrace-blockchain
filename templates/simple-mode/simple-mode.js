@@ -79,59 +79,157 @@
   }
 
   /**
-   * Detects whether the visitor arrived via a shared Space Post or Profile link.
-   * Supported formats:
-   *   - /?post=<id>, /post/<id>, /space/post/<id>, #post=<id>
-   *   - /?profile=<handleOrAddr>, /profile/<handleOrAddr>, /space/profile/<handleOrAddr>, #profile=<handleOrAddr>
+   * Detects whether the visitor arrived via a shared Space Post or Profile link,
+   * along with the sharer's UI mode (`?mode=simple` or `?mode=pro`).
    */
   function getSharedDeepLinkTarget() {
     try {
       const sp = new URLSearchParams(window.location.search || '');
+      const rawMode = String(sp.get('mode') || '').trim().toLowerCase();
+      let mode = (rawMode === 'simple' || rawMode === 'pro') ? rawMode : null;
+
+      const hash = String(window.location.hash || '').replace(/^#/, '');
+      if (!mode && hash.includes('mode=')) {
+        const mMatch = hash.match(/mode=(simple|pro)/i);
+        if (mMatch && mMatch[1]) mode = mMatch[1].toLowerCase();
+      }
+
       const qPost = String(sp.get('post') || '').trim();
-      if (qPost) return { type: 'post', id: qPost };
+      if (qPost) return { type: 'post', id: qPost, mode };
       const qProfile = String(sp.get('profile') || '').trim();
-      if (qProfile) return { type: 'profile', id: qProfile };
+      if (qProfile) return { type: 'profile', id: qProfile, mode };
 
       const path = String(window.location.pathname || '').trim();
       const postPathMatch = path.match(/^\/(?:space\/)?post\/([^\/?#]+)/i);
       if (postPathMatch && postPathMatch[1]) {
-        return { type: 'post', id: decodeURIComponent(postPathMatch[1]) };
+        return { type: 'post', id: decodeURIComponent(postPathMatch[1]), mode };
       }
       const profilePathMatch = path.match(/^\/(?:space\/)?profile\/([^\/?#]+)/i);
       if (profilePathMatch && profilePathMatch[1]) {
-        return { type: 'profile', id: decodeURIComponent(profilePathMatch[1]) };
+        return { type: 'profile', id: decodeURIComponent(profilePathMatch[1]), mode };
       }
 
-      const hash = String(window.location.hash || '').replace(/^#/, '');
       if (hash.startsWith('post=')) {
         const hid = decodeURIComponent(hash.slice(5).split('&')[0] || '').trim();
-        if (hid) return { type: 'post', id: hid };
+        if (hid) return { type: 'post', id: hid, mode };
       }
       if (hash.startsWith('profile=')) {
         const hprof = decodeURIComponent(hash.slice(8).split('&')[0] || '').trim();
-        if (hprof) return { type: 'profile', id: hprof };
+        if (hprof) return { type: 'profile', id: hprof, mode };
       }
     } catch (_e) { }
     return null;
   }
 
   function renderGuestSharedBanner() {
-    if (!_guestSharedLinkBypass || !isMobileDevice() || isStandalonePwaApp()) return '';
+    if (!_guestSharedLinkBypass) return '';
     const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+    const showInstall = isMobileDevice() && !isStandalonePwaApp();
     return `
-      <div class="mx-4 mt-2.5 mb-1 px-3.5 py-2.5 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-between gap-2.5">
+      <div class="mx-4 mt-2.5 mb-1 px-3 py-2 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
-          <span class="material-symbols-outlined notranslate text-primary text-[18px] shrink-0" translate="no">install_mobile</span>
-          <span class="text-[11px] font-medium text-on-surface leading-snug">
-            ${isTr ? 'Misafir önizlemesi • Tüm özellikler için LockTrace uygulamasını kur' : 'Guest preview • Install LockTrace app for full access'}
+          <span class="material-symbols-outlined notranslate text-primary text-[17px] shrink-0" translate="no">visibility</span>
+          <span class="text-[11px] font-medium text-on-surface leading-snug truncate">
+            ${isTr ? 'Paylaşım önizlemesi • Simple Mod' : 'Shared preview • Simple Mode'}
           </span>
         </div>
-        <button type="button" onclick="window.BlocTagSimpleMode.promptPwaInstallFromGuest()"
-          class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-[11px] font-bold shrink-0 cursor-pointer active:scale-95 transition-transform">
-          ${isTr ? 'Uygulamayı Kur' : 'Install'}
-        </button>
+        <div class="flex items-center gap-1.5 shrink-0">
+          <button type="button" onclick="window.BlocTagSimpleMode.switchGuestSharedMode('pro')"
+            class="px-2.5 py-1.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-[11px] font-bold border border-outline-variant/25 flex items-center gap-1 cursor-pointer active:scale-95 transition-transform">
+            <span class="material-symbols-outlined notranslate text-[13px] text-primary" translate="no">bolt</span>
+            <span>${isTr ? 'Pro Mod' : 'Pro'}</span>
+          </button>
+          ${showInstall ? `
+            <button type="button" onclick="window.BlocTagSimpleMode.promptPwaInstallFromGuest()"
+              class="px-2.5 py-1.5 rounded-full bg-primary text-on-primary text-[11px] font-bold cursor-pointer active:scale-95 transition-transform">
+              ${isTr ? 'Kur' : 'Install'}
+            </button>
+          ` : ''}
+        </div>
       </div>
     `;
+  }
+
+  function renderGuestProModeFloatingBar() {
+    if (!_guestSharedLinkBypass) return;
+    let bar = document.getElementById('bloctag-guest-pro-mode-bar');
+    if (!bar) {
+      bar = document.createElement('div');
+      bar.id = 'bloctag-guest-pro-mode-bar';
+      document.body.appendChild(bar);
+    }
+    const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+    const showInstall = isMobileDevice() && !isStandalonePwaApp();
+    bar.className = 'fixed bottom-4 left-1/2 -translate-x-1/2 z-[98] max-w-[94vw] px-3 py-2 rounded-full bg-surface-container-highest/95 backdrop-blur-md border border-primary/35 shadow-2xl flex items-center gap-2';
+    bar.innerHTML = `
+      <span class="text-[11px] font-semibold text-on-surface pl-1.5 whitespace-nowrap">
+        ${isTr ? 'Pro Mod Önizleme' : 'Pro Preview'}
+      </span>
+      <button type="button" onclick="window.BlocTagSimpleMode.switchGuestSharedMode('simple')"
+        class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-[11px] font-bold flex items-center gap-1 cursor-pointer active:scale-95 transition-transform whitespace-nowrap">
+        <span class="material-symbols-outlined notranslate text-[14px]" translate="no">auto_awesome</span>
+        <span>${isTr ? 'Simple Mod' : 'Simple Mode'}</span>
+      </button>
+      ${showInstall ? `
+        <button type="button" onclick="window.BlocTagSimpleMode.promptPwaInstallFromGuest()"
+          class="px-2.5 py-1.5 rounded-full bg-surface-container text-primary text-[11px] font-bold border border-primary/30 cursor-pointer active:scale-95 transition-transform whitespace-nowrap">
+          ${isTr ? 'Kur' : 'Install'}
+        </button>
+      ` : ''}
+    `;
+  }
+
+  function removeGuestProModeFloatingBar() {
+    const bar = document.getElementById('bloctag-guest-pro-mode-bar');
+    if (bar) bar.remove();
+  }
+
+  /**
+   * Ephemeral mode switcher ONLY for the current shared post/profile session.
+   * Never modifies localStorage user preferences.
+   */
+  function switchGuestSharedMode(nextMode) {
+    if (!_guestSharedLinkBypass) return;
+    // Determine the exact post or profile currently being viewed so switching keeps the same content
+    let currentTarget = _guestSharedTarget ? { ..._guestSharedTarget } : null;
+    if (simpleState.enabled) {
+      if (simpleState.activeScreen === 'SCR-SPC-04' && simpleState.activePostId) {
+        currentTarget = { type: 'post', id: simpleState.activePostId };
+      } else if (simpleState.activeScreen === 'SCR-PRF-05' && simpleState.profileTarget) {
+        currentTarget = { type: 'profile', id: simpleState.profileTarget };
+      }
+    } else {
+      if (window.currentProfileData && window.currentProfileData.address) {
+        const profModal = document.getElementById('userProfileModal');
+        if (profModal && !profModal.classList.contains('hidden')) {
+          currentTarget = { type: 'profile', id: window.currentProfileData.primary_handle || window.currentProfileData.address };
+        }
+      } else if (typeof activeDetailPostId !== 'undefined' && activeDetailPostId) {
+        currentTarget = { type: 'post', id: activeDetailPostId };
+      }
+    }
+    if (currentTarget) _guestSharedTarget = currentTarget;
+
+    if (nextMode === 'pro') {
+      // Ephemeral switch to Pro Mode (does NOT save to localStorage)
+      applySimpleModeState(false, false);
+      renderGuestProModeFloatingBar();
+      if (currentTarget && currentTarget.type === 'post' && typeof window.openSpacePostDetail === 'function') {
+        window.openSpacePostDetail(currentTarget.id);
+      } else if (currentTarget && currentTarget.type === 'profile' && typeof window.openUserProfile === 'function') {
+        window.openUserProfile(currentTarget.id);
+      }
+    } else if (nextMode === 'simple') {
+      // Ephemeral switch to Simple Mode (does NOT save to localStorage)
+      removeGuestProModeFloatingBar();
+      if (typeof window.closeUserProfile === 'function') window.closeUserProfile(true);
+      applySimpleModeState(true, false);
+      if (currentTarget && currentTarget.type === 'post') {
+        navigateToSimpleScreen('SCR-SPC-04', { postId: currentTarget.id, pushHistory: false });
+      } else if (currentTarget && currentTarget.type === 'profile') {
+        navigateToSimpleScreen('SCR-PRF-05', { profileTarget: currentTarget.id, pushHistory: false });
+      }
+    }
   }
 
   function isIosDeviceLocal() {
@@ -3630,6 +3728,11 @@
 
             <!-- Profile Action Buttons -->
             <div class="flex items-center gap-1.5 pb-1 flex-wrap justify-end">
+              <button type="button" onclick="window.BlocTagSimpleMode.shareSimpleProfile('${escAttr(resolvedBns || resolvedAddress)}')"
+                title="${t('space_share_btn', 'Share')}"
+                class="w-8.5 h-8.5 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface hover:text-primary text-xs font-medium transition-all active:scale-95 flex items-center justify-center cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[16px]" translate="no">ios_share</span>
+              </button>
               ${isMyProfile ? `
                 <button type="button" onclick="window.BlocTagSimpleMode.openAvatarStudio()"
                   class="h-8.5 px-3 rounded-full bg-primary/15 hover:bg-primary/25 text-primary text-xs font-semibold transition-all active:scale-95 flex items-center gap-1 cursor-pointer border border-primary/25">
@@ -5729,7 +5832,23 @@
     markManualPwaInstalled: () => handleMarkManualPwaInstalled(),
     showPwaInstallStepsAgain: () => handleShowPwaInstallStepsAgain(),
     openInstalledAppHint: (ev) => handleOpenInstalledAppHint(ev),
-    promptPwaInstallFromGuest: () => evaluateMobileGates(true)
+    promptPwaInstallFromGuest: () => evaluateMobileGates(true),
+    switchGuestSharedMode: (nextMode) => switchGuestSharedMode(nextMode),
+    shareSimpleProfile: (targetId) => {
+      const param = String(targetId || '').trim();
+      if (!param) return;
+      const url = `${window.location.origin}/?profile=${encodeURIComponent(param)}&mode=simple`;
+      if (navigator.share) {
+        navigator.share({ title: `${param} — LockTrace Profile`, url }).catch(() => { });
+        return;
+      }
+      if (typeof window.copyText === 'function') {
+        window.copyText(url, 'Profile link copied (Simple Mode)!');
+      } else if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).catch(() => { });
+        if (typeof window.showToast === 'function') window.showToast('Profile link copied!', 'content_copy');
+      }
+    }
   };
 
   // Global helper fallback
@@ -6740,8 +6859,11 @@
     }
     const saved = mobile ? isSimpleModeEnabled() : false;
     syncModeToggleControls(saved);
-    if (saved) {
-      if (sharedTarget) {
+    if (sharedTarget) {
+      // Honor the sharer's exact mode (?mode=simple or ?mode=pro) ephemerally for this shared session ONLY
+      const useSimpleForShare = sharedTarget.mode ? (sharedTarget.mode === 'simple') : saved;
+      if (useSimpleForShare) {
+        removeGuestProModeFloatingBar();
         applySimpleModeState(true, false);
         if (sharedTarget.type === 'post') {
           navigateToSimpleScreen('SCR-SPC-04', { postId: sharedTarget.id, pushHistory: false });
@@ -6749,11 +6871,21 @@
           navigateToSimpleScreen('SCR-PRF-05', { profileTarget: sharedTarget.id, pushHistory: false });
         }
       } else {
-        if (!getActiveWallet()) {
-          simpleState.activeScreen = 'SCR-ONB-01';
-        }
-        applySimpleModeState(true, false);
+        applySimpleModeState(false, false);
+        renderGuestProModeFloatingBar();
+        setTimeout(() => {
+          if (sharedTarget.type === 'post' && typeof window.openSpacePostDetail === 'function') {
+            window.openSpacePostDetail(sharedTarget.id);
+          } else if (sharedTarget.type === 'profile' && typeof window.openUserProfile === 'function') {
+            window.openUserProfile(sharedTarget.id);
+          }
+        }, 180);
       }
+    } else if (saved) {
+      if (!getActiveWallet()) {
+        simpleState.activeScreen = 'SCR-ONB-01';
+      }
+      applySimpleModeState(true, false);
     }
     evaluateMobileGates(false);
 
