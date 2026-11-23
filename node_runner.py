@@ -479,9 +479,22 @@ def calculate_tx_hash_dict(tx: dict) -> str:
 
 
 def calculate_block_hash_dict(blk: dict) -> str:
-    """Computes exact v1 or v2 block SHA-256 hash matching core/blockchain.py."""
+    """Computes exact v1 or v2 block SHA-256 hash matching core/blockchain.py (supports both header-only v2 and legacy full-body v2)."""
     ver = int(blk.get("version", 1))
+    stored_hash = str(blk.get("hash") or "").lower()
     if ver >= 2:
+        header_payload = {
+            "version": ver,
+            "index": int(blk["index"]),
+            "merkle_root": str(blk["merkle_root"]),
+            "previous_hash": str(blk["previous_hash"]),
+            "timestamp": blk["timestamp"],
+            "miner": str(blk.get("miner") or ""),
+            "nonce": int(blk["nonce"]),
+        }
+        h_header = hashlib.sha256(json.dumps(header_payload, sort_keys=True).encode("utf-8")).hexdigest()
+        if not stored_hash or h_header == stored_hash:
+            return h_header
         payload = {
             "index": int(blk["index"]),
             "version": ver,
@@ -2431,9 +2444,25 @@ class LockTraceNode:
                 dt = blk_ts - float(prev_blk.get("timestamp", 0.0))
                 if dt <= 0.0:
                     return False
+                # Match core/blockchain.py LWMA step-down + stall recovery
+                if b_idx >= 20:
+                    recent_ts = [
+                        float(self.chain_by_index[k].get("timestamp", 0.0))
+                        for k in range(b_idx - 20, b_idx)
+                        if k in self.chain_by_index
+                    ]
+                    if len(recent_ts) >= 2:
+                        t_diffs = [max(0.1, min(recent_ts[k] - recent_ts[k - 1], 120.0)) for k in range(1, len(recent_ts))]
+                        w_sum = sum((idx_i + 1) * d for idx_i, d in enumerate(t_diffs))
+                        w_tot = sum(idx_i + 1 for idx_i in range(len(t_diffs)))
+                        if (w_sum / max(1.0, w_tot)) > 36.0 and req_diff > 2:
+                            req_diff = max(2, req_diff - 1)
                 if dt > 120.0:
                     stall_drop = int((dt - 120.0) // 60.0) + 1
-                    req_diff = max(1, int(base_difficulty) - stall_drop)
+                    req_diff = max(1, req_diff - stall_drop)
+            elif b_idx > 0 and self.snapshot_height > 0 and b_idx <= self.snapshot_height:
+                # First boundary block in snapshot window has no prev_blk in memory; allow LWMA/stall floor
+                req_diff = 1
 
         if b_idx > 0 and not b_hash.startswith("0" * max(1, req_diff)):
             return False
@@ -2444,7 +2473,8 @@ class LockTraceNode:
 
         system_tx_types = {
             "genesis", "reward", "mining_reward", "validator_reward",
-            "attestation_reward", "bridge_unlock", "validator_unstake", "frontend_release"
+            "observer_reward", "attestation_reward", "bridge_unlock",
+            "bridge_vault_deposit", "validator_unstake", "frontend_release"
         }
         reward_total_u = 0
         fee_total_u = 0
