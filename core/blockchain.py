@@ -1651,21 +1651,39 @@ class Blockchain:
             return feed[:limit]
 
     def get_space_trending_tags(self, top_n: int = 15) -> dict:
-        """Calculates top trending hashtags (#) and cashtags ($) across space posts."""
+        """Calculates top trending hashtags (#) and cashtags ($) across space posts (case-merged, excluding raw BCT addresses)."""
         with self.lock:
             self._load_state()
-            tag_counts = {}
+            tag_counts: Dict[str, int] = {}
+            display_label: Dict[str, str] = {}
             for p in self.space_posts.values():
                 content = p.get("content", "")
                 ents = self.extract_space_entities(content)
                 for h in ents.get("hashtags", []):
-                    tag_counts[h] = tag_counts.get(h, 0) + 1
+                    raw_h = str(h or "").strip()
+                    # Skip 43-char wallet address mentions (#BCT...) so only real topics trend
+                    if re.fullmatch(r"#BCT[0-9a-fA-F]{40}", raw_h, re.IGNORECASE):
+                        continue
+                    key = raw_h.lower()
+                    tag_counts[key] = tag_counts.get(key, 0) + 1
+                    if key not in display_label or (raw_h != raw_h.lower() and display_label[key] == key):
+                        display_label[key] = raw_h
                 for c in ents.get("cashtags", []):
-                    tag_counts[c] = tag_counts.get(c, 0) + 1
+                    raw_c = str(c or "").strip().upper()
+                    key = raw_c.lower()
+                    tag_counts[key] = tag_counts.get(key, 0) + 1
+                    display_label[key] = raw_c
 
-            sorted_tags = sorted(tag_counts.items(), key=lambda x: x[1], reverse=True)
+            sorted_tags = sorted(tag_counts.items(), key=lambda x: (-x[1], display_label.get(x[0], x[0])))
             return {
-                "tags": [{"tag": t[0], "count": t[1], "type": "cashtag" if t[0].startswith("$") else "hashtag"} for t in sorted_tags[:top_n]],
+                "tags": [
+                    {
+                        "tag": display_label.get(t[0], t[0]),
+                        "count": t[1],
+                        "type": "cashtag" if display_label.get(t[0], t[0]).startswith("$") else "hashtag",
+                    }
+                    for t in sorted_tags[:top_n]
+                ],
                 "total_tags_count": len(sorted_tags)
             }
 
@@ -1699,6 +1717,8 @@ class Blockchain:
             clean_viewer = (viewer_address or "").strip()
             excluded_addrs = {
                 TREASURY_ADDRESS,
+                BRIDGE_VAULT_ADDRESS,
+                VALIDATOR_STAKE_VAULT_ADDRESS,
                 clean_viewer,
                 "BCTd9cdd72f3d0ad1766a17d13d3fbfd3a97cf0d11d",
                 "BCTf8c255f129a61b296f197a7e70902c043c3da0bf",
@@ -1706,6 +1726,8 @@ class Blockchain:
                 "BCT4ebea3d0f7132475e4e7c22573696eab6267a191",
                 "BCT0000000000000000000000000000000000000000"
             }
+            for slashed_addr in self.slashed_validators:
+                excluded_addrs.add(normalize_bct_address(slashed_addr))
 
             candidates: Dict[str, dict] = {}
             for p in self.space_posts.values():
@@ -1745,9 +1767,11 @@ class Blockchain:
                     display_name = short_addr
 
                 is_val = self.is_active_validator(addr)
+                norm_addr = normalize_bct_address(addr)
                 result.append({
                     "address": addr,
                     "bns_name": bns,
+                    "avatar": self.avatar_equipped.get(norm_addr),
                     "display_name": display_name,
                     "bio": bio,
                     "is_validator": is_val,

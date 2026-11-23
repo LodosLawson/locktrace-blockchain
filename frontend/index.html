@@ -5085,7 +5085,7 @@
           <!-- Right Sidebar Column: Trending Topics, Suggested Voices & Network Vitals (Exact Stitch Desktop) -->
           <aside class="hidden lg:flex flex-col w-[350px] xl:w-[380px] shrink-0 gap-4 min-w-0">
 
-            <!-- Card 1: Trending Topics -->
+            <!-- Card 1: Trending Topics (Live On-Chain Hashtags & Cashtags) -->
             <div
               class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
               <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
@@ -5093,62 +5093,14 @@
                   <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">local_fire_department</span>
                   <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight">Trending Topics</h2>
                 </div>
-                <button type="button" onclick="showToast('Showing top trending topics');"
-                  class="text-xs text-on-surface-variant hover:text-primary transition-colors cursor-pointer font-medium">View
-                  All</button>
+                <button type="button" onclick="loadTrendingTopicsSidebar(); showToast('Trending topics refreshed');"
+                  class="text-xs text-on-surface-variant hover:text-primary transition-colors cursor-pointer font-medium">Refresh</button>
               </div>
-              <div class="flex flex-col gap-2">
-                <!-- Topic 1 -->
-                <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer"
-                  onclick="filterSpaceByEntity('#EIP4844')">
-                  <div class="flex flex-col min-w-0">
-                    <span
-                      class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">#EIP4844</span>
-                    <span class="text-[11px] text-on-surface-variant truncate">Proto-danksharding &amp; blobs</span>
-                  </div>
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">14.2k
-                    casts</span>
-                </a>
-                <!-- Topic 2 -->
-                <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer"
-                  onclick="filterSpaceByEntity('$ETH')">
-                  <div class="flex flex-col min-w-0">
-                    <span
-                      class="font-mono font-semibold text-xs text-on-surface group-hover:text-primary transition-colors truncate">$ETH
-                      L2 Rollups</span>
-                    <span class="text-[11px] text-on-surface-variant truncate">Arbitrum, Optimism, Base</span>
-                  </div>
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-primary/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-primary shrink-0 transition-colors">8.9k
-                    casts</span>
-                </a>
-                <!-- Topic 3 -->
-                <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer"
-                  onclick="filterSpaceByEntity('#Solana')">
-                  <div class="flex flex-col min-w-0">
-                    <span
-                      class="font-mono font-semibold text-xs text-on-surface group-hover:text-purple-400 transition-colors truncate">Solana
-                      Breakpoint</span>
-                    <span class="text-[11px] text-on-surface-variant truncate">Firedancer updates</span>
-                  </div>
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-purple-500/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-purple-400 shrink-0 transition-colors">5.4k
-                    casts</span>
-                </a>
-                <!-- Topic 4 -->
-                <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer"
-                  onclick="filterSpaceByEntity('#ZeroKnowledge')">
-                  <div class="flex flex-col min-w-0">
-                    <span
-                      class="font-mono font-semibold text-xs text-on-surface group-hover:text-emerald-400 transition-colors truncate">Zero-Knowledge
-                      MPC</span>
-                    <span class="text-[11px] text-on-surface-variant truncate">Non-custodial key recovery</span>
-                  </div>
-                  <span
-                    class="px-2 py-0.5 rounded-full bg-surface-container group-hover:bg-emerald-500/10 font-mono text-[10.5px] text-on-surface-variant group-hover:text-emerald-400 shrink-0 transition-colors">3.1k
-                    casts</span>
-                </a>
+              <div id="trendingTopicsSidebarList" class="flex flex-col gap-2 min-h-[110px]">
+                <div class="flex items-center justify-center p-4 text-xs text-on-surface-variant font-mono">
+                  <span class="material-symbols-outlined notranslate text-sm animate-spin mr-1.5" translate="no">sync</span>
+                  Loading on-chain trends...
+                </div>
               </div>
             </div>
 
@@ -11074,6 +11026,48 @@
       }
     }
 
+    // ── Trending Topics Sidebar (Live On-Chain Tags) ─────────────────────────────
+    async function loadTrendingTopicsSidebar() {
+      const container = document.getElementById('trendingTopicsSidebarList');
+      if (!container) return;
+      try {
+        const resp = await apiFetch('/space/trending_tags?limit=6&_nc=' + Date.now());
+        if (resp && resp.ok && resp.body && resp.body.data && Array.isArray(resp.body.data.tags)) {
+          const tags = resp.body.data.tags;
+          if (tags.length === 0) {
+            container.innerHTML = `
+              <div class="p-3 text-center text-xs text-on-surface-variant font-mono">
+                No trending tags on-chain yet. Cast with #hashtags or $cashtags!
+              </div>
+            `;
+            return;
+          }
+          container.innerHTML = tags.map((item, idx) => {
+            const tag = String(item.tag || '');
+            const cnt = Number(item.count || 0);
+            const isCash = item.type === 'cashtag' || tag.startsWith('$');
+            const hoverText = isCash ? 'group-hover:text-secondary' : 'group-hover:text-primary';
+            const badgeCls = isCash
+              ? 'group-hover:bg-secondary/10 group-hover:text-secondary'
+              : 'group-hover:bg-primary/10 group-hover:text-primary';
+            const subLabel = isCash ? 'On-chain token cashtag' : 'On-chain Space topic';
+            return `
+              <a class="group flex items-center justify-between p-2 rounded-xl hover:bg-surface-container transition-all cursor-pointer"
+                onclick="filterSpaceByEntity('${sanitizeJsAttr(tag)}')">
+                <div class="flex flex-col min-w-0">
+                  <span class="font-mono font-semibold text-xs text-on-surface ${hoverText} transition-colors truncate">${escapeHtml(tag)}</span>
+                  <span class="text-[11px] text-on-surface-variant truncate">#${idx + 1} • ${subLabel}</span>
+                </div>
+                <span class="px-2 py-0.5 rounded-full bg-surface-container ${badgeCls} font-mono text-[10.5px] text-on-surface-variant shrink-0 transition-colors">${cnt} ${cnt === 1 ? 'cast' : 'casts'}</span>
+              </a>
+            `;
+          }).join('');
+        }
+      } catch (err) {
+        console.error('loadTrendingTopicsSidebar error:', err);
+      }
+    }
+
     // ── Suggested Voices & On-Chain Paid Follow ──────────────────────────────────
     async function loadSuggestedVoices() {
       const container = document.getElementById('suggestedVoicesContainer');
@@ -11081,7 +11075,7 @@
 
       const viewer = (typeof currentAccount !== 'undefined' && currentAccount && currentAccount.address) ? currentAccount.address : '';
       try {
-        const resp = await apiFetch('/space/suggested-voices?viewer=' + encodeURIComponent(viewer) + '&limit=5');
+        const resp = await apiFetch('/space/suggested-voices?viewer=' + encodeURIComponent(viewer) + '&limit=5&_nc=' + Date.now());
         if (resp && resp.ok && resp.body && resp.body.data && Array.isArray(resp.body.data.voices)) {
           const voices = resp.body.data.voices;
           if (voices.length === 0) {
@@ -11099,12 +11093,17 @@
             const subTitle = v.bns_name
               ? `${v.address.slice(0, 6)}...${v.address.slice(-4)} • ${v.followers_count} Followers`
               : `${v.posts_count > 0 ? v.posts_count + ' Cast' : 'BCT Account'} • ${v.followers_count} Followers`;
+            const av = v.avatar;
+            const avBg = av && /^#[0-9A-F]{6}$/i.test(String(av.bg_color || '')) ? String(av.bg_color).toUpperCase() : '#FFFFFF';
+            const avatarInner = (av && av.image_url)
+              ? `<div class="w-full h-full flex items-center justify-center overflow-hidden rounded-full" style="background-color:${avBg};"><img src="${escapeHtml(av.image_url)}" alt="" loading="lazy" decoding="async" class="w-full h-full object-contain p-0.5 select-none pointer-events-none" /></div>`
+              : avatarChar;
 
             return `
               <div class="flex items-center justify-between gap-2.5 p-1.5 rounded-xl hover:bg-surface-container transition-colors group">
                 <div class="flex items-center gap-2.5 min-w-0 cursor-pointer" onclick="openUserProfile('${sanitizeJsAttr(v.address)}')" title="View On-Chain Profile">
-                  <div class="w-8 h-8 rounded-full bg-surface-container-high shrink-0 flex items-center justify-center font-mono font-bold text-xs text-primary ring-1 ring-primary/30 group-hover:ring-primary">
-                    ${avatarChar}
+                  <div class="w-8 h-8 rounded-full bg-surface-container-high shrink-0 overflow-hidden flex items-center justify-center font-mono font-bold text-xs text-primary ring-1 ring-primary/30 group-hover:ring-primary">
+                    ${avatarInner}
                   </div>
                   <div class="flex flex-col min-w-0">
                     <div class="flex items-center gap-1 min-w-0">
@@ -15463,21 +15462,28 @@
       if (!pillsWrap) return;
 
       const counts = {};
+      const labels = {};
       spacePostsCache.forEach(p => {
         const raw = String(p.content || '');
         const hs = raw.match(/#([a-zA-Z0-9_\-\u00C0-\u017F]+)/g) || [];
         const cs = raw.match(/\$([a-zA-Z0-9_]{2,10})\b/g) || [];
         [...hs, ...cs].forEach(t => {
+          if (/^#BCT[0-9a-fA-F]{40}$/i.test(t)) return;
           const norm = t.startsWith('$') ? t.toUpperCase() : t;
-          counts[norm] = (counts[norm] || 0) + 1;
+          const key = norm.toLowerCase();
+          counts[key] = (counts[key] || 0) + 1;
+          if (!labels[key] || (norm !== key && labels[key] === key)) labels[key] = norm;
         });
       });
 
-      ['#LockTrace', '$BCT', '#Mainnet', '$ETH', '#Web3'].forEach(defTag => {
-        if (!counts[defTag]) counts[defTag] = 1;
-      });
-
-      const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]).slice(0, 8);
+      const sorted = Object.entries(counts)
+        .sort((a, b) => b[1] - a[1])
+        .slice(0, 8)
+        .map(([k, cnt]) => [labels[k] || k, cnt]);
+      if (sorted.length === 0) {
+        pillsWrap.innerHTML = `<span class="text-[11px] font-mono text-on-surface-variant px-2">No on-chain tags yet</span>`;
+        return;
+      }
       pillsWrap.innerHTML = sorted.map(([tag, cnt]) => {
         const isCash = tag.startsWith('$');
         const colorCls = isCash ? 'text-secondary bg-secondary/10 hover:bg-secondary/20 border-secondary/20' : 'text-emerald-400 bg-emerald-500/10 hover:bg-emerald-500/20 border-emerald-500/20';
@@ -15530,6 +15536,7 @@
 
     async function loadSpaceFeed() {
       try {
+        loadTrendingTopicsSidebar();
         loadSuggestedVoices();
         fetchLiveEthTelemetry();
         const { ok, body } = await apiFetch('/space/feed?limit=80&_nc=' + Date.now());
