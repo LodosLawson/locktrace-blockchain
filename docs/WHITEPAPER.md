@@ -1,7 +1,7 @@
-# BlocTag (BCT) Technical Whitepaper — v2.13.0
+# BlocTag (BCT) Technical Whitepaper — v2.14.0
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.13.0 — November 2026*  
+*Version 2.14.0 — November 2026*  
 *Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
@@ -20,7 +20,8 @@ Modern digital communication, identity naming, and financial settlement remain h
 
 **BlocTag (Ticker: BCT)**, developed by LockTrace, introduces a mathematically provable, high-concurrency Layer-1 blockchain protocol engineered from the ground up to unify **censorship-resistant on-chain social networking (BlocTag Space)**, **sovereign decentralized identity (`.bct` Blockchain Naming System)**, and **non-custodial decentralized finance (DeFi)** within a single zero-trust state machine.
 
-In **Version 2.13.0**, LockTrace establishes sovereign peer-to-peer resilience, ultra-efficient block propagation, decentralized hardware acceleration, and comprehensive multi-layer security hardening:
+In **Version 2.14.0**, LockTrace introduces transferable on-chain SocialFi royalty rights, burned-wallet Treasury royalty recovery, and autonomous network defense:
+0. **Burned-Wallet Royalty Redirection & Space Post Royalty Transfer (v2.14.0):** Enforced consensus-level redirection of all Space and Protocol Rooms royalties destined for permanently burned wallets directly into the Protocol Treasury (`TREASURY_ADDRESS`) with zero atomic-unit drift. Added ECDSA-signed Space Post Royalty Transfer (`space_royalty_transfer`, `0.50 BCT`, rolling 365-day cap of max **3 transfers per post**, previous-holder revocation, mempool double-transfer guard, and burned/system target rejection), plus Adaptive Abuse Shield auto-jailing and Tor exit write protection.
 0. **Protocol Rooms — On-Chain Reddit-Style Public Spaces, Immutable Avatars & Creator Royalties (v2.13.0):** Launched on-chain public rooms with deterministic Special IDs (`RM-XXXXXXXX`), homoglyph-resistant unique slugs, tiered anti-squatting creation pricing (`10 / 25 / 50 BCT`), consensus-enforced one-time immutable room avatars (`+2.00 BCT`), Reddit-style Topics (`0.25 BCT`, 30% Room Creator royalty), nested Replies (`0.05 BCT`, 20% Topic Author + 20% Room Creator royalty), and Topic Upvotes (`0.01 BCT`) with exact atomic-unit conservation.
 0. **Simple Mode Stitch Follower/Following Screens & Navigation, Multi-Language Internationalization & Protocol Parity (v2.12.3):** Connected dedicated Followers (`Space - Takipçiler`) and Following (`Space - Takip Edilenler`) mobile screens from Stitch project `Modern Crypto Wallet App` with real-time in-place tab switching, multi-filter carousels (All/Mutual/Verified), live username/address search, on-chain creator follow actions, profile routing, and full 8-language internationalization.
 0. **Concurrency & Lock-Order Hardening, Mempool Anti-Race Shield, Cooldown DoS Mitigation & Dynamic 2-Click Drawer Navigation (v2.12.2):** Resolved AB-BA deadlock scenarios across mempool and state locks, eliminated TOCTOU nonce race conditions with atomic CAS validations, implemented adaptive sliding-window cooldown protection against P2P and faucet DoS vectors, strictly sanitized DOM injection surfaces with CSP script hash enforcement, and added touch-safe 2-click drawer navigation.
@@ -475,7 +476,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.12.1 (Completed):** Cross-Chain Bridge Mobile & PWA Optimization, unblocking WebKit standalone deep links, eliminating SDK recursive reset traps, adding 1-tap in-app DApp browser launchers, and real-time bidirectional route indicators.
 - **v2.12.2 (Completed):** Concurrency & Lock-Order Hardening (AB-BA deadlock fix), TOCTOU nonce race mitigation, adaptive cooldown DoS protection, DOM XSS sanitization, and 2-click mobile drawer navigation.
 - **v2.12.3 (Completed):** Simple Mode Stitch Follower/Following Screens & Navigation, Multi-Language Internationalization & Protocol Parity with Stitch `Modern Crypto Wallet App`.
-- **v2.13.0 (Current Production Release):** Protocol Rooms — On-Chain Reddit-Style Public Spaces with Special IDs (`RM-XXXXXXXX`), Tiered Anti-Squatting Pricing (`10/25/50 BCT`), Consensus-Immutable Room Avatars (`+2.00 BCT`), Topics, Nested Replies & Creator Royalties.
+- **v2.13.0 (Completed):** Protocol Rooms — On-Chain Reddit-Style Public Spaces with Special IDs (`RM-XXXXXXXX`), Tiered Anti-Squatting Pricing (`10/25/50 BCT`), Consensus-Immutable Room Avatars (`+2.00 BCT`), Topics, Nested Replies, Room Ownership Transfer (`room_transfer`) & Permanent Wallet Burn (`wallet_burn`).
+- **v2.14.0 (Current Production Release):** Consensus-Enforced Burned-Wallet Royalty Redirection to Treasury, Space Post Royalty Transfer (`space_royalty_transfer`, `0.50 BCT`, max 3 transfers / 365-day rolling window), Adaptive Abuse Shield & Tor Exit Write Protection, and Simple Mode `SCR-ROOMS` Router Optimization.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---

@@ -629,16 +629,18 @@ class Blockchain:
         tx_counts: Dict[str, int],
         used_sigs: set,
         rewarded: set,
+        burned_wallets: Optional[set] = None,
     ):
         fee_bearing_types = {
             "transfer", "space_post", "space_like", "space_comment", "space_follow",
+            "space_royalty_transfer",
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
             "bns_accept_offer", "avatar_mint", "avatar_equip",
             "room_create", "room_set_avatar", "room_transfer", "room_topic", "room_reply", "room_upvote",
             "room_verify"
         }
         net_credit_types = {
-            "transfer", "space_post", "bns_register", "bns_buy",
+            "transfer", "space_post", "space_royalty_transfer", "bns_register", "bns_buy",
             "validator_stake", "validator_unstake", "avatar_mint", "avatar_equip",
             "room_create", "room_set_avatar", "room_transfer", "room_verify"
         }
@@ -706,29 +708,36 @@ class Blockchain:
                 units_map[snd] = units_map.get(snd, 0) - amt_u
 
         if extra:
+            def _credit_royalty(target_addr: str, cut_val):
+                cut_u = _to_units(cut_val)
+                if cut_u <= 0:
+                    return
+                # Protocol Rule (v2.14.0): Any royalty destined for a permanently burned/closed
+                # wallet is automatically redirected to the Protocol Treasury Vault.
+                eff_addr = (
+                    TREASURY_ADDRESS
+                    if (not target_addr or (burned_wallets is not None and target_addr in burned_wallets))
+                    else target_addr
+                )
+                units_map[eff_addr] = units_map.get(eff_addr, 0) + cut_u
+
             if ttype in ("space_like", "space_comment"):
-                author = normalize_bct_address(extra.get("author"))
-                if author:
-                    units_map[author] = units_map.get(author, 0) + _to_units(extra.get("author_cut", 0.0))
+                r_recipient = normalize_bct_address(extra.get("royalty_recipient") or extra.get("author"))
+                _credit_royalty(r_recipient, extra.get("author_cut", 0.0))
             elif ttype == "space_follow":
-                target = normalize_bct_address(extra.get("target"))
-                if target:
-                    units_map[target] = units_map.get(target, 0) + _to_units(extra.get("creator_cut", 0.0))
+                r_recipient = normalize_bct_address(extra.get("royalty_recipient") or extra.get("target"))
+                _credit_royalty(r_recipient, extra.get("creator_cut", 0.0))
             elif ttype == "room_topic":
-                r_creator = normalize_bct_address(extra.get("room_creator"))
-                if r_creator:
-                    units_map[r_creator] = units_map.get(r_creator, 0) + _to_units(extra.get("room_creator_cut", 0.0))
+                r_creator = normalize_bct_address(extra.get("room_creator_royalty_recipient") or extra.get("room_creator"))
+                _credit_royalty(r_creator, extra.get("room_creator_cut", 0.0))
             elif ttype == "room_reply":
-                t_author = normalize_bct_address(extra.get("topic_author"))
-                if t_author:
-                    units_map[t_author] = units_map.get(t_author, 0) + _to_units(extra.get("topic_author_cut", 0.0))
-                r_creator = normalize_bct_address(extra.get("room_creator"))
-                if r_creator:
-                    units_map[r_creator] = units_map.get(r_creator, 0) + _to_units(extra.get("room_creator_cut", 0.0))
+                t_author = normalize_bct_address(extra.get("topic_author_royalty_recipient") or extra.get("topic_author"))
+                _credit_royalty(t_author, extra.get("topic_author_cut", 0.0))
+                r_creator = normalize_bct_address(extra.get("room_creator_royalty_recipient") or extra.get("room_creator"))
+                _credit_royalty(r_creator, extra.get("room_creator_cut", 0.0))
             elif ttype == "room_upvote":
-                t_author = normalize_bct_address(extra.get("author"))
-                if t_author:
-                    units_map[t_author] = units_map.get(t_author, 0) + _to_units(extra.get("author_cut", 0.0))
+                t_author = normalize_bct_address(extra.get("royalty_recipient") or extra.get("author"))
+                _credit_royalty(t_author, extra.get("author_cut", 0.0))
 
         if ttype in fee_bearing_types and fee_u > 0:
             units_map[TREASURY_ADDRESS] = units_map.get(TREASURY_ADDRESS, 0) + fee_u
@@ -787,6 +796,7 @@ class Blockchain:
                         self._confirmed_tx_counts_map,
                         self._confirmed_used_sigs,
                         self._confirmed_rewarded_wallets,
+                        self._confirmed_burned_wallets,
                     )
                     norm_snd = normalize_bct_address(tx.sender)
                     norm_rec = normalize_bct_address(tx.receiver)
@@ -829,7 +839,7 @@ class Blockchain:
                 if sig and sig in self._confirmed_used_sigs:
                     continue  # Already sealed in confirmed block; skip to prevent duplicate debit
                 clean_pending.append(tx)
-                self._apply_tx_to_ledger_maps(tx, units_map, sender_nonces, tx_counts, used_sigs, rewarded)
+                self._apply_tx_to_ledger_maps(tx, units_map, sender_nonces, tx_counts, used_sigs, rewarded, burned)
                 if tx.tx_type == "wallet_burn":
                     norm_snd = normalize_bct_address(tx.sender)
                     if norm_snd:
@@ -1398,6 +1408,9 @@ class Blockchain:
                 return False, f"Insufficient balance! Like fee is {like_cost:.2f} BCT. Current balance: {liker_bal:.4f} BCT.", None
 
             author_address = post["author"]
+            royalty_holder = normalize_bct_address(post.get("royalty_owner") or author_address)
+            royalty_redirected = self.is_wallet_burned(royalty_holder)
+            effective_royalty_recipient = TREASURY_ADDRESS if royalty_redirected else royalty_holder
             author_cut = 0.002
             treasury_cut = 0.007
             miner_fee = 0.001
@@ -1406,6 +1419,8 @@ class Blockchain:
             extra_data = {
                 "post_id": pid,
                 "author": author_address,
+                "royalty_recipient": effective_royalty_recipient,
+                "royalty_redirected_to_treasury": royalty_redirected,
                 "liker": clean_liker,
                 "author_cut": author_cut,
                 "treasury_cut": treasury_cut
@@ -1431,6 +1446,7 @@ class Blockchain:
 
             self.balances[clean_liker] = self.verify_and_recalc_balance(clean_liker)
             self.balances[author_address] = self.verify_and_recalc_balance(author_address)
+            self.balances[effective_royalty_recipient] = self.verify_and_recalc_balance(effective_royalty_recipient)
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
 
@@ -1443,6 +1459,8 @@ class Blockchain:
                 "batch_quota": LIKE_BATCH_QUOTA,
                 "likes_count": updated_post.get("likes_count", 1),
                 "author_earned": author_cut,
+                "royalty_recipient": effective_royalty_recipient,
+                "royalty_redirected_to_treasury": royalty_redirected,
                 "liker_new_balance": self.balances[clean_liker]
             }
             msg = ("Post liked and sealed into block!" if block
@@ -1503,6 +1521,9 @@ class Blockchain:
                 assigned_bns = self.bns_reverse.get(clean_commenter, "")
 
             author_address = post["author"]
+            royalty_holder = normalize_bct_address(post.get("royalty_owner") or author_address)
+            royalty_redirected = self.is_wallet_burned(royalty_holder)
+            effective_royalty_recipient = TREASURY_ADDRESS if royalty_redirected else royalty_holder
             author_cut = 0.004
             treasury_cut = 0.014
             miner_fee = 0.002
@@ -1513,6 +1534,8 @@ class Blockchain:
                 "post_id": pid,
                 "comment_id": comment_id,
                 "author": author_address,
+                "royalty_recipient": effective_royalty_recipient,
+                "royalty_redirected_to_treasury": royalty_redirected,
                 "commenter": clean_commenter,
                 "content": clean_text,
                 "bns_name": assigned_bns,
@@ -1563,6 +1586,7 @@ class Blockchain:
 
             self.balances[clean_commenter] = self.verify_and_recalc_balance(clean_commenter)
             self.balances[author_address] = self.verify_and_recalc_balance(author_address)
+            self.balances[effective_royalty_recipient] = self.verify_and_recalc_balance(effective_royalty_recipient)
             self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
 
@@ -1574,6 +1598,8 @@ class Blockchain:
                 "batch_window_seconds": COMMENT_BATCH_WINDOW_SECONDS,
                 "batch_quota": COMMENT_BATCH_QUOTA,
                 "author_earned": author_cut,
+                "royalty_recipient": effective_royalty_recipient,
+                "royalty_redirected_to_treasury": royalty_redirected,
                 "commenter_new_balance": self.balances[clean_commenter]
             }
             msg = ("Comment published and sealed into block!" if block
@@ -1631,9 +1657,13 @@ class Blockchain:
             creator_cut = 0.50
             miner_fee = 0.30
             treasury_cut = 0.20
+            royalty_redirected = self.is_wallet_burned(clean_target)
+            effective_royalty_recipient = TREASURY_ADDRESS if royalty_redirected else clean_target
 
             extra_data = {
                 "target": clean_target,
+                "royalty_recipient": effective_royalty_recipient,
+                "royalty_redirected_to_treasury": royalty_redirected,
                 "follower": clean_follower,
                 "creator_cut": creator_cut,
                 "treasury_cut": treasury_cut,
@@ -1672,11 +1702,174 @@ class Blockchain:
                 "status": "confirmed" if block else "mempool_batched",
                 "followers_count": len(self.follows.get(clean_target, [])),
                 "creator_earned": creator_cut,
+                "royalty_recipient": effective_royalty_recipient,
+                "royalty_redirected_to_treasury": royalty_redirected,
                 "follower_new_balance": self.balances[clean_follower]
             }
             msg = ("Creator followed and sealed on-chain!" if block
                    else "Creator followed! Queued in mempool.")
             return True, msg, res
+
+    def transfer_post_royalty(
+        self,
+        current_holder: str,
+        post_id: str,
+        to_address: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Transfers future Space post royalty rights (likes & comments author cut) to another
+        BCT wallet or resolved .bct handle.
+        Protocol Security Rules (v2.14.0):
+        - Only the current royalty holder (`royalty_owner`, initially the original post author)
+          may transfer royalty rights. Once transferred, the previous holder loses transfer authority.
+        - Hard Limit: Maximum 3 royalty transfers per post within any rolling 365-day window.
+        - Burned / closed wallets cannot send or receive royalty rights (royalties to burned wallets
+          automatically redirect to the Protocol Treasury).
+        - Fee: 0.50 BCT (0.25 BCT Treasury, 0.25 BCT Validator/Miner Pool).
+        """
+        POST_ROYALTY_TRANSFER_COST = 0.50
+        POST_ROYALTY_TREASURY_CUT = 0.25
+        POST_ROYALTY_POOL_CUT = 0.25
+        POST_ROYALTY_MAX_PER_YEAR = 3
+        POST_ROYALTY_WINDOW_SECONDS = 365 * 24 * 3600
+
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_space_index()
+
+            clean_from = normalize_bct_address(current_holder)
+            if not is_valid_bct_address(clean_from):
+                return False, f"Invalid royalty holder address: '{clean_from}'", None
+            if self.is_wallet_burned(clean_from):
+                return False, "Permanently burned wallets cannot transfer royalty rights.", None
+
+            raw_to = str(to_address or "").strip()
+            if not raw_to:
+                return False, "Recipient address or .bct handle is required.", None
+
+            clean_to = normalize_bct_address(raw_to)
+            if not is_valid_bct_address(clean_to):
+                norm_bns = self._normalize_bns_name(raw_to.lstrip("@"))
+                bns_rec = self.bns_records.get(norm_bns)
+                if bns_rec and is_valid_bct_address(bns_rec.get("owner", "")):
+                    clean_to = normalize_bct_address(bns_rec["owner"])
+                else:
+                    return False, f"Invalid recipient address or unregistered .bct handle: '{raw_to}'", None
+
+            if clean_from == clean_to:
+                return False, "Cannot transfer post royalty rights to your own address.", None
+            if clean_to in (
+                TREASURY_ADDRESS,
+                VALIDATOR_STAKE_VAULT_ADDRESS,
+                BRIDGE_VAULT_ADDRESS,
+                "BCT_BURN",
+                "SYSTEM",
+                "GENESIS",
+                "GENESIS_VAULT",
+            ):
+                return False, "Cannot transfer post royalty rights to a system or vault address.", None
+            if self.is_wallet_burned(clean_to):
+                return False, "Recipient wallet has been permanently burned and cannot receive royalty rights.", None
+
+            pid = str(post_id or "").strip()
+            post = self.space_posts.get(pid)
+            if not post:
+                return False, "Target Space post not found.", None
+
+            active_holder = normalize_bct_address(post.get("royalty_owner") or post.get("author", ""))
+            if active_holder != clean_from:
+                return False, "Only the current royalty holder can transfer this post's royalty rights.", None
+
+            # Mempool race / double-transfer protection
+            has_pending = any(
+                t.tx_type == "space_royalty_transfer"
+                and isinstance(t.extra_data, dict)
+                and str(t.extra_data.get("post_id", "")).strip() == pid
+                for t in self.pending_transactions
+            )
+            if has_pending:
+                return False, "A royalty transfer for this post is already pending in the mempool.", None
+
+            # Rolling 365-day annual limit check (max 3 transfers per post per year)
+            now_ts = time.time()
+            cutoff_ts = now_ts - POST_ROYALTY_WINDOW_SECONDS
+            transfers_hist = list(post.get("royalty_transfers", []))
+            recent_transfers = [
+                tr for tr in transfers_hist
+                if float(tr.get("timestamp", 0) or 0) >= cutoff_ts
+            ]
+            if len(recent_transfers) >= POST_ROYALTY_MAX_PER_YEAR:
+                oldest_recent = min(float(tr.get("timestamp", now_ts)) for tr in recent_transfers)
+                unlock_days = max(1, int((oldest_recent + POST_ROYALTY_WINDOW_SECONDS - now_ts + 86399) // 86400))
+                return (
+                    False,
+                    f"Annual royalty transfer limit reached ({POST_ROYALTY_MAX_PER_YEAR}/{POST_ROYALTY_MAX_PER_YEAR} in the last 365 days). Next transfer unlocks in ~{unlock_days} day(s).",
+                    None,
+                )
+
+            expected_payload = signed_payload or f"POST_ROYALTY_TRANSFER:{clean_from}:{pid}:{clean_to}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_from, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            holder_bal = self.verify_and_recalc_balance(clean_from)
+            if holder_bal < POST_ROYALTY_TRANSFER_COST:
+                return (
+                    False,
+                    f"Insufficient balance! Royalty transfer fee is {POST_ROYALTY_TRANSFER_COST:.2f} BCT. Current balance: {holder_bal:.4f} BCT.",
+                    None,
+                )
+
+            tx = Transaction(
+                sender=clean_from,
+                receiver=TREASURY_ADDRESS,
+                amount=POST_ROYALTY_TRANSFER_COST,
+                fee=POST_ROYALTY_POOL_CUT,
+                signature=signature,
+                tx_type="space_royalty_transfer",
+                extra_data={
+                    "post_id": pid,
+                    "original_author": normalize_bct_address(post.get("author", "")),
+                    "from_address": clean_from,
+                    "to_address": clean_to,
+                    "treasury_cut": POST_ROYALTY_TREASURY_CUT,
+                    "pool_cut": POST_ROYALTY_POOL_CUT,
+                },
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + POST_ROYALTY_POOL_CUT, 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_space_index()
+
+            self.balances[clean_from] = self.verify_and_recalc_balance(clean_from)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._loaded_revision += 1
+            self._profile_cache.clear()
+            self._save_state()
+
+            used_after = len(recent_transfers) + 1
+            remaining_after = max(0, POST_ROYALTY_MAX_PER_YEAR - used_after)
+            new_owner_bns = self.bns_reverse.get(clean_to, "")
+            return True, f"Post royalty rights transferred to {new_owner_bns or clean_to[:10] + '...'}! ({used_after}/{POST_ROYALTY_MAX_PER_YEAR} used this year)", {
+                "post_id": pid,
+                "previous_royalty_owner": clean_from,
+                "new_royalty_owner": clean_to,
+                "new_royalty_owner_bns": new_owner_bns,
+                "transfers_used_year": used_after,
+                "transfers_remaining_year": remaining_after,
+                "max_transfers_per_year": POST_ROYALTY_MAX_PER_YEAR,
+                "cost": POST_ROYALTY_TRANSFER_COST,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+                "new_balance": self.balances[clean_from],
+            }
 
     @staticmethod
     def extract_space_entities(text: str) -> dict:
@@ -1749,12 +1942,33 @@ class Blockchain:
 
         return results
 
+    def _enrich_post_royalty_meta(self, p: dict, now_sec: Optional[float] = None) -> None:
+        """Populates live royalty holder, burned-redirect flag, and 3/year quota metadata on a post."""
+        now_t = float(now_sec if now_sec is not None else time.time())
+        cutoff_t = now_t - (365 * 24 * 3600)
+        author_addr = normalize_bct_address(str(p.get("author", "")))
+        r_owner = normalize_bct_address(str(p.get("royalty_owner") or author_addr))
+        transfers = p.get("royalty_transfers") or []
+        used_year = sum(1 for tr in transfers if float(tr.get("timestamp", 0) or 0) >= cutoff_t)
+        p["royalty_owner"] = r_owner
+        p["royalty_owner_bns"] = (
+            p.get("author_bns", "")
+            if r_owner == author_addr
+            else self.bns_reverse.get(r_owner, "")
+        )
+        p["royalty_redirected_to_treasury"] = self.is_wallet_burned(r_owner)
+        p["royalty_transfers_used_year"] = used_year
+        p["royalty_transfers_remaining_year"] = max(0, 3 - used_year)
+        p["royalty_transfers_max_year"] = 3
+        p["royalty_transfer_fee"] = 0.50
+
     def get_space_feed(self, limit: int = 50, feed_type: str = "for_you", tag: str = "", author: str = "") -> list:
         with self.lock:
             self._load_state()
             feed = list(self.space_posts.values())
+            now_enrich = time.time()
 
-            # Enrich posts with entity tags, live validator status, and equipped profile avatars
+            # Enrich posts with entity tags, live validator status, equipped profile avatars, and royalty metadata
             for p in feed:
                 if "entities" not in p:
                     p["entities"] = self.extract_space_entities(p.get("content", ""))
@@ -1762,6 +1976,7 @@ class Blockchain:
                 author_addr = normalize_bct_address(str(p.get("author", "")))
                 p["author_is_validator"] = False if is_anon else self.is_active_validator(author_addr)
                 p["author_avatar"] = None if is_anon else self.avatar_equipped.get(author_addr)
+                self._enrich_post_royalty_meta(p, now_sec=now_enrich)
                 for cmt in p.get("comments", []):
                     c_anon = bool(cmt.get("is_anonymous") or cmt.get("commenter_bns") == "anonymous")
                     cmt_addr = normalize_bct_address(str(cmt.get("commenter", "")))
@@ -1860,6 +2075,7 @@ class Blockchain:
                 author_addr = normalize_bct_address(str(p.get("author", "")))
                 p["author_is_validator"] = False if is_anon else self.is_active_validator(author_addr)
                 p["author_avatar"] = None if is_anon else self.avatar_equipped.get(author_addr)
+                self._enrich_post_royalty_meta(p)
                 for cmt in p.get("comments", []):
                     c_anon = bool(cmt.get("is_anonymous") or cmt.get("commenter_bns") == "anonymous")
                     cmt_addr = normalize_bct_address(str(cmt.get("commenter", "")))
@@ -3958,7 +4174,7 @@ class Blockchain:
         transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(
             _to_units(tx.fee) for tx in pending_txs if tx.tx_type in (
-                "space_post", "space_like", "space_comment", "space_follow",
+                "space_post", "space_like", "space_comment", "space_follow", "space_royalty_transfer",
                 "bns_register", "bns_transfer", "avatar_mint", "avatar_equip",
                 "room_create", "room_set_avatar", "room_transfer", "room_topic", "room_reply", "room_upvote"
             )
@@ -5822,6 +6038,9 @@ class Blockchain:
                     "post_id": pid,
                     "author": snd,
                     "author_bns": author_bns,
+                    "royalty_owner": snd,
+                    "royalty_owner_bns": author_bns,
+                    "royalty_transfers": [],
                     "is_anonymous": (author_bns == "anonymous" or bool(tx.extra_data.get("is_anonymous"))),
                     "content": tx.extra_data.get("content", ""),
                     "timestamp": tx.timestamp,
@@ -5834,6 +6053,26 @@ class Blockchain:
                     "comments": [],
                     "author_earnings": 0.0,
                 }
+        elif tx.tx_type == "space_royalty_transfer" and tx.extra_data:
+            pid = str(tx.extra_data.get("post_id", "")).strip()
+            to_addr = normalize_bct_address(tx.extra_data.get("to_address"))
+            if pid in space_posts and is_valid_bct_address(to_addr) and to_addr != snd:
+                post_rec = space_posts[pid]
+                cur_holder = normalize_bct_address(post_rec.get("royalty_owner") or post_rec.get("author", ""))
+                if cur_holder == snd:
+                    tx_ts = float(tx.timestamp or 0)
+                    cutoff = tx_ts - (365 * 24 * 3600)
+                    hist = post_rec.setdefault("royalty_transfers", [])
+                    recent_cnt = sum(1 for tr in hist if float(tr.get("timestamp", 0) or 0) >= cutoff)
+                    if recent_cnt < 3:
+                        post_rec["royalty_owner"] = to_addr
+                        post_rec["royalty_owner_bns"] = self.bns_reverse.get(to_addr, "")
+                        hist.append({
+                            "from_address": snd,
+                            "to_address": to_addr,
+                            "timestamp": tx_ts,
+                            "tx_hash": tx.hash(),
+                        })
         elif tx.tx_type == "space_like" and tx.extra_data:
             pid = tx.extra_data.get("post_id")
             liker = snd
@@ -6712,6 +6951,8 @@ class Blockchain:
 
             topic_id = f"top_{secrets.token_hex(6)}"
             room_creator = room["creator"]
+            rc_burned = self.is_wallet_burned(room_creator)
+            eff_room_creator_recipient = TREASURY_ADDRESS if rc_burned else room_creator
 
             tx = Transaction(
                 sender=clean_author,
@@ -6727,6 +6968,8 @@ class Blockchain:
                     "content": clean_body,
                     "author": clean_author,
                     "room_creator": room_creator,
+                    "room_creator_royalty_recipient": eff_room_creator_recipient,
+                    "royalty_redirected_to_treasury": rc_burned,
                     "bns_name": assigned_bns,
                     "is_anonymous": (assigned_bns == "anonymous"),
                     "room_creator_cut": pricing["room_creator_cut"],
@@ -6836,6 +7079,8 @@ class Blockchain:
             reply_id = f"rep_{secrets.token_hex(6)}"
             topic_author = topic["author"]
             room_creator = room["creator"]
+            ta_burned = self.is_wallet_burned(topic_author)
+            rc_burned = self.is_wallet_burned(room_creator)
 
             tx = Transaction(
                 sender=clean_author,
@@ -6853,6 +7098,9 @@ class Blockchain:
                     "author": clean_author,
                     "topic_author": topic_author,
                     "room_creator": room_creator,
+                    "topic_author_royalty_recipient": TREASURY_ADDRESS if ta_burned else topic_author,
+                    "room_creator_royalty_recipient": TREASURY_ADDRESS if rc_burned else room_creator,
+                    "royalty_redirected_to_treasury": bool(ta_burned or rc_burned),
                     "bns_name": assigned_bns,
                     "is_anonymous": (assigned_bns == "anonymous"),
                     "topic_author_cut": pricing["topic_author_cut"],
@@ -6938,6 +7186,7 @@ class Blockchain:
                 return False, "Upvote already queued in mempool.", None
 
             topic_author = topic["author"]
+            ta_burned = self.is_wallet_burned(topic_author)
             tx = Transaction(
                 sender=clean_voter,
                 receiver=TREASURY_ADDRESS,
@@ -6949,6 +7198,8 @@ class Blockchain:
                     "room_id": topic["room_id"],
                     "topic_id": tid,
                     "author": topic_author,
+                    "royalty_recipient": TREASURY_ADDRESS if ta_burned else topic_author,
+                    "royalty_redirected_to_treasury": ta_burned,
                     "voter": clean_voter,
                     "author_cut": pricing["author_cut"],
                     "treasury_cut": pricing["treasury_cut"],

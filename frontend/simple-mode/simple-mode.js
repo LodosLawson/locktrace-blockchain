@@ -2142,7 +2142,8 @@
       'SCR-PRF-FOLLOWERS',
       'SCR-PRF-FOLLOWING',
       'SCR-NTF-06',
-      'SCR-MNU-07'
+      'SCR-MNU-07',
+      'SCR-ROOMS'
     ];
     const target = valid.includes(screenCode) ? screenCode : 'SCR-SPC-03';
 
@@ -3596,6 +3597,26 @@
               <span class="text-on-surface-variant">${t('post_royalties_label', 'Royalties')}</span>
             </div>
           </div>
+
+          ${(() => {
+            const accR = getActiveWallet();
+            const rOwner = String(post.royalty_owner || authorAddr || '').trim();
+            const isRoyaltyMine = accR && accR.address && rOwner.toLowerCase() === String(accR.address).toLowerCase();
+            const isRedirected = Boolean(post.royalty_redirected_to_treasury);
+            const isTransferred = rOwner && authorAddr && rOwner.toLowerCase() !== String(authorAddr).toLowerCase();
+            const remY = Number(post.royalty_transfers_remaining_year ?? 3);
+            let html = '';
+            if (isRedirected) {
+              html += `<div class="px-3 py-2 rounded-xl bg-amber-500/12 border border-amber-500/30 text-[11px] text-amber-300 flex items-center gap-1.5"><span class="material-symbols-outlined notranslate text-[15px]" translate="no">account_balance</span><span>Cüzdan kapalı olduğu için bu paylaşımın telifleri otomatik olarak <strong>Hazine'ye</strong> aktarılır.</span></div>`;
+            } else if (isTransferred) {
+              const rLbl = post.royalty_owner_bns ? ('@' + String(post.royalty_owner_bns).replace(/^@/, '')) : (typeof window.shortAddr === 'function' ? window.shortAddr(rOwner) : rOwner);
+              html += `<div class="px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/25 text-[11px] text-sky-300 font-mono flex items-center gap-1.5"><span class="material-symbols-outlined notranslate text-[15px]" translate="no">currency_exchange</span><span>Telif Sahibi: ${esc(rLbl)}</span></div>`;
+            }
+            if (isRoyaltyMine) {
+              html += `<button type="button" onclick="if(typeof window.openPostRoyaltyTransferModal==='function') window.openPostRoyaltyTransferModal('${pid}', event);" class="w-full py-2 px-3 rounded-xl bg-emerald-500/12 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"><span class="material-symbols-outlined notranslate text-[16px]" translate="no">currency_exchange</span><span>Telif Hakkını Devret (${remY}/3 hak · 0.50 BCT)</span></button>`;
+            }
+            return html;
+          })()}
 
           <!-- 4-Action Cluster -->
           <div class="grid grid-cols-4 gap-1.5 pt-1">

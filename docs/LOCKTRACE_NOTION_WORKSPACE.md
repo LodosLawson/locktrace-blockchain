@@ -216,7 +216,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.13.0` | Protocol Rooms (Özel ID'li Reddit Tarzı Odalar), Rust Core Acceleration, Base L2 WrappedBlocTag & MetaMask SDK Direct Sign, Compact Relay, State Snapshot Fast Sync, GPU Mining |
+| **Ağ Sürümü** | `v2.14.0` | Kapalı Cüzdan Telif Hazine Yönlendirmesi, Paylaşım Telif Devri (Yılda En Fazla 3), Adaptive Abuse Shield & Tor Yazma Koruması, Protocol Rooms, Rust Core Acceleration, Base L2 WrappedBlocTag |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
 | **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -742,3 +742,13 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 - **Render Sertleştirmesi:** Protocol Rooms satır içi olay işleyicileri artık kullanıcı metni taşımaz (`onclick` string kaçış enjeksiyon vektörü kapatıldı).
 - **Transfer Tavanı:** `MAX_TRANSACTION` artık `10_000_000` BCT. Gönderen-öder transferlerde her iki tarafta tam tutar, ayrı bir ücret satırıyla gösterilir.
 - **Tam Sayfa Protocol Rooms:** Odalar artık modal widget değil, ayrı bir sayfadır (Pro Mode `Protocol Rooms` sekmesi, Simple Mode `SCR-ROOMS`).
+
+## 🛡️ 36. BlocTag / LockTrace v2.14.0: Kapalı Cüzdan Telif Yönlendirmesi, Paylaşım Telif Devri (3/Yıl) & Saldırı Kalkanı
+
+1. **Kapatılmış (Yakılmış) Cüzdan Teliflerinin Hazine'ye Yönlendirilmesi:**
+   - Yakılmış cüzdanlara gelecek tüm Space (beğeni, yorum, takip) ve Protocol Rooms (mevzu, yanıt, oy) telif gelirleri hem işlem oluşturma hem de konsensüs defter hesaplama katmanında otomatik olarak **Protokol Hazinesi'ne (`TREASURY_ADDRESS`)** aktarılır. Sıfır sapmalı (`0.00000000 BCT` drift) arz korunumu garanti edilir.
+2. **Paylaşım Telif Hakkı Devri (`space_royalty_transfer` — `0.50 BCT`):**
+   - Bir Space paylaşımının mevcut telif sahibi, gelecek beğeni ve yorum telif haklarını başka bir `BCT...` adresine veya `.bct` alan adına ECDSA imzasıyla devredebilir (`POST /api/v1/space/post/<post_id>/royalty/transfer`).
+   - **Güvenlik Kuralları:** Son 365 günde paylaşım başına en fazla **3 devir**, önceki sahibin yetkisinin anında düşmesi, mempool çift-devir kilidi ve yakılmış/sistem adreslerine devrin reddi.
+3. **Adaptive Abuse Shield & Simple Mode `SCR-ROOMS` Düzeltmesi:**
+   - 60 saniyede 10 kimlik doğrulama hatası veya 8 rate-limit aşımında 15 dakikalık otomatik IP karantinası + Tor çıkış düğümlerine `POST /api/` yazma engeli aktif edildi. Simple Mode'da `SCR-ROOMS` yönlendirici listesi ve SW/SRI önbellek yenilemesi (`locktrace-pwa-v100`) tamamlandı.
