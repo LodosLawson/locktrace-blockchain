@@ -96,6 +96,19 @@ html.bloctag-simple-mode #bloctag-simple-mode-shell {
   display: flex !important;
 }
 
+/* Strict Guest Shared Preview Isolation: hides full app chrome, Space feed, and nav bars */
+html.bloctag-guest-shared-lock #desktopSidebar,
+html.bloctag-guest-shared-lock #mobileTopHeader,
+html.bloctag-guest-shared-lock #desktopTopHeader,
+html.bloctag-guest-shared-lock #mobile-nav,
+html.bloctag-guest-shared-lock #pwaBannerContainer,
+html.bloctag-guest-shared-lock #tab-space,
+html.bloctag-guest-shared-lock #spaceFeedMainView,
+html.bloctag-guest-shared-lock #spaceComposeFabWrap,
+html.bloctag-guest-shared-lock #bloctag-simple-bottom-nav-portal {
+  display: none !important;
+}
+
 html.bloctag-simple-mode.bloctag-mode-switching #bloctag-simple-mode-shell {
   animation: bloctagSimpleMorphIn 0.4s var(--simple-ease-spring);
 }

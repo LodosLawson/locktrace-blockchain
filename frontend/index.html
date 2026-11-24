@@ -119,7 +119,7 @@
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
   <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.19.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.19.0" integrity="sha256-yxVFNlNyu+H5iQkBgte7A0yx0+JtqtEfQax5RqS++kI=" crossorigin="anonymous" defer></script>
+  <script src="/simple-mode/simple-mode.js?v=2.19.0" integrity="sha256-JpIDb7YgXEaGt4zljlSZJYnocxhh7h6Fkhzl6Jw5pr4=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -451,11 +451,13 @@
         padding-right: max(16px, env(safe-area-inset-right, 0px)) !important;
       }
 
-      /* 6. Floating Action Button (Space FAB) adjustment */
+      /* 6. Floating Action Button (Space FAB) adjustment — cleanly ABOVE bottom menu */
       aside.fixed.bottom-\[74px\],
-      aside.fixed:has(#fab-compose) {
-        bottom: calc(46px + env(safe-area-inset-bottom, 0px)) !important;
+      aside.fixed:has(#fab-compose),
+      #spaceComposeFabWrap {
+        bottom: calc(76px + env(safe-area-inset-bottom, 0px)) !important;
         right: max(14px, env(safe-area-inset-right, 0px)) !important;
+        z-index: 55 !important;
       }
 
       #fab-compose {
@@ -732,9 +734,11 @@
     }
 
     html.is-mobile-landscape aside.fixed.bottom-\[74px\],
-    html.is-mobile-landscape aside.fixed:has(#fab-compose) {
-      bottom: calc(46px + env(safe-area-inset-bottom, 0px)) !important;
+    html.is-mobile-landscape aside.fixed:has(#fab-compose),
+    html.is-mobile-landscape #spaceComposeFabWrap {
+      bottom: calc(74px + env(safe-area-inset-bottom, 0px)) !important;
       right: max(14px, env(safe-area-inset-right, 0px)) !important;
+      z-index: 55 !important;
     }
 
     html.is-mobile-landscape #fab-compose {
@@ -5185,7 +5189,7 @@
             </section>
 
             <!-- Feed Filter Segmented Bar & Algorithms (Exact Stitch Screen E) -->
-            <section class="px-1 sm:px-2 md:px-0 mb-3">
+            <section id="spaceFilterBarSection" class="px-1 sm:px-2 md:px-0 mb-3">
               <div
                 class="flex items-center bg-surface-container-low p-1 rounded-full shadow-inner border border-outline-variant/20 gap-1">
                 <button
@@ -5254,8 +5258,8 @@
               </div>
             </div>
 
-            <!-- Floating Action Compose Trigger Button (Exact Stitch FAB - Adjusted to avoid bottom bar) -->
-            <aside class="fixed bottom-[74px] sm:bottom-24 md:bottom-8 right-4 sm:right-6 md:right-8 z-40">
+            <!-- Floating Action Compose Trigger Button (Pinned cleanly ABOVE bottom menu) -->
+            <aside id="spaceComposeFabWrap" class="fixed bottom-[80px] sm:bottom-24 md:bottom-8 right-4 sm:right-6 md:right-8 z-[55]" style="bottom: calc(78px + env(safe-area-inset-bottom, 0px));">
               <button aria-label="Quick Compose Cast"
                 class="w-12 h-12 sm:w-13 sm:h-13 p-3 sm:p-3.5 rounded-full bg-primary-container text-on-primary-container shadow-2xl flex items-center justify-center active:scale-90 transition-transform focus:outline-none cursor-pointer ring-2 ring-primary/30"
                 id="fab-compose" onclick="openQuickComposeModal()" title="New Thought (Quick Cast)" type="button">
@@ -11102,7 +11106,7 @@
         const isWallet = /^BCT[a-fA-F0-9]{36,44}$/i.test(handle) || /^BCT[a-fA-F0-9]{3,10}(?:\.\.\.|…)[a-fA-F0-9]{3,10}$/i.test(handle);
         const displayHandle = isWallet && handle.length > 14 ? `@${handle.slice(0, 6)}...${handle.slice(-4)}` : `@${handle}`;
         const filterEntity = isWallet ? `#${cleanHandle}` : `@${cleanHandle}`;
-        const html = `<span class="mention-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('${filterEntity}'); openUserProfile('${cleanHandle}');" title="View Profile &amp; Filter: @${escHandle}">${escapeHtml(displayHandle)}</span>`;
+        const html = `<span class="mention-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-primary/10 text-primary font-medium hover:bg-primary/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); openMentionProfile('${cleanHandle}', event);" title="View Profile: @${escHandle}">${escapeHtml(displayHandle)}</span>`;
         return prefix + savePlaceholder(html);
       });
 
@@ -11113,7 +11117,7 @@
         const isWalletTag = /^BCT[a-fA-F0-9]{36,44}$/i.test(tag) || /^BCT[a-fA-F0-9]{3,10}(?:\.\.\.|…)[a-fA-F0-9]{3,10}$/i.test(tag);
         if (isWalletTag) {
           const shortTag = tag.length > 14 ? `#${tag.slice(0, 6)}...${tag.slice(-4)}` : `#${tag}`;
-          const html = `<span class="hashtag-tag inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors shrink-0 shadow-2xs border border-emerald-500/20" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}'); openUserProfile('${cleanTag}');" title="View Profile &amp; Filter: #${escTag}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
+          const html = `<span class="hashtag-tag inline-flex max-w-full items-center gap-1 px-2 py-0.5 rounded-lg bg-emerald-500/10 text-emerald-400 font-mono text-xs font-semibold hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors shrink-0 shadow-2xs border border-emerald-500/20" onclick="event.stopPropagation(); openMentionProfile('${cleanTag}', event);" title="View Profile: #${escTag}"><span class="material-symbols-outlined notranslate text-[13px] shrink-0 text-emerald-400" translate="no">account_balance_wallet</span><span class="truncate">${escapeHtml(shortTag)}</span></span>`;
           return prefix + savePlaceholder(html);
         }
         const html = `<span class="hashtag-tag inline-flex max-w-full break-all items-center gap-0.5 px-1.5 py-0.2 rounded-md bg-emerald-500/10 text-emerald-400 font-medium hover:bg-emerald-500/20 hover:underline cursor-pointer transition-colors" onclick="event.stopPropagation(); filterSpaceByEntity('#${cleanTag}')" title="Filter topic #${escTag}">#${escTag}</span>`;
@@ -16253,7 +16257,8 @@
 
       const myAddr = currentAccount ? currentAccount.address : '';
       if (window.proSpaceFeedLayout === 'snap') {
-        stream.className = 'flex flex-col h-[calc(100dvh-215px)] min-h-[460px] overflow-y-scroll snap-y snap-mandatory no-scrollbar rounded-2xl border border-outline-variant/20 bg-surface-container-low/40';
+        stream.className = 'flex flex-col h-[calc(100dvh-152px)] min-h-[460px] overflow-y-scroll snap-y snap-mandatory no-scrollbar rounded-2xl border border-outline-variant/20 bg-surface-container-low/40';
+        if (typeof syncProSpaceReelsChrome === 'function') syncProSpaceReelsChrome();
         stream.innerHTML = list.map((post, idx) => {
           const pid = sanitizeJsAttr(post.post_id);
           const likedByMe = myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr);
@@ -22489,7 +22494,25 @@
       closeUserProfile();
     }
 
+    function openMentionProfile(handleOrAddr, ev) {
+      if (ev && typeof ev.stopPropagation === 'function') ev.stopPropagation();
+      const target = String(handleOrAddr || '').trim().replace(/^[#@]+/, '');
+      if (!target) return;
+      if (document.documentElement.classList.contains('bloctag-simple-mode') && window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.go === 'function') {
+        window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: target });
+        return;
+      }
+      openUserProfile(target);
+    }
+    window.openMentionProfile = openMentionProfile;
+
     async function openUserProfile(addressOrHandle, initialTab = 'posts', isBackNav = false) {
+      // If Simple Mode is active, always route profile opens to native Simple Mode profile screen
+      if (document.documentElement.classList.contains('bloctag-simple-mode') && window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.go === 'function') {
+        const cleanSimpleTarget = String(addressOrHandle || '').trim().replace(/^[#@]+/, '');
+        window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: cleanSimpleTarget });
+        return;
+      }
       if (closeProfileTimeout) {
         clearTimeout(closeProfileTimeout);
         closeProfileTimeout = null;
@@ -22498,8 +22521,9 @@
       const card = document.getElementById('userProfileModalCard');
       if (!modal || !card) return;
 
-      // Keep mobile bottom nav visible ONLY when opened from the Pro Mode bottom nav Profile icon
-      const keepBottomNav = !!window._proProfileKeepBottomNav;
+      // Always keep mobile bottom nav visible in Pro Mode (except during isolated guest shared preview)
+      const isGuestLocked = document.documentElement.classList.contains('bloctag-guest-shared-lock');
+      const keepBottomNav = !isGuestLocked;
       window._proProfileKeepBottomNav = false;
       const mobNavEl = document.getElementById('mobile-nav');
       if (keepBottomNav) {
@@ -22638,6 +22662,12 @@
     }
 
     function closeUserProfile(immediate = false) {
+      if (!immediate && document.documentElement.classList.contains('bloctag-guest-shared-lock')) {
+        if (window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.promptPwaInstallFromGuest === 'function') {
+          window.BlocTagSimpleMode.promptPwaInstallFromGuest();
+        }
+        return;
+      }
       userProfileHistoryStack = [];
       const modal = document.getElementById('userProfileModal');
       const card = document.getElementById('userProfileModalCard');
@@ -25006,6 +25036,31 @@
     }
 
     window.proSpaceFeedLayout = 'classic';
+    function syncProSpaceReelsChrome() {
+      const isSnap = window.proSpaceFeedLayout === 'snap';
+      const hideIds = ['spaceComposeSection', 'spaceFilterBarSection', 'spaceTrendingTagsBar', 'spaceSearchBarWrap', 'spaceActiveFilterBar', 'spaceWalletAlert'];
+      hideIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (!el) return;
+        if (isSnap) {
+          el.classList.add('!hidden');
+        } else {
+          el.classList.remove('!hidden');
+        }
+      });
+      const fabWrap = document.getElementById('spaceComposeFabWrap');
+      if (fabWrap) {
+        fabWrap.style.zIndex = '55';
+        fabWrap.style.bottom = isSnap
+          ? 'calc(84px + env(safe-area-inset-bottom, 0px))'
+          : 'calc(78px + env(safe-area-inset-bottom, 0px))';
+      }
+      const stream = document.getElementById('spaceFeedStream');
+      if (stream && isSnap) {
+        stream.className = 'flex flex-col h-[calc(100dvh-152px)] min-h-[460px] overflow-y-scroll snap-y snap-mandatory no-scrollbar rounded-2xl border border-outline-variant/20 bg-surface-container-low/40';
+      }
+    }
+
     function toggleProSpaceReelsMode() {
       window.proSpaceFeedLayout = (window.proSpaceFeedLayout === 'snap') ? 'classic' : 'snap';
       const btn = document.getElementById('btnProSpaceReels');
@@ -25020,6 +25075,7 @@
       }
       if (ic) ic.textContent = isSnap ? 'view_agenda' : 'movie';
       if (typeof renderSpacePosts === 'function') renderSpacePosts();
+      syncProSpaceReelsChrome();
       showToast(isSnap ? 'Pro Reels Akış Modu Aktif' : 'Klasik Space Akışına Dönüldü', isSnap ? 'movie' : 'view_agenda');
     }
 

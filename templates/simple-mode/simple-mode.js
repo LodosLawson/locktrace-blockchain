@@ -98,6 +98,8 @@
       if (qPost) return { type: 'post', id: qPost, mode };
       const qProfile = String(sp.get('profile') || '').trim();
       if (qProfile) return { type: 'profile', id: qProfile, mode };
+      const qBlock = String(sp.get('block') || '').trim();
+      if (qBlock) return { type: 'block', id: qBlock, mode };
 
       const path = String(window.location.pathname || '').trim();
       const postPathMatch = path.match(/^\/(?:space\/)?post\/([^\/?#]+)/i);
@@ -108,6 +110,10 @@
       if (profilePathMatch && profilePathMatch[1]) {
         return { type: 'profile', id: decodeURIComponent(profilePathMatch[1]), mode };
       }
+      const blockPathMatch = path.match(/^\/(?:explorer\/)?block\/([^\/?#]+)/i);
+      if (blockPathMatch && blockPathMatch[1]) {
+        return { type: 'block', id: decodeURIComponent(blockPathMatch[1]), mode };
+      }
 
       if (hash.startsWith('post=')) {
         const hid = decodeURIComponent(hash.slice(5).split('&')[0] || '').trim();
@@ -116,6 +122,10 @@
       if (hash.startsWith('profile=')) {
         const hprof = decodeURIComponent(hash.slice(8).split('&')[0] || '').trim();
         if (hprof) return { type: 'profile', id: hprof, mode };
+      }
+      if (hash.startsWith('block=')) {
+        const hblk = decodeURIComponent(hash.slice(6).split('&')[0] || '').trim();
+        if (hblk) return { type: 'block', id: hblk, mode };
       }
     } catch (_e) { }
     return null;
@@ -2147,19 +2157,25 @@
     ];
     const target = valid.includes(screenCode) ? screenCode : 'SCR-SPC-03';
 
-    // Guest Shared Link Mode: allow viewing shared posts & profiles freely without PWA gate,
-    // but prompt PWA install if a mobile browser guest tries to enter the full app.
-    if (_guestSharedLinkBypass && isMobileDevice() && !isStandalonePwaApp()) {
+    // Strict Guest Shared Link Isolation: guests arriving via shared post/profile/block URLs
+    // stay inside the dedicated preview area and CANNOT escape into Space feed or other tabs
+    // without installing the PWA (on mobile) or connecting a wallet.
+    if (_guestSharedLinkBypass && ((isMobileDevice() && !isStandalonePwaApp()) || !getActiveWallet())) {
       const targetProf = opts.profileTarget !== undefined ? String(opts.profileTarget || '').trim() : String(simpleState.profileTarget || '').trim();
       const isAllowedGuestScreen = (
         target === 'SCR-SPC-04' ||
-        (target === 'SCR-PRF-05' && Boolean(targetProf)) ||
-        target === 'SCR-PRF-FOLLOW' ||
-        target === 'SCR-PRF-FOLLOWERS' ||
-        target === 'SCR-PRF-FOLLOWING'
+        (target === 'SCR-PRF-05' && Boolean(targetProf))
       );
       if (!isAllowedGuestScreen) {
-        evaluateMobileGates(true);
+        if (isMobileDevice() && !isStandalonePwaApp()) {
+          evaluateMobileGates(true);
+        } else {
+          if (typeof showToast === 'function') {
+            showToast('Devam etmek için BlocTag uygulamasını açın veya cüzdan bağlayın.', 'lock');
+          }
+          simpleState.activeScreen = 'SCR-ONB-01';
+          renderSimpleMode(false);
+        }
         return;
       }
     }
@@ -2333,6 +2349,10 @@
   }
 
   function renderBottomNav() {
+    // Never show full app navigation bar during isolated guest shared preview
+    if (_guestSharedLinkBypass && ((isMobileDevice() && !isStandalonePwaApp()) || !getActiveWallet())) {
+      return '';
+    }
     const active = simpleState.activeScreen;
     const isSpace = active === 'SCR-SPC-03' || active === 'SCR-SPC-04';
     const isRooms = active === 'SCR-ROOMS';
@@ -3180,27 +3200,48 @@
     const posts = (typeof spacePostsCache !== 'undefined' && Array.isArray(spacePostsCache)) ? spacePostsCache : [];
     const q = String(simpleState.searchQuery || '').trim().toLowerCase();
 
-    const filteredPosts = posts.filter(p => {
-      if (!p) return false;
-      if (simpleState.feedFilter === 'following' && acc && acc.address) {
-        // Show user's own posts or posts from verified BNS handles
-        const isMine = String(p.author || '').toLowerCase() === acc.address.toLowerCase();
-        const hasBns = Boolean(p.author_bns && p.author_bns !== 'anonymous');
-        if (!isMine && !hasBns) return false;
-      }
-      if (q) {
-        const content = String(p.content || '').toLowerCase();
-        const author = String(p.author || '').toLowerCase();
-        const bns = String(p.author_bns || '').toLowerCase();
-        return content.includes(q) || author.includes(q) || bns.includes(q);
-      }
-      return true;
-    }).sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
-
     const myProfileForHeader = acc ? getSimpleProfileData(acc.address) : null;
     if (!myProfileForHeader && acc && acc.address) {
       fetchSimpleProfile(acc.address);
     }
+
+    const myAddrLower = (acc && acc.address) ? acc.address.toLowerCase() : '';
+    const followingSet = new Set();
+    if (myProfileForHeader && Array.isArray(myProfileForHeader.following)) {
+      myProfileForHeader.following.forEach(f => {
+        if (!f) return;
+        if (typeof f === 'string') {
+          followingSet.add(f.toLowerCase().replace(/^@/, ''));
+        } else {
+          if (f.address) followingSet.add(String(f.address).toLowerCase());
+          if (f.primary_handle) followingSet.add(String(f.primary_handle).toLowerCase().replace(/^@/, ''));
+          if (f.bns_name) followingSet.add(String(f.bns_name).toLowerCase().replace(/^@/, ''));
+        }
+      });
+    }
+
+    const filteredPosts = posts.filter(p => {
+      if (!p) return false;
+      const authorLower = String(p.author || '').toLowerCase();
+      const authorBnsLower = String(p.author_bns || '').toLowerCase().replace(/^@/, '');
+      const isMine = Boolean(myAddrLower && authorLower === myAddrLower);
+
+      // In Simple Mode feed (both All & Following), exclude user's own posts unless explicitly searching
+      if (!q && isMine) return false;
+
+      if (simpleState.feedFilter === 'following' && myAddrLower) {
+        if (followingSet.size === 0) return false;
+        const isFollowed = followingSet.has(authorLower) || (authorBnsLower && followingSet.has(authorBnsLower));
+        if (!isFollowed) return false;
+      }
+      if (q) {
+        const content = String(p.content || '').toLowerCase();
+        const author = authorLower;
+        const bns = authorBnsLower;
+        return content.includes(q) || author.includes(q) || bns.includes(q);
+      }
+      return true;
+    }).sort((a, b) => Number(b.timestamp || 0) - Number(a.timestamp || 0));
     const myMiniAvatarHtml = renderAvatarCircleHtml(
       myProfileForHeader?.avatar,
       '<span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">account_circle</span>'
@@ -3473,11 +3514,18 @@
               <span class="text-[11px] text-on-surface-variant truncate block">${esc(subHandle)} • ${esc(timeAgo)}</span>
             </div>
           </div>
-          <button type="button" aria-label="${t('space_share_btn', 'Share')}"
-            onclick="event.stopPropagation(); if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
-            class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer shrink-0">
-            <span class="material-symbols-outlined notranslate text-[18px]" translate="no">more_horiz</span>
-          </button>
+          <div class="flex items-center gap-0.5 shrink-0">
+            <button type="button" aria-label="Detaylar" title="Detaylar &amp; Geçmiş Yolculuğu"
+              onclick="event.stopPropagation(); if(typeof window.openPostJourneyModal==='function') window.openPostJourneyModal('${pid}', event);"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-sky-400 cursor-pointer shrink-0">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">history</span>
+            </button>
+            <button type="button" aria-label="${t('space_share_btn', 'Share')}"
+              onclick="event.stopPropagation(); if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer shrink-0">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">more_horiz</span>
+            </button>
+          </div>
         </div>
 
         <div class="simple-post-body mt-2.5 text-sm text-on-surface">
@@ -3564,10 +3612,18 @@
                 <span class="text-[11px] font-mono text-on-surface-variant truncate">${esc(typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : authorAddr)}</span>
               </div>
             </div>
-            <button type="button" onclick="if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
-              class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">ios_share</span>
-            </button>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button" onclick="if(typeof window.openPostJourneyModal==='function') window.openPostJourneyModal('${pid}', event);"
+                title="Detaylar &amp; Geçmiş Yolculuğu"
+                class="h-9 px-2.5 flex items-center justify-center gap-1 rounded-full bg-sky-500/12 text-sky-400 hover:bg-sky-500/20 text-[11px] font-semibold cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[17px]" translate="no">history</span>
+                <span>Detaylar</span>
+              </button>
+              <button type="button" onclick="if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
+                class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">ios_share</span>
+              </button>
+            </div>
           </div>
 
           <div class="simple-post-body text-base text-on-surface pt-1">
@@ -7133,12 +7189,15 @@
     if (sharedTarget) {
       _guestSharedLinkBypass = true;
       _guestSharedTarget = sharedTarget;
+      if ((mobile && !isStandalonePwaApp()) || !getActiveWallet()) {
+        document.documentElement.classList.add('bloctag-guest-shared-lock');
+      }
     }
     const saved = mobile ? isSimpleModeEnabled() : false;
     syncModeToggleControls(saved);
     if (sharedTarget) {
       // Honor the sharer's exact mode (?mode=simple or ?mode=pro) ephemerally for this shared session ONLY
-      const useSimpleForShare = sharedTarget.mode ? (sharedTarget.mode === 'simple') : saved;
+      const useSimpleForShare = (sharedTarget.type === 'block') ? false : (sharedTarget.mode ? (sharedTarget.mode === 'simple') : saved);
       if (useSimpleForShare) {
         removeGuestProModeFloatingBar();
         applySimpleModeState(true, false);
@@ -7155,6 +7214,8 @@
             window.openSpacePostDetail(sharedTarget.id);
           } else if (sharedTarget.type === 'profile' && typeof window.openUserProfile === 'function') {
             window.openUserProfile(sharedTarget.id);
+          } else if (sharedTarget.type === 'block' && typeof window.inspectBlockModal === 'function') {
+            window.inspectBlockModal(sharedTarget.id);
           }
         }, 180);
       }
@@ -7242,11 +7303,19 @@
       window.filterSpaceByEntity = wrappedFilterEntity;
     }
 
-    // Intercept Pro Mode tab navigation while in Simple Mode and ask for user confirmation
+    // Intercept Pro Mode tab navigation while in Simple Mode OR Guest Shared Preview Lock
     const origSwitchTab = window.switchTab;
     if (typeof origSwitchTab === 'function' && !origSwitchTab._simpleHooked) {
       window._origSwitchTab = origSwitchTab;
       const wrappedSwitchTab = function (tabId) {
+        if (_guestSharedLinkBypass && ((isMobileDevice() && !isStandalonePwaApp()) || !getActiveWallet())) {
+          if (isMobileDevice() && !isStandalonePwaApp()) {
+            evaluateMobileGates(true);
+          } else if (typeof showToast === 'function') {
+            showToast('Paylaşım önizlemesinden çıkmak için uygulamayı kurun veya giriş yapın.', 'lock');
+          }
+          return;
+        }
         if (simpleState.enabled && tabId) {
           const cleanTab = String(tabId).trim();
           if (cleanTab === 'cuzdanim') {
