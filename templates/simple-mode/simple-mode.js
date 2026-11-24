@@ -2334,6 +2334,7 @@
   function renderBottomNav() {
     const active = simpleState.activeScreen;
     const isSpace = active === 'SCR-SPC-03' || active === 'SCR-SPC-04';
+    const isRooms = active === 'SCR-ROOMS';
     const isWallet = active === 'SCR-WLT-HOME' || active === 'SCR-WLT-SEND' || active === 'SCR-ONB-01' || active === 'SCR-WLT-02';
     const isProfile = active === 'SCR-PRF-05' || active === 'SCR-PRF-FOLLOW' || active === 'SCR-PRF-FOLLOWERS' || active === 'SCR-PRF-FOLLOWING';
     const isMenu = active === 'SCR-MNU-07';
@@ -2346,6 +2347,13 @@
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[22px]" translate="no">tag</span>
             <span class="font-label-sm text-[10px] leading-none">${t('nav_space', 'Space')}</span>
+          </button>
+
+          <!-- 2. Protocol Rooms -->
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-ROOMS')"
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isRooms ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">meeting_room</span>
+            <span class="font-label-sm text-[10px] leading-none">${t('nav_rooms', 'Odalar')}</span>
           </button>
 
           <!-- 2. Wallet -->
@@ -2775,6 +2783,7 @@
                   </div>
                   <div class="flex flex-col items-end shrink-0 pl-2">
                     <span class="text-xs font-mono font-semibold ${meta.isIncoming ? 'text-primary' : 'text-on-surface'}">${meta.displayAmount > 0 ? esc(meta.sign) : ''}${esc(amtStr)} BCT</span>
+                    ${Number(meta.fee || tx.fee || 0) > 0 ? `<span class="text-[10px] font-mono text-on-surface-variant/80">Fee: ${esc(typeof window.formatBct === 'function' ? window.formatBct(Number(meta.fee || tx.fee || 0), 4) : Number(meta.fee || tx.fee || 0).toFixed(4))} BCT</span>` : ''}
                     <div class="flex items-center gap-1">
                       <span class="text-[10px] text-on-surface-variant">${tx.status === 'mempool' ? t('wlt_tx_pending', 'Pending') : t('wlt_tx_confirmed', 'Confirmed')}</span>
                       <span class="w-1.5 h-1.5 rounded-full ${tx.status === 'mempool' ? 'bg-secondary animate-pulse' : 'bg-primary'}"></span>
@@ -4443,6 +4452,21 @@
             <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
           </button>
 
+          <!-- Permanent Wallet Burn / Self-Destruct -->
+          <button type="button" onclick="if(typeof openWalletBurnModal==='function') openWalletBurnModal();"
+            class="w-full p-3 rounded-2xl bg-error/10 hover:bg-error/15 border border-error/30 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-error/20 text-error flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">local_fire_department</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-error">Cüzdanı Kalıcı Olarak Yak / Kapat</span>
+                <span class="text-[10px] text-on-surface-variant">Geri döndürülemez zincir üstü cüzdan imhası</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined notranslate text-[18px] text-error" translate="no">chevron_right</span>
+          </button>
+
           <!-- Notifications -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-NTF-06')"
             class="w-full p-3 rounded-2xl bg-surface-container-low hover:bg-surface-container border border-outline-variant/15 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
@@ -4549,6 +4573,9 @@
     if (simpleState.activeScreen === 'SCR-WLT-HOME') {
       const txSig = txs.slice(0, 20).map(t => `${t.tx_hash || t.hash}:${t.status || ''}`).join(',');
       return `WLTHOME|${addr}|${bal}|${nonce}|${hidden}|${simpleState.txFilter}|${txSig}|${unread}`;
+    }
+    if (simpleState.activeScreen === 'SCR-ROOMS') {
+      return `ROOMS|${addr}`;
     }
     if (simpleState.activeScreen === 'SCR-PRF-FOLLOW' || simpleState.activeScreen === 'SCR-PRF-FOLLOWERS' || simpleState.activeScreen === 'SCR-PRF-FOLLOWING') {
       return `PRFFOLLOW|${addr}|${simpleState.followTargetAddr}|${simpleState.followTab}|${simpleState.followFilter}|${simpleState.followSearch}|${unread}`;
@@ -4688,6 +4715,16 @@
       case 'SCR-MNU-07':
         screenHtml = renderScreenMenu();
         break;
+      case 'SCR-ROOMS':
+        screenHtml = `
+          ${renderTopBar('Protocol Rooms', false)}
+          <main class="flex-1 flex flex-col w-full px-3.5 pt-3 pb-24 simple-screen-animate">
+            <div id="simpleRoomsPageRoot" class="w-full">
+              <div class="py-12 text-center text-xs text-on-surface-variant font-mono">Protocol Rooms yükleniyor...</div>
+            </div>
+          </main>
+        `;
+        break;
       case 'SCR-SPC-03':
       default:
         screenHtml = renderScreenSpaceFeed();
@@ -4703,6 +4740,10 @@
         ${screenHtml}
       </div>
     `;
+
+    if (simpleState.activeScreen === 'SCR-ROOMS' && window.ProtocolRoomsUI && typeof window.ProtocolRoomsUI.mountPage === 'function') {
+      window.ProtocolRoomsUI.mountPage();
+    }
 
     const navPortal = document.getElementById('bloctag-simple-bottom-nav-portal');
     if (navPortal) {

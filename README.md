@@ -522,7 +522,7 @@ curl -s "https://locktrace.space/api/v1/nodes"
    - **Consensus Timestamp Monotonicity & Anti-Spoofing:** Enforced strict block timestamp monotonicity (`cur_ts > prev_ts`) and future drift bounds (`cur_ts <= now + 120s`) across `core/blockchain.py:is_chain_valid` and `node_runner.py:verify_single_block` to eliminate artificial stall-drop difficulty reduction exploits.
    - **Client-Side Vault Encryption Hardening:** Hardened `encryptDeviceSecrets` with per-encryption 16-byte random IVs via CSPRNG (`window.crypto.getRandomValues`) to prevent keystream reuse, while preserving seamless backward compatibility migration for existing vaults.
 26. **Anti-Whale Transfer Limits & Validator Concurrency Hardening (v2.9.7):**
-   - **Anti-Whale Transfer Ceiling:** Enforced `MAX_TRANSACTION = 1_000_000` BCT (<10% of circulating supply) and `MIN_TRANSACTION = 0.01` BCT across both `core/blockchain.py:create_transaction` and `node_runner.py:handle_decentralized_write`.
+   - **Anti-Whale Transfer Ceiling:** Enforced `MAX_TRANSACTION = 10_000_000` BCT (<10% of circulating supply) and `MIN_TRANSACTION = 0.01` BCT across both `core/blockchain.py:create_transaction` and `node_runner.py:handle_decentralized_write`.
    - **Zero-Fee Dust Spam Mitigation:** Enforced `MIN_TRANSFER_FEE = 0.001` BCT in P2P decentralized node transfer processing, barring sub-dust zero-fee transactions.
    - **Validator Stake/Unstake Concurrency Mutex:** Enforced mempool mutex rejecting concurrent unstake/stake transactions until pending ones are sealed into a block, and barred `amt <= 0` in `execute_validator_unstake`.
    - **Accounting & BNS Trade Parity:** Synchronized `node_runner.py:local_calc_balance_and_nonce` with `core/blockchain.py` by removing `bns_accept_offer` from `net_credit_types` and enforcing fail-closed seller checks. Synchronized SocialFi fee tokenomics in `config.py`.
@@ -571,3 +571,12 @@ curl -s "https://locktrace.space/api/v1/nodes"
 
 ## 📄 License
 MIT License. Built for decentralization, transparency, and sovereign peer-to-peer finance.
+
+### v2.13.0 Addendum: Room Ownership Transfer, Permanent Wallet Burn & Signature Binding
+
+- **Protocol Room Ownership Transfer (`room_transfer`, 0.50 BCT: 50% Treasury / 50% Miner-Validator pool):** Only the current owner can hand a room to a `BCT...` address or a `.bct` handle. All future creator royalties (30% per topic, 20% per reply) follow the new owner; `original_creator`, `transfer_count` and `transfer_history` stay on-chain. Transfers to burned, treasury or system addresses are rejected, and a rogue `room_transfer` from a non-owner is ignored at consensus level.
+- **Permanent Wallet Burn (`wallet_burn`):** A user-signed, irreversible close of a wallet (`WALLET_BURN:<address>:PERMANENT_IRREVERSIBLE_DESTROY`). Remaining liquid BCT is absorbed into the Treasury and the address enters a consensus-level burned set: it can never sign again, never receive BCT, `.bct` handles or rooms, and can never re-register. System and release-authority addresses cannot be burned. Available in Simple Mode (Menu) and Pro Mode (Wallet Vault).
+- **ECDSA Payload Binding:** `ROOM_CREATE` now signs the description, `ROOM_TOPIC` signs the body and `ROOM_REPLY` signs `parent_reply_id`, so a signed request can no longer be re-used with altered content.
+- **Rendering Hardening:** Protocol Rooms inline handlers no longer embed user text (removes an `onclick` string-escape injection vector).
+- **Transfer Ceiling:** `MAX_TRANSACTION` is now `10_000_000` BCT. Sender-pays transfers show the full amount to both parties with a separate fee line.
+- **Full-Page Protocol Rooms:** Rooms are a dedicated page (Pro Mode `Protocol Rooms` tab, Simple Mode `SCR-ROOMS`) instead of a modal widget.

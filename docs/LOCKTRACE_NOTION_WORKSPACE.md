@@ -623,7 +623,7 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 
 ## 🛡️ 26. BlocTag / LockTrace v2.9.7: Balina Transfer Tavanı, Validator Eşzamanlılık Koruması & P2P Eşitlemesi
 
-1. **Anti-Whale Transfer Tavanı (Maksimum %10 Dolaşımdaki Arz):** `MAX_TRANSACTION = 1_000_000` BCT (dolaşımdaki ~14.89M BCT arzın <%10'u) ve `MIN_TRANSACTION = 0.01` BCT limitleri hem `core/blockchain.py:create_transaction` hem de `node_runner.py:handle_decentralized_write` katmanlarında zorunlu kılındı.
+1. **Anti-Whale Transfer Tavanı (Maksimum %10 Dolaşımdaki Arz):** `MAX_TRANSACTION = 10_000_000` BCT (dolaşımdaki ~14.89M BCT arzın <%10'u) ve `MIN_TRANSACTION = 0.01` BCT limitleri hem `core/blockchain.py:create_transaction` hem de `node_runner.py:handle_decentralized_write` katmanlarında zorunlu kılındı.
 2. **Sıfır Ücretli Toz Spam Koruması:** `node_runner.py` transfer işlemcisinde `MIN_TRANSFER_FEE = 0.001` BCT tabanı ve `amount > fee` şartı zorunlu tutularak, mikro transferlerle sıfır ücretli blok üretim sömürüsü tamamen engellendi.
 3. **Validator Stake / Unstake Eşzamanlılık Mutex'i:** `execute_validator_unstake` ve `execute_validator_stake` fonksiyonlarında bekleyen işlem kontrolü çift yönlü sıkılaştırıldı; mempool'da bekleyen bir stake veya unstake varken yeni işlem açılması engellendi ve pozitif olmayan (`amt <= 0`) unstake talepleri reddedildi.
 4. **P2P Muhasebe & BNS Kabul Paritesi:** `node_runner.py:local_calc_balance_and_nonce` fonksiyonundan `bns_accept_offer` kaldırıldı ve satıcı ekstra verisi doğrulaması `core/blockchain.py` ile %100 birebir eşitlendi.
@@ -733,3 +733,12 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - Kurucu, oda açılışında veya sonradan yalnızca 1 kez kalıcı avatar mühürleyebilir; konsensüs indeksleyicisi ikinci değişiklik girişimlerini zincir seviyesinde reddeder.
 3. **Reddit Tarzı Mevzu (`0.25 BCT`), İç İçe Yanıtlar (`0.05 BCT`) & Kurucu Gelir Paylaşımı:**
    - Açılan mevzulardan %30 oda kurucusu geliri, mevzu altı yanıtlardan %20 mevzu yazarı + %20 oda kurucusu geliri tam atomik birim hassasiyetiyle dağıtılır.
+
+### v2.13.0 Eki: Oda Devri, Kalıcı Cüzdan Yakma ve İmza Bağlama
+
+- **Protocol Room Sahiplik Devri (`room_transfer`, 0.50 BCT: %50 Hazine / %50 Madenci-Doğrulayıcı havuzu):** Odayı yalnızca mevcut sahip, bir `BCT...` adresine veya `.bct` alan adına devredebilir. Gelecekteki tüm kurucu gelirleri (mevzu başına %30, yanıt başına %20) yeni sahibe akar; `original_creator`, `transfer_count` ve `transfer_history` zincirde kalır. Yakılmış, Hazine veya sistem adreslerine devir reddedilir; sahibi olmayan birinin `room_transfer` işlemi konsensüs seviyesinde yok sayılır.
+- **Kalıcı Cüzdan Yakma (`wallet_burn`):** Kullanıcının imzaladığı, geri döndürülemez cüzdan kapatma (`WALLET_BURN:<adres>:PERMANENT_IRREVERSIBLE_DESTROY`). Kalan likit BCT Hazine'ye absorbe edilir ve adres konsensüs seviyesinde yakılmış kümesine girer: bir daha imza atamaz; BCT, `.bct` alan adı veya oda alamaz; yeniden kaydolamaz. Sistem ve release-authority adresleri yakılamaz. Simple Mode (Menü) ve Pro Mode (Cüzdan Kasası) içinde bulunur.
+- **ECDSA Payload Bağlama:** `ROOM_CREATE` açıklamayı, `ROOM_TOPIC` gövdeyi, `ROOM_REPLY` ise `parent_reply_id` değerini imzalar; imzalı bir istek artık değiştirilmiş içerikle yeniden kullanılamaz.
+- **Render Sertleştirmesi:** Protocol Rooms satır içi olay işleyicileri artık kullanıcı metni taşımaz (`onclick` string kaçış enjeksiyon vektörü kapatıldı).
+- **Transfer Tavanı:** `MAX_TRANSACTION` artık `10_000_000` BCT. Gönderen-öder transferlerde her iki tarafta tam tutar, ayrı bir ücret satırıyla gösterilir.
+- **Tam Sayfa Protocol Rooms:** Odalar artık modal widget değil, ayrı bir sayfadır (Pro Mode `Protocol Rooms` sekmesi, Simple Mode `SCR-ROOMS`).
