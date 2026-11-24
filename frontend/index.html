@@ -3766,6 +3766,8 @@
                 </div>
                 <div class="flex flex-wrap items-center gap-2 text-xs font-mono">
                   <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Total Staked: <strong id="statTotalStakedBCT" class="text-primary font-bold">0.00 BCT</strong></span>
+                  <span id="statForfeitedVaultWrap" class="hidden px-2.5 py-1 rounded-lg bg-rose-500/10 border border-rose-500/25 text-rose-300" title="Slashed or burned validator collateral locked in VALIDATOR_STAKE_VAULT">Slashed: <strong id="statForfeitedVaultBCT" class="font-bold">0.00 BCT</strong></span>
+                  <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant" title="Total on-chain balance of VALIDATOR_STAKE_VAULT (Active + Slashed)">Vault Total: <strong id="statVaultTotalBCT" class="text-on-surface font-bold">0.00 BCT</strong></span>
                   <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Active Nodes: <strong id="statActiveValidatorsCount" class="text-emerald-400 font-bold">0</strong></span>
                   <span class="px-2.5 py-1 rounded-lg bg-surface-container text-on-surface-variant">Observers: <strong id="statObserversCount" class="text-primary font-bold">0</strong></span>
                 </div>
@@ -25641,11 +25643,19 @@
         if (expEl) expEl.innerHTML = renderRows(d.stakers);
 
         const totalStakedEl = document.getElementById('statTotalStakedBCT');
-        if (totalStakedEl) totalStakedEl.textContent = Number(d.total_staked_bct).toLocaleString('en-US', {minimumFractionDigits: 2}) + ' BCT';
+        if (totalStakedEl) totalStakedEl.textContent = Number(d.total_staked_bct || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' BCT';
+        const forfeitedVal = Number(d.forfeited_vault_bct || 0);
+        const forfeitedWrapEl = document.getElementById('statForfeitedVaultWrap');
+        const forfeitedEl = document.getElementById('statForfeitedVaultBCT');
+        if (forfeitedEl) forfeitedEl.textContent = forfeitedVal.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' BCT';
+        if (forfeitedWrapEl) forfeitedWrapEl.classList.toggle('hidden', forfeitedVal <= 0);
+        const vaultTotalEl = document.getElementById('statVaultTotalBCT');
+        if (vaultTotalEl) vaultTotalEl.textContent = Number(d.vault_total_bct != null ? d.vault_total_bct : d.total_staked_bct || 0).toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' BCT';
         const activeValsEl = document.getElementById('statActiveValidatorsCount');
         if (activeValsEl) activeValsEl.textContent = d.active_validators_count;
         const observersEl = document.getElementById('statObserversCount');
         if (observersEl) observersEl.textContent = d.observers_count;
+        if (typeof updateSmartStakingPreview === 'function') updateSmartStakingPreview();
       } catch (err) {
         console.error('Error loading staking participants:', err);
       }

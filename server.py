@@ -486,7 +486,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-pLzNgiCJJwifyHOIaBGXXX/PJviDtc8friXChGGhEaU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-hJkA2Vl7/Hr49arY5oDnnvKcubfhvDkwbWut181k6Gk=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -2347,10 +2347,14 @@ def api_staking_participants():
     inactive_vals = [s for s in stakers if s["tier"] == "inactive_validator"]
     slashed = [s for s in stakers if s["tier"] == "slashed"]
     total_staked = sum(s["staked_amount"] for s in stakers if not s["is_slashed"])
+    vault_total_bct = round(float(blockchain.verify_and_recalc_balance(VALIDATOR_STAKE_VAULT_ADDRESS)), 4)
+    forfeited_vault_bct = max(0.0, round(vault_total_bct - total_staked, 4))
 
     return api_response(True, data={
         "total_stakers": len(stakers),
         "total_staked_bct": round(total_staked, 4),
+        "forfeited_vault_bct": forfeited_vault_bct,
+        "vault_total_bct": vault_total_bct,
         "active_validators_count": len(active_validators),
         "inactive_validators_count": len(inactive_vals),
         "observers_count": len(observers),
