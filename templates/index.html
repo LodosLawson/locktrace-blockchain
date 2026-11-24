@@ -60,8 +60,8 @@
     crossorigin="anonymous" defer></script>
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
-  <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.13.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-1AO+E+n9kWdBcLP986A0VRULPgAYt9a4qlqE6ATqV4g=" crossorigin="anonymous" defer></script>
+  <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.13.0-r5" />
+  <script src="/simple-mode/simple-mode.js?v=2.13.0-r5" integrity="sha256-1AO+E+n9kWdBcLP986A0VRULPgAYt9a4qlqE6ATqV4g=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12158,6 +12158,20 @@
         }
       }
 
+      // Always close bottom-nav profile overlay cleanly when switching main tabs
+      const profM = document.getElementById('userProfileModal');
+      if (window._proProfileKeepBottomNav || (profM && profM.dataset.keepBottomNav === '1')) {
+        window._proProfileKeepBottomNav = false;
+        if (profM && !profM.classList.contains('hidden') && typeof closeUserProfile === 'function') {
+          closeUserProfile(true);
+        }
+      }
+      const mobNavReset = document.getElementById('mobile-nav');
+      if (mobNavReset) {
+        mobNavReset.classList.remove('z-[60]');
+        mobNavReset.classList.add('z-40');
+      }
+
       // Always reset Space Detail Stack Header & restore mobile nav when switching main tabs
       if (target !== 'space' || activeDetailPostId !== null) {
         resetSpaceDetailChrome();
@@ -13500,14 +13514,14 @@
         }
       }
       if (!modal || !card) return;
-      // 1-second touch/click guard so rapid double-taps opening the menu never accidentally trigger a menu item
+      // 0.5-second touch/click guard so rapid double-taps opening the menu never accidentally trigger a menu item
       if (window._mobileMenuGuardTimer) clearTimeout(window._mobileMenuGuardTimer);
-      modal.dataset.openGuardUntil = String(Date.now() + 1000);
+      modal.dataset.openGuardUntil = String(Date.now() + 500);
       card.style.pointerEvents = 'none';
       window._mobileMenuGuardTimer = setTimeout(() => {
         card.style.pointerEvents = '';
         window._mobileMenuGuardTimer = null;
-      }, 1000);
+      }, 500);
       modal.classList.remove('hidden');
       modal.classList.add('flex');
       card.style.transform = '';
@@ -21957,6 +21971,26 @@
       const card = document.getElementById('userProfileModalCard');
       if (!modal || !card) return;
 
+      // Keep mobile bottom nav visible ONLY when opened from the Pro Mode bottom nav Profile icon
+      const keepBottomNav = !!window._proProfileKeepBottomNav;
+      window._proProfileKeepBottomNav = false;
+      const mobNavEl = document.getElementById('mobile-nav');
+      if (keepBottomNav) {
+        modal.dataset.keepBottomNav = '1';
+        modal.style.bottom = 'calc(52px + env(safe-area-inset-bottom, 0px))';
+        if (mobNavEl) {
+          mobNavEl.classList.remove('z-40');
+          mobNavEl.classList.add('z-[60]');
+        }
+      } else {
+        delete modal.dataset.keepBottomNav;
+        modal.style.bottom = '';
+        if (mobNavEl) {
+          mobNavEl.classList.remove('z-[60]');
+          mobNavEl.classList.add('z-40');
+        }
+      }
+
       const raw = String(addressOrHandle || '').trim();
       if (!raw) return;
       const cleanTarget = raw.replace(/^[#@]+/, '').trim();
@@ -22079,6 +22113,15 @@
       const modal = document.getElementById('userProfileModal');
       const card = document.getElementById('userProfileModalCard');
       if (!modal || !card) return;
+
+      window._proProfileKeepBottomNav = false;
+      delete modal.dataset.keepBottomNav;
+      modal.style.bottom = '';
+      const mobNavEl = document.getElementById('mobile-nav');
+      if (mobNavEl) {
+        mobNavEl.classList.remove('z-[60]');
+        mobNavEl.classList.add('z-40');
+      }
       if (closeProfileTimeout) {
         clearTimeout(closeProfileTimeout);
         closeProfileTimeout = null;
@@ -23149,14 +23192,14 @@
       const isMenuTabActive = lastMenuSelectedTab && (activeTabId === lastMenuSelectedTab);
 
       if (isMenuTabActive) {
-        btn.className = 'mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-primary font-semibold transition-colors active:scale-95 cursor-pointer';
-        icon.className = 'material-symbols-outlined notranslate text-[23px] text-primary';
-        label.className = 'font-label-sm text-[10px] font-semibold text-primary leading-none';
+        btn.className = 'mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-emerald-400 font-semibold transition-colors active:scale-95 cursor-pointer';
+        icon.className = 'material-symbols-outlined notranslate text-[22px] leading-none text-emerald-400';
+        label.className = 'font-label-sm text-[10px] font-semibold text-emerald-400 leading-none';
         btn.setAttribute('title', `${config.label} (Tekrar dokununca menüyü açar)`);
         if (indicator) indicator.classList.add('hidden');
       } else {
-        btn.className = 'mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 cursor-pointer';
-        icon.className = 'material-symbols-outlined notranslate text-[23px] text-on-surface-variant';
+        btn.className = 'mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 cursor-pointer';
+        icon.className = 'material-symbols-outlined notranslate text-[22px] leading-none text-on-surface-variant';
         label.className = 'font-label-sm text-[10px] font-medium text-on-surface-variant leading-none';
         btn.setAttribute('title', lastMenuSelectedTab ? `${config.label} sayfasına dön` : 'Menu');
         if (indicator) {
@@ -24438,6 +24481,7 @@
             iconEl.classList.toggle('text-emerald-400', active);
           }
         });
+        window._proProfileKeepBottomNav = true;
         openUserProfile(currentAccount.address);
       } else if (typeof switchTab === 'function') {
         switchTab('yeni-cuzdan');

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'locktrace-pwa-v98';
+const CACHE_NAME = 'locktrace-pwa-v99';
 const PRECACHE_ASSETS = [
   '/',
   '/index.html',
