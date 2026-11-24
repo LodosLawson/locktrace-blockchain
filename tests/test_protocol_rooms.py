@@ -71,7 +71,7 @@ class TestProtocolRooms(unittest.TestCase):
         self.assertEqual(q_short["total_cost"], 52.0)
         self.assertTrue(q_short["room_id"].startswith("RM-"))
 
-        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q_short['slug']}:Kısa isimli premium kripto odası.")
+        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q_short['slug']}:Kısa isimli premium kripto odası.:ANM-001-10B981")
         bal_before = self.bc.verify_and_recalc_balance(self.creator.address)
         ok, msg, res = self.bc.create_room(
             creator=self.creator.address,
@@ -103,7 +103,7 @@ class TestProtocolRooms(unittest.TestCase):
 
     def test_developer_room_verification(self):
         ok_q, _, q = self.bc.get_room_create_quote("Official Room", has_avatar=False)
-        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:Dogrulama testi odasi.")
+        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:Dogrulama testi odasi.:NONE")
         ok, _, r = self.bc.create_room(
             creator=self.creator.address,
             name="Official Room",
@@ -130,7 +130,7 @@ class TestProtocolRooms(unittest.TestCase):
     def test_strict_avatar_immutability(self):
         # Case A: Room created WITH avatar -> set_room_avatar MUST fail
         ok_q, _, q1 = self.bc.get_room_create_quote("Sealed Room Alpha", has_avatar=True)
-        sig1 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q1['slug']}:Oluşturulurken avatarı mühürlenmiş oda.")
+        sig1 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q1['slug']}:Oluşturulurken avatarı mühürlenmiş oda.:ANM-002-3B82F6")
         ok, _, r1 = self.bc.create_room(
             creator=self.creator.address,
             name="Sealed Room Alpha",
@@ -157,7 +157,7 @@ class TestProtocolRooms(unittest.TestCase):
 
         # Case B: Room created WITHOUT avatar -> non-creator fails, creator succeeds ONCE, second time fails!
         ok_q2, _, q2 = self.bc.get_room_create_quote("Open Room Beta", has_avatar=False)
-        sig2 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q2['slug']}:Sonradan tek seferlik avatar mühürlenecek oda.")
+        sig2 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q2['slug']}:Sonradan tek seferlik avatar mühürlenecek oda.:NONE")
         ok2, _, r2 = self.bc.create_room(
             creator=self.creator.address,
             name="Open Room Beta",
@@ -236,7 +236,7 @@ class TestProtocolRooms(unittest.TestCase):
         # Create "Kripto Analiz" then attempt Turkish homoglyph spoof "krıpto analiz"
         ok_q, _, q = self.bc.get_room_create_quote("Kripto Analiz", has_avatar=False)
         self.assertTrue(ok_q)
-        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:Gerçek kripto analiz topluluğu.")
+        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:Gerçek kripto analiz topluluğu.:NONE")
         ok, _, _ = self.bc.create_room(
             creator=self.creator.address,
             name="Kripto Analiz",
@@ -252,7 +252,7 @@ class TestProtocolRooms(unittest.TestCase):
 
         # Invalid hex / CSS injection in avatar color rejected
         ok_q2, _, q2 = self.bc.get_room_create_quote("Security Test Room", has_avatar=True)
-        sig2 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q2['slug']}:XSS testi için oda.")
+        sig2 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q2['slug']}:XSS testi için oda.:NONE")
         ok_xss, _, _ = self.bc.create_room(
             creator=self.creator.address,
             name="Security Test Room",
@@ -267,7 +267,7 @@ class TestProtocolRooms(unittest.TestCase):
     def test_reddit_flow_topics_replies_upvotes_and_royalties(self):
         # 1. Creator opens a standard room (10.00 BCT)
         ok_q, _, q = self.bc.get_room_create_quote("LockTrace Developers", has_avatar=False)
-        sig_r = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:L1 geliştirici tartışma ve mevzu alanı.")
+        sig_r = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:L1 geliştirici tartışma ve mevzu alanı.:NONE")
         ok, _, room = self.bc.create_room(
             creator=self.creator.address,
             name="LockTrace Developers",
@@ -388,7 +388,7 @@ class TestProtocolRooms(unittest.TestCase):
     def test_room_ownership_transfer_and_royalty_redirection(self):
         # 1. Creator creates a room without avatar
         ok_q, _, q = self.bc.get_room_create_quote("Transferable Space", has_avatar=False)
-        sig_c = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:Sahiplik devri test odası.")
+        sig_c = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:Sahiplik devri test odası.:NONE")
         ok, _, room = self.bc.create_room(
             creator=self.creator.address,
             name="Transferable Space",

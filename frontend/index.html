@@ -25509,14 +25509,17 @@
         state.busy = true;
         render();
         try {
-          const canonical = `ROOM_CREATE:${currentAccount.address}:${state.quote.slug}:${desc}`;
+          const avBase = state.createForm.useAvatar ? String(state.createForm.avatarBaseId || '').trim().toUpperCase() : '';
+          const avBg = state.createForm.useAvatar ? String(state.createForm.avatarBgColor || '#FFFFFF').trim().toUpperCase() : '#FFFFFF';
+          const avTag = avBase ? `${avBase}-${avBg.replace('#', '')}` : 'NONE';
+          const canonical = `ROOM_CREATE:${currentAccount.address}:${state.quote.slug}:${desc}:${avTag}`;
           const authFields = await buildSignedAuthPayload(canonical);
           const payload = Object.assign({
             creator: currentAccount.address,
             name,
             description: desc,
-            avatar_base_id: state.createForm.useAvatar ? state.createForm.avatarBaseId : '',
-            avatar_bg_color: state.createForm.useAvatar ? state.createForm.avatarBgColor : '#FFFFFF',
+            avatar_base_id: avBase,
+            avatar_bg_color: avBg,
           }, authFields);
 
           const { ok, body } = await apiFetch('/rooms', {

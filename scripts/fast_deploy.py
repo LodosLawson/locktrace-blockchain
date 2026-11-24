@@ -189,7 +189,7 @@ systemctl is-active blockchaint-relayer.service
         "-o", "ConnectTimeout=15",
         VPS_HOST, remote_script
     ]
-    if not run_cmd(ssh_cmd, timeout=90):
+    if not run_cmd(ssh_cmd, timeout=180):
         print("[!] Remote execution failed")
         sys.exit(1)
 

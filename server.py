@@ -370,7 +370,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-TCY0Lu63SDG5nuXBQx6VxyNZ1gS71I0d0dk8ft8WQ0k=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-u6WXda4EUyZJCzZ6UDWfzexKa49IF34TspgL2gkO6w4=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -2796,17 +2796,21 @@ def api_rooms_create():
     if not creator or not name or not description:
         return api_response(False, message="Fields 'creator', 'name', and 'description' are required.", status=400)
 
-    from core.rooms_engine import validate_room_name, validate_room_description
+    from core.rooms_engine import validate_room_name, validate_room_description, validate_room_avatar_spec
     ok_n, clean_name_or_err, slug, _rid = validate_room_name(name)
     if not ok_n:
         return api_response(False, message=clean_name_or_err, status=400)
     ok_d, clean_desc_or_err = validate_room_description(description)
     if not ok_d:
         return api_response(False, message=clean_desc_or_err, status=400)
+    ok_av, av_err, variant_id, _av_meta = validate_room_avatar_spec(avatar_base_id, avatar_bg_color)
+    if not ok_av:
+        return api_response(False, message=av_err, status=400)
 
+    av_tag = variant_id or "NONE"
     canonical = [
-        f"ROOM_CREATE:{creator}:{slug}:{description}",
-        f"ROOM_CREATE:{creator}:{slug}:{clean_desc_or_err}",
+        f"ROOM_CREATE:{creator}:{slug}:{description}:{av_tag}",
+        f"ROOM_CREATE:{creator}:{slug}:{clean_desc_or_err}:{av_tag}",
     ]
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, creator, canonical

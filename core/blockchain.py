@@ -6305,7 +6305,8 @@ class Blockchain:
             if not ok_av:
                 return False, av_err, None
 
-            expected_payload = signed_payload or f"ROOM_CREATE:{clean_creator}:{slug}:{clean_desc}"
+            av_tag = variant_id or "NONE"
+            expected_payload = signed_payload or f"ROOM_CREATE:{clean_creator}:{slug}:{clean_desc}:{av_tag}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_creator, expected_payload, signature, public_key)
             if not sig_ok:
                 return False, sig_msg, None
