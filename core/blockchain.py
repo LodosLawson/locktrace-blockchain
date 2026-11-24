@@ -99,7 +99,7 @@ MIN_OBSERVER_STAKE = getattr(Config, "MIN_OBSERVER_STAKE", 100.0)             # 
 MAX_OBSERVER_STAKE = getattr(Config, "MAX_OBSERVER_STAKE", 100000.0)          # 100,000 BCT max allowed per observer stake
 MIN_VALIDATOR_STAKE = getattr(Config, "MIN_VALIDATOR_STAKE", 1000.0)          # 1000 BCT required for active validator node
 MIN_TRANSACTION = float(getattr(Config, "MIN_TRANSACTION", 0.01))             # Minimum transfer amount
-MAX_TRANSACTION = float(getattr(Config, "MAX_TRANSACTION", 1_000_000.0))       # Maximum single transfer amount
+MAX_TRANSACTION = float(getattr(Config, "MAX_TRANSACTION", 100_000_000.0))     # Maximum single transfer amount
 TARGET_BLOCK_TIME = getattr(Config, "TARGET_BLOCK_TIME", 20.0)                 # 20 seconds target block time
 LWMA_WINDOW = getattr(Config, "LWMA_WINDOW", 20)                              # 20 blocks window for difficulty adjustment
 MEMPOOL_MINER_WINDOW_SECONDS = 15.0      # Priority window for external PoW miners before fallback sealing
@@ -1150,11 +1150,11 @@ class Blockchain:
                 from config import Config
                 min_tx = float(getattr(Config, "MIN_TRANSACTION", 0.01))
                 min_fee = float(getattr(Config, "MIN_TRANSFER_FEE", 0.001))
-                max_tx = float(getattr(Config, "MAX_TRANSACTION", 1_000_000.0))
+                max_tx = float(getattr(Config, "MAX_TRANSACTION", 100_000_000.0))
             except Exception:
                 min_tx = 0.01
                 min_fee = 0.001
-                max_tx = 1_000_000.0
+                max_tx = 100_000_000.0
 
             if amount < min_tx:
                 return False, f"Minimum transfer amount is {min_tx} BCT to prevent network dust spam.", None
