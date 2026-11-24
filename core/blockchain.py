@@ -6976,6 +6976,7 @@ class Blockchain:
                 "description": description,
                 "creator": snd,
                 "original_creator": snd,
+                "original_creator_bns": creator_bns,
                 "creator_bns": creator_bns,
                 "transfer_count": 0,
                 "transfer_history": [],
@@ -7050,8 +7051,11 @@ class Blockchain:
             hist = room.setdefault("transfer_history", [])
             hist.append({
                 "from": snd,
+                "from_bns": self.bns_reverse.get(snd, ""),
                 "to": to_addr,
+                "to_bns": self.bns_reverse.get(to_addr, ""),
                 "timestamp": tx.timestamp,
+                "block_index": block_idx,
                 "tx_hash": tx.hash(),
             })
 
@@ -8038,6 +8042,20 @@ class Blockchain:
                 room_topics.sort(key=_hot_score, reverse=True)
 
             room_out = {k: v for k, v in room.items() if k != "topic_ids"}
+            orig_addr = room_out.get("original_creator") or room_out.get("creator") or ""
+            if not room_out.get("original_creator_bns") and orig_addr:
+                room_out["original_creator_bns"] = self.bns_reverse.get(orig_addr, "")
+            enriched_hist = []
+            for h_ev in (room.get("transfer_history") or []):
+                hc = dict(h_ev)
+                frm = hc.get("from", "")
+                to = hc.get("to", "")
+                if not hc.get("from_bns") and frm:
+                    hc["from_bns"] = self.bns_reverse.get(frm, "")
+                if not hc.get("to_bns") and to:
+                    hc["to_bns"] = self.bns_reverse.get(to, "")
+                enriched_hist.append(hc)
+            room_out["transfer_history"] = enriched_hist
             room_out["creator_avatar"] = None if room.get("is_anonymous") else self.avatar_equipped.get(room["creator"])
             room_out["topics"] = room_topics[:limit]
             room_out["tokenomics"] = get_rooms_tokenomics_summary()
