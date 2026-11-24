@@ -350,14 +350,82 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
     return False, 401, "Wallet signature authentication is required for this action.", "", "", ""
 
 
+# ── Adaptive Abuse Shield (Automatic Auto-Jail for Auth Fuzzers & Scanners) ──
+_ABUSE_SHIELD_LOCK = threading.Lock()
+_ABUSE_AUTH_HITS: dict = {}     # ip -> [timestamps of 401/403/409]
+_ABUSE_SCAN_HITS: dict = {}     # ip -> [timestamps of 404/405]
+_ABUSE_JAIL_UNTIL: dict = {}    # ip -> monotonic/epoch expiry timestamp
+_ABUSE_WHITELIST = {"127.0.0.1", "::1", "localhost"}
+
+
+def _is_ip_jailed(ip: str) -> float:
+    """Returns remaining jail seconds if IP is currently auto-jailed, else 0.0."""
+    if not ip or ip in _ABUSE_WHITELIST:
+        return 0.0
+    now = time.time()
+    with _ABUSE_SHIELD_LOCK:
+        exp = _ABUSE_JAIL_UNTIL.get(ip, 0.0)
+        if exp > now:
+            return exp - now
+        if exp:
+            _ABUSE_JAIL_UNTIL.pop(ip, None)
+    return 0.0
+
+
+def _record_abuse_signal(ip: str, status_code: int):
+    """Automatically jails IPs exhibiting automated auth fuzzing or endpoint scanning."""
+    if not ip or ip in _ABUSE_WHITELIST:
+        return
+    if status_code not in (401, 403, 404, 405, 409):
+        return
+    now = time.time()
+    cutoff = now - 60.0
+    with _ABUSE_SHIELD_LOCK:
+        # Bounded memory protection against IP-spoofing OOM
+        if len(_ABUSE_AUTH_HITS) > 10000:
+            _ABUSE_AUTH_HITS.clear()
+        if len(_ABUSE_SCAN_HITS) > 10000:
+            _ABUSE_SCAN_HITS.clear()
+        if len(_ABUSE_JAIL_UNTIL) > 10000:
+            _ABUSE_JAIL_UNTIL.clear()
+
+        if status_code in (401, 403, 409):
+            hits = [t for t in _ABUSE_AUTH_HITS.get(ip, []) if t > cutoff]
+            hits.append(now)
+            _ABUSE_AUTH_HITS[ip] = hits
+            if len(hits) >= 18:
+                _ABUSE_JAIL_UNTIL[ip] = now + 900.0  # 15 min auto-jail
+                _ABUSE_AUTH_HITS.pop(ip, None)
+                logger.warning(f"[ABUSE_SHIELD] Auto-jailed IP {ip} for 15m ({len(hits)} auth/nonce failures in 60s)")
+        elif status_code in (404, 405):
+            hits = [t for t in _ABUSE_SCAN_HITS.get(ip, []) if t > cutoff]
+            hits.append(now)
+            _ABUSE_SCAN_HITS[ip] = hits
+            if len(hits) >= 45:
+                _ABUSE_JAIL_UNTIL[ip] = now + 600.0  # 10 min auto-jail
+                _ABUSE_SCAN_HITS.pop(ip, None)
+                logger.warning(f"[ABUSE_SHIELD] Auto-jailed scanner IP {ip} for 10m ({len(hits)} 404/405 hits in 60s)")
+
+
 @app.before_request
 def before_request():
     g.start_time = time.time()
     g.request_id = secrets.token_hex(8)
+    if request.method != "OPTIONS" and request.path.startswith("/api/"):
+        ip = get_client_ip()
+        remain = _is_ip_jailed(ip)
+        if remain > 0:
+            return api_response(
+                False,
+                message=f"Automated abuse/fuzzing detected. Access temporarily suspended for {int(remain)}s.",
+                status=429,
+            )
 
 
 @app.after_request
 def after_request(response):
+    if request.path.startswith("/api/"):
+        _record_abuse_signal(get_client_ip(), response.status_code)
     duration = time.time() - getattr(g, "start_time", time.time())
     response.headers["X-Request-ID"] = getattr(g, "request_id", "unknown")
     response.headers["X-Response-Time"] = f"{duration:.4f}s"
@@ -1014,7 +1082,7 @@ def api_market_bot_wallet_detail(address):
     addr_clean = str(address or "").strip().lower()
     wallet_info = BOT_WALLETS.get(addr_clean)
     if not wallet_info:
-        return api_response(False, message="Bot wallet not found", code="NOT_FOUND"), 404
+        return api_response(False, message="Bot wallet not found", code="NOT_FOUND", status=404)
 
     eth_balance = 0.0125  # default gas reserve estimate
     wbct_balance = 797.0   # calibrated pool allocation
@@ -4129,6 +4197,9 @@ def api_bridge_claim_burn():
 
     if not (bct_address.startswith("BCT") and len(bct_address) == 43) or not re.match(r"^BCT[0-9a-fA-F]{40}$", bct_address) or re.match(r"^BCT0{40}$", bct_address, re.IGNORECASE):
         return api_response(False, message="Invalid or reserved LockTrace BCT recipient address.", status=400)
+
+    if blockchain.is_wallet_burned(bct_address):
+        return api_response(False, message="Recipient wallet has been permanently burned and cannot receive bridge unlocks.", status=403)
 
     if amount_bct < 1.0:
         return api_response(False, message="Minimum bridge amount is 1.00 BCT.", status=400)
