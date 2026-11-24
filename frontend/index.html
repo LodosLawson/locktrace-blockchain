@@ -61,7 +61,7 @@
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
   <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.13.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-nCkaS4575KbU6/8SbUTRN8AGZabOUHHsO+Xm9UzHkYk=" crossorigin="anonymous" defer></script>
+  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-fuio5yG0ADZDOyztZ+vlRmMhBuaxhAGkf5m75xo8O+A=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -25776,37 +25776,84 @@
         const cat = state.avatarCatalog;
         const items = cat ? (Array.isArray(cat.items) ? cat.items : (Array.isArray(cat.catalog) ? cat.catalog : [])) : [];
         if (!items || items.length === 0) {
-          return `<div class="text-xs text-on-surface-variant py-3 text-center">Avatar kataloğu yükleniyor...</div>`;
+          return `<div class="text-xs text-on-surface-variant py-4 text-center">Avatar kataloğu yükleniyor...</div>`;
         }
+        const safeBg = /^#[0-9A-Fa-f]{6}$/.test(String(selectedBg || '')) ? String(selectedBg).toUpperCase() : '#10B981';
+        const selItem = items.find(it => it.base_id === selectedBaseId) || items[0];
+        const liveVid = selItem ? `${selItem.base_id}-${safeBg.replace('#', '')}` : '';
+        const defaultColors = [
+          { hex: '#10B981', name_tr: 'Zümrüt' },
+          { hex: '#3B82F6', name_tr: 'Mavi' },
+          { hex: '#8B5CF6', name_tr: 'Mor' },
+          { hex: '#F59E0B', name_tr: 'Altın' },
+          { hex: '#EF4444', name_tr: 'Kırmızı' },
+          { hex: '#EC4899', name_tr: 'Pembe' },
+          { hex: '#06B6D4', name_tr: 'Turkuaz' },
+          { hex: '#1E293B', name_tr: 'Gece' },
+          { hex: '#FFFFFF', name_tr: 'Beyaz' },
+        ];
         const colors = (cat && Array.isArray(cat.curated_colors) && cat.curated_colors.length > 0)
           ? cat.curated_colors
-          : [{ hex: '#10B981', name_tr: 'Zümrüt' }, { hex: '#3B82F6', name_tr: 'Mavi' }, { hex: '#8B5CF6', name_tr: 'Mor' }, { hex: '#F59E0B', name_tr: 'Altın' }, { hex: '#EF4444', name_tr: 'Kırmızı' }, { hex: '#FFFFFF', name_tr: 'Beyaz' }];
+          : defaultColors;
+
         return `
-          <div class="flex flex-col gap-2.5 p-3 rounded-xl bg-surface-container border border-outline-variant/20">
-            <div class="flex items-center justify-between gap-2">
-              <span class="text-[11px] font-bold text-amber-400 flex items-center gap-1">
-                <span class="material-symbols-outlined notranslate text-[15px]" translate="no">lock</span>
-                Tek Seferlik & Kalıcı — Asla Değiştirilemez!
-              </span>
-              <span class="text-[10.5px] font-mono text-primary font-bold">+2.00 BCT</span>
+          <div class="flex flex-col gap-3.5 p-3.5 rounded-2xl bg-surface-container border border-outline-variant/20">
+            <!-- Profile-Style Live Preview Card -->
+            <div class="flex items-center gap-3.5 p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15">
+              <div class="w-20 h-20 rounded-2xl overflow-hidden shrink-0 shadow-lg ring-2 ring-primary/40 flex items-center justify-center transition-colors"
+                style="background-color:${esc(safeBg)};">
+                ${selItem ? `<img src="${esc(selItem.image_url)}" alt="${esc(selItem.name_tr || selItem.name)}" class="w-full h-full object-contain p-1 select-none pointer-events-none" />` : ''}
+              </div>
+              <div class="min-w-0 flex-1 flex flex-col gap-1">
+                <div class="flex items-center justify-between gap-2">
+                  <span class="text-xs font-bold text-on-surface truncate">${esc(selItem ? (selItem.name_tr || selItem.name) : 'Avatar Seç')}</span>
+                  <span class="text-[10.5px] font-mono text-primary font-bold shrink-0">+2.00 BCT</span>
+                </div>
+                <span class="text-[10.5px] font-mono text-primary/90 truncate">${esc(liveVid)}</span>
+                <span class="text-[10px] font-semibold text-amber-400 flex items-center gap-1">
+                  <span class="material-symbols-outlined notranslate text-[13px]" translate="no">lock</span>
+                  <span>Tek Seferlik & Kalıcı — Asla Değiştirilemez</span>
+                </span>
+              </div>
             </div>
-            <div class="flex items-center gap-1.5 flex-wrap">
-              ${colors.map(c => `
-                <button type="button" onclick="${onSelectColorFn}('${esc(c.hex)}')"
-                  class="w-6 h-6 rounded-full border-2 cursor-pointer transition-transform ${selectedBg === c.hex ? 'border-primary scale-110' : 'border-outline-variant/40'}"
-                  style="background-color:${esc(c.hex)};" title="${esc(c.name_tr || c.hex)}"></button>
-              `).join('')}
+
+            <!-- Background Color Studio (Swatches + Custom Color Wheel + Hex Input) -->
+            <div class="flex flex-col gap-2">
+              <div class="flex items-center justify-between">
+                <span class="text-[11px] font-bold text-on-surface">Arka Plan Rengi</span>
+                <div class="flex items-center gap-1.5">
+                  <label class="inline-flex items-center gap-1 px-2 py-1 rounded-lg bg-surface-container-low border border-outline-variant/25 text-[10.5px] font-semibold text-on-surface cursor-pointer hover:border-primary/50">
+                    <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">palette</span>
+                    <span>Özel Renk</span>
+                    <input type="color" value="${esc(safeBg)}"
+                      oninput="${onSelectColorFn}(this.value.toUpperCase())"
+                      class="w-4 h-4 rounded cursor-pointer border-0 bg-transparent p-0" />
+                  </label>
+                  <input type="text" maxlength="7" value="${esc(safeBg)}"
+                    onchange="if(/^#[0-9A-Fa-f]{6}$/.test(this.value.trim())){ ${onSelectColorFn}(this.value.trim().toUpperCase()); }"
+                    class="w-[74px] px-2 py-1 rounded-lg bg-surface-container-low border border-outline-variant/25 text-[10.5px] font-mono text-on-surface text-center focus:outline-none focus:border-primary" />
+                </div>
+              </div>
+              <div class="flex items-center gap-2 flex-wrap">
+                ${colors.map(c => `
+                  <button type="button" onclick="${onSelectColorFn}('${esc(c.hex)}')"
+                    class="w-7 h-7 rounded-full border-2 cursor-pointer transition-transform ${safeBg === String(c.hex).toUpperCase() ? 'border-primary scale-110 ring-2 ring-primary/30' : 'border-outline-variant/40 hover:scale-105'}"
+                    style="background-color:${esc(c.hex)};" title="${esc(c.name_tr || c.hex)}"></button>
+                `).join('')}
+              </div>
             </div>
-            <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-48 overflow-y-auto pr-1">
+
+            <!-- Avatar Character Grid -->
+            <div class="grid grid-cols-4 sm:grid-cols-6 gap-2 max-h-56 overflow-y-auto pr-1">
               ${items.map(it => {
-                const isSel = it.base_id === selectedBaseId;
+                const isSel = it.base_id === (selItem && selItem.base_id);
                 return `
                   <button type="button" onclick="${onSelectBaseFn}('${esc(it.base_id)}')"
-                    class="p-1.5 rounded-xl bg-surface-container-low border ${isSel ? 'border-primary ring-2 ring-primary/30' : 'border-outline-variant/15'} flex flex-col items-center gap-1 cursor-pointer">
-                    <div class="w-10 h-10 rounded-lg overflow-hidden" style="background-color:${esc(selectedBg)};">
+                    class="p-1.5 rounded-xl bg-surface-container-low border ${isSel ? 'border-primary ring-2 ring-primary/30' : 'border-outline-variant/15 hover:border-primary/40'} flex flex-col items-center gap-1 cursor-pointer transition-all">
+                    <div class="w-11 h-11 rounded-xl overflow-hidden" style="background-color:${esc(safeBg)};">
                       <img src="${esc(it.image_url)}" alt="${esc(it.name_tr || it.name)}" class="w-full h-full object-contain p-0.5" loading="lazy" />
                     </div>
-                    <span class="text-[9.5px] text-on-surface truncate w-full text-center">${esc(it.name_tr || it.name)}</span>
+                    <span class="text-[9.5px] text-on-surface truncate w-full text-center font-medium">${esc(it.name_tr || it.name)}</span>
                   </button>
                 `;
               }).join('')}
@@ -26195,10 +26242,16 @@
                     <span>Tüm Odalar</span>
                   </button>
                 ` : `
+                  ${isSimpleModeActive() ? `
+                    <button type="button" onclick="window.BlocTagSimpleMode && window.BlocTagSimpleMode.go('SCR-SPC-03')"
+                      class="w-9 h-9 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/20 text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center" title="Space'e Dön">
+                      <span class="material-symbols-outlined notranslate text-[18px]" translate="no">arrow_back</span>
+                    </button>
+                  ` : ''}
                   <button type="button" onclick="window.ProtocolRoomsUI.openCreate()"
                     class="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer hover:brightness-95 inline-flex items-center gap-1">
                     <span class="material-symbols-outlined notranslate text-[16px]" translate="no">add_circle</span>
-                    <span>Yeni Oda Aç</span>
+                    <span>Yeni Oda</span>
                   </button>
                 `}
               </div>

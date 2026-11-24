@@ -2333,8 +2333,7 @@
 
   function renderBottomNav() {
     const active = simpleState.activeScreen;
-    const isSpace = active === 'SCR-SPC-03' || active === 'SCR-SPC-04';
-    const isRooms = active === 'SCR-ROOMS';
+    const isSpace = active === 'SCR-SPC-03' || active === 'SCR-SPC-04' || active === 'SCR-ROOMS';
     const isWallet = active === 'SCR-WLT-HOME' || active === 'SCR-WLT-SEND' || active === 'SCR-ONB-01' || active === 'SCR-WLT-02';
     const isProfile = active === 'SCR-PRF-05' || active === 'SCR-PRF-FOLLOW' || active === 'SCR-PRF-FOLLOWERS' || active === 'SCR-PRF-FOLLOWING';
     const isMenu = active === 'SCR-MNU-07';
@@ -2347,13 +2346,6 @@
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[22px]" translate="no">tag</span>
             <span class="font-label-sm text-[10px] leading-none">${t('nav_space', 'Space')}</span>
-          </button>
-
-          <!-- 2. Protocol Rooms -->
-          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-ROOMS')"
-            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isRooms ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">meeting_room</span>
-            <span class="font-label-sm text-[10px] leading-none">${t('nav_rooms', 'Odalar')}</span>
           </button>
 
           <!-- 2. Wallet -->
@@ -3240,6 +3232,14 @@
                 <span>${simpleState.feedFilter === 'following' ? t('space_filter_following', 'Following') : t('space_filter_all', 'All')}</span>
               </button>
 
+              <!-- Protocol Rooms (Icon Only) -->
+              <button type="button" aria-label="Protocol Rooms"
+                title="Protocol Rooms"
+                onclick="window.BlocTagSimpleMode.go('SCR-ROOMS')"
+                class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-primary hover:bg-primary/15 transition-colors active:scale-95 cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">forum</span>
+              </button>
+
               <!-- Toggle between TikTok/Reels Snap and Classic List View -->
               <button type="button" aria-label="${t('feed_layout_list', 'Switch to List View')}"
                 title="${t('feed_layout_list', 'Switch to List View')}"
@@ -3317,11 +3317,10 @@
 
           <div class="flex items-center gap-1.5 shrink-0">
             <button type="button" aria-label="Protocol Rooms"
-              title="Protocol Rooms (Odalar)"
-              onclick="window.ProtocolRoomsUI && window.ProtocolRoomsUI.openDirectory()"
-              class="h-9 px-2.5 rounded-full bg-primary/15 border border-primary/30 flex items-center justify-center gap-1 text-primary hover:bg-primary/25 transition-colors active:scale-95 cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[17px]" translate="no">forum</span>
-              <span class="text-[11px] font-bold">Odalar</span>
+              title="Protocol Rooms"
+              onclick="window.BlocTagSimpleMode.go('SCR-ROOMS')"
+              class="w-9 h-9 rounded-full bg-surface-container-low flex items-center justify-center text-primary hover:bg-primary/15 transition-colors active:scale-95 cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">forum</span>
             </button>
             <button type="button" aria-label="${t('feed_layout_snap', 'Switch to TikTok / Reels View')}"
               title="${t('feed_layout_snap', 'Switch to TikTok / Reels View')}"
@@ -7210,6 +7209,10 @@
             navigateToSimpleScreen('SCR-SPC-03');
             return;
           }
+          if (cleanTab === 'rooms') {
+            navigateToSimpleScreen('SCR-ROOMS');
+            return;
+          }
           if (cleanTab === 'yeni-cuzdan') {
             BlocTagSimpleMode.startCreateWallet();
             return;
@@ -7236,6 +7239,43 @@
       };
       wrappedOpenMobileMenu._simpleHooked = true;
       window.openMobileMenuModal = wrappedOpenMobileMenu;
+    }
+
+    // Right-Edge 29px Swipe Gesture: Space (SCR-SPC-03) -> Protocol Rooms (SCR-ROOMS), and Left-Edge Swipe back
+    if (!window._simpleRoomsSwipeBound) {
+      window._simpleRoomsSwipeBound = true;
+      let swStartX = 0;
+      let swStartY = 0;
+      let swFromRightEdge = false;
+      let swFromLeftEdge = false;
+
+      document.addEventListener('touchstart', (e) => {
+        if (!simpleState.enabled || !e.touches || e.touches.length !== 1) return;
+        const t0 = e.touches[0];
+        swStartX = t0.clientX;
+        swStartY = t0.clientY;
+        swFromRightEdge = (window.innerWidth - swStartX) <= 29;
+        swFromLeftEdge = swStartX <= 29;
+      }, { passive: true });
+
+      document.addEventListener('touchend', (e) => {
+        if (!simpleState.enabled || (!swFromRightEdge && !swFromLeftEdge)) return;
+        const t1 = (e.changedTouches && e.changedTouches[0]) ? e.changedTouches[0] : null;
+        if (!t1) return;
+        const dx = t1.clientX - swStartX;
+        const dy = t1.clientY - swStartY;
+        const fromR = swFromRightEdge;
+        const fromL = swFromLeftEdge;
+        swFromRightEdge = false;
+        swFromLeftEdge = false;
+
+        if (Math.abs(dx) < 45 || Math.abs(dx) < Math.abs(dy) * 1.35) return;
+        if (fromR && dx < -45 && simpleState.activeScreen === 'SCR-SPC-03') {
+          navigateToSimpleScreen('SCR-ROOMS');
+        } else if (fromL && dx > 45 && simpleState.activeScreen === 'SCR-ROOMS') {
+          navigateToSimpleScreen('SCR-SPC-03');
+        }
+      }, { passive: true });
     }
   }
 
