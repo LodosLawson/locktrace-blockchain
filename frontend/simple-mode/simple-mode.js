@@ -2333,7 +2333,8 @@
 
   function renderBottomNav() {
     const active = simpleState.activeScreen;
-    const isSpace = active === 'SCR-SPC-03' || active === 'SCR-SPC-04' || active === 'SCR-ROOMS';
+    const isSpace = active === 'SCR-SPC-03' || active === 'SCR-SPC-04';
+    const isRooms = active === 'SCR-ROOMS';
     const isWallet = active === 'SCR-WLT-HOME' || active === 'SCR-WLT-SEND' || active === 'SCR-ONB-01' || active === 'SCR-WLT-02';
     const isProfile = active === 'SCR-PRF-05' || active === 'SCR-PRF-FOLLOW' || active === 'SCR-PRF-FOLLOWERS' || active === 'SCR-PRF-FOLLOWING';
     const isMenu = active === 'SCR-MNU-07';
@@ -2343,36 +2344,36 @@
         <div class="flex justify-around items-center h-14 px-1.5">
           <!-- 1. Space -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-SPC-03')"
-            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">tag</span>
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-emerald-400 font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px] ${isSpace ? 'px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400' : ''}" translate="no">tag</span>
             <span class="font-label-sm text-[10px] leading-none">${t('nav_space', 'Space')}</span>
           </button>
 
           <!-- 2. Wallet -->
           <button type="button" onclick="window.BlocTagSimpleMode.openWalletTab()"
-            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isWallet ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">account_balance_wallet</span>
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isWallet ? 'text-emerald-400 font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px] ${isWallet ? 'px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400' : ''}" translate="no">account_balance_wallet</span>
             <span class="font-label-sm text-[10px] leading-none">${t('nav_wallet', 'Wallet')}</span>
           </button>
 
           <!-- Center: Protocol Rooms (Pro-Style Icon Only) -->
           <button type="button" aria-label="Protocol Rooms" title="Protocol Rooms"
             onclick="window.BlocTagSimpleMode.go('SCR-ROOMS')"
-            class="flex items-center justify-center w-11 h-11 rounded-2xl mx-1 transition-all active:scale-95 cursor-pointer ${active === 'SCR-ROOMS' ? 'bg-primary text-on-primary shadow-md shadow-primary/30' : 'bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25'}">
+            class="flex items-center justify-center w-11 h-11 rounded-2xl mx-1 transition-all active:scale-95 cursor-pointer ${isRooms ? 'bg-emerald-500 text-slate-950 shadow-md shadow-emerald-500/35' : 'bg-surface-container text-on-surface-variant hover:text-emerald-400 border border-outline-variant/25'}">
             <span class="material-symbols-outlined notranslate text-[22px]" translate="no">meeting_room</span>
           </button>
 
           <!-- 3. Profile -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
-            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">person</span>
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isProfile ? 'text-emerald-400 font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px] ${isProfile ? 'px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400' : ''}" translate="no">person</span>
             <span class="font-label-sm text-[10px] leading-none">${t('nav_profile', 'Profile')}</span>
           </button>
 
           <!-- 4. Menu -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-MNU-07')"
-            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isMenu ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
-            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">widgets</span>
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isMenu ? 'text-emerald-400 font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px] ${isMenu ? 'px-3 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400' : ''}" translate="no">widgets</span>
             <span class="font-label-sm text-[10px] leading-none font-semibold">${t('nav_menu', 'Menu')}</span>
           </button>
         </div>

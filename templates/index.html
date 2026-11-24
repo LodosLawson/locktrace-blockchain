@@ -61,7 +61,7 @@
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
   <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.13.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-bgflU5Rb0zcmCiDxtGSFOIwEuN1QITFUF7Ickd3Yn+4=" crossorigin="anonymous" defer></script>
+  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-JRk2BPD9tQW7r4obWB3Z3V7FPCZhayvreZPlizC9/5Y=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -4851,10 +4851,10 @@
                   onclick="switchTab('rooms')" title="Protocol Rooms (Odalar)" type="button">
                   <span class="material-symbols-outlined notranslate text-[18px]" translate="no">meeting_room</span>
                 </button>
-                <button aria-label="Reels Modu"
+                <button id="btnProSpaceReels" aria-label="Reels Modu"
                   class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary active:scale-95 transition-all border border-outline-variant/20 cursor-pointer"
-                  onclick="enterProReelsMode()" title="Reels Moduna Geç" type="button">
-                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">movie</span>
+                  onclick="toggleProSpaceReelsMode()" title="Reels Modu (Aç/Kapat)" type="button">
+                  <span id="iconProSpaceReels" class="material-symbols-outlined notranslate text-[18px]" translate="no">movie</span>
                 </button>
                 <button aria-label="Search Feed"
                   class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-95 transition-all border border-outline-variant/20 cursor-pointer"
@@ -7347,11 +7347,11 @@
         <span class="material-symbols-outlined notranslate text-[23px]" translate="no">meeting_room</span>
         <span class="font-label-sm text-[10px] font-medium leading-none">Rooms</span>
       </button>
-      <button
-        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95"
-        data-tab="yeni-cuzdan" onclick="switchTab('yeni-cuzdan')" type="button">
-        <span class="material-symbols-outlined notranslate text-[23px]" translate="no">add_circle</span>
-        <span class="font-label-sm text-[10px] font-medium leading-none">New</span>
+      <button id="mobileNavProfileBtn"
+        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 cursor-pointer"
+        data-tab="profile" onclick="openProMobileProfileTab()" type="button">
+        <span class="material-symbols-outlined notranslate text-[23px]" translate="no">person</span>
+        <span class="font-label-sm text-[10px] font-medium leading-none">Profile</span>
       </button>
       <button
         class="mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer"
@@ -12172,24 +12172,35 @@
         el.classList.toggle('active', el.id === 'tab-' + target);
       });
 
-      // Desktop Sidebar Active Highlight
+      // Desktop Sidebar Active Highlight (Green active icon background)
       document.querySelectorAll('#sidebar-nav .nav-item').forEach((btn) => {
         const active = btn.getAttribute('data-tab') === target;
         btn.className = active
-          ? 'nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface font-semibold bg-surface-container-high transition-all font-label-lg text-label-lg'
+          ? 'nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface font-semibold bg-emerald-500/15 border border-emerald-500/30 transition-all font-label-lg text-label-lg'
           : 'nav-item flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-on-surface-variant hover:bg-surface-container hover:text-on-surface transition-all font-label-lg text-label-lg';
         const firstIcon = btn.querySelector('.material-symbols-outlined');
         if (firstIcon) {
-          firstIcon.classList.toggle('text-primary', active);
+          firstIcon.classList.toggle('bg-emerald-500/25', active);
+          firstIcon.classList.toggle('text-emerald-400', active);
+          firstIcon.classList.toggle('p-1', active);
+          firstIcon.classList.toggle('rounded-lg', active);
         }
       });
 
-      // Mobile Bottom Nav Active Highlight (Only for tabs with data-tab)
+      // Mobile Bottom Nav Active Highlight (Green active icon pill)
       document.querySelectorAll('#mobile-nav .mobile-nav-btn[data-tab]').forEach((btn) => {
         const active = btn.getAttribute('data-tab') === target;
         btn.className = active
-          ? 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-primary font-semibold transition-colors'
-          : 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors';
+          ? 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-emerald-400 font-semibold transition-colors cursor-pointer'
+          : 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer';
+        const iconEl = btn.querySelector('.material-symbols-outlined');
+        if (iconEl) {
+          iconEl.classList.toggle('bg-emerald-500/20', active);
+          iconEl.classList.toggle('text-emerald-400', active);
+          iconEl.classList.toggle('px-3', active);
+          iconEl.classList.toggle('py-0.5', active);
+          iconEl.classList.toggle('rounded-full', active);
+        }
       });
 
       if (typeof updateMobileNavMenuButtonState === 'function') {
@@ -15725,6 +15736,64 @@
       }
 
       const myAddr = currentAccount ? currentAccount.address : '';
+      if (window.proSpaceFeedLayout === 'snap') {
+        stream.className = 'flex flex-col h-[calc(100dvh-215px)] min-h-[460px] overflow-y-scroll snap-y snap-mandatory no-scrollbar rounded-2xl border border-outline-variant/20 bg-surface-container-low/40';
+        stream.innerHTML = list.map((post, idx) => {
+          const pid = sanitizeJsAttr(post.post_id);
+          const likedByMe = myAddr && Array.isArray(post.likes) && post.likes.includes(myAddr);
+          const likesCount = Number(post.likes_count || (post.likes ? post.likes.length : 0));
+          const postComments = Array.isArray(post.comments) ? post.comments : [];
+          const commentsCount = Number(post.comments_count || postComments.length || 0);
+          const earned = Number(post.author_earnings || 0);
+          const isAnon = post.author_bns === 'anonymous' || post.author_bns === 'anon' || Boolean(post.is_anonymous);
+          const displayAuthor = isAnon ? '🕵️ Anonim' : (post.author_bns ? '@' + post.author_bns : shortAddr(post.author));
+          const initialLetter = isAnon ? '?' : (post.author_bns ? post.author_bns.charAt(0).toUpperCase() : (post.author ? post.author.slice(3, 4).toUpperCase() : 'U'));
+          const av = (!isAnon && post.author_avatar && post.author_avatar.image_url) ? post.author_avatar : null;
+          const avHtml = av
+            ? `<div class="w-11 h-11 rounded-full overflow-hidden ring-2 ring-primary/40 shrink-0" style="background-color:${escapeHtml(av.bg_color || '#10B981')};"><img src="${escapeHtml(av.image_url)}" alt="avatar" class="w-full h-full object-contain p-0.5" loading="lazy" /></div>`
+            : `<div class="w-11 h-11 rounded-full bg-primary/20 text-primary font-bold flex items-center justify-center ring-2 ring-primary/30 shrink-0">${escapeHtml(initialLetter)}</div>`;
+          const authorClick = (!isAnon && post.author) ? `onclick="event.stopPropagation(); openUserProfile('${sanitizeJsAttr(post.author)}')"` : '';
+          return `
+            <article class="min-h-full h-full snap-start snap-always flex flex-col justify-between p-5 sm:p-6 border-b border-outline-variant/15 bg-gradient-to-b from-surface-container-low via-surface to-surface-container-low shrink-0">
+              <div class="flex items-center justify-between gap-3">
+                <div class="flex items-center gap-3 min-w-0 cursor-pointer" ${authorClick}>
+                  ${avHtml}
+                  <div class="min-w-0">
+                    <div class="text-sm font-bold text-on-surface truncate">${escapeHtml(displayAuthor)}</div>
+                    <div class="text-[11px] font-mono text-on-surface-variant">${escapeHtml(formatTimeAgo(post.timestamp))} • Blok #${escapeHtml(String(post.block_index || 'Mempool'))}</div>
+                  </div>
+                </div>
+                <span class="px-2.5 py-0.5 rounded-full bg-surface-container text-[10.5px] font-mono text-on-surface-variant shrink-0">${idx + 1} / ${list.length}</span>
+              </div>
+
+              <div class="flex-1 flex items-center py-6 overflow-y-auto cursor-pointer" onclick="openSpacePostDetail('${pid}')">
+                <p class="text-base sm:text-lg leading-relaxed text-on-surface whitespace-pre-wrap break-words w-full">${escapeHtml(String(post.content || ''))}</p>
+              </div>
+
+              <div class="pt-3 border-t border-outline-variant/15 flex items-center justify-between gap-2">
+                <div class="flex items-center gap-2">
+                  <button type="button" onclick="event.stopPropagation(); likeSpacePost('${pid}')"
+                    class="px-3.5 py-2 rounded-full ${likedByMe ? 'bg-rose-500/20 text-rose-400 border border-rose-500/35' : 'bg-surface-container text-on-surface-variant hover:text-rose-400 border border-outline-variant/20'} text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95">
+                    <span class="material-symbols-outlined notranslate text-[17px]" translate="no">favorite</span>
+                    <span>${likesCount}</span>
+                  </button>
+                  <button type="button" onclick="event.stopPropagation(); openSpacePostDetail('${pid}')"
+                    class="px-3.5 py-2 rounded-full bg-surface-container text-on-surface-variant hover:text-primary border border-outline-variant/20 text-xs font-bold flex items-center gap-1.5 cursor-pointer transition-all active:scale-95">
+                    <span class="material-symbols-outlined notranslate text-[17px]" translate="no">chat_bubble</span>
+                    <span>${commentsCount}</span>
+                  </button>
+                </div>
+                <div class="flex items-center gap-2 text-[11px] font-mono text-primary">
+                  ${earned > 0 ? `<span class="px-2 py-0.5 rounded-full bg-primary/15">+${earned.toFixed(3)} BCT</span>` : ''}
+                  <span class="text-on-surface-variant/70 text-[10px]">${idx < list.length - 1 ? '↓ Kaydır' : 'Son'}</span>
+                </div>
+              </div>
+            </article>
+          `;
+        }).join('');
+        return;
+      }
+      stream.className = 'flex flex-col gap-3 px-1 sm:px-2 md:px-0';
       stream.innerHTML = list.map((post) => {
         const pid = sanitizeJsAttr(post.post_id);
         const isMine = myAddr && post.author === myAddr;
@@ -24342,18 +24411,44 @@
       } catch (_re) { }
     }
 
-    function enterProReelsMode() {
-      try {
-        localStorage.setItem('bloctag_simple_feed_layout', 'snap');
-      } catch (_e) { }
-      if (typeof toggleSimpleModeSetting === 'function') {
-        toggleSimpleModeSetting(true);
+    window.proSpaceFeedLayout = 'classic';
+    function toggleProSpaceReelsMode() {
+      window.proSpaceFeedLayout = (window.proSpaceFeedLayout === 'snap') ? 'classic' : 'snap';
+      const btn = document.getElementById('btnProSpaceReels');
+      const ic = document.getElementById('iconProSpaceReels');
+      const isSnap = window.proSpaceFeedLayout === 'snap';
+      if (btn) {
+        btn.classList.toggle('bg-emerald-500/20', isSnap);
+        btn.classList.toggle('text-emerald-400', isSnap);
+        btn.classList.toggle('border-emerald-500/40', isSnap);
+        btn.classList.toggle('bg-surface-container-low', !isSnap);
+        btn.classList.toggle('text-on-surface-variant', !isSnap);
       }
-      setTimeout(() => {
-        if (window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.go === 'function') {
-          window.BlocTagSimpleMode.go('SCR-SPC-03');
-        }
-      }, 80);
+      if (ic) ic.textContent = isSnap ? 'view_agenda' : 'movie';
+      if (typeof renderSpacePosts === 'function') renderSpacePosts();
+      showToast(isSnap ? 'Pro Reels Akış Modu Aktif' : 'Klasik Space Akışına Dönüldü', isSnap ? 'movie' : 'view_agenda');
+    }
+
+    function openProMobileProfileTab() {
+      if (currentAccount && currentAccount.address && typeof openUserProfile === 'function') {
+        document.querySelectorAll('#mobile-nav .mobile-nav-btn[data-tab]').forEach((btn) => {
+          const active = btn.getAttribute('data-tab') === 'profile';
+          btn.className = active
+            ? 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-emerald-400 font-semibold transition-colors cursor-pointer'
+            : 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer';
+          const iconEl = btn.querySelector('.material-symbols-outlined');
+          if (iconEl) {
+            iconEl.classList.toggle('bg-emerald-500/20', active);
+            iconEl.classList.toggle('text-emerald-400', active);
+            iconEl.classList.toggle('px-3', active);
+            iconEl.classList.toggle('py-0.5', active);
+            iconEl.classList.toggle('rounded-full', active);
+          }
+        });
+        openUserProfile(currentAccount.address);
+      } else if (typeof switchTab === 'function') {
+        switchTab('yeni-cuzdan');
+      }
     }
 
     document.addEventListener('DOMContentLoaded', initApp);
@@ -25309,14 +25404,16 @@
       }
 
       function isSimpleModeActive() {
-        return !!(document.body && document.body.classList.contains('bloctag-simple-mode-active') && window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.go === 'function');
+        if (document.getElementById('simpleRoomsPageRoot')) return true;
+        const shell = document.getElementById('bloctag-simple-shell');
+        if (shell && !shell.classList.contains('hidden')) return true;
+        return !!(window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.isEnabled === 'function' && window.BlocTagSimpleMode.isEnabled());
       }
 
       function getPageContainer() {
-        if (isSimpleModeActive()) {
-          return document.getElementById('simpleRoomsPageRoot') || document.getElementById('protocolRoomsPageRoot');
-        }
-        return document.getElementById('protocolRoomsPageRoot') || document.getElementById('simpleRoomsPageRoot');
+        const simpleEl = document.getElementById('simpleRoomsPageRoot');
+        if (simpleEl) return simpleEl;
+        return document.getElementById('protocolRoomsPageRoot');
       }
 
       function openModal() {
