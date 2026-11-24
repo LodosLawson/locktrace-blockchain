@@ -253,6 +253,82 @@ class TestRoyaltyTransferAndBurnRedirect(unittest.TestCase):
 
         self._assert_zero_drift()
 
+    def test_bulk_post_royalty_transfer_all_1000_bct_and_per_post_3_year_rule(self):
+        """Tests bulk transfer-all (1,000 BCT), per-post 3/year cap skipping, insufficient balance, and zero-drift conservation."""
+        # Fund A with 2,500 BCT so A can afford 1,000 BCT bulk transfer
+        rich_a = _make_funded_wallet(self.bc, 2500.0)
+        pid1 = self._create_post(rich_a, "Bulk post #1")
+        pid2 = self._create_post(rich_a, "Bulk post #2")
+        pid3 = self._create_post(rich_a, "Bulk post #3 (will hit 3/3 limit)")
+        self.bc.mine_pending_block(TREASURY_ADDRESS)
+
+        # Exhaust pid3's 3/year limit across wallets: rich_a -> wb -> wc -> rich_a
+        for frm, to in ((rich_a, self.wb), (self.wb, self.wc), (self.wc, rich_a)):
+            pl = f"POST_ROYALTY_TRANSFER:{frm.address}:{pid3}:{to.address}"
+            ok, msg, _ = self.bc.transfer_post_royalty(frm.address, pid3, to.address, frm.sign(pl), frm.pub_hex, pl)
+            self.assertTrue(ok, msg)
+            self.bc.mine_pending_block(TREASURY_ADDRESS)
+
+        # Insufficient balance check: wb only has ~50 BCT (< 1,000 BCT)
+        pid_b = self._create_post(self.wb, "B's single post")
+        self.bc.mine_pending_block(TREASURY_ADDRESS)
+        pb_low = f"POST_ROYALTY_TRANSFER_ALL:{self.wb.address}:{self.wc.address}"
+        ok, msg_low, _ = self.bc.transfer_all_post_royalties(
+            self.wb.address, self.wc.address, self.wb.sign(pb_low), self.wb.pub_hex, pb_low
+        )
+        self.assertFalse(ok)
+        self.assertIn("1,000.00", msg_low)
+
+        # Security: burned wallet target & system target rejected
+        self._burn_wallet(self.wx)
+        for bad_to in (self.wx.address, TREASURY_ADDRESS, VALIDATOR_STAKE_VAULT_ADDRESS, rich_a.address):
+            p_bad = f"POST_ROYALTY_TRANSFER_ALL:{rich_a.address}:{bad_to}"
+            ok, _, _ = self.bc.transfer_all_post_royalties(
+                rich_a.address, bad_to, rich_a.sign(p_bad), rich_a.pub_hex, p_bad
+            )
+            self.assertFalse(ok)
+
+        # Preview check before bulk transfer
+        prev = self.bc.get_bulk_royalty_transfer_preview(rich_a.address)
+        self.assertEqual(prev["eligible_count"], 2)
+        self.assertEqual(prev["skipped_limit_count"], 1)
+        self.assertIn(pid3, prev["skipped_post_ids"])
+
+        # Execute Bulk Transfer All: rich_a -> wb (1,000 BCT)
+        bal_a_before = self.bc.verify_and_recalc_units(rich_a.address)
+        p_bulk = f"POST_ROYALTY_TRANSFER_ALL:{rich_a.address}:{self.wb.address}"
+        ok, msg, res = self.bc.transfer_all_post_royalties(
+            rich_a.address, self.wb.address, rich_a.sign(p_bulk), rich_a.pub_hex, p_bulk
+        )
+        self.assertTrue(ok, msg)
+        self.assertEqual(res["transferred_count"], 2)
+        self.assertEqual(res["skipped_limit_count"], 1)
+        self.assertEqual(res["cost"], 1000.0)
+        self.assertEqual(bal_a_before - self.bc.verify_and_recalc_units(rich_a.address), int(round(1000.0 * ATOMIC_UNIT)))
+        self.bc.mine_pending_block(TREASURY_ADDRESS)
+
+        # Verify pid1 & pid2 now pay royalties to wb, while skipped pid3 still pays rich_a
+        b_before = self.bc.verify_and_recalc_units(self.wb.address)
+        a_before = self.bc.verify_and_recalc_units(rich_a.address)
+        for p_target in (pid1, pid2, pid3):
+            lp = f"like:{self.wc.address}:{p_target}"
+            ok, msg, _ = self.bc.like_space_post(self.wc.address, p_target, self.wc.sign(lp), self.wc.pub_hex, lp)
+            self.assertTrue(ok, msg)
+        self.assertEqual(self.bc.verify_and_recalc_units(self.wb.address) - b_before, int(round(0.004 * ATOMIC_UNIT)))
+        self.assertEqual(self.bc.verify_and_recalc_units(rich_a.address) - a_before, int(round(0.002 * ATOMIC_UNIT)))
+
+        # Second bulk transfer attempt by rich_a (only pid3 at 3/3 remains) -> REJECTED, NO 1,000 BCT charged!
+        a_bal_pre = self.bc.verify_and_recalc_units(rich_a.address)
+        p_bulk2 = f"POST_ROYALTY_TRANSFER_ALL:{rich_a.address}:{self.wc.address}"
+        ok2, msg2, _ = self.bc.transfer_all_post_royalties(
+            rich_a.address, self.wc.address, rich_a.sign(p_bulk2), rich_a.pub_hex, p_bulk2
+        )
+        self.assertFalse(ok2)
+        self.assertIn("3/3", msg2)
+        self.assertEqual(self.bc.verify_and_recalc_units(rich_a.address), a_bal_pre)
+
+        self._assert_zero_drift()
+
 
 if __name__ == "__main__":
     unittest.main()

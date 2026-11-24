@@ -217,6 +217,7 @@ def check_wallet_cooldown(wallet: str, action: str) -> Optional[Tuple[bool, str,
             "space_comment": "Yorum",
             "space_follow": "Takip etme",
             "space_royalty_transfer": "Telif hakkı devri",
+            "space_royalty_transfer_all": "Toplu telif hakkı devri",
             "bns_register": "Alan adı kaydı",
             "room_create": "Oda oluşturma",
             "room_set_avatar": "Oda avatarı mühürleme",
@@ -483,7 +484,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-ECTeFyPtbfBC/6yzDAPrkQ755ZeLn4n8BME9QYsZjOE=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-MgUcDN4+Cv8YVjvONDRhOmTDpQtVOKEM4AEGqpTSMAw=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -3113,6 +3114,80 @@ def api_space_post_royalty_transfer(post_id):
                 title="💎 Paylaşım Telif Hakkı Size Devredildi!",
                 body=f"{pid} paylaşımının gelecek beğeni ve yorum telif gelirleri artık cüzdanınıza akacak.",
                 url=f"/?post={pid}",
+                category="space",
+            )
+        except Exception:
+            pass
+    return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/space/royalty/bulk-preview/<address>", methods=["GET"])
+def api_space_royalty_bulk_preview(address):
+    """Returns count of eligible & 3/3-limited Space posts for bulk royalty transfer (1,000 BCT)."""
+    if not check_rate_limit("space_royalty_preview", limit=30, window_seconds=60):
+        return api_response(False, message="Too many requests. Please wait.", status=429)
+    preview = blockchain.get_bulk_royalty_transfer_preview(address)
+    return api_response(True, data=preview, status=200)
+
+
+@app.route("/api/v1/space/royalty/transfer-all", methods=["POST"])
+def api_space_post_royalty_transfer_all():
+    """
+    Transfers royalty rights of ALL eligible Space posts held by the signer to a new
+    BCT address or .bct handle in a single atomic transaction (1,000 BCT; per-post 3/365d limit).
+    """
+    if not check_rate_limit("space_royalty_transfer_all", limit=5, window_seconds=60):
+        return api_response(False, message="Too many bulk royalty transfer requests. Please wait.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    from_address = str(data.get("from_address") or data.get("holder") or data.get("author") or "").strip()
+    to_address = str(data.get("to_address") or "").strip()
+
+    if not from_address or not to_address:
+        return api_response(False, message="Fields 'from_address' and 'to_address' are required.", status=400)
+
+    from core.blockchain import normalize_bct_address, is_valid_bct_address
+    resolved_to = normalize_bct_address(to_address)
+    if not is_valid_bct_address(resolved_to):
+        norm_bns = blockchain._normalize_bns_name(to_address.lstrip("@"))
+        bns_rec = blockchain.bns_records.get(norm_bns)
+        if bns_rec and is_valid_bct_address(bns_rec.get("owner", "")):
+            resolved_to = normalize_bct_address(bns_rec["owner"])
+
+    canonical = [
+        f"POST_ROYALTY_TRANSFER_ALL:{from_address}:{resolved_to}",
+        f"POST_ROYALTY_TRANSFER_ALL:{from_address}:{to_address}",
+    ]
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, from_address, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(from_address, "space_royalty_transfer_all")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
+
+    success, message, result = blockchain.transfer_all_post_royalties(
+        current_holder=from_address,
+        to_address=to_address,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.info(
+        f"Bulk Space Post Royalty Transferred: {result.get('transferred_count', 0)} posts from {from_address[:10]}... -> {result.get('new_royalty_owner', '')[:10]}..."
+    )
+    if push_service and result and result.get("new_royalty_owner") and result.get("new_royalty_owner") != from_address:
+        try:
+            push_service.send_push_to_wallet(
+                result["new_royalty_owner"],
+                title="💎 Toplu Telif Hakkı Size Devredildi!",
+                body=f"{result.get('transferred_count', 0)} adet Space paylaşımının gelecek telif gelirleri artık cüzdanınıza akacak.",
+                url="/#space",
                 category="space",
             )
         except Exception:

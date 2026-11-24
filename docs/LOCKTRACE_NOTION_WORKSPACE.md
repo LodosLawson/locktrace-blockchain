@@ -216,7 +216,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.14.0` | Kapalı Cüzdan Telif Hazine Yönlendirmesi, Paylaşım Telif Devri (Yılda En Fazla 3), Adaptive Abuse Shield & Tor Yazma Koruması, Protocol Rooms, Rust Core Acceleration, Base L2 WrappedBlocTag |
+| **Ağ Sürümü** | `v2.15.0` | Toplu Paylaşım Telif Devri (`1,000 BCT`, paylaşım bazlı 3/yıl limiti), Kapalı Cüzdan Telif Hazine Yönlendirmesi, Adaptive Abuse Shield & Tor Yazma Koruması, Protocol Rooms |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
 | **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -752,3 +752,11 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - **Güvenlik Kuralları:** Son 365 günde paylaşım başına en fazla **3 devir**, önceki sahibin yetkisinin anında düşmesi, mempool çift-devir kilidi ve yakılmış/sistem adreslerine devrin reddi.
 3. **Adaptive Abuse Shield & Simple Mode `SCR-ROOMS` Düzeltmesi:**
    - 60 saniyede 10 kimlik doğrulama hatası veya 8 rate-limit aşımında 15 dakikalık otomatik IP karantinası + Tor çıkış düğümlerine `POST /api/` yazma engeli aktif edildi. Simple Mode'da `SCR-ROOMS` yönlendirici listesi ve SW/SRI önbellek yenilemesi (`locktrace-pwa-v100`) tamamlandı.
+
+## 💎 37. BlocTag / LockTrace v2.15.0: Toplu Paylaşım Telif Devri (`1,000 BCT`) & Pro Mod Alt Menü Optimizasyonu
+
+1. **Tek İşlemde Toplu Paylaşım Telif Devri (`space_royalty_transfer_all` — `1,000 BCT`):**
+   - Kullanıcı, mevcut telif sahibi olduğu tüm uygun Space paylaşımlarını tek ECDSA imzalı işlemle (`POST /api/v1/space/royalty/transfer-all`) başka bir `BCT...` adresine veya `.bct` alan adına devredebilir (`500 BCT` Hazine + `500 BCT` Validator/Miner havuzu).
+   - **Paylaşım Bazlı 3/Yıl Kuralı:** Yıllık 3 devir limiti cüzdandan bağımsız olarak her paylaşımın kendi 365 günlük geçmişi üzerinden hesaplanır; `3/3` limitine ulaşmış paylaşımlar güvenle atlanır ve uygun paylaşım yoksa ücret kesilmez.
+2. **Pro Mod Profil Alt Menü Sabitlemesi:**
+   - Alt menüden Profil açıldığında `body { position: fixed }` kaynaklı yukarı kayma ve alt boşluk giderildi; `#mobile-nav` ekranın en altına boşluksuz sabitlendi.

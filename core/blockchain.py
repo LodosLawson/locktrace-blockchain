@@ -633,14 +633,15 @@ class Blockchain:
     ):
         fee_bearing_types = {
             "transfer", "space_post", "space_like", "space_comment", "space_follow",
-            "space_royalty_transfer",
+            "space_royalty_transfer", "space_royalty_transfer_all",
             "bns_register", "bns_transfer", "bns_set_price", "bns_buy",
             "bns_accept_offer", "avatar_mint", "avatar_equip",
             "room_create", "room_set_avatar", "room_transfer", "room_topic", "room_reply", "room_upvote",
             "room_verify"
         }
         net_credit_types = {
-            "transfer", "space_post", "space_royalty_transfer", "bns_register", "bns_buy",
+            "transfer", "space_post", "space_royalty_transfer", "space_royalty_transfer_all",
+            "bns_register", "bns_buy",
             "validator_stake", "validator_unstake", "avatar_mint", "avatar_equip",
             "room_create", "room_set_avatar", "room_transfer", "room_verify"
         }
@@ -1865,6 +1866,217 @@ class Blockchain:
                 "transfers_remaining_year": remaining_after,
                 "max_transfers_per_year": POST_ROYALTY_MAX_PER_YEAR,
                 "cost": POST_ROYALTY_TRANSFER_COST,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+                "new_balance": self.balances[clean_from],
+            }
+
+    def get_bulk_royalty_transfer_preview(self, holder_address: str) -> dict:
+        """
+        Returns live counts of Space posts currently held by `holder_address` that are eligible
+        for bulk royalty transfer (each post independently checked against its own 3/365d limit).
+        """
+        POST_ROYALTY_MAX_PER_YEAR = 3
+        POST_ROYALTY_WINDOW_SECONDS = 365 * 24 * 3600
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_space_index()
+            clean_holder = normalize_bct_address(holder_address)
+            now_ts = time.time()
+            cutoff_ts = now_ts - POST_ROYALTY_WINDOW_SECONDS
+
+            pending_pids = set()
+            for t in self.pending_transactions:
+                if t.tx_type == "space_royalty_transfer" and isinstance(t.extra_data, dict):
+                    pending_pids.add(str(t.extra_data.get("post_id", "")).strip())
+                elif t.tx_type == "space_royalty_transfer_all" and isinstance(t.extra_data, dict):
+                    for pp in (t.extra_data.get("post_ids") or []):
+                        pending_pids.add(str(pp).strip())
+
+            eligible_pids = []
+            skipped_limit_pids = []
+            for pid, post in self.space_posts.items():
+                r_owner = normalize_bct_address(post.get("royalty_owner") or post.get("author", ""))
+                if r_owner != clean_holder:
+                    continue
+                if pid in pending_pids:
+                    skipped_limit_pids.append(pid)
+                    continue
+                hist = post.get("royalty_transfers") or []
+                recent_cnt = sum(1 for tr in hist if float(tr.get("timestamp", 0) or 0) >= cutoff_ts)
+                if recent_cnt >= POST_ROYALTY_MAX_PER_YEAR:
+                    skipped_limit_pids.append(pid)
+                else:
+                    eligible_pids.append(pid)
+
+            eligible_pids.sort()
+            skipped_limit_pids.sort()
+            return {
+                "holder": clean_holder,
+                "total_held_posts": len(eligible_pids) + len(skipped_limit_pids),
+                "eligible_count": len(eligible_pids),
+                "skipped_limit_count": len(skipped_limit_pids),
+                "eligible_post_ids": eligible_pids,
+                "skipped_post_ids": skipped_limit_pids,
+                "fee_bct": 1000.0,
+                "max_transfers_per_post_per_year": POST_ROYALTY_MAX_PER_YEAR,
+            }
+
+    def transfer_all_post_royalties(
+        self,
+        current_holder: str,
+        to_address: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Atomically transfers royalty rights of ALL eligible Space posts currently held by
+        `current_holder` to a new BCT wallet or resolved .bct handle in a single transaction.
+        Protocol Security Rules (v2.15.0):
+        - Fee: 1,000.00 BCT (500.00 BCT Treasury, 500.00 BCT Validator/Miner Pool).
+        - Per-Post 3/Year Rule (Wallet-Independent): Each post is checked independently against
+          its own rolling 365-day transfer history (max 3 transfers/post/year). Posts already at
+          3/3 are safely skipped; if 0 eligible posts exist, the tx is rejected (no fee charged).
+        - Burned/closed wallets and system/vault addresses are strictly rejected.
+        """
+        BULK_TRANSFER_COST = 1000.0
+        BULK_TREASURY_CUT = 500.0
+        BULK_POOL_CUT = 500.0
+        POST_ROYALTY_MAX_PER_YEAR = 3
+        POST_ROYALTY_WINDOW_SECONDS = 365 * 24 * 3600
+
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_space_index()
+
+            clean_from = normalize_bct_address(current_holder)
+            if not is_valid_bct_address(clean_from):
+                return False, f"Invalid royalty holder address: '{clean_from}'", None
+            if self.is_wallet_burned(clean_from):
+                return False, "Permanently burned wallets cannot transfer royalty rights.", None
+
+            raw_to = str(to_address or "").strip()
+            if not raw_to:
+                return False, "Recipient address or .bct handle is required.", None
+
+            clean_to = normalize_bct_address(raw_to)
+            if not is_valid_bct_address(clean_to):
+                norm_bns = self._normalize_bns_name(raw_to.lstrip("@"))
+                bns_rec = self.bns_records.get(norm_bns)
+                if bns_rec and is_valid_bct_address(bns_rec.get("owner", "")):
+                    clean_to = normalize_bct_address(bns_rec["owner"])
+                else:
+                    return False, f"Invalid recipient address or unregistered .bct handle: '{raw_to}'", None
+
+            if clean_from == clean_to:
+                return False, "Cannot transfer post royalty rights to your own address.", None
+            if clean_to in (
+                TREASURY_ADDRESS,
+                VALIDATOR_STAKE_VAULT_ADDRESS,
+                BRIDGE_VAULT_ADDRESS,
+                "BCT_BURN",
+                "SYSTEM",
+                "GENESIS",
+                "GENESIS_VAULT",
+            ):
+                return False, "Cannot transfer post royalty rights to a system or vault address.", None
+            if self.is_wallet_burned(clean_to):
+                return False, "Recipient wallet has been permanently burned and cannot receive royalty rights.", None
+
+            # Mempool race / double-bulk protection for this sender
+            has_pending_sender = any(
+                t.tx_type in ("space_royalty_transfer", "space_royalty_transfer_all")
+                and normalize_bct_address(t.sender) == clean_from
+                for t in self.pending_transactions
+            )
+            if has_pending_sender:
+                return False, "A royalty transfer from your wallet is already pending in the mempool.", None
+
+            # Collect eligible posts (strictly enforcing each post's independent 3/365d limit)
+            now_ts = time.time()
+            cutoff_ts = now_ts - POST_ROYALTY_WINDOW_SECONDS
+            eligible_pids = []
+            skipped_limit_pids = []
+            for pid, post in self.space_posts.items():
+                active_holder = normalize_bct_address(post.get("royalty_owner") or post.get("author", ""))
+                if active_holder != clean_from:
+                    continue
+                hist = post.get("royalty_transfers") or []
+                recent_cnt = sum(1 for tr in hist if float(tr.get("timestamp", 0) or 0) >= cutoff_ts)
+                if recent_cnt >= POST_ROYALTY_MAX_PER_YEAR:
+                    skipped_limit_pids.append(pid)
+                else:
+                    eligible_pids.append(pid)
+
+            eligible_pids.sort()
+            skipped_limit_pids.sort()
+
+            if not eligible_pids:
+                if skipped_limit_pids:
+                    return (
+                        False,
+                        f"All {len(skipped_limit_pids)} of your Space posts have already reached the annual 3/3 royalty transfer limit. No fee was charged.",
+                        None,
+                    )
+                return False, "You do not currently hold royalty rights for any Space posts. No fee was charged.", None
+
+            expected_payload = signed_payload or f"POST_ROYALTY_TRANSFER_ALL:{clean_from}:{clean_to}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_from, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            holder_bal = self.verify_and_recalc_balance(clean_from)
+            if holder_bal < BULK_TRANSFER_COST:
+                return (
+                    False,
+                    f"Insufficient balance! Bulk royalty transfer fee is {BULK_TRANSFER_COST:,.2f} BCT. Current balance: {holder_bal:,.4f} BCT.",
+                    None,
+                )
+
+            tx = Transaction(
+                sender=clean_from,
+                receiver=TREASURY_ADDRESS,
+                amount=BULK_TRANSFER_COST,
+                fee=BULK_POOL_CUT,
+                signature=signature,
+                tx_type="space_royalty_transfer_all",
+                extra_data={
+                    "post_ids": eligible_pids,
+                    "transferred_count": len(eligible_pids),
+                    "skipped_limit_count": len(skipped_limit_pids),
+                    "from_address": clean_from,
+                    "to_address": clean_to,
+                    "treasury_cut": BULK_TREASURY_CUT,
+                    "pool_cut": BULK_POOL_CUT,
+                },
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + BULK_POOL_CUT, 8)
+
+            block = self._seal_or_queue_mempool()
+            self._load_in_memory_space_index()
+
+            self.balances[clean_from] = self.verify_and_recalc_balance(clean_from)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            self._loaded_revision += 1
+            self._profile_cache.clear()
+            self._save_state()
+
+            new_owner_bns = self.bns_reverse.get(clean_to, "")
+            skip_note = f" ({len(skipped_limit_pids)} post skipped at 3/3 annual limit)" if skipped_limit_pids else ""
+            return True, f"{len(eligible_pids)} Space post royalty rights transferred to {new_owner_bns or clean_to[:10] + '...'}!{skip_note}", {
+                "transferred_post_ids": eligible_pids,
+                "transferred_count": len(eligible_pids),
+                "skipped_limit_post_ids": skipped_limit_pids,
+                "skipped_limit_count": len(skipped_limit_pids),
+                "previous_royalty_owner": clean_from,
+                "new_royalty_owner": clean_to,
+                "new_royalty_owner_bns": new_owner_bns,
+                "cost": BULK_TRANSFER_COST,
                 "tx_hash": tx.hash(),
                 "block_index": block.index if block else "Mempool",
                 "status": "confirmed" if block else "mempool",
@@ -4174,7 +4386,8 @@ class Blockchain:
         transfer_fees_u = sum(_to_units(tx.fee) for tx in pending_txs if tx.tx_type in ("transfer", "bns_buy", "bns_accept_offer"))
         space_and_bns_fees_u = sum(
             _to_units(tx.fee) for tx in pending_txs if tx.tx_type in (
-                "space_post", "space_like", "space_comment", "space_follow", "space_royalty_transfer",
+                "space_post", "space_like", "space_comment", "space_follow",
+                "space_royalty_transfer", "space_royalty_transfer_all",
                 "bns_register", "bns_transfer", "avatar_mint", "avatar_equip",
                 "room_create", "room_set_avatar", "room_transfer", "room_topic", "room_reply", "room_upvote"
             )
@@ -6073,6 +6286,35 @@ class Blockchain:
                             "timestamp": tx_ts,
                             "tx_hash": tx.hash(),
                         })
+        elif tx.tx_type == "space_royalty_transfer_all" and tx.extra_data:
+            to_addr = normalize_bct_address(tx.extra_data.get("to_address"))
+            raw_pids = tx.extra_data.get("post_ids") or []
+            if is_valid_bct_address(to_addr) and to_addr != snd and isinstance(raw_pids, list):
+                tx_ts = float(tx.timestamp or 0)
+                cutoff = tx_ts - (365 * 24 * 3600)
+                seen_pids = set()
+                for raw_pid in raw_pids:
+                    pid = str(raw_pid or "").strip()
+                    if not pid or pid in seen_pids or pid not in space_posts:
+                        continue
+                    seen_pids.add(pid)
+                    post_rec = space_posts[pid]
+                    cur_holder = normalize_bct_address(post_rec.get("royalty_owner") or post_rec.get("author", ""))
+                    if cur_holder != snd:
+                        continue
+                    hist = post_rec.setdefault("royalty_transfers", [])
+                    recent_cnt = sum(1 for tr in hist if float(tr.get("timestamp", 0) or 0) >= cutoff)
+                    if recent_cnt >= 3:
+                        continue
+                    post_rec["royalty_owner"] = to_addr
+                    post_rec["royalty_owner_bns"] = self.bns_reverse.get(to_addr, "")
+                    hist.append({
+                        "from_address": snd,
+                        "to_address": to_addr,
+                        "timestamp": tx_ts,
+                        "tx_hash": tx.hash(),
+                        "bulk": True,
+                    })
         elif tx.tx_type == "space_like" and tx.extra_data:
             pid = tx.extra_data.get("post_id")
             liker = snd
