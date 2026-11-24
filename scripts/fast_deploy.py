@@ -122,10 +122,10 @@ sudo cp /tmp/node_runner.py /opt/blockchaint/node_runner.py
 sudo cp /tmp/README.md /opt/blockchaint/README.md
 sudo cp /tmp/requirements.txt /opt/blockchaint/requirements.txt
 sudo cp /tmp/config.py /opt/blockchaint/config.py
-sudo cp /tmp/frontend/index.html /opt/blockchaint/frontend/index.html
-sudo cp /tmp/frontend/sw.js /opt/blockchaint/frontend/sw.js
-sudo cp /tmp/templates/index.html /opt/blockchaint/templates/index.html
-sudo cp /tmp/templates/sw.js /opt/blockchaint/templates/sw.js
+sudo install -m 644 /tmp/frontend/index.html /opt/blockchaint/frontend/index.html
+sudo install -m 644 /tmp/frontend/sw.js /opt/blockchaint/frontend/sw.js
+sudo install -m 644 /tmp/templates/index.html /opt/blockchaint/templates/index.html
+sudo install -m 644 /tmp/templates/sw.js /opt/blockchaint/templates/sw.js
 sudo cp /tmp/scripts/sign_frontend.py /opt/blockchaint/scripts/sign_frontend.py
 if [ -f /tmp/deploy/nginx_ssl.conf ]; then
     sudo cp /tmp/deploy/nginx_ssl.conf /etc/nginx/sites-available/blockchaint
@@ -162,10 +162,10 @@ if [ -f /tmp/frontend/favicon.ico ]; then
     sudo cp /tmp/frontend/favicon.ico /opt/blockchaint/frontend/favicon.ico
     sudo cp /tmp/frontend/favicon.ico /var/www/locktrace/favicon.ico
 fi
-sudo cp /opt/blockchaint/frontend/index.html /var/www/locktrace/index.html
-sudo cp /opt/blockchaint/frontend/sw.js /var/www/locktrace/sw.js
-sudo cp /opt/blockchaint/frontend/integrity.json /var/www/locktrace/integrity.json
-sudo cp /opt/blockchaint/frontend/integrity.json /opt/blockchaint/templates/integrity.json
+sudo install -m 644 /opt/blockchaint/frontend/index.html /var/www/locktrace/index.html
+sudo install -m 644 /opt/blockchaint/frontend/sw.js /var/www/locktrace/sw.js
+sudo install -m 644 /opt/blockchaint/frontend/integrity.json /var/www/locktrace/integrity.json
+sudo install -m 644 /opt/blockchaint/frontend/integrity.json /opt/blockchaint/templates/integrity.json
 sudo chown -R www-data:www-data /var/www/locktrace /opt/blockchaint/frontend
 
 # 3. Restart Services

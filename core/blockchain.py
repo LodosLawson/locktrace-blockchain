@@ -547,6 +547,7 @@ class Blockchain:
         self._space_index_key: Optional[tuple] = None
         self.finalized_height: int = 0
         self.observer_pending_units: Dict[str, int] = {}
+        self.pending_asset_transfers: Dict[str, dict] = {}
         self._removed_mempool_hashes: List[str] = []
         self.slashed_validators: Dict[str, dict] = {}
         self._attestations_by_validator: Dict[str, str] = {}
@@ -2112,6 +2113,392 @@ class Blockchain:
                 "status": "confirmed" if block else "mempool",
                 "new_balance": self.balances[clean_from],
             }
+
+    # =========================================================================
+    # 2-STEP RECIPIENT-CONSENT ASSET TRANSFERS (v2.17.0)
+    # Applies to: .bct BNS handles, Protocol Rooms, Single & Bulk Post Royalties
+    # Prevents unsolicited asset dumping; fee is charged ONLY upon recipient accept.
+    # =========================================================================
+    def _prune_expired_asset_transfers(self, now_ts: Optional[float] = None) -> None:
+        now = float(now_ts if now_ts is not None else time.time())
+        for pid, prop in list(self.pending_asset_transfers.items()):
+            if prop.get("status") == "pending" and float(prop.get("expires_at", 0) or 0) < now:
+                prop["status"] = "expired"
+            # Keep completed/expired history for 30 days max to avoid unbounded meta growth
+            if prop.get("status") != "pending" and (now - float(prop.get("created_at", now) or now)) > (30 * 86400):
+                self.pending_asset_transfers.pop(pid, None)
+
+    @staticmethod
+    def _public_proposal_view(prop: dict) -> dict:
+        return {
+            "proposal_id": prop.get("proposal_id", ""),
+            "asset_type": prop.get("asset_type", ""),
+            "asset_id": prop.get("asset_id", ""),
+            "asset_label": prop.get("asset_label", ""),
+            "from_address": prop.get("from_address", ""),
+            "from_bns": prop.get("from_bns", ""),
+            "to_address": prop.get("to_address", ""),
+            "to_bns": prop.get("to_bns", ""),
+            "fee_bct": float(prop.get("fee_bct", 0.0) or 0.0),
+            "status": prop.get("status", "pending"),
+            "created_at": float(prop.get("created_at", 0.0) or 0.0),
+            "expires_at": float(prop.get("expires_at", 0.0) or 0.0),
+            "tx_hash": prop.get("tx_hash", ""),
+        }
+
+    def propose_asset_transfer(
+        self,
+        asset_type: str,
+        asset_id: str,
+        from_address: str,
+        to_address: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Creates a cryptographically ECDSA-signed transfer proposal that requires explicit
+        recipient ECDSA acceptance before ownership changes or any fee is charged.
+        """
+        PROPOSAL_TTL_SECONDS = 7 * 24 * 3600
+        MAX_OUTGOING_PER_SENDER = 10
+
+        with self.lock:
+            self._load_state()
+            self._load_in_memory_bns_index()
+            self._load_in_memory_space_index()
+            self._load_in_memory_rooms_index()
+            self._prune_expired_asset_transfers()
+
+            atype = str(asset_type or "").strip().lower()
+            if atype not in ("bns", "room", "post_royalty", "post_royalty_all"):
+                return False, f"Unsupported asset transfer type: '{atype}'", None
+
+            clean_from = normalize_bct_address(from_address)
+            if not is_valid_bct_address(clean_from):
+                return False, f"Invalid sender address: '{clean_from}'", None
+            if self.is_wallet_burned(clean_from):
+                return False, "Permanently burned wallets cannot initiate asset transfers.", None
+
+            raw_to = str(to_address or "").strip()
+            if not raw_to:
+                return False, "Recipient address or .bct handle is required.", None
+            clean_to = normalize_bct_address(raw_to)
+            if not is_valid_bct_address(clean_to):
+                norm_to_bns = self._normalize_bns_name(raw_to.lstrip("@"))
+                bns_rec = self.bns_records.get(norm_to_bns)
+                if bns_rec and is_valid_bct_address(bns_rec.get("owner", "")):
+                    clean_to = normalize_bct_address(bns_rec["owner"])
+                else:
+                    return False, f"Invalid recipient address or unregistered .bct handle: '{raw_to}'", None
+
+            if clean_from == clean_to:
+                return False, "Cannot transfer assets to your own address.", None
+            if clean_to in (
+                TREASURY_ADDRESS,
+                VALIDATOR_STAKE_VAULT_ADDRESS,
+                BRIDGE_VAULT_ADDRESS,
+                "BCT_BURN",
+                "SYSTEM",
+                "GENESIS",
+                "GENESIS_VAULT",
+            ):
+                return False, "Cannot transfer assets to a system or vault address.", None
+            if self.is_wallet_burned(clean_to):
+                return False, "Recipient wallet has been permanently burned and cannot receive assets.", None
+
+            # Verify sender ECDSA signature
+            if not signed_payload:
+                return False, "Signed payload is required to propose an asset transfer.", None
+            sig_ok, sig_msg = self._verify_actor_signature(clean_from, signed_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            # Anti-spam: limit active outgoing proposals per sender
+            active_outgoing = [
+                p for p in self.pending_asset_transfers.values()
+                if p.get("status") == "pending" and p.get("from_address") == clean_from
+            ]
+            if len(active_outgoing) >= MAX_OUTGOING_PER_SENDER:
+                return False, f"You already have {MAX_OUTGOING_PER_SENDER} pending transfer proposals. Cancel or wait for approval first.", None
+
+            clean_aid = str(asset_id or "").strip()
+            asset_label = ""
+            fee_bct = 0.0
+
+            if atype == "bns":
+                norm = self._normalize_bns_name(clean_aid)
+                rec = self.bns_records.get(norm)
+                if not rec or normalize_bct_address(rec.get("owner", "")) != clean_from:
+                    return False, f"You do not own the .bct handle '{norm}'.", None
+                clean_aid = norm
+                asset_label = f"@{norm}"
+                fee_bct = 1.00
+            elif atype == "room":
+                rid = clean_aid.upper()
+                room = self.rooms.get(rid)
+                if not room:
+                    return False, "Protocol room not found.", None
+                if normalize_bct_address(room.get("creator", "")) != clean_from:
+                    return False, "Only the current room owner can propose transferring this room.", None
+                clean_aid = rid
+                asset_label = f"Oda: {room.get('name', rid)} ({rid})"
+                fee_bct = float(getattr(Config, "ROOM_TRANSFER_FEE", 0.50))
+            elif atype == "post_royalty":
+                post = self.space_posts.get(clean_aid)
+                if not post:
+                    return False, "Target Space post not found.", None
+                holder = normalize_bct_address(post.get("royalty_owner") or post.get("author", ""))
+                if holder != clean_from:
+                    return False, "Only the current royalty holder can transfer this post's royalty rights.", None
+                cutoff_ts = time.time() - POST_ROYALTY_WINDOW_SECONDS
+                recent_cnt = sum(
+                    1 for tr in (post.get("royalty_transfers") or [])
+                    if float(tr.get("timestamp", 0) or 0) >= cutoff_ts
+                )
+                if recent_cnt >= POST_ROYALTY_MAX_PER_YEAR:
+                    return False, f"Annual royalty transfer limit reached ({POST_ROYALTY_MAX_PER_YEAR}/{POST_ROYALTY_MAX_PER_YEAR} in the last 365 days).", None
+                snippet = str(post.get("content", "") or "").strip().replace("\n", " ")[:48]
+                asset_label = f"Paylaşım Telifi ({clean_aid[:12]}): {snippet}"
+                fee_bct = POST_ROYALTY_TRANSFER_FEE
+            elif atype == "post_royalty_all":
+                prev = self.get_bulk_royalty_transfer_preview(clean_from)
+                elig_cnt = int(prev.get("eligible_count", 0))
+                if elig_cnt <= 0:
+                    return False, "You have no eligible Space posts available for bulk royalty transfer.", None
+                clean_aid = f"ALL:{clean_from}"
+                asset_label = f"Toplu Telif Devri ({elig_cnt} paylaşım)"
+                fee_bct = POST_ROYALTY_BULK_FEE
+
+            # Prevent duplicate pending proposal for the same asset
+            dup = any(
+                p.get("status") == "pending"
+                and p.get("asset_type") == atype
+                and p.get("asset_id") == clean_aid
+                for p in self.pending_asset_transfers.values()
+            )
+            if dup:
+                return False, "Bu varlık için zaten alıcı onayı bekleyen bir devir teklifi var.", None
+
+            # Verify sender currently has enough balance (fee is charged ONLY when recipient accepts)
+            sender_bal = self.verify_and_recalc_balance(clean_from)
+            if sender_bal < fee_bct:
+                return False, f"Insufficient balance! Transfer fee is {fee_bct:,.2f} BCT (charged upon recipient approval). Current balance: {sender_bal:,.4f} BCT.", None
+
+            now_ts = time.time()
+            proposal_id = f"trp_{secrets.token_hex(8)}"
+            prop = {
+                "proposal_id": proposal_id,
+                "asset_type": atype,
+                "asset_id": clean_aid,
+                "asset_label": asset_label,
+                "from_address": clean_from,
+                "from_bns": self.bns_reverse.get(clean_from, ""),
+                "to_address": clean_to,
+                "to_bns": self.bns_reverse.get(clean_to, ""),
+                "fee_bct": fee_bct,
+                "sender_signature": signature,
+                "sender_public_key": public_key,
+                "sender_signed_payload": signed_payload,
+                "created_at": now_ts,
+                "expires_at": now_ts + PROPOSAL_TTL_SECONDS,
+                "status": "pending",
+            }
+            self.pending_asset_transfers[proposal_id] = prop
+            self._save_state()
+
+            to_lbl = prop["to_bns"] or (clean_to[:10] + "...")
+            return True, f"Devir teklifi {to_lbl} alıcısına gönderildi! Alıcı onayladığında ({fee_bct:,.2f} BCT ücretle) zincire işlenecektir.", self._public_proposal_view(prop)
+
+    def get_pending_asset_transfers(self, address: str) -> dict:
+        with self.lock:
+            self._load_state()
+            self._prune_expired_asset_transfers()
+            clean = normalize_bct_address(address)
+            incoming = []
+            outgoing = []
+            for prop in self.pending_asset_transfers.values():
+                if prop.get("status") != "pending":
+                    continue
+                if prop.get("to_address") == clean:
+                    incoming.append(self._public_proposal_view(prop))
+                elif prop.get("from_address") == clean:
+                    outgoing.append(self._public_proposal_view(prop))
+            incoming.sort(key=lambda x: -x["created_at"])
+            outgoing.sort(key=lambda x: -x["created_at"])
+            return {
+                "address": clean,
+                "incoming": incoming,
+                "outgoing": outgoing,
+                "pending_incoming_count": len(incoming),
+                "pending_outgoing_count": len(outgoing),
+            }
+
+    def accept_asset_transfer(
+        self,
+        proposal_id: str,
+        recipient_address: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Recipient explicitly accepts and cryptographically signs an incoming asset transfer proposal,
+        executing the underlying on-chain transfer atomically.
+        """
+        with self.lock:
+            self._load_state()
+            self._prune_expired_asset_transfers()
+
+            pid = str(proposal_id or "").strip()
+            prop = self.pending_asset_transfers.get(pid)
+            if not prop:
+                return False, "Transfer proposal not found.", None
+            if prop.get("status") != "pending":
+                return False, f"Transfer proposal is no longer pending (status: {prop.get('status')}).", None
+            if time.time() > float(prop.get("expires_at", 0) or 0):
+                prop["status"] = "expired"
+                self._save_state()
+                return False, "Transfer proposal has expired.", None
+
+            clean_rec = normalize_bct_address(recipient_address)
+            if clean_rec != prop.get("to_address"):
+                return False, "Only the designated recipient can accept this transfer proposal.", None
+            if self.is_wallet_burned(clean_rec):
+                return False, "Permanently burned wallets cannot accept asset transfers.", None
+            if self.is_wallet_burned(prop.get("from_address", "")):
+                prop["status"] = "cancelled"
+                self._save_state()
+                return False, "Sender wallet has been burned; proposal cancelled.", None
+
+            expected_payload = signed_payload or f"ASSET_TRANSFER_ACCEPT:{clean_rec}:{pid}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_rec, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            atype = prop["asset_type"]
+            aid = prop["asset_id"]
+            snd = prop["from_address"]
+            s_sig = prop.get("sender_signature", "")
+            s_pub = prop.get("sender_public_key", "")
+            s_pl = prop.get("sender_signed_payload", "")
+
+            if atype == "bns":
+                ok, msg, res = self.bns_transfer(
+                    name=aid,
+                    current_owner=snd,
+                    to_address=clean_rec,
+                    signature=s_sig,
+                    public_key=s_pub,
+                    signed_payload=s_pl,
+                )
+            elif atype == "room":
+                ok, msg, res = self.transfer_room(
+                    current_owner=snd,
+                    room_id=aid,
+                    to_address=clean_rec,
+                    signature=s_sig,
+                    public_key=s_pub,
+                    signed_payload=s_pl,
+                )
+            elif atype == "post_royalty":
+                ok, msg, res = self.transfer_post_royalty(
+                    current_holder=snd,
+                    post_id=aid,
+                    to_address=clean_rec,
+                    signature=s_sig,
+                    public_key=s_pub,
+                    signed_payload=s_pl,
+                )
+            elif atype == "post_royalty_all":
+                ok, msg, res = self.transfer_all_post_royalties(
+                    current_holder=snd,
+                    to_address=clean_rec,
+                    signature=s_sig,
+                    public_key=s_pub,
+                    signed_payload=s_pl,
+                )
+            else:
+                return False, f"Unknown asset type '{atype}'.", None
+
+            if not ok:
+                return False, msg, None
+
+            prop["status"] = "accepted"
+            prop["accepted_at"] = time.time()
+            prop["recipient_signature"] = signature
+            prop["tx_hash"] = (res or {}).get("tx_hash", "")
+            self._save_state()
+            return True, f"Devir onaylandı ve zincire işlendi! {msg}", {
+                "proposal": self._public_proposal_view(prop),
+                "execution": res,
+            }
+
+    def reject_asset_transfer(
+        self,
+        proposal_id: str,
+        recipient_address: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """Recipient explicitly rejects an unwanted incoming transfer proposal (0 fee charged)."""
+        with self.lock:
+            self._load_state()
+            self._prune_expired_asset_transfers()
+            pid = str(proposal_id or "").strip()
+            prop = self.pending_asset_transfers.get(pid)
+            if not prop:
+                return False, "Transfer proposal not found.", None
+            if prop.get("status") != "pending":
+                return False, f"Transfer proposal is no longer pending (status: {prop.get('status')}).", None
+
+            clean_rec = normalize_bct_address(recipient_address)
+            if clean_rec != prop.get("to_address"):
+                return False, "Only the designated recipient can reject this transfer proposal.", None
+
+            expected_payload = signed_payload or f"ASSET_TRANSFER_REJECT:{clean_rec}:{pid}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_rec, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            prop["status"] = "rejected"
+            prop["rejected_at"] = time.time()
+            self._save_state()
+            return True, "Devir teklifi reddedildi. Herhangi bir ücret kesilmedi.", self._public_proposal_view(prop)
+
+    def cancel_asset_transfer(
+        self,
+        proposal_id: str,
+        sender_address: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """Sender cancels their own still-pending transfer proposal before recipient accepts."""
+        with self.lock:
+            self._load_state()
+            self._prune_expired_asset_transfers()
+            pid = str(proposal_id or "").strip()
+            prop = self.pending_asset_transfers.get(pid)
+            if not prop:
+                return False, "Transfer proposal not found.", None
+            if prop.get("status") != "pending":
+                return False, f"Transfer proposal is no longer pending (status: {prop.get('status')}).", None
+
+            clean_snd = normalize_bct_address(sender_address)
+            if clean_snd != prop.get("from_address"):
+                return False, "Only the original sender can cancel this transfer proposal.", None
+
+            expected_payload = signed_payload or f"ASSET_TRANSFER_CANCEL:{clean_snd}:{pid}"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_snd, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            prop["status"] = "cancelled"
+            prop["cancelled_at"] = time.time()
+            self._save_state()
+            return True, "Devir teklifi iptal edildi.", self._public_proposal_view(prop)
 
     @staticmethod
     def extract_space_entities(text: str) -> dict:
@@ -8289,6 +8676,7 @@ class Blockchain:
                 finalized_height=self.finalized_height,
                 removed_mempool_hashes=list(self._removed_mempool_hashes),
                 observer_pending_units=self.observer_pending_units,
+                pending_asset_transfers=self.pending_asset_transfers,
             )
             self._removed_mempool_hashes.clear()
             self._loaded_revision = new_rev
@@ -8429,6 +8817,8 @@ class Blockchain:
                     self.finalized_height = max(self.finalized_height, int(d_state.get("finalized_height", 0) or 0))
                     if isinstance(d_state.get("observer_pending_units"), dict):
                         self.observer_pending_units = dict(d_state["observer_pending_units"])
+                    if isinstance(d_state.get("pending_asset_transfers"), dict):
+                        self.pending_asset_transfers = dict(d_state["pending_asset_transfers"])
                     for b in self.chain[-10:]:
                         if b.index in att_counts:
                             b.attestations_count = att_counts[b.index]
@@ -8490,6 +8880,8 @@ class Blockchain:
             self.finalized_height = max(self.finalized_height, int(state.get("finalized_height", 0) or 0))
             if isinstance(state.get("observer_pending_units"), dict):
                 self.observer_pending_units = dict(state["observer_pending_units"])
+            if isinstance(state.get("pending_asset_transfers"), dict):
+                self.pending_asset_transfers = dict(state["pending_asset_transfers"])
             if self.finalized_height > 0:
                 for b in self.chain:
                     if b.index <= self.finalized_height:

@@ -406,12 +406,19 @@ class SQLiteStorage:
             except Exception:
                 obs_pending_units = {}
 
+            try:
+                pat_raw = json.loads(meta.get("pending_asset_transfers", "{}") or "{}")
+                pending_asset_transfers = pat_raw if isinstance(pat_raw, dict) else {}
+            except Exception:
+                pending_asset_transfers = {}
+
             return revision, {
                 "chain": chain_dicts,
                 "pending_transactions": pending_txs,
                 "attestation_counts": attestation_counts,
                 "finalized_height": finalized_height,
                 "observer_pending_units": obs_pending_units,
+                "pending_asset_transfers": pending_asset_transfers,
                 "wallets": wallets,
                 "nodes": nodes,
                 "total_transactions": int(meta.get("total_transactions", "0")),
@@ -503,12 +510,19 @@ class SQLiteStorage:
             except Exception:
                 obs_pending_units = {}
 
+            try:
+                pat_raw = json.loads(meta.get("pending_asset_transfers", "{}") or "{}")
+                pending_asset_transfers = pat_raw if isinstance(pat_raw, dict) else {}
+            except Exception:
+                pending_asset_transfers = {}
+
             return revision, {
                 "new_blocks": new_chain_dicts,
                 "pending_transactions": pending_txs,
                 "attestation_counts": attestation_counts,
                 "finalized_height": finalized_height,
                 "observer_pending_units": obs_pending_units,
+                "pending_asset_transfers": pending_asset_transfers,
                 "wallets": wallets,
                 "nodes": nodes,
                 "total_transactions": int(meta.get("total_transactions", "0")),
@@ -526,7 +540,8 @@ class SQLiteStorage:
                    dirty_wallets: Optional[Dict[str, dict]] = None,
                    finalized_height: Optional[int] = None,
                    removed_mempool_hashes: Optional[List[str]] = None,
-                   observer_pending_units: Optional[Dict[str, int]] = None) -> int:
+                   observer_pending_units: Optional[Dict[str, int]] = None,
+                   pending_asset_transfers: Optional[Dict[str, dict]] = None) -> int:
         """
         Persists new blocks incrementally, synchronizes shared mempool,
         and upserts wallets/nodes inside a single ACID WAL transaction.
@@ -654,6 +669,11 @@ class SQLiteStorage:
                 conn.execute(
                     "INSERT OR REPLACE INTO meta (key, value) VALUES ('observer_pending_units', ?);",
                     (json.dumps(clean_obs, sort_keys=True),),
+                )
+            if pending_asset_transfers is not None:
+                conn.execute(
+                    "INSERT OR REPLACE INTO meta (key, value) VALUES ('pending_asset_transfers', ?);",
+                    (json.dumps(pending_asset_transfers, sort_keys=True),),
                 )
             conn.execute("INSERT OR REPLACE INTO meta (key, value) VALUES ('state_revision', ?);", (str(next_rev),))
             conn.execute("COMMIT;")

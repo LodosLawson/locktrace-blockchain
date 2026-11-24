@@ -216,7 +216,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.16.0` | Staking & Kilitli Teminat Güvenlik Sertleştirmesi (7 Denetim Düzeltmesi), Toplu Paylaşım Telif Devri (`1,000 BCT`), Kapalı Cüzdan Telif Hazine Yönlendirmesi, Adaptive Abuse Shield |
+| **Ağ Sürümü** | `v2.17.0` | Çift Aşamalı Alıcı Onaylı Varlık Devri (`.bct`, Oda, Tekil/Toplu Telif), Staking Güvenlik Sertleştirmesi, Toplu Telif Devri (`1,000 BCT`), Adaptive Abuse Shield |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
 | **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -766,3 +766,9 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 1. **%10 Gözlemci Ödül Havuzu Çift Dağıtım & Madenci Sıfırlanma Düzeltmesi:** `_build_reward_transactions()` içinde `proposer_u` artık toplu ödeme yerine bloğa ayrılan `reserved_obs_u` payını düşer; böylece hem çift ödeme hem de ödeme bloklarında madencinin `0 BCT` alması tamamen giderildi.
 2. **Yakılmış Cüzdan Teminat & Ödül Kilidi:** Stake bakiyesi olan cüzdanın yakılması engellendi (önce unstake zorunlu); yakılmış cüzdanlar tüm ödül havuzlarından (`observer`, `validator`, `miner`) ve staker listelerinden kesin olarak çıkarıldı.
 3. **Anti-Flash-Staking 1 Saat Kilit + Cooldown + Kümülatif 100.000 BCT Tavanı:** Yeni kilitlenen teminatlar için 1 saat (`3600 sn`) minimum kilit süresi, cüzdan cooldown koruması, toplam `100.000 BCT` kümülatif tavanı, `100 BCT` altı kısmi çekim toz engeli ve `slashed` teminatların `forfeited_amount` olarak şeffaf ayrımı eklendi.
+
+## 🤝 39. BlocTag / LockTrace v2.17.0: Çift Aşamalı Alıcı Onaylı Varlık Devri
+
+1. **İstenmeyen Varlık Yükleme Koruması (`.bct`, Protocol Rooms, Tekil & Toplu Telif):**
+   - Tüm sahiplik ve telif devirleri artık önce 7 gün geçerli, SQLite'da kalıcı ECDSA imzalı bir teklif (`propose_asset_transfer`) oluşturur; alıcı `Your Account · Kontrol Merkezi` üzerinden kendi ECDSA imzasıyla onaylamadan sahiplik değişmez ve **hiçbir ücret kesilmez**.
+   - Alıcı istemediği odayı, `.bct` adını veya içerik telifini sıfır maliyetle reddedebilir (`reject`), gönderen ise onaylanmadan önce iptal edebilir (`cancel`).

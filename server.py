@@ -486,7 +486,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-Jx9M1AgtWiPGzi0yie4f8GJWrdhqCOOtg3YBClxQ00A=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-spn9voaoCasfDqz0xw9hOvO/8TmeATHTdJ4gK1Xa/Vc=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -3120,9 +3120,10 @@ def api_space_post_royalty_transfer(post_id):
     if cd_err:
         return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
-    success, message, result = blockchain.transfer_post_royalty(
-        current_holder=from_address,
-        post_id=pid,
+    success, message, result = blockchain.propose_asset_transfer(
+        asset_type="post_royalty",
+        asset_id=pid,
+        from_address=from_address,
         to_address=to_address,
         signature=signature,
         public_key=pub_key,
@@ -3132,15 +3133,15 @@ def api_space_post_royalty_transfer(post_id):
         return api_response(False, message=message, status=400)
 
     logger.info(
-        f"Space Post Royalty Transferred: {pid} from {from_address[:10]}... -> {result.get('new_royalty_owner', '')[:10]}..."
+        f"Space Post Royalty Transfer Proposed: {pid} from {from_address[:10]}... -> {result.get('to_address', '')[:10]}... (awaiting recipient approval)"
     )
-    if push_service and result and result.get("new_royalty_owner") and result.get("new_royalty_owner") != from_address:
+    if push_service and result and result.get("to_address") and result.get("to_address") != from_address:
         try:
             push_service.send_push_to_wallet(
-                result["new_royalty_owner"],
-                title="💎 Paylaşım Telif Hakkı Size Devredildi!",
-                body=f"{pid} paylaşımının gelecek beğeni ve yorum telif gelirleri artık cüzdanınıza akacak.",
-                url=f"/?post={pid}",
+                result["to_address"],
+                title="📩 Telif Devri Onayınız Bekleniyor!",
+                body=f"{result.get('asset_label', pid)} için devir teklifi geldi. Your Account üzerinden onaylayabilir veya reddedebilirsiniz.",
+                url="/#space",
                 category="space",
             )
         except Exception:
@@ -3195,8 +3196,10 @@ def api_space_post_royalty_transfer_all():
     if cd_err:
         return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
-    success, message, result = blockchain.transfer_all_post_royalties(
-        current_holder=from_address,
+    success, message, result = blockchain.propose_asset_transfer(
+        asset_type="post_royalty_all",
+        asset_id="ALL",
+        from_address=from_address,
         to_address=to_address,
         signature=signature,
         public_key=pub_key,
@@ -3206,20 +3209,130 @@ def api_space_post_royalty_transfer_all():
         return api_response(False, message=message, status=400)
 
     logger.info(
-        f"Bulk Space Post Royalty Transferred: {result.get('transferred_count', 0)} posts from {from_address[:10]}... -> {result.get('new_royalty_owner', '')[:10]}..."
+        f"Bulk Space Post Royalty Transfer Proposed: from {from_address[:10]}... -> {result.get('to_address', '')[:10]}... (awaiting recipient approval)"
     )
-    if push_service and result and result.get("new_royalty_owner") and result.get("new_royalty_owner") != from_address:
+    if push_service and result and result.get("to_address") and result.get("to_address") != from_address:
         try:
             push_service.send_push_to_wallet(
-                result["new_royalty_owner"],
-                title="💎 Toplu Telif Hakkı Size Devredildi!",
-                body=f"{result.get('transferred_count', 0)} adet Space paylaşımının gelecek telif gelirleri artık cüzdanınıza akacak.",
+                result["to_address"],
+                title="📩 Toplu Telif Devri Onayınız Bekleniyor!",
+                body=f"{result.get('asset_label', 'Toplu Telif Devri')} için onayınız bekleniyor. Your Account üzerinden onaylayın veya reddedin.",
                 url="/#space",
                 category="space",
             )
         except Exception:
             pass
     return api_response(True, message=message, data=result, status=200)
+
+
+# ── 2-Step Recipient-Consent Asset Transfer Endpoints (v2.17.0) ──
+@app.route("/api/v1/transfers/pending/<address>", methods=["GET"])
+def api_asset_transfers_pending(address):
+    """Lists pending incoming & outgoing consent-gated asset transfer proposals for a wallet."""
+    if not check_rate_limit("asset_transfer_list", limit=60, window_seconds=60):
+        return api_response(False, message="Too many requests. Please wait.", status=429)
+    data = blockchain.get_pending_asset_transfers(address)
+    return api_response(True, data=data, status=200)
+
+
+@app.route("/api/v1/transfers/<proposal_id>/accept", methods=["POST"])
+def api_asset_transfer_accept(proposal_id):
+    """Recipient explicitly accepts and signs an incoming .bct / Room / Royalty transfer proposal."""
+    if not check_rate_limit("asset_transfer_accept", limit=15, window_seconds=60):
+        return api_response(False, message="Too many accept requests. Please wait.", status=429)
+    data = request.get_json(silent=True) or {}
+    recipient = str(data.get("recipient") or data.get("address") or data.get("to_address") or "").strip()
+    if not recipient:
+        return api_response(False, message="Field 'recipient' is required.", status=400)
+    pid = str(proposal_id or "").strip()[:48]
+    canonical = f"ASSET_TRANSFER_ACCEPT:{recipient}:{pid}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, recipient, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    ok, msg, res = blockchain.accept_asset_transfer(
+        proposal_id=pid,
+        recipient_address=recipient,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not ok:
+        return api_response(False, message=msg, status=400)
+
+    prop = (res or {}).get("proposal") or {}
+    if push_service and prop.get("from_address"):
+        try:
+            push_service.send_push_to_wallet(
+                prop["from_address"],
+                title="✅ Devir Teklifiniz Onaylandı!",
+                body=f"{prop.get('asset_label', pid)} devri alıcı tarafından onaylandı ve zincire işlendi.",
+                url="/#space",
+                category="space",
+            )
+        except Exception:
+            pass
+    return api_response(True, message=msg, data=res, status=200)
+
+
+@app.route("/api/v1/transfers/<proposal_id>/reject", methods=["POST"])
+def api_asset_transfer_reject(proposal_id):
+    """Recipient explicitly rejects an unwanted incoming transfer proposal (0 fee charged)."""
+    if not check_rate_limit("asset_transfer_reject", limit=20, window_seconds=60):
+        return api_response(False, message="Too many reject requests. Please wait.", status=429)
+    data = request.get_json(silent=True) or {}
+    recipient = str(data.get("recipient") or data.get("address") or data.get("to_address") or "").strip()
+    if not recipient:
+        return api_response(False, message="Field 'recipient' is required.", status=400)
+    pid = str(proposal_id or "").strip()[:48]
+    canonical = f"ASSET_TRANSFER_REJECT:{recipient}:{pid}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, recipient, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    ok, msg, res = blockchain.reject_asset_transfer(
+        proposal_id=pid,
+        recipient_address=recipient,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not ok:
+        return api_response(False, message=msg, status=400)
+    return api_response(True, message=msg, data=res, status=200)
+
+
+@app.route("/api/v1/transfers/<proposal_id>/cancel", methods=["POST"])
+def api_asset_transfer_cancel(proposal_id):
+    """Sender cancels their own still-pending transfer proposal."""
+    if not check_rate_limit("asset_transfer_cancel", limit=20, window_seconds=60):
+        return api_response(False, message="Too many cancel requests. Please wait.", status=429)
+    data = request.get_json(silent=True) or {}
+    sender = str(data.get("sender") or data.get("address") or data.get("from_address") or "").strip()
+    if not sender:
+        return api_response(False, message="Field 'sender' is required.", status=400)
+    pid = str(proposal_id or "").strip()[:48]
+    canonical = f"ASSET_TRANSFER_CANCEL:{sender}:{pid}"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, sender, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    ok, msg, res = blockchain.cancel_asset_transfer(
+        proposal_id=pid,
+        sender_address=sender,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not ok:
+        return api_response(False, message=msg, status=400)
+    return api_response(True, message=msg, data=res, status=200)
 
 
 @app.route("/api/v1/rooms/<room_id>/transfer", methods=["POST"])
@@ -3262,9 +3375,10 @@ def api_rooms_transfer(room_id):
     if cd_err:
         return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
-    success, message, result = blockchain.transfer_room(
-        current_owner=from_address,
-        room_id=rid,
+    success, message, result = blockchain.propose_asset_transfer(
+        asset_type="room",
+        asset_id=rid,
+        from_address=from_address,
         to_address=to_address,
         signature=signature,
         public_key=pub_key,
@@ -3273,13 +3387,13 @@ def api_rooms_transfer(room_id):
     if not success:
         return api_response(False, message=message, status=400)
 
-    logger.info(f"Protocol Room Transferred: {rid} from {from_address[:10]}... -> {result.get('new_owner', '')[:10]}...")
-    if push_service and result and result.get("new_owner") and result.get("new_owner") != from_address:
+    logger.info(f"Protocol Room Transfer Proposed: {rid} from {from_address[:10]}... -> {result.get('to_address', '')[:10]}... (awaiting recipient approval)")
+    if push_service and result and result.get("to_address") and result.get("to_address") != from_address:
         try:
             push_service.send_push_to_wallet(
-                result["new_owner"],
-                title="🔑 Oda Sahipliği Size Devredildi!",
-                body=f"'{result.get('name', rid)}' ({rid}) odası artık sizin kontrolünüzde.",
+                result["to_address"],
+                title="📩 Oda Devri Onayınız Bekleniyor!",
+                body=f"{result.get('asset_label', rid)} size devredilmek isteniyor. Your Account üzerinden onaylayın veya reddedin.",
                 url="/#rooms",
                 category="space",
             )
@@ -3647,9 +3761,10 @@ def api_bns_transfer():
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
 
-    success, message, result = blockchain.bns_transfer(
-        name=name,
-        current_owner=current_owner,
+    success, message, result = blockchain.propose_asset_transfer(
+        asset_type="bns",
+        asset_id=name,
+        from_address=current_owner,
         to_address=to_address,
         signature=signature,
         public_key=pub_key,
@@ -3658,7 +3773,18 @@ def api_bns_transfer():
     if not success:
         return api_response(False, message=message, status=400)
 
-    logger.info(f"BNS Transferred: '{norm}' from {current_owner[:8]}... to {to_address[:8]}...")
+    logger.info(f"BNS Transfer Proposed: '{norm}' from {current_owner[:8]}... to {result.get('to_address', '')[:8]}... (awaiting recipient approval)")
+    if push_service and result and result.get("to_address") and result.get("to_address") != current_owner:
+        try:
+            push_service.send_push_to_wallet(
+                result["to_address"],
+                title="📩 .bct Alan Adı Devri Onayınız Bekleniyor!",
+                body=f"@{norm} alan adı size devredilmek isteniyor. Your Account üzerinden onaylayın veya reddedin.",
+                url="/#space",
+                category="space",
+            )
+        except Exception:
+            pass
     return api_response(True, message=message, data=result, status=200)
 
 
