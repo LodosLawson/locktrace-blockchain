@@ -6305,7 +6305,7 @@ class Blockchain:
             if not ok_av:
                 return False, av_err, None
 
-            expected_payload = signed_payload or f"ROOM_CREATE:{clean_creator}:{slug}"
+            expected_payload = signed_payload or f"ROOM_CREATE:{clean_creator}:{slug}:{clean_desc}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_creator, expected_payload, signature, public_key)
             if not sig_ok:
                 return False, sig_msg, None
@@ -6682,7 +6682,7 @@ class Blockchain:
             if not ok_f:
                 return False, clean_title, None
 
-            expected_payload = signed_payload or f"ROOM_TOPIC:{clean_author}:{rid}:{clean_title}"
+            expected_payload = signed_payload or f"ROOM_TOPIC:{clean_author}:{rid}:{clean_title}:{clean_body}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_author, expected_payload, signature, public_key)
             if not sig_ok:
                 return False, sig_msg, None
@@ -6801,7 +6801,11 @@ class Blockchain:
                 if not any(r.get("reply_id") == clean_parent for r in topic.get("replies", [])):
                     return False, "Referenced parent reply does not belong to this topic.", None
 
-            expected_payload = signed_payload or f"ROOM_REPLY:{clean_author}:{tid}:{clean_content}"
+            expected_payload = signed_payload or (
+                f"ROOM_REPLY:{clean_author}:{tid}:{clean_content}:{clean_parent}"
+                if clean_parent
+                else f"ROOM_REPLY:{clean_author}:{tid}:{clean_content}"
+            )
             sig_ok, sig_msg = self._verify_actor_signature(clean_author, expected_payload, signature, public_key)
             if not sig_ok:
                 return False, sig_msg, None

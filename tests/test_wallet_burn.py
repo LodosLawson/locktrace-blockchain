@@ -135,7 +135,7 @@ class TestWalletBurn(unittest.TestCase):
 
         # 8. Alice CANNOT transfer a Protocol Room to a burned wallet
         ok_q, _, q = self.bc.get_room_create_quote("Burn Test Room", has_avatar=False)
-        sig_rm = self.alice.sign(f"ROOM_CREATE:{self.alice.address}:{q['slug']}")
+        sig_rm = self.alice.sign(f"ROOM_CREATE:{self.alice.address}:{q['slug']}:Room transfer to burned wallet test.")
         ok_rm, _, rm = self.bc.create_room(
             creator=self.alice.address,
             name="Burn Test Room",

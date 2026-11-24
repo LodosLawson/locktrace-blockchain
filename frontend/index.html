@@ -25461,7 +25461,7 @@
         state.busy = true;
         render();
         try {
-          const canonical = `ROOM_CREATE:${currentAccount.address}:${state.quote.slug}`;
+          const canonical = `ROOM_CREATE:${currentAccount.address}:${state.quote.slug}:${desc}`;
           const authFields = await buildSignedAuthPayload(canonical);
           const payload = Object.assign({
             creator: currentAccount.address,
@@ -25602,7 +25602,7 @@
         state.busy = true;
         render();
         try {
-          const canonical = `ROOM_TOPIC:${currentAccount.address}:${rid}:${title}`;
+          const canonical = `ROOM_TOPIC:${currentAccount.address}:${rid}:${title}:${content}`;
           const authFields = await buildSignedAuthPayload(canonical);
           const { ok, body } = await apiFetch(`/rooms/${encodeURIComponent(rid)}/topics`, {
             method: 'POST',
@@ -25645,7 +25645,10 @@
         state.busy = true;
         render();
         try {
-          const canonical = `ROOM_REPLY:${currentAccount.address}:${tid}:${content}`;
+          const parentId = state.replyTargetId || '';
+          const canonical = parentId
+            ? `ROOM_REPLY:${currentAccount.address}:${tid}:${content}:${parentId}`
+            : `ROOM_REPLY:${currentAccount.address}:${tid}:${content}`;
           const authFields = await buildSignedAuthPayload(canonical);
           const { ok, body } = await apiFetch(`/rooms/topics/${encodeURIComponent(tid)}/replies`, {
             method: 'POST',

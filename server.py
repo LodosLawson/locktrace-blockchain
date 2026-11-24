@@ -370,7 +370,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-LMRFVCSYpxhJFjlTQZDO3x+DeS5gSp28AI8nl0BcWB0=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-ckgvwr0jly2Cg4SDBeZbCrOnBUGq16EFq+CDPaS2jeU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -2796,12 +2796,18 @@ def api_rooms_create():
     if not creator or not name or not description:
         return api_response(False, message="Fields 'creator', 'name', and 'description' are required.", status=400)
 
-    from core.rooms_engine import validate_room_name
+    from core.rooms_engine import validate_room_name, validate_room_description
     ok_n, clean_name_or_err, slug, _rid = validate_room_name(name)
     if not ok_n:
         return api_response(False, message=clean_name_or_err, status=400)
+    ok_d, clean_desc_or_err = validate_room_description(description)
+    if not ok_d:
+        return api_response(False, message=clean_desc_or_err, status=400)
 
-    canonical = [f"ROOM_CREATE:{creator}:{slug}", f"ROOM_CREATE:{creator}:{clean_name_or_err}"]
+    canonical = [
+        f"ROOM_CREATE:{creator}:{slug}:{description}",
+        f"ROOM_CREATE:{creator}:{slug}:{clean_desc_or_err}",
+    ]
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, creator, canonical
     )
@@ -3001,7 +3007,11 @@ def api_rooms_create_topic(room_id):
         return api_response(False, message="Fields 'author', 'title', and 'content' are required.", status=400)
 
     rid = str(room_id or "").strip().upper()[:32]
-    canonical = [f"ROOM_TOPIC:{author}:{rid}:{title}", f"ROOM_TOPIC:{author}:{rid}:{title}:{bns_name}"] if bns_name else f"ROOM_TOPIC:{author}:{rid}:{title}"
+    canonical = (
+        [f"ROOM_TOPIC:{author}:{rid}:{title}:{content}", f"ROOM_TOPIC:{author}:{rid}:{title}:{content}:{bns_name}"]
+        if bns_name
+        else f"ROOM_TOPIC:{author}:{rid}:{title}:{content}"
+    )
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, author, canonical
     )
@@ -3054,7 +3064,8 @@ def api_rooms_create_reply(topic_id):
         return api_response(False, message="Fields 'author' and 'content' are required.", status=400)
 
     tid = str(topic_id or "").strip()[:64]
-    canonical = [f"ROOM_REPLY:{author}:{tid}:{content}", f"ROOM_REPLY:{author}:{tid}:{content}:{bns_name}"] if bns_name else f"ROOM_REPLY:{author}:{tid}:{content}"
+    base_rep_canon = f"ROOM_REPLY:{author}:{tid}:{content}:{parent_reply_id}" if parent_reply_id else f"ROOM_REPLY:{author}:{tid}:{content}"
+    canonical = [base_rep_canon, f"{base_rep_canon}:{bns_name}"] if bns_name else base_rep_canon
     auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
         data, author, canonical
     )

@@ -71,7 +71,7 @@ class TestProtocolRooms(unittest.TestCase):
         self.assertEqual(q_short["total_cost"], 52.0)
         self.assertTrue(q_short["room_id"].startswith("RM-"))
 
-        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q_short['slug']}")
+        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q_short['slug']}:Kısa isimli premium kripto odası.")
         bal_before = self.bc.verify_and_recalc_balance(self.creator.address)
         ok, msg, res = self.bc.create_room(
             creator=self.creator.address,
@@ -103,7 +103,7 @@ class TestProtocolRooms(unittest.TestCase):
 
     def test_developer_room_verification(self):
         ok_q, _, q = self.bc.get_room_create_quote("Official Room", has_avatar=False)
-        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}")
+        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:Dogrulama testi odasi.")
         ok, _, r = self.bc.create_room(
             creator=self.creator.address,
             name="Official Room",
@@ -130,7 +130,7 @@ class TestProtocolRooms(unittest.TestCase):
     def test_strict_avatar_immutability(self):
         # Case A: Room created WITH avatar -> set_room_avatar MUST fail
         ok_q, _, q1 = self.bc.get_room_create_quote("Sealed Room Alpha", has_avatar=True)
-        sig1 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q1['slug']}")
+        sig1 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q1['slug']}:Oluşturulurken avatarı mühürlenmiş oda.")
         ok, _, r1 = self.bc.create_room(
             creator=self.creator.address,
             name="Sealed Room Alpha",
@@ -157,7 +157,7 @@ class TestProtocolRooms(unittest.TestCase):
 
         # Case B: Room created WITHOUT avatar -> non-creator fails, creator succeeds ONCE, second time fails!
         ok_q2, _, q2 = self.bc.get_room_create_quote("Open Room Beta", has_avatar=False)
-        sig2 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q2['slug']}")
+        sig2 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q2['slug']}:Sonradan tek seferlik avatar mühürlenecek oda.")
         ok2, _, r2 = self.bc.create_room(
             creator=self.creator.address,
             name="Open Room Beta",
@@ -236,7 +236,7 @@ class TestProtocolRooms(unittest.TestCase):
         # Create "Kripto Analiz" then attempt Turkish homoglyph spoof "krıpto analiz"
         ok_q, _, q = self.bc.get_room_create_quote("Kripto Analiz", has_avatar=False)
         self.assertTrue(ok_q)
-        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}")
+        sig = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:Gerçek kripto analiz topluluğu.")
         ok, _, _ = self.bc.create_room(
             creator=self.creator.address,
             name="Kripto Analiz",
@@ -252,7 +252,7 @@ class TestProtocolRooms(unittest.TestCase):
 
         # Invalid hex / CSS injection in avatar color rejected
         ok_q2, _, q2 = self.bc.get_room_create_quote("Security Test Room", has_avatar=True)
-        sig2 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q2['slug']}")
+        sig2 = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q2['slug']}:XSS testi için oda.")
         ok_xss, _, _ = self.bc.create_room(
             creator=self.creator.address,
             name="Security Test Room",
@@ -267,7 +267,7 @@ class TestProtocolRooms(unittest.TestCase):
     def test_reddit_flow_topics_replies_upvotes_and_royalties(self):
         # 1. Creator opens a standard room (10.00 BCT)
         ok_q, _, q = self.bc.get_room_create_quote("LockTrace Developers", has_avatar=False)
-        sig_r = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}")
+        sig_r = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:L1 geliştirici tartışma ve mevzu alanı.")
         ok, _, room = self.bc.create_room(
             creator=self.creator.address,
             name="LockTrace Developers",
@@ -283,12 +283,25 @@ class TestProtocolRooms(unittest.TestCase):
         alice_bal_0 = self.bc.verify_and_recalc_balance(self.alice.address)
 
         title = "Blok süresi 20s optimize edilmeli mi?"
-        sig_t = self.alice.sign(f"ROOM_TOPIC:{self.alice.address}:{rid}:{title}")
+        body_txt = "LWMA penceresi ve 20s hedef blok süresi hakkında fikirleriniz?"
+        # Body-tampering test: signing with different body MUST be rejected
+        sig_tamper = self.alice.sign(f"ROOM_TOPIC:{self.alice.address}:{rid}:{title}:DIFFERENT_BODY")
+        ok_tamp, _, _ = self.bc.create_room_topic(
+            author=self.alice.address,
+            room_id=rid,
+            title=title,
+            content=body_txt,
+            signature=sig_tamper,
+            public_key=self.alice.pub_hex,
+        )
+        self.assertFalse(ok_tamp)
+
+        sig_t = self.alice.sign(f"ROOM_TOPIC:{self.alice.address}:{rid}:{title}:{body_txt}")
         ok_t, msg_t, topic = self.bc.create_room_topic(
             author=self.alice.address,
             room_id=rid,
             title=title,
-            content="LWMA penceresi ve 20s hedef blok süresi hakkında fikirleriniz?",
+            content=body_txt,
             signature=sig_t,
             public_key=self.alice.pub_hex,
         )
@@ -319,7 +332,7 @@ class TestProtocolRooms(unittest.TestCase):
 
         # 4. Alice posts a nested reply to Bob's reply
         rep2_txt = "Katılıyorum, compact block relay ile çok hızlı!"
-        sig_rep2 = self.alice.sign(f"ROOM_REPLY:{self.alice.address}:{tid}:{rep2_txt}")
+        sig_rep2 = self.alice.sign(f"ROOM_REPLY:{self.alice.address}:{tid}:{rep2_txt}:{rep1['reply_id']}")
         ok_rep2, _, rep2 = self.bc.create_room_reply(
             author=self.alice.address,
             topic_id=tid,
@@ -375,7 +388,7 @@ class TestProtocolRooms(unittest.TestCase):
     def test_room_ownership_transfer_and_royalty_redirection(self):
         # 1. Creator creates a room without avatar
         ok_q, _, q = self.bc.get_room_create_quote("Transferable Space", has_avatar=False)
-        sig_c = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}")
+        sig_c = self.creator.sign(f"ROOM_CREATE:{self.creator.address}:{q['slug']}:Sahiplik devri test odası.")
         ok, _, room = self.bc.create_room(
             creator=self.creator.address,
             name="Transferable Space",
@@ -464,7 +477,7 @@ class TestProtocolRooms(unittest.TestCase):
         alice_bal_0 = self.bc.verify_and_recalc_balance(self.alice.address)
         creator_bal_0 = self.bc.verify_and_recalc_balance(self.creator.address)
         title = "Yeni sahip royalty testi"
-        sig_top = self.bob.sign(f"ROOM_TOPIC:{self.bob.address}:{rid}:{title}")
+        sig_top = self.bob.sign(f"ROOM_TOPIC:{self.bob.address}:{rid}:{title}:Royalty artık Alice hesabına gitmeli.")
         ok_top, msg_top, _ = self.bc.create_room_topic(
             author=self.bob.address,
             room_id=rid,
