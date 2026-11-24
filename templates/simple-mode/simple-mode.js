@@ -3837,10 +3837,10 @@
                   <span class="material-symbols-outlined notranslate text-[15px]" translate="no">palette</span>
                   <span>${t('profile_avatar_btn', 'Avatar')}</span>
                 </button>
-                <button type="button" onclick="if(typeof openWalletVaultModal==='function') openWalletVaultModal();"
-                  class="h-8.5 px-3 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
-                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">tune</span>
-                  <span>${t('profile_security_btn', 'Security')}</span>
+                <button type="button" onclick="if(typeof window.openAccountControlCenter==='function') window.openAccountControlCenter();"
+                  class="h-8.5 px-3 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/35 text-xs font-semibold transition-all active:scale-95 flex items-center gap-1 cursor-pointer">
+                  <span class="material-symbols-outlined notranslate text-[15px]" translate="no">manage_accounts</span>
+                  <span>${t('profile_your_account_btn', 'Your Account')}</span>
                 </button>
               ` : `
                 <!-- Follow Button (For Other Profiles) -->

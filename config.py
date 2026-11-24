@@ -73,6 +73,10 @@ class Config:
     SPACE_LIKE_FEE = 0.01       # 20% Creator royalty, 70% Treasury reserve, 10% Validator fee
     SPACE_COMMENT_FEE = 0.02    # 20% Creator royalty, 70% Treasury reserve, 10% Validator fee
     SPACE_FOLLOW_FEE = 1.00     # 50% Creator, 30% Miner/Validator pool, 20% Treasury reserve
+    POST_ROYALTY_TRANSFER_FEE = 0.50    # Tek paylaşım telif devri (%50 Hazine, %50 Validator/Miner)
+    POST_ROYALTY_BULK_FEE = 1000.0      # Toplu paylaşım telif devri (%50 Hazine, %50 Validator/Miner)
+    POST_ROYALTY_MAX_PER_YEAR = 3       # Paylaşım başına son 365 günde maksimum devir hakkı
+    POST_ROYALTY_WINDOW_SECONDS = 365 * 24 * 3600
 
     # ── Protocol Rooms (Reddit-Style Public Spaces) Ücretleri (BCT) ──
     ROOM_CREATE_FEES = {
@@ -97,7 +101,8 @@ class Config:
     REWARD_MINER_PERCENT = 50       # %50 PoW bloğunu bulan madenciye (Proposer)
     REWARD_VALIDATOR_PERCENT = 40   # %40 aktif doğrulayıcı düğüm havuzuna (Düğüm çalıştıran Validator Quorum)
     REWARD_OBSERVER_PERCENT = 10    # %10 pasif teminat kitleyen gözlemcilere (Observer Staking Pool)
-    BASE_BLOCK_REWARD = 50.0        # Başlangıç blok ödülü
+    BLOCK_REWARD = 0.05             # Sabit blok ödülü (Hazine'den)
+    BASE_BLOCK_REWARD = 0.05        # Geriye dönük uyumluluk için BLOCK_REWARD ile eşitlendi
 
     # ── Sybil Koruması & Staking Kademeleri (Stake Limits) ───
     MIN_OBSERVER_STAKE = 100.0      # Pasif gözlemci staking alt limiti (Min 100 BCT)
@@ -121,6 +126,10 @@ class Config:
         "space_post": 10,       # Post Paylaşımı: 10 saniye
         "bns_register": 10,     # İsim Alma: 10 saniye
         "space_follow": 3,      # Takip Etme: 3 saniye
+        "space_royalty_transfer": 10,     # Tek Paylaşım Telif Devri: 10 saniye
+        "space_royalty_transfer_all": 30, # Toplu Paylaşım Telif Devri: 30 saniye
+        "validator_stake": 10,            # Teminat Kilitleme: 10 saniye
+        "validator_unstake": 10,          # Teminat Çözme: 10 saniye
         "room_create": 15,      # Oda Oluşturma: 15 saniye
         "room_set_avatar": 10,  # Oda Avatarı Mühürleme: 10 saniye
         "room_transfer": 10,    # Oda Devretme: 10 saniye

@@ -3749,7 +3749,7 @@
               <div class="flex items-center gap-2.5">
                 <span class="material-symbols-outlined text-secondary text-[22px] shrink-0">info</span>
                 <span class="leading-relaxed">
-                  <strong>Consensus Reward Distribution:</strong> Every block distributes <strong class="text-on-surface">50% to the PoW Block Proposer</strong>, <strong class="text-emerald-400 font-bold">40% to Active Node Validators</strong>, and <strong class="text-primary font-bold">10% to Observer Stakers</strong> pro-rata by locked collateral.
+                  <strong>Consensus Reward Distribution:</strong> Every block distributes <strong class="text-on-surface">50% to the PoW Block Proposer</strong>, <strong class="text-emerald-400 font-bold">40% to Active Node Validators</strong>, and <strong class="text-primary font-bold">10% to Observer Stakers</strong> pro-rata by locked collateral. <span class="text-amber-300">Anti-flash-staking: 1-hour minimum lockup after stake; partial unstake must leave &ge; 100 BCT or unstake 100%.</span>
                 </span>
               </div>
             </div>
@@ -24975,9 +24975,11 @@
     // VALIDATOR 1,000 BCT STAKING & COLLATERAL VAULT CONTROLLERS (v2.16.0)
     // =========================================================================
     let currentValidatorStakedBCT = 0;
+    let currentValidatorUnlockAt = 0;
 
     async function refreshValidatorStakeUI() {
       if (!currentAccount || !currentAccount.address) {
+        currentValidatorUnlockAt = 0;
         updateStakingVaultDisplay(0, false);
         return;
       }
@@ -24987,8 +24989,11 @@
           const staked = Number(body.data.staked_amount || 0);
           const isEligible = Boolean(body.data.is_eligible);
           currentValidatorStakedBCT = staked;
+          currentValidatorUnlockAt = Number(body.data.unlock_at || 0);
           updateStakingVaultDisplay(staked, isEligible);
+          updateSmartStakingPreview();
         } else {
+          currentValidatorUnlockAt = 0;
           updateStakingVaultDisplay(0, false);
         }
       } catch (_e) {
@@ -25014,13 +25019,19 @@
         progressBar.style.width = `${pct}%`;
       }
 
+      const nowSecLock = Date.now() / 1000;
+      const lockRemainMin = (staked > 0 && currentValidatorUnlockAt > nowSecLock)
+        ? Math.max(1, Math.ceil((currentValidatorUnlockAt - nowSecLock) / 60))
+        : 0;
+      const lockSuffix = lockRemainMin > 0 ? ` · 🔒 Kilit: ~${lockRemainMin} dk` : '';
+
       if (staked >= 1000 || isEligible) {
         if (vaultBadge) {
           vaultBadge.textContent = 'ACTIVE VALIDATOR';
           vaultBadge.className = 'px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 font-mono text-[10px] font-bold uppercase';
         }
         operatorStakeEls.forEach(el => { el.textContent = `${formatBct(staked, 2)} BCT (Locked)`; });
-        operatorStakeSubs.forEach(el => { el.textContent = '✅ 1,000+ BCT Collateral Locked (40% Quorum Eligible)'; });
+        operatorStakeSubs.forEach(el => { el.textContent = '✅ 1,000+ BCT Collateral Locked (40% Quorum Eligible)' + lockSuffix; });
         operatorRoleEls.forEach(el => { el.textContent = 'Active PoS Validator'; });
         if (operatorRoleBadge) {
           operatorRoleBadge.textContent = 'VALIDATOR ACTIVE';
@@ -25032,7 +25043,7 @@
           vaultBadge.className = 'px-2.5 py-0.5 rounded-full bg-primary/20 text-primary border border-primary/30 font-mono text-[10px] font-bold uppercase';
         }
         operatorStakeEls.forEach(el => { el.textContent = `${formatBct(staked, 2)} BCT (Locked)`; });
-        operatorStakeSubs.forEach(el => { el.textContent = '10% Observer Pool Active (' + formatBct(Math.max(0, 1000 - staked), 2) + ' BCT to Validator)'; });
+        operatorStakeSubs.forEach(el => { el.textContent = '10% Observer Pool Active (' + formatBct(Math.max(0, 1000 - staked), 2) + ' BCT to Validator)' + lockSuffix; });
         operatorRoleEls.forEach(el => { el.textContent = 'Observer Staker (10%)'; });
       } else {
         if (vaultBadge) {
@@ -25055,10 +25066,12 @@
 
     function setStakingMaxAmount() {
       const curBal = Number(currentAccount?.balance || 0);
-      const safeMax = Math.min(100000, Math.floor(curBal));
+      const remCap = Math.max(0, Math.floor(100000 - Number(currentValidatorStakedBCT || 0)));
+      const safeMax = Math.min(remCap, Math.floor(curBal));
       const inp = document.getElementById('inputCustomStakeAmt');
       if (inp) {
-        inp.value = Math.max(100, safeMax);
+        const minAllowed = currentValidatorStakedBCT >= 100 ? 1 : 100;
+        inp.value = safeMax >= minAllowed ? safeMax : minAllowed;
         updateSmartStakingPreview();
       }
     }
@@ -25066,6 +25079,7 @@
     function updateSmartStakingPreview() {
       const inp = document.getElementById('inputCustomStakeAmt');
       const amt = Number(inp?.value || 0);
+      const totalAfter = Number(currentValidatorStakedBCT || 0) + amt;
 
       const titleEl = document.getElementById('smartTierTitle');
       const iconEl = document.getElementById('smartTierBadgeIcon');
@@ -25075,23 +25089,43 @@
       const monthlyEl = document.getElementById('valEstimatedMonthlyLabel');
       const aprEl = document.getElementById('valEstimatedAprLabel');
 
-      if (amt < 100) {
+      // Live on-chain pool metrics from Staking Participants table (real data, no fake constants)
+      const totalStakedText = String(document.getElementById('statTotalStakedBCT')?.textContent || '0').replace(/[^0-9.]/g, '');
+      const liveTotalStaked = Math.max(0, Number(totalStakedText) || 0);
+      const liveActiveVals = Math.max(0, Number(document.getElementById('statActiveValidatorsCount')?.textContent || 0) || 0);
+      const dailyBaseSubsidy = 4320 * 0.05; // 216 BCT/day base subsidy (excluding variable tx fees)
+      const dailyObsPool = dailyBaseSubsidy * 0.10; // 21.6 BCT/day
+      const dailyValPool = dailyBaseSubsidy * 0.40; // 86.4 BCT/day
+
+      if (amt <= 0 || (currentValidatorStakedBCT < 100 && totalAfter < 100)) {
         if (titleEl) titleEl.textContent = `${amt} BCT — Insufficient Collateral Amount`;
         if (iconEl) iconEl.textContent = 'warning';
         if (badgeEl) {
           badgeEl.textContent = 'Min. 100 BCT Required';
           badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-amber-500/15 text-amber-400 border border-amber-500/30';
         }
-        if (descEl) descEl.innerHTML = '⚠️ The minimum lockable collateral to participate in the staking reward pools is <strong>100 BCT</strong>.';
+        if (descEl) descEl.innerHTML = '⚠️ The minimum lockable collateral to participate in the staking reward pools is <strong>100 BCT</strong> (or &ge; 1 BCT top-up if you already have &ge; 100 BCT staked).';
         if (dailyEl) dailyEl.textContent = '0.00 BCT / day';
         if (monthlyEl) monthlyEl.textContent = '0.00 BCT / mo';
-        if (aprEl) aprEl.textContent = '0% APR';
+        if (aprEl) aprEl.textContent = '0.0% APR';
         return;
       }
 
-      if (amt >= 100 && amt < 1000) {
+      if (totalAfter > 100000) {
+        const remRoom = Math.max(0, 100000 - Number(currentValidatorStakedBCT || 0));
+        if (titleEl) titleEl.textContent = `Exceeds 100,000 BCT Cumulative Cap (Remaining: ${remRoom.toLocaleString('en-US')} BCT)`;
+        if (iconEl) iconEl.textContent = 'warning';
+        if (badgeEl) {
+          badgeEl.textContent = 'Max 100,000 BCT / Wallet';
+          badgeEl.className = 'px-2.5 py-0.5 rounded-full text-[11px] font-mono font-bold bg-error/15 text-error border border-error/30';
+        }
+        return;
+      }
+
+      const effStake = totalAfter;
+      if (effStake < 1000) {
         // Observer Staker Tier (10% pool)
-        if (titleEl) titleEl.textContent = `${Number(amt).toLocaleString('en-US')} BCT — Passive Observer Staking`;
+        if (titleEl) titleEl.textContent = `${Number(effStake).toLocaleString('en-US')} BCT — Passive Observer Staking`;
         if (iconEl) iconEl.textContent = 'visibility';
         if (badgeEl) {
           badgeEl.textContent = '10% Observer Pool';
@@ -25099,24 +25133,23 @@
         }
         if (descEl) descEl.innerHTML = `
           <strong>Passive Observer Model (10% Pool):</strong><br>
-          • <strong>No Node Required:</strong> You do not need to run any server or software — simply lock BCT collateral in the vault.<br>
-          • <strong>Automated Yield:</strong> 10% of every block's reward and fee pool is distributed pro-rata directly to your wallet.<br>
-          • <em>Tip:</em> Upgrading your stake to 1,000 BCT and running a node automatically promotes you to the <strong>40% Validator Quorum Pool</strong>!
+          • <strong>No Node Required:</strong> Lock BCT collateral in the vault and earn pro-rata from the 10% Observer Pool (batched at 0.25 BCT).<br>
+          • <strong>Anti-Flash Lockup:</strong> 1-hour minimum lockup after staking; partial unstake must leave &ge; 100 BCT or unstake 100%.
         `;
-        // Daily est: 4320 blk/day * 0.05 BCT * 10% = 21.6 BCT pool / day
-        const estDaily = ((amt / 5000) * 21.6) / 2;
-        if (dailyEl) dailyEl.textContent = `~${estDaily.toFixed(3)} BCT / day`;
+        const denomObs = Math.max(effStake, liveTotalStaked + amt);
+        const estDaily = (effStake / denomObs) * dailyObsPool;
+        const estApr = effStake > 0 ? ((estDaily * 365) / effStake) * 100 : 0;
+        if (dailyEl) dailyEl.textContent = `~${estDaily.toFixed(4)} BCT / day`;
         if (monthlyEl) monthlyEl.textContent = `~${(estDaily * 30).toFixed(2)} BCT / mo`;
-        const estApr = Math.min(45, Math.max(12, (estDaily * 365 / amt) * 100));
-        if (aprEl) aprEl.textContent = `~${estApr.toFixed(1)}% APR`;
+        if (aprEl) aprEl.textContent = `~${estApr.toFixed(1)}% APR (Base)`;
       } else {
         // >= 1000 BCT (Validator or Observer)
-        const hasExcess = amt > 1000;
-        const excessAmt = amt - 1000;
+        const hasExcess = effStake > 1000;
+        const excessAmt = effStake - 1000;
         if (titleEl) {
           titleEl.textContent = hasExcess
-            ? `${Number(amt).toLocaleString('en-US')} BCT — 40% Validator (1,000 BCT) + 10% Observer (${Number(excessAmt).toLocaleString('en-US')} BCT)`
-            : `${Number(amt).toLocaleString('en-US')} BCT — Validator Tier Collateral (1,000 BCT)`;
+            ? `${Number(effStake).toLocaleString('en-US')} BCT — 40% Validator (1,000 BCT) + 10% Observer (${Number(excessAmt).toLocaleString('en-US')} BCT)`
+            : `${Number(effStake).toLocaleString('en-US')} BCT — Validator Tier Collateral (1,000 BCT)`;
         }
         if (iconEl) iconEl.textContent = 'verified_user';
         if (badgeEl) {
@@ -25125,15 +25158,18 @@
         }
         if (descEl) descEl.innerHTML = `
           <strong>Smart Dual-Tier Consensus (1,000+ BCT):</strong><br>
-          • 🟢 <strong>Tier 1 (1,000 BCT Base Collateral):</strong> When running a node on your PC or VPS, this enters the <strong class="text-emerald-400 font-bold">40% Active Validator Quorum Pool</strong>.<br>
-          ${hasExcess ? `• 🟣 <strong>Tier 2 (${Number(excessAmt).toLocaleString('en-US')} BCT Excess Collateral):</strong> Any stake above 1,000 BCT automatically earns additional pro-rata yield from the <strong class="text-primary font-bold">10% Observer Pool</strong>!<br>` : ''}
-          • 🔵 <strong>When Node Is Offline:</strong> Even without an active node, your full ${Number(amt).toLocaleString('en-US')} BCT automatically earns from the <strong class="text-primary font-bold">10% Observer Pool</strong> so your capital never sits idle!
+          • 🟢 <strong>Tier 1 (1,000 BCT Base Collateral):</strong> Running <code class="font-mono text-on-surface bg-surface-container-highest px-1 rounded">node_runner.py</code> enters the <strong class="text-emerald-400 font-bold">40% Active Validator Quorum Pool</strong>.<br>
+          ${hasExcess ? `• 🟣 <strong>Tier 2 (${Number(excessAmt).toLocaleString('en-US')} BCT Excess):</strong> Automatically earns pro-rata yield from the <strong class="text-primary font-bold">10% Observer Pool</strong>.<br>` : ''}
+          • 🔵 <strong>Offline / Passive:</strong> Without a node, your full ${Number(effStake).toLocaleString('en-US')} BCT earns from the 10% Observer Pool (1-hour minimum lockup).
         `;
-        // Daily est: 4320 blk/day * 0.05 BCT * 40% = 86.4 BCT pool / day
-        const estDaily = (86.4 / 2) + (hasExcess ? ((excessAmt / 5000) * 21.6) / 2 : 0);
+        const denomObs = Math.max(effStake, liveTotalStaked + amt);
+        const valShareDaily = dailyValPool / Math.max(1, liveActiveVals + 1);
+        const obsExcessDaily = hasExcess ? (excessAmt / denomObs) * dailyObsPool : 0;
+        const estDaily = valShareDaily + obsExcessDaily;
+        const estApr = effStake > 0 ? ((estDaily * 365) / effStake) * 100 : 0;
         if (dailyEl) dailyEl.textContent = `~${estDaily.toFixed(2)} BCT / day`;
         if (monthlyEl) monthlyEl.textContent = `~${(estDaily * 30).toFixed(2)} BCT / mo`;
-        if (aprEl) aprEl.textContent = '~58.4% APR (w/ Node)';
+        if (aprEl) aprEl.textContent = `~${estApr.toFixed(1)}% APR (w/ Node)`;
       }
     }
 
@@ -25143,12 +25179,22 @@
         return;
       }
       const amt = Number(amountBct || 1000);
-      if (isNaN(amt) || amt < 100) {
+      const curStaked = Number(currentValidatorStakedBCT || 0);
+      if (isNaN(amt) || amt <= 0) {
+        showToast('Geçerli bir teminat tutarı girin.', 'warning');
+        return;
+      }
+      if (curStaked < 100 && (curStaked + amt) < 100) {
         showToast('Minimum stake collateral is 100 BCT (Observer pool). Active validator quorum requires 1,000 BCT.', 'warning');
         return;
       }
-      if (amt > 100000) {
-        showToast('Maximum single stake limit is 100,000 BCT.', 'warning');
+      if (curStaked >= 100 && amt < 1) {
+        showToast('Ek teminat tutarı en az 1.00 BCT olmalıdır.', 'warning');
+        return;
+      }
+      if ((curStaked + amt) > 100000) {
+        const remCap = Math.max(0, 100000 - curStaked);
+        showToast(`Cüzdan başına maksimum toplam teminat 100,000 BCT'dir (Kalan limit: ${remCap.toLocaleString('en-US')} BCT).`, 'warning');
         return;
       }
       const curBal = Number(currentAccount.balance || 0);

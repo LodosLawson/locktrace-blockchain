@@ -91,7 +91,15 @@ PROTOCOL_VERSION = getattr(Config, "PROTOCOL_VERSION", "2.2.0")
 FEE_PERCENT = 0.01                       # 1%
 MINER_FEE_SHARE = 0.50                   # 50% of the 1% fee allocated to block/validator reward pool
 TREASURY_FEE_SHARE = 0.50                # 50% returned to Treasury Vault
-BLOCK_REWARD = 0.05                      # 0.05 BCT fixed block subsidy from treasury
+BLOCK_REWARD = float(getattr(Config, "BLOCK_REWARD", 0.05))           # 0.05 BCT fixed block subsidy from treasury
+SPACE_POST_FEE = float(getattr(Config, "SPACE_POST_FEE", 0.10))
+SPACE_LIKE_FEE = float(getattr(Config, "SPACE_LIKE_FEE", 0.01))
+SPACE_COMMENT_FEE = float(getattr(Config, "SPACE_COMMENT_FEE", 0.02))
+SPACE_FOLLOW_FEE = float(getattr(Config, "SPACE_FOLLOW_FEE", 1.00))
+POST_ROYALTY_TRANSFER_FEE = float(getattr(Config, "POST_ROYALTY_TRANSFER_FEE", 0.50))
+POST_ROYALTY_BULK_FEE = float(getattr(Config, "POST_ROYALTY_BULK_FEE", 1000.0))
+POST_ROYALTY_MAX_PER_YEAR = int(getattr(Config, "POST_ROYALTY_MAX_PER_YEAR", 3))
+POST_ROYALTY_WINDOW_SECONDS = int(getattr(Config, "POST_ROYALTY_WINDOW_SECONDS", 365 * 24 * 3600))
 PROPOSER_REWARD_SHARE = getattr(Config, "REWARD_MINER_PERCENT", 50) / 100.0   # 50% of reward pool to winning PoW block producer
 VALIDATOR_POOL_SHARE = getattr(Config, "REWARD_VALIDATOR_PERCENT", 40) / 100.0 # 40% of reward pool shared equally among active verified peer validators
 OBSERVER_POOL_SHARE = getattr(Config, "REWARD_OBSERVER_PERCENT", 10) / 100.0   # 10% of reward pool shared pro-rata among passive observer stakers
@@ -1430,7 +1438,7 @@ class Blockchain:
                 return False, "Your like for this post is already queued in the batch pool.", None
 
             liker_bal = self.verify_and_recalc_balance(clean_liker)
-            like_cost = 0.01
+            like_cost = SPACE_LIKE_FEE
             if liker_bal < like_cost:
                 return False, f"Insufficient balance! Like fee is {like_cost:.2f} BCT. Current balance: {liker_bal:.4f} BCT.", None
 
@@ -1438,9 +1446,9 @@ class Blockchain:
             royalty_holder = normalize_bct_address(post.get("royalty_owner") or author_address)
             royalty_redirected = self.is_wallet_burned(royalty_holder)
             effective_royalty_recipient = TREASURY_ADDRESS if royalty_redirected else royalty_holder
-            author_cut = 0.002
-            treasury_cut = 0.007
-            miner_fee = 0.001
+            author_cut = round(like_cost * 0.20, 8)
+            miner_fee = round(like_cost * 0.10, 8)
+            treasury_cut = round(like_cost - author_cut - miner_fee, 8)
             sig = signature
 
             extra_data = {
@@ -1526,7 +1534,7 @@ class Blockchain:
                 return False, sig_msg, None
 
             commenter_bal = self.verify_and_recalc_balance(clean_commenter)
-            comment_cost = 0.02
+            comment_cost = SPACE_COMMENT_FEE
             if commenter_bal < comment_cost:
                 return False, f"Insufficient balance! Comment fee is {comment_cost:.2f} BCT. Current balance: {commenter_bal:.4f} BCT.", None
 
@@ -1551,9 +1559,9 @@ class Blockchain:
             royalty_holder = normalize_bct_address(post.get("royalty_owner") or author_address)
             royalty_redirected = self.is_wallet_burned(royalty_holder)
             effective_royalty_recipient = TREASURY_ADDRESS if royalty_redirected else royalty_holder
-            author_cut = 0.004
-            treasury_cut = 0.014
-            miner_fee = 0.002
+            author_cut = round(comment_cost * 0.20, 8)
+            miner_fee = round(comment_cost * 0.10, 8)
+            treasury_cut = round(comment_cost - author_cut - miner_fee, 8)
             comment_id = f"cmt_{secrets.token_hex(6)}"
             sig = signature
 
@@ -1677,13 +1685,13 @@ class Blockchain:
                 return False, "Your follow transaction is already queued in the mempool.", None
 
             follower_bal = self.verify_and_recalc_balance(clean_follower)
-            follow_cost = 1.00
+            follow_cost = SPACE_FOLLOW_FEE
             if follower_bal < follow_cost:
                 return False, f"Insufficient balance! Follow fee is {follow_cost:.2f} BCT. Current balance: {follower_bal:.4f} BCT.", None
 
-            creator_cut = 0.50
-            miner_fee = 0.30
-            treasury_cut = 0.20
+            creator_cut = round(follow_cost * 0.50, 8)
+            miner_fee = round(follow_cost * 0.30, 8)
+            treasury_cut = round(follow_cost - creator_cut - miner_fee, 8)
             royalty_redirected = self.is_wallet_burned(clean_target)
             effective_royalty_recipient = TREASURY_ADDRESS if royalty_redirected else clean_target
 
@@ -1757,11 +1765,9 @@ class Blockchain:
           automatically redirect to the Protocol Treasury).
         - Fee: 0.50 BCT (0.25 BCT Treasury, 0.25 BCT Validator/Miner Pool).
         """
-        POST_ROYALTY_TRANSFER_COST = 0.50
-        POST_ROYALTY_TREASURY_CUT = 0.25
-        POST_ROYALTY_POOL_CUT = 0.25
-        POST_ROYALTY_MAX_PER_YEAR = 3
-        POST_ROYALTY_WINDOW_SECONDS = 365 * 24 * 3600
+        POST_ROYALTY_TRANSFER_COST = POST_ROYALTY_TRANSFER_FEE
+        POST_ROYALTY_TREASURY_CUT = round(POST_ROYALTY_TRANSFER_COST * 0.50, 8)
+        POST_ROYALTY_POOL_CUT = round(POST_ROYALTY_TRANSFER_COST - POST_ROYALTY_TREASURY_CUT, 8)
 
         with self.lock:
             self._load_state()
@@ -1967,11 +1973,9 @@ class Blockchain:
           3/3 are safely skipped; if 0 eligible posts exist, the tx is rejected (no fee charged).
         - Burned/closed wallets and system/vault addresses are strictly rejected.
         """
-        BULK_TRANSFER_COST = 1000.0
-        BULK_TREASURY_CUT = 500.0
-        BULK_POOL_CUT = 500.0
-        POST_ROYALTY_MAX_PER_YEAR = 3
-        POST_ROYALTY_WINDOW_SECONDS = 365 * 24 * 3600
+        BULK_TRANSFER_COST = POST_ROYALTY_BULK_FEE
+        BULK_TREASURY_CUT = round(BULK_TRANSFER_COST * 0.50, 8)
+        BULK_POOL_CUT = round(BULK_TRANSFER_COST - BULK_TREASURY_CUT, 8)
 
         with self.lock:
             self._load_state()

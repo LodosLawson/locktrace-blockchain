@@ -955,11 +955,18 @@ class LockTraceNode:
         exists = clean_addr in (TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS)
         fee_bearing = (
             "transfer", "space_post", "space_like", "space_comment", "space_follow",
-            "bns_register", "bns_transfer", "bns_set_price", "bns_buy", "bns_accept_offer"
+            "space_royalty_transfer", "space_royalty_transfer_all",
+            "bns_register", "bns_transfer", "bns_set_price", "bns_buy", "bns_accept_offer",
+            "avatar_mint", "avatar_equip",
+            "room_create", "room_set_avatar", "room_transfer", "room_topic", "room_reply", "room_upvote",
+            "room_verify",
         )
         net_credit_types = (
-            "transfer", "space_post", "bns_register", "bns_buy",
-            "validator_stake", "validator_unstake"
+            "transfer", "space_post", "space_royalty_transfer", "space_royalty_transfer_all",
+            "bns_register", "bns_buy",
+            "validator_stake", "validator_unstake",
+            "avatar_mint", "avatar_equip",
+            "room_create", "room_set_avatar", "room_transfer", "room_verify",
         )
 
         with self.chain_lock:
