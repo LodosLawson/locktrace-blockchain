@@ -61,7 +61,7 @@
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
   <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.13.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-JRk2BPD9tQW7r4obWB3Z3V7FPCZhayvreZPlizC9/5Y=" crossorigin="anonymous" defer></script>
+  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-1AO+E+n9kWdBcLP986A0VRULPgAYt9a4qlqE6ATqV4g=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -7320,45 +7320,46 @@
   <!-- MOBILE BOTTOM NAVIGATION BAR (< 768px — Streamlined & Uncluttered)        -->
   <!-- ========================================================================= -->
   <nav
-    class="md:hidden fixed bottom-0 w-full z-40 pb-safe bg-surface/90 backdrop-blur-md border-t border-outline-variant/20 shadow-[0_-4px_16px_rgba(0,0,0,0.25)]"
+    class="md:hidden fixed bottom-0 w-full z-40 bg-surface/92 backdrop-blur-md border-t border-outline-variant/20 shadow-[0_-4px_16px_rgba(0,0,0,0.25)]"
+    style="padding-bottom: env(safe-area-inset-bottom, 0px);"
     id="mobile-nav">
-    <div class="h-14 px-1.5 sm:px-3 flex items-center justify-around">
+    <div class="h-[52px] px-1 flex items-center justify-around">
       <button
-        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-primary transition-colors active:scale-90 cursor-pointer"
+        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-on-surface-variant hover:text-primary transition-colors active:scale-90 cursor-pointer"
         id="mobileNavBackBtn" onclick="navigatePwaBack()" type="button" title="Geri / Back">
-        <span class="material-symbols-outlined notranslate text-[22px]" translate="no">arrow_back</span>
+        <span class="material-symbols-outlined notranslate text-[22px] leading-none" translate="no">arrow_back</span>
         <span class="font-label-sm text-[10px] font-medium leading-none">Back</span>
       </button>
       <button
-        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95"
+        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 cursor-pointer"
         data-tab="cuzdanim" onclick="switchTab('cuzdanim')" type="button">
-        <span class="material-symbols-outlined notranslate text-[23px]" translate="no">account_balance_wallet</span>
+        <span class="material-symbols-outlined notranslate text-[22px] leading-none" translate="no">account_balance_wallet</span>
         <span class="font-label-sm text-[10px] font-medium leading-none">Wallet</span>
       </button>
       <button
-        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95"
+        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 cursor-pointer"
         data-tab="space" onclick="switchTab('space')" type="button">
-        <span class="material-symbols-outlined notranslate text-[23px]" translate="no">forum</span>
+        <span class="material-symbols-outlined notranslate text-[22px] leading-none" translate="no">forum</span>
         <span class="font-label-sm text-[10px] font-medium leading-none">Space</span>
       </button>
       <button
-        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95"
+        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 cursor-pointer"
         data-tab="rooms" onclick="switchTab('rooms')" type="button">
-        <span class="material-symbols-outlined notranslate text-[23px]" translate="no">meeting_room</span>
+        <span class="material-symbols-outlined notranslate text-[22px] leading-none" translate="no">meeting_room</span>
         <span class="font-label-sm text-[10px] font-medium leading-none">Rooms</span>
       </button>
       <button id="mobileNavProfileBtn"
-        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 cursor-pointer"
+        class="mobile-nav-btn flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors active:scale-95 cursor-pointer"
         data-tab="profile" onclick="openProMobileProfileTab()" type="button">
-        <span class="material-symbols-outlined notranslate text-[23px]" translate="no">person</span>
+        <span class="material-symbols-outlined notranslate text-[22px] leading-none" translate="no">person</span>
         <span class="font-label-sm text-[10px] font-medium leading-none">Profile</span>
       </button>
       <button
-        class="mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer"
+        class="mobile-nav-btn relative flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-on-surface-variant hover:text-primary transition-colors active:scale-95 cursor-pointer"
         id="mobileNavMenuBtn" onclick="handleMobileNavMenuClick(event)" ondblclick="openMobileMenuModal()" type="button" title="Menu">
         <span id="mobileNavMenuIndicator" class="hidden absolute top-1.5 right-1/4 w-2 h-2 rounded-full bg-primary ring-2 ring-surface animate-pulse"></span>
-        <span class="material-symbols-outlined notranslate text-[23px] text-primary" translate="no" id="mobileNavMenuIcon">widgets</span>
-        <span class="font-label-sm text-[10px] font-semibold text-primary leading-none" id="mobileNavMenuLabel">Menu</span>
+        <span class="material-symbols-outlined notranslate text-[22px] leading-none text-on-surface-variant" translate="no" id="mobileNavMenuIcon">widgets</span>
+        <span class="font-label-sm text-[10px] font-medium text-on-surface-variant leading-none" id="mobileNavMenuLabel">Menu</span>
       </button>
     </div>
   </nav>
@@ -12187,19 +12188,15 @@
         }
       });
 
-      // Mobile Bottom Nav Active Highlight (Green active icon pill)
+      // Mobile Bottom Nav Active Highlight (Green icon color only, no background box)
       document.querySelectorAll('#mobile-nav .mobile-nav-btn[data-tab]').forEach((btn) => {
         const active = btn.getAttribute('data-tab') === target;
         btn.className = active
-          ? 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-emerald-400 font-semibold transition-colors cursor-pointer'
-          : 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer';
+          ? 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-emerald-400 font-semibold transition-colors cursor-pointer'
+          : 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer';
         const iconEl = btn.querySelector('.material-symbols-outlined');
         if (iconEl) {
-          iconEl.classList.toggle('bg-emerald-500/20', active);
           iconEl.classList.toggle('text-emerald-400', active);
-          iconEl.classList.toggle('px-3', active);
-          iconEl.classList.toggle('py-0.5', active);
-          iconEl.classList.toggle('rounded-full', active);
         }
       });
 
@@ -24434,15 +24431,11 @@
         document.querySelectorAll('#mobile-nav .mobile-nav-btn[data-tab]').forEach((btn) => {
           const active = btn.getAttribute('data-tab') === 'profile';
           btn.className = active
-            ? 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-emerald-400 font-semibold transition-colors cursor-pointer'
-            : 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-12 gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer';
+            ? 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-emerald-400 font-semibold transition-colors cursor-pointer'
+            : 'mobile-nav-btn flex flex-col items-center justify-center flex-1 h-full gap-0.5 text-on-surface-variant hover:text-on-surface transition-colors cursor-pointer';
           const iconEl = btn.querySelector('.material-symbols-outlined');
           if (iconEl) {
-            iconEl.classList.toggle('bg-emerald-500/20', active);
             iconEl.classList.toggle('text-emerald-400', active);
-            iconEl.classList.toggle('px-3', active);
-            iconEl.classList.toggle('py-0.5', active);
-            iconEl.classList.toggle('rounded-full', active);
           }
         });
         openUserProfile(currentAccount.address);
@@ -25404,10 +25397,9 @@
       }
 
       function isSimpleModeActive() {
+        if (document.documentElement && document.documentElement.classList.contains('bloctag-simple-mode')) return true;
         if (document.getElementById('simpleRoomsPageRoot')) return true;
-        const shell = document.getElementById('bloctag-simple-shell');
-        if (shell && !shell.classList.contains('hidden')) return true;
-        return !!(window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.isEnabled === 'function' && window.BlocTagSimpleMode.isEnabled());
+        return false;
       }
 
       function getPageContainer() {
@@ -26348,7 +26340,22 @@
           `;
         }
 
-        el.innerHTML = `
+        const inSimple = isSimpleModeActive();
+        el.innerHTML = inSimple ? `
+          <div class="w-full flex flex-col gap-3">
+            ${state.view !== 'list' ? `
+              <div class="flex items-center justify-between gap-2 pb-1">
+                <button type="button" onclick="window.ProtocolRoomsUI.openDirectory()"
+                  class="px-2.5 py-1.5 rounded-xl bg-surface-container text-xs font-semibold text-on-surface cursor-pointer inline-flex items-center gap-1">
+                  <span class="material-symbols-outlined notranslate text-[16px]" translate="no">arrow_back</span>
+                  <span>Odalar</span>
+                </button>
+                <span class="text-xs font-bold text-on-surface truncate">${esc(headerTitle)}</span>
+              </div>
+            ` : ''}
+            <div class="w-full">${bodyHtml}</div>
+          </div>
+        ` : `
           <div class="w-full flex flex-col gap-4">
             <div class="px-4 sm:px-6 py-4 rounded-2xl bg-surface-container-low border border-outline-variant/20 shadow-sm flex flex-wrap items-center justify-between gap-3">
               <div class="flex items-center gap-3 min-w-0">
@@ -26368,12 +26375,6 @@
                     <span>Tüm Odalar</span>
                   </button>
                 ` : `
-                  ${isSimpleModeActive() ? `
-                    <button type="button" onclick="window.BlocTagSimpleMode && window.BlocTagSimpleMode.go('SCR-SPC-03')"
-                      class="w-9 h-9 rounded-xl bg-surface-container hover:bg-surface-container-high border border-outline-variant/20 text-on-surface-variant hover:text-on-surface cursor-pointer flex items-center justify-center" title="Space'e Dön">
-                      <span class="material-symbols-outlined notranslate text-[18px]" translate="no">arrow_back</span>
-                    </button>
-                  ` : ''}
                   <button type="button" onclick="window.ProtocolRoomsUI.openCreate()"
                     class="px-3.5 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer hover:brightness-95 inline-flex items-center gap-1">
                     <span class="material-symbols-outlined notranslate text-[16px]" translate="no">add_circle</span>

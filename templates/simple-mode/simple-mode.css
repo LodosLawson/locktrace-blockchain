@@ -7,7 +7,7 @@
 :root {
   --simple-ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
   --simple-ease-smooth: cubic-bezier(0.4, 0, 0.2, 1);
-  --simple-bottom-nav-h: calc(60px + env(safe-area-inset-bottom, 0px));
+  --simple-bottom-nav-h: calc(52px + env(safe-area-inset-bottom, 0px));
 }
 
 /* Mode Transition Overlay & Kinetic Morph Animation */
@@ -156,7 +156,7 @@ html.bloctag-simple-mode #bloctag-simple-bottom-nav-portal {
   background-color: rgba(19, 19, 21, 0.92);
   -webkit-backdrop-filter: blur(22px);
   backdrop-filter: blur(22px);
-  padding-bottom: max(4px, env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   border-top: 1px solid rgba(60, 74, 66, 0.2);
   box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.42);
 }
