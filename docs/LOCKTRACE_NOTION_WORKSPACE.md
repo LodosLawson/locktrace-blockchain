@@ -216,7 +216,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.17.0` | Çift Aşamalı Alıcı Onaylı Varlık Devri (`.bct`, Oda, Tekil/Toplu Telif), Staking Güvenlik Sertleştirmesi, Toplu Telif Devri (`1,000 BCT`), Adaptive Abuse Shield |
+| **Ağ Sürümü** | `v2.18.0` | Tam Paylaşım Sahiplik Devri & Zincir Üstü Yolculuk (`Detaylar`), Çift Aşamalı Alıcı Onaylı Varlık Devri, Staking Güvenlik Sertleştirmesi, Adaptive Abuse Shield |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
 | **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -772,3 +772,8 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 1. **İstenmeyen Varlık Yükleme Koruması (`.bct`, Protocol Rooms, Tekil & Toplu Telif):**
    - Tüm sahiplik ve telif devirleri artık önce 7 gün geçerli, SQLite'da kalıcı ECDSA imzalı bir teklif (`propose_asset_transfer`) oluşturur; alıcı `Your Account · Kontrol Merkezi` üzerinden kendi ECDSA imzasıyla onaylamadan sahiplik değişmez ve **hiçbir ücret kesilmez**.
    - Alıcı istemediği odayı, `.bct` adını veya içerik telifini sıfır maliyetle reddedebilir (`reject`), gönderen ise onaylanmadan önce iptal edebilir (`cancel`).
+
+## 📜 40. BlocTag / LockTrace v2.18.0: Tam Paylaşım Sahiplik Devri & Zincir Üstü Yolculuk (`Detaylar`)
+
+1. **Paylaşımın Kendisinin Devri (`author` + `royalty_owner`):** Alıcı devri onayladığında yalnızca telif geliri değil paylaşımın kendisi de yeni sahibin profiline geçer; ilk oluşturan (`original_author`) bilgisi zincir üzerinde değişmez olarak korunur.
+2. **Paylaşım Detayları & Yolculuğu (`Detaylar` İkonu):** Hem Pro Mod hem Simple Mod'da her paylaşım kartına eklenen `history` ("Detaylar") ikonuyla paylaşımın ilk oluşturulduğu bloktan itibaren tüm sahiplik devir zinciri (`Kimden → Kime`, blok, tarih, işlem özeti) tıpkı `.bct` alan adlarında olduğu gibi şeffafça izlenir.

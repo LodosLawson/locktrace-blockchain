@@ -604,3 +604,8 @@ MIT License. Built for decentralization, transparency, and sovereign peer-to-pee
 
 - **Mandatory Recipient ECDSA Consent (`propose → accept / reject / cancel`):** Transferring `.bct` handles (`bns`), Protocol Rooms (`room`), single Space post royalties (`post_royalty`), or bulk post royalties (`post_royalty_all`) now creates a 7-day durable proposal (`GET /api/v1/transfers/pending/<address>`, `POST /api/v1/transfers/<id>/accept|reject|cancel`). Ownership never changes and **zero fee is charged** until the recipient explicitly signs and accepts; unwanted assets can be rejected with 0 cost, preventing unsolicited asset dumping.
 - **Unified Control Center Approvals UI:** Both Pro Mode and Simple Mode display incoming/outgoing pending transfer proposals with 1-tap `Onayla (İmzala)` / `Reddet` / `İptal Et` actions directly inside `Your Account · Kontrol Merkezi`, backed by instant Web Push notifications.
+
+### v2.18.0 Release: Full Space Post Ownership Transfer & On-Chain Provenance Journey
+
+- **Full Post Ownership Transfer (`author` + `royalty_owner`):** Accepting a single (`0.50 BCT`) or bulk (`1,000 BCT`) Space post transfer now transfers ownership of the post itself (`author` & `royalty_owner`) to the recipient's profile while permanently preserving immutable `original_author` provenance on-chain.
+- **Post Details & Provenance Journey (`Detaylar`):** Added a dedicated `history` ("Detaylar") icon on every Space post in both Pro Mode and Simple Mode that opens `#post-journey-modal`, displaying the post's complete on-chain journey from initial creation (`original_author`, block, tx) through every transfer hop (`from → to`, block, fee tier, tx hash) — matching `.bct` domain provenance transparency.

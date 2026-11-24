@@ -3981,6 +3981,22 @@
                 <span class="text-[10.5px] text-on-surface-variant group-hover:text-on-surface transition-colors mt-0.5">${t('profile_stat_following', 'Following')}</span>
               </div>
             </div>
+
+            ${isMyProfile ? `
+              <!-- Dedicated Own-Profile Incoming & Outgoing Transfer Consent Panel (v2.17.0) -->
+              <div class="mt-3.5 flex flex-col gap-2">
+                <div class="flex items-center justify-between gap-2 px-0.5">
+                  <div class="flex items-center gap-1.5">
+                    <span class="material-symbols-outlined notranslate text-[16px] text-amber-400" translate="no">mark_email_unread</span>
+                    <span class="text-xs font-bold text-on-surface">Gelen &amp; Bekleyen Devir Onayları</span>
+                  </div>
+                  <span id="simpleProfilePendingTransfersBadge" class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-mono font-bold">0</span>
+                </div>
+                <div id="simpleProfilePendingTransfersBox" class="flex flex-col gap-2">
+                  <div class="p-3 rounded-2xl bg-surface-container-low border border-outline-variant/15 text-[11px] text-on-surface-variant text-center">Kontrol ediliyor...</div>
+                </div>
+              </div>
+            ` : ''}
           </div>
         </div>
 
@@ -4772,6 +4788,12 @@
 
     if (simpleState.activeScreen === 'SCR-ROOMS' && window.ProtocolRoomsUI && typeof window.ProtocolRoomsUI.mountPage === 'function') {
       window.ProtocolRoomsUI.mountPage();
+    }
+    if (simpleState.activeScreen === 'SCR-PRF-05' && document.getElementById('simpleProfilePendingTransfersBox') && typeof window.loadProfilePendingTransfers === 'function') {
+      const accP = getActiveWallet();
+      if (accP && accP.address) {
+        window.loadProfilePendingTransfers(accP.address, 'simpleProfilePendingTransfersBox', 'simpleProfilePendingTransfersBadge');
+      }
     }
 
     const navPortal = document.getElementById('bloctag-simple-bottom-nav-portal');

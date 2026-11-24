@@ -3473,11 +3473,18 @@
               <span class="text-[11px] text-on-surface-variant truncate block">${esc(subHandle)} • ${esc(timeAgo)}</span>
             </div>
           </div>
-          <button type="button" aria-label="${t('space_share_btn', 'Share')}"
-            onclick="event.stopPropagation(); if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
-            class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer shrink-0">
-            <span class="material-symbols-outlined notranslate text-[18px]" translate="no">more_horiz</span>
-          </button>
+          <div class="flex items-center gap-0.5 shrink-0">
+            <button type="button" aria-label="Detaylar" title="Detaylar &amp; Geçmiş Yolculuğu"
+              onclick="event.stopPropagation(); if(typeof window.openPostJourneyModal==='function') window.openPostJourneyModal('${pid}', event);"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-sky-400 cursor-pointer shrink-0">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">history</span>
+            </button>
+            <button type="button" aria-label="${t('space_share_btn', 'Share')}"
+              onclick="event.stopPropagation(); if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
+              class="w-8 h-8 rounded-full flex items-center justify-center text-on-surface-variant hover:text-on-surface cursor-pointer shrink-0">
+              <span class="material-symbols-outlined notranslate text-[18px]" translate="no">more_horiz</span>
+            </button>
+          </div>
         </div>
 
         <div class="simple-post-body mt-2.5 text-sm text-on-surface">
@@ -3564,10 +3571,18 @@
                 <span class="text-[11px] font-mono text-on-surface-variant truncate">${esc(typeof window.shortAddr === 'function' ? window.shortAddr(authorAddr) : authorAddr)}</span>
               </div>
             </div>
-            <button type="button" onclick="if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
-              class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface cursor-pointer">
-              <span class="material-symbols-outlined notranslate text-[20px]" translate="no">ios_share</span>
-            </button>
+            <div class="flex items-center gap-1 shrink-0">
+              <button type="button" onclick="if(typeof window.openPostJourneyModal==='function') window.openPostJourneyModal('${pid}', event);"
+                title="Detaylar &amp; Geçmiş Yolculuğu"
+                class="h-9 px-2.5 flex items-center justify-center gap-1 rounded-full bg-sky-500/12 text-sky-400 hover:bg-sky-500/20 text-[11px] font-semibold cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[17px]" translate="no">history</span>
+                <span>Detaylar</span>
+              </button>
+              <button type="button" onclick="if(typeof openPostShareModal==='function') openPostShareModal('${pid}', event);"
+                class="w-9 h-9 flex items-center justify-center rounded-full text-on-surface-variant hover:text-on-surface cursor-pointer">
+                <span class="material-symbols-outlined notranslate text-[20px]" translate="no">ios_share</span>
+              </button>
+            </div>
           </div>
 
           <div class="simple-post-body text-base text-on-surface pt-1">

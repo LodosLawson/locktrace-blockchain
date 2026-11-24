@@ -177,9 +177,18 @@ class TestTwoStepAssetTransferConsent(unittest.TestCase):
         self.assertEqual(res_acc["execution"]["transferred_count"], 2)
         self.assertEqual(alice_pre - bc_reloaded.verify_and_recalc_units(self.alice.address), int(round(1000.0 * ATOMIC_UNIT)))
 
-        # Verify Bob is now the royalty_owner of both posts
-        self.assertEqual(bc_reloaded.get_space_post(pid1)["royalty_owner"], self.bob.address)
-        self.assertEqual(bc_reloaded.get_space_post(pid2)["royalty_owner"], self.bob.address)
+        # Verify Bob is now BOTH the post owner (author) AND royalty_owner, while Alice stays immutable original_author!
+        p1_after = bc_reloaded.get_space_post(pid1)
+        p2_after = bc_reloaded.get_space_post(pid2)
+        self.assertEqual(p1_after["author"], self.bob.address)
+        self.assertEqual(p1_after["royalty_owner"], self.bob.address)
+        self.assertEqual(p1_after["original_author"], self.alice.address)
+        self.assertEqual(p1_after["transfer_count"], 1)
+        self.assertEqual(p1_after["royalty_transfers"][0]["from_address"], self.alice.address)
+        self.assertEqual(p1_after["royalty_transfers"][0]["to_address"], self.bob.address)
+        self.assertEqual(p2_after["author"], self.bob.address)
+        self.assertEqual(p2_after["royalty_owner"], self.bob.address)
+        self.assertEqual(p2_after["original_author"], self.alice.address)
 
         try:
             bc_reloaded.storage.close()

@@ -2572,24 +2572,43 @@ class Blockchain:
         return results
 
     def _enrich_post_royalty_meta(self, p: dict, now_sec: Optional[float] = None) -> None:
-        """Populates live royalty holder, burned-redirect flag, and 3/year quota metadata on a post."""
+        """Populates live owner, original_author provenance, burned-redirect flag, transfer journey, and 3/year quota."""
         now_t = float(now_sec if now_sec is not None else time.time())
-        cutoff_t = now_t - (365 * 24 * 3600)
+        cutoff_t = now_t - POST_ROYALTY_WINDOW_SECONDS
         author_addr = normalize_bct_address(str(p.get("author", "")))
+        orig_addr = normalize_bct_address(str(p.get("original_author") or author_addr))
         r_owner = normalize_bct_address(str(p.get("royalty_owner") or author_addr))
         transfers = p.get("royalty_transfers") or []
         used_year = sum(1 for tr in transfers if float(tr.get("timestamp", 0) or 0) >= cutoff_t)
+        enriched_hist = []
+        for tr in transfers:
+            fa = normalize_bct_address(str(tr.get("from_address", "")))
+            ta = normalize_bct_address(str(tr.get("to_address", "")))
+            enriched_hist.append({
+                "from_address": fa,
+                "from_bns": self.bns_reverse.get(fa, ""),
+                "to_address": ta,
+                "to_bns": self.bns_reverse.get(ta, ""),
+                "timestamp": float(tr.get("timestamp", 0) or 0),
+                "block_index": tr.get("block_index"),
+                "tx_hash": str(tr.get("tx_hash", "")),
+                "bulk": bool(tr.get("bulk", False)),
+            })
+        p["original_author"] = orig_addr
+        p["original_author_bns"] = p.get("original_author_bns") or self.bns_reverse.get(orig_addr, "")
         p["royalty_owner"] = r_owner
         p["royalty_owner_bns"] = (
             p.get("author_bns", "")
             if r_owner == author_addr
             else self.bns_reverse.get(r_owner, "")
         )
+        p["royalty_transfers"] = enriched_hist
+        p["transfer_count"] = len(enriched_hist)
         p["royalty_redirected_to_treasury"] = self.is_wallet_burned(r_owner)
         p["royalty_transfers_used_year"] = used_year
-        p["royalty_transfers_remaining_year"] = max(0, 3 - used_year)
-        p["royalty_transfers_max_year"] = 3
-        p["royalty_transfer_fee"] = 0.50
+        p["royalty_transfers_remaining_year"] = max(0, POST_ROYALTY_MAX_PER_YEAR - used_year)
+        p["royalty_transfers_max_year"] = POST_ROYALTY_MAX_PER_YEAR
+        p["royalty_transfer_fee"] = POST_ROYALTY_TRANSFER_FEE
 
     def get_space_feed(self, limit: int = 50, feed_type: str = "for_you", tag: str = "", author: str = "") -> list:
         with self.lock:
@@ -6707,6 +6726,8 @@ class Blockchain:
                     author_bns = self.bns_reverse.get(snd, "")
                 space_posts[pid] = {
                     "post_id": pid,
+                    "original_author": snd,
+                    "original_author_bns": author_bns,
                     "author": snd,
                     "author_bns": author_bns,
                     "royalty_owner": snd,
@@ -6732,24 +6753,31 @@ class Blockchain:
                 cur_holder = normalize_bct_address(post_rec.get("royalty_owner") or post_rec.get("author", ""))
                 if cur_holder == snd:
                     tx_ts = float(tx.timestamp or 0)
-                    cutoff = tx_ts - (365 * 24 * 3600)
+                    cutoff = tx_ts - POST_ROYALTY_WINDOW_SECONDS
                     hist = post_rec.setdefault("royalty_transfers", [])
                     recent_cnt = sum(1 for tr in hist if float(tr.get("timestamp", 0) or 0) >= cutoff)
-                    if recent_cnt < 3:
+                    if recent_cnt < POST_ROYALTY_MAX_PER_YEAR:
+                        new_bns = self.bns_reverse.get(to_addr, "")
+                        post_rec["author"] = to_addr
+                        post_rec["author_bns"] = new_bns
+                        post_rec["is_anonymous"] = False
                         post_rec["royalty_owner"] = to_addr
-                        post_rec["royalty_owner_bns"] = self.bns_reverse.get(to_addr, "")
+                        post_rec["royalty_owner_bns"] = new_bns
                         hist.append({
                             "from_address": snd,
                             "to_address": to_addr,
                             "timestamp": tx_ts,
+                            "block_index": b_idx,
                             "tx_hash": tx.hash(),
+                            "bulk": False,
                         })
         elif tx.tx_type == "space_royalty_transfer_all" and tx.extra_data:
             to_addr = normalize_bct_address(tx.extra_data.get("to_address"))
             raw_pids = tx.extra_data.get("post_ids") or []
             if is_valid_bct_address(to_addr) and to_addr != snd and isinstance(raw_pids, list):
                 tx_ts = float(tx.timestamp or 0)
-                cutoff = tx_ts - (365 * 24 * 3600)
+                cutoff = tx_ts - POST_ROYALTY_WINDOW_SECONDS
+                new_bns = self.bns_reverse.get(to_addr, "")
                 seen_pids = set()
                 for raw_pid in raw_pids:
                     pid = str(raw_pid or "").strip()
@@ -6762,14 +6790,18 @@ class Blockchain:
                         continue
                     hist = post_rec.setdefault("royalty_transfers", [])
                     recent_cnt = sum(1 for tr in hist if float(tr.get("timestamp", 0) or 0) >= cutoff)
-                    if recent_cnt >= 3:
+                    if recent_cnt >= POST_ROYALTY_MAX_PER_YEAR:
                         continue
+                    post_rec["author"] = to_addr
+                    post_rec["author_bns"] = new_bns
+                    post_rec["is_anonymous"] = False
                     post_rec["royalty_owner"] = to_addr
-                    post_rec["royalty_owner_bns"] = self.bns_reverse.get(to_addr, "")
+                    post_rec["royalty_owner_bns"] = new_bns
                     hist.append({
                         "from_address": snd,
                         "to_address": to_addr,
                         "timestamp": tx_ts,
+                        "block_index": b_idx,
                         "tx_hash": tx.hash(),
                         "bulk": True,
                     })

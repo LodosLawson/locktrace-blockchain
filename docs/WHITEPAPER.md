@@ -1,7 +1,7 @@
-# BlocTag (BCT) Technical Whitepaper — v2.17.0
+# BlocTag (BCT) Technical Whitepaper — v2.18.0
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.17.0 — November 2026*  
+*Version 2.18.0 — November 2026*  
 *Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
@@ -480,7 +480,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.14.0 (Completed):** Consensus-Enforced Burned-Wallet Royalty Redirection to Treasury, Space Post Royalty Transfer (`space_royalty_transfer`, `0.50 BCT`, max 3 transfers / 365-day rolling window), Adaptive Abuse Shield & Tor Exit Write Protection, and Simple Mode `SCR-ROOMS` Router Optimization.
 - **v2.15.0 (Completed):** Atomic Bulk Space Post Royalty Transfer (`space_royalty_transfer_all`, `1,000.00 BCT`, wallet-independent per-post 3/365d enforcement, automatic skipping of capped posts, zero-drift conservation) and Pro Mode Profile Bottom-Nav Viewport Pinning.
 - **v2.16.0 (Completed):** Staking & Locked Collateral Security Hardening — exact 10% Observer pool reservation (`reserved_obs_u`), burned-wallet stake/reward exclusion, 1-hour anti-flash-staking lockup + wallet cooldowns, cumulative `100,000 BCT` stake cap, partial unstake `< 100 BCT` dust guard, and slashed collateral accounting clarity.
-- **v2.17.0 (Current Production Release):** 2-Step Recipient-Consent Asset Transfers (`propose → accept / reject / cancel`) for `.bct` handles, Protocol Rooms, and Single/Bulk Space Post Royalties — zero fee charged until recipient ECDSA acceptance, preventing unsolicited asset dumping, with unified Control Center UI in Pro & Simple Mode.
+- **v2.17.0 (Completed):** 2-Step Recipient-Consent Asset Transfers (`propose → accept / reject / cancel`) for `.bct` handles, Protocol Rooms, and Single/Bulk Space Post Royalties — zero fee charged until recipient ECDSA acceptance, preventing unsolicited asset dumping, with unified Control Center & Profile Approvals UI in Pro & Simple Mode.
+- **v2.18.0 (Current Production Release):** Full Space Post Ownership Transfer (transferring both post ownership and royalties while preserving immutable `original_author` provenance) and On-Chain Post Journey Timeline (`Detaylar` modal) across Pro & Simple Mode.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---
