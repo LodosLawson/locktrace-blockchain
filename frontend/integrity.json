@@ -1,13 +1,13 @@
 {
-  "version": "2.15.0",
-  "released_at": "2026-11-24T11:39:41Z",
+  "version": "2.16.0",
+  "released_at": "2026-11-24T11:55:38Z",
   "authority_address": "BCT885bc383a03ebed0aa11cedfbfac0d52be3d4080",
   "authority_public_key": "5e3686d4e64119cc049dd966e57150a04db4160a335610c8740748ba618c002321a5882ed90bfd5597bc144a7c4926369aec9b89070d3d337819d6626c67a150",
-  "index_html_sha256": "68a2878d5435b94b27c99a4a06cc04d3ac93c123e011a693801db17073ffcdd7",
-  "index_sha256": "68a2878d5435b94b27c99a4a06cc04d3ac93c123e011a693801db17073ffcdd7",
-  "sw_js_sha256": "40fc295550b317b6eb8b26382fad1857da4c0f255171d959f6c1f30cecc10ea2",
-  "sw_sha256": "40fc295550b317b6eb8b26382fad1857da4c0f255171d959f6c1f30cecc10ea2",
-  "ipfs_cid_v1": "bafkreidiukdy2vbvxffspsm2jidmybgtvsj4ci7acgtjhaa5wfyhh76n24",
-  "canonical_payload": "LOCKTRACE_FRONTEND_RELEASE:2.15.0:68a2878d5435b94b27c99a4a06cc04d3ac93c123e011a693801db17073ffcdd7:40fc295550b317b6eb8b26382fad1857da4c0f255171d959f6c1f30cecc10ea2:bafkreidiukdy2vbvxffspsm2jidmybgtvsj4ci7acgtjhaa5wfyhh76n24",
-  "signature": "a944e08b586df25f75faf60ae7fcf25960565970fdecd6d23b149d53a6d3c4a0043b2197947ababa88e3db95b0e92f20e40e0b425f832e095d69c74af78f0b1c"
+  "index_html_sha256": "6cee88b68475c49b92e8ae9b35f9bc1d00c29e2490fc0f28824870099cda375e",
+  "index_sha256": "6cee88b68475c49b92e8ae9b35f9bc1d00c29e2490fc0f28824870099cda375e",
+  "sw_js_sha256": "14b91aa2ea55abaa4e351714d0d7bc55c240cd51a15b207d6834e6c32c247646",
+  "sw_sha256": "14b91aa2ea55abaa4e351714d0d7bc55c240cd51a15b207d6834e6c32c247646",
+  "ipfs_cid_v1": "bafkreidm52elnbdvysnzf2fotm27tpa5adbj4jeq7qhsrasioaezzwrxly",
+  "canonical_payload": "LOCKTRACE_FRONTEND_RELEASE:2.16.0:6cee88b68475c49b92e8ae9b35f9bc1d00c29e2490fc0f28824870099cda375e:14b91aa2ea55abaa4e351714d0d7bc55c240cd51a15b207d6834e6c32c247646:bafkreidm52elnbdvysnzf2fotm27tpa5adbj4jeq7qhsrasioaezzwrxly",
+  "signature": "ca2b4161ba510c3e0036b7cf14ed233c984ace8146b47af659c131021e103ad13e499ba4b4fba01201f3f19320ad09b939e4eddff7f08e85dbc70465c33565c8"
 }
