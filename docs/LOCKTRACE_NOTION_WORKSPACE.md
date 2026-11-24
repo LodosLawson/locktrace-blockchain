@@ -216,7 +216,7 @@ Reklam çalışmalarında, sosyal medya gönderilerinde, influencer işbirlikler
 
 | Parametre | Değer | Açıklama |
 | :--- | :--- | :--- |
-| **Ağ Sürümü** | `v2.15.0` | Toplu Paylaşım Telif Devri (`1,000 BCT`, paylaşım bazlı 3/yıl limiti), Kapalı Cüzdan Telif Hazine Yönlendirmesi, Adaptive Abuse Shield & Tor Yazma Koruması, Protocol Rooms |
+| **Ağ Sürümü** | `v2.16.0` | Staking & Kilitli Teminat Güvenlik Sertleştirmesi (7 Denetim Düzeltmesi), Toplu Paylaşım Telif Devri (`1,000 BCT`), Kapalı Cüzdan Telif Hazine Yönlendirmesi, Adaptive Abuse Shield |
 | **Konsensüs** | `pow-v2-merkle-quorum` | %50 SHA-256 PoW + %40 ECDSA Validator Quorum + %10 Gözlemci (Observer) Staking |
 | **Validator Teminatı** | `1.000,0 BCT` (Min 100 BCT Gözlemci) | %40 Quorum (1.000+ BCT + Düğüm) ve %10 Gözlemci Staking Havuzu |
 | **Transfer Ücreti** | `%1.0` | %50 Hazine Havuzu Kilidi, %35 Madenci, %15 Doğrulayıcılar |
@@ -760,3 +760,9 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - **Paylaşım Bazlı 3/Yıl Kuralı:** Yıllık 3 devir limiti cüzdandan bağımsız olarak her paylaşımın kendi 365 günlük geçmişi üzerinden hesaplanır; `3/3` limitine ulaşmış paylaşımlar güvenle atlanır ve uygun paylaşım yoksa ücret kesilmez.
 2. **Pro Mod Profil Alt Menü Sabitlemesi:**
    - Alt menüden Profil açıldığında `body { position: fixed }` kaynaklı yukarı kayma ve alt boşluk giderildi; `#mobile-nav` ekranın en altına boşluksuz sabitlendi.
+
+## 🔐 38. BlocTag / LockTrace v2.16.0: Staking & Kilitli Teminat Güvenlik Sertleştirmesi
+
+1. **%10 Gözlemci Ödül Havuzu Çift Dağıtım & Madenci Sıfırlanma Düzeltmesi:** `_build_reward_transactions()` içinde `proposer_u` artık toplu ödeme yerine bloğa ayrılan `reserved_obs_u` payını düşer; böylece hem çift ödeme hem de ödeme bloklarında madencinin `0 BCT` alması tamamen giderildi.
+2. **Yakılmış Cüzdan Teminat & Ödül Kilidi:** Stake bakiyesi olan cüzdanın yakılması engellendi (önce unstake zorunlu); yakılmış cüzdanlar tüm ödül havuzlarından (`observer`, `validator`, `miner`) ve staker listelerinden kesin olarak çıkarıldı.
+3. **Anti-Flash-Staking 1 Saat Kilit + Cooldown + Kümülatif 100.000 BCT Tavanı:** Yeni kilitlenen teminatlar için 1 saat (`3600 sn`) minimum kilit süresi, cüzdan cooldown koruması, toplam `100.000 BCT` kümülatif tavanı, `100 BCT` altı kısmi çekim toz engeli ve `slashed` teminatların `forfeited_amount` olarak şeffaf ayrımı eklendi.

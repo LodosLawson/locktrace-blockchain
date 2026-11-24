@@ -225,6 +225,8 @@ def check_wallet_cooldown(wallet: str, action: str) -> Optional[Tuple[bool, str,
             "room_topic": "Mevzu açma",
             "room_reply": "Mevzu yanıtı",
             "room_upvote": "Mevzu oylama",
+            "validator_stake": "Teminat kilitleme",
+            "validator_unstake": "Teminat çözme",
         }
         name = action_names.get(action, action)
         return False, f"{name} için bekleme süresi aktif. Lütfen {remain:.0f} saniye sonra tekrar deneyin.", 429
@@ -484,7 +486,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-MgUcDN4+Cv8YVjvONDRhOmTDpQtVOKEM4AEGqpTSMAw=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-oF1DQmAn5tkoT1qGU/oZs/9cSvAqvoZOfX9iA+kQYZc=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -2177,24 +2179,32 @@ def api_validator_stake():
 
     if not sender or amount_raw is None:
         return api_response(False, message="Sender and amount are required.", status=400)
-    if amount < MIN_OBSERVER_STAKE:
+    cur_staked_now = blockchain.get_validator_stake(sender)
+    if cur_staked_now < MIN_OBSERVER_STAKE and round(cur_staked_now + amount, 8) < MIN_OBSERVER_STAKE:
         return api_response(
             False,
             message=f"Minimum kilitlenebilir teminat {MIN_OBSERVER_STAKE:.2f} BCT'dir (%10 Gözlemci havuzu). Aktif Validator düğüm havuzu (%40) için en az {MIN_VALIDATOR_STAKE:.2f} BCT gereklidir.",
             status=400
         )
-    if amount > MAX_OBSERVER_STAKE:
+    if amount <= 0 or (cur_staked_now >= MIN_OBSERVER_STAKE and amount < 1.0):
+        return api_response(False, message="Ek teminat tutarı en az 1.00 BCT olmalıdır.", status=400)
+    if round(cur_staked_now + amount, 8) > MAX_OBSERVER_STAKE:
+        rem_cap = max(0.0, round(MAX_OBSERVER_STAKE - cur_staked_now, 8))
         return api_response(
             False,
-            message=f"Tek seferde maksimum kilitlenebilir teminat {MAX_OBSERVER_STAKE:,.2f} BCT'dir.",
+            message=f"Cüzdan başına maksimum toplam teminat {MAX_OBSERVER_STAKE:,.2f} BCT'dir (Kalan limit: {rem_cap:,.2f} BCT).",
             status=400
         )
 
     amount = round(amount, 8)
     amt_str_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
     amt_int = str(int(amount)) if amount.is_integer() else str(amount)
+    acct_nonce = blockchain.get_account_nonce(sender)
 
     canonical_variants = list(dict.fromkeys([
+        f"VALIDATOR_STAKE:{sender}:{amount}:{acct_nonce}",
+        f"VALIDATOR_STAKE:{sender}:{amt_str_trim}:{acct_nonce}",
+        f"VALIDATOR_STAKE:{sender}:{amt_int}:{acct_nonce}",
         f"VALIDATOR_STAKE:{sender}:{amount}",
         f"VALIDATOR_STAKE:{sender}:{amt_str_trim}",
         f"VALIDATOR_STAKE:{sender}:{amt_int}",
@@ -2209,6 +2219,10 @@ def api_validator_stake():
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(sender, "validator_stake")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     ok, msg, res = blockchain.execute_validator_stake(
         sender=sender,
@@ -2241,8 +2255,12 @@ def api_validator_unstake():
     amount = round(amount, 8)
     amt_str_trim = f"{amount:.8f}".rstrip("0").rstrip(".") or "0"
     amt_int = str(int(amount)) if amount.is_integer() else str(amount)
+    acct_nonce = blockchain.get_account_nonce(sender)
 
     canonical_variants = list(dict.fromkeys([
+        f"VALIDATOR_UNSTAKE:{sender}:{amount}:{acct_nonce}",
+        f"VALIDATOR_UNSTAKE:{sender}:{amt_str_trim}:{acct_nonce}",
+        f"VALIDATOR_UNSTAKE:{sender}:{amt_int}:{acct_nonce}",
         f"VALIDATOR_UNSTAKE:{sender}:{amount}",
         f"VALIDATOR_UNSTAKE:{sender}:{amt_str_trim}",
         f"VALIDATOR_UNSTAKE:{sender}:{amt_int}",
@@ -2257,6 +2275,10 @@ def api_validator_unstake():
     )
     if not auth_ok:
         return api_response(False, message=auth_err, status=auth_status)
+
+    cd_err = check_wallet_cooldown(sender, "validator_unstake")
+    if cd_err:
+        return api_response(cd_err[0], message=cd_err[1], status=cd_err[2])
 
     ok, msg, res = blockchain.execute_validator_unstake(
         sender=sender,
@@ -2292,6 +2314,9 @@ def api_validator_get_stake(address):
     bal = blockchain.get_balance(clean)
     is_eligible_val = staked >= MIN_VALIDATOR_STAKE
     is_eligible_obs = staked >= MIN_OBSERVER_STAKE
+    from core.blockchain import STAKE_LOCKUP_SECONDS, normalize_bct_address
+    last_stake_ts = float(getattr(blockchain, "_confirmed_stake_timestamps", {}).get(normalize_bct_address(clean), 0.0) or 0.0)
+    unlock_at = (last_stake_ts + STAKE_LOCKUP_SECONDS) if (staked > 0 and last_stake_ts > 0) else 0.0
     return api_response(True, data={
         "address": clean,
         "staked_amount": staked,
@@ -2299,6 +2324,8 @@ def api_validator_get_stake(address):
         "min_observer_stake": MIN_OBSERVER_STAKE,
         "min_validator_stake": MIN_VALIDATOR_STAKE,
         "max_stake": MAX_OBSERVER_STAKE,
+        "lockup_seconds": STAKE_LOCKUP_SECONDS,
+        "unlock_at": unlock_at,
         "is_eligible": is_eligible_val or is_eligible_obs,
         "is_eligible_validator": is_eligible_val,
         "is_eligible_observer": is_eligible_obs,

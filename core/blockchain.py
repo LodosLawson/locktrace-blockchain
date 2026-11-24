@@ -98,6 +98,7 @@ OBSERVER_POOL_SHARE = getattr(Config, "REWARD_OBSERVER_PERCENT", 10) / 100.0   #
 MIN_OBSERVER_STAKE = getattr(Config, "MIN_OBSERVER_STAKE", 100.0)             # 100 BCT min required for passive observer staking pool
 MAX_OBSERVER_STAKE = getattr(Config, "MAX_OBSERVER_STAKE", 100000.0)          # 100,000 BCT max allowed per observer stake
 MIN_VALIDATOR_STAKE = getattr(Config, "MIN_VALIDATOR_STAKE", 1000.0)          # 1000 BCT required for active validator node
+STAKE_LOCKUP_SECONDS = int(getattr(Config, "STAKE_LOCKUP_SECONDS", 3600))     # 1-hour anti-flash-staking lockup window
 MIN_TRANSACTION = float(getattr(Config, "MIN_TRANSACTION", 0.01))             # Minimum transfer amount
 MAX_TRANSACTION = float(getattr(Config, "MAX_TRANSACTION", 10_000_000.0))      # Maximum single transfer amount
 TARGET_BLOCK_TIME = getattr(Config, "TARGET_BLOCK_TIME", 20.0)                 # 20 seconds target block time
@@ -781,6 +782,7 @@ class Blockchain:
             self._confirmed_rewarded_wallets = set()
             self._confirmed_burned_wallets = set()
             self._confirmed_stakes_map = {}
+            self._confirmed_stake_timestamps = {}
             self._confirmed_blocks_mined_map = {}
             self._confirmed_rewards_earned_map = {}
 
@@ -803,8 +805,16 @@ class Blockchain:
                     norm_rec = normalize_bct_address(tx.receiver)
                     if tx.tx_type == "validator_stake" and norm_rec == VALIDATOR_STAKE_VAULT_ADDRESS and norm_snd:
                         self._confirmed_stakes_map[norm_snd] = self._confirmed_stakes_map.get(norm_snd, 0) + _to_units(tx.amount)
+                        if not hasattr(self, "_confirmed_stake_timestamps"):
+                            self._confirmed_stake_timestamps = {}
+                        tx_ts = float(tx.timestamp or 0.0)
+                        if tx_ts > float(self._confirmed_stake_timestamps.get(norm_snd, 0.0)):
+                            self._confirmed_stake_timestamps[norm_snd] = tx_ts
                     elif tx.tx_type == "validator_unstake" and norm_snd == VALIDATOR_STAKE_VAULT_ADDRESS and norm_rec:
-                        self._confirmed_stakes_map[norm_rec] = max(0, self._confirmed_stakes_map.get(norm_rec, 0) - _to_units(tx.amount))
+                        new_stk = max(0, self._confirmed_stakes_map.get(norm_rec, 0) - _to_units(tx.amount))
+                        self._confirmed_stakes_map[norm_rec] = new_stk
+                        if new_stk == 0 and hasattr(self, "_confirmed_stake_timestamps"):
+                            self._confirmed_stake_timestamps.pop(norm_rec, None)
                     elif tx.tx_type in ("mining_reward", "validator_reward", "attestation_reward", "observer_reward") and norm_rec:
                         self._confirmed_rewards_earned_map[norm_rec] = self._confirmed_rewards_earned_map.get(norm_rec, 0) + _to_units(tx.amount)
                     elif tx.tx_type == "wallet_burn" and norm_snd:
@@ -1038,6 +1048,22 @@ class Blockchain:
 
             if self.is_wallet_burned(clean_addr):
                 return False, "This wallet is already permanently burned and closed.", None
+
+            # Protect staked collateral: require unstaking before permanent wallet burn
+            active_stake = self.get_validator_stake(clean_addr)
+            if active_stake > 0:
+                return (
+                    False,
+                    f"This wallet still has {active_stake:.4f} BCT locked in the Staking Vault. Please unstake all collateral before burning your wallet.",
+                    None,
+                )
+            has_pending_stake_op = any(
+                t.tx_type in ("validator_stake", "validator_unstake")
+                and (normalize_bct_address(t.sender) == clean_addr or normalize_bct_address(t.receiver) == clean_addr)
+                for t in self.pending_transactions
+            )
+            if has_pending_stake_op:
+                return False, "A staking/unstaking transaction is pending in the mempool. Wait for confirmation before burning.", None
 
             # Mempool race-condition protection
             has_pending = any(
@@ -3620,7 +3646,7 @@ class Blockchain:
 
             for addr, raw_u in self._confirmed_stakes_map.items():
                 clean_addr = normalize_bct_address(addr)
-                if not clean_addr or raw_u <= 0:
+                if not clean_addr or raw_u <= 0 or clean_addr in self._burned_wallets_set:
                     continue
                 staked_bct = float(Decimal(min(raw_u, vault_u)) / Decimal(ATOMIC_UNIT))
                 if staked_bct < float(MIN_OBSERVER_STAKE):
@@ -3662,7 +3688,8 @@ class Blockchain:
 
                 stakers.append({
                     "address": clean_addr,
-                    "staked_amount": round(staked_bct, 4),
+                    "staked_amount": 0.0 if is_slashed else round(staked_bct, 4),
+                    "forfeited_amount": round(staked_bct, 4) if is_slashed else 0.0,
                     "tier": tier,
                     "role_title": role_title,
                     "pool_share": pool_share,
@@ -3739,16 +3766,25 @@ class Blockchain:
                 return False, "Slashed address is permanently barred from staking collateral.", None
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid validator wallet address: '{clean_sender}'", None
+            if self.is_wallet_burned(clean_sender):
+                return False, "Permanently burned wallets cannot stake collateral.", None
 
             try:
                 amt = round(float(amount_bct), 8)
             except (ValueError, TypeError):
                 return False, "Invalid stake amount.", None
 
-            if amt < MIN_OBSERVER_STAKE:
+            if amt <= 0:
+                return False, "Stake amount must be greater than zero.", None
+
+            cur_staked = self.get_validator_stake(clean_sender)
+            if cur_staked < MIN_OBSERVER_STAKE and round(cur_staked + amt, 8) < MIN_OBSERVER_STAKE:
                 return False, f"Minimum stake amount is {MIN_OBSERVER_STAKE:.2f} BCT (Observer pool). Active validator quorum requires >= {MIN_VALIDATOR_STAKE:.2f} BCT.", None
-            if amt > MAX_OBSERVER_STAKE:
-                return False, f"Maximum stake amount is {MAX_OBSERVER_STAKE:,.2f} BCT.", None
+            if cur_staked >= MIN_OBSERVER_STAKE and amt < 1.0:
+                return False, "Minimum top-up stake amount is 1.00 BCT.", None
+            if round(cur_staked + amt, 8) > MAX_OBSERVER_STAKE:
+                rem_room = max(0.0, round(MAX_OBSERVER_STAKE - cur_staked, 8))
+                return False, f"Maximum total stake per wallet is {MAX_OBSERVER_STAKE:,.2f} BCT (Current: {cur_staked:,.2f} BCT, Remaining room: {rem_room:,.2f} BCT).", None
 
             if any(tx.tx_type == "validator_unstake" and normalize_bct_address(tx.receiver) == clean_sender for tx in self.pending_transactions):
                 return False, "Bekleyen (henüz blokta onaylanmamış) bir unstake işleminiz var. Lütfen önce mevcut unstake işleminin blokta onaylanmasını bekleyin.", None
@@ -3820,6 +3856,8 @@ class Blockchain:
                 return False, "Slashed address has forfeited all staking collateral (100% slashed).", None
             if not is_valid_bct_address(clean_sender):
                 return False, f"Invalid validator wallet address: '{clean_sender}'", None
+            if self.is_wallet_burned(clean_sender):
+                return False, "Permanently burned wallets cannot unstake collateral.", None
 
             try:
                 amt = round(float(amount_bct), 8)
@@ -3837,6 +3875,28 @@ class Blockchain:
             cur_staked = self.get_validator_stake(clean_sender)
             if cur_staked < amt:
                 return False, f"Insufficient staked collateral. Current staked: {cur_staked:.4f} BCT (requested: {amt:.4f} BCT).", None
+
+            # Anti-flash-staking minimum lockup window (default 1 hour)
+            lockup_sec = int(getattr(self, "stake_lockup_seconds", STAKE_LOCKUP_SECONDS))
+            last_stake_ts = float(getattr(self, "_confirmed_stake_timestamps", {}).get(clean_sender, 0.0) or 0.0)
+            if lockup_sec > 0 and last_stake_ts > 0:
+                elapsed = time.time() - last_stake_ts
+                if elapsed < lockup_sec:
+                    remain_min = max(1, int((lockup_sec - elapsed + 59) // 60))
+                    return (
+                        False,
+                        f"Teminat kilit süresi (anti-flash-staking) aktif. Çekim yapabilmek için yaklaşık {remain_min} dakika daha beklemeniz gerekiyor.",
+                        None,
+                    )
+
+            # Prevent trapped dust below MIN_OBSERVER_STAKE (100 BCT) after partial unstake
+            remaining_after = round(cur_staked - amt, 8)
+            if 0 < remaining_after < MIN_OBSERVER_STAKE:
+                return (
+                    False,
+                    f"Kısmi çekim sonrası kalan teminat en az {MIN_OBSERVER_STAKE:.2f} BCT olmalı veya tamamını ({cur_staked:.4f} BCT) çekmelisiniz.",
+                    None,
+                )
 
             if signed_payload:
                 sig_ok, sig_msg = self._verify_actor_signature(clean_sender, signed_payload, signature, public_key)
@@ -4069,8 +4129,8 @@ class Blockchain:
             staked = self.get_validator_stake(m_addr)
             if staked < MIN_VALIDATOR_STAKE:
                 continue
-            # Equivocation Defense: Exclude slashed malicious validators
-            if m_addr in self.slashed_validators:
+            # Equivocation & Burn Defense: Exclude slashed malicious validators and burned wallets
+            if m_addr in self.slashed_validators or self.is_wallet_burned(m_addr):
                 continue
             # Proof-of-Attestation & Archival Verification (LT-01): Must have actively attested within the last 3 blocks
             attested_h = int(n.get("attested_height", -1))
@@ -4113,6 +4173,8 @@ class Blockchain:
 
         with self.lock:
             self._ensure_ledger_index()
+            for b_addr in self._burned_wallets_set:
+                excludes.add(b_addr)
             eligible: List[Tuple[str, int]] = []
             min_u = _to_units(MIN_OBSERVER_STAKE)
             max_u = _to_units(MAX_OBSERVER_STAKE)
@@ -4364,6 +4426,7 @@ class Blockchain:
             and is_valid_bct_address(clean_miner)
             and clean_miner != TREASURY_ADDRESS
             and clean_miner not in self.slashed_validators
+            and not self.is_wallet_burned(clean_miner)
         )
 
         # Anti-Self-Loop & Zero-Fee Farming Guard: If block only contains self-transfers, slashed validators,
@@ -4418,6 +4481,7 @@ class Blockchain:
 
         # Tier 3: 10% Observer Stakers Pool (Threshold-Batched Payouts >= 0.25 BCT to eliminate dust tx bloat)
         actual_obs_total_u = 0
+        reserved_obs_u = 0
         next_observer_pending = dict(self.observer_pending_units)
         obs_threshold_bct = float(getattr(Config, "OBSERVER_PAYOUT_THRESHOLD", 0.25))
         obs_threshold_u = max(1, _to_units(obs_threshold_bct))
@@ -4425,6 +4489,7 @@ class Blockchain:
             obs_pool_u = (total_pool_u * 10) // 100
             total_obs_stake_u = sum(stk_u for _, stk_u in observers)
             if total_obs_stake_u > 0:
+                reserved_obs_u = obs_pool_u
                 avail_treasury_u = max(0, treasury_units - total_pool_u)
                 for o_addr, o_stake_u in observers:
                     o_cut_u = (obs_pool_u * o_stake_u) // total_obs_stake_u
@@ -4481,7 +4546,9 @@ class Blockchain:
                 validators_breakdown.append({"node_id": v_nid, "miner_address": v_addr, "reward": val_amt})
 
         # Tier 1: 50% PoW Block Producer (Proposer) + Any unallocated Validator/Observer pool remainder
-        proposer_u = total_pool_u - (actual_val_total_u + actual_obs_total_u)
+        # Subtract THIS block's reserved_obs_u (not batched actual_obs_total_u) so observers are never
+        # double-paid alongside proposer and proposer never gets 0 on a batched observer payout block.
+        proposer_u = max(0, total_pool_u - (actual_val_total_u + reserved_obs_u))
         if proposer_u > 0 and is_miner_eligible:
             proposer_amt = float(Decimal(proposer_u) / Decimal(ATOMIC_UNIT))
             reward_txs.append(

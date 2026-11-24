@@ -40,7 +40,7 @@ if os.path.exists(env_path):
 
 class Config:
     # ── Protokol & Versiyon ───────────────────────────
-    PROTOCOL_VERSION = "2.15.0"
+    PROTOCOL_VERSION = "2.16.0"
     NETWORK_NAME = os.environ.get("BCT_NETWORK", "mainnet")
 
     # ── Anti-Stall & Resilience Parameters (v2.5.0) ───
@@ -104,6 +104,7 @@ class Config:
     MAX_OBSERVER_STAKE = 100_000.0  # Pasif gözlemci staking üst limiti (Max 100.000 BCT)
     OBSERVER_PAYOUT_THRESHOLD = 0.25 # Toz işlemleri önlemek için pasif gözlemci ödülü ödeme eşiği (0.25 BCT)
     MIN_VALIDATOR_STAKE = 1000.0    # Aktif Validator Düğümü olmak için gereken min bakiye/stake
+    STAKE_LOCKUP_SECONDS = 3600     # Anti-flash-staking minimum teminat kilit süresi (1 saat)
     EQUIVOCATION_SLASH_PERCENT = 100 # Çift imza / çelişkili blok tasdikinde %100 slashing
 
     # ── Dinamik Zorluk (LWMA) & Hedef Blok Süresi ─────
