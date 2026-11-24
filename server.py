@@ -354,8 +354,36 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
 _ABUSE_SHIELD_LOCK = threading.Lock()
 _ABUSE_AUTH_HITS: dict = {}     # ip -> [timestamps of 401/403/409]
 _ABUSE_SCAN_HITS: dict = {}     # ip -> [timestamps of 404/405]
-_ABUSE_JAIL_UNTIL: dict = {}    # ip -> monotonic/epoch expiry timestamp
+_ABUSE_RL_HITS: dict = {}       # ip -> [timestamps of 429]
+_ABUSE_JAIL_UNTIL: dict = {}    # ip -> epoch expiry timestamp
 _ABUSE_WHITELIST = {"127.0.0.1", "::1", "localhost"}
+
+# Dynamic Tor Exit Node POST Shield (reloaded automatically from data/tor_exits.txt)
+_TOR_EXIT_SET: set = set()
+_TOR_EXIT_MTIME: float = 0.0
+_TOR_EXIT_LAST_CHECK: float = 0.0
+_TOR_EXIT_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "data", "tor_exits.txt")
+
+
+def _is_tor_exit_ip(ip: str) -> bool:
+    """Returns True if IP is in the cached official Tor bulk exit list (auto-reloads every 60s)."""
+    global _TOR_EXIT_SET, _TOR_EXIT_MTIME, _TOR_EXIT_LAST_CHECK
+    if not ip or ip in _ABUSE_WHITELIST:
+        return False
+    now = time.time()
+    if now - _TOR_EXIT_LAST_CHECK > 60.0:
+        _TOR_EXIT_LAST_CHECK = now
+        try:
+            if os.path.exists(_TOR_EXIT_FILE):
+                mt = os.path.getmtime(_TOR_EXIT_FILE)
+                if mt != _TOR_EXIT_MTIME:
+                    with open(_TOR_EXIT_FILE, "r", encoding="utf-8", errors="ignore") as f:
+                        loaded = {ln.strip() for ln in f if ln.strip() and not ln.startswith("#")}
+                    _TOR_EXIT_SET = loaded
+                    _TOR_EXIT_MTIME = mt
+        except Exception:
+            pass
+    return ip in _TOR_EXIT_SET
 
 
 def _is_ip_jailed(ip: str) -> float:
@@ -373,10 +401,10 @@ def _is_ip_jailed(ip: str) -> float:
 
 
 def _record_abuse_signal(ip: str, status_code: int):
-    """Automatically jails IPs exhibiting automated auth fuzzing or endpoint scanning."""
+    """Automatically jails IPs exhibiting automated auth fuzzing, rate-limit hammering, or endpoint scanning."""
     if not ip or ip in _ABUSE_WHITELIST:
         return
-    if status_code not in (401, 403, 404, 405, 409):
+    if status_code not in (401, 403, 404, 405, 409, 429):
         return
     now = time.time()
     cutoff = now - 60.0
@@ -386,6 +414,8 @@ def _record_abuse_signal(ip: str, status_code: int):
             _ABUSE_AUTH_HITS.clear()
         if len(_ABUSE_SCAN_HITS) > 10000:
             _ABUSE_SCAN_HITS.clear()
+        if len(_ABUSE_RL_HITS) > 10000:
+            _ABUSE_RL_HITS.clear()
         if len(_ABUSE_JAIL_UNTIL) > 10000:
             _ABUSE_JAIL_UNTIL.clear()
 
@@ -393,15 +423,23 @@ def _record_abuse_signal(ip: str, status_code: int):
             hits = [t for t in _ABUSE_AUTH_HITS.get(ip, []) if t > cutoff]
             hits.append(now)
             _ABUSE_AUTH_HITS[ip] = hits
-            if len(hits) >= 18:
+            if len(hits) >= 10:
                 _ABUSE_JAIL_UNTIL[ip] = now + 900.0  # 15 min auto-jail
                 _ABUSE_AUTH_HITS.pop(ip, None)
                 logger.warning(f"[ABUSE_SHIELD] Auto-jailed IP {ip} for 15m ({len(hits)} auth/nonce failures in 60s)")
+        elif status_code == 429:
+            hits = [t for t in _ABUSE_RL_HITS.get(ip, []) if t > cutoff]
+            hits.append(now)
+            _ABUSE_RL_HITS[ip] = hits
+            if len(hits) >= 8:
+                _ABUSE_JAIL_UNTIL[ip] = now + 900.0  # 15 min auto-jail
+                _ABUSE_RL_HITS.pop(ip, None)
+                logger.warning(f"[ABUSE_SHIELD] Auto-jailed IP {ip} for 15m ({len(hits)} rate-limit violations in 60s)")
         elif status_code in (404, 405):
             hits = [t for t in _ABUSE_SCAN_HITS.get(ip, []) if t > cutoff]
             hits.append(now)
             _ABUSE_SCAN_HITS[ip] = hits
-            if len(hits) >= 45:
+            if len(hits) >= 30:
                 _ABUSE_JAIL_UNTIL[ip] = now + 600.0  # 10 min auto-jail
                 _ABUSE_SCAN_HITS.pop(ip, None)
                 logger.warning(f"[ABUSE_SHIELD] Auto-jailed scanner IP {ip} for 10m ({len(hits)} 404/405 hits in 60s)")
@@ -419,6 +457,12 @@ def before_request():
                 False,
                 message=f"Automated abuse/fuzzing detected. Access temporarily suspended for {int(remain)}s.",
                 status=429,
+            )
+        if request.method == "POST" and _is_tor_exit_ip(ip):
+            return api_response(
+                False,
+                message="Write requests from anonymous Tor exit nodes are restricted for anti-spam security.",
+                status=403,
             )
 
 
