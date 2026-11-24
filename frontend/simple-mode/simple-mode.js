@@ -2334,6 +2334,7 @@
   function renderBottomNav() {
     const active = simpleState.activeScreen;
     const isSpace = active === 'SCR-SPC-03' || active === 'SCR-SPC-04';
+    const isRooms = active === 'SCR-ROOMS';
     const isWallet = active === 'SCR-WLT-HOME' || active === 'SCR-WLT-SEND' || active === 'SCR-ONB-01' || active === 'SCR-WLT-02';
     const isProfile = active === 'SCR-PRF-05' || active === 'SCR-PRF-FOLLOW' || active === 'SCR-PRF-FOLLOWERS' || active === 'SCR-PRF-FOLLOWING';
     const isMenu = active === 'SCR-MNU-07';
@@ -2346,6 +2347,13 @@
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isSpace ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
             <span class="material-symbols-outlined notranslate text-[22px]" translate="no">tag</span>
             <span class="font-label-sm text-[10px] leading-none">${t('nav_space', 'Space')}</span>
+          </button>
+
+          <!-- 2. Protocol Rooms -->
+          <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-ROOMS')"
+            class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isRooms ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">
+            <span class="material-symbols-outlined notranslate text-[21px]" translate="no">meeting_room</span>
+            <span class="font-label-sm text-[10px] leading-none">${t('nav_rooms', 'Odalar')}</span>
           </button>
 
           <!-- 2. Wallet -->
@@ -4566,6 +4574,9 @@
       const txSig = txs.slice(0, 20).map(t => `${t.tx_hash || t.hash}:${t.status || ''}`).join(',');
       return `WLTHOME|${addr}|${bal}|${nonce}|${hidden}|${simpleState.txFilter}|${txSig}|${unread}`;
     }
+    if (simpleState.activeScreen === 'SCR-ROOMS') {
+      return `ROOMS|${addr}`;
+    }
     if (simpleState.activeScreen === 'SCR-PRF-FOLLOW' || simpleState.activeScreen === 'SCR-PRF-FOLLOWERS' || simpleState.activeScreen === 'SCR-PRF-FOLLOWING') {
       return `PRFFOLLOW|${addr}|${simpleState.followTargetAddr}|${simpleState.followTab}|${simpleState.followFilter}|${simpleState.followSearch}|${unread}`;
     }
@@ -4704,6 +4715,16 @@
       case 'SCR-MNU-07':
         screenHtml = renderScreenMenu();
         break;
+      case 'SCR-ROOMS':
+        screenHtml = `
+          ${renderTopBar('Protocol Rooms', false)}
+          <main class="flex-1 flex flex-col w-full px-3.5 pt-3 pb-24 simple-screen-animate">
+            <div id="simpleRoomsPageRoot" class="w-full">
+              <div class="py-12 text-center text-xs text-on-surface-variant font-mono">Protocol Rooms yükleniyor...</div>
+            </div>
+          </main>
+        `;
+        break;
       case 'SCR-SPC-03':
       default:
         screenHtml = renderScreenSpaceFeed();
@@ -4719,6 +4740,10 @@
         ${screenHtml}
       </div>
     `;
+
+    if (simpleState.activeScreen === 'SCR-ROOMS' && window.ProtocolRoomsUI && typeof window.ProtocolRoomsUI.mountPage === 'function') {
+      window.ProtocolRoomsUI.mountPage();
+    }
 
     const navPortal = document.getElementById('bloctag-simple-bottom-nav-portal');
     if (navPortal) {
