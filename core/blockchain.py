@@ -7090,6 +7090,147 @@ class Blockchain:
             out["tokenomics"] = get_rooms_tokenomics_summary()
             return out
 
+    def get_room_notifications_for_wallet(self, address: str, limit: int = 30) -> List[dict]:
+        """
+        Returns recent on-chain Protocol Rooms notifications for a wallet:
+          - New topics in rooms owned by the wallet
+          - Replies on topics authored by the wallet, replies to the wallet's replies, or replies in rooms owned by the wallet
+          - @mentions of the wallet's BNS handle(s) in any room topic or reply
+          - Room ownership transfers received by the wallet
+        """
+        clean_addr = normalize_bct_address(address)
+        if not is_valid_bct_address(clean_addr):
+            return []
+        with self.lock:
+            self._load_state(sweep_overdue=False)
+            self._load_in_memory_rooms_index()
+            my_handles = {
+                name.lower() for name, rec in self.bns_records.items()
+                if normalize_bct_address(rec.get("owner", "")) == clean_addr
+            }
+            my_short_handles = {h[:-4] for h in my_handles if h.endswith(".bct")}
+            all_my_tags = my_handles | my_short_handles
+
+            def _mentions_me(text: str) -> bool:
+                if not text:
+                    return False
+                low = text.lower()
+                if clean_addr.lower() in low:
+                    return True
+                for h in all_my_tags:
+                    if f"@{h}" in low:
+                        return True
+                return False
+
+            notifs = []
+            for rid, room in self.rooms.items():
+                for idx_h, h_ev in enumerate(room.get("transfer_history") or []):
+                    if normalize_bct_address(h_ev.get("to", "")) == clean_addr and normalize_bct_address(h_ev.get("from", "")) != clean_addr:
+                        frm = normalize_bct_address(h_ev.get("from", ""))
+                        frm_lbl = self.bns_reverse.get(frm, "") or f"{frm[:8]}..."
+                        notifs.append({
+                            "id": f"room-xfer-{rid}-{h_ev.get('tx_hash', idx_h)}",
+                            "type": "room_transfer",
+                            "room_id": rid,
+                            "topic_id": "",
+                            "title": "🔑 Oda Sahipliği Size Devredildi!",
+                            "body": f"{frm_lbl}, '{room.get('name', rid)}' odasını size devretti.",
+                            "icon": "swap_horiz",
+                            "timestamp": float(h_ev.get("timestamp") or 0),
+                        })
+
+            for tid, topic in self.room_topics.items():
+                rid = topic.get("room_id", "")
+                room = self.rooms.get(rid)
+                room_name = room.get("name", rid) if room else topic.get("room_name", rid)
+                room_owner = normalize_bct_address(room.get("creator", "")) if room else ""
+                t_author = normalize_bct_address(topic.get("author", ""))
+                t_author_lbl = (f"@{topic['author_bns']}" if topic.get("author_bns") and topic.get("author_bns") != "anonymous" else f"{t_author[:8]}...")
+
+                if t_author != clean_addr:
+                    if room_owner == clean_addr:
+                        notifs.append({
+                            "id": f"room-topic-{tid}",
+                            "type": "room_topic",
+                            "room_id": rid,
+                            "topic_id": tid,
+                            "title": f"🏛️ {room_name}: Yeni Mevzu!",
+                            "body": f"{t_author_lbl}: \"{str(topic.get('title', ''))[:65]}\"",
+                            "icon": "meeting_room",
+                            "timestamp": float(topic.get("timestamp") or 0),
+                        })
+                    elif _mentions_me(f"{topic.get('title', '')} {topic.get('content', '')}"):
+                        notifs.append({
+                            "id": f"room-topic-mention-{tid}",
+                            "type": "room_mention",
+                            "room_id": rid,
+                            "topic_id": tid,
+                            "title": f"📢 {room_name} Odasında Etiketlendiniz!",
+                            "body": f"{t_author_lbl} mevzuda sizden bahsetti: \"{str(topic.get('title', ''))[:55]}\"",
+                            "icon": "alternate_email",
+                            "timestamp": float(topic.get("timestamp") or 0),
+                        })
+
+                replies = topic.get("replies") or []
+                rep_by_id = {r.get("reply_id"): r for r in replies if r.get("reply_id")}
+                for rep in replies:
+                    r_id = rep.get("reply_id", "")
+                    r_author = normalize_bct_address(rep.get("author", ""))
+                    if not r_id or r_author == clean_addr:
+                        continue
+                    r_lbl = (f"@{rep['author_bns']}" if rep.get("author_bns") and rep.get("author_bns") != "anonymous" else f"{r_author[:8]}...")
+                    snippet = str(rep.get("content", ""))[:65]
+                    parent_rep = rep_by_id.get(rep.get("parent_reply_id", ""))
+                    parent_author = normalize_bct_address(parent_rep.get("author", "")) if parent_rep else ""
+
+                    if parent_author == clean_addr:
+                        notifs.append({
+                            "id": f"room-rep-nested-{r_id}",
+                            "type": "room_reply",
+                            "room_id": rid,
+                            "topic_id": tid,
+                            "title": f"↩️ {room_name}: Yanıtınıza Cevap!",
+                            "body": f"{r_lbl}: \"{snippet}\"",
+                            "icon": "reply",
+                            "timestamp": float(rep.get("timestamp") or 0),
+                        })
+                    elif t_author == clean_addr:
+                        notifs.append({
+                            "id": f"room-rep-topic-{r_id}",
+                            "type": "room_reply",
+                            "room_id": rid,
+                            "topic_id": tid,
+                            "title": f"💬 Mevzunuza Yeni Yanıt!",
+                            "body": f"{r_lbl} ({str(topic.get('title', ''))[:28]}): \"{snippet}\"",
+                            "icon": "chat_bubble",
+                            "timestamp": float(rep.get("timestamp") or 0),
+                        })
+                    elif _mentions_me(rep.get("content", "")):
+                        notifs.append({
+                            "id": f"room-rep-mention-{r_id}",
+                            "type": "room_mention",
+                            "room_id": rid,
+                            "topic_id": tid,
+                            "title": f"📢 {room_name}: Yorumda Etiketlendiniz!",
+                            "body": f"{r_lbl}: \"{snippet}\"",
+                            "icon": "alternate_email",
+                            "timestamp": float(rep.get("timestamp") or 0),
+                        })
+                    elif room_owner == clean_addr:
+                        notifs.append({
+                            "id": f"room-rep-owner-{r_id}",
+                            "type": "room_reply",
+                            "room_id": rid,
+                            "topic_id": tid,
+                            "title": f"🏛️ {room_name}: Yeni Tartışma!",
+                            "body": f"{r_lbl}: \"{snippet}\"",
+                            "icon": "forum",
+                            "timestamp": float(rep.get("timestamp") or 0),
+                        })
+
+            notifs.sort(key=lambda x: x["timestamp"], reverse=True)
+            return notifs[:max(1, min(int(limit or 30), 60))]
+
     # ── ON-CHAIN SOULBOUND PROFILE AVATARS (Bonding Curve + Color Variants) ──
 
     @staticmethod

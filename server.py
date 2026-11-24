@@ -438,7 +438,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-+ix3tUWGBebsQTKw0Oefhpas5Vh+JULRGIUgy6xSuF0=' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-Wr9NGTVGX7TnAoGNzxRj9St4tukwU8JRwlEgo2rmNxs=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -3060,6 +3060,17 @@ def api_rooms_transfer(room_id):
         return api_response(False, message=message, status=400)
 
     logger.info(f"Protocol Room Transferred: {rid} from {from_address[:10]}... -> {result.get('new_owner', '')[:10]}...")
+    if push_service and result and result.get("new_owner") and result.get("new_owner") != from_address:
+        try:
+            push_service.send_push_to_wallet(
+                result["new_owner"],
+                title="🔑 Oda Sahipliği Size Devredildi!",
+                body=f"'{result.get('name', rid)}' ({rid}) odası artık sizin kontrolünüzde.",
+                url="/#rooms",
+                category="space",
+            )
+        except Exception:
+            pass
     return api_response(True, message=message, data=result, status=200)
 
 
@@ -3108,6 +3119,34 @@ def api_rooms_create_topic(room_id):
         return api_response(False, message=message, status=400)
 
     logger.info(f"Room Topic Created: {result.get('topic_id')} in {rid} by {author[:10]}...")
+    if push_service:
+        try:
+            room_obj = blockchain.rooms.get(rid)
+            display_author = f"@{bns_name}" if bns_name else f"{author[:8]}..."
+            snippet = title[:65].replace('"', "'")
+            notified = {author}
+            if room_obj and room_obj.get("creator") and room_obj["creator"] not in notified:
+                notified.add(room_obj["creator"])
+                push_service.send_push_to_wallet(
+                    room_obj["creator"],
+                    title=f"🏛️ {room_obj.get('name', rid)}: Yeni Mevzu!",
+                    body=f"{display_author}: \"{snippet}\"",
+                    url="/#rooms",
+                    category="space",
+                )
+            for item in blockchain.resolve_tagged_wallets(f"{title} {content}"):
+                tw = item.get("wallet")
+                if tw and tw not in notified:
+                    notified.add(tw)
+                    push_service.send_push_to_wallet(
+                        tw,
+                        title="📢 Oda Mevzusu İçinde Etiketlendiniz!",
+                        body=f"{display_author} sizden bahsetti: \"{snippet}\"",
+                        url="/#rooms",
+                        category="space",
+                    )
+        except Exception as _rt_err:
+            logger.debug(f"Room topic push error: {_rt_err}")
     return api_response(True, message=message, data=result, status=201)
 
 
@@ -3162,6 +3201,55 @@ def api_rooms_create_reply(topic_id):
         return api_response(False, message=message, status=400)
 
     logger.info(f"Room Reply Created: {result.get('reply_id')} on {tid} by {author[:10]}...")
+    if push_service:
+        try:
+            topic_obj = blockchain.room_topics.get(tid)
+            room_obj = blockchain.rooms.get(topic_obj["room_id"]) if topic_obj else None
+            display_author = f"@{bns_name}" if bns_name else f"{author[:8]}..."
+            snippet = content[:65].replace('"', "'")
+            notified = {author}
+            if topic_obj and parent_reply_id:
+                parent_rep = next((r for r in (topic_obj.get("replies") or []) if r.get("reply_id") == parent_reply_id), None)
+                if parent_rep and parent_rep.get("author") and parent_rep["author"] not in notified:
+                    notified.add(parent_rep["author"])
+                    push_service.send_push_to_wallet(
+                        parent_rep["author"],
+                        title="↩️ Oda Yanıtınıza Cevap Geldi!",
+                        body=f"{display_author}: \"{snippet}\"",
+                        url="/#rooms",
+                        category="space",
+                    )
+            if topic_obj and topic_obj.get("author") and topic_obj["author"] not in notified:
+                notified.add(topic_obj["author"])
+                push_service.send_push_to_wallet(
+                    topic_obj["author"],
+                    title="💬 Mevzunuza Yeni Yanıt Geldi!",
+                    body=f"{display_author}: \"{snippet}\"",
+                    url="/#rooms",
+                    category="space",
+                )
+            for item in blockchain.resolve_tagged_wallets(content):
+                tw = item.get("wallet")
+                if tw and tw not in notified:
+                    notified.add(tw)
+                    push_service.send_push_to_wallet(
+                        tw,
+                        title="📢 Oda Yorumunda Etiketlendiniz!",
+                        body=f"{display_author} sizden bahsetti: \"{snippet}\"",
+                        url="/#rooms",
+                        category="space",
+                    )
+            if room_obj and room_obj.get("creator") and room_obj["creator"] not in notified:
+                notified.add(room_obj["creator"])
+                push_service.send_push_to_wallet(
+                    room_obj["creator"],
+                    title=f"🏛️ {room_obj.get('name', '')}: Yeni Tartışma!",
+                    body=f"{display_author}: \"{snippet}\"",
+                    url="/#rooms",
+                    category="space",
+                )
+        except Exception as _rr_err:
+            logger.debug(f"Room reply push error: {_rr_err}")
     return api_response(True, message=message, data=result, status=201)
 
 
@@ -3194,7 +3282,28 @@ def api_rooms_upvote_topic(topic_id):
     if not success:
         return api_response(False, message=message, status=400)
 
+    if push_service:
+        try:
+            topic_obj = blockchain.room_topics.get(tid)
+            if topic_obj and topic_obj.get("author") and topic_obj["author"] != voter:
+                push_service.send_push_to_wallet(
+                    topic_obj["author"],
+                    title="⬆️ Mevzunuz Oylandı!",
+                    body=f"{voter[:8]}... mevzunuza oy verdi: \"{str(topic_obj.get('title', ''))[:50]}\"",
+                    url="/#rooms",
+                    category="space",
+                )
+        except Exception:
+            pass
     return api_response(True, message=message, data=result, status=200)
+
+
+@app.route("/api/v1/rooms/notifications/<address>", methods=["GET"])
+def api_rooms_notifications(address):
+    """Returns recent on-chain Protocol Rooms notifications (replies, mentions, topics, transfers) for a wallet."""
+    limit = safe_int(request.args.get("limit", 30), default=30, min_val=1, max_val=60)
+    items = blockchain.get_room_notifications_for_wallet(address, limit=limit)
+    return api_response(True, data={"notifications": items, "count": len(items)})
 
 
 # ══════════════════════════════════════════════════════

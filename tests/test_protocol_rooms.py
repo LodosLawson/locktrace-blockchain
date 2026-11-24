@@ -504,6 +504,11 @@ class TestProtocolRooms(unittest.TestCase):
         self.bc._load_in_memory_rooms_index()
         self.assertEqual(self.bc.rooms[rid]["creator"], self.alice.address)
 
+        # 9. Verify on-chain Protocol Rooms notifications (Alice owns room & Bob opened topic)
+        alice_notifs = self.bc.get_room_notifications_for_wallet(self.alice.address)
+        self.assertTrue(any(n["type"] == "room_transfer" and n["room_id"] == rid for n in alice_notifs))
+        self.assertTrue(any(n["type"] == "room_topic" and n["room_id"] == rid for n in alice_notifs))
+
 
 if __name__ == "__main__":
     unittest.main()

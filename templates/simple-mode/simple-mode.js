@@ -2355,6 +2355,13 @@
             <span class="font-label-sm text-[10px] leading-none">${t('nav_wallet', 'Wallet')}</span>
           </button>
 
+          <!-- Center: Protocol Rooms (Pro-Style Icon Only) -->
+          <button type="button" aria-label="Protocol Rooms" title="Protocol Rooms"
+            onclick="window.BlocTagSimpleMode.go('SCR-ROOMS')"
+            class="flex items-center justify-center w-11 h-11 rounded-2xl mx-1 transition-all active:scale-95 cursor-pointer ${active === 'SCR-ROOMS' ? 'bg-primary text-on-primary shadow-md shadow-primary/30' : 'bg-primary/15 text-primary border border-primary/30 hover:bg-primary/25'}">
+            <span class="material-symbols-outlined notranslate text-[22px]" translate="no">meeting_room</span>
+          </button>
+
           <!-- 3. Profile -->
           <button type="button" onclick="window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: '' })"
             class="flex flex-col items-center justify-center gap-0.5 flex-1 h-12 transition-colors cursor-pointer ${isProfile ? 'text-primary font-semibold' : 'text-on-surface-variant hover:text-on-surface'}">

@@ -61,7 +61,7 @@
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
   <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.13.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-fuio5yG0ADZDOyztZ+vlRmMhBuaxhAGkf5m75xo8O+A=" crossorigin="anonymous" defer></script>
+  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-bgflU5Rb0zcmCiDxtGSFOIwEuN1QITFUF7Ickd3Yn+4=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -4846,6 +4846,16 @@
                   Royalties</span>
               </div>
               <div class="flex items-center gap-1.5 sm:gap-2">
+                <button aria-label="Protocol Rooms"
+                  class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container-low flex items-center justify-center text-primary hover:bg-primary/15 active:scale-95 transition-all border border-outline-variant/20 cursor-pointer"
+                  onclick="switchTab('rooms')" title="Protocol Rooms (Odalar)" type="button">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">meeting_room</span>
+                </button>
+                <button aria-label="Reels Modu"
+                  class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-primary active:scale-95 transition-all border border-outline-variant/20 cursor-pointer"
+                  onclick="enterProReelsMode()" title="Reels Moduna Geç" type="button">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">movie</span>
+                </button>
                 <button aria-label="Search Feed"
                   class="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant hover:text-on-surface active:scale-95 transition-all border border-outline-variant/20 cursor-pointer"
                   onclick="toggleSpaceSearchBar()" title="Search Feed" type="button">
@@ -5060,11 +5070,6 @@
             <!-- Trending Topics & Cashtags Bar (Horizontal Carousel) -->
             <div class="px-1 sm:px-2 md:px-0 mb-3.5 flex items-center gap-1.5 overflow-x-auto no-scrollbar py-0.5"
               id="spaceTrendingTagsBar">
-              <button type="button" onclick="window.ProtocolRoomsUI && window.ProtocolRoomsUI.openDirectory()"
-                class="px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold shrink-0 flex items-center gap-1 mr-1 cursor-pointer transition-colors">
-                <span class="material-symbols-outlined notranslate text-[14px]" translate="no">forum</span>
-                <span>Protocol Rooms</span>
-              </button>
               <span
                 class="text-[11px] font-mono uppercase font-bold text-on-surface-variant/70 shrink-0 flex items-center gap-1 mr-1">
                 <span class="material-symbols-outlined notranslate text-[14px] text-amber-400" translate="no">trending_up</span>
@@ -5137,41 +5142,6 @@
                   <span class="material-symbols-outlined notranslate text-sm animate-spin mr-1.5" translate="no">sync</span>
                   Loading on-chain voices...
                 </div>
-              </div>
-            </div>
-
-            <!-- Card 3: Protocol Rooms (On-Chain Reddit-Style Public Spaces) -->
-            <div
-              class="rounded-2xl bg-surface-container-low p-5 border border-outline-variant/15 shadow-sm flex flex-col gap-3">
-              <div class="flex items-center justify-between pb-2 border-b border-outline-variant/10">
-                <div class="flex items-center gap-2 min-w-0">
-                  <span class="material-symbols-outlined notranslate text-primary text-[20px]" translate="no">forum</span>
-                  <div class="min-w-0">
-                    <h2 class="font-headline-sm text-sm font-bold text-on-surface tracking-tight truncate">Protocol Rooms</h2>
-                    <span class="text-[10px] font-mono text-on-surface-variant/75">Özel ID'li Açık Akış Odaları</span>
-                  </div>
-                </div>
-                <div class="flex items-center gap-1.5 shrink-0">
-                  <button type="button" onclick="window.ProtocolRoomsUI && window.ProtocolRoomsUI.openCreate()"
-                    class="px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold transition-colors cursor-pointer flex items-center gap-1">
-                    <span class="material-symbols-outlined notranslate text-[14px]" translate="no">add</span>
-                    <span>Oda Aç</span>
-                  </button>
-                </div>
-              </div>
-              <div id="protocolRoomsSidebarList" class="flex flex-col gap-2 min-h-[120px]">
-                <div class="flex items-center justify-center p-4 text-xs text-on-surface-variant font-mono">
-                  <span class="material-symbols-outlined notranslate text-sm animate-spin mr-1.5" translate="no">sync</span>
-                  Odalar yükleniyor...
-                </div>
-              </div>
-              <div class="pt-1.5 border-t border-outline-variant/10 flex items-center justify-between">
-                <span class="text-[10px] font-mono text-on-surface-variant/75">Oda: 10-50 BCT • Mevzu: 0.25</span>
-                <button type="button" onclick="window.ProtocolRoomsUI && window.ProtocolRoomsUI.openDirectory()"
-                  class="text-[11px] font-semibold text-primary hover:underline cursor-pointer flex items-center gap-0.5">
-                  <span>Tümünü Gör</span>
-                  <span class="material-symbols-outlined notranslate text-[14px]" translate="no">chevron_right</span>
-                </button>
               </div>
             </div>
 
@@ -24341,6 +24311,49 @@
           saveSeenSpacePosts();
         }
       } catch (_e) { }
+
+      // Poll Protocol Rooms on-chain notifications (topic replies, nested replies, @mentions, room transfers)
+      try {
+        const rmRes = await apiFetch('/rooms/notifications/' + encodeURIComponent(myAddr) + '?limit=25');
+        if (rmRes.ok && rmRes.body && rmRes.body.data && Array.isArray(rmRes.body.data.notifications)) {
+          rmRes.body.data.notifications.forEach(rn => {
+            const nid = String(rn.id || '');
+            if (!nid) return;
+            const alreadySeen = seenPosts.has(nid);
+            const alreadyInCache = notificationsCache.some(n => n.id === nid);
+            if (!alreadySeen) {
+              seenPosts.add(nid);
+              if (!alreadyInCache) {
+                addNotification({
+                  id: nid,
+                  category: 'space',
+                  title: rn.title || '🏛️ Protocol Rooms Bildirimi',
+                  body: rn.body || '',
+                  icon: rn.icon || 'meeting_room',
+                  time: Number(rn.timestamp || Date.now() / 1000) * 1000,
+                  read: false,
+                  actionUrl: rn.topic_id ? ('#room-topic-' + rn.topic_id) : ('#room-' + (rn.room_id || ''))
+                }, seenPosts.size > 1);
+              }
+            }
+          });
+          saveSeenSpacePosts();
+        }
+      } catch (_re) { }
+    }
+
+    function enterProReelsMode() {
+      try {
+        localStorage.setItem('bloctag_simple_feed_layout', 'snap');
+      } catch (_e) { }
+      if (typeof toggleSimpleModeSetting === 'function') {
+        toggleSimpleModeSetting(true);
+      }
+      setTimeout(() => {
+        if (window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.go === 'function') {
+          window.BlocTagSimpleMode.go('SCR-SPC-03');
+        }
+      }, 80);
     }
 
     document.addEventListener('DOMContentLoaded', initApp);
@@ -25153,6 +25166,7 @@
         },
         replyTargetId: '',
         replyTargetPreview: '',
+        topicComposerOpen: false,
       };
 
       function esc(s) {
@@ -25364,6 +25378,7 @@
         state.activeRoom = null;
         state.replyTargetId = '';
         state.replyTargetPreview = '';
+        state.topicComposerOpen = false;
         openModal();
         render();
         await fetchRoomDetail(roomId);
@@ -25665,6 +25680,7 @@
           });
           if (ok && body && body.data) {
             showToast('Mevzu zincire mühürlendi! (0.25 BCT)', 'verified');
+            state.topicComposerOpen = false;
             if (typeof refreshCurrentAccountBalance === 'function') refreshCurrentAccountBalance();
             loadSidebar();
             await fetchRoomDetail(rid);
@@ -26024,26 +26040,39 @@
                   </div>
                 </div>
 
-                <!-- Open New Topic Composer -->
-                <div class="p-3.5 rounded-2xl bg-surface-container border border-outline-variant/20 flex flex-col gap-2">
-                  <div class="flex items-center justify-between">
-                    <span class="text-xs font-bold text-on-surface flex items-center gap-1.5">
-                      <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">edit_note</span>
-                      Yeni Mevzu Aç
-                    </span>
-                    <span class="text-[10.5px] font-mono text-primary">0.25 BCT (%30 Oda Kurucusu)</span>
+                <!-- Collapsible New Topic Button / Composer -->
+                ${!state.topicComposerOpen ? `
+                  <button type="button" onclick="window.ProtocolRoomsUI._toggleTopicComposer(true)"
+                    class="w-full py-3 px-4 rounded-2xl bg-primary/15 hover:bg-primary/25 border border-primary/35 text-primary text-xs font-bold flex items-center justify-center gap-2 cursor-pointer transition-all active:scale-[0.99]">
+                    <span class="material-symbols-outlined notranslate text-[18px]" translate="no">add_comment</span>
+                    <span>Yeni Mevzu Aç (0.25 BCT)</span>
+                  </button>
+                ` : `
+                  <div class="p-3.5 rounded-2xl bg-surface-container border border-primary/30 flex flex-col gap-2.5 shadow-sm">
+                    <div class="flex items-center justify-between">
+                      <span class="text-xs font-bold text-on-surface flex items-center gap-1.5">
+                        <span class="material-symbols-outlined notranslate text-primary text-[16px]" translate="no">edit_note</span>
+                        Yeni Mevzu Aç
+                      </span>
+                      <span class="text-[10.5px] font-mono text-primary">0.25 BCT (%30 Oda Kurucusu)</span>
+                    </div>
+                    <input id="roomNewTopicTitle" type="text" maxlength="120" placeholder="Mevzu başlığı (3–120 karakter)..."
+                      class="px-3 py-2 rounded-xl bg-surface-container-low border border-outline-variant/25 text-xs text-on-surface focus:outline-none focus:border-primary" />
+                    <textarea id="roomNewTopicBody" rows="3" maxlength="500" placeholder="Mevzu detayını veya ilk tweet'ini yaz (3–500 karakter)..."
+                      class="px-3 py-2 rounded-xl bg-surface-container-low border border-outline-variant/25 text-xs text-on-surface focus:outline-none focus:border-primary resize-none"></textarea>
+                    <div class="flex items-center justify-end gap-2">
+                      <button type="button" onclick="window.ProtocolRoomsUI._toggleTopicComposer(false)"
+                        class="px-3.5 py-1.5 rounded-xl bg-surface-container-low hover:bg-surface-container-high text-on-surface-variant text-xs font-semibold cursor-pointer">
+                        Vazgeç
+                      </button>
+                      <button type="button" ${state.busy ? 'disabled' : ''} onclick="window.ProtocolRoomsUI.submitTopic()"
+                        class="px-4 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer hover:brightness-95 disabled:opacity-50 inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined notranslate text-[15px]" translate="no">check_circle</span>
+                        <span>${state.busy ? 'Mühürleniyor...' : 'Onayla ve Aç (0.25 BCT)'}</span>
+                      </button>
+                    </div>
                   </div>
-                  <input id="roomNewTopicTitle" type="text" maxlength="120" placeholder="Mevzu başlığı (3–120 karakter)..."
-                    class="px-3 py-2 rounded-xl bg-surface-container-low border border-outline-variant/20 text-xs text-on-surface focus:outline-none focus:border-primary" />
-                  <textarea id="roomNewTopicBody" rows="2" maxlength="500" placeholder="Mevzu detayını veya ilk tweet'ini yaz (3–500 karakter)..."
-                    class="px-3 py-2 rounded-xl bg-surface-container-low border border-outline-variant/20 text-xs text-on-surface focus:outline-none focus:border-primary resize-none"></textarea>
-                  <div class="flex justify-end">
-                    <button type="button" ${state.busy ? 'disabled' : ''} onclick="window.ProtocolRoomsUI.submitTopic()"
-                      class="px-4 py-1.5 rounded-xl bg-primary text-on-primary text-xs font-bold cursor-pointer hover:brightness-95 disabled:opacity-50">
-                      ${state.busy ? 'Mühürleniyor...' : 'Mevzu Aç (0.25 BCT)'}
-                    </button>
-                  </div>
-                </div>
+                `}
 
                 <!-- Topics Sort & List -->
                 <div class="flex items-center justify-between">
@@ -26336,6 +26365,14 @@
         _selSealAvatarBase: (b) => { state.sealAvatarForm.avatarBaseId = b; render(); },
         _selSealAvatarBg: (c) => { state.sealAvatarForm.avatarBgColor = c; render(); },
         _onTransferTo: (v) => { state.transferForm.toAddress = String(v || ''); },
+        _toggleTopicComposer: (open) => {
+          state.topicComposerOpen = !!open;
+          render();
+          if (state.topicComposerOpen) {
+            const el = document.getElementById('roomNewTopicTitle');
+            if (el) el.focus();
+          }
+        },
       };
     })();
 
