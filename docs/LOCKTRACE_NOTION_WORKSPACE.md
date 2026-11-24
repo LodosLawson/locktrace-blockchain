@@ -777,3 +777,9 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 
 1. **Paylaşımın Kendisinin Devri (`author` + `royalty_owner`):** Alıcı devri onayladığında yalnızca telif geliri değil paylaşımın kendisi de yeni sahibin profiline geçer; ilk oluşturan (`original_author`) bilgisi zincir üzerinde değişmez olarak korunur.
 2. **Paylaşım Detayları & Yolculuğu (`Detaylar` İkonu):** Hem Pro Mod hem Simple Mod'da her paylaşım kartına eklenen `history` ("Detaylar") ikonuyla paylaşımın ilk oluşturulduğu bloktan itibaren tüm sahiplik devir zinciri (`Kimden → Kime`, blok, tarih, işlem özeti) tıpkı `.bct` alan adlarında olduğu gibi şeffafça izlenir.
+
+## 🛡️ 41. BlocTag / LockTrace v2.19.0: Derin Güvenlik Sertleştirmesi, Zero-FOUC Açılış, Staking Kasa Şeffaflığı & Oda Geçmişi
+
+1. **Kriptografik Push & API Rate-Limit Koruması:** `/api/v1/notifications/test-push` uç noktası SECP256k1 ECDSA cüzdan sahiplik imzası (`PUSH_TEST:<wallet>:<timestamp>`) ve replay koruması ile sertleştirildi; `/api/v1/` GET sorguları için global `300/dk` rate limit, ağır uç noktalara özel limitler ve `safe_int()` ile HTTP 500 çökme korumaları eklendi.
+2. **Performans & Zero-FOUC Açılış Kalkanı:** `/api/v1/stats` için 3 saniyelik revizyon-anahtarlı TTL önbelleği eklendi; `ethers.umd.min.js` `defer` edildi; `Material Symbols Outlined` fontu `display=block` + `.icons-ready` kalkanı ve saf CSS `#bloctag-boot-splash` ile ilk açılıştaki büyük yazı/dönen ikon metni sorunu giderildi.
+3. **Staking Kasa Şeffaflığı & Oda Yolculuğu (`Geçmiş`):** Staking sayfasına `Slashed` ve `Vault Total` rozetleri eklenerek System sayfasındaki `VALIDATOR_STAKE_VAULT` bakiyesiyle 1:1 eşitlik sağlandı; Protocol Rooms için hem liste hem oda içi `history` ikonu ve `#room-journey-modal` eklendi.

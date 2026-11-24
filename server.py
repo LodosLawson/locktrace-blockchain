@@ -468,6 +468,13 @@ def before_request():
                 message="Write requests from anonymous Tor exit nodes are restricted for anti-spam security.",
                 status=403,
             )
+        if request.method == "GET" and request.path.startswith("/api/v1/") and request.path != "/api/v1/health":
+            if not check_rate_limit("api_v1_global_get", limit=300, window_seconds=60):
+                return api_response(
+                    False,
+                    message="Global API query rate limit exceeded (300/min). Please slow down.",
+                    status=429,
+                )
 
 
 @app.after_request
@@ -486,7 +493,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-LkLbWwsGBNeMYuYb8zK+I8g1qqpBHOFKPStVG/r0r9w=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' 'sha256-n5xYcNV5KaCX6UbsSF9lOfnJv5VlpxizzOIpiq/UJQM=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -941,7 +948,7 @@ def api_notifications_unsubscribe():
 def api_notifications_test_push():
     """
     Sends a test Web Push notification to all registered devices of the caller's wallet via APNs/Google Push.
-    Verifies lock-screen delivery end-to-end without transferring actual funds.
+    Requires SECP256k1 ECDSA wallet ownership proof (PUSH_TEST:<wallet>:<timestamp>) to prevent unauthorized push spam.
     """
     if not push_service:
         return api_response(False, message="Web Push service not available on this node", status=503)
@@ -953,6 +960,25 @@ def api_notifications_test_push():
     wallet_address = str(data.get("wallet_address", "") or "").strip()
     if not wallet_address or not is_valid_bct_address(wallet_address):
         return api_response(False, message="Valid BCT wallet address required.", status=400)
+
+    public_key = str(data.get("public_key", "") or "").strip()
+    signature = str(data.get("signature", "") or "").strip()
+    raw_ts = data.get("timestamp")
+    ts_val = safe_float(raw_ts, default=0.0) or 0.0
+    if not public_key or not signature or ts_val <= 0:
+        return api_response(False, message="Cryptographic wallet signature (public_key, signature, timestamp) required for test push.", status=401)
+    if abs(time.time() - ts_val) > 300:
+        return api_response(False, message="Test push signature expired. Please retry.", status=401)
+    derived_addr = Wallet.address_from_public_key(public_key)
+    if derived_addr != wallet_address:
+        return api_response(False, message="Public key does not match wallet address.", status=401)
+    ts_str = str(raw_ts).strip()
+    canonical_payload = f"PUSH_TEST:{wallet_address}:{ts_str}"
+    if not verify_signature(public_key, canonical_payload, signature):
+        if not verify_signature(public_key, f"PUSH_TEST:{wallet_address}:{int(ts_val)}", signature):
+            return api_response(False, message="Invalid ECDSA signature for test push.", status=401)
+    if not rate_limiter.register_signature_once(signature, ttl_seconds=600):
+        return api_response(False, message="Replay detected: test push signature already used.", status=409)
 
     if not rate_limiter.allow(f"push_test_wallet:{wallet_address}", limit=2, window_seconds=60):
         return api_response(False, message="Rate limit exceeded for this wallet. Please wait 1 minute.", status=429)
@@ -972,6 +998,10 @@ def api_notifications_test_push():
 
 
 # ── Health & Stats ───────────────────────────────────────────
+_stats_cache = {"key": None, "ts": 0.0, "data": None}
+_stats_cache_lock = threading.Lock()
+
+
 @app.route("/api/v1/health", methods=["GET"])
 def api_health():
     check = _inspect_local_frontend_integrity()
@@ -992,7 +1022,30 @@ def api_health():
 
 @app.route("/api/v1/stats", methods=["GET"])
 def api_stats():
-    return api_response(True, data=blockchain.get_stats())
+    now = time.time()
+    cache_key = (
+        getattr(blockchain, "_loaded_revision", 0),
+        len(blockchain.chain),
+        len(blockchain.pending_transactions),
+    )
+    with _stats_cache_lock:
+        if (
+            _stats_cache["data"] is not None
+            and _stats_cache["key"] == cache_key
+            and (now - _stats_cache["ts"]) < 3.0
+        ):
+            return api_response(True, data=_stats_cache["data"])
+    stats_data = blockchain.get_stats()
+    new_key = (
+        getattr(blockchain, "_loaded_revision", 0),
+        len(blockchain.chain),
+        len(blockchain.pending_transactions),
+    )
+    with _stats_cache_lock:
+        _stats_cache["key"] = new_key
+        _stats_cache["ts"] = time.time()
+        _stats_cache["data"] = stats_data
+    return api_response(True, data=stats_data)
 
 
 # ── Live / Cached DEX & Uniswap Market Price ───────────────────
@@ -1893,6 +1946,8 @@ def api_latest_blocks():
 @app.route("/api/v1/chain/range", methods=["GET"])
 def api_chain_range():
     """Incremental archival chain sync endpoint for decentralized peer nodes."""
+    if not check_rate_limit("chain_range", limit=120, window_seconds=60):
+        return api_response(False, message="Chain range sync rate limit exceeded.", status=429)
     start = safe_int(request.args.get("start", 0), default=0, min_val=0)
     limit = safe_int(request.args.get("limit", 100), default=100, min_val=1, max_val=200)
     return api_response(True, data=blockchain.get_chain_range(start=start, limit=limit))
@@ -2743,10 +2798,7 @@ def api_space_suggested_voices():
     Returns verified on-chain creator accounts for the Suggested Voices sidebar.
     """
     viewer = str(request.args.get("viewer", "") or "").strip()
-    try:
-        limit = min(max(int(request.args.get("limit", 5)), 1), 20)
-    except Exception:
-        limit = 5
+    limit = safe_int(request.args.get("limit", 5), default=5, min_val=1, max_val=20)
 
     voices = blockchain.get_suggested_voices(viewer_address=viewer, limit=limit)
     return api_response(True, message="Suggested voices retrieved", data={"voices": voices})
@@ -3003,6 +3055,8 @@ def api_rooms_verify(room_id):
     """
     Developer / Release Authority only: sets or revokes the verified badge on a room.
     """
+    if not check_rate_limit("rooms_verify", limit=15, window_seconds=60):
+        return api_response(False, message="Too many room verification requests.", status=429)
     data = request.get_json(silent=True) or {}
     authority = str(data.get("authority", "") or "").strip()
     verified = bool(data.get("verified", True))
@@ -3671,6 +3725,8 @@ def api_bns_list_names():
 @app.route("/api/v1/bns/analytics", methods=["GET"])
 def api_bns_analytics():
     """Returns ecosystem-wide analytics, pricing timeline, treasury fees, and trade records."""
+    if not check_rate_limit("bns_analytics", limit=60, window_seconds=60):
+        return api_response(False, message="BNS analytics rate limit exceeded.", status=429)
     data = blockchain.get_bns_analytics()
     return api_response(True, data=data)
 
@@ -4526,7 +4582,9 @@ def api_bridge_base_transactions():
     Returns verified Base L2 wBCT transactions and bridge activities so users
     can inspect Base activity directly within LockTrace Explorer without navigating to BaseScan.
     """
-    limit = min(int(request.args.get("limit", 50)), 200)
+    if not check_rate_limit("bridge_base_txs", limit=60, window_seconds=60):
+        return api_response(False, message="Bridge transactions query rate limit exceeded.", status=429)
+    limit = safe_int(request.args.get("limit", 50), default=50, min_val=1, max_val=200)
     filter_addr = str(request.args.get("address", "")).strip().lower()
 
     if filter_addr:

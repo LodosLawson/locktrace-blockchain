@@ -111,26 +111,28 @@ LockTrace v2.4.0 features an on-chain **Validator Staking Vault** that empowers 
 
 ### 🏛️ Staking Vault Specifications
 * **Vault Address:** `BCT_STAKE_VAULT_00000000000000000000000000000000`
-* **Collateral Threshold:** Exactly **$1{,}000.00\text{ BCT}$** locked per validator address.
+* **Collateral Tiers & Cap:** **100.00 – 100,000.00 BCT** cumulative Observer Staking Pool (`>= 100 BCT`, top-ups allowed, `< 100 BCT` partial-unstake dust guard); **$\ge 1{,}000.00\text{ BCT}$** required for Active Validator Quorum nodes.
+* **Anti-Flash-Staking Lockup:** **1-hour (`STAKE_LOCKUP_SECONDS = 3600`)** minimum lockup window after stake deposits + per-wallet stake/unstake cooldowns.
+* **Vault Accounting Transparency:** `/api/v1/staking/participants` reports `total_staked_bct` (active non-slashed stakers), `forfeited_vault_bct` (slashed/burned collateral), and `vault_total_bct` (exact `VALIDATOR_STAKE_VAULT` balance matching the System page 1:1).
 * **Non-Custodial Cryptographic Security:** Staking operations are executed entirely client-side using deterministic SECP256k1 ECDSA signatures (`VALIDATOR_STAKE:<sender>:<amount>:<nonce>`).
-* **Consensus Split:** Every 20-second block rewards are divided into **50% to winning PoW Miner / Block Proposer**, **40% to Active Staked Quorum Validators**, and **10% pro-rata to Observer Stakers (100 - 100,000 BCT)**.
+* **Consensus Split:** Every 20-second block reward is divided into **50% to winning PoW Miner / Block Proposer**, **40% to Active Staked Quorum Validators**, and **10% pro-rata to Observer Stakers (100 – 100,000 BCT)**.
 
 ### 📈 Emission Math & APR Economic Projections
 1. **Cadence:** Block interval $T = 20.0\text{s} \implies 4{,}320\text{ blocks/day} \implies 1{,}576{,}800\text{ blocks/year}$.
-2. **Subsidy per Block:** Fixed treasury subsidy of $0.05\text{ BCT}$ per block $\times 30\% = \mathbf{0.015\text{ BCT / block}}$ for validators.
-3. **Daily Validator Pool:** $4{,}320 \times 0.015\text{ BCT} = \mathbf{64.80\text{ BCT / day}}$ ($+ 30\%$ of all network transaction fees).
-4. **Yearly Validator Pool:** $1{,}576{,}800 \times 0.015\text{ BCT} = \mathbf{23{,}652.00\text{ BCT / year}}$ ($+ 30\%$ of all network transaction fees).
-5. **Yield Schedule Table:**
+2. **Subsidy per Block:** Fixed treasury subsidy of $0.05\text{ BCT}$ per block:
+   - **Active Validator Quorum (40%):** $0.05 \times 40\% = \mathbf{0.020\text{ BCT / block}}$ $\implies$ **86.40 BCT / day** (**31,536.00 BCT / year**) $+ 40\%$ of network transaction fees.
+   - **Observer Staking Pool (10%):** $0.05 \times 10\% = \mathbf{0.005\text{ BCT / block}}$ $\implies$ **21.60 BCT / day** (**7,884.00 BCT / year**) $+ 10\%$ of network transaction fees (batched automatically once accrued rewards reach $\ge 0.25\text{ BCT}$).
+3. **Active Validator Yield Schedule Table (40% Quorum Pool, Base Subsidy Only):**
 
-| Active Quorum Validators | Total Staked Collateral | Daily Reward / Validator | Yearly Reward / Validator | Estimated APR |
+| Active Quorum Validators | Total Staked Collateral | Daily Reward / Validator | Yearly Reward / Validator | Estimated Base APR |
 |:---|:---|:---|:---|:---|
-| **1 Validator (Genesis Boot)** | $1{,}000\text{ BCT}$ | $64.80\text{ BCT}$ | $23{,}652.00\text{ BCT}$ | **$\sim 2{,}365.2\%$** |
-| **3 Validators** | $3{,}000\text{ BCT}$ | $21.60\text{ BCT}$ | $7{,}884.00\text{ BCT}$ | **$\sim 788.4\%$** |
-| **5 Validators** | $5{,}000\text{ BCT}$ | $12.96\text{ BCT}$ | $4{,}730.40\text{ BCT}$ | **$\sim 473.0\%$** |
-| **10 Validators (Max Soft Quorum)** | $10{,}000\text{ BCT}$ | $6.48\text{ BCT}$ | $2{,}365.20\text{ BCT}$ | **$\sim 236.5\%$** |
-| **25 Validators** | $25{,}000\text{ BCT}$ | $2.59\text{ BCT}$ | $946.08\text{ BCT}$ | **$\sim 94.6\%$** |
-| **50 Validators** | $50{,}000\text{ BCT}$ | $1.30\text{ BCT}$ | $473.04\text{ BCT}$ | **$\sim 47.3\%$** |
-| **100 Validators** | $100{,}000\text{ BCT}$ | $0.65\text{ BCT}$ | $236.52\text{ BCT}$ | **$\sim 23.7\%$** |
+| **1 Validator (Genesis Boot)** | $1{,}000\text{ BCT}$ | $86.40\text{ BCT}$ | $31{,}536.00\text{ BCT}$ | **$\sim 3{,}153.6\%$** |
+| **3 Validators** | $3{,}000\text{ BCT}$ | $28.80\text{ BCT}$ | $10{,}512.00\text{ BCT}$ | **$\sim 1{,}051.2\%$** |
+| **5 Validators** | $5{,}000\text{ BCT}$ | $17.28\text{ BCT}$ | $6{,}307.20\text{ BCT}$ | **$\sim 630.7\%$** |
+| **10 Validators (Max Soft Quorum)** | $10{,}000\text{ BCT}$ | $8.64\text{ BCT}$ | $3{,}153.60\text{ BCT}$ | **$\sim 315.4\%$** |
+| **25 Validators** | $25{,}000\text{ BCT}$ | $3.46\text{ BCT}$ | $1{,}261.44\text{ BCT}$ | **$\sim 126.1\%$** |
+| **50 Validators** | $50{,}000\text{ BCT}$ | $1.73\text{ BCT}$ | $630.72\text{ BCT}$ | **$\sim 63.1\%$** |
+| **100 Validators** | $100{,}000\text{ BCT}$ | $0.86\text{ BCT}$ | $315.36\text{ BCT}$ | **$\sim 31.5\%$** |
 
 ---
 
@@ -609,3 +611,9 @@ MIT License. Built for decentralization, transparency, and sovereign peer-to-pee
 
 - **Full Post Ownership Transfer (`author` + `royalty_owner`):** Accepting a single (`0.50 BCT`) or bulk (`1,000 BCT`) Space post transfer now transfers ownership of the post itself (`author` & `royalty_owner`) to the recipient's profile while permanently preserving immutable `original_author` provenance on-chain.
 - **Post Details & Provenance Journey (`Detaylar`):** Added a dedicated `history` ("Detaylar") icon on every Space post in both Pro Mode and Simple Mode that opens `#post-journey-modal`, displaying the post's complete on-chain journey from initial creation (`original_author`, block, tx) through every transfer hop (`from → to`, block, fee tier, tx hash) — matching `.bct` domain provenance transparency.
+
+### v2.19.0 Release: Security Hardening, Zero-FOUC Boot, Staking Vault Transparency & Room Provenance
+
+- **Cryptographic Push & API Rate-Limit Hardening:** `POST /api/v1/notifications/test-push` now enforces SECP256k1 ECDSA wallet ownership proof (`PUSH_TEST:<wallet>:<timestamp>`) with replay protection; added global `/api/v1/` GET rate limiting (`300/min`), targeted limits on `/api/v1/rooms/<room_id>/verify`, `/api/v1/chain/range`, `/api/v1/bns/analytics`, and `/api/v1/bridge/base-transactions`, and replaced raw `int()` query casts with `safe_int()` to prevent HTTP 500 crashes.
+- **Performance & Zero-FOUC Boot Shield:** Added a 3-second revision-keyed TTL cache on `/api/v1/stats`, deferred render-blocking `ethers.umd.min.js`, separated `Material Symbols Outlined` with `display=block` + `.icons-ready` guard, and introduced a pure-CSS instant boot splash (`#bloctag-boot-splash`) eliminating initial FOUC and spinning raw icon ligatures.
+- **Staking Vault Accounting Parity & Protocol Room Provenance:** Staking UI now displays `Total Staked` (active pool), `Slashed` (`forfeited_vault_bct`), and `Vault Total` (`vault_total_bct`, matching `VALIDATOR_STAKE_VAULT` 1:1); Protocol Rooms now include a `history` provenance icon & `#room-journey-modal` across Pro & Simple Mode.

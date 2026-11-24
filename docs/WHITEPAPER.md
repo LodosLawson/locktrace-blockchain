@@ -1,7 +1,7 @@
-# BlocTag (BCT) Technical Whitepaper — v2.18.0
+# BlocTag (BCT) Technical Whitepaper — v2.19.0
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.18.0 — November 2026*  
+*Version 2.19.0 — November 2026*  
 *Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
@@ -242,7 +242,7 @@ To qualify for the 30% Quorum Pool, a node must satisfy two cryptographic condit
 Nodes failing either criterion are pruned from quorum payout calculation.
 
 ### 4.3 Staking Vault & Non-Custodial Slashing Mechanism
-Validators lock collateral via a 100% non-custodial transaction to `BCT_STAKE_VAULT_...`. Unstaking requires an explicit withdrawal request with a 24-hour unbonding cooldown.
+Validators and passive observers lock collateral via a 100% non-custodial transaction to `BCT_STAKE_VAULT_...` (`100.00 – 100,000.00 BCT` cumulative cap per wallet; $\ge 1{,}000.00\text{ BCT}$ for Active Validator Quorum eligibility). Unstaking enforces a consensus-level **1-hour anti-flash-staking lockup (`STAKE_LOCKUP_SECONDS = 3600`)**, per-wallet stake/unstake cooldowns, and a `< 100 BCT` partial-unstake dust guard. The vault accounting endpoint (`/api/v1/staking/participants`) transparently exposes `vault_total_bct = total_staked_bct + forfeited_vault_bct` so active yield-bearing stake and slashed/forfeited collateral reconcile 1:1 with the System ledger.
 - **Equivocation Slashing:** If a validator signs two conflicting block proposals or attestations at the identical block height, any node can submit cryptographic proof of double-signing, triggering an on-chain **100% stake slash** ($1,000.0\text{ BCT}$ permanently burned to `BCT0000000000000000000000000000000000000000`) and permanent protocol blacklisting.
 - **Anti-Dust Spam & Self-Loop Subsidy Siphoning Defense:**
   - Mandatory minimum transfer amount: $0.01\text{ BCT}$. Micro-dust transactions ($< 0.01\text{ BCT}$) are unconditionally rejected from the mempool.
@@ -481,7 +481,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.15.0 (Completed):** Atomic Bulk Space Post Royalty Transfer (`space_royalty_transfer_all`, `1,000.00 BCT`, wallet-independent per-post 3/365d enforcement, automatic skipping of capped posts, zero-drift conservation) and Pro Mode Profile Bottom-Nav Viewport Pinning.
 - **v2.16.0 (Completed):** Staking & Locked Collateral Security Hardening — exact 10% Observer pool reservation (`reserved_obs_u`), burned-wallet stake/reward exclusion, 1-hour anti-flash-staking lockup + wallet cooldowns, cumulative `100,000 BCT` stake cap, partial unstake `< 100 BCT` dust guard, and slashed collateral accounting clarity.
 - **v2.17.0 (Completed):** 2-Step Recipient-Consent Asset Transfers (`propose → accept / reject / cancel`) for `.bct` handles, Protocol Rooms, and Single/Bulk Space Post Royalties — zero fee charged until recipient ECDSA acceptance, preventing unsolicited asset dumping, with unified Control Center & Profile Approvals UI in Pro & Simple Mode.
-- **v2.18.0 (Current Production Release):** Full Space Post Ownership Transfer (transferring both post ownership and royalties while preserving immutable `original_author` provenance) and On-Chain Post Journey Timeline (`Detaylar` modal) across Pro & Simple Mode.
+- **v2.18.0 (Completed):** Full Space Post Ownership Transfer (transferring both post ownership and royalties while preserving immutable `original_author` provenance) and On-Chain Post Journey Timeline (`Detaylar` modal) across Pro & Simple Mode.
+- **v2.19.0 (Current Production Release):** Deep Security & Performance Hardening — ECDSA-authenticated Web Push testing (`PUSH_TEST`), global `/api/v1/` GET rate limiting + heavy-route guards + `safe_int` crash prevention, revision-keyed `/api/v1/stats` TTL caching, Zero-FOUC Boot Shield & Material Symbols FOUT elimination, Staking Vault Total/Slashed accounting parity, and Protocol Rooms On-Chain History & Provenance Journey (`#room-journey-modal`) across Pro & Simple Mode.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---
