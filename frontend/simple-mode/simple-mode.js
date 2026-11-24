@@ -2775,6 +2775,7 @@
                   </div>
                   <div class="flex flex-col items-end shrink-0 pl-2">
                     <span class="text-xs font-mono font-semibold ${meta.isIncoming ? 'text-primary' : 'text-on-surface'}">${meta.displayAmount > 0 ? esc(meta.sign) : ''}${esc(amtStr)} BCT</span>
+                    ${Number(meta.fee || tx.fee || 0) > 0 ? `<span class="text-[10px] font-mono text-on-surface-variant/80">Fee: ${esc(typeof window.formatBct === 'function' ? window.formatBct(Number(meta.fee || tx.fee || 0), 4) : Number(meta.fee || tx.fee || 0).toFixed(4))} BCT</span>` : ''}
                     <div class="flex items-center gap-1">
                       <span class="text-[10px] text-on-surface-variant">${tx.status === 'mempool' ? t('wlt_tx_pending', 'Pending') : t('wlt_tx_confirmed', 'Confirmed')}</span>
                       <span class="w-1.5 h-1.5 rounded-full ${tx.status === 'mempool' ? 'bg-secondary animate-pulse' : 'bg-primary'}"></span>
@@ -4441,6 +4442,21 @@
               </div>
             </div>
             <span class="material-symbols-outlined notranslate text-[18px] text-on-surface-variant" translate="no">chevron_right</span>
+          </button>
+
+          <!-- Permanent Wallet Burn / Self-Destruct -->
+          <button type="button" onclick="if(typeof openWalletBurnModal==='function') openWalletBurnModal();"
+            class="w-full p-3 rounded-2xl bg-error/10 hover:bg-error/15 border border-error/30 flex items-center justify-between text-left transition-all active:scale-[0.99] cursor-pointer">
+            <div class="flex items-center gap-3">
+              <div class="w-8 h-8 rounded-xl bg-error/20 text-error flex items-center justify-center shrink-0">
+                <span class="material-symbols-outlined notranslate text-[18px]" translate="no">local_fire_department</span>
+              </div>
+              <div class="flex flex-col">
+                <span class="text-xs font-bold text-error">Cüzdanı Kalıcı Olarak Yak / Kapat</span>
+                <span class="text-[10px] text-on-surface-variant">Geri döndürülemez zincir üstü cüzdan imhası</span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined notranslate text-[18px] text-error" translate="no">chevron_right</span>
           </button>
 
           <!-- Notifications -->

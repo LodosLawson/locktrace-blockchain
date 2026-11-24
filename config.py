@@ -170,7 +170,7 @@ class Config:
     # ── Blockchain Mempool & Limitler ─────────────────
     MIN_TRANSACTION = 0.01          # Minimum transfer miktarı (dust-spam engelleme)
     MIN_TRANSFER_FEE = 0.001        # Minimum transfer işlem ücreti (sıfır-ücret sömürü koruması)
-    MAX_TRANSACTION = 100_000_000  # Maksimum tek seferde transfer (100M BCT)
+    MAX_TRANSACTION = 10_000_000   # Maksimum tek seferde transfer (10M BCT)
     MAX_PENDING_TX = 5000          # Maksimum bekleyen işlem
     AUTO_MINE = True               # Otomatik madencilik
 

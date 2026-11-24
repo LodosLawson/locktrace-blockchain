@@ -61,7 +61,7 @@
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
   <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.13.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-EdwPFr11Tu/eduagHd2kQVutUsIuU/gmMJXh0oLxtKQ=" crossorigin="anonymous" defer></script>
+  <script src="/simple-mode/simple-mode.js?v=2.13.0" integrity="sha256-qjdQKv9csB3pQhbSiyKs0+FcI6TMH0v78Gc8vJeRFXQ=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -12471,12 +12471,19 @@
         icon = 'app_registration';
         iconColor = 'text-primary';
         sign = '-';
+      } else if (txType === 'wallet_burn') {
+        title = 'Wallet Burned (Closed)';
+        icon = 'local_fire_department';
+        iconColor = 'text-error';
+        sign = '-';
       } else {
         title = isIncoming ? 'BCT Received' : 'BCT Sent';
       }
 
-      const totalOut = (isIncoming && (txType === 'transfer' || txType === 'bns_buy' || txType === 'bns_accept_offer'))
-        ? Math.max(0, Number((amountNum - Number(tx.fee || 0)).toFixed(8)))
+      const feeNum = Math.max(0, Number(tx.fee || 0));
+      const isSenderPays = (txType === 'transfer' && tx.extra_data && tx.extra_data.fee_mode === 'sender_pays');
+      const totalOut = (isIncoming && !isSenderPays && (txType === 'transfer' || txType === 'bns_buy' || txType === 'bns_accept_offer'))
+        ? Math.max(0, Number((amountNum - feeNum).toFixed(8)))
         : Math.max(0, amountNum);
 
       return {
@@ -12487,6 +12494,8 @@
         isSpace,
         sign,
         displayAmount: totalOut,
+        fee: feeNum,
+        isSenderPays,
         counterparty,
         prefixLabel
       };
@@ -12610,6 +12619,7 @@
             </div>
             <div class="flex flex-col items-end shrink-0 ml-2">
               <span class="font-body-md text-body-md ${amtClass} font-semibold tabular-nums">${signPrefix}${formatBct(displayAmt, 4)} BCT</span>
+              ${meta.fee > 0 ? `<span class="font-mono text-[10px] text-on-surface-variant/80 tabular-nums">Fee: ${formatBct(meta.fee, 4)} BCT</span>` : ''}
               <div class="flex items-center gap-1">
                 <span class="w-1.5 h-1.5 rounded-full ${tx.status === 'mempool' ? 'bg-secondary animate-pulse' : 'bg-primary'}"></span>
                 <span class="font-label-sm text-label-sm ${tx.status === 'mempool' ? 'text-secondary' : 'text-on-surface-variant'}">${tx.status === 'mempool' ? 'Mempool (PoW)' : 'Confirmed'}</span>
@@ -12688,7 +12698,8 @@
             runningDelta += amt;
           }
         } else if (isOutgoing) {
-          const sentAmt = amt; // In LockTrace, fee is deducted inside transfer amt (net = amt - fee, sender pays amt)
+          const isSenderPaysTx = (ttype === 'transfer' && tx.extra_data && tx.extra_data.fee_mode === 'sender_pays');
+          const sentAmt = isSenderPaysTx ? (amt + fee) : amt;
           outflowTotal += sentAmt;
           outflowCount++;
           runningDelta -= sentAmt;
