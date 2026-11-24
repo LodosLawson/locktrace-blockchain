@@ -60,8 +60,8 @@
     crossorigin="anonymous" defer></script>
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
-  <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.17.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.17.0" integrity="sha256-+mOanVtOL7g4c6BzXkPVSWhOlgjcWYsvVKtAhx+FQ24=" crossorigin="anonymous" defer></script>
+  <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.17.0-r2" />
+  <script src="/simple-mode/simple-mode.js?v=2.17.0-r2" integrity="sha256-iUttpNxgDj1FTL2VdpPDKndtvxcAf8nuxYW9HWYrvaw=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -9332,6 +9332,18 @@
               BCT</span>
             <span class="text-[10px] text-outline truncate">Creator cut</span>
           </div>
+        </div>
+
+        <!-- Dedicated Own-Profile Incoming & Outgoing Transfer Consent Panel (v2.17.0) -->
+        <div id="proProfilePendingTransfersSection" class="hidden flex-col gap-2 pt-1">
+          <div class="flex items-center justify-between gap-2 px-1">
+            <div class="flex items-center gap-1.5">
+              <span class="material-symbols-outlined notranslate text-[17px] text-amber-400" translate="no">mark_email_unread</span>
+              <span class="text-xs font-bold text-on-surface">Gelen &amp; Bekleyen Devir Onayları</span>
+            </div>
+            <span id="proProfilePendingTransfersBadge" class="px-2 py-0.5 rounded-full bg-surface-container-high text-on-surface-variant text-[10px] font-mono font-bold">0</span>
+          </div>
+          <div id="proProfilePendingTransfersBox" class="flex flex-col gap-2"></div>
         </div>
 
         <!-- Collapsible In-Profile Universal Search Bar -->
@@ -22951,6 +22963,22 @@
         }
       }
 
+      // Own-Profile Dedicated Pending Transfer Approvals Panel
+      const proPendSec = document.getElementById('proProfilePendingTransfersSection');
+      const isSelfProfileNow = Boolean(currentAccount && currentAccount.address && data && data.address && currentAccount.address.toLowerCase() === data.address.toLowerCase());
+      if (proPendSec) {
+        if (isSelfProfileNow) {
+          proPendSec.classList.remove('hidden');
+          proPendSec.classList.add('flex');
+          if (typeof loadProfilePendingTransfers === 'function') {
+            loadProfilePendingTransfers(data.address, 'proProfilePendingTransfersBox', 'proProfilePendingTransfersBadge');
+          }
+        } else {
+          proPendSec.classList.add('hidden');
+          proPendSec.classList.remove('flex');
+        }
+      }
+
       // 1. Posts Tab View
       const viewPosts = document.getElementById('profileSubViewPosts');
       if (!posts.length) {
@@ -27155,9 +27183,39 @@
       } catch (_e) {}
     }
 
-    function _renderAccountCenterPendingTransfers(data) {
-      const listEl = document.getElementById('accCenterPendingList');
-      const badgeEl = document.getElementById('accCenterPendingBadge');
+    function inspectPendingAssetTransfer(assetType, assetId, fromAddress) {
+      const isSimple = document.documentElement.classList.contains('bloctag-simple-mode') || document.body.classList.contains('simple-mode-active');
+      if (typeof closeAccountControlCenter === 'function') closeAccountControlCenter();
+      if (assetType === 'room' && assetId) {
+        if (isSimple && window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.go === 'function') {
+          window.BlocTagSimpleMode.go('SCR-ROOMS');
+          setTimeout(() => { if (window.ProtocolRoomsUI && typeof window.ProtocolRoomsUI.openRoom === 'function') window.ProtocolRoomsUI.openRoom(assetId); }, 120);
+        } else {
+          if (typeof closeUserProfile === 'function') closeUserProfile(true);
+          if (window.ProtocolRoomsUI && typeof window.ProtocolRoomsUI.openRoom === 'function') window.ProtocolRoomsUI.openRoom(assetId);
+        }
+        return;
+      }
+      if (assetType === 'post_royalty' && assetId) {
+        if (isSimple && window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.go === 'function') {
+          window.BlocTagSimpleMode.go('SCR-SPC-04', { postId: assetId });
+        } else {
+          if (typeof closeUserProfile === 'function') closeUserProfile(true);
+          if (typeof openSpacePostDetail === 'function') openSpacePostDetail(assetId);
+        }
+        return;
+      }
+      if (fromAddress) {
+        if (isSimple && window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.go === 'function') {
+          window.BlocTagSimpleMode.go('SCR-PRF-05', { profileTarget: fromAddress });
+        } else if (typeof openUserProfile === 'function') {
+          openUserProfile(fromAddress);
+        }
+      }
+    }
+    window.inspectPendingAssetTransfer = inspectPendingAssetTransfer;
+
+    function _renderPendingTransfersInto(listEl, badgeEl, data) {
       if (!listEl) return;
       const incoming = (data && Array.isArray(data.incoming)) ? data.incoming : [];
       const outgoing = (data && Array.isArray(data.outgoing)) ? data.outgoing : [];
@@ -27176,27 +27234,37 @@
       }
 
       const typeLabel = (t) => ({ bns: '.bct İsim', room: 'Protocol Oda', post_royalty: 'Paylaşım Telifi', post_royalty_all: 'Toplu Telif' }[t] || t);
+      const inspectLabel = (t) => ({ bns: 'Göndereni İncele', room: 'Odayı İncele', post_royalty: 'Paylaşımı İncele', post_royalty_all: 'Paylaşımları İncele' }[t] || 'İncele');
       let html = '';
       incoming.forEach(p => {
         const pid = escapeHtml(p.proposal_id || '');
+        const aType = sanitizeJsAttr(p.asset_type || '');
+        const aId = sanitizeJsAttr(p.asset_id || '');
+        const fAddr = sanitizeJsAttr(p.from_address || '');
         const fromLbl = p.from_bns ? ('@' + String(p.from_bns).replace(/^@/, '')) : shortAddr(p.from_address || '');
+        const remDays = Math.max(1, Math.ceil(((Number(p.expires_at || 0) * 1000) - Date.now()) / 86400000));
         html += `
-          <div class="p-3 rounded-2xl bg-amber-500/8 border border-amber-500/30 flex flex-col gap-2">
-            <div class="flex items-center justify-between gap-2">
+          <div class="p-3.5 rounded-2xl bg-amber-500/8 border border-amber-500/30 flex flex-col gap-2">
+            <div class="flex items-center justify-between gap-2 flex-wrap">
               <span class="px-2 py-0.5 rounded-md bg-amber-500/20 text-amber-300 text-[10px] font-mono font-bold">GELEN · ${escapeHtml(typeLabel(p.asset_type))}</span>
-              <span class="text-[10px] font-mono text-on-surface-variant">Gönderen: ${escapeHtml(fromLbl)}</span>
+              <span class="text-[10px] font-mono text-on-surface-variant">Gönderen: <strong class="text-on-surface">${escapeHtml(fromLbl)}</strong> · ${remDays} gün</span>
             </div>
             <div class="text-xs font-bold text-on-surface break-words">${escapeHtml(p.asset_label || p.asset_id || '')}</div>
-            <div class="text-[10px] text-on-surface-variant">Ücret (${formatBct(p.fee_bct || 0, 2)} BCT) gönderenden kesilir. Onaylamazsanız devir gerçekleşmez.</div>
-            <div class="grid grid-cols-2 gap-2 pt-0.5">
+            <div class="text-[10.5px] text-on-surface-variant leading-relaxed">Ücret (${formatBct(p.fee_bct || 0, 2)} BCT) gönderenden kesilir. Kabul etmeden önce içeriği inceleyebilirsiniz.</div>
+            <div class="grid grid-cols-3 gap-1.5 pt-0.5">
+              <button type="button" onclick="inspectPendingAssetTransfer('${aType}', '${aId}', '${fAddr}')"
+                class="py-2 px-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-300 border border-sky-500/30 text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+                <span class="material-symbols-outlined notranslate text-[14px]" translate="no">visibility</span>
+                <span class="truncate">${escapeHtml(inspectLabel(p.asset_type))}</span>
+              </button>
               <button type="button" onclick="accountCenterRespondTransfer('${pid}', 'accept', this)"
-                class="py-2 rounded-xl bg-emerald-500 hover:brightness-110 text-slate-950 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-                <span class="material-symbols-outlined notranslate text-[15px]" translate="no">check_circle</span>
-                <span>Onayla (İmzala)</span>
+                class="py-2 px-1.5 rounded-xl bg-emerald-500 hover:brightness-110 text-slate-950 text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+                <span class="material-symbols-outlined notranslate text-[14px]" translate="no">check_circle</span>
+                <span>Onayla</span>
               </button>
               <button type="button" onclick="accountCenterRespondTransfer('${pid}', 'reject', this)"
-                class="py-2 rounded-xl bg-error/15 hover:bg-error/25 text-error border border-error/30 text-[11px] font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-95">
-                <span class="material-symbols-outlined notranslate text-[15px]" translate="no">cancel</span>
+                class="py-2 px-1.5 rounded-xl bg-error/15 hover:bg-error/25 text-error border border-error/30 text-[10.5px] font-bold flex items-center justify-center gap-1 cursor-pointer active:scale-95">
+                <span class="material-symbols-outlined notranslate text-[14px]" translate="no">cancel</span>
                 <span>Reddet</span>
               </button>
             </div>
@@ -27220,6 +27288,28 @@
       listEl.innerHTML = html;
     }
 
+    function _renderAccountCenterPendingTransfers(data) {
+      _renderPendingTransfersInto(
+        document.getElementById('accCenterPendingList'),
+        document.getElementById('accCenterPendingBadge'),
+        data
+      );
+    }
+
+    async function loadProfilePendingTransfers(address, listId, badgeId) {
+      if (!address) return;
+      const listEl = document.getElementById(listId);
+      const badgeEl = document.getElementById(badgeId);
+      if (!listEl) return;
+      try {
+        const { ok, body } = await apiFetch(`/transfers/pending/${encodeURIComponent(address)}?_nc=${Date.now()}`);
+        _renderPendingTransfersInto(listEl, badgeEl, ok && body ? body.data : null);
+      } catch (_e) {
+        _renderPendingTransfersInto(listEl, badgeEl, null);
+      }
+    }
+    window.loadProfilePendingTransfers = loadProfilePendingTransfers;
+
     async function accountCenterRespondTransfer(proposalId, action, btnEl) {
       if (!currentAccount || !currentAccount.address) return;
       const pid = String(proposalId || '').trim();
@@ -27237,7 +27327,14 @@
         });
         if (ok) {
           showToast((body && body.message) || 'İşlem tamamlandı!', action === 'accept' ? 'verified' : 'info');
-          openAccountControlCenter();
+          const accM = document.getElementById('account-control-center-modal');
+          if (accM && !accM.classList.contains('hidden')) openAccountControlCenter();
+          if (document.getElementById('proProfilePendingTransfersBox')) {
+            loadProfilePendingTransfers(addr, 'proProfilePendingTransfersBox', 'proProfilePendingTransfersBadge');
+          }
+          if (document.getElementById('simpleProfilePendingTransfersBox')) {
+            loadProfilePendingTransfers(addr, 'simpleProfilePendingTransfersBox', 'simpleProfilePendingTransfersBadge');
+          }
           if (typeof loadSpaceFeed === 'function') loadSpaceFeed();
           if (typeof refreshCurrentAccountBalance === 'function') refreshCurrentAccountBalance();
           if (window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.refresh === 'function') window.BlocTagSimpleMode.refresh(true);
