@@ -8098,17 +8098,65 @@
         </label>
       </div>
 
-      <div class="flex items-center gap-2">
+      <div class="flex flex-col gap-2">
         <button
-          class="flex-1 h-[44px] rounded-full bg-surface-container-low hover:bg-error-container/30 text-on-surface-variant hover:text-error font-label-md text-label-md border border-outline-variant/25 transition-colors flex items-center justify-center gap-1.5"
-          onclick="disconnectCurrentWallet()" type="button">
-          <span class="material-symbols-outlined notranslate text-[15px]" translate="no">logout</span>
-          <span>Disconnect Wallet</span>
+          class="w-full h-[42px] rounded-full bg-error/10 hover:bg-error/20 text-error font-label-md text-xs font-bold border border-error/30 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+          onclick="openWalletBurnModal()" type="button">
+          <span class="material-symbols-outlined notranslate text-[16px]" translate="no">local_fire_department</span>
+          <span>Cüzdanı Kalıcı Olarak Yak / Kapat</span>
         </button>
-        <button
-          class="flex-1 h-[44px] rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-label-md font-semibold transition-colors"
-          onclick="closeWalletVaultModal()" type="button">
-          Done
+        <div class="flex items-center gap-2">
+          <button
+            class="flex-1 h-[44px] rounded-full bg-surface-container-low hover:bg-error-container/30 text-on-surface-variant hover:text-error font-label-md text-label-md border border-outline-variant/25 transition-colors flex items-center justify-center gap-1.5"
+            onclick="disconnectCurrentWallet()" type="button">
+            <span class="material-symbols-outlined notranslate text-[15px]" translate="no">logout</span>
+            <span>Disconnect Wallet</span>
+          </button>
+          <button
+            class="flex-1 h-[44px] rounded-full bg-surface-container-high hover:bg-surface-variant text-on-surface font-label-md text-label-md font-semibold transition-colors"
+            onclick="closeWalletVaultModal()" type="button">
+            Done
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================= -->
+  <!-- MODAL 2B: PERMANENT ON-CHAIN WALLET BURN / SELF-DESTRUCT                  -->
+  <!-- ========================================================================= -->
+  <div class="fixed inset-0 z-[95] bg-background/90 backdrop-blur-md hidden items-center justify-center p-4"
+    id="wallet-burn-modal" onclick="if(event.target===this) closeWalletBurnModal();">
+    <div
+      class="w-full max-w-[420px] max-h-[94dvh] overflow-y-auto rounded-2xl bg-surface-container p-6 flex flex-col gap-4 shadow-2xl border border-error/40">
+      <div class="w-12 h-12 rounded-full bg-error/15 text-error flex items-center justify-center mx-auto">
+        <span class="material-symbols-outlined notranslate text-[26px]" translate="no">local_fire_department</span>
+      </div>
+      <div class="text-center">
+        <h3 class="font-headline-sm text-lg font-bold text-error">Cüzdanı Kalıcı Olarak Yak</h3>
+        <p class="font-body-sm text-xs text-on-surface-variant mt-1.5 leading-relaxed">
+          Bu işlem <strong>geri alınamaz</strong>. Cüzdanınız zincir üzerinde kalıcı olarak kapatılır, kalan BCT bakiyesi protokol rezervine absorbe edilir ve bu adresten (veya bu adrese) bir daha asla işlem yapılamaz.
+        </p>
+      </div>
+      <div class="p-3 rounded-xl bg-surface-container-low border border-outline-variant/20 flex flex-col gap-1 text-[11px] font-mono">
+        <div class="text-on-surface-variant">Yakılacak Cüzdan:</div>
+        <div id="walletBurnTargetAddr" class="text-on-surface font-bold break-all">—</div>
+        <div class="text-amber-400 mt-1">İpucu: Korumak istediğiniz BCT, .bct alan adı veya odalarınızı yakmadan önce yeni bir cüzdana aktarın.</div>
+      </div>
+      <div class="flex flex-col gap-1.5">
+        <label class="text-xs font-bold text-on-surface">Onaylamak için aşağıya <span class="text-error font-mono">YAK</span> yazın:</label>
+        <input id="walletBurnConfirmInput" type="text" maxlength="10" autocomplete="off" placeholder="YAK"
+          class="w-full bg-surface-container-low rounded-xl px-4 py-2.5 text-center font-mono text-sm font-bold tracking-widest text-error placeholder:text-outline focus:outline-none border border-error/30 focus:border-error" />
+      </div>
+      <div class="flex items-center gap-2 pt-1">
+        <button type="button" onclick="closeWalletBurnModal()"
+          class="flex-1 h-[42px] rounded-full bg-surface-container-high text-on-surface text-xs font-semibold cursor-pointer">
+          Vazgeç
+        </button>
+        <button id="walletBurnSubmitBtn" type="button" onclick="confirmPermanentWalletBurn()"
+          class="flex-1 h-[42px] rounded-full bg-error hover:brightness-110 text-on-error text-xs font-bold cursor-pointer flex items-center justify-center gap-1.5">
+          <span class="material-symbols-outlined notranslate text-[16px]" translate="no">local_fire_department</span>
+          <span>İmzala ve Yak</span>
         </button>
       </div>
     </div>
@@ -25078,6 +25126,10 @@
           .replace(/'/g, '&#39;');
       }
 
+      function safeId(s) {
+        return String(s == null ? '' : s).replace(/[^a-zA-Z0-9_-]/g, '');
+      }
+
       function shortAddr(addr) {
         const a = String(addr || '');
         return a.length > 14 ? `${a.slice(0, 8)}...${a.slice(-4)}` : a;
@@ -25641,9 +25693,15 @@
         }
       }
 
-      function setReplyTarget(replyId, preview) {
-        state.replyTargetId = replyId || '';
-        state.replyTargetPreview = preview || '';
+      function setReplyTarget(replyId) {
+        const cleanId = safeId(replyId);
+        state.replyTargetId = cleanId;
+        let preview = '';
+        if (cleanId && state.activeTopic && Array.isArray(state.activeTopic.replies)) {
+          const hit = state.activeTopic.replies.find(r => r && r.reply_id === cleanId);
+          if (hit) preview = String(hit.content || '').slice(0, 45);
+        }
+        state.replyTargetPreview = preview;
         render();
         const inp = document.getElementById('roomReplyInput');
         if (inp) inp.focus();
@@ -25984,7 +26042,7 @@
                           <span class="font-semibold text-on-surface">${esc(rep.author_bns ? '@' + rep.author_bns : shortAddr(rep.author))}</span>
                           <div class="flex items-center gap-2">
                             <span>${fmtTime(rep.timestamp)}</span>
-                            <button type="button" onclick="window.ProtocolRoomsUI.setReplyTarget('${esc(rep.reply_id)}', '${esc(String(rep.content || '').slice(0, 45))}')"
+                            <button type="button" onclick="window.ProtocolRoomsUI.setReplyTarget('${safeId(rep.reply_id)}')"
                               class="text-primary hover:underline cursor-pointer">Yanıtla</button>
                           </div>
                         </div>
@@ -26154,6 +26212,68 @@
         _onTransferTo: (v) => { state.transferForm.toAddress = String(v || ''); },
       };
     })();
+
+    // ── Permanent On-Chain Wallet Burn UI Controller ──────────────────────────
+    function openWalletBurnModal() {
+      if (!currentAccount || !currentAccount.address) {
+        showToast('Önce yakmak istediğiniz cüzdanı bağlayın.', 'warning', true);
+        return;
+      }
+      if (typeof closeWalletVaultModal === 'function') closeWalletVaultModal();
+      const addrEl = document.getElementById('walletBurnTargetAddr');
+      if (addrEl) addrEl.textContent = currentAccount.address;
+      const inp = document.getElementById('walletBurnConfirmInput');
+      if (inp) inp.value = '';
+      const modal = document.getElementById('wallet-burn-modal');
+      if (modal) {
+        modal.classList.remove('hidden');
+        modal.classList.add('flex');
+      }
+    }
+
+    function closeWalletBurnModal() {
+      const modal = document.getElementById('wallet-burn-modal');
+      if (modal) {
+        modal.classList.add('hidden');
+        modal.classList.remove('flex');
+      }
+    }
+
+    async function confirmPermanentWalletBurn() {
+      if (!currentAccount || !currentAccount.address) {
+        showToast('Aktif cüzdan bulunamadı.', 'error', true);
+        return;
+      }
+      const inp = document.getElementById('walletBurnConfirmInput');
+      const typed = String(inp ? inp.value : '').trim().toUpperCase();
+      if (typed !== 'YAK' && typed !== 'BURN') {
+        showToast('Onaylamak için YAK yazmalısınız.', 'warning', true);
+        return;
+      }
+      const btn = document.getElementById('walletBurnSubmitBtn');
+      if (btn) btn.disabled = true;
+      try {
+        const addr = currentAccount.address;
+        const canonical = `WALLET_BURN:${addr}:PERMANENT_IRREVERSIBLE_DESTROY`;
+        const authFields = await buildSignedAuthPayload(canonical);
+        const { ok, body } = await apiFetch('/wallet/burn', {
+          method: 'POST',
+          body: JSON.stringify(Object.assign({ address: addr }, authFields)),
+        });
+        if (ok) {
+          closeWalletBurnModal();
+          showToast('Cüzdan zincir üzerinde kalıcı olarak yakıldı ve kapatıldı!', 'local_fire_department');
+          if (typeof disconnectCurrentWallet === 'function') disconnectCurrentWallet();
+        } else {
+          showToast((body && body.message) || 'Cüzdan yakma işlemi başarısız.', 'error', true);
+        }
+      } catch (err) {
+        console.error('Wallet burn error:', err);
+        showToast('Cüzdan yakma imzası sırasında hata oluştu.', 'error', true);
+      } finally {
+        if (btn) btn.disabled = false;
+      }
+    }
 
 </script>
 </body>

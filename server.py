@@ -264,6 +264,9 @@ def resolve_authenticated_action(data: dict, expected_address: str, canonical_pa
     if not is_valid_bct_address(clean_expected) or clean_expected.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
         return False, 400, "Invalid wallet address format.", "", "", ""
 
+    if blockchain.is_wallet_burned(clean_expected):
+        return False, 403, "This wallet has been permanently burned and closed on-chain.", "", "", ""
+
     mnemonic_phrase = str(data.get("mnemonic", "") or "").strip()
     private_key_hex = str(data.get("private_key", "") or "").strip()
     client_sig = str(data.get("signature", "") or "").strip()
@@ -367,7 +370,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-EtwM6JJ7YLm13A81KVQNg3aYjNEmqdV0GJ5kAGpS5/8=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-cKvZ6c47wq1IQwrRT39MBwjWa+B069VQV8j0rTVqMNU=' 'sha256-prsefiH98xUF8lTnScOJH2M+FUkt6DI2VHcJw1DBwf0=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1146,12 +1149,49 @@ def api_balance(address):
 
     bal = blockchain.get_balance(clean_addr)
     nonce = blockchain.get_account_nonce(clean_addr)
+    is_burned = blockchain.is_wallet_burned(clean_addr)
     return api_response(True, data={
         "address": clean_addr,
-        "balance": bal,
+        "balance": 0.0 if is_burned else bal,
         "nonce": nonce,
         "exists": clean_addr in blockchain.wallets or clean_addr == TREASURY_ADDRESS,
+        "is_burned": is_burned,
     })
+
+
+@app.route("/api/v1/wallet/burn", methods=["POST"])
+def api_wallet_burn():
+    """
+    Permanently and irreversibly burns/closes a wallet on-chain.
+    Absorbs remaining liquid BCT balance back to protocol reserve and permanently
+    locks out all future transactions/signatures from or to this address.
+    """
+    if not check_rate_limit("wallet_burn", limit=5, window_seconds=60):
+        return api_response(False, message="Too many wallet burn requests. Please wait.", status=429)
+
+    data = request.get_json(silent=True) or {}
+    address = str(data.get("address") or "").strip()
+    if not address:
+        return api_response(False, message="Field 'address' is required.", status=400)
+
+    canonical = f"WALLET_BURN:{address}:PERMANENT_IRREVERSIBLE_DESTROY"
+    auth_ok, auth_status, auth_err, signature, pub_key, signed_payload = resolve_authenticated_action(
+        data, address, canonical
+    )
+    if not auth_ok:
+        return api_response(False, message=auth_err, status=auth_status)
+
+    success, message, result = blockchain.burn_wallet(
+        address=address,
+        signature=signature,
+        public_key=pub_key,
+        signed_payload=signed_payload,
+    )
+    if not success:
+        return api_response(False, message=message, status=400)
+
+    logger.warning(f"WALLET PERMANENTLY BURNED ON-CHAIN: {address} (absorbed {result.get('absorbed_amount', 0)} BCT)")
+    return api_response(True, message=message, data=result, status=200)
 
 
 # ── Wire Transfer (Cryptographically Verified) ───────────────

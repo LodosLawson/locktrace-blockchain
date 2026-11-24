@@ -518,6 +518,8 @@ class Blockchain:
         self._confirmed_tx_counts_map: Dict[str, int] = {}
         self._confirmed_used_sigs: set = set()
         self._confirmed_rewarded_wallets: set = set()
+        self._confirmed_burned_wallets: set = set()
+        self._burned_wallets_set: set = set()
         self._confirmed_stakes_map: Dict[str, int] = {}
         self._confirmed_blocks_mined_map: Dict[str, int] = {}
         self._confirmed_rewards_earned_map: Dict[str, int] = {}
@@ -767,6 +769,7 @@ class Blockchain:
             self._confirmed_tx_counts_map = {}
             self._confirmed_used_sigs = set()
             self._confirmed_rewarded_wallets = set()
+            self._confirmed_burned_wallets = set()
             self._confirmed_stakes_map = {}
             self._confirmed_blocks_mined_map = {}
             self._confirmed_rewards_earned_map = {}
@@ -793,6 +796,8 @@ class Blockchain:
                         self._confirmed_stakes_map[norm_rec] = max(0, self._confirmed_stakes_map.get(norm_rec, 0) - _to_units(tx.amount))
                     elif tx.tx_type in ("mining_reward", "validator_reward", "attestation_reward", "observer_reward") and norm_rec:
                         self._confirmed_rewards_earned_map[norm_rec] = self._confirmed_rewards_earned_map.get(norm_rec, 0) + _to_units(tx.amount)
+                    elif tx.tx_type == "wallet_burn" and norm_snd:
+                        self._confirmed_burned_wallets.add(norm_snd)
             vault_total = self._confirmed_units_map.get(VALIDATOR_STAKE_VAULT_ADDRESS, 0)
             if vault_total <= 0:
                 self._confirmed_stakes_map.clear()
@@ -810,12 +815,14 @@ class Blockchain:
             self._tx_counts_map = dict(self._confirmed_tx_counts_map)
             self._used_signatures_set = set(self._confirmed_used_sigs)
             self._rewarded_wallets_set = set(self._confirmed_rewarded_wallets)
+            self._burned_wallets_set = set(self._confirmed_burned_wallets)
         else:
             units_map = dict(self._confirmed_units_map)
             sender_nonces = dict(self._confirmed_nonces_map)
             tx_counts = dict(self._confirmed_tx_counts_map)
             used_sigs = set(self._confirmed_used_sigs)
             rewarded = set(self._confirmed_rewarded_wallets)
+            burned = set(self._confirmed_burned_wallets)
             clean_pending = []
             for tx in self.pending_transactions:
                 sig = (tx.signature or "").strip()
@@ -823,6 +830,10 @@ class Blockchain:
                     continue  # Already sealed in confirmed block; skip to prevent duplicate debit
                 clean_pending.append(tx)
                 self._apply_tx_to_ledger_maps(tx, units_map, sender_nonces, tx_counts, used_sigs, rewarded)
+                if tx.tx_type == "wallet_burn":
+                    norm_snd = normalize_bct_address(tx.sender)
+                    if norm_snd:
+                        burned.add(norm_snd)
             if len(clean_pending) != len(self.pending_transactions):
                 self.pending_transactions = clean_pending
             self._unit_balances_map = units_map
@@ -830,6 +841,7 @@ class Blockchain:
             self._tx_counts_map = tx_counts
             self._used_signatures_set = used_sigs
             self._rewarded_wallets_set = rewarded
+            self._burned_wallets_set = burned
 
         self._ledger_index_key = current_key
 
@@ -848,12 +860,23 @@ class Blockchain:
         """Calculate mathematically exact balance from immutable on-chain history."""
         return max(0.0, round(self.verify_and_recalc_units(address) / ATOMIC_UNIT, 8))
 
+    def is_wallet_burned(self, address: str) -> bool:
+        """Returns True if the wallet has been permanently burned/closed on-chain."""
+        clean_addr = normalize_bct_address(address)
+        if not clean_addr:
+            return False
+        self._ensure_ledger_index()
+        return clean_addr in self._burned_wallets_set
+
     def _verify_actor_signature(self, actor_address: str, payload: str,
                                 signature: str, public_key: str = "") -> Tuple[bool, str]:
         """Cryptographically verify ECDSA signature, enforce Anti-DDoS mempool quotas, and bind public key."""
         clean_addr = normalize_bct_address(actor_address)
         if clean_addr.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT", "GENESIS"):
             return False, "System treasury address cannot be a direct transaction sender."
+        self._ensure_ledger_index()
+        if clean_addr in self._burned_wallets_set:
+            return False, "This wallet has been permanently burned and closed on-chain."
         if not signature:
             return False, "Cryptographic signature missing (Unauthorized)."
 
@@ -910,6 +933,9 @@ class Blockchain:
 
             if not is_valid_bct_address(clean_addr) or clean_addr.upper() in (TREASURY_ADDRESS, "GENESIS_VAULT"):
                 return False, "Invalid wallet address format."
+
+            if self.is_wallet_burned(clean_addr):
+                return False, "This wallet has been permanently burned and cannot be re-activated."
 
             if clean_pub:
                 derived = public_key_to_address(clean_pub)
@@ -968,6 +994,90 @@ class Blockchain:
             self._save_state()
             return True, f"Wallet registered successfully! Available balance: {final_bal} BCT"
 
+    def burn_wallet(
+        self,
+        address: str,
+        signature: str = "",
+        public_key: str = "",
+        signed_payload: str = "",
+    ) -> Tuple[bool, str, Optional[dict]]:
+        """
+        Permanently and irreversibly burns/closes a wallet on-chain.
+        - Any remaining liquid BCT balance is absorbed back into TREASURY_ADDRESS (0.0 BCT left).
+        - The address is permanently sealed into `self._burned_wallets_set` via consensus.
+        - No future transaction, transfer, signature, room, BNS, or bridge action can ever be
+          executed from or sent to this address again.
+        """
+        with self.lock:
+            self._load_state()
+            clean_addr = normalize_bct_address(address)
+            if not is_valid_bct_address(clean_addr):
+                return False, f"Invalid wallet address: '{clean_addr}'", None
+
+            protected = {
+                TREASURY_ADDRESS,
+                "GENESIS_VAULT",
+                "GENESIS",
+                VALIDATOR_STAKE_VAULT_ADDRESS,
+                BRIDGE_VAULT_ADDRESS,
+                RELEASE_AUTHORITY_ADDRESS,
+            }
+            if clean_addr in protected or clean_addr.upper() in protected:
+                return False, "System or protocol authority wallets cannot be burned.", None
+
+            if self.is_wallet_burned(clean_addr):
+                return False, "This wallet is already permanently burned and closed.", None
+
+            # Mempool race-condition protection
+            has_pending = any(
+                t.tx_type == "wallet_burn" and normalize_bct_address(t.sender) == clean_addr
+                for t in self.pending_transactions
+            )
+            if has_pending:
+                return False, "A wallet burn transaction is already pending in the mempool for this address.", None
+
+            expected_payload = signed_payload or f"WALLET_BURN:{clean_addr}:PERMANENT_IRREVERSIBLE_DESTROY"
+            sig_ok, sig_msg = self._verify_actor_signature(clean_addr, expected_payload, signature, public_key)
+            if not sig_ok:
+                return False, sig_msg, None
+
+            remaining_bal = self.verify_and_recalc_balance(clean_addr)
+            tx = Transaction(
+                sender=clean_addr,
+                receiver=TREASURY_ADDRESS,
+                amount=remaining_bal,
+                fee=0.0,
+                signature=signature,
+                tx_type="wallet_burn",
+                extra_data={
+                    "burned_address": clean_addr,
+                    "absorbed_amount": remaining_bal,
+                    "reason": "user_permanent_burn",
+                },
+            )
+
+            self.pending_transactions.append(tx)
+            self.total_transactions += 1
+
+            block = self._seal_or_queue_mempool()
+            self._ensure_ledger_index()
+
+            self.balances[clean_addr] = 0.0
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
+            if clean_addr in self.wallets:
+                self.wallets[clean_addr]["burned"] = True
+                self.wallets[clean_addr]["burned_at"] = tx.timestamp
+            self._save_state()
+
+            return True, f"Wallet {clean_addr[:10]}... permanently burned and closed on-chain! Absorbed {remaining_bal:.4f} BCT to protocol reserve.", {
+                "burned_address": clean_addr,
+                "absorbed_amount": remaining_bal,
+                "is_burned": True,
+                "tx_hash": tx.hash(),
+                "block_index": block.index if block else "Mempool",
+                "status": "confirmed" if block else "mempool",
+            }
+
     def _admit_or_evict_mempool(self, tx: Transaction) -> Tuple[bool, str]:
         """
         v2.5.0 Dynamic Mempool Admission & Replace-By-Fee (RBF) Eviction:
@@ -1025,6 +1135,12 @@ class Blockchain:
 
             if not is_valid_bct_address(clean_receiver):
                 return False, f"Invalid recipient address format: '{raw_receiver}'. Must be BCT followed by 40 hex characters.", None
+
+            if self.is_wallet_burned(clean_sender):
+                return False, "This wallet has been permanently burned and closed on-chain.", None
+
+            if self.is_wallet_burned(clean_receiver):
+                return False, "Recipient wallet has been permanently burned and cannot receive funds.", None
 
             if not isinstance(amount, (int, float)) or not math.isfinite(amount) or amount <= 0:
                 return False, "Amount must be a finite positive number", None
@@ -2039,6 +2155,8 @@ class Blockchain:
                 return False, "Invalid sender or recipient address.", None
             if clean_from == clean_to:
                 return False, "Recipient address cannot be identical to sender address.", None
+            if self.is_wallet_burned(clean_to):
+                return False, "Recipient wallet has been permanently burned and cannot receive domains.", None
             if norm not in self.bns_records:
                 return False, f"'{norm}' is not registered.", None
 
@@ -6454,6 +6572,8 @@ class Blockchain:
                 return False, "Cannot transfer a room to your own address.", None
             if clean_to in (TREASURY_ADDRESS, "BCT_BURN", "SYSTEM"):
                 return False, "Cannot transfer a room to a system or treasury address.", None
+            if self.is_wallet_burned(clean_to):
+                return False, "Recipient wallet has been permanently burned and cannot receive rooms.", None
 
             rid = str(room_id or "").strip().upper()
             room = self.rooms.get(rid)
