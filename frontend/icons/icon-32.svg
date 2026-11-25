@@ -1,4 +1,18 @@
-<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" width="32" height="32" viewBox="0 0 32 32">
-  <rect width="32" height="32" fill="#ffffff"/>
-  <image width="32" height="32" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAIAAAD8GO2jAAABC2lDQ1BJQ0MgUHJvZmlsZQAAeJyVkLFOwlAUhr+LJILBOMjAwNCBgUWCDsaBCYaGzRRJKE5tKV2gbW5rfAHZGFjZiItvIK/ghomJg5OPQEh0NtdqysLAmb785885/zkgXgCydRj7sTT0ptYz+9rhJwKhOmA5UcjuEvD9nnjfzti/8gM3coA1UJE9sw+iCBS9hKuK7YQbiu/jMAZxrVjeGC0QA6DqbbG9xU4olX8KNMajO7XrLzcF1+92gBxQJsJAp6nuTyzBI1x9wcEs1ew5LCdQ+ki1ygJOHuB5lWrpT0JLWr9SFsgMh7B5gmMTTl/h6Pb/ETuyqXlldAICPEa4aLTxcaihcUGdcy5/AKbWPz8bOFjoAAAECklEQVR42s1Wa2xUVRA+c/b96FOWbtttu7R2l61lWywUtbZiUkL4oVKJFhUfsVbSmKhVoiT8sCRYpZjUGGkkKDEpSCEGGlH/YCU2VFIgUlAh2G5sscXd1u1uu/e6u3fvOeOPGxM17KPbkjj/7uTcmfPNfDPnA0Qkt9Mouc2mTvEcR+ScEyBAgFIKKSeAVErEkVP4F1ZEBIClQcARKVCPd+rE8Hd/hObXlbuaahsAAAkCgcUiUO5+bGig9UBXXlauJTP78oSnfuWqvvaOTKMZCEmOA+Mb4xwRR2/+Zn564xu9PREpiog/TngKX3x0+4H3EFFmDJNZogQxJnPOO44fqnztGcUTjcUQ8djQQEFrU0CYR0TOeeIEiWgKBADA450qsVgVj1atJoQ4Cor9wpw3MEsIwUU2OSCENrjXIJKAEMK/o5l0+lc2bbFm56bCwFs3mSNSgEn/9OauXY4C26R/JigKAKDcGAjcmW97oq5xyz0PKCfTnGQxGsk1Z3zY0l5VXOYsKKqw2SsK7c78YndJ2cxcsPn93Z0neikAR55mifRa3Q3/9N6TR74aGTbp9AojETEoCnXOyqa19+/qO7ixuram1Mk5p5QuOAEQIjP594Bfq9ac2vlOjimDcU4BLnquP9b91p7mlkhMOnl+sKbUyUlctiRpMgDoNVpKIceUmWU0Kc5G95rV9nJr9h0NFVVj3qnFbVOAiCwBACKPxiTGmczY4NXLv3gnv7lycffnn9a73Iuiqcx5ht7QeNfqbR/sicqSKEUZY+MzvvUV1eN+X73L3bS2HhFVQNNBEJYkh9XW/dzLlyY8ZqPxUNvOwpxldou1c+sL+dk5g9dG3nz4SZPewBNuVlVHR8ctFhQhABAK//nJma85Z19eOheWohfGrv0wPuqbC565OkKANDjdnf2Ha8tWrlierzR/wSVSUzoXFr+//rNZZ9j//Kt6jc6g0RIgAVHYcbjnxux0ybK813t7ht/+KMGsJSoREqKm1KjTUUori8vuLnW4iuwum/0+Z2Xn1lZfMLBvW5sQCf864wUAHmdtJH2TgQChlBq1un96x3xTlEKW0UwBYnIsTRYBQIzJQVGcFUP7Th3Va7QcEQiZ9M/0nj39oKvqpY+7JVm2W6zKVC44gSTLtlzLjoea937xWd/QgIpSChQRtRrN5pq6+bB4bvSn/S3teq2Oca5KY1UwxkJh8WbQT5CULS/QqNVBMSRzLsXk01cuiFK066m27Rse4Yjxosdd14poCAihd/uPzIdFAqT//FkxEnn83vUmvUGjUpXnF22qXldsyUsuLzA1W9X+7PGhb//7aKfwJidRFTJjACQoCB7vVK2jQvlUfqBAKcDSCK948msptWl60ReG4H+qrv8C3zC26tr2luAAAAAASUVORK5CYII="/>
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 32 32" fill="none">
+  <!-- Padlock Shackle -->
+  <path d="M11.65 9.1V6.95C11.65 4.25 13.42 2.2 15.85 2.2C18.28 2.2 20.05 4.25 20.05 6.95V9.55L18.42 9.05V6.95C18.42 5.15 17.32 3.85 15.85 3.85C14.38 3.85 13.28 5.15 13.28 6.95V9.1H11.65Z" fill="#1c6a54"/>
+  <!-- Main B Body with Speech Tail & Transparent D-Cutouts -->
+  <path fill-rule="evenodd" clip-rule="evenodd" d="M9.4 9.75H17.35C20.9 9.75 23.15 11.7 23.15 14.55C23.15 16.35 22.25 17.65 20.9 18.35C22.6 19.15 23.75 20.65 23.75 22.85C23.75 26.0 21.35 28.05 17.55 28.05H15.75L13.15 30.5V28.05H9.4V9.75ZM13.15 13.3V16.95H17.0C18.35 16.95 19.25 16.25 19.25 15.12C19.25 14.0 18.35 13.3 17.0 13.3H13.15ZM13.15 20.45V24.5H17.35C18.85 24.5 19.85 23.7 19.85 22.48C19.85 21.25 18.85 20.45 17.35 20.45H13.15Z" fill="#1c6a54"/>
+  <!-- Internal Circuit Traces -->
+  <path d="M11.3 11.5V26.25" stroke="#ffffff" stroke-width="0.65" stroke-linecap="round"/>
+  <path d="M11.3 11.5H17.2C19.6 11.5 21.2 12.9 21.2 15.05C21.2 17.2 19.55 18.65 17.15 18.65H14.65" stroke="#ffffff" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M17.15 18.65C19.85 18.65 21.75 20.25 21.75 22.55C21.75 24.85 19.95 26.25 17.35 26.25H11.3" stroke="#ffffff" stroke-width="0.65" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M11.3 18.75L13.25 16.8" stroke="#ffffff" stroke-width="0.65" stroke-linecap="round"/>
+  <!-- Circuit Nodes -->
+  <circle cx="11.3" cy="11.5" r="0.88" fill="#ffffff"/>
+  <circle cx="11.3" cy="18.75" r="0.88" fill="#ffffff"/>
+  <circle cx="11.3" cy="26.25" r="0.88" fill="#ffffff"/>
+  <circle cx="14.65" cy="18.65" r="0.88" fill="#ffffff"/>
+  <circle cx="21.15" cy="14.75" r="0.88" fill="#ffffff"/>
+  <circle cx="21.65" cy="22.65" r="0.88" fill="#ffffff"/>
 </svg>

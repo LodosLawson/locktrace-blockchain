@@ -12,7 +12,7 @@
 [![Telegram Channel](https://img.shields.io/badge/Telegram-Channel-229ED9?style=for-the-badge&logo=telegram)](https://t.me/LOCKTRACESPACE)
 [![Telegram Community](https://img.shields.io/badge/Telegram-Community-0088cc?style=for-the-badge&logo=telegram)](https://t.me/+boFrw-gPj0g5ODEy)
 [![Instagram](https://img.shields.io/badge/Instagram-@bloctag-E4405F?style=for-the-badge&logo=instagram)](https://www.instagram.com/bloctag)
-[![Official Email](https://img.shields.io/badge/Email-locktracetoken%2Bspace%40gmail.com-EA4335?style=for-the-badge&logo=gmail)](mailto:locktracetoken+space@gmail.com)
+[![Official Email](https://img.shields.io/badge/Email-contact%40bloctag.space-EA4335?style=for-the-badge&logo=gmail)](mailto:contact@bloctag.space)
 
 **BlocTag** is an independent, high-performance Layer-1 decentralized blockchain ledger **developed by LockTrace** for sovereign asset custody, instantaneous peer-to-peer settlement, censorship-resistant on-chain social networking, and cross-chain liquidity. Engineered with deterministic macro-monetary rules, BIP-39 mnemonic key derivation, SECP256k1 ECDSA cryptography, tri-tier hybrid 50% PoW + 40% BFT Quorum + 10% Observer Stakers consensus, native Name Service (BNS `.bct`), and cryptographically signed on-chain frontend releases.
 
@@ -20,8 +20,8 @@
 
 ## 🌐 Official Channels & Community Links
 
-- **Official Web Portal & Web3 DApp:** [https://locktrace.space](https://locktrace.space)
-- **Official Contact & Inquiries:** [`locktracetoken@gmail.com`](mailto:locktracetoken@gmail.com) / [`locktracetoken+space@gmail.com`](mailto:locktracetoken+space@gmail.com)
+- **Official Web Portal & Web3 DApp:** [https://bloctag.space](https://bloctag.space) / [https://locktrace.space](https://locktrace.space)
+- **Official Contact & Inquiries:** [`contact@bloctag.space`](mailto:contact@bloctag.space) (Backup: [`locktracetoken@gmail.com`](mailto:locktracetoken@gmail.com))
 - **X (Twitter):** [@bloctag](https://x.com/bloctag)
 - **Telegram Announcements:** [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE)
 - **Telegram Community Chat:** [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy)
