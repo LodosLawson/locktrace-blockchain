@@ -365,6 +365,38 @@ class TestCoreConsensusAndCrypto(unittest.TestCase):
         self.assertTrue(admitted)
         self.assertTrue(any(t.tx_type == "wallet_burn" for t in self.bc.pending_transactions))
 
+    def test_node_runner_server_mode_security_guards(self):
+        """node_runner.py Server Mode enforces Slowloris timeout, connection cap, rate limits, 0o600 wallet perms, Content-Length guard, and pinned CSP."""
+        import pathlib
+        import node_runner
+
+        node_tmp = tempfile.mkdtemp(prefix="lt_node_sec_")
+        try:
+            node = node_runner.LockTraceNode(
+                seed_url="http://127.0.0.1:1",
+                host="127.0.0.1",
+                port=0,
+                enable_web=False,
+                data_dir=node_tmp,
+            )
+            wallet_path = os.path.join(node_tmp, "miner_wallet.json")
+            self.assertTrue(os.path.exists(wallet_path))
+            self.assertEqual(
+                node.keys["address"],
+                node_runner.PureSecp256k1.public_key_to_address(node.keys["public_key"]),
+            )
+            src = pathlib.Path(os.path.join(ROOT, "node_runner.py")).read_text(encoding="utf-8")
+            self.assertIn("os.chmod(path, 0o600)", src)
+            self.assertIn("self.request.settimeout(15.0)", src)
+            self.assertIn("threading.BoundedSemaphore(64)", src)
+            self.assertIn("srv.daemon_threads = True", src)
+            self.assertIn("Invalid Content-Length header", src)
+            self.assertIn("Upstream proxy rate limit exceeded", src)
+            self.assertIn('"Content-Security-Policy": node_csp', src)
+            self.assertIn("'sha256-", src)
+        finally:
+            shutil.rmtree(node_tmp, ignore_errors=True)
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -849,14 +849,21 @@ class LockTraceNode:
 
     def _init_miner_keys(self, private_key: str = "") -> dict:
         wallet_file = os.path.join(self.home_dir, "miner_wallet.json")
+        def _lock_wallet_perms(path: str):
+            try:
+                os.chmod(path, 0o600)
+            except Exception:
+                pass
         if private_key:
             kp = PureSecp256k1.generate_keypair(private_key_hex=private_key)
             with open(wallet_file, "w", encoding="utf-8") as f:
                 json.dump(kp, f, indent=2)
+            _lock_wallet_perms(wallet_file)
             return kp
 
         if os.path.exists(wallet_file):
             try:
+                _lock_wallet_perms(wallet_file)
                 with open(wallet_file, "r", encoding="utf-8") as f:
                     saved = json.load(f)
                 if saved.get("private_key"):
@@ -869,6 +876,7 @@ class LockTraceNode:
         kp = PureSecp256k1.generate_keypair()
         with open(wallet_file, "w", encoding="utf-8") as f:
             json.dump(kp, f, indent=2)
+        _lock_wallet_perms(wallet_file)
         print("\n" + "=" * 72)
         print(" [NON-CUSTODIAL KEYGEN] Local SECP256k1 Validator Keypair Created!")
         print(f" Validator Node Key: {kp['address']}")
@@ -1685,7 +1693,62 @@ class LockTraceNode:
     def start_p2p_server(self):
         node_ref = self
 
+        _node_rl_lock = threading.Lock()
+        _node_rl_buckets: dict = {}
+        _node_conn_sem = threading.BoundedSemaphore(64)
+
+        def _node_check_rate_limit(bucket_key: str, limit: int, window_s: int = 60) -> bool:
+            now = time.time()
+            with _node_rl_lock:
+                if len(_node_rl_buckets) > 4096:
+                    cutoff_clean = now - 300
+                    for k in [k for k, v in _node_rl_buckets.items() if not v or v[-1] < cutoff_clean]:
+                        _node_rl_buckets.pop(k, None)
+                    if len(_node_rl_buckets) > 4096:
+                        for k in list(_node_rl_buckets.keys())[:1024]:
+                            _node_rl_buckets.pop(k, None)
+                dq = _node_rl_buckets.get(bucket_key)
+                if dq is None:
+                    dq = []
+                    _node_rl_buckets[bucket_key] = dq
+                cutoff = now - window_s
+                while dq and dq[0] < cutoff:
+                    dq.pop(0)
+                if len(dq) >= limit:
+                    return False
+                dq.append(now)
+                return True
+
         class DecentralizedNodeHandler(BaseHTTPRequestHandler):
+            timeout = 15.0  # Slowloris DoS protection
+
+            def setup(self):
+                super().setup()
+                try:
+                    self.request.settimeout(15.0)
+                except Exception:
+                    pass
+
+            def handle(self):
+                if not _node_conn_sem.acquire(blocking=False):
+                    try:
+                        self.request.sendall(b"HTTP/1.1 503 Service Unavailable\r\nContent-Length: 19\r\nConnection: close\r\n\r\nServer busy (limit)")
+                    except Exception:
+                        pass
+                    return
+                try:
+                    super().handle()
+                except (TimeoutError, socket.timeout, ConnectionResetError, BrokenPipeError):
+                    return
+                finally:
+                    _node_conn_sem.release()
+
+            def _client_ip(self) -> str:
+                try:
+                    return str(self.client_address[0] or "127.0.0.1")[:64]
+                except Exception:
+                    return "127.0.0.1"
+
             def log_message(self, _format, *_args):
                 return  # Keep terminal dashboard clean
 
@@ -1805,11 +1868,21 @@ class LockTraceNode:
                     return
 
                 manifest = check["manifest"]
+                node_csp = (
+                    "default-src 'self' https: data: blob:; "
+                    "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-O+Ww9GfLti/sMaBOCZq77qPDRG1CVOHOLPys1znfltE=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+                    "script-src-attr 'unsafe-inline'; "
+                    "style-src 'self' 'unsafe-inline' https:; "
+                    "img-src 'self' data: https: blob:; "
+                    "font-src 'self' https: data:; "
+                    "object-src 'none'; base-uri 'self';"
+                )
                 self._send_bytes(
                     200,
                     check["index_bytes"],
                     "text/html; charset=utf-8",
                     extra_headers={
+                        "Content-Security-Policy": node_csp,
                         "X-Frontend-SHA256": check["actual_index_sha256"],
                         "X-Frontend-IPFS-CID": manifest.get("ipfs_cid_v1", ""),
                         "X-Frontend-Signature": manifest.get("signature", ""),
@@ -1821,6 +1894,9 @@ class LockTraceNode:
                     self.send_response(403)
                     self.end_headers()
                     self.wfile.write(b"Forbidden: Host header mismatch (DNS Rebinding Guard)")
+                    return
+                if not _node_check_rate_limit(f"get:{self._client_ip()}", limit=120, window_s=60):
+                    self._send_json(429, {"success": False, "message": "Node GET rate limit exceeded (120/min)."})
                     return
                 parsed = urllib.parse.urlparse(self.path)
                 path = parsed.path
@@ -2272,8 +2348,11 @@ class LockTraceNode:
                     self._send_json(200, {"success": True, "data": {"name": clean, "available": is_avail}})
                     return
 
-                # Upstream transparent proxy for any unhandled /api/v1/* GET route
+                # Upstream transparent proxy for any unhandled /api/v1/* GET route (strictly rate-limited against IP-jail amplification)
                 if path.startswith("/api/v1/"):
+                    if not _node_check_rate_limit(f"proxy_get:{self._client_ip()}", limit=30, window_s=60):
+                        self._send_json(429, {"success": False, "message": "Upstream proxy rate limit exceeded (30/min)."})
+                        return
                     full_path = path + (("?" + urllib.parse.urlencode(qs, doseq=True)) if qs else "")
                     upstream = node_ref.request(full_path, method="GET", timeout=4.0)
                     if upstream and not upstream.get("_offline") and upstream.get("success") is not None:
@@ -2341,9 +2420,16 @@ class LockTraceNode:
                     self.end_headers()
                     self.wfile.write(b"Forbidden: Cross-Origin RPC execution rejected (LT-03 CSRF/Origin Guard)")
                     return
+                if not _node_check_rate_limit(f"post:{self._client_ip()}", limit=40, window_s=60):
+                    self._send_json(429, {"success": False, "message": "Node POST rate limit exceeded (40/min)."})
+                    return
                 parsed = urllib.parse.urlparse(self.path)
                 path = parsed.path
-                length = int(self.headers.get("Content-Length", "0"))
+                try:
+                    length = int(self.headers.get("Content-Length", "0"))
+                except (ValueError, TypeError):
+                    self._send_json(400, {"success": False, "message": "Invalid Content-Length header"})
+                    return
                 # LT-05 Fix: Enforce strict 512 KB payload limit (DoS & Memory Exhaustion Guard)
                 if length < 0 or length > 524_288:
                     self._send_json(400, {"success": False, "message": "Payload exceeds strict 512 KB limit"})
@@ -2380,6 +2466,8 @@ class LockTraceNode:
         for candidate_port in [self.port, 0]:
             try:
                 srv = ThreadingHTTPServer((self.host, candidate_port), DecentralizedNodeHandler)
+                srv.daemon_threads = True
+                srv.allow_reuse_address = True
                 self.port = srv.server_address[1]
                 self._p2p_server = srv
                 threading.Thread(target=srv.serve_forever, daemon=True).start()
@@ -2990,8 +3078,8 @@ class LockTraceNode:
             print(f" Validator Wallet : {self.wallet_address}")
         print(f" Wallet Vault     : {os.path.join(self.home_dir, 'miner_wallet.json')}")
         print(f" Wallet Balance   : {self.wallet_balance:.8f} BCT")
-        print(f" PoW Blocks Mined : {self.blocks_mined} (70% Proposer Share: +{self.proposer_rewards:.6f} BCT)")
-        print(f" Blocks Attested  : {self.blocks_attested} (Eligible for 30% Validator Quorum Pool)")
+        print(f" PoW Blocks Mined : {self.blocks_mined} (50% Proposer Share: +{self.proposer_rewards:.6f} BCT)")
+        print(f" Blocks Attested  : {self.blocks_attested} (Eligible for 40% Active Validator Quorum Pool)")
         print(f" Local Hashrate   : {self.last_hashrate_hs:,.0f} H/s (SHA-256 v2 Merkle)")
         print(f" Mining Engine    : {self.miner_engine_info.get('active_engine')}")
         if self.miner_engine_info.get("gpu_available"):

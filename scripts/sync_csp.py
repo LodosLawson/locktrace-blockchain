@@ -19,7 +19,7 @@ import sys
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INDEXES = ["frontend/index.html", "templates/index.html"]
-TARGETS = ["deploy/nginx.conf", "deploy/nginx_ssl.conf", "frontend/netlify.toml", "server.py"]
+TARGETS = ["deploy/nginx.conf", "deploy/nginx_ssl.conf", "frontend/netlify.toml", "server.py", "node_runner.py"]
 EXTERNAL_SCRIPT_HOSTS = "https://cdn.tailwindcss.com"  # Tailwind Play CDN (no SRI possible; build step is the long-term fix)
 
 
