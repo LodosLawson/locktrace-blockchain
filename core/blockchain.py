@@ -652,7 +652,7 @@ class Blockchain:
         }
         net_credit_types = {
             "transfer", "space_post", "space_royalty_transfer", "space_royalty_transfer_all",
-            "bns_register", "bns_buy",
+            "bns_register", "bns_buy", "bns_set_price", "bns_set_primary", "bns_offer", "bns_cancel_offer",
             "validator_stake", "validator_unstake", "avatar_mint", "avatar_equip",
             "room_create", "room_set_avatar", "room_transfer", "room_verify"
         }
@@ -1157,10 +1157,16 @@ class Blockchain:
             self.pending_transactions.append(tx)
             return True, "Transaction admitted to mempool"
 
-        # Find candidate with lowest fee
+        # Find candidate with lowest fee (exempt critical 0-fee protocol/staking/burn/bridge txs from RBF eviction)
+        non_evictable_types = {
+            "wallet_burn", "validator_stake", "validator_unstake", "bridge_unlock",
+            "frontend_release", "reward", "mining_reward", "validator_reward", "observer_reward",
+        }
         min_fee_idx = -1
         min_fee_val = float("inf")
         for idx, pending in enumerate(self.pending_transactions):
+            if getattr(pending, "tx_type", "") in non_evictable_types:
+                continue
             p_fee = float(getattr(pending, "fee", 0.0) or 0.0)
             if p_fee < min_fee_val:
                 min_fee_val = p_fee
@@ -2234,13 +2240,21 @@ class Blockchain:
             if not sig_ok:
                 return False, sig_msg, None
 
-            # Anti-spam: limit active outgoing proposals per sender
-            active_outgoing = [
+            # Anti-spam: limit active outgoing per sender, incoming per recipient, and global pending proposals
+            MAX_INCOMING_PER_RECIPIENT = 50
+            MAX_GLOBAL_PENDING_PROPOSALS = 2000
+            all_active_props = [
                 p for p in self.pending_asset_transfers.values()
-                if p.get("status") == "pending" and p.get("from_address") == clean_from
+                if p.get("status") == "pending"
             ]
+            if len(all_active_props) >= MAX_GLOBAL_PENDING_PROPOSALS:
+                return False, "Network pending transfer proposal queue is temporarily full. Please try again later.", None
+            active_outgoing = [p for p in all_active_props if p.get("from_address") == clean_from]
             if len(active_outgoing) >= MAX_OUTGOING_PER_SENDER:
                 return False, f"You already have {MAX_OUTGOING_PER_SENDER} pending transfer proposals. Cancel or wait for approval first.", None
+            active_incoming = [p for p in all_active_props if p.get("to_address") == clean_to]
+            if len(active_incoming) >= MAX_INCOMING_PER_RECIPIENT:
+                return False, f"Recipient already has {MAX_INCOMING_PER_RECIPIENT} pending incoming transfer proposals.", None
 
             clean_aid = str(asset_id or "").strip()
             asset_label = ""
@@ -3120,6 +3134,12 @@ class Blockchain:
             if not math.isfinite(raw_price) or raw_price < 0 or raw_price > TOTAL_SUPPLY:
                 return False, "Listing price must be a finite non-negative amount.", None
             price = max(0.0, round(raw_price, 4))
+            action_cost = float(getattr(Config, "BNS_SET_PRICE_FEE", 0.05))
+            action_fee = round(action_cost * 0.5, 8)
+            owner_bal = self.verify_and_recalc_balance(clean_owner)
+            if owner_bal < action_cost:
+                return False, f"Insufficient balance for BNS listing update ({action_cost:.2f} BCT required, available: {owner_bal:.4f} BCT).", None
+
             expected_payload = signed_payload or f"BNS_SET_PRICE:{norm}:{clean_owner}:{price}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
             if not sig_ok:
@@ -3135,21 +3155,24 @@ class Blockchain:
             tx = Transaction(
                 sender=clean_owner,
                 receiver=TREASURY_ADDRESS,
-                amount=0.0,
-                fee=0.0,
+                amount=action_cost,
+                fee=action_fee,
                 signature=signature,
                 tx_type="bns_set_price",
                 extra_data=extra_data
             )
             self.pending_transactions.append(tx)
             self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + action_fee, 8)
 
             block = self._seal_or_queue_mempool()
             self._load_in_memory_bns_index()
+            self.balances[clean_owner] = self.verify_and_recalc_balance(clean_owner)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
 
-            msg = f"'{norm}' listed on marketplace for {price} BCT!" if price > 0 else f"'{norm}' unlisted from marketplace."
-            return True, msg, {"name": norm, "owner": clean_owner, "sale_price": price}
+            msg = f"'{norm}' listed on marketplace for {price} BCT! (Fee: {action_cost:.2f} BCT)" if price > 0 else f"'{norm}' unlisted from marketplace. (Fee: {action_cost:.2f} BCT)"
+            return True, msg, {"name": norm, "owner": clean_owner, "sale_price": price, "fee": action_cost}
 
     def bns_buy(self, name: str, buyer: str, signature: str = "",
                 public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
@@ -3241,6 +3264,12 @@ class Blockchain:
             if rec.get("owner") != clean_owner:
                 return False, f"You are not the owner of '{norm}'.", None
 
+            action_cost = float(getattr(Config, "BNS_SET_PRIMARY_FEE", 0.05))
+            action_fee = round(action_cost * 0.5, 8)
+            owner_bal = self.verify_and_recalc_balance(clean_owner)
+            if owner_bal < action_cost:
+                return False, f"Insufficient balance to change primary BNS handle ({action_cost:.2f} BCT required, available: {owner_bal:.4f} BCT).", None
+
             expected_payload = signed_payload or f"BNS_SET_PRIMARY:{norm}:{clean_owner}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
             if not sig_ok:
@@ -3255,21 +3284,24 @@ class Blockchain:
             tx = Transaction(
                 sender=clean_owner,
                 receiver=TREASURY_ADDRESS,
-                amount=0.0,
-                fee=0.0,
+                amount=action_cost,
+                fee=action_fee,
                 signature=signature,
                 tx_type="bns_set_primary",
                 extra_data=extra_data
             )
             self.pending_transactions.append(tx)
             self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + action_fee, 8)
 
             block = self._seal_or_queue_mempool()
             self._load_in_memory_bns_index()
+            self.balances[clean_owner] = self.verify_and_recalc_balance(clean_owner)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
 
-            msg = f"'{norm}' is now your primary BNS handle!"
-            return True, msg, {"name": norm, "owner": clean_owner, "tx_hash": tx.hash()}
+            msg = f"'{norm}' is now your primary BNS handle! (Fee: {action_cost:.2f} BCT)"
+            return True, msg, {"name": norm, "owner": clean_owner, "fee": action_cost, "tx_hash": tx.hash()}
 
     def bns_make_offer(self, name: str, bidder: str, amount_bct: float,
                        signature: str = "", public_key: str = "", signed_payload: str = "") -> Tuple[bool, str, Optional[dict]]:
@@ -3318,9 +3350,11 @@ class Blockchain:
             if not sig_ok:
                 return False, sig_msg, None
 
+            offer_cost = float(getattr(Config, "BNS_OFFER_FEE", 0.05))
+            offer_fee = round(offer_cost * 0.5, 8)
             bal = self.verify_and_recalc_balance(clean_bidder)
-            if bal < amount:
-                return False, f"Insufficient balance! You offered {amount:.2f} BCT but your balance is {bal:.4f} BCT.", None
+            if bal < (amount + offer_cost):
+                return False, f"Insufficient balance! Offer ({amount:.2f} BCT) + fee ({offer_cost:.2f} BCT) exceeds balance ({bal:.4f} BCT).", None
 
             offer_id = f"bno_{secrets.token_hex(6)}"
             extra_data = {
@@ -3334,18 +3368,21 @@ class Blockchain:
 
             tx = Transaction(
                 sender=clean_bidder,
-                receiver=owner,
-                amount=0.0,
-                fee=0.0,
+                receiver=TREASURY_ADDRESS,
+                amount=offer_cost,
+                fee=offer_fee,
                 signature=signature,
                 tx_type="bns_offer",
                 extra_data=extra_data
             )
             self.pending_transactions.append(tx)
             self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + offer_fee, 8)
 
             block = self._seal_or_queue_mempool()
             self._load_in_memory_bns_index()
+            self.balances[clean_bidder] = self.verify_and_recalc_balance(clean_bidder)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
 
             offer_obj = {
@@ -3481,6 +3518,12 @@ class Blockchain:
             if clean_actor not in (bidder, owner):
                 return False, "Only the bidder or domain owner can cancel/reject this offer.", None
 
+            cancel_cost = float(getattr(Config, "BNS_CANCEL_OFFER_FEE", 0.01))
+            cancel_fee = round(cancel_cost * 0.5, 8)
+            actor_bal = self.verify_and_recalc_balance(clean_actor)
+            if actor_bal < cancel_cost:
+                return False, f"Insufficient balance to cancel/reject offer ({cancel_cost:.2f} BCT required, available: {actor_bal:.4f} BCT).", None
+
             expected_payload = signed_payload or f"BNS_CANCEL_OFFER:{norm}:{clean_actor}:{offer_id}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_actor, expected_payload, signature, public_key)
             if not sig_ok:
@@ -3501,17 +3544,20 @@ class Blockchain:
             tx = Transaction(
                 sender=clean_actor,
                 receiver=TREASURY_ADDRESS,
-                amount=0.0,
-                fee=0.0,
+                amount=cancel_cost,
+                fee=cancel_fee,
                 signature=signature,
                 tx_type="bns_cancel_offer",
                 extra_data=extra_data
             )
             self.pending_transactions.append(tx)
             self.total_transactions += 1
+            self.total_fees_collected = round(self.total_fees_collected + cancel_fee, 8)
 
             self._seal_or_queue_mempool()
             self._load_in_memory_bns_index()
+            self.balances[clean_actor] = self.verify_and_recalc_balance(clean_actor)
+            self.balances[TREASURY_ADDRESS] = self.verify_and_recalc_balance(TREASURY_ADDRESS)
             self._save_state()
 
             label = "cancelled" if clean_actor == bidder else "rejected"
@@ -4887,7 +4933,8 @@ class Blockchain:
             _to_units(tx.fee) for tx in pending_txs if tx.tx_type in (
                 "space_post", "space_like", "space_comment", "space_follow",
                 "space_royalty_transfer", "space_royalty_transfer_all",
-                "bns_register", "bns_transfer", "avatar_mint", "avatar_equip",
+                "bns_register", "bns_transfer", "bns_set_price", "bns_set_primary", "bns_offer", "bns_cancel_offer",
+                "avatar_mint", "avatar_equip",
                 "room_create", "room_set_avatar", "room_transfer", "room_topic", "room_reply", "room_upvote"
             )
         )
@@ -5571,7 +5618,7 @@ class Blockchain:
     ) -> Tuple[bool, str, Optional[dict]]:
         """
         Verifies and records a peer validator's cryptographic ECDSA attestation over a synced block.
-        Qualifies the validator node for the 30% Active Validator Quorum Reward Pool!
+        Qualifies the validator node for the 40% Active Validator Quorum Reward Pool!
         """
         with self.lock:
             self._load_state()
@@ -5584,6 +5631,8 @@ class Blockchain:
                 return False, "Invalid node ID or wallet address.", None
             if clean_miner in self.slashed_validators:
                 return False, "Validator has been slashed and cannot attest blocks.", None
+            if self.is_wallet_burned(clean_miner):
+                return False, "Permanently burned wallet cannot attest blocks.", None
             if not clean_pub or not signature:
                 return False, "Validator signature missing.", None
             if public_key_to_address(clean_pub) != clean_miner:

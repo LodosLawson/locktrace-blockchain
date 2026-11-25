@@ -303,6 +303,68 @@ class TestCoreConsensusAndCrypto(unittest.TestCase):
         self.assertFalse(ok_off)
         self.assertIn("burned", msg_off.lower())
 
+    def test_bns_anti_spam_fees_and_rbf_protects_critical_txs(self):
+        """bns_set_primary/set_price/offer/cancel charge SSOT anti-spam fees & RBF eviction never drops wallet_burn/unstake."""
+        from config import Config
+        from core.blockchain import MAX_GLOBAL_MEMPOOL_SIZE
+
+        owner = Wallet()
+        bidder = Wallet()
+        broke = Wallet()
+        for w, amt in ((owner, 50.0), (bidder, 50.0)):
+            self.bc.register_wallet(w.address, w.get_public_key_hex(), grant_welcome_bonus=False)
+            self.bc.pending_transactions.append(
+                Transaction(sender=TREASURY_ADDRESS, receiver=w.address, amount=amt, fee=0.0, tx_type="reward")
+            )
+        self.bc.register_wallet(broke.address, broke.get_public_key_hex(), grant_welcome_bonus=False)
+        self.bc.mine_pending_block(TREASURY_ADDRESS)
+
+        # Register betaname.bct (5+ chars = 10 BCT, leaving 40 BCT balance)
+        reg_p = f"BNS_REGISTER:betaname.bct:{owner.address}:10.0"
+        ok, msg, _ = self.bc.bns_register("betaname.bct", owner.address, owner.sign(reg_p), owner.get_public_key_hex(), signed_payload=reg_p)
+        self.assertTrue(ok, msg)
+        self.bc.mine_pending_block(TREASURY_ADDRESS)
+
+        # 1. bns_set_primary charges Config.BNS_SET_PRIMARY_FEE (0.05 BCT)
+        bal_before = self.bc.verify_and_recalc_balance(owner.address)
+        prim_p = f"BNS_SET_PRIMARY:betaname.bct:{owner.address}"
+        ok_p, msg_p, _ = self.bc.bns_set_primary("betaname.bct", owner.address, owner.sign(prim_p), owner.get_public_key_hex(), signed_payload=prim_p)
+        self.assertTrue(ok_p, msg_p)
+        bal_after = self.bc.verify_and_recalc_balance(owner.address)
+        self.assertAlmostEqual(bal_before - bal_after, Config.BNS_SET_PRIMARY_FEE, places=6)
+
+        # 2. bns_make_offer charges Config.BNS_OFFER_FEE (0.05 BCT) and rejects 0-balance spam wallet
+        broke_off_p = f"BNS_OFFER:betaname.bct:{broke.address}:1.0"
+        ok_bo, _, _ = self.bc.bns_make_offer("betaname.bct", broke.address, 1.0, broke.sign(broke_off_p), broke.get_public_key_hex(), signed_payload=broke_off_p)
+        self.assertFalse(ok_bo)
+
+        bid_before = self.bc.verify_and_recalc_balance(bidder.address)
+        off_p = f"BNS_OFFER:betaname.bct:{bidder.address}:5.0"
+        ok_o, msg_o, off_res = self.bc.bns_make_offer("betaname.bct", bidder.address, 5.0, bidder.sign(off_p), bidder.get_public_key_hex(), signed_payload=off_p)
+        self.assertTrue(ok_o, msg_o)
+        bid_after_offer = self.bc.verify_and_recalc_balance(bidder.address)
+        self.assertAlmostEqual(bid_before - bid_after_offer, Config.BNS_OFFER_FEE, places=6)
+
+        # 3. bns_cancel_offer charges Config.BNS_CANCEL_OFFER_FEE (0.01 BCT)
+        oid = off_res["offer_id"]
+        can_p = f"BNS_CANCEL_OFFER:betaname.bct:{bidder.address}:{oid}"
+        ok_c, msg_c, _ = self.bc.bns_cancel_offer("betaname.bct", bidder.address, oid, bidder.sign(can_p), bidder.get_public_key_hex(), signed_payload=can_p)
+        self.assertTrue(ok_c, msg_c)
+        bid_after_cancel = self.bc.verify_and_recalc_balance(bidder.address)
+        self.assertAlmostEqual(bid_after_offer - bid_after_cancel, Config.BNS_CANCEL_OFFER_FEE, places=6)
+
+        # 4. RBF mempool eviction must NEVER evict 0-fee wallet_burn even when mempool is full
+        self.bc.pending_transactions = [
+            Transaction(sender=owner.address, receiver=TREASURY_ADDRESS, amount=1.0, fee=0.0, tx_type="wallet_burn")
+        ] + [
+            Transaction(sender=bidder.address, receiver=owner.address, amount=0.1, fee=0.001, tx_type="transfer")
+            for _ in range(MAX_GLOBAL_MEMPOOL_SIZE - 1)
+        ]
+        high_fee_tx = Transaction(sender=bidder.address, receiver=owner.address, amount=1.0, fee=0.5, tx_type="transfer")
+        admitted, _ = self.bc._admit_or_evict_mempool(high_fee_tx)
+        self.assertTrue(admitted)
+        self.assertTrue(any(t.tx_type == "wallet_burn" for t in self.bc.pending_transactions))
+
 
 if __name__ == "__main__":
     unittest.main()

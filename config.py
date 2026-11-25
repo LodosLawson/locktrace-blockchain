@@ -96,6 +96,10 @@ class Config:
         4: 50.0,    # 4 karakter (örn: lock.bct)
         5: 10.0     # 5+ karakter (örn: trace.bct)
     }
+    BNS_SET_PRIMARY_FEE = 0.05  # Birincil .bct isim değişikliği anti-spam ücreti (%50 Hazine, %50 Miner/Validator)
+    BNS_SET_PRICE_FEE = 0.05    # Pazar yeri satış fiyatı güncelleme / listeleme ücreti (%50 Hazine, %50 Miner/Validator)
+    BNS_OFFER_FEE = 0.05        # .bct teklif verme anti-spam ücreti (%50 Hazine, %50 Miner/Validator)
+    BNS_CANCEL_OFFER_FEE = 0.01 # .bct teklif iptal/red anti-spam ücreti (%50 Hazine, %50 Miner/Validator)
 
     # ── Konsensüs & Blok Ödülü Dağılımı (3 Kademeli Model) ──
     REWARD_MINER_PERCENT = 50       # %50 PoW bloğunu bulan madenciye (Proposer)
@@ -125,6 +129,10 @@ class Config:
         "transfer": 3,          # Para Transferi: 3 saniye
         "space_post": 10,       # Post Paylaşımı: 10 saniye
         "bns_register": 10,     # İsim Alma: 10 saniye
+        "bns_set_primary": 5,   # Birincil İsim Değişikliği: 5 saniye
+        "bns_set_price": 5,     # Satış Fiyatı Güncelleme: 5 saniye
+        "bns_offer": 5,         # BNS Teklif Verme: 5 saniye
+        "bns_cancel_offer": 3,  # BNS Teklif İptal: 3 saniye
         "space_follow": 3,      # Takip Etme: 3 saniye
         "space_royalty_transfer": 10,     # Tek Paylaşım Telif Devri: 10 saniye
         "space_royalty_transfer_all": 30, # Toplu Paylaşım Telif Devri: 30 saniye
