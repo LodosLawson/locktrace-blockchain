@@ -52,9 +52,9 @@ except Exception:  # standalone execution fallback
         return any(k in low for k in ("pending", "mempool", "not yet", "confirmation", "reorg security",
                                       "network_error", "timeout", "rpc", "connect", "insufficient locked balance"))
 
-# Limit-free 1:1 asset-backed bridge ceilings (1 Billion BCT per tx / day, matching MAX_BRIDGE_AMOUNT)
-MAX_MINT_PER_TX_BCT = Decimal(os.environ.get("MAX_MINT_PER_TX_BCT", "1000000000"))
-DAILY_MINT_LIMIT_BCT = Decimal(os.environ.get("DAILY_MINT_LIMIT_BCT", "1000000000"))
+# Conservative default circuit-breaker ceilings (override via .env MAX_MINT_PER_TX_BCT / DAILY_MINT_LIMIT_BCT)
+MAX_MINT_PER_TX_BCT = Decimal(os.environ.get("MAX_MINT_PER_TX_BCT", "100000"))
+DAILY_MINT_LIMIT_BCT = Decimal(os.environ.get("DAILY_MINT_LIMIT_BCT", "500000"))
 
 WBCT_ABI = [
     {

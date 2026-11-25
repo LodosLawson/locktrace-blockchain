@@ -513,6 +513,7 @@ class Blockchain:
         self._sender_nonce_map: Dict[str, int] = {}
         self._tx_counts_map: Dict[str, int] = {}
         self._used_signatures_set: set = set()
+        self._mempool_used_sigs: set = set()
         self._rewarded_wallets_set: set = set()
         self._chain_valid_cache: Tuple[int, str, bool] = (-1, "", False)
         self._last_json_backup_ts: float = 0.0
@@ -838,28 +839,29 @@ class Blockchain:
             self._confirmed_indexed_len = len(self.chain)
             self._confirmed_indexed_tip = tip_hash
 
-        # 2. Apply live mempool overlay on top of confirmed snapshot
+        # 2. Apply live mempool overlay on top of confirmed snapshot (O(|Mempool|) — zero copy of historical sigs)
         if not self.pending_transactions:
             self._unit_balances_map = dict(self._confirmed_units_map)
             self._sender_nonce_map = dict(self._confirmed_nonces_map)
             self._tx_counts_map = dict(self._confirmed_tx_counts_map)
-            self._used_signatures_set = set(self._confirmed_used_sigs)
+            self._used_signatures_set = self._confirmed_used_sigs
+            self._mempool_used_sigs = set()
             self._rewarded_wallets_set = set(self._confirmed_rewarded_wallets)
             self._burned_wallets_set = set(self._confirmed_burned_wallets)
         else:
             units_map = dict(self._confirmed_units_map)
             sender_nonces = dict(self._confirmed_nonces_map)
             tx_counts = dict(self._confirmed_tx_counts_map)
-            used_sigs = set(self._confirmed_used_sigs)
+            mempool_sigs = set()
             rewarded = set(self._confirmed_rewarded_wallets)
             burned = set(self._confirmed_burned_wallets)
             clean_pending = []
             for tx in self.pending_transactions:
                 sig = (tx.signature or "").strip()
-                if sig and sig in self._confirmed_used_sigs:
-                    continue  # Already sealed in confirmed block; skip to prevent duplicate debit
+                if sig and (sig in self._confirmed_used_sigs or sig in mempool_sigs):
+                    continue  # Already sealed in confirmed block or duplicate in mempool; skip
                 clean_pending.append(tx)
-                self._apply_tx_to_ledger_maps(tx, units_map, sender_nonces, tx_counts, used_sigs, rewarded, burned)
+                self._apply_tx_to_ledger_maps(tx, units_map, sender_nonces, tx_counts, mempool_sigs, rewarded, burned)
                 if tx.tx_type == "wallet_burn":
                     norm_snd = normalize_bct_address(tx.sender)
                     if norm_snd:
@@ -869,11 +871,17 @@ class Blockchain:
             self._unit_balances_map = units_map
             self._sender_nonce_map = sender_nonces
             self._tx_counts_map = tx_counts
-            self._used_signatures_set = used_sigs
+            self._used_signatures_set = self._confirmed_used_sigs
+            self._mempool_used_sigs = mempool_sigs
             self._rewarded_wallets_set = rewarded
             self._burned_wallets_set = burned
 
         self._ledger_index_key = current_key
+
+    def _is_signature_used(self, sig: str) -> bool:
+        """O(1) two-tier signature replay check across confirmed chain and live mempool without copying history."""
+        clean_sig = (sig or "").strip()
+        return bool(clean_sig and (clean_sig in self._confirmed_used_sigs or clean_sig in self._mempool_used_sigs))
 
     def verify_and_recalc_units(self, address: str) -> int:
         """Calculate exact balance in 10^8 integer atomic units (immune to IEEE-754 float64 drift)."""
@@ -921,10 +929,10 @@ class Blockchain:
         if not verify_signature(pub_hex, payload, signature):
             return False, "Invalid ECDSA digital signature!"
 
-        # Full-history on-chain & mempool signature replay protection (O(1) lookup across all blocks #0..tip)
+        # Full-history on-chain & mempool signature replay protection (O(1) two-tier lookup across all blocks #0..tip)
         clean_sig = signature.strip()
         self._ensure_ledger_index()
-        if clean_sig in self._used_signatures_set:
+        if self._is_signature_used(clean_sig):
             return False, "Replay transaction signature rejected (already used on-chain or in mempool)!"
 
         # Atomic under-lock nonce verification (closes TOCTOU window between HTTP auth & ledger admission)
@@ -1113,6 +1121,18 @@ class Blockchain:
             if clean_addr in self.wallets:
                 self.wallets[clean_addr]["burned"] = True
                 self.wallets[clean_addr]["burned_at"] = tx.timestamp
+            # Immediately cancel any open 2-step asset transfer proposals involving the burned wallet
+            if isinstance(getattr(self, "pending_asset_transfers", None), dict):
+                for _pid, _prop in self.pending_asset_transfers.items():
+                    if not isinstance(_prop, dict) or _prop.get("status") != "pending":
+                        continue
+                    if (
+                        normalize_bct_address(_prop.get("from_address", "")) == clean_addr
+                        or normalize_bct_address(_prop.get("to_address", "")) == clean_addr
+                    ):
+                        _prop["status"] = "cancelled"
+                        _prop["resolved_at"] = tx.timestamp
+                        _prop["cancel_reason"] = "wallet_burned"
             self._save_state()
 
             return True, f"Wallet {clean_addr[:10]}... permanently burned and closed on-chain! Absorbed {remaining_bal:.4f} BCT to protocol reserve.", {
@@ -3148,6 +3168,8 @@ class Blockchain:
                 return False, f"'{norm}' is not currently listed for sale.", None
             if clean_buyer == seller:
                 return False, "You already own this name.", None
+            if self.is_wallet_burned(seller):
+                return False, f"Cannot purchase '{norm}': seller wallet has been permanently burned.", None
 
             buyer_bal = self.verify_and_recalc_balance(clean_buyer)
             if buyer_bal < sale_price:
@@ -3270,6 +3292,8 @@ class Blockchain:
             owner = rec.get("owner", "")
             if clean_bidder == owner:
                 return False, "You cannot make an offer on your own domain.", None
+            if self.is_wallet_burned(owner):
+                return False, f"Cannot make an offer on '{norm}': owner wallet has been permanently burned.", None
 
             try:
                 raw_amt = float(amount_bct)
@@ -3366,6 +3390,8 @@ class Blockchain:
             amount = float(target_offer.get("amount", 0.0))
             if bidder == clean_owner:
                 return False, "Cannot accept an offer from your own address.", None
+            if self.is_wallet_burned(bidder):
+                return False, "Cannot accept offer: bidder wallet has been permanently burned.", None
 
             expected_payload = signed_payload or f"BNS_ACCEPT_OFFER:{norm}:{clean_owner}:{offer_id}:{bidder}:{amount}"
             sig_ok, sig_msg = self._verify_actor_signature(clean_owner, expected_payload, signature, public_key)
@@ -3377,8 +3403,8 @@ class Blockchain:
             if bidder_bal < amount:
                 return False, f"Bidder no longer has sufficient funds ({bidder_bal:.4f} BCT available). Offer cannot be accepted.", None
 
-            # Standard 1% network trade fee
-            fee = round(amount * 0.01, 8)
+            # Standard 1% network trade fee (minimum 0.001 BCT floor matching bns_buy)
+            fee = max(0.001, round(amount * 0.01, 8))
             net_amount = round(amount - fee, 8)
 
             extra_data = {
@@ -5315,10 +5341,19 @@ class Blockchain:
                     None,
                 )
 
-            submitted_idx = int(block_data.get("index", -1))
+            raw_idx = block_data.get("index", -1)
+            raw_nonce = block_data.get("nonce", -1)
+            raw_ver = block_data.get("version", 2)
+            if isinstance(raw_idx, bool) or isinstance(raw_nonce, bool) or isinstance(raw_ver, bool):
+                return False, "Invalid block header integer field type.", None
+            try:
+                submitted_idx = int(raw_idx)
+                submitted_nonce = int(raw_nonce)
+                submitted_ver = int(raw_ver)
+            except (ValueError, TypeError):
+                return False, "Invalid block header numeric fields (index/nonce/version).", None
             submitted_hash = str(block_data.get("hash", "") or "").strip().lower()
             submitted_prev = str(block_data.get("previous_hash", "") or "").strip().lower()
-            submitted_nonce = int(block_data.get("nonce", -1))
             try:
                 raw_ts = float(block_data.get("timestamp", 0.0))
             except (ValueError, TypeError):
@@ -5326,7 +5361,6 @@ class Blockchain:
             if not math.isfinite(raw_ts) or raw_ts <= 0:
                 return False, "Block timestamp must be a finite positive number.", None
             submitted_ts = round(raw_ts, 3)
-            submitted_ver = int(block_data.get("version", 2))
 
             if submitted_ver < 2 or submitted_nonce < 0:
                 return False, "Only v2 Merkle PoW block format is accepted.", None
@@ -5386,13 +5420,21 @@ class Blockchain:
                 if not isinstance(t_dict, dict):
                     return False, "Malformed transaction format.", None
                 t_type = str(t_dict.get("tx_type", "transfer"))
+                try:
+                    t_amount = float(t_dict.get("amount", 0.0))
+                    t_fee = float(t_dict.get("fee", 0.0))
+                    t_ts = float(t_dict.get("timestamp", 0.0))
+                except (ValueError, TypeError):
+                    return False, "Malformed transaction numeric field (amount/fee/timestamp).", None
+                if not (math.isfinite(t_amount) and math.isfinite(t_fee) and math.isfinite(t_ts)) or t_amount < 0 or t_fee < 0:
+                    return False, "Invalid transaction numeric bounds (must be finite non-negative).", None
                 tx_obj = Transaction(
                     sender=str(t_dict.get("sender", "")),
                     receiver=str(t_dict.get("receiver", "")),
-                    amount=float(t_dict.get("amount", 0.0)),
-                    fee=float(t_dict.get("fee", 0.0)),
+                    amount=t_amount,
+                    fee=t_fee,
                     signature=str(t_dict.get("signature", "")),
-                    timestamp=float(t_dict.get("timestamp", 0.0)),
+                    timestamp=t_ts,
                     tx_type=t_type,
                     extra_data=t_dict.get("extra_data"),
                 )
@@ -5434,10 +5476,13 @@ class Blockchain:
                 elif m_tx.amount > 0:
                     snd = normalize_bct_address(m_tx.sender)
                     amt_u = _to_units(m_tx.amount)
+                    extra = m_tx.extra_data if isinstance(m_tx.extra_data, dict) else {}
+                    is_sender_pays = (m_tx.tx_type == "transfer" and extra.get("fee_mode") == "sender_pays")
+                    debit_u = amt_u + (_to_units(m_tx.fee) if is_sender_pays else 0)
                     if snd and snd not in ("GENESIS_VAULT", "GENESIS", TREASURY_ADDRESS, BRIDGE_VAULT_ADDRESS, VALIDATOR_STAKE_VAULT_ADDRESS):
-                        if units_check.get(snd, 0) < amt_u:
+                        if units_check.get(snd, 0) < debit_u:
                             return False, f"Block contains insolvent transaction from {snd}!", None
-                        units_check[snd] -= amt_u
+                        units_check[snd] -= debit_u
 
             expected_reward_txs, breakdown = self._build_reward_transactions(
                 matched_user_txs, clean_miner, expected_idx, fixed_timestamp=submitted_ts
@@ -6136,6 +6181,45 @@ class Blockchain:
                     return False
             self._chain_valid_cache = (len(self.chain), tip_hash, True)
             return True
+
+    def verify_full_chain_integrity(self) -> Tuple[bool, str, dict]:
+        """
+        Deep consensus integrity audit beyond header-only `is_chain_valid()`.
+        Verifies structural PoW/Merkle validity, non-negative finite transaction values,
+        and strict conservation of total supply (no hidden minting or negative balances).
+        """
+        with self.lock:
+            if not self.is_chain_valid():
+                return False, "Structural PoW / Merkle chain validation failed.", {}
+
+            total_txs = 0
+            for blk in self.chain:
+                for tx in blk.transactions:
+                    total_txs += 1
+                    try:
+                        amt = float(tx.amount)
+                        fee = float(tx.fee)
+                    except (ValueError, TypeError):
+                        return False, f"Block #{blk.index} contains non-numeric amount/fee.", {"block_index": blk.index}
+                    if not (math.isfinite(amt) and math.isfinite(fee)) or amt < 0 or fee < 0:
+                        return False, f"Block #{blk.index} contains negative or non-finite amount/fee.", {"block_index": blk.index}
+
+            self._ensure_ledger_index()
+            neg_accounts = [
+                addr for addr, u in self._confirmed_units_map.items()
+                if u < 0 and addr not in ("GENESIS_VAULT", "GENESIS")
+            ]
+            if neg_accounts:
+                return False, f"Ledger solvency violation: {len(neg_accounts)} account(s) have negative balance.", {
+                    "negative_accounts": neg_accounts[:10]
+                }
+
+            return True, "Full chain structural and solvency integrity verified.", {
+                "blocks": len(self.chain),
+                "transactions": total_txs,
+                "accounts": len(self._confirmed_units_map),
+                "unique_signatures": len(self._confirmed_used_sigs),
+            }
 
     def get_latest_frontend_release(self) -> Optional[dict]:
         """Return the latest on-chain cryptographically verified frontend release anchor."""
