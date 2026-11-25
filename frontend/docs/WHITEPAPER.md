@@ -1,7 +1,7 @@
-# BlocTag (BCT) Technical Whitepaper — v2.19.0
+# BlocTag (BCT) Technical Whitepaper — v2.20.0
 **A High-Throughput Hybrid Proof-of-Work, 3-Phase Atomic CAS Sequencer & Quorum-Attested Layer-1 Blockchain for Censorship-Resistant SocialFi, Decentralized Naming (.bct), and Self-Sovereign Cross-Chain DeFi**
 
-*Version 2.19.0 — November 2026*  
+*Version 2.20.0 — November 2026*  
 *Developed by LockTrace — Core Architecture Team & Decentralized Validator Community*  
 *Official Mainnet Explorer:* [https://www.locktrace.space](https://www.locktrace.space)  
 *Official Socials:* X: [@bloctag](https://x.com/bloctag) | Telegram Channel: [@LOCKTRACESPACE](https://t.me/LOCKTRACESPACE) | Community: [t.me/+boFrw-gPj0g5ODEy](https://t.me/+boFrw-gPj0g5ODEy) | Instagram: [@bloctag](https://www.instagram.com/bloctag)  
@@ -482,7 +482,8 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.16.0 (Completed):** Staking & Locked Collateral Security Hardening — exact 10% Observer pool reservation (`reserved_obs_u`), burned-wallet stake/reward exclusion, 1-hour anti-flash-staking lockup + wallet cooldowns, cumulative `100,000 BCT` stake cap, partial unstake `< 100 BCT` dust guard, and slashed collateral accounting clarity.
 - **v2.17.0 (Completed):** 2-Step Recipient-Consent Asset Transfers (`propose → accept / reject / cancel`) for `.bct` handles, Protocol Rooms, and Single/Bulk Space Post Royalties — zero fee charged until recipient ECDSA acceptance, preventing unsolicited asset dumping, with unified Control Center & Profile Approvals UI in Pro & Simple Mode.
 - **v2.18.0 (Completed):** Full Space Post Ownership Transfer (transferring both post ownership and royalties while preserving immutable `original_author` provenance) and On-Chain Post Journey Timeline (`Detaylar` modal) across Pro & Simple Mode.
-- **v2.19.0 (Current Production Release):** Deep Security & Performance Hardening — ECDSA-authenticated Web Push testing (`PUSH_TEST`), global `/api/v1/` GET rate limiting + heavy-route guards + `safe_int` crash prevention, revision-keyed `/api/v1/stats` TTL caching, Zero-FOUC Boot Shield & Material Symbols FOUT elimination, Staking Vault Total/Slashed accounting parity, and Protocol Rooms On-Chain History & Provenance Journey (`#room-journey-modal`) across Pro & Simple Mode.
+- **v2.19.0 (Completed):** Deep Security & Performance Hardening — ECDSA-authenticated Web Push testing (`PUSH_TEST`), global `/api/v1/` GET rate limiting + heavy-route guards + `safe_int` crash prevention, revision-keyed `/api/v1/stats` TTL caching, Zero-FOUC Boot Shield & Material Symbols FOUT elimination, Staking Vault Total/Slashed accounting parity, Protocol Rooms On-Chain History & Provenance Journey (`#room-journey-modal`), and strict Guest Shared Link isolation.
+- **v2.20.0 (Current Production Release):** 5-Pass Core Security Audit & Zero-Free-Spam Protocol Hardening — SSOT anti-spam fees on `bns_set_primary` (`0.05 BCT`), `bns_set_price` (`0.05 BCT`), `bns_offer` (`0.05 BCT`), and `bns_cancel_offer` (`0.01 BCT`), `submit_mined_block` `sender_pays` solvency & type hardening, zero-copy O(1) two-tier signature replay guard (`_is_signature_used`), `verify_full_chain_integrity()`, RBF mempool protection for critical 0-fee protocol transactions, recipient/global 2-step transfer Sybil caps (`50 / 2,000`), burned-wallet completeness across BNS marketplace & `attest_block`, Bridge Relayer `100k/500k` circuit-breakers, Nginx canonical Port 80 redirect, and 23/23 automated security tests.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---

@@ -783,3 +783,16 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
 1. **Kriptografik Push & API Rate-Limit Koruması:** `/api/v1/notifications/test-push` uç noktası SECP256k1 ECDSA cüzdan sahiplik imzası (`PUSH_TEST:<wallet>:<timestamp>`) ve replay koruması ile sertleştirildi; `/api/v1/` GET sorguları için global `300/dk` rate limit, ağır uç noktalara özel limitler ve `safe_int()` ile HTTP 500 çökme korumaları eklendi.
 2. **Performans & Zero-FOUC Açılış Kalkanı:** `/api/v1/stats` için 3 saniyelik revizyon-anahtarlı TTL önbelleği eklendi; `ethers.umd.min.js` `defer` edildi; `Material Symbols Outlined` fontu `display=block` + `.icons-ready` kalkanı ve saf CSS `#bloctag-boot-splash` ile ilk açılıştaki büyük yazı/dönen ikon metni sorunu giderildi.
 3. **Staking Kasa Şeffaflığı & Oda Yolculuğu (`Geçmiş`):** Staking sayfasına `Slashed` ve `Vault Total` rozetleri eklenerek System sayfasındaki `VALIDATOR_STAKE_VAULT` bakiyesiyle 1:1 eşitlik sağlandı; Protocol Rooms için hem liste hem oda içi `history` ikonu ve `#room-journey-modal` eklendi.
+
+## 🔒 42. BlocTag / LockTrace v2.20.0: 5 Turlu Çekirdek Güvenlik Denetimi, Sıfır Bedava Spam Ücretlendirmesi & Konsensüs Sertleştirmesi
+
+1. **Tüm Bedava Zincir İçi BNS İşlemlerine SSOT Anti-Spam Ücretleri (`config.py`):**
+   - `bns_set_primary` (`0.05 BCT`), `bns_set_price` (`0.05 BCT`), `bns_offer` (`0.05 BCT`) ve `bns_cancel_offer` (`0.01 BCT`) işlemleri %50 Hazine / %50 Miner-Validator dağılımı ve cüzdan cooldown'ları ile ücretlendirildi; zincirde kullanıcının bedava spam üretebileceği **0 adet** işlem bırakıldı.
+2. **Konsensüs Solvency, O(1) Replay & Tam Zincir Denetimi (`core/blockchain.py`):**
+   - `submit_mined_block()` içinde `sender_pays` transfer ücretlerinin (`amount + fee`) bakiye yeterliliğine dahil edilmesi ve tüm blok/işlem sayısal alanlarının `bool`/`NaN`/bozuk tip koruması tamamlandı.
+   - Her mempool güncellemesinde tüm geçmiş imza setinin kopyalanması kaldırılarak sıfır-kopyalı O(1) iki katmanlı `_is_signature_used()` aramasına geçildi ve derin bütünlük denetimi için `verify_full_chain_integrity()` eklendi.
+3. **RBF Mempool Koruması, Sybil Teklif Tavanları & Yakılmış Cüzdan Tam Koruması:**
+   - Kritik 0-ücretli protokol işlemleri (`wallet_burn`, `validator_stake`, `validator_unstake`, `bridge_unlock`, `frontend_release`, ödüller) RBF mempool tahliyesinden muaf tutuldu.
+   - 2 aşamalı devir tekliflerine alıcı başına `50`, global `2.000` tavanı ve `burn_wallet()` sırasında açık tekliflerin otomatik iptali eklendi; `bns_buy`, `bns_accept_offer`, `bns_make_offer` ve `attest_block()` tam yakılmış cüzdan korumasına alındı.
+4. **Bridge Devre Kesici, Nginx Kanonik Yönlendirme & 23/23 Otomatik Güvenlik Testi:**
+   - `core/bridge_relayer.py` varsayılan mint tavanları `100.000 BCT/işlem` ve `500.000 BCT/gün` olarak sıkılaştırıldı, `deploy/nginx_ssl.conf` Port 80 yönlendirmesi sabit `https://www.locktrace.space` adresine kilitlendi ve `tests/test_core_consensus_and_crypto.py` ile toplam **`23/23`** birim testi doğrulandı.
