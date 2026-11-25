@@ -1695,7 +1695,48 @@ class LockTraceNode:
 
         _node_rl_lock = threading.Lock()
         _node_rl_buckets: dict = {}
+        _node_strikes: dict = {}
+        _node_jail_until: dict = {}
         _node_conn_sem = threading.BoundedSemaphore(64)
+
+        def _safe_qs_int(qs_map: dict, key: str, default: int, min_val: int = 0, max_val: int = 1000000, alt_key: str = "") -> int:
+            raw_vals = qs_map.get(key) or (qs_map.get(alt_key) if alt_key else None)
+            if not raw_vals:
+                return default
+            try:
+                val = int(str(raw_vals[0]).strip())
+            except (ValueError, TypeError):
+                return default
+            return max(min_val, min(max_val, val))
+
+        def _node_is_jailed(ip: str) -> float:
+            now = time.time()
+            with _node_rl_lock:
+                until = _node_jail_until.get(ip, 0.0)
+                if until > now:
+                    return until - now
+                if until:
+                    _node_jail_until.pop(ip, None)
+                return 0.0
+
+        def _node_record_strike(ip: str):
+            if ip in ("127.0.0.1", "::1", "localhost"):
+                return
+            now = time.time()
+            with _node_rl_lock:
+                if len(_node_strikes) > 4096:
+                    _node_strikes.clear()
+                arr = _node_strikes.get(ip)
+                if arr is None:
+                    arr = []
+                    _node_strikes[ip] = arr
+                cutoff = now - 60.0
+                while arr and arr[0] < cutoff:
+                    arr.pop(0)
+                arr.append(now)
+                if len(arr) >= 8:
+                    _node_jail_until[ip] = now + 600.0  # 10-minute adaptive auto-jail
+                    arr.clear()
 
         def _node_check_rate_limit(bucket_key: str, limit: int, window_s: int = 60) -> bool:
             now = time.time()
@@ -1877,6 +1918,15 @@ class LockTraceNode:
                     "font-src 'self' https: data:; "
                     "object-src 'none'; base-uri 'self';"
                 )
+                node_csp = (
+                    "default-src 'self' https: data: blob:; "
+                    "script-src 'self' https://cdn.tailwindcss.com; "
+                    "script-src-attr 'unsafe-inline'; "
+                    "style-src 'self' 'unsafe-inline' https:; "
+                    "img-src 'self' data: https: blob:; "
+                    "font-src 'self' https: data:; "
+                    "object-src 'none'; base-uri 'self';"
+                )
                 self._send_bytes(
                     200,
                     check["index_bytes"],
@@ -1895,7 +1945,13 @@ class LockTraceNode:
                     self.end_headers()
                     self.wfile.write(b"Forbidden: Host header mismatch (DNS Rebinding Guard)")
                     return
-                if not _node_check_rate_limit(f"get:{self._client_ip()}", limit=120, window_s=60):
+                cip = self._client_ip()
+                jail_rem = _node_is_jailed(cip)
+                if jail_rem > 0:
+                    self._send_json(429, {"success": False, "message": f"IP temporarily jailed for {int(jail_rem)}s due to repeated abuse."})
+                    return
+                if not _node_check_rate_limit(f"get:{cip}", limit=120, window_s=60):
+                    _node_record_strike(cip)
                     self._send_json(429, {"success": False, "message": "Node GET rate limit exceeded (120/min)."})
                     return
                 parsed = urllib.parse.urlparse(self.path)
@@ -1926,8 +1982,8 @@ class LockTraceNode:
                     return
 
                 if path == "/p2p/blocks":
-                    start = max(0, int(qs.get("start", ["0"])[0]))
-                    limit = max(1, min(100, int(qs.get("limit", ["50"])[0])))
+                    start = _safe_qs_int(qs, "start", 0, 0, 10_000_000)
+                    limit = _safe_qs_int(qs, "limit", 50, 1, 100)
                     with node_ref.chain_lock:
                         blocks = [
                             node_ref.chain_by_index[i]
@@ -2043,8 +2099,8 @@ class LockTraceNode:
                     return
 
                 if path == "/api/v1/chain/range":
-                    start = max(0, int(qs.get("start", ["0"])[0]))
-                    limit = max(1, min(100, int(qs.get("limit", ["50"])[0])))
+                    start = _safe_qs_int(qs, "start", 0, 0, 10_000_000)
+                    limit = _safe_qs_int(qs, "limit", 50, 1, 100)
                     with node_ref.chain_lock:
                         blks = [node_ref.chain_by_index[i] for i in range(start, start + limit) if i in node_ref.chain_by_index]
                     self._send_json(200, {
@@ -2077,8 +2133,8 @@ class LockTraceNode:
                     if upstream and upstream.get("success"):
                         self._send_json(200, upstream)
                         return
-                    lim = max(1, min(100, int(qs.get("limit", ["10"])[0])))
-                    page = max(1, int(qs.get("page", ["1"])[0]))
+                    lim = _safe_qs_int(qs, "limit", 10, 1, 100)
+                    page = _safe_qs_int(qs, "page", 1, 1, 100_000)
                     all_txs = []
                     with node_ref.chain_lock:
                         for idx in sorted(node_ref.chain_by_index.keys(), reverse=True):
@@ -2117,8 +2173,8 @@ class LockTraceNode:
                     if upstream and upstream.get("success"):
                         self._send_json(200, upstream)
                         return
-                    lim = max(1, min(100, int(qs.get("limit", qs.get("count", ["10"]))[0])))
-                    page = max(1, int(qs.get("page", ["1"])[0]))
+                    lim = _safe_qs_int(qs, "limit", 10, 1, 100, alt_key="count")
+                    page = _safe_qs_int(qs, "page", 1, 1, 100_000)
                     with node_ref.chain_lock:
                         all_indices = sorted(node_ref.chain_by_index.keys(), reverse=True)
                         total = len(all_indices)
@@ -2207,8 +2263,8 @@ class LockTraceNode:
                     if upstream and upstream.get("success"):
                         self._send_json(200, upstream)
                         return
-                    lim = max(1, min(50, int(qs.get("limit", ["10"])[0])))
-                    page = max(1, int(qs.get("page", ["1"])[0]))
+                    lim = _safe_qs_int(qs, "limit", 10, 1, 50)
+                    page = _safe_qs_int(qs, "page", 1, 1, 100_000)
                     self._send_json(200, {"success": True, "data": node_ref.local_holders(page, lim)})
                     return
 
@@ -2218,7 +2274,7 @@ class LockTraceNode:
                     if upstream and upstream.get("success"):
                         self._send_json(200, upstream)
                         return
-                    lim = max(1, min(100, int(qs.get("limit", ["50"])[0])))
+                    lim = _safe_qs_int(qs, "limit", 50, 1, 100)
                     posts_map = node_ref.local_space_posts()
                     ordered = sorted(posts_map.values(), key=lambda x: float(x.get("timestamp", 0)), reverse=True)[:lim]
                     self._send_json(200, {"success": True, "data": {"posts": ordered}})
@@ -2248,7 +2304,7 @@ class LockTraceNode:
                     if upstream and upstream.get("success"):
                         self._send_json(200, upstream)
                         return
-                    lim = max(1, min(20, int(qs.get("limit", ["5"])[0])))
+                    lim = _safe_qs_int(qs, "limit", 5, 1, 20)
                     posts_map = node_ref.local_space_posts()
                     authors = {p.get("author") for p in posts_map.values() if p.get("author")}
                     bns_map, _ = node_ref.local_bns_state()
@@ -2420,7 +2476,13 @@ class LockTraceNode:
                     self.end_headers()
                     self.wfile.write(b"Forbidden: Cross-Origin RPC execution rejected (LT-03 CSRF/Origin Guard)")
                     return
-                if not _node_check_rate_limit(f"post:{self._client_ip()}", limit=40, window_s=60):
+                cip = self._client_ip()
+                jail_rem = _node_is_jailed(cip)
+                if jail_rem > 0:
+                    self._send_json(429, {"success": False, "message": f"IP temporarily jailed for {int(jail_rem)}s due to repeated abuse."})
+                    return
+                if not _node_check_rate_limit(f"post:{cip}", limit=40, window_s=60):
+                    _node_record_strike(cip)
                     self._send_json(429, {"success": False, "message": "Node POST rate limit exceeded (40/min)."})
                     return
                 parsed = urllib.parse.urlparse(self.path)
@@ -2428,10 +2490,12 @@ class LockTraceNode:
                 try:
                     length = int(self.headers.get("Content-Length", "0"))
                 except (ValueError, TypeError):
+                    _node_record_strike(cip)
                     self._send_json(400, {"success": False, "message": "Invalid Content-Length header"})
                     return
                 # LT-05 Fix: Enforce strict 512 KB payload limit (DoS & Memory Exhaustion Guard)
                 if length < 0 or length > 524_288:
+                    _node_record_strike(cip)
                     self._send_json(400, {"success": False, "message": "Payload exceeds strict 512 KB limit"})
                     return
                 try:
@@ -2657,7 +2721,10 @@ class LockTraceNode:
             return False
 
         prefilled = {}
-        for item in (compact_data.get("prefilled_transactions", []) or []):
+        raw_prefilled = compact_data.get("prefilled_transactions", []) or []
+        if not isinstance(raw_prefilled, list) or len(raw_prefilled) > 2000:
+            return False
+        for item in raw_prefilled:
             if isinstance(item, dict) and "index" in item and "tx" in item and isinstance(item["tx"], dict):
                 try:
                     prefilled[int(item["index"])] = item["tx"]
