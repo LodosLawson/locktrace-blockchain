@@ -236,7 +236,12 @@ class BasketImpactEngine:
           ("PENDING_WAIT", None)        -> Kuyrukta zamanı bekleyen parçalar var
           ("HOLD", None)                -> Pasif / eşik altı
         """
-        # 1. Kuyrukta bekleyen parça varsa zamanı geleni çıkar
+        # 1. Kuyrukta bekleyen parça varsa bayat olanları temizle, zamanı geleni çıkar
+        if self.pending_slices:
+            self.pending_slices = [
+                s for s in self.pending_slices
+                if (current_time - s["execute_at"]) <= 600.0
+            ]
         if self.pending_slices:
             self.pending_slices.sort(key=lambda s: s["execute_at"])
             if current_time >= self.pending_slices[0]["execute_at"]:
@@ -295,6 +300,23 @@ class BasketImpactEngine:
         action = "BUY" if signed_impact > 0 else "SELL"
         n_slices = self._choose_slice_count(equiv_raw_delta, total_wbct, total_usd)
         weights = self._random_weights(n_slices)
+        # Her ağırlıklı parçanın gerçekte MIN_SLICE_WBCT ve MIN_SLICE_USD üstünde kalmasını garanti et
+        while n_slices > 1 and any(
+            round(total_wbct * w, 2) < self.config["MIN_SLICE_WBCT"]
+            or round(total_usd * w, 4) < self.config["MIN_SLICE_USD"]
+            for w in weights
+        ):
+            # Eşit bölme geçiyorsa eşit ağırlığa dön, geçmiyorsa parça sayısını 1 azalt
+            eq_w = [1.0 / n_slices] * n_slices
+            if all(
+                round(total_wbct * w, 2) >= self.config["MIN_SLICE_WBCT"]
+                and round(total_usd * w, 4) >= self.config["MIN_SLICE_USD"]
+                for w in eq_w
+            ):
+                weights = eq_w
+                break
+            n_slices -= 1
+            weights = self._random_weights(n_slices)
 
         # 5 dakikalık pencere içine yayılmış rastgele yürütme zamanları (15s .. 270s)
         window_span = max(60, self.config["WINDOW_SECONDS"] - 30)
@@ -406,8 +428,9 @@ class LiveOnChainExecutor:
 
             if action == "BUY":
                 usdc_bal = self.usdc_contract.functions.balanceOf(address).call() / 1e6
-                if usdc_bal < req_usd:
-                    return False, f"Yetersiz USDC: ${usdc_bal:.4f} (Gereken: ${req_usd:.4f})"
+                exact_req_usd = max(0.001, (req_wbct * self.config["WBCT_UNIT_PRICE_USD"]))
+                if usdc_bal < exact_req_usd:
+                    return False, f"Yetersiz USDC: ${usdc_bal:.4f} (Gereken: ${exact_req_usd:.4f})"
             elif action == "SELL":
                 wbct_bal = self.wbct_contract.functions.balanceOf(address).call() / 1e18
                 if wbct_bal < req_wbct:

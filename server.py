@@ -1214,7 +1214,8 @@ def get_live_bot_wallets_telemetry(force_refresh: bool = False) -> dict:
     """Fetches live Base Mainnet ETH, USDC, and wBCT balances for all protocol bot wallets in a single RPC batch."""
     global _bot_wallets_telemetry_cache
     now = time.time()
-    if not force_refresh and _bot_wallets_telemetry_cache["data"] and (now - _bot_wallets_telemetry_cache["timestamp"] < 25):
+    ttl = 10 if force_refresh else 25
+    if _bot_wallets_telemetry_cache["data"] and (now - _bot_wallets_telemetry_cache["timestamp"] < ttl):
         return _bot_wallets_telemetry_cache["data"]
 
     if not _bot_wallets_telemetry_lock.acquire(blocking=False):
@@ -1224,7 +1225,7 @@ def get_live_bot_wallets_telemetry(force_refresh: bool = False) -> dict:
 
     try:
         now = time.time()
-        if not force_refresh and _bot_wallets_telemetry_cache["data"] and (now - _bot_wallets_telemetry_cache["timestamp"] < 25):
+        if _bot_wallets_telemetry_cache["data"] and (now - _bot_wallets_telemetry_cache["timestamp"] < ttl):
             return _bot_wallets_telemetry_cache["data"]
 
         base_rpc = getattr(Config, "BASE_RPC_URL", "https://mainnet.base.org")
@@ -4519,7 +4520,8 @@ def get_relayer_public_status(force_refresh: bool = False) -> Dict[str, Any]:
 
     try:
         now = time.time()
-        if not force_refresh and _relayer_status_cache["data"] and (now - _relayer_status_cache["timestamp"] < 10):
+        relayer_ttl = 10 if force_refresh else 15
+        if _relayer_status_cache["data"] and (now - _relayer_status_cache["timestamp"] < relayer_ttl):
             return _relayer_status_cache["data"]
 
         relayer_address = "0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3"
