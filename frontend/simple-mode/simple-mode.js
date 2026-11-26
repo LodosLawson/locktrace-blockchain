@@ -171,37 +171,71 @@
     window.location.href = `${window.location.origin}/`;
   }
 
+  function notifyGuestStayOnSharedPage() {
+    const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+    const isMobileGuest = isMobileDevice() && !isStandalonePwaApp();
+    if (typeof window.showToast === 'function') {
+      window.showToast(
+        isTr
+          ? (isMobileGuest ? 'Devam etmek için alttaki "Katıl" butonundan uygulamayı kurun.' : 'Devam etmek için alttaki "Katıl" butonuna tıklayın.')
+          : (isMobileGuest ? 'Tap "Join" below to install the app and explore more.' : 'Click "Join" below to visit Home and explore more.'),
+        'lock'
+      );
+    }
+  }
+
   window.handleGuestSharedEscape = handleGuestSharedEscape;
+  window.notifyGuestStayOnSharedPage = notifyGuestStayOnSharedPage;
   window.getGuestSharedTarget = () => (_guestSharedTarget ? { ..._guestSharedTarget } : null);
   window.isGuestLockedSession = isGuestLockedSession;
 
   function renderGuestSharedBanner() {
-    if (!_guestSharedLinkBypass) return '';
+    if (!isGuestLockedSession()) return '';
     const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
-    const isMobileGuest = isMobileDevice() && !isStandalonePwaApp();
     const targetType = _guestSharedTarget ? _guestSharedTarget.type : 'post';
     const typeLabelTr = targetType === 'profile'
-      ? 'Paylaşılan Profil'
-      : (targetType === 'room' ? 'Paylaşılan Oda' : (targetType === 'topic' ? 'Paylaşılan Mevzu' : 'Paylaşılan Gönderi'));
+      ? 'Paylaşılan Profil Önizlemesi'
+      : (targetType === 'room' ? 'Paylaşılan Oda Önizlemesi' : (targetType === 'topic' ? 'Paylaşılan Mevzu Önizlemesi' : 'Paylaşılan Gönderi Önizlemesi'));
     const typeLabelEn = targetType === 'profile'
-      ? 'Shared Profile'
-      : (targetType === 'room' ? 'Shared Room' : (targetType === 'topic' ? 'Shared Topic' : 'Shared Post'));
-    const ctaLabel = isMobileGuest
-      ? (isTr ? 'Uygulamayı Kur' : 'Install App')
-      : (isTr ? 'Ana Sayfa' : 'Home');
-    const ctaIcon = isMobileGuest ? 'download' : 'home';
+      ? 'Shared Profile Preview'
+      : (targetType === 'room' ? 'Shared Room Preview' : (targetType === 'topic' ? 'Shared Topic Preview' : 'Shared Post Preview'));
     return `
-      <div class="mx-4 mt-2.5 mb-1 px-3 py-2 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-between gap-2">
+      <div class="mx-4 mt-2.5 mb-1 px-3 py-1.5 rounded-2xl bg-primary/10 border border-primary/25 flex items-center justify-between gap-2">
         <div class="flex items-center gap-2 min-w-0">
-          <span class="material-symbols-outlined notranslate text-primary text-[17px] shrink-0" translate="no">visibility</span>
+          <span class="material-symbols-outlined notranslate text-primary text-[16px] shrink-0" translate="no">visibility</span>
           <span class="text-[11px] font-semibold text-on-surface leading-snug truncate">
-            ${isTr ? `${typeLabelTr} • BlocTag` : `${typeLabelEn} • BlocTag`}
+            ${isTr ? typeLabelTr : typeLabelEn}
           </span>
         </div>
+        <span class="text-[10px] font-mono text-primary font-bold shrink-0">BlocTag</span>
+      </div>
+    `;
+  }
+
+  function renderGuestBottomJoinBar() {
+    if (!isGuestLockedSession()) return '';
+    const isTr = (typeof getSimpleLang === 'function' ? getSimpleLang() : 'en') === 'tr';
+    const isMobileGuest = isMobileDevice() && !isStandalonePwaApp();
+    const subText = isMobileGuest
+      ? (isTr ? 'Uygulamayı kur & keşfet' : 'Install app & explore')
+      : (isTr ? 'Ana sayfaya git & keşfet' : 'Visit home & explore');
+    const btnLabel = isTr ? 'Katıl' : 'Join';
+    return `
+      <div id="bloctag-guest-join-bar"
+        class="fixed bottom-0 left-1/2 -translate-x-1/2 w-full max-w-[480px] z-[96] px-4 pt-2.5 pb-[max(12px,env(safe-area-inset-bottom,12px))] bg-[#131315]/95 backdrop-blur-xl border-t border-primary/25 shadow-[0_-8px_30px_rgba(0,0,0,0.45)] flex items-center justify-between gap-3">
+        <div class="flex items-center gap-2.5 min-w-0">
+          <div class="w-9 h-9 rounded-full bg-white p-1.5 flex items-center justify-center shrink-0 shadow-sm ring-1 ring-primary/35 overflow-hidden">
+            <img src="/icons/icon-192.png" alt="BlocTag" class="w-full h-full object-contain rounded-full" />
+          </div>
+          <div class="flex flex-col min-w-0">
+            <span class="text-xs font-bold text-on-surface truncate">BlocTag</span>
+            <span class="text-[10.5px] text-on-surface-variant truncate">${subText}</span>
+          </div>
+        </div>
         <button type="button" onclick="window.handleGuestSharedEscape()"
-          class="px-3 py-1.5 rounded-full bg-primary text-on-primary text-[11px] font-bold flex items-center gap-1 cursor-pointer active:scale-95 transition-transform shrink-0 whitespace-nowrap">
-          <span class="material-symbols-outlined notranslate text-[14px]" translate="no">${ctaIcon}</span>
-          <span>${ctaLabel}</span>
+          class="h-10 px-6 rounded-full bg-primary hover:brightness-105 text-on-primary text-xs font-bold flex items-center justify-center gap-1.5 shadow-lg shadow-primary/25 cursor-pointer active:scale-95 transition-all shrink-0 whitespace-nowrap">
+          <span class="material-symbols-outlined notranslate text-[17px]" translate="no">${isMobileGuest ? 'download' : 'login'}</span>
+          <span>${btnLabel}</span>
         </button>
       </div>
     `;
@@ -441,7 +475,7 @@
           system: parsed.system !== false
         };
       }
-    } catch (_e) {}
+    } catch (_e) { }
     return { transfer: true, space: true, system: true };
   }
 
@@ -2210,7 +2244,7 @@
         isAllowedGuestScreen = (target === 'SCR-ROOMS');
       }
       if (!isAllowedGuestScreen) {
-        handleGuestSharedEscape();
+        notifyGuestStayOnSharedPage();
         return;
       }
     }
@@ -2338,6 +2372,22 @@
 
   // ── Shared Top Header & Bottom Navigation ──────────────────────────────────
   function renderTopBar(title, showBack = false, rightActionHtml = '') {
+    const guestLocked = isGuestLockedSession();
+    if (guestLocked) {
+      return `
+        <header class="simple-top-header">
+          <div class="h-14 px-4 flex items-center justify-between gap-2">
+            <div class="flex items-center gap-2.5 min-w-0">
+              <div class="w-7 h-7 rounded-full bg-white p-1 flex items-center justify-center shrink-0 ring-1 ring-primary/35 overflow-hidden">
+                <img src="/icons/icon-192.png" alt="BlocTag" class="w-full h-full object-contain rounded-full" />
+              </div>
+              <span class="font-headline-sm text-[17px] font-semibold tracking-tight text-on-surface truncate">${esc(title)}</span>
+            </div>
+            <span class="px-2.5 py-1 rounded-full bg-surface-container-high border border-outline-variant/20 text-[10px] font-mono text-primary font-semibold shrink-0">BlocTag</span>
+          </div>
+        </header>
+      `;
+    }
     const acc = getActiveWallet();
     const myHandle = getMyPrimaryHandle();
     const avatarChar = myHandle ? myHandle[0].toUpperCase() : (acc && acc.address ? acc.address.slice(3, 4).toUpperCase() : '');
@@ -3690,24 +3740,24 @@
           </div>
 
           ${(() => {
-            const accR = getActiveWallet();
-            const rOwner = String(post.royalty_owner || authorAddr || '').trim();
-            const isRoyaltyMine = accR && accR.address && rOwner.toLowerCase() === String(accR.address).toLowerCase();
-            const isRedirected = Boolean(post.royalty_redirected_to_treasury);
-            const isTransferred = rOwner && authorAddr && rOwner.toLowerCase() !== String(authorAddr).toLowerCase();
-            const remY = Number(post.royalty_transfers_remaining_year ?? 3);
-            let html = '';
-            if (isRedirected) {
-              html += `<div class="px-3 py-2 rounded-xl bg-amber-500/12 border border-amber-500/30 text-[11px] text-amber-300 flex items-center gap-1.5"><span class="material-symbols-outlined notranslate text-[15px]" translate="no">account_balance</span><span>Cüzdan kapalı olduğu için bu paylaşımın telifleri otomatik olarak <strong>Hazine'ye</strong> aktarılır.</span></div>`;
-            } else if (isTransferred) {
-              const rLbl = post.royalty_owner_bns ? ('@' + String(post.royalty_owner_bns).replace(/^@/, '')) : (typeof window.shortAddr === 'function' ? window.shortAddr(rOwner) : rOwner);
-              html += `<div class="px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/25 text-[11px] text-sky-300 font-mono flex items-center gap-1.5"><span class="material-symbols-outlined notranslate text-[15px]" translate="no">currency_exchange</span><span>Telif Sahibi: ${esc(rLbl)}</span></div>`;
-            }
-            if (isRoyaltyMine) {
-              html += `<button type="button" onclick="if(typeof window.openPostRoyaltyTransferModal==='function') window.openPostRoyaltyTransferModal('${pid}', event);" class="w-full py-2 px-3 rounded-xl bg-emerald-500/12 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"><span class="material-symbols-outlined notranslate text-[16px]" translate="no">currency_exchange</span><span>Telif Hakkını Devret (${remY}/3 hak · 0.50 BCT)</span></button>`;
-            }
-            return html;
-          })()}
+        const accR = getActiveWallet();
+        const rOwner = String(post.royalty_owner || authorAddr || '').trim();
+        const isRoyaltyMine = accR && accR.address && rOwner.toLowerCase() === String(accR.address).toLowerCase();
+        const isRedirected = Boolean(post.royalty_redirected_to_treasury);
+        const isTransferred = rOwner && authorAddr && rOwner.toLowerCase() !== String(authorAddr).toLowerCase();
+        const remY = Number(post.royalty_transfers_remaining_year ?? 3);
+        let html = '';
+        if (isRedirected) {
+          html += `<div class="px-3 py-2 rounded-xl bg-amber-500/12 border border-amber-500/30 text-[11px] text-amber-300 flex items-center gap-1.5"><span class="material-symbols-outlined notranslate text-[15px]" translate="no">account_balance</span><span>Cüzdan kapalı olduğu için bu paylaşımın telifleri otomatik olarak <strong>Hazine'ye</strong> aktarılır.</span></div>`;
+        } else if (isTransferred) {
+          const rLbl = post.royalty_owner_bns ? ('@' + String(post.royalty_owner_bns).replace(/^@/, '')) : (typeof window.shortAddr === 'function' ? window.shortAddr(rOwner) : rOwner);
+          html += `<div class="px-3 py-1.5 rounded-xl bg-sky-500/10 border border-sky-500/25 text-[11px] text-sky-300 font-mono flex items-center gap-1.5"><span class="material-symbols-outlined notranslate text-[15px]" translate="no">currency_exchange</span><span>Telif Sahibi: ${esc(rLbl)}</span></div>`;
+        }
+        if (isRoyaltyMine) {
+          html += `<button type="button" onclick="if(typeof window.openPostRoyaltyTransferModal==='function') window.openPostRoyaltyTransferModal('${pid}', event);" class="w-full py-2 px-3 rounded-xl bg-emerald-500/12 hover:bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 text-xs font-semibold flex items-center justify-center gap-1.5 active:scale-95 transition-all cursor-pointer"><span class="material-symbols-outlined notranslate text-[16px]" translate="no">currency_exchange</span><span>Telif Hakkını Devret (${remY}/3 hak · 0.50 BCT)</span></button>`;
+        }
+        return html;
+      })()}
 
           <!-- 4-Action Cluster -->
           <div class="grid grid-cols-4 gap-1.5 pt-1">
@@ -3750,12 +3800,12 @@
               ${t('post_be_first_comment', 'Be the first to leave an on-chain comment below!')}
             </div>
           ` : comments.slice().reverse().map(c => {
-      const cAddr = String(c.commenter || '');
-      const cBns = (c.commenter_bns && c.commenter_bns !== 'anonymous') ? String(c.commenter_bns).replace(/^@/, '') : '';
-      const cName = cBns ? ('@' + cBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(cAddr) : cAddr);
-      const cTime = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(c.timestamp) : '';
-      const cBody = safeFormatSimpleBody(c.content || '');
-      return `
+        const cAddr = String(c.commenter || '');
+        const cBns = (c.commenter_bns && c.commenter_bns !== 'anonymous') ? String(c.commenter_bns).replace(/^@/, '') : '';
+        const cName = cBns ? ('@' + cBns) : (typeof window.shortAddr === 'function' ? window.shortAddr(cAddr) : cAddr);
+        const cTime = typeof window.formatTimeAgo === 'function' ? window.formatTimeAgo(c.timestamp) : '';
+        const cBody = safeFormatSimpleBody(c.content || '');
+        return `
               <article class="simple-post-card bg-surface-container rounded-2xl px-3.5 py-3 flex flex-col gap-1.5 border border-outline-variant/10">
                 <div class="flex items-center justify-between gap-2 min-w-0">
                   <div class="flex items-center gap-2 min-w-0 cursor-pointer flex-1"
@@ -3777,7 +3827,7 @@
                 </div>
               </article>
             `;
-    }).join('')}
+      }).join('')}
         </section>
 
         <!-- Sticky Bottom Reply Bar (Above bottom nav) -->
@@ -4898,6 +4948,7 @@
     shell.innerHTML = `
       <div class="simple-app-frame">
         ${screenHtml}
+        ${renderGuestBottomJoinBar()}
       </div>
     `;
 
@@ -6804,13 +6855,8 @@
           ${langBarHtml}
           <!-- Brand Header -->
           <div class="flex flex-col items-center text-center gap-3">
-            <div class="relative flex items-center justify-center w-20 h-20 rounded-full bg-surface-container-high shadow-xl border border-primary/25">
-              <svg class="w-10 h-10 text-primary" fill="none" viewBox="0 0 36 36">
-                <path class="opacity-95" d="M18 4L30 11V25L18 32L6 25V11L18 4Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2"></path>
-                <path d="M18 12L24 15.5V22.5L18 26L12 22.5V15.5L18 12Z" fill="currentColor" fill-opacity="0.25"></path>
-                <circle cx="18" cy="19" fill="currentColor" r="3"></circle>
-              </svg>
-              <span class="absolute bottom-1 right-1 w-3.5 h-3.5 rounded-full bg-primary ring-2 ring-[#131315]"></span>
+            <div class="relative flex items-center justify-center w-20 h-20 rounded-full bg-white p-2.5 shadow-xl ring-2 ring-primary/40 overflow-hidden">
+              <img src="/icons/icon-192.png" alt="BlocTag" class="w-full h-full object-contain rounded-full select-none pointer-events-none" />
             </div>
             <div class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface-container-high border border-outline-variant/20 text-[11px] font-mono text-primary">
               <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
@@ -6874,9 +6920,9 @@
         <div class="w-full max-w-[400px] flex flex-col gap-5" translate="yes">
           ${langBarHtml}
           <div class="flex flex-col items-center text-center gap-3">
-            <div class="relative flex items-center justify-center w-20 h-20 rounded-3xl bg-surface-container-high shadow-xl border border-primary/30">
-              <span class="material-symbols-outlined notranslate text-primary text-[38px]" translate="no">install_mobile</span>
-              <span class="absolute -bottom-1.5 -right-1.5 w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md">
+            <div class="relative flex items-center justify-center w-20 h-20 rounded-full bg-white p-2.5 shadow-xl ring-2 ring-primary/40">
+              <img src="/icons/icon-192.png" alt="BlocTag" class="w-full h-full object-contain rounded-full select-none pointer-events-none" />
+              <span class="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-primary text-on-primary flex items-center justify-center shadow-md ring-2 ring-[#131315]">
                 <span class="material-symbols-outlined notranslate text-[16px]" translate="no">download</span>
               </span>
             </div>
@@ -7062,11 +7108,8 @@
           </div>
 
           <div class="w-full p-4 rounded-3xl bg-surface-container border border-outline-variant/20 flex items-center gap-3 text-left">
-            <div class="w-12 h-12 rounded-2xl bg-[#131315] border border-primary/35 flex items-center justify-center shrink-0">
-              <svg class="w-7 h-7 text-primary" fill="none" viewBox="0 0 36 36">
-                <path d="M18 4L30 11V25L18 32L6 25V11L18 4Z" stroke="currentColor" stroke-linejoin="round" stroke-width="2.2"></path>
-                <circle cx="18" cy="19" fill="currentColor" r="3"></circle>
-              </svg>
+            <div class="w-12 h-12 rounded-full bg-white p-1.5 ring-2 ring-primary/35 flex items-center justify-center shrink-0 overflow-hidden shadow-sm">
+              <img src="/icons/icon-192.png" alt="BlocTag" class="w-full h-full object-contain rounded-full select-none pointer-events-none" />
             </div>
             <div class="flex flex-col min-w-0">
               <span class="text-xs font-bold text-on-surface">${t.doneCardTitle}</span>
@@ -7429,7 +7472,7 @@
           const locked = _guestSharedTarget || getSharedDeepLinkTarget();
           const req = normalizeSharedId(targetAddrOrHandle);
           if (!locked || locked.type !== 'profile' || req !== normalizeSharedId(locked.id)) {
-            handleGuestSharedEscape();
+            notifyGuestStayOnSharedPage();
             return;
           }
         }
@@ -7475,7 +7518,7 @@
       window._origSwitchTab = origSwitchTab;
       const wrappedSwitchTab = function (tabId) {
         if (isGuestLockedSession()) {
-          handleGuestSharedEscape();
+          notifyGuestStayOnSharedPage();
           return;
         }
         if (simpleState.enabled && tabId) {
