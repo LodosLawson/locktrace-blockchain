@@ -796,3 +796,11 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - 2 aşamalı devir tekliflerine alıcı başına `50`, global `2.000` tavanı ve `burn_wallet()` sırasında açık tekliflerin otomatik iptali eklendi; `bns_buy`, `bns_accept_offer`, `bns_make_offer` ve `attest_block()` tam yakılmış cüzdan korumasına alındı.
 4. **Bridge Devre Kesici, Nginx Kanonik Yönlendirme & 23/23 Otomatik Güvenlik Testi:**
    - `core/bridge_relayer.py` varsayılan mint tavanları `100.000 BCT/işlem` ve `500.000 BCT/gün` olarak sıkılaştırıldı, `deploy/nginx_ssl.conf` Port 80 yönlendirmesi sabit `https://www.locktrace.space` adresine kilitlendi ve `tests/test_core_consensus_and_crypto.py` ile toplam **`23/23`** birim testi doğrulandı.
+
+## 🛡️ 43. BlocTag / LockTrace v2.21.0: Çatal-Güvenli PoW Zorluk Sertleştirmesi & BaseScan Token Doğrulama Uyumu
+
+1. **Blok Yüksekliğine Bağlı PoW Zorluk Tabanı (`POW_HARDENING_HEIGHT = 1304`):**
+   - `config.py` ve `core/blockchain.py` (`compute_lwma_difficulty` & `is_chain_valid`) içinde `#1304` bloğundan itibaren geçerli olacak şekilde taban zorluk **`5`** (~1.05M hash/blok), acil durum (stall recovery) dahil asla düşülmeyecek minimum taban **`4`** (~65.5K hash/blok) ve LWMA tavanı **`8`** olarak sertleştirildi.
+   - Ağ uzun süre işlem almadan boşta kalsa bile zorluğun `1`'e düşmesi engellendi; `#0–#1303` geçmiş blokların doğrulaması %100 korundu.
+2. **BaseScan wBCT Profil & Kurumsal E-posta Uyumu:**
+   - `frontend/icons/icon-32.svg` saf vektör, şeffaf arka planlı 32×32 SVG olarak yenilendi; `contact@bloctag.space` (MX/SPF/DKIM/DMARC doğrulanmış) tüm resmi iletişim kanallarına işlendi.

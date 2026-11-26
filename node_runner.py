@@ -53,7 +53,7 @@ logger = logging.getLogger("LockTraceNode")
 
 DEFAULT_SEED = "https://www.locktrace.space"
 FALLBACK_SEED = "http://129.151.205.219"
-VERSION = "2.20.0"
+VERSION = "2.21.0"
 
 # ═════════════════════════════════════════════════════════════════════
 # HIGH-PERFORMANCE MINING ENGINE (OPENCL GPU & MULTI-WORKER CPU)
@@ -1909,24 +1909,7 @@ class LockTraceNode:
                     return
 
                 manifest = check["manifest"]
-                node_csp = (
-                    "default-src 'self' https: data: blob:; "
-                    "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-O+Ww9GfLti/sMaBOCZq77qPDRG1CVOHOLPys1znfltE=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
-                    "script-src-attr 'unsafe-inline'; "
-                    "style-src 'self' 'unsafe-inline' https:; "
-                    "img-src 'self' data: https: blob:; "
-                    "font-src 'self' https: data:; "
-                    "object-src 'none'; base-uri 'self';"
-                )
-                node_csp = (
-                    "default-src 'self' https: data: blob:; "
-                    "script-src 'self' https://cdn.tailwindcss.com; "
-                    "script-src-attr 'unsafe-inline'; "
-                    "style-src 'self' 'unsafe-inline' https:; "
-                    "img-src 'self' data: https: blob:; "
-                    "font-src 'self' https: data:; "
-                    "object-src 'none'; base-uri 'self';"
-                )
+                node_csp = "default-src 'self' https: data: blob:; script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-66lgoivTedW+6Dxhflb4+/yPTZkMLnyXy5YAj36pEO0=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; font-src 'self' https: data:; object-src 'none'; base-uri 'self';"
                 self._send_bytes(
                     200,
                     check["index_bytes"],

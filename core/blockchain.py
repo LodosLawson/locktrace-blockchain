@@ -111,6 +111,10 @@ MIN_TRANSACTION = float(getattr(Config, "MIN_TRANSACTION", 0.01))             # 
 MAX_TRANSACTION = float(getattr(Config, "MAX_TRANSACTION", 10_000_000.0))      # Maximum single transfer amount
 TARGET_BLOCK_TIME = getattr(Config, "TARGET_BLOCK_TIME", 20.0)                 # 20 seconds target block time
 LWMA_WINDOW = getattr(Config, "LWMA_WINDOW", 20)                              # 20 blocks window for difficulty adjustment
+POW_HARDENING_HEIGHT = int(getattr(Config, "POW_HARDENING_HEIGHT", 1304))     # v2.21.0 fork-safe PoW hardening activation block
+HARDENED_BASE_DIFFICULTY = int(getattr(Config, "HARDENED_BASE_DIFFICULTY", 5))
+HARDENED_MIN_DIFFICULTY = int(getattr(Config, "HARDENED_MIN_DIFFICULTY", 4))
+MAX_DIFFICULTY = int(getattr(Config, "MAX_DIFFICULTY", 8))
 MEMPOOL_MINER_WINDOW_SECONDS = 15.0      # Priority window for external PoW miners before fallback sealing
 ACTIVE_MINER_TTL_SECONDS = 90.0          # Heartbeat window identifying live external PoW miners
 
@@ -4702,17 +4706,21 @@ class Blockchain:
         so difficulty scales cumulatively across [MIN_DIFFICULTY=2 .. MAX_DIFFICULTY=8] instead
         of being clamped to base_difficulty +/- 1.
         """
-        max_diff = max(self.difficulty, int(os.environ.get("BCT_MAX_DIFFICULTY", "8")))
-        min_diff = min(2, self.difficulty)
+        next_height = len(chain_slice)
+        hardened = next_height >= POW_HARDENING_HEIGHT
+        base_diff = max(self.difficulty, HARDENED_BASE_DIFFICULTY) if hardened else self.difficulty
+        max_diff = max(base_diff, int(os.environ.get("BCT_MAX_DIFFICULTY", str(MAX_DIFFICULTY))))
+        min_diff = HARDENED_MIN_DIFFICULTY if hardened else min(2, self.difficulty)
+        stall_floor = HARDENED_MIN_DIFFICULTY if hardened else 1
 
         if len(chain_slice) < LWMA_WINDOW:
-            eff_diff = self.difficulty
+            eff_diff = base_diff
         else:
             recent = chain_slice[-LWMA_WINDOW:]
             # Observed effective difficulty via median leading zeros in window (immune to single lucky hash)
             lz_counts = sorted(self._leading_zero_count(b.hash) for b in recent)
             median_lz = lz_counts[len(lz_counts) // 2]
-            eff_diff = max(min_diff, min(max_diff, max(self.difficulty, median_lz)))
+            eff_diff = max(min_diff, min(max_diff, max(base_diff, median_lz)))
 
             time_diffs = []
             for i in range(1, len(recent)):
@@ -4731,15 +4739,15 @@ class Blockchain:
 
         # Emergency Stall Recovery (Anti-Freeze Guard):
         # If the network has stalled without a block for > 6x target time (120s) due to hashrate collapse,
-        # dynamically relax difficulty so miners can recover block generation immediately.
+        # dynamically relax difficulty, never dropping below stall_floor (4 after POW_HARDENING_HEIGHT).
         if now_ts is not None and chain_slice:
             tip_time = float(chain_slice[-1].timestamp)
             time_since_tip = float(now_ts) - tip_time
             if time_since_tip > (TARGET_BLOCK_TIME * 6.0):
                 stall_drop = int((time_since_tip - (TARGET_BLOCK_TIME * 6.0)) // 60.0) + 1
-                return max(1, eff_diff - stall_drop)
+                return max(stall_floor, eff_diff - stall_drop)
 
-        return max(1, eff_diff)
+        return max(stall_floor, eff_diff)
 
     def get_current_difficulty(self) -> int:
         """
@@ -6195,7 +6203,10 @@ class Blockchain:
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False
                 dt = cur_ts - prev_ts
-                req_diff = self.difficulty
+                hardened = i >= POW_HARDENING_HEIGHT
+                req_diff = max(self.difficulty, HARDENED_BASE_DIFFICULTY) if hardened else self.difficulty
+                min_lwma_floor = HARDENED_MIN_DIFFICULTY if hardened else 2
+                stall_floor = HARDENED_MIN_DIFFICULTY if hardened else 1
                 if i >= LWMA_WINDOW:
                     recent = self.chain[i - LWMA_WINDOW:i]
                     time_diffs = [
@@ -6206,12 +6217,12 @@ class Blockchain:
                         w_sum = sum((idx + 1) * d for idx, d in enumerate(time_diffs))
                         w_tot = sum(idx + 1 for idx in range(len(time_diffs)))
                         avg_solve = w_sum / max(1.0, w_tot)
-                        if avg_solve > (TARGET_BLOCK_TIME * 1.8) and req_diff > 2:
-                            req_diff = max(2, req_diff - 1)
+                        if avg_solve > (TARGET_BLOCK_TIME * 1.8) and req_diff > min_lwma_floor:
+                            req_diff = max(min_lwma_floor, req_diff - 1)
                 if dt > (TARGET_BLOCK_TIME * 6.0):
                     stall_drop = int((dt - (TARGET_BLOCK_TIME * 6.0)) // 60.0) + 1
-                    req_diff = max(1, req_diff - stall_drop)
-                req_target = "0" * max(1, req_diff)
+                    req_diff = max(stall_floor, req_diff - stall_drop)
+                req_target = "0" * max(stall_floor, req_diff)
                 if not current.hash.startswith(req_target):
                     self._chain_valid_cache = (len(self.chain), tip_hash, False)
                     return False

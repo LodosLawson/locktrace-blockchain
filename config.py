@@ -40,7 +40,7 @@ if os.path.exists(env_path):
 
 class Config:
     # ── Protokol & Versiyon ───────────────────────────
-    PROTOCOL_VERSION = "2.20.0"
+    PROTOCOL_VERSION = "2.21.0"
     NETWORK_NAME = os.environ.get("BCT_NETWORK", "mainnet")
 
     # ── Anti-Stall & Resilience Parameters (v2.5.0) ───
@@ -119,7 +119,11 @@ class Config:
     # ── Dinamik Zorluk (LWMA) & Hedef Blok Süresi ─────
     TARGET_BLOCK_TIME = 20.0        # Hedeflenen blok üretim süresi (saniye)
     LWMA_WINDOW = 20                # Zorluk ayarlaması için incelenen geçmiş blok sayısı
-    INITIAL_DIFFICULTY = 10          # Başlangıç PoW zorluğu (hex sıfır sayısı)
+    INITIAL_DIFFICULTY = 3          # Başlangıç (Genesis / blok < 1304) PoW zorluğu (hex sıfır sayısı)
+    POW_HARDENING_HEIGHT = 1304     # v2.21.0: Sertleştirilmiş PoW zorluk tabanının aktifleştiği blok yüksekliği
+    HARDENED_BASE_DIFFICULTY = 5    # Blok >= 1304 için taban PoW zorluğu (~1.05M hash / blok)
+    HARDENED_MIN_DIFFICULTY = 4     # Blok >= 1304 için acil durum (stall) dahil asla düşülmeyen minimum zorluk (~65.5K hash)
+    MAX_DIFFICULTY = 8              # LWMA dinamik zorluk tavanı (~4.3B hash)
     FINALITY_QUORUM_RATIO = 2.0 / 3.0  # Finalized checkpoint için gereken validator onay oranı (%66.7)
 
     # ── Anti-Spam & İşlem Tipi Bekleme Süreleri (Saniye)
