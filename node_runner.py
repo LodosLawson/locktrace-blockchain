@@ -1909,7 +1909,7 @@ class LockTraceNode:
                     return
 
                 manifest = check["manifest"]
-                node_csp = "default-src 'self' https: data: blob:; script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' 'sha256-tx1Ry+R23a3MnT2Fu9xXCy9UOJ5MiPKSOYonDqxJII8=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; font-src 'self' https: data:; object-src 'none'; base-uri 'self';"
+                node_csp = "default-src 'self' https: data: blob:; script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-Vc4iR7vehCX4ANcZgVQSknicllOMB8Ohqo4FHh9gJjw=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; style-src 'self' 'unsafe-inline' https:; img-src 'self' data: https: blob:; font-src 'self' https: data:; object-src 'none'; base-uri 'self';"
                 self._send_bytes(
                     200,
                     check["index_bytes"],

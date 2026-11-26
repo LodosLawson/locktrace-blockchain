@@ -119,7 +119,7 @@
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
   <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.22.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.22.0" integrity="sha256-UNy1ORjHS4Xs1sT1ZSof79S3eM7ulMwJN8Vo+YxnHUw=" crossorigin="anonymous" defer></script>
+  <script src="/simple-mode/simple-mode.js?v=2.22.0" integrity="sha256-RshM/wpQyWxhA/2JfULfw5J5MyTKmOtmAfzXWBkx7mw=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -16748,8 +16748,7 @@
     let _activeSharePostId = null;
 
     function _populatePostShareModalFields(post, postId) {
-      const activeShareMode = document.body.classList.contains('simple-mode-active') ? 'simple' : 'pro';
-      const shareUrl = `${window.location.origin}/post/${encodeURIComponent(postId)}?mode=${activeShareMode}`;
+      const shareUrl = `${window.location.origin}/post/${encodeURIComponent(postId)}`;
       const authorLabel = post && (post.is_anonymous || post.author_bns === 'anonymous')
         ? 'Anonymous Author'
         : (post && post.author_bns ? `@${post.author_bns}` : (post && post.author ? shortAddr(post.author) : 'BlocTag Creator'));
@@ -17002,6 +17001,14 @@
     }
 
     function closeSpacePostDetail() {
+      if (document.documentElement.classList.contains('bloctag-guest-shared-lock')) {
+        if (typeof window.handleGuestSharedEscape === 'function') {
+          window.handleGuestSharedEscape();
+        } else if (window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.exitGuestSharedPreview === 'function') {
+          window.BlocTagSimpleMode.exitGuestSharedPreview();
+        }
+        return;
+      }
       resetSpaceDetailChrome();
       window._sharedPostEntryId = null;
       if (
@@ -22944,7 +22951,9 @@
 
     function closeUserProfile(immediate = false) {
       if (!immediate && document.documentElement.classList.contains('bloctag-guest-shared-lock')) {
-        if (window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.promptPwaInstallFromGuest === 'function') {
+        if (typeof window.handleGuestSharedEscape === 'function') {
+          window.handleGuestSharedEscape();
+        } else if (window.BlocTagSimpleMode && typeof window.BlocTagSimpleMode.promptPwaInstallFromGuest === 'function') {
           window.BlocTagSimpleMode.promptPwaInstallFromGuest();
         }
         return;
@@ -23031,8 +23040,7 @@
     async function shareUserProfile() {
       if (!currentProfileData || !currentProfileData.address) return;
       const param = currentProfileData.primary_bns || currentProfileData.address;
-      const activeShareMode = document.body.classList.contains('simple-mode-active') ? 'simple' : 'pro';
-      const url = `${window.location.origin}/?profile=${encodeURIComponent(param)}&mode=${activeShareMode}`;
+      const url = `${window.location.origin}/profile/${encodeURIComponent(param)}`;
       const label = currentProfileData.primary_bns ? `@${currentProfileData.primary_bns}` : shortAddr(currentProfileData.address);
       if (navigator.share) {
         try {
@@ -26408,18 +26416,81 @@
         }
       }
 
+      function isGuestLockedRoomSession() {
+        return Boolean(
+          document.documentElement.classList.contains('bloctag-guest-shared-lock') ||
+          (typeof window.isGuestLockedSession === 'function' && window.isGuestLockedSession())
+        );
+      }
+
+      function getLockedGuestTarget() {
+        return (typeof window.getGuestSharedTarget === 'function') ? window.getGuestSharedTarget() : null;
+      }
+
+      function escapeGuestRoomSession() {
+        if (typeof window.handleGuestSharedEscape === 'function') {
+          window.handleGuestSharedEscape();
+        } else {
+          window.location.href = `${window.location.origin}/`;
+        }
+      }
+
+      function shareRoom(roomId, ev) {
+        if (ev) ev.stopPropagation();
+        const rid = String(roomId || (state.activeRoom && state.activeRoom.room_id) || '').trim();
+        if (!rid) return;
+        const url = `${window.location.origin}/room/${encodeURIComponent(rid)}`;
+        const title = state.activeRoom && state.activeRoom.name ? `${state.activeRoom.name} — BlocTag Protocol Room` : `BlocTag Protocol Room (${rid})`;
+        if (navigator.share) {
+          navigator.share({ title, url }).catch(() => { });
+          return;
+        }
+        if (typeof copyText === 'function') {
+          copyText(url, 'Oda paylaşım bağlantısı kopyalandı!');
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).catch(() => { });
+          showToast('Oda paylaşım bağlantısı kopyalandı!', 'content_copy');
+        }
+      }
+
+      function shareTopic(topicId, ev) {
+        if (ev) ev.stopPropagation();
+        const tid = String(topicId || (state.activeTopic && state.activeTopic.topic_id) || '').trim();
+        if (!tid) return;
+        const url = `${window.location.origin}/topic/${encodeURIComponent(tid)}`;
+        const title = state.activeTopic && state.activeTopic.title ? `${state.activeTopic.title} — BlocTag Mevzu` : `BlocTag Mevzu (${tid})`;
+        if (navigator.share) {
+          navigator.share({ title, url }).catch(() => { });
+          return;
+        }
+        if (typeof copyText === 'function') {
+          copyText(url, 'Mevzu paylaşım bağlantısı kopyalandı!');
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(url).catch(() => { });
+          showToast('Mevzu paylaşım bağlantısı kopyalandı!', 'content_copy');
+        }
+      }
+
       function mountPage() {
         render();
-        if (state.view === 'list') {
+        if (state.view === 'list' && !isGuestLockedRoomSession()) {
           fetchRoomsList();
         }
       }
 
       function close() {
+        if (isGuestLockedRoomSession()) {
+          escapeGuestRoomSession();
+          return;
+        }
         openDirectory();
       }
 
       async function openDirectory() {
+        if (isGuestLockedRoomSession()) {
+          escapeGuestRoomSession();
+          return;
+        }
         state.view = 'list';
         openModal();
         render();
@@ -26440,6 +26511,10 @@
       }
 
       async function openCreate() {
+        if (isGuestLockedRoomSession()) {
+          escapeGuestRoomSession();
+          return;
+        }
         state.view = 'create';
         state.quote = null;
         state.quoteError = '';
@@ -26450,6 +26525,18 @@
       }
 
       async function openRoom(roomId) {
+        if (isGuestLockedRoomSession()) {
+          const locked = getLockedGuestTarget();
+          const reqId = String(roomId || '').trim().toLowerCase();
+          if (locked && locked.type === 'topic') {
+            escapeGuestRoomSession();
+            return;
+          }
+          if (locked && locked.type === 'room' && reqId !== String(locked.id || '').trim().toLowerCase()) {
+            escapeGuestRoomSession();
+            return;
+          }
+        }
         state.view = 'room';
         state.activeRoom = null;
         state.replyTargetId = '';
@@ -26467,7 +26554,7 @@
             state.activeRoom = body.data;
           } else {
             showToast((body && body.message) || 'Oda bulunamadı', 'error', true);
-            state.view = 'list';
+            if (!isGuestLockedRoomSession()) state.view = 'list';
           }
         } catch (e) {
           console.error(e);
@@ -26476,6 +26563,14 @@
       }
 
       async function openTopic(topicId) {
+        if (isGuestLockedRoomSession()) {
+          const locked = getLockedGuestTarget();
+          const reqId = String(topicId || '').trim().toLowerCase();
+          if (locked && locked.type === 'topic' && reqId !== String(locked.id || '').trim().toLowerCase()) {
+            escapeGuestRoomSession();
+            return;
+          }
+        }
         state.view = 'topic';
         state.activeTopic = null;
         state.replyTargetId = '';
@@ -27098,6 +27193,12 @@
                       <span class="text-primary">• Kurucu Geliri: ${Number(r.creator_earnings || 0).toFixed(3)} BCT</span>
                     </div>
                     <div class="flex flex-wrap items-center gap-2 mt-2.5">
+                      <button type="button" onclick="window.ProtocolRoomsUI.shareRoom('${esc(r.room_id)}', event)"
+                        title="Oda Paylaşım Bağlantısını Kopyala"
+                        class="px-3 py-1.5 rounded-xl bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[11px] font-bold cursor-pointer inline-flex items-center gap-1">
+                        <span class="material-symbols-outlined notranslate text-[15px]" translate="no">share</span>
+                        Paylaş
+                      </button>
                       <button type="button" onclick="window.openRoomJourneyModal('${esc(r.room_id)}', event)"
                         title="Oda Detayları &amp; Geçmiş Yolculuğu"
                         class="px-3 py-1.5 rounded-xl bg-sky-500/15 hover:bg-sky-500/25 text-sky-400 border border-sky-500/30 text-[11px] font-bold cursor-pointer inline-flex items-center gap-1">
@@ -27221,7 +27322,15 @@
                     <span class="material-symbols-outlined notranslate text-[15px]" translate="no">arrow_back</span>
                     <span class="truncate max-w-[220px]">${esc(t.room_name || t.room_id)}</span>
                   </button>
-                  <span class="px-2 py-0.5 rounded-full bg-surface-container-low text-[10px] font-mono text-on-surface-variant shrink-0">${replies.length} yanıt</span>
+                  <div class="flex items-center gap-1.5 shrink-0">
+                    <button type="button" onclick="window.ProtocolRoomsUI.shareTopic('${esc(t.topic_id)}', event)"
+                      class="px-2.5 py-1 rounded-full bg-primary/15 hover:bg-primary/25 text-primary border border-primary/30 text-[10.5px] font-bold inline-flex items-center gap-1 cursor-pointer active:scale-95 transition-all"
+                      title="Mevzuyu Paylaş">
+                      <span class="material-symbols-outlined notranslate text-[13px]" translate="no">share</span>
+                      <span>Paylaş</span>
+                    </button>
+                    <span class="px-2 py-0.5 rounded-full bg-surface-container-low text-[10px] font-mono text-on-surface-variant shrink-0">${replies.length} yanıt</span>
+                  </div>
                 </div>
 
                 <!-- Sleek Topic Hero Card -->
@@ -27365,9 +27474,10 @@
         }
 
         const inSimple = isSimpleModeActive();
+        const guestLocked = isGuestLockedRoomSession();
         el.innerHTML = inSimple ? `
           <div class="w-full flex flex-col gap-3">
-            ${state.view !== 'list' ? `
+            ${state.view !== 'list' && !guestLocked ? `
               <div class="flex items-center justify-between gap-2 pb-1">
                 <button type="button" onclick="window.ProtocolRoomsUI.openDirectory()"
                   class="px-2.5 py-1.5 rounded-xl bg-surface-container text-xs font-semibold text-on-surface cursor-pointer inline-flex items-center gap-1">
@@ -27426,6 +27536,8 @@
         openCreate,
         openRoom,
         openTopic,
+        shareRoom,
+        shareTopic,
         openSealAvatar,
         openTransferRoom,
         close,

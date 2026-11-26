@@ -493,7 +493,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' 'sha256-tx1Ry+R23a3MnT2Fu9xXCy9UOJ5MiPKSOYonDqxJII8=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-Vc4iR7vehCX4ANcZgVQSknicllOMB8Ohqo4FHh9gJjw=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -796,7 +796,12 @@ def index_page():
 
 @app.route("/post/<post_id>", methods=["GET"])
 @app.route("/p/<post_id>", methods=["GET"])
-def shared_post_page(post_id: str):
+@app.route("/profile/<path:profile_id>", methods=["GET"])
+@app.route("/room/<room_id>", methods=["GET"])
+@app.route("/rooms/<room_id>", methods=["GET"])
+@app.route("/topic/<topic_id>", methods=["GET"])
+@app.route("/topics/<topic_id>", methods=["GET"])
+def shared_post_page(post_id: str = "", profile_id: str = "", room_id: str = "", topic_id: str = ""):
     return _serve_verified_frontend_response()
 
 
