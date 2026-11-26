@@ -119,7 +119,7 @@ class Config:
     # ── Dinamik Zorluk (LWMA) & Hedef Blok Süresi ─────
     TARGET_BLOCK_TIME = 20.0        # Hedeflenen blok üretim süresi (saniye)
     LWMA_WINDOW = 20                # Zorluk ayarlaması için incelenen geçmiş blok sayısı
-    INITIAL_DIFFICULTY = 3          # Başlangıç PoW zorluğu (hex sıfır sayısı)
+    INITIAL_DIFFICULTY = 10          # Başlangıç PoW zorluğu (hex sıfır sayısı)
     FINALITY_QUORUM_RATIO = 2.0 / 3.0  # Finalized checkpoint için gereken validator onay oranı (%66.7)
 
     # ── Anti-Spam & İşlem Tipi Bekleme Süreleri (Saniye)
