@@ -6717,6 +6717,70 @@
     }
   }
 
+  function renderMobileGateSecurityNotice(lang) {
+    const isTr = lang === 'tr';
+    const host = String(window.location.hostname || '').toLowerCase();
+    const isOfficialHost = (
+      host === 'locktrace.space' ||
+      host === 'www.locktrace.space' ||
+      host === 'bloctag.space' ||
+      host === 'www.bloctag.space' ||
+      host === 'localhost' ||
+      host === '127.0.0.1'
+    );
+    const wbctAddr = '0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28';
+    return `
+      <div class="w-full p-3.5 rounded-3xl bg-surface-container/95 border border-amber-400/35 flex flex-col gap-2.5 text-left shadow-lg">
+        <div class="flex items-center justify-between gap-2">
+          <div class="flex items-center gap-1.5 text-amber-400 text-[11px] font-bold">
+            <span class="material-symbols-outlined notranslate text-[16px]" translate="no">gpp_maybe</span>
+            <span>${isTr ? 'Güvenlik & Doğrulama Bildirimi' : 'Security & Verification Notice'}</span>
+          </div>
+          <span class="px-2 py-0.5 rounded-full text-[9.5px] font-mono font-bold shrink-0 ${isOfficialHost ? 'bg-emerald-500/15 text-emerald-400 border border-emerald-500/35' : 'bg-error/20 text-error border border-error/50 animate-pulse'}">
+            ${isOfficialHost ? (isTr ? '✓ Resmi Site' : '✓ Official Site') : (isTr ? '⚠ SAHTE SİTE' : '⚠ FAKE SITE')}
+          </span>
+        </div>
+
+        <!-- Pump.fun Fake Token Warning -->
+        <div class="p-2.5 rounded-2xl bg-error/10 border border-error/25 text-[11px] text-on-surface/90 leading-relaxed">
+          <strong class="text-error">${isTr ? 'Pump.fun Uyarısı:' : 'Pump.fun Warning:'}</strong>
+          ${isTr
+            ? 'Şu an pump.fun üzerinde herhangi bir resmi tokenimiz <strong>YOKTUR</strong>. Sahte tokenlere kesinlikle kanmayın.'
+            : 'We have <strong>NO</strong> official token on pump.fun. Do not fall for fake impersonation tokens.'}
+        </div>
+
+        <!-- Official Verified wBCT Contract (Base) -->
+        <div class="p-2.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col gap-1.5">
+          <div class="flex items-center justify-between gap-1.5">
+            <span class="text-[11px] font-bold text-emerald-400 flex items-center gap-1">
+              <span class="material-symbols-outlined notranslate text-[14px]" translate="no">verified</span>
+              <span>${isTr ? 'Tek Resmi Token: wBCT (Base)' : 'Only Official Token: wBCT (Base)'}</span>
+            </span>
+            <span class="px-1.5 py-0.5 rounded bg-emerald-500/20 text-emerald-300 font-mono text-[9px] font-bold uppercase">${isTr ? 'Doğrulanmış' : 'Verified'}</span>
+          </div>
+          <div class="flex items-center gap-1.5 p-1.5 rounded-xl bg-surface-container-lowest/90 border border-emerald-500/20">
+            <code class="text-[10px] font-mono text-emerald-300 truncate flex-1 select-all">${wbctAddr}</code>
+            <button type="button"
+              onclick="if(typeof copyToClipboard==='function'){copyToClipboard('${wbctAddr}');}else if(navigator.clipboard){navigator.clipboard.writeText('${wbctAddr}');} if(typeof showToast==='function'){showToast('${isTr ? 'Doğrulanmış wBCT kontratı kopyalandı!' : 'Verified wBCT contract copied!'}','verified');}"
+              class="px-2 py-1 rounded-lg bg-emerald-500/20 text-emerald-300 text-[10px] font-bold cursor-pointer shrink-0">
+              ${isTr ? 'Kopyala' : 'Copy'}
+            </button>
+            <a href="https://basescan.org/token/${wbctAddr}" target="_blank" rel="noopener noreferrer"
+              class="px-2 py-1 rounded-lg bg-surface-container-high text-on-surface text-[10px] font-bold shrink-0 no-underline">
+              BaseScan
+            </a>
+          </div>
+        </div>
+
+        <!-- Official vs Fake Site Alert Guide -->
+        <div class="text-[10.5px] text-on-surface-variant leading-relaxed flex flex-col gap-1 px-0.5">
+          <div><strong class="text-emerald-400">● ${isTr ? 'Resmi Adresler:' : 'Official Domains:'}</strong> <span class="font-mono text-primary">locktrace.space</span> &amp; <span class="font-mono text-primary">bloctag.space</span> (${isTr ? 'ECDSA imzalı' : 'ECDSA signed'}).</div>
+          <div><strong class="text-error">● ${isTr ? 'Kırmızı Uyarı / Sahte Site:' : 'Red Alert / Fake Site:'}</strong> ${isTr ? 'Adres farklıysa veya kırmızı güvenlik uyarısı görürseniz asla 12 kelimenizi girmeyin.' : 'If the URL differs or a red security alert appears, never enter your 12-word seed phrase.'}</div>
+        </div>
+      </div>
+    `;
+  }
+
   function renderMobileOnboardingGate(step) {
     if (!isMobileDevice()) {
       closeMobileOnboardingGate();
@@ -6732,6 +6796,7 @@
     const overlay = ensureMobileGateOverlay();
     document.documentElement.classList.add('bloctag-mobile-gate-open');
     const langBarHtml = renderGateLanguageBar(lang);
+    const securityNoticeHtml = renderMobileGateSecurityNotice(lang);
 
     if (step === 'web3') {
       overlay.innerHTML = `
@@ -6798,6 +6863,7 @@
             <span class="material-symbols-outlined notranslate text-[14px] text-primary" translate="no">verified_user</span>
             <span>${t.nonCustodialFooter}</span>
           </div>
+          ${securityNoticeHtml}
         </div>
       `;
     } else if (step === 'pwa') {
@@ -6971,6 +7037,7 @@
               `}
             </div>
           `}
+          ${securityNoticeHtml}
         </div>
       `;
     } else if (step === 'pwa-installed') {
@@ -7019,6 +7086,7 @@
               ${t.doneRetryBtn}
             </button>
           </div>
+          ${securityNoticeHtml}
         </div>
       `;
     }
