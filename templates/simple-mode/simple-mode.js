@@ -4930,7 +4930,7 @@
           ${renderGuestSharedBanner()}
           <main class="flex-1 flex flex-col w-full px-3.5 pt-3 pb-24 simple-screen-animate">
             <div id="simpleRoomsPageRoot" class="w-full">
-              <div class="py-12 text-center text-xs text-on-surface-variant font-mono">Protocol Rooms yükleniyor...</div>
+              <div class="py-12 text-center text-xs text-on-surface-variant font-mono">Loading Protocol Rooms...</div>
             </div>
           </main>
         `;
@@ -6287,10 +6287,10 @@
         return;
       }
       if (typeof window.copyText === 'function') {
-        window.copyText(url, 'Profil bağlantısı kopyalandı!');
+        window.copyText(url, 'Profile link copied!');
       } else if (navigator.clipboard && navigator.clipboard.writeText) {
         navigator.clipboard.writeText(url).catch(() => { });
-        if (typeof window.showToast === 'function') window.showToast('Profil bağlantısı kopyalandı!', 'content_copy');
+        if (typeof window.showToast === 'function') window.showToast('Profile link copied!', 'content_copy');
       }
     }
   };
@@ -6796,8 +6796,8 @@
         <div class="p-2.5 rounded-2xl bg-error/10 border border-error/25 text-[11px] text-on-surface/90 leading-relaxed">
           <strong class="text-error">${isTr ? 'Pump.fun Uyarısı:' : 'Pump.fun Warning:'}</strong>
           ${isTr
-            ? 'Şu an pump.fun üzerinde herhangi bir resmi tokenimiz <strong>YOKTUR</strong>. Sahte tokenlere kesinlikle kanmayın.'
-            : 'We have <strong>NO</strong> official token on pump.fun. Do not fall for fake impersonation tokens.'}
+        ? 'Şu an pump.fun üzerinde herhangi bir resmi tokenimiz <strong>YOKTUR</strong>. Sahte tokenlere kesinlikle kanmayın.'
+        : 'We have <strong>NO</strong> official token on pump.fun. Do not fall for fake impersonation tokens.'}
         </div>
 
         <!-- Official Verified wBCT Contract (Base) -->

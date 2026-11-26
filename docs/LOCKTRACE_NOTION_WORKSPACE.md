@@ -811,3 +811,12 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - Tek toplu (batch) Base Mainnet JSON-RPC sorgusu ve 25 sn önbellek ile Bridge Relayer (`0x66eD...4ED3`) ve 3 AMM Likidite Botu (`Alpha`, `Beta`, `Gamma`) için gerçek zamanlı ETH (+ USD), USDC ve wBCT bakiyeleri hem Köprü hem Explorer sayfalarına temiz, kalabalıksız kartlarla eklendi; tüm statik/örnek bakiye metinleri kaldırıldı.
 2. **AMM Market Maker v2.0 (`scripts/wbct_market_maker.py`):**
    - Kümülatif **BTC + ETH + XRP Sepet Endeksi** (`2.5x` kontrollü beta, sıfır drift), dinamik 1–3 cüzdan parça bölme, gerçek `DRY_RUN` koruması, `MAX_GAS_GWEI = 0.5` gas tavanı, tek işlem / günlük devre kesici ve bağımlılıksız `--balances` bakiye sorgulama modu eklendi.
+
+## 🛡️ 45. BlocTag / LockTrace v2.23.0: Tek Tip Misafir Paylaşım Standardı, Anti-Scam Güvenlik Widget'ı & Pro Reels Optimizasyonu
+
+1. **Moddan Bağımsız Paylaşım Linkleri & Katı Misafir İzolasyonu:**
+   - `/post/<id>`, `/profile/<id>`, `/room/<id>` ve `/topic/<id>` kanonik rotaları tüm modlarda (`Pro`, `Simple`, `Desktop`) standartlaştırıldı. Misafir kullanıcılar yalnızca paylaşılan içeriği görüntüler; alttaki sabit **Katıl** çubuğu Web'de Ana Sayfa'ya (`/`), Mobilde zorunlu PWA İndirme ekranına yönlendirir. Misafirlere bildirim izni popup'ı kapatıldı.
+2. **İngilizce Varsayılan Güvenlik & Doğrulama Bildirimi Widget'ı:**
+   - Web Ana Sayfası ve Mobil Zorunlu PWA İndirme ekranına **pump.fun sahte token uyarısı**, tek resmi doğrulanmış **Base Mainnet wBCT** kontratı (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) ve canlı Yeşil/Kırmızı resmi site doğrulama rehberi eklendi.
+3. **Mobil Logo & Pro Reels Viewport Düzeltmesi:**
+   - Mobil giriş ekranlarına dairesel beyaz arka planlı gerçek BlocTag logosu (`/icons/icon-192.png`) eklendi; Pro Mod Reels akışında çakışma ve alt menü arkasında kesilme `fitProReelsStreamHeight` ile giderildi.
