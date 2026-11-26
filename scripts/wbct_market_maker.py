@@ -1,16 +1,17 @@
 """
 LockTrace wBCT Live Market Maker & Multi-Asset Basket Engine (Base Mainnet)
 ===========================================================================
-v2.0 — BTC + ETH + XRP Kümülatif Sepet Endeksi + Kontrollü Beta + Dinamik 1-3 Bölme:
+v2.1 — Anti-Barcode Histerezis + Doğal Trend Dalgaları + Çoklu Sepet Endeksi:
 - Havuz: wBCT / USDC (%0.9 Fee, TickSpacing 90)
 - PoolId: 0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139
 - Uniswap V4 Universal Router: 0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40
 - Sepet Endeksi: (ΔBTC% + ΔETH% + ΔXRP%) / 3 (Binance birincil, Coinbase yedek)
-- Kümülatif Hedef + Kontrollü Beta (2.5x ±%12 jitter): Drift/kayma yapmadan gerçekçi altcoin gövdesi
-- Dinamik 1-3 Parçalı Bölme (5 dk pencere içine yayılmış rastgele dakika & oran):
-    * %0.15 - %0.35 -> 1 cüzdan (gas tasarrufu)
-    * %0.35 - %0.75 -> 2 farklı cüzdan
-    * >= %0.75      -> 3 farklı cüzdan
+- Kümülatif Hedef + Kontrollü Beta (2.5x ±%22 asimetrik jitter): Doğal altcoin gövdesi
+- Barkod Kırıcı Histerezis & Yön Kilidi (%0.9 havuz makasında ping-pong engeli):
+    * Aynı yön devam eşiği : %0.20 (doğal trend merdivenleri)
+    * Ters yön dönüş eşiği : %0.55 + 20–40 dk rastgele yön kilidi (şok override: >= %1.25)
+    * Değişken pencere     : 6–22 dk arası rastgele değerlendirme aralığı
+- Dinamik 1-3 Asimetrik Parçalı Bölme (farklı büyüklüklerde doğal mum gövdeleri)
 - Güvenlik Kalkanları:
     * DRY_RUN gerçek koruması, MAX_GAS_GWEI tavanı, MAX_SINGLE_TRADE_USD & MAX_DAILY_TXS devre kesici
     * Toz işlem (sub-dust) engeli, otomatik .env yükleyici, private key log koruması
@@ -98,18 +99,26 @@ CONFIG: Dict[str, Any] = {
     # Sepet & Beta Parametreleri (BTC + ETH + XRP)
     "BASKET_SYMBOLS": ("BTC", "ETH", "XRP"),
     "BETA_MULTIPLIER": float(os.getenv("BOT_BETA_MULTIPLIER", "2.5")),
-    "JITTER_MIN": 0.88,
-    "JITTER_MAX": 1.12,
+    "JITTER_MIN": 0.78,
+    "JITTER_MAX": 1.24,
 
-    # Zamanlama (5 dakikalık pencere)
+    # Zamanlama (Doğal 6–22 dakikalık değişken değerlendirme penceresi)
     "POLL_INTERVAL_SECONDS": 10,
-    "WINDOW_SECONDS": 300,
+    "WINDOW_MIN_SECONDS": int(os.getenv("BOT_WINDOW_MIN_SECONDS", "360")),   # 6 dk
+    "WINDOW_MAX_SECONDS": int(os.getenv("BOT_WINDOW_MAX_SECONDS", "1320")),  # 22 dk
+    "WINDOW_SECONDS": 600,  # Parça yayılımı için ortalama pencere referansı
+
+    # Anti-Barkod Histerezis & Yön Kilidi (Ping-Pong Engelleyici)
+    "MIN_DELTA_THRESHOLD_PCT": 0.20,          # Aynı yönde devam eşiği (%0.20)
+    "REVERSE_DELTA_THRESHOLD_PCT": 0.55,      # Ters yöne dönüş eşiği (%0.55 - barkod kırıcı)
+    "SHOCK_OVERRIDE_PCT": 1.25,               # %1.25+ sert piyasa hareketinde yön kilidini kır
+    "DIRECTION_LOCK_MIN_SECONDS": int(os.getenv("BOT_DIR_LOCK_MIN_SECONDS", "1200")),  # 20 dk
+    "DIRECTION_LOCK_MAX_SECONDS": int(os.getenv("BOT_DIR_LOCK_MAX_SECONDS", "2400")),  # 40 dk
 
     # Dinamik 1-3 Parçalı Bölme Eşikleri (Ham Sepet % Değişimi)
-    "MIN_DELTA_THRESHOLD_PCT": 0.15,   # %0.15 altı pasif (spam & gas koruması)
-    "SPLIT_2_THRESHOLD_PCT": 0.35,     # %0.35 - %0.75 -> 2 farklı cüzdan
-    "SPLIT_3_THRESHOLD_PCT": 0.75,     # >= %0.75      -> 3 farklı cüzdan
-    "MAX_IMPACT_CAP_PCT": 4.00,        # Tek 5dk pencerede maksimum fiyat etkisi tavanı
+    "SPLIT_2_THRESHOLD_PCT": 0.40,            # %0.40 - %0.85 -> 2 farklı cüzdan
+    "SPLIT_3_THRESHOLD_PCT": 0.85,            # >= %0.85      -> 3 farklı cüzdan
+    "MAX_IMPACT_CAP_PCT": 4.00,               # Tek pencerede maksimum fiyat etkisi tavanı
 
     # Güvenlik & Devre Kesiciler
     "MAX_GAS_GWEI": float(os.getenv("BOT_MAX_GAS_GWEI", "0.5")),
@@ -193,14 +202,25 @@ class BasketImpactEngine:
         self.wallet_count = max(1, wallet_count)
         self.initial_prices: Optional[Dict[str, float]] = None
         self.last_eval_time: float = 0.0
+        self.next_eval_at: float = 0.0
         self.cumulative_executed_pct: float = 0.0
         self.pending_slices: List[Dict[str, Any]] = []
+        self.last_direction: Optional[str] = None
+        self.direction_lock_until: float = 0.0
+
+    def _roll_next_window(self, now: float) -> float:
+        w_min = int(self.config.get("WINDOW_MIN_SECONDS", 360))
+        w_max = int(self.config.get("WINDOW_MAX_SECONDS", 1320))
+        span = random.uniform(w_min, max(w_min + 60, w_max))
+        self.next_eval_at = now + span
+        return span
 
     @staticmethod
     def _random_weights(n: int) -> List[float]:
         if n <= 1:
             return [1.0]
-        raw = [random.uniform(0.25, 0.85) for _ in range(n)]
+        # Asimetrik (kuadratik) ağırlıklar: mum boylarının tekdüze barkod olmasını önler
+        raw = [random.uniform(0.20, 1.0) ** 1.8 for _ in range(n)]
         total = sum(raw)
         return [r / total for r in raw]
 
@@ -252,28 +272,49 @@ class BasketImpactEngine:
         if self.initial_prices is None:
             self.initial_prices = dict(prices)
             self.last_eval_time = current_time
+            span = self._roll_next_window(current_time)
             summary = " | ".join(f"{k}=${v:.4f}" if v < 10 else f"{k}=${v:.2f}" for k, v in prices.items())
-            logger.info(f"[REFERANS SEPET] Başlangıç endeksi sabitlendi: {summary}")
+            logger.info(f"[REFERANS SEPET] Başlangıç endeksi sabitlendi: {summary} (İlk kontrol: {span/60:.1f} dk sonra)")
             return "HOLD", None
 
-        # 3. 5 dakikalık pencere dolmadan yeni plan yapma
-        if (current_time - self.last_eval_time) < self.config["WINDOW_SECONDS"]:
+        # 3. Değişken değerlendirme penceresi dolmadan yeni plan yapma
+        if current_time < self.next_eval_at:
             return "HOLD", None
 
         self.last_eval_time = current_time
+        next_span = self._roll_next_window(current_time)
 
         # 4. Kümülatif sepet değişimi & drift-free hedef etki hesabı
         cum_basket_pct = self.compute_cumulative_basket_pct(prices)
         target_cum_impact = cum_basket_pct * self.config["BETA_MULTIPLIER"]
         needed_impact = target_cum_impact - self.cumulative_executed_pct
+        proposed_action = "BUY" if needed_impact > 0 else "SELL"
 
-        # Eşdeğer ham sepet hareketi (eşik & bölme kararı için)
+        # Eşdeğer ham sepet hareketi (asimetrik histerezis & barkod kırıcı kontrol)
         equiv_raw_delta = abs(needed_impact) / max(0.1, self.config["BETA_MULTIPLIER"])
-        if equiv_raw_delta < self.config["MIN_DELTA_THRESHOLD_PCT"]:
+        is_reversal = (self.last_direction is not None and proposed_action != self.last_direction)
+        required_threshold = (
+            self.config.get("REVERSE_DELTA_THRESHOLD_PCT", 0.55)
+            if is_reversal
+            else self.config["MIN_DELTA_THRESHOLD_PCT"]
+        )
+
+        # Yön kilidi aktifken ters yönde küçük salınımları yoksay (barkod / ping-pong engeli)
+        if is_reversal and current_time < self.direction_lock_until:
+            shock_pct = self.config.get("SHOCK_OVERRIDE_PCT", 1.25)
+            if equiv_raw_delta < shock_pct:
+                rem_min = max(0.1, (self.direction_lock_until - current_time) / 60.0)
+                logger.info(
+                    f"[YÖN KİLİDİ / ANTI-BARKOD] {self.last_direction} -> {proposed_action} bekletiliyor "
+                    f"(Kalan: {rem_min:.1f} dk | Fark={equiv_raw_delta:.3f}% < Şok %{shock_pct} | Sonraki: {next_span/60:.1f} dk)"
+                )
+                return "HOLD", None
+
+        if equiv_raw_delta < required_threshold:
             logger.info(
-                f"[PASIF] 5dk kontrol: Sepet={cum_basket_pct:+.3f}% | "
+                f"[PASIF] Kontrol ({'Ters Yön' if is_reversal else 'Aynı Yön'}): Sepet={cum_basket_pct:+.3f}% | "
                 f"Hedef={target_cum_impact:+.3f}% | Uygulanan={self.cumulative_executed_pct:+.3f}% | "
-                f"Fark={equiv_raw_delta:.3f}% (<%{self.config['MIN_DELTA_THRESHOLD_PCT']})"
+                f"Fark={equiv_raw_delta:.3f}% (<%{required_threshold}) | Sonraki: {next_span/60:.1f} dk"
             )
             return "HOLD", None
 
@@ -355,6 +396,14 @@ class BasketImpactEngine:
 
     def commit_slice(self, slice_info: Dict[str, Any]):
         self.cumulative_executed_pct += float(slice_info["signed_impact"])
+        action = str(slice_info.get("action") or "").upper()
+        if action in ("BUY", "SELL"):
+            now = time.time()
+            lock_min = int(self.config.get("DIRECTION_LOCK_MIN_SECONDS", 1200))
+            lock_max = int(self.config.get("DIRECTION_LOCK_MAX_SECONDS", 2400))
+            if self.last_direction != action or now >= self.direction_lock_until:
+                self.direction_lock_until = now + random.uniform(lock_min, max(lock_min + 60, lock_max))
+            self.last_direction = action
 
 
 class LiveOnChainExecutor:
