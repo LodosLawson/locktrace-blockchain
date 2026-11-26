@@ -178,6 +178,36 @@ html.bloctag-simple-mode #bloctag-simple-bottom-nav-portal {
   padding-bottom: env(safe-area-inset-bottom, 0px);
   border-top: 1px solid rgba(60, 74, 66, 0.2);
   box-shadow: 0 -6px 24px rgba(0, 0, 0, 0.42);
+  transition: background-color 0.25s ease, backdrop-filter 0.25s ease;
+}
+
+/* User-Configurable Bottom Navigation Glass / Solid Styles (Simple & Pro Mode) */
+html.bloctag-nav-simple-glass .simple-bottom-nav {
+  background-color: rgba(19, 19, 21, 0.56) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(165%) !important;
+  backdrop-filter: blur(24px) saturate(165%) !important;
+  border-top: 1px solid rgba(78, 222, 163, 0.22) !important;
+}
+
+html.bloctag-nav-simple-solid .simple-bottom-nav {
+  background-color: #131315 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-top: 1px solid rgba(60, 74, 66, 0.28) !important;
+}
+
+html.bloctag-nav-pro-glass #mobile-nav {
+  background-color: rgba(19, 19, 21, 0.58) !important;
+  -webkit-backdrop-filter: blur(24px) saturate(165%) !important;
+  backdrop-filter: blur(24px) saturate(165%) !important;
+  border-top: 1px solid rgba(78, 222, 163, 0.22) !important;
+}
+
+html.bloctag-nav-pro-solid #mobile-nav {
+  background-color: #131315 !important;
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+  border-top: 1px solid rgba(60, 74, 66, 0.28) !important;
 }
 
 @media (min-width: 640px) {

@@ -426,12 +426,36 @@
     return s.slice(0, 6) + '...' + s.slice(-4);
   }
 
+  function getNotifCategoryPrefs() {
+    if (typeof window.getNotificationCategoryPrefs === 'function') {
+      return window.getNotificationCategoryPrefs();
+    }
+    try {
+      const raw = localStorage.getItem('locktrace_notif_prefs_v1');
+      if (raw) {
+        const parsed = JSON.parse(raw);
+        return {
+          transfer: parsed.transfer !== false,
+          space: parsed.space !== false,
+          system: parsed.system !== false
+        };
+      }
+    } catch (_e) {}
+    return { transfer: true, space: true, system: true };
+  }
+
+  function isNotifAllowedByPrefs(n) {
+    if (!n) return false;
+    const prefs = getNotifCategoryPrefs();
+    const cat = String(n.category || 'system').toLowerCase();
+    if (cat === 'transfer' || cat === 'tips') return prefs.transfer !== false;
+    if (cat === 'space' || cat === 'mentions') return prefs.space !== false;
+    return prefs.system !== false;
+  }
+
   function getUnreadNotificationsCount() {
     try {
-      const raw = localStorage.getItem('locktrace_notifications_v1');
-      if (!raw) return 0;
-      const list = JSON.parse(raw);
-      if (!Array.isArray(list)) return 0;
+      const list = getStoredNotifications();
       return list.filter(n => n && !n.read).length;
     } catch (_e) {
       return 0;
@@ -440,10 +464,21 @@
 
   function getStoredNotifications() {
     try {
-      const raw = localStorage.getItem('locktrace_notifications_v1');
-      if (!raw) return [];
-      const list = JSON.parse(raw);
-      return Array.isArray(list) ? list : [];
+      const rawV2 = localStorage.getItem('locktrace_notifications_v2');
+      const rawV1 = localStorage.getItem('locktrace_notifications_v1');
+      const listV2 = rawV2 ? JSON.parse(rawV2) : [];
+      const listV1 = rawV1 ? JSON.parse(rawV1) : [];
+      const combined = [];
+      const seen = new Set();
+      [...(Array.isArray(listV2) ? listV2 : []), ...(Array.isArray(listV1) ? listV1 : [])].forEach(n => {
+        if (!n) return;
+        const key = String(n.id || (String(n.title || '') + ':' + String(n.time || '')));
+        if (seen.has(key)) return;
+        seen.add(key);
+        if (isNotifAllowedByPrefs(n)) combined.push(n);
+      });
+      combined.sort((a, b) => Number(b.time || 0) - Number(a.time || 0));
+      return combined;
     } catch (_e) {
       return [];
     }
@@ -4362,11 +4397,23 @@
               ${unreadCount} ${t('notif_new_badge', 'new')}
             </span>
           </div>
-          <button type="button" onclick="window.BlocTagSimpleMode.markAllNotifsRead()"
-            class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-xs active:scale-95 transition-all cursor-pointer">
-            <span class="material-symbols-outlined notranslate text-[16px]" translate="no">done_all</span>
-            <span>${t('notif_mark_all', 'Mark All Read')}</span>
-          </button>
+          <div class="flex items-center gap-1.5">
+            <button type="button" onclick="if(typeof window.pollNotifications==='function'){window.pollNotifications().then(()=>{window.BlocTagSimpleMode.refresh(true);});}else{window.BlocTagSimpleMode.refresh(true);}"
+              title="Yenile"
+              class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary flex items-center justify-center active:scale-95 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[17px]" translate="no">refresh</span>
+            </button>
+            <button type="button" onclick="if(typeof window.openAccountControlCenter==='function') window.openAccountControlCenter();"
+              title="Bildirim Ayarları"
+              class="w-8 h-8 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-primary flex items-center justify-center active:scale-95 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[17px]" translate="no">tune</span>
+            </button>
+            <button type="button" onclick="window.BlocTagSimpleMode.markAllNotifsRead()"
+              class="flex items-center gap-1 px-3 py-1.5 rounded-full bg-surface-container hover:bg-surface-container-high text-on-surface-variant hover:text-on-surface text-xs active:scale-95 transition-all cursor-pointer">
+              <span class="material-symbols-outlined notranslate text-[16px]" translate="no">done_all</span>
+              <span>${t('notif_mark_all', 'Mark All Read')}</span>
+            </button>
+          </div>
         </div>
 
         <!-- Filter Chips -->
@@ -4812,6 +4859,17 @@
         break;
       case 'SCR-NTF-06':
         screenHtml = renderScreenNotifications();
+        if (typeof window.pollNotifications === 'function' && !window._smNotifPollingNow) {
+          const nowTs = Date.now();
+          if (!window._smNotifLastPoll || (nowTs - window._smNotifLastPoll) > 12000) {
+            window._smNotifPollingNow = true;
+            window._smNotifLastPoll = nowTs;
+            Promise.resolve(window.pollNotifications()).finally(() => {
+              window._smNotifPollingNow = false;
+              if (simpleState.activeScreen === 'SCR-NTF-06') renderSimpleMode();
+            });
+          }
+        }
         break;
       case 'SCR-MNU-07':
         screenHtml = renderScreenMenu();
