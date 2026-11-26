@@ -1,32 +1,37 @@
 """
-LockTrace wBCT Live Market Maker & Trend Following Bot (Base Mainnet)
-====================================================================
-MATEMATİKSEL FİYAT ETKİSİ VE CANLI UNISWAP V4 AMM ENTEGRASYONU:
+LockTrace wBCT Live Market Maker & Multi-Asset Basket Engine (Base Mainnet)
+===========================================================================
+v2.0 — BTC + ETH + XRP Kümülatif Sepet Endeksi + Kontrollü Beta + Dinamik 1-3 Bölme:
 - Havuz: wBCT / USDC (%0.9 Fee, TickSpacing 90)
 - PoolId: 0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139
 - Uniswap V4 Universal Router: 0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40
-- Formül: Delta_wBCT = (abs(Delta_ETH_Pct) / 100) / 2.0 * Pool_wBCT_Reserve
-- Multi-Wallet Rotation: Alpha, Beta, Gamma cüzdanları arasında rotasyon.
-- Random Jitter: 5 dk dolduktan sonra ilk 1-2 dk (10 - 110s) içinde rastgele yürütme.
-- Eşik: %0.15 altındaki değişimlerde pasif (Sıfır spam, DEXScreener dostu).
-- DEXScreener / GeckoTerminal üzerinde gerçek yeşil ve kırmızı mumlar oluşturur.
+- Sepet Endeksi: (ΔBTC% + ΔETH% + ΔXRP%) / 3 (Binance birincil, Coinbase yedek)
+- Kümülatif Hedef + Kontrollü Beta (2.5x ±%12 jitter): Drift/kayma yapmadan gerçekçi altcoin gövdesi
+- Dinamik 1-3 Parçalı Bölme (5 dk pencere içine yayılmış rastgele dakika & oran):
+    * %0.15 - %0.35 -> 1 cüzdan (gas tasarrufu)
+    * %0.35 - %0.75 -> 2 farklı cüzdan
+    * >= %0.75      -> 3 farklı cüzdan
+- Güvenlik Kalkanları:
+    * DRY_RUN gerçek koruması, MAX_GAS_GWEI tavanı, MAX_SINGLE_TRADE_USD & MAX_DAILY_TXS devre kesici
+    * Toz işlem (sub-dust) engeli, otomatik .env yükleyici, private key log koruması
+- Bakiye Sorgulama: `python scripts/wbct_market_maker.py --balances`
 """
 
+import argparse
+import json
+import logging
 import os
+import random
 import sys
 import time
-import json
-import random
-import logging
-from collections import deque
-from typing import Dict, Any, Optional, Tuple, List
-import urllib.request
 import urllib.error
+import urllib.request
+from typing import Any, Dict, List, Optional, Tuple
 
 try:
-    from web3 import Web3
-    from eth_account import Account
     from eth_abi import encode
+    from eth_account import Account
+    from web3 import Web3
     HAS_WEB3 = True
 except ImportError:
     Web3 = None
@@ -34,139 +39,89 @@ except ImportError:
     encode = None
     HAS_WEB3 = False
 
+
+def _load_dotenv():
+    """Load workspace .env safely without overwriting existing env vars."""
+    root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    env_path = os.path.join(root_dir, ".env")
+    if not os.path.exists(env_path):
+        return
+    try:
+        with open(env_path, "r", encoding="utf-8") as f:
+            for raw_line in f:
+                line = raw_line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                k = k.strip()
+                v = v.strip()
+                if not (v.startswith('"') or v.startswith("'")):
+                    v = v.split("#")[0].strip()
+                else:
+                    q = v[0]
+                    end_idx = v.find(q, 1)
+                    v = v[1:end_idx] if end_idx != -1 else v.strip("'\"")
+                if k and k not in os.environ:
+                    os.environ[k] = v
+    except Exception:
+        pass
+
+
+_load_dotenv()
+
 logging.basicConfig(
     level=logging.INFO,
     format="%(asctime)s [%(levelname)s] [wBCT-AMM]: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S"
+    datefmt="%Y-%m-%d %H:%M:%S",
 )
 logger = logging.getLogger("wBCT-AMM")
 
-CONFIG = {
+
+def _checksum(addr: str) -> str:
+    return Web3.to_checksum_address(addr) if HAS_WEB3 and Web3 else addr
+
+
+CONFIG: Dict[str, Any] = {
     "CHAIN_ID": 8453,
     "RPC_URL": os.getenv("BASE_RPC_URL", "https://mainnet.base.org"),
-    
-    # Sözleşme Adresleri
-    "WBCT_ADDRESS": Web3.to_checksum_address("0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28") if Web3 else "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28",
-    "USDC_ADDRESS": Web3.to_checksum_address("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913") if Web3 else "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
-    "UNIVERSAL_ROUTER": Web3.to_checksum_address("0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40") if Web3 else "0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40",
-    "POOL_ID": "0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139",
-    
-    # Canlı Havuz Rezervi Parametresi (wBCT)
-    "POOL_WBCT_RESERVE": 2391.0,
-    "WBCT_UNIT_PRICE_USD": 0.001048,
 
-    # Zamanlama
+    # Sözleşme Adresleri (Base Mainnet)
+    "WBCT_ADDRESS": _checksum("0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28"),
+    "USDC_ADDRESS": _checksum("0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"),
+    "UNIVERSAL_ROUTER": _checksum("0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40"),
+    "POOL_ID": "0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139",
+
+    # Havuz Rezerv Parametreleri
+    "POOL_WBCT_RESERVE": float(os.getenv("BOT_POOL_WBCT_RESERVE", "2391.0")),
+    "WBCT_UNIT_PRICE_USD": float(os.getenv("BOT_WBCT_PRICE_USD", "0.001048")),
+
+    # Sepet & Beta Parametreleri (BTC + ETH + XRP)
+    "BASKET_SYMBOLS": ("BTC", "ETH", "XRP"),
+    "BETA_MULTIPLIER": float(os.getenv("BOT_BETA_MULTIPLIER", "2.5")),
+    "JITTER_MIN": 0.88,
+    "JITTER_MAX": 1.12,
+
+    # Zamanlama (5 dakikalık pencere)
     "POLL_INTERVAL_SECONDS": 10,
-    "WINDOW_SECONDS": 300,          # 5 Dakika
-    "EXECUTION_DELAY_MIN_SEC": 10,  # Minimum 10 sn gecikme
-    "EXECUTION_DELAY_MAX_SEC": 110, # Maksimum 110 sn gecikme
-    
-    # Delta Eşikleri
-    "MIN_DELTA_THRESHOLD_PCT": 0.15,# %0.15 altı pasif
-    "MAX_DELTA_CAP_PCT": 2.00,      # Tavan: %2.00
-    
+    "WINDOW_SECONDS": 300,
+
+    # Dinamik 1-3 Parçalı Bölme Eşikleri (Ham Sepet % Değişimi)
+    "MIN_DELTA_THRESHOLD_PCT": 0.15,   # %0.15 altı pasif (spam & gas koruması)
+    "SPLIT_2_THRESHOLD_PCT": 0.35,     # %0.35 - %0.75 -> 2 farklı cüzdan
+    "SPLIT_3_THRESHOLD_PCT": 0.75,     # >= %0.75      -> 3 farklı cüzdan
+    "MAX_IMPACT_CAP_PCT": 4.00,        # Tek 5dk pencerede maksimum fiyat etkisi tavanı
+
+    # Güvenlik & Devre Kesiciler
+    "MAX_GAS_GWEI": float(os.getenv("BOT_MAX_GAS_GWEI", "0.5")),
+    "MAX_SINGLE_TRADE_USD": float(os.getenv("BOT_MAX_SINGLE_TRADE_USD", "0.50")),
+    "MIN_SLICE_WBCT": 1.0,             # 1 wBCT altı toz işlemleri tek parçada topla
+    "MIN_SLICE_USD": 0.001,            # $0.001 altı toz işlemleri tek parçada topla
+    "MIN_WALLET_ETH_GAS": 0.000003,    # Cüzdan başına minimum gas tamponu
+    "MAX_DAILY_TXS": int(os.getenv("BOT_MAX_DAILY_TXS", "240")),
+
     # Simülasyon / Canlı Mod
     "DRY_RUN": os.getenv("BOT_DRY_RUN", "false").lower() in ("true", "1", "yes"),
 }
-
-class PriceFeed:
-    @staticmethod
-    def get_eth_price() -> Optional[float]:
-        try:
-            url = "https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT"
-            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-            with urllib.request.urlopen(req, timeout=4) as response:
-                if response.status == 200:
-                    data = json.loads(response.read().decode("utf-8"))
-                    return float(data["price"])
-        except Exception:
-            pass
-        return None
-
-class ExactImpactEngine:
-    """
-    AMM Havuz Fiyat Etkisi Formülü ile çalışan Karar Motoru.
-    ETH faizi/oranı kadar tam wBCT fiyat değişimi hesaplar.
-    """
-    def __init__(self, config: Dict[str, Any]):
-        self.config = config
-        self.history = deque()
-        self.last_action_price: Optional[float] = None
-        self.last_action_time: float = 0.0
-        self.pending_order: Optional[Dict[str, Any]] = None
-
-    def record_price(self, price: float, timestamp: float):
-        self.history.append((timestamp, price))
-        cutoff = timestamp - self.config["WINDOW_SECONDS"]
-        while self.history and self.history[0][0] < cutoff:
-            self.history.popleft()
-
-    def evaluate_market(self, current_price: float, current_time: float) -> Tuple[str, float, float, float]:
-        """
-        Dönüş: (ACTION, WBCT_MIKTARI, USD_DEGERI, DELTA_ORANI)
-        """
-        if self.pending_order is not None:
-            if current_time >= self.pending_order["execute_at"]:
-                order = self.pending_order
-                self.pending_order = None
-                return order["action"], order["wbct_amount"], order["usd_amount"], order["delta"]
-            else:
-                return "PENDING_WAIT", 0.0, 0.0, 0.0
-
-        if len(self.history) < 2:
-            return "HOLD", 0.0, 0.0, 0.0
-
-        if self.last_action_price is None:
-            self.last_action_price = self.history[0][1]
-            logger.info(f"Ilk referans baz ETH fiyati: ${self.last_action_price:.2f}")
-            return "HOLD", 0.0, 0.0, 0.0
-
-        if self.last_action_time > 0 and (current_time - self.last_action_time) < self.config["WINDOW_SECONDS"]:
-            return "HOLD", 0.0, 0.0, 0.0
-
-        delta_pct = ((current_price - self.last_action_price) / self.last_action_price) * 100.0
-        abs_delta = abs(delta_pct)
-
-        # Kural: %0.15 altındaki değişimlerde pasif kal (Spam koruması)
-        if abs_delta < self.config["MIN_DELTA_THRESHOLD_PCT"]:
-            return "HOLD", 0.0, 0.0, delta_pct
-
-        effective_delta = min(abs_delta, self.config["MAX_DELTA_CAP_PCT"])
-
-        # ======================================================================
-        # MATEMATİKSEL NOKTA ATIŞI FİYAT ETKİSİ HESAPLAMASI
-        # wBCT Miktarı = (Delta_ETH_% / 100) / 2.0 * Havuz_Rezervi
-        # ======================================================================
-        target_wbct = round((effective_delta / 100.0) / 2.0 * self.config["POOL_WBCT_RESERVE"], 2)
-        target_usd = round(target_wbct * self.config["WBCT_UNIT_PRICE_USD"], 4)
-
-        # 5 Dakika Dolduktan Sonraki İlk 1-2 Dakika İçindeki Rastgele Zamanlama (Jitter)
-        random_delay = random.uniform(
-            self.config["EXECUTION_DELAY_MIN_SEC"], 
-            self.config["EXECUTION_DELAY_MAX_SEC"]
-        )
-        execute_at_time = current_time + random_delay
-        action = "BUY" if delta_pct > 0 else "SELL"
-
-        self.pending_order = {
-            "action": action,
-            "wbct_amount": target_wbct,
-            "usd_amount": target_usd,
-            "delta": delta_pct,
-            "execute_at": execute_at_time,
-            "delay": random_delay
-        }
-
-        logger.info(
-            f"[PLANLANDI] 5 Dk doldu! ETH: %{delta_pct:+.2f} degisti. "
-            f"Havuzda tam %{delta_pct:+.2f} etki icin: {target_wbct:.2f} wBCT (${target_usd:.4f}) "
-            f"planlandi. {random_delay:.1f} sn sonra yurutulecek."
-        )
-        return "PENDING_WAIT", 0.0, 0.0, delta_pct
-
-    def commit_action(self, current_price: float, current_time: float):
-        self.last_action_price = current_price
-        self.last_action_time = current_time
 
 ERC20_BALANCE_ABI = [
     {
@@ -174,223 +129,531 @@ ERC20_BALANCE_ABI = [
         "inputs": [{"name": "_owner", "type": "address"}],
         "name": "balanceOf",
         "outputs": [{"name": "balance", "type": "uint256"}],
-        "type": "function"
+        "type": "function",
     }
 ]
+
+
+class PriceFeed:
+    """BTC + ETH + XRP fiyat sağlayıcı (Binance birincil, Coinbase yedek)."""
+
+    @staticmethod
+    def _http_json(url: str, timeout: int = 5) -> Optional[Any]:
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                if resp.status == 200:
+                    return json.loads(resp.read().decode("utf-8"))
+        except Exception:
+            return None
+        return None
+
+    @classmethod
+    def get_basket_prices(cls, symbols: Tuple[str, ...] = ("BTC", "ETH", "XRP")) -> Optional[Dict[str, float]]:
+        # 1. Binance toplu sorgu (tek HTTP isteği)
+        binance_syms = json.dumps([f"{s}USDT" for s in symbols], separators=(",", ":"))
+        url = f"https://api.binance.com/api/v3/ticker/price?symbols={urllib.request.quote(binance_syms)}"
+        data = cls._http_json(url)
+        if isinstance(data, list):
+            prices: Dict[str, float] = {}
+            for item in data:
+                sym = str(item.get("symbol", ""))
+                for s in symbols:
+                    if sym == f"{s}USDT":
+                        prices[s] = float(item["price"])
+            if len(prices) == len(symbols):
+                return prices
+
+        # 2. Coinbase yedek (tek tek spot fiyat)
+        fallback: Dict[str, float] = {}
+        for s in symbols:
+            cb = cls._http_json(f"https://api.coinbase.com/v2/prices/{s}-USD/spot")
+            if isinstance(cb, dict) and isinstance(cb.get("data"), dict) and "amount" in cb["data"]:
+                fallback[s] = float(cb["data"]["amount"])
+        if len(fallback) == len(symbols):
+            return fallback
+
+        return None
+
+    @classmethod
+    def get_eth_price(cls) -> Optional[float]:
+        prices = cls.get_basket_prices(("ETH",))
+        return prices.get("ETH") if prices else None
+
+
+class BasketImpactEngine:
+    """
+    BTC + ETH + XRP Kümülatif Sepet Endeksi + Kontrollü Beta + Dinamik 1-3 Parçalı Zamanlayıcı.
+    - Fiyatı başlangıç referansına göre kümülatif sepet endeksine bağlar (uzun vadede drift/kayma yapmaz).
+    - Hareket büyüklüğüne göre 5 dakikalık pencere içine yayılmış 1, 2 veya 3 rastgele parçalı emir planlar.
+    """
+
+    def __init__(self, config: Dict[str, Any], wallet_count: int = 3):
+        self.config = config
+        self.wallet_count = max(1, wallet_count)
+        self.initial_prices: Optional[Dict[str, float]] = None
+        self.last_eval_time: float = 0.0
+        self.cumulative_executed_pct: float = 0.0
+        self.pending_slices: List[Dict[str, Any]] = []
+
+    @staticmethod
+    def _random_weights(n: int) -> List[float]:
+        if n <= 1:
+            return [1.0]
+        raw = [random.uniform(0.25, 0.85) for _ in range(n)]
+        total = sum(raw)
+        return [r / total for r in raw]
+
+    def _choose_slice_count(self, abs_raw_delta_pct: float, total_wbct: float, total_usd: float) -> int:
+        if abs_raw_delta_pct >= self.config["SPLIT_3_THRESHOLD_PCT"]:
+            n = 3
+        elif abs_raw_delta_pct >= self.config["SPLIT_2_THRESHOLD_PCT"]:
+            n = 2
+        else:
+            n = 1
+        n = min(n, self.wallet_count)
+
+        # Toz (sub-dust) koruması: parça başına minimum eşik sağlanmıyorsa parça sayısını düşür
+        while n > 1:
+            if (total_wbct / n) >= self.config["MIN_SLICE_WBCT"] and (total_usd / n) >= self.config["MIN_SLICE_USD"]:
+                break
+            n -= 1
+        return n
+
+    def compute_cumulative_basket_pct(self, prices: Dict[str, float]) -> float:
+        assert self.initial_prices is not None
+        deltas = []
+        for sym in self.config["BASKET_SYMBOLS"]:
+            p0 = self.initial_prices[sym]
+            pt = prices[sym]
+            deltas.append(((pt - p0) / p0) * 100.0)
+        return sum(deltas) / len(deltas)
+
+    def evaluate_market(self, prices: Dict[str, float], current_time: float) -> Tuple[str, Optional[Dict[str, Any]]]:
+        """
+        Dönüş:
+          ("EXECUTE_SLICE", slice_dict) -> Zamanı gelmiş parçayı yürüt
+          ("PENDING_WAIT", None)        -> Kuyrukta zamanı bekleyen parçalar var
+          ("HOLD", None)                -> Pasif / eşik altı
+        """
+        # 1. Kuyrukta bekleyen parça varsa zamanı geleni çıkar
+        if self.pending_slices:
+            self.pending_slices.sort(key=lambda s: s["execute_at"])
+            if current_time >= self.pending_slices[0]["execute_at"]:
+                return "EXECUTE_SLICE", self.pending_slices.pop(0)
+            return "PENDING_WAIT", None
+
+        # 2. İlk referans sepet fiyatlarını sabitle
+        if self.initial_prices is None:
+            self.initial_prices = dict(prices)
+            self.last_eval_time = current_time
+            summary = " | ".join(f"{k}=${v:.4f}" if v < 10 else f"{k}=${v:.2f}" for k, v in prices.items())
+            logger.info(f"[REFERANS SEPET] Başlangıç endeksi sabitlendi: {summary}")
+            return "HOLD", None
+
+        # 3. 5 dakikalık pencere dolmadan yeni plan yapma
+        if (current_time - self.last_eval_time) < self.config["WINDOW_SECONDS"]:
+            return "HOLD", None
+
+        self.last_eval_time = current_time
+
+        # 4. Kümülatif sepet değişimi & drift-free hedef etki hesabı
+        cum_basket_pct = self.compute_cumulative_basket_pct(prices)
+        target_cum_impact = cum_basket_pct * self.config["BETA_MULTIPLIER"]
+        needed_impact = target_cum_impact - self.cumulative_executed_pct
+
+        # Eşdeğer ham sepet hareketi (eşik & bölme kararı için)
+        equiv_raw_delta = abs(needed_impact) / max(0.1, self.config["BETA_MULTIPLIER"])
+        if equiv_raw_delta < self.config["MIN_DELTA_THRESHOLD_PCT"]:
+            logger.info(
+                f"[PASIF] 5dk kontrol: Sepet={cum_basket_pct:+.3f}% | "
+                f"Hedef={target_cum_impact:+.3f}% | Uygulanan={self.cumulative_executed_pct:+.3f}% | "
+                f"Fark={equiv_raw_delta:.3f}% (<%{self.config['MIN_DELTA_THRESHOLD_PCT']})"
+            )
+            return "HOLD", None
+
+        # Kontrollü küçük jitter (±%12) + tavan koruması
+        jitter = random.uniform(self.config["JITTER_MIN"], self.config["JITTER_MAX"])
+        capped_impact = min(abs(needed_impact) * jitter, self.config["MAX_IMPACT_CAP_PCT"])
+        signed_impact = capped_impact if needed_impact > 0 else -capped_impact
+
+        # AMM Fiyat Etkisi Formülü: Delta_wBCT = (Impact% / 100) / 2 * Pool_wBCT_Reserve
+        total_wbct = round((capped_impact / 100.0) / 2.0 * self.config["POOL_WBCT_RESERVE"], 2)
+        total_usd = round(total_wbct * self.config["WBCT_UNIT_PRICE_USD"], 4)
+
+        # Güvenlik: Tek pencere üst harcama sınırı
+        max_usd = self.config["MAX_SINGLE_TRADE_USD"]
+        if total_usd > max_usd:
+            scale = max_usd / total_usd
+            total_usd = round(max_usd, 4)
+            total_wbct = round(total_wbct * scale, 2)
+            signed_impact = signed_impact * scale
+
+        if total_wbct < self.config["MIN_SLICE_WBCT"] or total_usd < self.config["MIN_SLICE_USD"]:
+            return "HOLD", None
+
+        action = "BUY" if signed_impact > 0 else "SELL"
+        n_slices = self._choose_slice_count(equiv_raw_delta, total_wbct, total_usd)
+        weights = self._random_weights(n_slices)
+
+        # 5 dakikalık pencere içine yayılmış rastgele yürütme zamanları (15s .. 270s)
+        window_span = max(60, self.config["WINDOW_SECONDS"] - 30)
+        slot_width = window_span / n_slices
+        wallet_order = list(range(self.wallet_count))
+        random.shuffle(wallet_order)
+
+        self.pending_slices = []
+        for i in range(n_slices):
+            w = weights[i]
+            s_wbct = round(total_wbct * w, 2)
+            s_usd = round(total_usd * w, 4)
+            s_impact = signed_impact * w
+            low_delay = 10.0 + i * slot_width
+            high_delay = min(float(window_span), (i + 1) * slot_width - 5.0)
+            delay = random.uniform(low_delay, max(low_delay + 5.0, high_delay))
+            self.pending_slices.append({
+                "action": action,
+                "wbct_amount": s_wbct,
+                "usd_amount": s_usd,
+                "signed_impact": s_impact,
+                "preferred_wallet_idx": wallet_order[i % len(wallet_order)],
+                "execute_at": current_time + delay,
+                "delay": delay,
+                "slice_no": i + 1,
+                "slice_total": n_slices,
+            })
+
+        self.pending_slices.sort(key=lambda s: s["execute_at"])
+        delays_str = ", ".join(f"#{s['slice_no']}:{s['delay']:.0f}s(${s['usd_amount']:.4f})" for s in self.pending_slices)
+        logger.info(
+            f"[PLANLANDI] Sepet={cum_basket_pct:+.2f}% (Beta {self.config['BETA_MULTIPLIER']}x) -> "
+            f"{action} {total_wbct:.2f} wBCT (${total_usd:.4f}) | {n_slices} parça: [{delays_str}]"
+        )
+        return "PENDING_WAIT", None
+
+    def commit_slice(self, slice_info: Dict[str, Any]):
+        self.cumulative_executed_pct += float(slice_info["signed_impact"])
+
 
 class LiveOnChainExecutor:
     def __init__(self, config: Dict[str, Any]):
         self.config = config
-        self.w3 = Web3(Web3.HTTPProvider(self.config["RPC_URL"], request_kwargs={"headers": {"User-Agent": "Mozilla/5.0"}}))
-        
-        self.wallets = [
-            ("Bot Alpha", os.getenv("BOT_KEY_1", "").strip()),
-            ("Bot Beta", os.getenv("BOT_KEY_2", "").strip()),
-            ("Bot Gamma", os.getenv("BOT_KEY_3", "").strip()),
+        if not HAS_WEB3:
+            raise RuntimeError("web3 / eth_account / eth_abi paketleri kurulu değil.")
+
+        self.w3 = Web3(
+            Web3.HTTPProvider(
+                self.config["RPC_URL"],
+                request_kwargs={"headers": {"User-Agent": "Mozilla/5.0"}, "timeout": 15},
+            )
+        )
+
+        raw_wallets = [
+            ("Bot Alpha", os.getenv("BOT_KEY_1", "").strip(), os.getenv("BOT_ADDRESS_1", "").strip()),
+            ("Bot Beta", os.getenv("BOT_KEY_2", "").strip(), os.getenv("BOT_ADDRESS_2", "").strip()),
+            ("Bot Gamma", os.getenv("BOT_KEY_3", "").strip(), os.getenv("BOT_ADDRESS_3", "").strip()),
         ]
-        self.wallets = [(name, k) for name, k in self.wallets if k]
+        self.wallets: List[Tuple[str, str, str]] = []
+        for name, key, addr_hint in raw_wallets:
+            if key:
+                derived = Account.from_key(key).address
+                if addr_hint and derived.lower() != addr_hint.lower():
+                    logger.warning(f"[UYARI] {name} için BOT_ADDRESS ile private key türetimi uyuşmuyor; türetilen adres kullanılıyor.")
+                self.wallets.append((name, key, derived))
+            elif addr_hint:
+                # Sadece bakiye okuma modu için salt-okunur adres
+                self.wallets.append((name, "", _checksum(addr_hint)))
+
         self.last_wallet_idx = -1
-        
+        self.daily_tx_day = time.strftime("%Y-%m-%d", time.gmtime())
+        self.daily_tx_count = 0
+
         self.pool_key = (
             self.config["USDC_ADDRESS"],
             self.config["WBCT_ADDRESS"],
             9000,
             90,
-            Web3.to_checksum_address("0x0000000000000000000000000000000000000000")
+            _checksum("0x0000000000000000000000000000000000000000"),
         )
-        
-        # Token sözleşmeleri (Bakiye kontrolleri için)
         self.usdc_contract = self.w3.eth.contract(address=self.config["USDC_ADDRESS"], abi=ERC20_BALANCE_ABI)
         self.wbct_contract = self.w3.eth.contract(address=self.config["WBCT_ADDRESS"], abi=ERC20_BALANCE_ABI)
-        
-        logger.info(f"Canli On-Chain Yonetici baslatildi: {len(self.wallets)} bot cuzdani aktif (Akilli Yedekleme Korumali).")
 
-    def check_wallet_liquidity(self, account, action: str, req_wbct: float, req_usd: float) -> Tuple[bool, str]:
-        """
-        Cüzdanın ETH (gas), USDC (alım için) ve wBCT (satım için) bakiyelerini doğrular.
-        Eğer bakiye yetersizse False ve sebep döner; böylece bot otomatik diğer cüzdana geçer.
-        """
+    def get_wallet_balances(self) -> List[Dict[str, Any]]:
+        eth_usd = PriceFeed.get_eth_price() or 0.0
+        wbct_usd = self.config["WBCT_UNIT_PRICE_USD"]
+        rows: List[Dict[str, Any]] = []
+        for name, _key, address in self.wallets:
+            eth_bal = float(self.w3.from_wei(self.w3.eth.get_balance(address), "ether"))
+            usdc_bal = self.usdc_contract.functions.balanceOf(address).call() / 1e6
+            wbct_bal = self.wbct_contract.functions.balanceOf(address).call() / 1e18
+            rows.append({
+                "name": name,
+                "address": address,
+                "eth": eth_bal,
+                "eth_usd": eth_bal * eth_usd,
+                "usdc": usdc_bal,
+                "wbct": wbct_bal,
+                "wbct_usd": wbct_bal * wbct_usd,
+                "eth_price": eth_usd,
+            })
+        return rows
+
+    def check_wallet_liquidity(self, address: str, action: str, req_wbct: float, req_usd: float) -> Tuple[bool, str]:
         try:
-            eth_bal = float(self.w3.from_wei(self.w3.eth.get_balance(account.address), 'ether'))
-            # Minimum 0.000002 ETH gas payı (yaklaşık 2 swaplık pay)
-            if eth_bal < 0.000002:
-                return False, f"Yetersiz Gas: {eth_bal:.6f} ETH (Gereken: >=0.000002 ETH)"
+            eth_bal = float(self.w3.from_wei(self.w3.eth.get_balance(address), "ether"))
+            if eth_bal < self.config["MIN_WALLET_ETH_GAS"]:
+                return False, f"Yetersiz Gas: {eth_bal:.6f} ETH (Min: {self.config['MIN_WALLET_ETH_GAS']:.6f} ETH)"
 
             if action == "BUY":
-                usdc_raw = self.usdc_contract.functions.balanceOf(account.address).call()
-                usdc_bal = usdc_raw / 1e6
-                # Alım için gereken minimum USDC
+                usdc_bal = self.usdc_contract.functions.balanceOf(address).call() / 1e6
                 if usdc_bal < req_usd:
                     return False, f"Yetersiz USDC: ${usdc_bal:.4f} (Gereken: ${req_usd:.4f})"
             elif action == "SELL":
-                wbct_raw = self.wbct_contract.functions.balanceOf(account.address).call()
-                wbct_bal = wbct_raw / 1e18
-                # Satım için gereken minimum wBCT
+                wbct_bal = self.wbct_contract.functions.balanceOf(address).call() / 1e18
                 if wbct_bal < req_wbct:
                     return False, f"Yetersiz wBCT: {wbct_bal:.2f} wBCT (Gereken: {req_wbct:.2f} wBCT)"
 
             return True, "OK"
         except Exception as e:
-            return False, f"Bakiye kontrol hatasi: {e}"
+            return False, f"Bakiye kontrol hatası: {type(e).__name__}"
 
     def build_v4_swap_calldata(self, action: str, wbct_amount: float, recipient: str) -> bytes:
         deadline = int(time.time()) + 1800
-        
-        if action == "BUY":
-            # USDC -> wBCT
-            usd_val = wbct_amount * self.config["WBCT_UNIT_PRICE_USD"]
-            amount_in = max(1000, int(usd_val * 1e6)) # USDC 6 decimals, min 0.001 USDC
-            
-            # Action 0x0b (SETTLE): (currency, maxAmount, payerIsUser)
-            param0 = encode(['address', 'uint256', 'bool'], [self.config["USDC_ADDRESS"], amount_in, True])
-            
-            # Action 0x06 (SWAP_EXACT_IN_SINGLE)
-            exact_input_params = (
-                self.pool_key,
-                True,        # zeroForOne: USDC (0) -> wBCT (1)
-                amount_in,   # amountIn
-                0,           # amountOutMinimum
-                0,           # flags
-                b""          # hookData
-            )
-            param1 = encode(['((address,address,uint24,int24,address),bool,uint128,uint128,uint256,bytes)'], [exact_input_params])
-            
-            # Action 0x0e (TAKE): (currency, recipient, minAmount)
-            param2 = encode(['address', 'address', 'uint256'], [self.config["WBCT_ADDRESS"], recipient, 0])
-            
-        else:
-            # SELL: wBCT -> USDC
-            amount_in = int(wbct_amount * 1e18) # wBCT 18 decimals
-            
-            # Action 0x0b (SETTLE): (currency, maxAmount, payerIsUser)
-            param0 = encode(['address', 'uint256', 'bool'], [self.config["WBCT_ADDRESS"], amount_in, True])
-            
-            # Action 0x06 (SWAP_EXACT_IN_SINGLE)
-            exact_input_params = (
-                self.pool_key,
-                False,       # zeroForOne: wBCT (1) -> USDC (0)
-                amount_in,   # amountIn
-                0,           # amountOutMinimum
-                0,           # flags
-                b""          # hookData
-            )
-            param1 = encode(['((address,address,uint24,int24,address),bool,uint128,uint128,uint256,bytes)'], [exact_input_params])
-            
-            # Action 0x0e (TAKE): (currency, recipient, minAmount)
-            param2 = encode(['address', 'address', 'uint256'], [self.config["USDC_ADDRESS"], recipient, 0])
 
-        actions = bytes.fromhex('0b060e')
-        params = [param0, param1, param2]
-        v4_swap_input = encode(['bytes', 'bytes[]'], [actions, params])
-        
-        commands = bytes.fromhex('10')
-        inputs = [v4_swap_input]
-        exec_selector = bytes.fromhex('3593564c') # execute(bytes,bytes[],uint256)
-        exec_args = encode(['bytes', 'bytes[]', 'uint256'], [commands, inputs, deadline])
+        if action == "BUY":
+            usd_val = wbct_amount * self.config["WBCT_UNIT_PRICE_USD"]
+            amount_in = max(1000, int(usd_val * 1e6))
+            param0 = encode(["address", "uint256", "bool"], [self.config["USDC_ADDRESS"], amount_in, True])
+            exact_input_params = (self.pool_key, True, amount_in, 0, 0, b"")
+            param1 = encode(["((address,address,uint24,int24,address),bool,uint128,uint128,uint256,bytes)"], [exact_input_params])
+            param2 = encode(["address", "address", "uint256"], [self.config["WBCT_ADDRESS"], recipient, 0])
+        else:
+            amount_in = int(wbct_amount * 1e18)
+            param0 = encode(["address", "uint256", "bool"], [self.config["WBCT_ADDRESS"], amount_in, True])
+            exact_input_params = (self.pool_key, False, amount_in, 0, 0, b"")
+            param1 = encode(["((address,address,uint24,int24,address),bool,uint128,uint128,uint256,bytes)"], [exact_input_params])
+            param2 = encode(["address", "address", "uint256"], [self.config["USDC_ADDRESS"], recipient, 0])
+
+        actions = bytes.fromhex("0b060e")
+        v4_swap_input = encode(["bytes", "bytes[]"], [actions, [param0, param1, param2]])
+        commands = bytes.fromhex("10")
+        exec_selector = bytes.fromhex("3593564c")
+        exec_args = encode(["bytes", "bytes[]", "uint256"], [commands, [v4_swap_input], deadline])
         return exec_selector + exec_args
 
-    def execute_live_order(self, action: str, wbct_amount: float, usd_amount: float, eth_price: float):
-        if not self.wallets:
-            logger.error("Cüzdan anahtari bulunamadi!")
+    def execute_live_order(self, slice_info: Dict[str, Any]) -> bool:
+        action = slice_info["action"]
+        wbct_amount = float(slice_info["wbct_amount"])
+        usd_amount = float(slice_info["usd_amount"])
+        preferred_idx = int(slice_info.get("preferred_wallet_idx", -1))
+
+        # Güvenlik 1: Günlük işlem devre kesici
+        today = time.strftime("%Y-%m-%d", time.gmtime())
+        if today != self.daily_tx_day:
+            self.daily_tx_day = today
+            self.daily_tx_count = 0
+        if self.daily_tx_count >= self.config["MAX_DAILY_TXS"]:
+            logger.warning(f"[DEVRE KESİCİ] Günlük maksimum işlem limitine ({self.config['MAX_DAILY_TXS']}) ulaşıldı.")
             return False
 
-        # Multi-wallet rotasyon listesi oluştur (önceki cüzdan hariç olanları önceliklendir)
-        non_last = [i for i in range(len(self.wallets)) if i != self.last_wallet_idx]
-        random.shuffle(non_last)
-        last_candidates = [self.last_wallet_idx] if self.last_wallet_idx >= 0 else []
-        candidates_order = non_last + last_candidates
+        # Güvenlik 2: Tek işlem USD tavanı
+        if usd_amount <= 0 or usd_amount > self.config["MAX_SINGLE_TRADE_USD"]:
+            logger.error(f"[GÜVENLİK ENGELİ] İşlem tutarı sınır dışı: ${usd_amount:.4f} (Tavan: ${self.config['MAX_SINGLE_TRADE_USD']})")
+            return False
 
-        # Cüzdanları sırayla kontrol et: Yeterli bakiyesi (USDC/wBCT ve Gas) olan İLK cüzdanı seç
+        signable = [(i, w) for i, w in enumerate(self.wallets) if w[1]]
+        if not signable:
+            logger.error("İmzalanabilir cüzdan anahtarı bulunamadı!")
+            return False
+
+        # Önce tercih edilen cüzdan, sonra diğerleri
+        candidates: List[int] = []
+        if 0 <= preferred_idx < len(self.wallets) and self.wallets[preferred_idx][1]:
+            candidates.append(preferred_idx)
+        others = [i for i, _ in signable if i not in candidates and i != self.last_wallet_idx]
+        random.shuffle(others)
+        candidates.extend(others)
+        if self.last_wallet_idx >= 0 and self.last_wallet_idx not in candidates and self.wallets[self.last_wallet_idx][1]:
+            candidates.append(self.last_wallet_idx)
+
+        # Güvenlik 3: DRY_RUN gerçek koruması
+        if self.config["DRY_RUN"]:
+            idx = candidates[0]
+            name, _k, addr = self.wallets[idx]
+            logger.info(
+                f"[DRY-RUN] >>> {name} ({addr[:6]}...{addr[-4:]}) | "
+                f"Parça {slice_info['slice_no']}/{slice_info['slice_total']} | "
+                f"{action} {wbct_amount:.2f} wBCT (${usd_amount:.4f})"
+            )
+            self.last_wallet_idx = idx
+            self.daily_tx_count += 1
+            return True
+
+        # Güvenlik 4: Base Gas tavan koruması
+        try:
+            gas_price = self.w3.eth.gas_price
+            gas_gwei = float(self.w3.from_wei(gas_price, "gwei"))
+            if gas_gwei > self.config["MAX_GAS_GWEI"]:
+                logger.warning(f"[GAS TAVANI] Base gas yüksek ({gas_gwei:.4f} gwei > {self.config['MAX_GAS_GWEI']} gwei); parça atlandı.")
+                return False
+        except Exception as e:
+            logger.error(f"[RPC HATASI] Gas okunamadı: {type(e).__name__}")
+            return False
+
         selected_idx = None
-        for cand_idx in candidates_order:
-            name, key = self.wallets[cand_idx]
-            account = Account.from_key(key)
-            has_funds, reason = self.check_wallet_liquidity(account, action, wbct_amount, usd_amount)
+        for cand_idx in candidates:
+            name, _key, address = self.wallets[cand_idx]
+            has_funds, reason = self.check_wallet_liquidity(address, action, wbct_amount, usd_amount)
             if has_funds:
                 selected_idx = cand_idx
                 break
-            else:
-                logger.warning(f"[BAKİYE YETERSİZ - YEDEK CÜZDANA GEÇİLİYOR] {name} ({account.address[:6]}...{account.address[-4]}): {reason}")
+            logger.warning(f"[BAKİYE YETERSİZ - YEDEK CÜZDANA GEÇİLİYOR] {name} ({address[:6]}...{address[-4:]}): {reason}")
 
         if selected_idx is None:
-            logger.error(f"[TÜM CÜZDANLAR YETERSİZ] {action} islemi ({wbct_amount:.2f} wBCT / ${usd_amount:.4f}) icin hicbir cuzdanin bakiyesi uygun degil!")
+            logger.error(f"[TÜM CÜZDANLAR YETERSİZ] {action} ({wbct_amount:.2f} wBCT / ${usd_amount:.4f}) yürütülemedi!")
             return False
 
         self.last_wallet_idx = selected_idx
-        name, key = self.wallets[selected_idx]
+        name, key, address = self.wallets[selected_idx]
         account = Account.from_key(key)
 
         try:
-            calldata = self.build_v4_swap_calldata(action, wbct_amount, account.address)
-            nonce = self.w3.eth.get_transaction_count(account.address, 'pending')
-            gas_price = self.w3.eth.gas_price
-
+            calldata = self.build_v4_swap_calldata(action, wbct_amount, address)
+            nonce = self.w3.eth.get_transaction_count(address, "pending")
             tx = {
-                'from': account.address,
-                'to': self.config["UNIVERSAL_ROUTER"],
-                'data': calldata,
-                'nonce': nonce,
-                'gas': 240000,
-                'gasPrice': gas_price,
-                'chainId': self.config["CHAIN_ID"]
+                "from": address,
+                "to": self.config["UNIVERSAL_ROUTER"],
+                "data": calldata,
+                "nonce": nonce,
+                "gas": 240000,
+                "gasPrice": gas_price,
+                "chainId": self.config["CHAIN_ID"],
             }
-
             signed = account.sign_transaction(tx)
             tx_hash = self.w3.eth.send_raw_transaction(signed.raw_transaction)
             logger.info(
-                f"[ON-CHAIN SWAP SENT] >>> {name} ({account.address[:6]}...{account.address[-4:]}) "
-                f"| Islem: {action} ({wbct_amount:.2f} wBCT / ${usd_amount:.4f}) | Tx: 0x{tx_hash.hex()}"
+                f"[ON-CHAIN SWAP SENT] >>> {name} ({address[:6]}...{address[-4:]}) | "
+                f"Parça {slice_info['slice_no']}/{slice_info['slice_total']} | "
+                f"{action} ({wbct_amount:.2f} wBCT / ${usd_amount:.4f}) | Tx: 0x{tx_hash.hex()}"
             )
-            
-            # Receipt bekle (DEXScreener onayı)
             rc = self.w3.eth.wait_for_transaction_receipt(tx_hash, timeout=45)
             if rc.get("status") == 1:
+                self.daily_tx_count += 1
                 logger.info(
-                    f"[AMM POOL SWAP SUCCESS] Block: {rc['blockNumber']} | Gas: {rc['gasUsed']} | "
-                    f"DEXScreener Mumu Basildi! Tx: 0x{tx_hash.hex()}"
+                    f"[AMM POOL SWAP SUCCESS] Block: {rc['blockNumber']} | Gas: {rc['gasUsed']} | Tx: 0x{tx_hash.hex()}"
                 )
                 return True
-            else:
-                logger.error(f"[AMM POOL SWAP REVERTED] Tx status 0: 0x{tx_hash.hex()}")
-                return False
-
+            logger.error(f"[AMM POOL SWAP REVERTED] Tx status 0: 0x{tx_hash.hex()}")
+            return False
         except Exception as e:
-            logger.error(f"[ON-CHAIN ERROR] {name} islem hatasi: {e}")
+            # Private key asla loglanmaz
+            logger.error(f"[ON-CHAIN ERROR] {name} işlem hatası: {type(e).__name__}: {str(e)[:160]}")
             return False
 
-def run_live_loop():
-    logger.info("=" * 65)
-    logger.info("  LockTrace wBCT Market Maker (CANLI UNISWAP V4 AMM ENTEGRASYONU)")
-    logger.info("=" * 65)
 
-    engine = ExactImpactEngine(CONFIG)
+def _rpc_call(rpc_url: str, method: str, params: list) -> Any:
+    payload = json.dumps({"jsonrpc": "2.0", "id": 1, "method": method, "params": params}).encode("utf-8")
+    req = urllib.request.Request(
+        rpc_url,
+        data=payload,
+        headers={"Content-Type": "application/json", "User-Agent": "Mozilla/5.0"},
+    )
+    with urllib.request.urlopen(req, timeout=12) as resp:
+        data = json.loads(resp.read().decode("utf-8"))
+    if "error" in data:
+        raise RuntimeError(data["error"])
+    return data.get("result")
+
+
+def _get_erc20_balance_rpc(rpc_url: str, token_addr: str, wallet_addr: str, decimals: int) -> float:
+    padded = wallet_addr.lower().replace("0x", "").rjust(64, "0")
+    call_data = "0x70a08231" + padded  # balanceOf(address)
+    res = _rpc_call(rpc_url, "eth_call", [{"to": token_addr, "data": call_data}, "latest"])
+    return int(res, 16) / (10 ** decimals) if res and res != "0x" else 0.0
+
+
+def print_wallet_balances():
+    rpc_url = CONFIG["RPC_URL"]
+    raw_entries = [
+        ("Bot Alpha", os.getenv("BOT_KEY_1", "").strip(), os.getenv("BOT_ADDRESS_1", "").strip()),
+        ("Bot Beta", os.getenv("BOT_KEY_2", "").strip(), os.getenv("BOT_ADDRESS_2", "").strip()),
+        ("Bot Gamma", os.getenv("BOT_KEY_3", "").strip(), os.getenv("BOT_ADDRESS_3", "").strip()),
+    ]
+    wallets: List[Tuple[str, str]] = []
+    for name, key, addr_hint in raw_entries:
+        addr = addr_hint
+        if key and HAS_WEB3 and Account is not None:
+            addr = Account.from_key(key).address
+        if addr:
+            wallets.append((name, addr))
+
+    if not wallets:
+        print("Hiç bot cüzdanı yapılandırılmamış (.env içinde BOT_ADDRESS_1..3 veya BOT_KEY_1..3 yok).")
+        return
+
+    eth_price = PriceFeed.get_eth_price() or 0.0
+    print("\n" + "=" * 96)
+    print(f"  LOCKTRACE wBCT BOT CÜZDAN BAKİYELERİ (Base Mainnet | ETH = ${eth_price:,.2f})")
+    print("=" * 96)
+    tot_eth = tot_eth_usd = tot_usdc = tot_wbct = 0.0
+    for name, addr in wallets:
+        eth_hex = _rpc_call(rpc_url, "eth_getBalance", [addr, "latest"])
+        eth_bal = int(eth_hex, 16) / 1e18 if eth_hex else 0.0
+        eth_usd = eth_bal * eth_price
+        usdc_bal = _get_erc20_balance_rpc(rpc_url, CONFIG["USDC_ADDRESS"], addr, 6)
+        wbct_bal = _get_erc20_balance_rpc(rpc_url, CONFIG["WBCT_ADDRESS"], addr, 18)
+
+        tot_eth += eth_bal
+        tot_eth_usd += eth_usd
+        tot_usdc += usdc_bal
+        tot_wbct += wbct_bal
+        est_swaps = int(eth_usd / 0.002) if eth_usd > 0 else 0
+        print(
+            f"  {name:<10} | {addr} | "
+            f"ETH: {eth_bal:.6f} (${eth_usd:.2f}, ~{est_swaps} swap) | "
+            f"USDC: ${usdc_bal:.4f} | wBCT: {wbct_bal:.2f}"
+        )
+    print("-" * 96)
+    est_days = round((tot_eth_usd / 0.002) / 160.0, 1) if tot_eth_usd > 0 else 0.0
+    print(
+        f"  {'TOPLAM':<10} | {'3 Cüzdan':<42} | "
+        f"ETH: {tot_eth:.6f} (${tot_eth_usd:.2f}, ~{est_days} gün) | "
+        f"USDC: ${tot_usdc:.4f} | wBCT: {tot_wbct:.2f}"
+    )
+    print("=" * 96 + "\n")
+
+
+def run_live_loop():
+    logger.info("=" * 72)
+    logger.info("  LockTrace wBCT Market Maker v2.0 (BTC+ETH+XRP Sepet + Dinamik 1-3 Bölme)")
+    logger.info(f"  Mod: {'DRY-RUN (Simülasyon)' if CONFIG['DRY_RUN'] else 'CANLI (Base Mainnet)'} | Beta: {CONFIG['BETA_MULTIPLIER']}x | Max Gas: {CONFIG['MAX_GAS_GWEI']} gwei")
+    logger.info("=" * 72)
+
     executor = LiveOnChainExecutor(CONFIG)
+    engine = BasketImpactEngine(CONFIG, wallet_count=len(executor.wallets))
+    logger.info(f"Aktif bot cüzdanı: {len(executor.wallets)}")
 
     try:
         while True:
             now = time.time()
-            eth_price = PriceFeed.get_eth_price()
-
-            if eth_price is not None:
-                engine.record_price(eth_price, now)
-                action, wbct_amt, usd_amt, delta = engine.evaluate_market(eth_price, now)
-
-                if action in ("BUY", "SELL"):
-                    logger.info(f"[TETIKLENDI] ETH %{delta:+.2f} degisti! Uniswap V4 havuzunda canli takas yapiliyor...")
-                    success = executor.execute_live_order(action, wbct_amt, usd_amt, eth_price)
-                    if success:
-                        engine.commit_action(eth_price, now)
-                elif action == "PENDING_WAIT":
-                    pass
-                else:
-                    ref_p = engine.last_action_price or eth_price
-                    logger.debug(f"[PASIF] ETH: ${eth_price:.2f} | Baz: ${ref_p:.2f} | Delta: %{delta:.2f}")
-
+            prices = PriceFeed.get_basket_prices(CONFIG["BASKET_SYMBOLS"])
+            if prices is not None:
+                status, slice_info = engine.evaluate_market(prices, now)
+                if status == "EXECUTE_SLICE" and slice_info is not None:
+                    ok = executor.execute_live_order(slice_info)
+                    if ok:
+                        engine.commit_slice(slice_info)
             sleep_time = CONFIG["POLL_INTERVAL_SECONDS"] + random.uniform(-1.0, 2.0)
             time.sleep(max(3.0, sleep_time))
-
     except KeyboardInterrupt:
         logger.info("Bot durduruldu.")
 
+
 if __name__ == "__main__":
-    run_live_loop()
+    parser = argparse.ArgumentParser(description="LockTrace wBCT Market Maker v2.0")
+    parser.add_argument("--balances", action="store_true", help="Bot cüzdanlarının Base Mainnet bakiyelerini listele")
+    args = parser.parse_args()
+    if args.balances:
+        print_wallet_balances()
+    else:
+        run_live_loop()

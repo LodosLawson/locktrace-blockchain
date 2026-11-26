@@ -118,8 +118,8 @@
     crossorigin="anonymous" defer></script>
 
   <!-- Stitch Simplified Mobile UI Module (Modular Pro / Simple Mode) -->
-  <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.21.0" />
-  <script src="/simple-mode/simple-mode.js?v=2.21.0" integrity="sha256-JpIDb7YgXEaGt4zljlSZJYnocxhh7h6Fkhzl6Jw5pr4=" crossorigin="anonymous" defer></script>
+  <link rel="stylesheet" href="/simple-mode/simple-mode.css?v=2.22.0" />
+  <script src="/simple-mode/simple-mode.js?v=2.22.0" integrity="sha256-JpIDb7YgXEaGt4zljlSZJYnocxhh7h6Fkhzl6Jw5pr4=" crossorigin="anonymous" defer></script>
 
   <!-- Tailwind CSS & Exact Stitch Design Tokens -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -1057,7 +1057,7 @@
           <span
             class="font-headline-sm text-headline-sm text-on-surface font-semibold leading-tight text-base tracking-tight">BlocTag</span>
           <span class="text-[9.5px] font-mono text-on-surface-variant font-medium leading-none">Developed by LockTrace</span>
-          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[10px] mt-0.5">Mainnet v2.21.0</span>
+          <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider text-[10px] mt-0.5">Mainnet v2.22.0</span>
           <span id="sidebarBrandNodeVal" class="hidden"></span>
         </div>
       </div>
@@ -1278,7 +1278,7 @@
           <div class="flex flex-col min-w-0 leading-none">
             <span
               class="font-label-sm text-[10px] sm:text-[11px] text-on-surface tracking-wide uppercase font-semibold shrink-0"
-              id="mobileNetLabel">Mainnet v2.21.0</span>
+              id="mobileNetLabel">Mainnet v2.22.0</span>
             <span class="text-[9px] font-mono text-on-surface-variant truncate max-w-[85px] xs:max-w-[110px]"
               id="mobileNetNodeUrl">net: <span class="text-primary font-medium"
                 id="mobileNetNodeVal">locktrace.space</span></span>
@@ -1380,7 +1380,7 @@
         <span class="w-2 h-2 rounded-full bg-primary animate-pulse shrink-0" id="desktopNetDot"></span>
         <div class="flex flex-col min-w-0 leading-tight">
           <span class="font-label-sm text-label-sm text-on-surface tracking-wide uppercase font-semibold"
-            id="desktopNetLabel">BlocTag Mainnet v2.21.0</span>
+            id="desktopNetLabel">BlocTag Mainnet v2.22.0</span>
           <span class="text-[10px] font-mono text-on-surface-variant truncate max-w-[150px]" id="desktopNetNodeUrl">net:
             <span class="text-primary font-medium" id="desktopNetNodeVal">locktrace.space</span></span>
         </div>
@@ -3514,34 +3514,95 @@
             </div>
 
             <!-- Base Bridge Relayer Status & Live Gas Balance -->
-            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-space-sm p-3.5 rounded-2xl bg-surface-container border border-outline-variant/20 shadow-sm">
-              <div class="flex items-center gap-2.5">
-                <div class="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center text-primary shrink-0">
-                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">local_gas_station</span>
+            <div class="mb-space-sm p-3.5 rounded-2xl bg-surface-container border border-outline-variant/20 shadow-sm flex flex-col gap-3">
+              <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+                <div class="flex items-center gap-2.5 min-w-0">
+                  <div class="w-8 h-8 rounded-xl bg-primary/15 flex items-center justify-center text-primary shrink-0">
+                    <span class="material-symbols-outlined notranslate text-[18px]" translate="no">local_gas_station</span>
+                  </div>
+                  <div class="min-w-0">
+                    <div class="flex items-center gap-1.5 flex-wrap text-xs">
+                      <span class="text-on-surface-variant font-medium">Base Bridge Relayer:</span>
+                      <a id="explorerRelayerAddressLink" href="https://basescan.org/address/0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3" target="_blank"
+                        rel="noopener noreferrer" class="font-mono text-primary font-semibold hover:underline inline-flex items-center gap-0.5">
+                        <span id="explorerRelayerAddressText">0x66eD...4ED3</span>
+                        <span class="material-symbols-outlined notranslate text-[12px]" translate="no">open_in_new</span>
+                      </a>
+                      <button type="button" onclick="copyToClipboard('0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3'); showToast('Relayer address copied!');"
+                        class="p-0.5 rounded hover:bg-surface-container-high text-outline hover:text-primary transition-colors" title="Copy Relayer Address">
+                        <span class="material-symbols-outlined notranslate text-[13px]" translate="no">content_copy</span>
+                      </button>
+                    </div>
+                    <div class="text-[11px] text-on-surface-variant flex items-center gap-1.5 mt-0.5 flex-wrap">
+                      <span id="explorerRelayerStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                      <span>Live Gas:</span>
+                      <span id="explorerRelayerBalance" class="font-mono font-bold text-emerald-400">Loading...</span>
+                      <span id="explorerRelayerStatusBadge" class="ml-1 px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold">Active</span>
+                    </div>
+                  </div>
                 </div>
-                <div>
-                  <div class="flex items-center gap-1.5 flex-wrap text-xs">
-                    <span class="text-on-surface-variant font-medium">Base Relayer Address:</span>
-                    <a id="explorerRelayerAddressLink" href="https://basescan.org/address/0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3" target="_blank"
-                      rel="noopener noreferrer" class="font-mono text-primary font-semibold hover:underline inline-flex items-center gap-0.5">
-                      <span id="explorerRelayerAddressText">0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3</span>
-                      <span class="material-symbols-outlined notranslate text-[12px]" translate="no">open_in_new</span>
-                    </a>
-                  </div>
-                  <div class="text-[11px] text-on-surface-variant flex items-center gap-1.5 mt-0.5">
-                    <span id="explorerRelayerStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
-                    <span>Live Gas Balance:</span>
-                    <span id="explorerRelayerBalance" class="font-mono font-bold text-emerald-400">Loading...</span>
-                    <span id="explorerRelayerStatusBadge" class="ml-1 px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold">Active</span>
-                  </div>
+                <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
+                  <button type="button" onclick="refreshBaseInfrastructureTelemetry(true); showToast('Base Relayer & AMM Bot balances refreshed');"
+                    class="px-2.5 py-1 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center gap-1 border border-outline-variant/20 transition-all text-xs font-semibold active:scale-95">
+                    <span class="material-symbols-outlined notranslate text-[13px] text-primary" translate="no">refresh</span>
+                    <span>Check Live</span>
+                  </button>
                 </div>
               </div>
-              <div class="flex items-center gap-2 self-end sm:self-auto shrink-0">
-                <button type="button" onclick="refreshRelayerBalance(true); showToast('Relayer gas balance refreshed');"
-                  class="px-2.5 py-1 rounded-xl bg-surface-container-high hover:bg-surface-container-highest text-on-surface flex items-center gap-1 border border-outline-variant/20 transition-all text-xs font-semibold active:scale-95">
-                  <span class="material-symbols-outlined notranslate text-[13px] text-primary" translate="no">refresh</span>
-                  <span>Check Balance</span>
-                </button>
+
+              <!-- Compact Base AMM Liquidity Bots (v2.0 BTC+ETH+XRP Basket) -->
+              <div class="pt-2.5 border-t border-outline-variant/15">
+                <div class="flex items-center justify-between gap-2 mb-2">
+                  <span class="text-[10px] font-bold uppercase tracking-wider text-on-surface-variant flex items-center gap-1.5">
+                    <span class="material-symbols-outlined notranslate text-[13px] text-secondary" translate="no">smart_toy</span>
+                    <span>Base AMM Liquidity Nodes (v2.0 • BTC+ETH+XRP Basket)</span>
+                  </span>
+                  <span id="explorerBotsTotalSummary" class="font-mono text-[10px] text-on-surface-variant">Loading...</span>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  <div class="p-2 rounded-xl bg-surface-container-low/80 border border-outline-variant/15 flex flex-col gap-1">
+                    <div class="flex items-center justify-between gap-1">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <span id="expBotDot0" class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                        <span class="text-[11px] font-semibold text-on-surface truncate">Bot Alpha</span>
+                        <span class="font-mono text-[10px] text-on-surface-variant">0xEe1A...72dC</span>
+                      </div>
+                      <div class="flex items-center gap-0.5 shrink-0">
+                        <button type="button" onclick="openBotWalletDetailsModal('0xEe1A47900eabB02aDD2F6Eb6008BC403EEee72dC', 'Bot Node Alpha')" class="p-0.5 hover:text-primary text-outline" title="Detaylar"><span class="material-symbols-outlined notranslate text-[13px]" translate="no">info</span></button>
+                        <a href="https://basescan.org/address/0xEe1A47900eabB02aDD2F6Eb6008BC403EEee72dC" target="_blank" rel="noopener noreferrer" class="p-0.5 hover:text-primary text-outline" title="BaseScan"><span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span></a>
+                      </div>
+                    </div>
+                    <div id="expBotBal0" class="font-mono text-[10px] text-on-surface-variant truncate">ETH: -- • USDC: -- • wBCT: --</div>
+                  </div>
+                  <div class="p-2 rounded-xl bg-surface-container-low/80 border border-outline-variant/15 flex flex-col gap-1">
+                    <div class="flex items-center justify-between gap-1">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <span id="expBotDot1" class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                        <span class="text-[11px] font-semibold text-on-surface truncate">Bot Beta</span>
+                        <span class="font-mono text-[10px] text-on-surface-variant">0x431E...B41B</span>
+                      </div>
+                      <div class="flex items-center gap-0.5 shrink-0">
+                        <button type="button" onclick="openBotWalletDetailsModal('0x431E2760a64211DAbc3A42d8cfB27032fC71B41B', 'Bot Node Beta')" class="p-0.5 hover:text-primary text-outline" title="Detaylar"><span class="material-symbols-outlined notranslate text-[13px]" translate="no">info</span></button>
+                        <a href="https://basescan.org/address/0x431E2760a64211DAbc3A42d8cfB27032fC71B41B" target="_blank" rel="noopener noreferrer" class="p-0.5 hover:text-primary text-outline" title="BaseScan"><span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span></a>
+                      </div>
+                    </div>
+                    <div id="expBotBal1" class="font-mono text-[10px] text-on-surface-variant truncate">ETH: -- • USDC: -- • wBCT: --</div>
+                  </div>
+                  <div class="p-2 rounded-xl bg-surface-container-low/80 border border-outline-variant/15 flex flex-col gap-1">
+                    <div class="flex items-center justify-between gap-1">
+                      <div class="flex items-center gap-1.5 min-w-0">
+                        <span id="expBotDot2" class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                        <span class="text-[11px] font-semibold text-on-surface truncate">Bot Gamma</span>
+                        <span class="font-mono text-[10px] text-on-surface-variant">0xE625...F04B</span>
+                      </div>
+                      <div class="flex items-center gap-0.5 shrink-0">
+                        <button type="button" onclick="openBotWalletDetailsModal('0xE625870281B2F54635DB1585F1C8610ae9b6F04B', 'Bot Node Gamma')" class="p-0.5 hover:text-primary text-outline" title="Detaylar"><span class="material-symbols-outlined notranslate text-[13px]" translate="no">info</span></button>
+                        <a href="https://basescan.org/address/0xE625870281B2F54635DB1585F1C8610ae9b6F04B" target="_blank" rel="noopener noreferrer" class="p-0.5 hover:text-primary text-outline" title="BaseScan"><span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span></a>
+                      </div>
+                    </div>
+                    <div id="expBotBal2" class="font-mono text-[10px] text-on-surface-variant truncate">ETH: -- • USDC: -- • wBCT: --</div>
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -3680,7 +3741,7 @@
               <span>← Back to Wallet</span>
             </button>
             <div class="flex items-center gap-2">
-              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">BlocTag PoS v2.21.0</span>
+              <span class="text-xs font-mono text-on-surface-variant hidden sm:inline">BlocTag PoS v2.22.0</span>
             </div>
           </div>
 
@@ -3691,7 +3752,7 @@
                 <span class="font-label-sm text-label-sm text-primary uppercase tracking-wider font-mono">P2P
                   Decentralized Infrastructure</span>
                 <span
-                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.21.0</span>
+                  class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px] font-bold">v2.22.0</span>
               </div>
               <h1 class="font-headline-md text-headline-md text-on-surface tracking-tight font-semibold">Node &amp;
                 Validator Hub</h1>
@@ -3760,7 +3821,7 @@
           </div>
 
 
-          <!-- 1,000 BCT Validator Staking Vault Card (v2.21.0 PoS Collateral) -->
+          <!-- 1,000 BCT Validator Staking Vault Card (v2.22.0 PoS Collateral) -->
           <div id="validatorStakingVaultCard"
             class="p-5 sm:p-7 rounded-3xl bg-surface-container border border-primary/30 shadow-lg flex flex-col gap-6 mb-8 overflow-hidden max-w-full">
             
@@ -5424,14 +5485,14 @@
             <div class="flex items-center gap-2">
               <span
                 class="px-2.5 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[11px] font-semibold">LOCKTRACE
-                MASTER DOCS v2.21.0</span>
+                MASTER DOCS v2.22.0</span>
               <span class="text-outline text-xs">•</span>
               <span class="text-on-surface-variant font-mono text-xs">Open Source &amp; Decentralized Protocol</span>
             </div>
             <h1 class="font-headline-md md:text-3xl text-on-surface font-bold">BlocTag Protocol Handbook (Developed by LockTrace)
             </h1>
             <p class="font-body-sm text-body-sm text-on-surface-variant max-w-2xl">
-              Comprehensive v2.21.0 architectural guide: 3-Phase Atomic CAS Consensus, O(1) Delta SQLite WAL Engine,
+              Comprehensive v2.22.0 architectural guide: 3-Phase Atomic CAS Consensus, O(1) Delta SQLite WAL Engine,
               Anti-Stall Emergency LWMA, Priority RBF Mempool, P2P Compact Block Relay, State Snapshot Warp Sync, OpenCL
               GPU Mining, Anti-DDoS &amp; Sybil /24 Subnet Defense, and REST/P2P API reference.
             </p>
@@ -5493,9 +5554,9 @@
               <div class="flex flex-col">
                 <div class="flex items-center gap-2">
                   <h2 class="font-headline-sm text-sm sm:text-base text-on-surface font-bold leading-tight">Official
-                    Technical Whitepaper (v2.21.0)</h2>
+                    Technical Whitepaper (v2.22.0)</h2>
                   <span class="px-2 py-0.5 rounded-full bg-primary text-on-primary font-mono text-[10px] font-bold">PDF
-                    &bull; v2.21.0</span>
+                    &bull; v2.22.0</span>
                 </div>
                 <p class="text-xs text-on-surface-variant line-clamp-1">3-Phase Atomic CAS Consensus, Compact Block
                   Relay, State Snapshot Warp Sync, OpenCL GPU Mining, Anti-Stall LWMA &amp; RBF</p>
@@ -5629,7 +5690,7 @@
                   <span
                     class="px-2.5 py-1 rounded-full bg-primary/10 border border-primary/30 text-primary font-mono text-[11px] font-semibold flex items-center gap-1">
                     <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
-                    <span>v2.21.0 Active</span>
+                    <span>v2.22.0 Active</span>
                   </span>
                   <span
                     class="px-2.5 py-1 rounded-full bg-surface-container border border-outline-variant/20 text-on-surface-variant font-mono text-[11px]">
@@ -6659,15 +6720,49 @@
                   <span class="material-symbols-outlined notranslate text-[20px]" translate="no">smart_toy</span>
                 </div>
                 <div>
-                  <h4 class="text-xs font-bold text-on-surface uppercase tracking-wider">Automated Liquidity &amp; Market Stability (AMM)</h4>
-                  <p class="text-[11px] text-on-surface-variant">Early-Stage Price Pegging &amp; Organic Volume Engine</p>
+                  <h4 class="text-xs font-bold text-on-surface uppercase tracking-wider">Automated Liquidity &amp; Market Stability (AMM v2.0)</h4>
+                  <p class="text-[11px] text-on-surface-variant">BTC + ETH + XRP Basket Index • Controlled Beta (2.5x) • Dynamic 1–3 Split</p>
                 </div>
               </div>
-              <span class="px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-400 font-mono text-[10px] font-semibold border border-emerald-500/20">Active</span>
+              <button type="button" onclick="refreshBaseInfrastructureTelemetry(true); showToast('Relayer & AMM Bot bakiyeleri yenilendi');"
+                class="px-2.5 py-1 rounded-full bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 font-mono text-[10px] font-semibold border border-emerald-500/20 flex items-center gap-1 transition-all">
+                <span class="material-symbols-outlined notranslate text-[12px]" translate="no">refresh</span>
+                <span>v2.0 Live</span>
+              </button>
+            </div>
+
+            <!-- Bridge Relayer Wallet & Live Base ETH Gas Strip -->
+            <div class="p-3 rounded-2xl bg-surface-container/70 border border-primary/20 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <div class="flex items-center gap-2.5 min-w-0">
+                <div class="w-8 h-8 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0">
+                  <span class="material-symbols-outlined notranslate text-[18px]" translate="no">local_gas_station</span>
+                </div>
+                <div class="min-w-0">
+                  <div class="flex items-center gap-1.5 flex-wrap text-[11px]">
+                    <span class="font-semibold text-on-surface">Bridge Relayer (Base L2):</span>
+                    <a id="bridgeRelayerAddressLink" href="https://basescan.org/address/0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3" target="_blank"
+                      rel="noopener noreferrer" class="font-mono text-primary font-semibold hover:underline inline-flex items-center gap-0.5">
+                      <span id="bridgeRelayerAddressText">0x66eD...4ED3</span>
+                      <span class="material-symbols-outlined notranslate text-[11px]" translate="no">open_in_new</span>
+                    </a>
+                    <button type="button" onclick="copyToClipboard('0x66eDD7782830b5f95d2c8EbDcdfF266646eA4ED3'); showToast('Relayer adresi kopyalandı!');"
+                      class="p-0.5 rounded hover:bg-surface-container-high text-outline hover:text-primary" title="Adresi Kopyala">
+                      <span class="material-symbols-outlined notranslate text-[12px]" translate="no">content_copy</span>
+                    </button>
+                  </div>
+                  <div class="text-[11px] text-on-surface-variant flex items-center gap-1.5 mt-0.5 flex-wrap">
+                    <span id="bridgeRelayerStatusDot" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    <span>ETH Gas Balance:</span>
+                    <span id="bridgeRelayerBalance" class="font-mono font-bold text-emerald-400">Loading...</span>
+                    <span id="bridgeRelayerStatusBadge" class="px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold">Active</span>
+                  </div>
+                </div>
+              </div>
+              <span class="text-[10px] font-mono text-on-surface-variant shrink-0">1:1 Mint &amp; Burn Settlement</span>
             </div>
 
             <p class="text-xs text-on-surface-variant leading-relaxed">
-              wBCT employs an automated market liquidity engine designed to maintain price stability and correlation with Ethereum market trends. During early distribution, verified protocol bots execute calibrated micro-swaps linked to broader market movements (ETH price action) to ensure natural chart progression.
+              wBCT employs the <strong>v2.0 Multi-Asset Basket Engine</strong> anchored to the cumulative average of <strong>BTC, ETH &amp; XRP</strong> (2.5x controlled beta) with gas-optimized dynamic 1–3 wallet order splitting inside each 5-minute window to keep chart depth organic without price drift.
             </p>
 
             <div class="p-3 rounded-2xl bg-surface-container/60 border border-outline-variant/15 flex flex-col gap-2">
@@ -6684,54 +6779,75 @@
             </div>
 
             <div class="flex flex-col gap-1.5 pt-1">
-              <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Official Protocol Bot Addresses (Base Mainnet)</span>
+              <div class="flex items-center justify-between gap-2">
+                <span class="text-[10px] font-bold text-on-surface-variant uppercase tracking-wider">Official Protocol Bot Addresses (Base Mainnet)</span>
+                <span id="bridgeBotsTotalSummary" class="font-mono text-[10px] text-on-surface-variant">Loading...</span>
+              </div>
               <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                <div class="p-2 rounded-xl bg-surface-container-high/40 border border-outline-variant/10 flex items-center justify-between">
-                  <div class="flex flex-col truncate pr-1">
-                    <span class="text-[10px] font-semibold text-on-surface">Bot Node Alpha</span>
-                    <span class="font-mono text-[10px] text-on-surface-variant truncate">0xEe1A...72dC</span>
+                <div class="p-2.5 rounded-xl bg-surface-container-high/40 border border-outline-variant/10 flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 truncate pr-1">
+                      <span id="bridgeBotDot0" class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                      <div class="flex flex-col truncate">
+                        <span class="text-[10px] font-semibold text-on-surface">Bot Node Alpha</span>
+                        <span class="font-mono text-[10px] text-on-surface-variant truncate">0xEe1A...72dC</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button onclick="openBotWalletDetailsModal('0xEe1A47900eabB02aDD2F6Eb6008BC403EEee72dC', 'Bot Node Alpha')" class="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1 transition-all" title="Detaylar & Canlı Durum" type="button">
+                        <span class="material-symbols-outlined notranslate text-[12px]" translate="no">info</span>
+                        <span>Detay</span>
+                      </button>
+                      <a href="https://basescan.org/address/0xEe1A47900eabB02aDD2F6Eb6008BC403EEee72dC" target="_blank" rel="noopener noreferrer" class="p-1 hover:text-primary text-outline" title="View on BaseScan">
+                        <span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span>
+                      </a>
+                    </div>
                   </div>
-                  <div class="flex items-center gap-1 shrink-0">
-                    <button onclick="openBotWalletDetailsModal('0xEe1A47900eabB02aDD2F6Eb6008BC403EEee72dC', 'Bot Node Alpha')" class="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1 transition-all" title="Detaylar & Canlı Durum" type="button">
-                      <span class="material-symbols-outlined notranslate text-[13px]" translate="no">info</span>
-                      <span>Detaylar</span>
-                    </button>
-                    <a href="https://basescan.org/address/0xEe1A47900eabB02aDD2F6Eb6008BC403EEee72dC" target="_blank" rel="noopener noreferrer" class="p-1 hover:text-primary text-outline" title="View on BaseScan">
-                      <span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span>
-                    </a>
-                  </div>
+                  <div id="bridgeBotBal0" class="font-mono text-[10px] text-on-surface-variant bg-surface-container/60 px-2 py-1 rounded-lg truncate">ETH: -- • USDC: -- • wBCT: --</div>
                 </div>
 
-                <div class="p-2 rounded-xl bg-surface-container-high/40 border border-outline-variant/10 flex items-center justify-between">
-                  <div class="flex flex-col truncate pr-1">
-                    <span class="text-[10px] font-semibold text-on-surface">Bot Node Beta</span>
-                    <span class="font-mono text-[10px] text-on-surface-variant truncate">0x431E...B41B</span>
+                <div class="p-2.5 rounded-xl bg-surface-container-high/40 border border-outline-variant/10 flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 truncate pr-1">
+                      <span id="bridgeBotDot1" class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                      <div class="flex flex-col truncate">
+                        <span class="text-[10px] font-semibold text-on-surface">Bot Node Beta</span>
+                        <span class="font-mono text-[10px] text-on-surface-variant truncate">0x431E...B41B</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button onclick="openBotWalletDetailsModal('0x431E2760a64211DAbc3A42d8cfB27032fC71B41B', 'Bot Node Beta')" class="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1 transition-all" title="Detaylar & Canlı Durum" type="button">
+                        <span class="material-symbols-outlined notranslate text-[12px]" translate="no">info</span>
+                        <span>Detay</span>
+                      </button>
+                      <a href="https://basescan.org/address/0x431E2760a64211DAbc3A42d8cfB27032fC71B41B" target="_blank" rel="noopener noreferrer" class="p-1 hover:text-primary text-outline" title="View on BaseScan">
+                        <span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span>
+                      </a>
+                    </div>
                   </div>
-                  <div class="flex items-center gap-1 shrink-0">
-                    <button onclick="openBotWalletDetailsModal('0x431E2760a64211DAbc3A42d8cfB27032fC71B41B', 'Bot Node Beta')" class="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1 transition-all" title="Detaylar & Canlı Durum" type="button">
-                      <span class="material-symbols-outlined notranslate text-[13px]" translate="no">info</span>
-                      <span>Detaylar</span>
-                    </button>
-                    <a href="https://basescan.org/address/0x431E2760a64211DAbc3A42d8cfB27032fC71B41B" target="_blank" rel="noopener noreferrer" class="p-1 hover:text-primary text-outline" title="View on BaseScan">
-                      <span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span>
-                    </a>
-                  </div>
+                  <div id="bridgeBotBal1" class="font-mono text-[10px] text-on-surface-variant bg-surface-container/60 px-2 py-1 rounded-lg truncate">ETH: -- • USDC: -- • wBCT: --</div>
                 </div>
 
-                <div class="p-2 rounded-xl bg-surface-container-high/40 border border-outline-variant/10 flex items-center justify-between">
-                  <div class="flex flex-col truncate pr-1">
-                    <span class="text-[10px] font-semibold text-on-surface">Bot Node Gamma</span>
-                    <span class="font-mono text-[10px] text-on-surface-variant truncate">0xE625...F04B</span>
+                <div class="p-2.5 rounded-xl bg-surface-container-high/40 border border-outline-variant/10 flex flex-col gap-1.5">
+                  <div class="flex items-center justify-between">
+                    <div class="flex items-center gap-1.5 truncate pr-1">
+                      <span id="bridgeBotDot2" class="w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0"></span>
+                      <div class="flex flex-col truncate">
+                        <span class="text-[10px] font-semibold text-on-surface">Bot Node Gamma</span>
+                        <span class="font-mono text-[10px] text-on-surface-variant truncate">0xE625...F04B</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center gap-1 shrink-0">
+                      <button onclick="openBotWalletDetailsModal('0xE625870281B2F54635DB1585F1C8610ae9b6F04B', 'Bot Node Gamma')" class="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1 transition-all" title="Detaylar & Canlı Durum" type="button">
+                        <span class="material-symbols-outlined notranslate text-[12px]" translate="no">info</span>
+                        <span>Detay</span>
+                      </button>
+                      <a href="https://basescan.org/address/0xE625870281B2F54635DB1585F1C8610ae9b6F04B" target="_blank" rel="noopener noreferrer" class="p-1 hover:text-primary text-outline" title="View on BaseScan">
+                        <span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span>
+                      </a>
+                    </div>
                   </div>
-                  <div class="flex items-center gap-1 shrink-0">
-                    <button onclick="openBotWalletDetailsModal('0xE625870281B2F54635DB1585F1C8610ae9b6F04B', 'Bot Node Gamma')" class="px-2 py-0.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[10px] font-semibold flex items-center gap-1 transition-all" title="Detaylar & Canlı Durum" type="button">
-                      <span class="material-symbols-outlined notranslate text-[13px]" translate="no">info</span>
-                      <span>Detaylar</span>
-                    </button>
-                    <a href="https://basescan.org/address/0xE625870281B2F54635DB1585F1C8610ae9b6F04B" target="_blank" rel="noopener noreferrer" class="p-1 hover:text-primary text-outline" title="View on BaseScan">
-                      <span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span>
-                    </a>
-                  </div>
+                  <div id="bridgeBotBal2" class="font-mono text-[10px] text-on-surface-variant bg-surface-container/60 px-2 py-1 rounded-lg truncate">ETH: -- • USDC: -- • wBCT: --</div>
                 </div>
               </div>
             </div>
@@ -6815,7 +6931,7 @@
               <div class="flex flex-col">
                 <div class="flex flex-wrap items-center gap-2">
                   <h3 class="font-headline-sm text-sm sm:text-base font-semibold text-on-surface">Cryptographic
-                    Integrity Shield (v2.21.0)</h3>
+                    Integrity Shield (v2.22.0)</h3>
                   <span
                     class="px-2 py-0.5 rounded-full bg-emerald-500/15 text-emerald-400 font-mono text-[10px] font-bold">ACTIVE
                     &bull; VERIFIED</span>
@@ -8305,7 +8421,7 @@
         <div class="text-on-surface-variant">Yakılacak Cüzdan:</div>
         <div id="walletBurnTargetAddr" class="text-on-surface font-bold break-all">—</div>
         <div class="text-amber-400 mt-1 leading-relaxed">
-          <strong>Telif Kuralı (v2.21.0):</strong> Kapatılan cüzdana gelecek tüm Space (beğeni, yorum, takip) ve Protocol Rooms (oda, mevzu, yanıt) telif gelirleri otomatik olarak <strong>Protokol Hazinesi'ne (TREASURY)</strong> aktarılır.
+          <strong>Telif Kuralı (v2.22.0):</strong> Kapatılan cüzdana gelecek tüm Space (beğeni, yorum, takip) ve Protocol Rooms (oda, mevzu, yanıt) telif gelirleri otomatik olarak <strong>Protokol Hazinesi'ne (TREASURY)</strong> aktarılır.
         </div>
         <div class="text-on-surface-variant leading-relaxed">İpucu: Korumak istediğiniz BCT, .bct alan adı, oda veya paylaşım telif haklarınızı yakmadan önce yeni bir cüzdana devredin.</div>
       </div>
@@ -8369,7 +8485,7 @@
           <span id="royaltyTransferFeeBadge" class="text-amber-300 font-bold">0.50 BCT</span>
         </div>
         <div class="text-[10.5px] font-sans text-on-surface-variant pt-1 border-t border-outline-variant/15 leading-relaxed">
-          • <strong>Alıcı Onayı Zorunludur (v2.21.0):</strong> Devir teklifi alıcıya gönderilir; alıcı <em>Your Account</em> üzerinden imzalayıp onayladığında devir gerçekleşir ve ücret o an kesilir (reddedilirse ücret kesilmez).<br />
+          • <strong>Alıcı Onayı Zorunludur (v2.22.0):</strong> Devir teklifi alıcıya gönderilir; alıcı <em>Your Account</em> üzerinden imzalayıp onayladığında devir gerçekleşir ve ücret o an kesilir (reddedilirse ücret kesilmez).<br />
           • <strong>Yıllık 3 devir limiti cüzdandan bağımsız olarak her paylaşımın kendi üzerinde hesaplanır</strong> (son 365 gün). Toplu devirde 3/3 limitine ulaşan paylaşımlar otomatik atlanır.<br />
           • Kapatılmış (yakılmış) cüzdanlara devir yapılamaz; kapatılan cüzdanların telifleri otomatik olarak <strong>Protokol Hazinesi'ne</strong> aktarılır.
         </div>
@@ -8585,7 +8701,7 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- MODAL 2E: SPACE POST DETAILS & ON-CHAIN OWNERSHIP JOURNEY (v2.21.0)       -->
+  <!-- MODAL 2E: SPACE POST DETAILS & ON-CHAIN OWNERSHIP JOURNEY (v2.22.0)       -->
   <!-- ========================================================================= -->
   <div class="fixed inset-0 z-[97] bg-background/88 backdrop-blur-md hidden items-end sm:items-center justify-center sm:p-4"
     id="post-journey-modal" onclick="if(event.target===this) closePostJourneyModal();">
@@ -8833,7 +8949,7 @@
             <span id="secModalStatusText">Verifying Signed Release...</span>
           </span>
           <span class="px-2 py-0.5 rounded-full bg-primary/15 text-primary font-mono text-[10px]"
-            id="secModalVersionBadge">v2.21.0</span>
+            id="secModalVersionBadge">v2.22.0</span>
         </div>
         <div class="grid grid-cols-1 gap-1.5 font-mono text-[11px] text-on-surface-variant pt-1">
           <div class="flex flex-col bg-surface-container p-2 rounded-lg">
@@ -9559,7 +9675,7 @@
           </div>
         </div>
 
-        <!-- Dedicated Own-Profile Incoming & Outgoing Transfer Consent Panel (v2.21.0) -->
+        <!-- Dedicated Own-Profile Incoming & Outgoing Transfer Consent Panel (v2.22.0) -->
         <div id="proProfilePendingTransfersSection" class="hidden flex-col gap-2 pt-1">
           <div class="flex items-center justify-between gap-2 px-1">
             <div class="flex items-center gap-1.5">
@@ -10450,7 +10566,7 @@
   </div>
 
   <!-- ========================================================================= -->
-  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v2.21.0)     -->
+  <!-- LOCKTRACE NON-CUSTODIAL CRYPTO ENGINE & STITCH UI CONTROLLER (v2.22.0)     -->
   <!-- ========================================================================= -->
   <script>
     'use strict';
@@ -11929,7 +12045,7 @@
       const netTxt = isLocal ? 'Local Node Active' : 'BlocTag Mainnet';
       const mobLbl = document.getElementById('mobileNetLabel');
       const dskLbl = document.getElementById('desktopNetLabel');
-      const currentVer = (rpcState.integrityStatus && rpcState.integrityStatus.version) ? ('v' + rpcState.integrityStatus.version) : 'v2.21.0';
+      const currentVer = (rpcState.integrityStatus && rpcState.integrityStatus.version) ? ('v' + rpcState.integrityStatus.version) : 'v2.22.0';
       if (mobLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) mobLbl.textContent = isLocal ? `Local ${currentVer}` : `Mainnet ${currentVer}`;
       if (dskLbl && (!rpcState.integrityStatus || rpcState.integrityStatus.verified !== false)) dskLbl.textContent = isLocal ? `Local Node Active (${currentVer})` : `LockTrace Mainnet ${currentVer}`;
     }
@@ -13148,7 +13264,7 @@
 
 
     // =========================================================================
-    // WALLET BALANCE & REVENUE ANALYTICS CONTROLLER (v2.21.0)
+    // WALLET BALANCE & REVENUE ANALYTICS CONTROLLER (v2.22.0)
     // =========================================================================
     function toggleAnalyticsView() {
       if (currentTxFilter === 'analytics') {
@@ -15288,40 +15404,81 @@
 
     function updateRelayerUI(relayer) {
       if (!relayer) return;
-      const addrEl = document.getElementById('explorerRelayerAddressText');
-      const linkEl = document.getElementById('explorerRelayerAddressLink');
-      const balEl = document.getElementById('explorerRelayerBalance');
-      const badgeEl = document.getElementById('explorerRelayerStatusBadge');
-      const dotEl = document.getElementById('explorerRelayerStatusDot');
+      const prefixes = ['explorerRelayer', 'bridgeRelayer'];
+      prefixes.forEach(prefix => {
+        const addrEl = document.getElementById(prefix + 'AddressText');
+        const linkEl = document.getElementById(prefix + 'AddressLink');
+        const balEl = document.getElementById(prefix + 'Balance');
+        const badgeEl = document.getElementById(prefix + 'StatusBadge');
+        const dotEl = document.getElementById(prefix + 'StatusDot');
 
-      if (addrEl && relayer.relayer_address) {
-        const a = relayer.relayer_address;
-        addrEl.textContent = a.slice(0, 6) + '...' + a.slice(-4);
-        if (linkEl) linkEl.href = `https://basescan.org/address/${a}`;
-      }
-      if (balEl && typeof relayer.balance_formatted !== 'undefined') {
-        balEl.textContent = relayer.balance_formatted;
-        if (relayer.is_operational) {
-          balEl.className = 'font-mono font-bold text-emerald-400';
-          if (badgeEl) {
-            badgeEl.textContent = 'Active (Ready)';
-            badgeEl.className = 'ml-1 px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold';
-          }
-          if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
-        } else {
-          balEl.className = 'font-mono font-bold text-amber-400';
-          if (badgeEl) {
-            badgeEl.textContent = 'Low Gas (Needs Top-Up)';
-            badgeEl.className = 'ml-1 px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 text-[10px] font-semibold';
-          }
-          if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-amber-400';
+        if (addrEl && relayer.relayer_address) {
+          const a = relayer.relayer_address;
+          addrEl.textContent = a.slice(0, 6) + '...' + a.slice(-4);
+          if (linkEl) linkEl.href = `https://basescan.org/address/${a}`;
         }
+        if (balEl && typeof relayer.balance_formatted !== 'undefined') {
+          const usdStr = relayer.balance_usd_formatted ? ` (${relayer.balance_usd_formatted})` : '';
+          balEl.textContent = relayer.balance_formatted + usdStr;
+          if (relayer.is_operational) {
+            balEl.className = 'font-mono font-bold text-emerald-400';
+            if (badgeEl) {
+              badgeEl.textContent = 'Active (Ready)';
+              badgeEl.className = 'ml-1 px-1.5 py-0.2 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-semibold';
+            }
+            if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+          } else {
+            balEl.className = 'font-mono font-bold text-amber-400';
+            if (badgeEl) {
+              badgeEl.textContent = 'Low Gas (Needs Top-Up)';
+              badgeEl.className = 'ml-1 px-1.5 py-0.2 rounded bg-amber-500/15 text-amber-400 text-[10px] font-semibold';
+            }
+            if (dotEl) dotEl.className = 'w-2 h-2 rounded-full bg-amber-400';
+          }
+        }
+      });
+    }
+
+    function updateBotWalletsTelemetryUI(payload) {
+      if (!payload || !Array.isArray(payload.wallets)) return;
+      if (payload.relayer) updateRelayerUI(payload.relayer);
+
+      const totals = payload.totals || {};
+      const totalText = `Total: ${Number(totals.eth || 0).toFixed(6)} ETH ($${Number(totals.eth_usd || 0).toFixed(2)}) • $${Number(totals.usdc || 0).toFixed(2)} USDC • ${Number(totals.wbct || 0).toFixed(1)} wBCT`;
+      ['explorerBotsTotalSummary', 'bridgeBotsTotalSummary'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.textContent = totalText;
+      });
+
+      payload.wallets.slice(0, 3).forEach((w, idx) => {
+        const ethTxt = `${Number(w.eth_balance || 0).toFixed(6)} ETH`;
+        const usdcTxt = `$${Number(w.usdc_balance || 0).toFixed(2)}`;
+        const wbctTxt = `${Number(w.wbct_balance || 0).toFixed(1)} wBCT`;
+        const line = `${ethTxt} • ${usdcTxt} • ${wbctTxt}`;
+        const dotCls = w.gas_ok ? 'w-1.5 h-1.5 rounded-full bg-emerald-400 shrink-0' : 'w-1.5 h-1.5 rounded-full bg-amber-400 shrink-0';
+        ['expBot', 'bridgeBot'].forEach(prefix => {
+          const balEl = document.getElementById(`${prefix}Bal${idx}`);
+          const dotEl = document.getElementById(`${prefix}Dot${idx}`);
+          if (balEl) balEl.textContent = line;
+          if (dotEl) dotEl.className = dotCls;
+        });
+      });
+    }
+
+    async function refreshBaseInfrastructureTelemetry(force = false) {
+      try {
+        const res = await apiFetch(`/market/bot-wallets${force ? '?refresh=1' : ''}`);
+        const data = (res && res.body && res.body.data) || (res && res.data);
+        if (data) updateBotWalletsTelemetryUI(data);
+      } catch (err) {
+        console.debug('Failed to refresh Base infrastructure telemetry:', err);
       }
     }
 
     async function loadExplorerBaseTransactions() {
       const list = document.getElementById('feedBaseTxsList');
       try {
+        refreshBaseInfrastructureTelemetry(false);
         const res = await apiFetch('/bridge/base-transactions?limit=50');
         const relayerData = (res && res.body && res.body.data && res.body.data.relayer) || (res && res.data && res.data.relayer);
         if (relayerData) {
@@ -17643,7 +17800,7 @@
           verified: allOk,
           devMode: isLocalHost,
           sigValid: sigValid || isLocalHost || Boolean(info.verified),
-          version: info.version || '2.21.0',
+          version: info.version || '2.22.0',
           sha256: info.index_html_sha256 || '--',
           ipfsCid: info.ipfs_cid_v1 || '--',
           onchainBlock: info.onchain_anchor ? info.onchain_anchor.block_index : null
@@ -17967,6 +18124,9 @@
     async function initBridgeTab() {
       // 1. Load active bridge parameters & supported networks (passive, no aggressive wallet popups)
       try {
+        if (typeof refreshBaseInfrastructureTelemetry === 'function') {
+          refreshBaseInfrastructureTelemetry(false);
+        }
         if (typeof loadBridgeConfig === 'function') {
           await loadBridgeConfig();
         }
@@ -23798,21 +23958,15 @@
     const BOT_DIRECTORY_METADATA = {
       '0xee1a47900eabb02add2f6eb6008bc403eeee72dc': {
         name: 'Bot Node Alpha',
-        role: 'AMM Primary Liquidity & Price Pegging Engine',
-        eth: '0.0142 ETH',
-        wbct: '~810.5 wBCT'
+        role: 'AMM Basket Engine v2.0 (BTC+ETH+XRP • Primary Node)'
       },
       '0x431e2760a64211dabc3a42d8cfb27032fc71b41b': {
         name: 'Bot Node Beta',
-        role: 'AMM Secondary Stability & Rotation Node',
-        eth: '0.0118 ETH',
-        wbct: '~785.2 wBCT'
+        role: 'AMM Basket Engine v2.0 (BTC+ETH+XRP • Split Node)'
       },
       '0xe625870281b2f54635db1585f1c8610ae9b6f04b': {
         name: 'Bot Node Gamma',
-        role: 'AMM Liquidity Rebalancing & Depth Node',
-        eth: '0.0135 ETH',
-        wbct: '~795.0 wBCT'
+        role: 'AMM Basket Engine v2.0 (BTC+ETH+XRP • Depth Node)'
       }
     };
 
@@ -23872,50 +24026,48 @@
       const listEl = document.getElementById('botDetailRecentActivityList');
 
       if (icon) icon.classList.add('animate-spin');
+      if (ethBalEl) ethBalEl.textContent = 'Loading...';
+      if (wbctBalEl) wbctBalEl.textContent = 'Loading...';
 
       try {
-        const meta = BOT_DIRECTORY_METADATA[currentViewingBotAddress.toLowerCase()] || {};
-        if (ethBalEl) ethBalEl.textContent = meta.eth || '0.0125 ETH';
-        if (wbctBalEl) wbctBalEl.textContent = meta.wbct || '~797.0 wBCT';
+        const res = await apiFetch(`/market/bot-wallet/${currentViewingBotAddress}?refresh=1`);
+        const data = (res && res.body && res.body.data) || (res && res.data);
+        if (data) {
+          const ethUsdStr = data.eth_usd ? ` ($${Number(data.eth_usd).toFixed(2)})` : '';
+          if (ethBalEl) ethBalEl.textContent = `${data.eth_formatted || '0.000000 ETH'}${ethUsdStr}`;
+          if (wbctBalEl) wbctBalEl.textContent = `${data.wbct_formatted || '0.00 wBCT'} • ${data.usdc_formatted || '$0.0000'} USDC`;
 
-        // Fetch live server details if available
-        try {
-          const res = await apiFetch(`/market/bot-wallet/${currentViewingBotAddress}`);
-          if (res && res.ok && res.body && res.body.data) {
-            const data = res.body.data;
-            if (ethBalEl && data.eth_balance) ethBalEl.textContent = `${data.eth_balance} ETH`;
-            if (wbctBalEl && data.wbct_balance) wbctBalEl.textContent = `~${data.wbct_balance} wBCT`;
-          }
-        } catch (_e) { }
-
-        // Render Recent Activity Swaps
-        if (listEl) {
-          const shortAddr = currentViewingBotAddress.substring(0, 6) + '...' + currentViewingBotAddress.substring(38);
-          const sampleTxs = [
-            { type: 'AMM Micro-Swap wBCT ↔ USDC', time: 'Son 4 dk', amount: '0.12 wBCT', status: 'Confirmed (Base L2)' },
-            { type: 'Dynamic Liquidity Pegging Rebalance', time: 'Son 18 dk', amount: '0.28 wBCT', status: 'Confirmed (Base L2)' },
-            { type: 'Autonomous Volatility Smoothing', time: 'Son 35 dk', amount: '0.09 wBCT', status: 'Confirmed (Base L2)' }
-          ];
-
-          listEl.innerHTML = sampleTxs.map(tx => `
-            <div class="p-2.5 rounded-xl bg-surface-container-high/40 border border-outline-variant/15 flex items-center justify-between text-xs">
-              <div class="flex items-center gap-2">
-                <div class="w-6 h-6 rounded-lg bg-emerald-500/15 text-emerald-400 flex items-center justify-center shrink-0">
-                  <span class="material-symbols-outlined notranslate text-[14px]" translate="no">swap_horiz</span>
+          if (listEl) {
+            const safeUrl = `https://basescan.org/address/${encodeURIComponent(data.address || currentViewingBotAddress)}`;
+            const gasBadge = data.gas_ok
+              ? '<span class="px-2 py-0.5 rounded bg-emerald-500/15 text-emerald-400 text-[10px] font-mono font-semibold">Gas OK</span>'
+              : '<span class="px-2 py-0.5 rounded bg-amber-500/15 text-amber-400 text-[10px] font-mono font-semibold">Low Gas</span>';
+            listEl.innerHTML = `
+              <div class="p-3 rounded-xl bg-surface-container-high/40 border border-outline-variant/15 flex flex-col gap-2 text-xs">
+                <div class="flex items-center justify-between">
+                  <span class="font-semibold text-on-surface text-[11px]">Engine: ${escapeHtml(data.engine_version || 'v2.0')} (${escapeHtml(data.index_basket || 'BTC + ETH + XRP')})</span>
+                  ${gasBadge}
                 </div>
-                <div class="flex flex-col">
-                  <span class="font-semibold text-on-surface text-[11px]">${tx.type}</span>
-                  <span class="text-[10px] text-on-surface-variant font-mono">${tx.time} • ${tx.amount}</span>
+                <div class="grid grid-cols-3 gap-2 font-mono text-[10px] text-on-surface-variant">
+                  <div class="p-1.5 rounded-lg bg-surface-container/60">ETH<br><strong class="text-on-surface">${escapeHtml(data.eth_formatted || '0.000000 ETH')}</strong></div>
+                  <div class="p-1.5 rounded-lg bg-surface-container/60">USDC<br><strong class="text-on-surface">${escapeHtml(data.usdc_formatted || '$0.0000')}</strong></div>
+                  <div class="p-1.5 rounded-lg bg-surface-container/60">wBCT<br><strong class="text-on-surface">${escapeHtml(data.wbct_formatted || '0.00 wBCT')}</strong></div>
                 </div>
+                <a href="${safeUrl}" target="_blank" rel="noopener noreferrer"
+                  class="mt-1 px-3 py-1.5 rounded-lg bg-primary/10 hover:bg-primary/20 text-primary text-[11px] font-semibold flex items-center justify-center gap-1.5 transition-all">
+                  <span>View Live On-Chain Swaps on BaseScan</span>
+                  <span class="material-symbols-outlined notranslate text-[13px]" translate="no">open_in_new</span>
+                </a>
               </div>
-              <a href="https://basescan.org/address/${encodeURIComponent(currentViewingBotAddress)}" target="_blank" rel="noopener noreferrer"
-                class="px-2 py-0.5 rounded bg-emerald-500/10 text-emerald-400 text-[10px] font-mono font-semibold hover:underline flex items-center gap-0.5">
-                <span>Doğrulandı</span>
-                <span class="material-symbols-outlined notranslate text-[10px]" translate="no">open_in_new</span>
-              </a>
-            </div>
-          `).join('');
+            `;
+          }
+        } else {
+          if (ethBalEl) ethBalEl.textContent = 'Unavailable';
+          if (wbctBalEl) wbctBalEl.textContent = 'Unavailable';
         }
+      } catch (_e) {
+        if (ethBalEl) ethBalEl.textContent = 'RPC Error';
+        if (wbctBalEl) wbctBalEl.textContent = 'RPC Error';
       } finally {
         if (icon) {
           setTimeout(() => icon.classList.remove('animate-spin'), 300);
@@ -25101,7 +25253,7 @@
     document.addEventListener('DOMContentLoaded', initApp);
 
     // =========================================================================
-    // LOCAL NODE & VALIDATOR HUB CONTROLLER (v2.21.0)
+    // LOCAL NODE & VALIDATOR HUB CONTROLLER (v2.22.0)
     // =========================================================================
     async function probeLocalNode() {
       const endpoints = ['http://127.0.0.1:5000', 'http://127.0.0.1:5050'];
@@ -25302,7 +25454,7 @@
 
 
     // =========================================================================
-    // VALIDATOR 1,000 BCT STAKING & COLLATERAL VAULT CONTROLLERS (v2.21.0)
+    // VALIDATOR 1,000 BCT STAKING & COLLATERAL VAULT CONTROLLERS (v2.22.0)
     // =========================================================================
     let currentValidatorStakedBCT = 0;
     let currentValidatorUnlockAt = 0;
@@ -25621,7 +25773,7 @@
 
 
     // =========================================================================
-    // INTEGRATED VALIDATOR & REMOTE NODE TELEMETRY CONTROLLER (v2.21.0)
+    // INTEGRATED VALIDATOR & REMOTE NODE TELEMETRY CONTROLLER (v2.22.0)
     // =========================================================================
     let cachedValidatorTelemetry = null;
 
@@ -27257,7 +27409,7 @@
       }
     }
 
-    // ── Space Post Royalty Transfer UI Controller (v2.21.0: Single 0.50 BCT & Bulk All 1,000 BCT) ─
+    // ── Space Post Royalty Transfer UI Controller (v2.22.0: Single 0.50 BCT & Bulk All 1,000 BCT) ─
     let _activeRoyaltyTransferPostId = '';
     let _activeRoyaltyTransferMode = 'single';
 
@@ -27747,7 +27899,7 @@
     window.accountCenterOpenAvatarStudio = accountCenterOpenAvatarStudio;
     window.accountCenterGo = accountCenterGo;
 
-    // ── Space Post Details & On-Chain Ownership Journey Modal (v2.21.0) ───────
+    // ── Space Post Details & On-Chain Ownership Journey Modal (v2.22.0) ───────
     function closePostJourneyModal() {
       const m = document.getElementById('post-journey-modal');
       if (m) {

@@ -493,7 +493,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-66lgoivTedW+6Dxhflb4+/yPTZkMLnyXy5YAj36pEO0=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-AgI3tQJQu1rzobS5G+j5WRQ8wV+eGJqF2HDYVxFFMwg=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1120,107 +1120,222 @@ BOT_WALLETS = {
     "0xee1a47900eabb02add2f6eb6008bc403eeee72dc": {
         "address": "0xEe1A47900eabB02aDD2F6Eb6008BC403EEee72dC",
         "name": "Bot Node Alpha",
-        "role": "AMM Primary Liquidity & Price Pegging Engine",
+        "role": "AMM Basket Engine v2.0 (BTC+ETH+XRP • Primary Node)",
         "chain_id": 8453,
         "chain_name": "Base Mainnet",
+        "engine_version": "v2.0",
+        "index_basket": "BTC + ETH + XRP",
+        "beta_multiplier": 2.5,
+        "split_mode": "Dynamic 1–3 Wallet Split",
         "status": "Active",
-        "operational_state": "Running (Multi-Wallet Rotation)",
+        "operational_state": "v2.0 Basket Rotation (BTC+ETH+XRP)",
         "pair": "wBCT / USDC (%0.9 Fee, Tick 90)",
         "pool_id": "0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139",
         "universal_router": "0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40",
         "execution_window_sec": 300,
         "min_delta_pct": 0.15,
-        "max_delta_cap_pct": 2.00,
+        "max_impact_cap_pct": 4.00,
         "policy": "Autonomous Handover as organic volume scales",
-        "last_active": "Real-time"
+        "last_active": "Live On-Chain"
     },
     "0x431e2760a64211dabc3a42d8cfb27032fc71b41b": {
         "address": "0x431E2760a64211DAbc3A42d8cfB27032fC71B41B",
         "name": "Bot Node Beta",
-        "role": "AMM Secondary Stability & Rotation Node",
+        "role": "AMM Basket Engine v2.0 (BTC+ETH+XRP • Split Node)",
         "chain_id": 8453,
         "chain_name": "Base Mainnet",
+        "engine_version": "v2.0",
+        "index_basket": "BTC + ETH + XRP",
+        "beta_multiplier": 2.5,
+        "split_mode": "Dynamic 1–3 Wallet Split",
         "status": "Active",
-        "operational_state": "Standby / Rotational Execution",
+        "operational_state": "v2.0 Basket Rotation (BTC+ETH+XRP)",
         "pair": "wBCT / USDC (%0.9 Fee, Tick 90)",
         "pool_id": "0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139",
         "universal_router": "0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40",
         "execution_window_sec": 300,
         "min_delta_pct": 0.15,
-        "max_delta_cap_pct": 2.00,
+        "max_impact_cap_pct": 4.00,
         "policy": "Autonomous Handover as organic volume scales",
-        "last_active": "Real-time"
+        "last_active": "Live On-Chain"
     },
     "0xe625870281b2f54635db1585f1c8610ae9b6f04b": {
         "address": "0xE625870281B2F54635DB1585F1C8610ae9b6F04B",
         "name": "Bot Node Gamma",
-        "role": "AMM Liquidity Rebalancing & Depth Node",
+        "role": "AMM Basket Engine v2.0 (BTC+ETH+XRP • Depth Node)",
         "chain_id": 8453,
         "chain_name": "Base Mainnet",
+        "engine_version": "v2.0",
+        "index_basket": "BTC + ETH + XRP",
+        "beta_multiplier": 2.5,
+        "split_mode": "Dynamic 1–3 Wallet Split",
         "status": "Active",
-        "operational_state": "Standby / Rotational Execution",
+        "operational_state": "v2.0 Basket Rotation (BTC+ETH+XRP)",
         "pair": "wBCT / USDC (%0.9 Fee, Tick 90)",
         "pool_id": "0xf38d2770459e2c4b5fa14af657c8726f1e96242af36d75ba4db1e57a911a9139",
         "universal_router": "0xd6145b2D3F379919E8CdEda7B97e37c4b2Ca9c40",
         "execution_window_sec": 300,
         "min_delta_pct": 0.15,
-        "max_delta_cap_pct": 2.00,
+        "max_impact_cap_pct": 4.00,
         "policy": "Autonomous Handover as organic volume scales",
-        "last_active": "Real-time"
+        "last_active": "Live On-Chain"
     }
 }
+
+_bot_wallets_telemetry_cache = {"data": None, "timestamp": 0.0}
+_bot_wallets_telemetry_lock = threading.Lock()
+_eth_usd_price_cache = {"price": 0.0, "timestamp": 0.0}
+
+
+def _get_cached_eth_usd_price() -> float:
+    now = time.time()
+    if _eth_usd_price_cache["price"] > 0 and (now - _eth_usd_price_cache["timestamp"] < 120):
+        return _eth_usd_price_cache["price"]
+    import urllib.request
+    for url, kind in (
+        ("https://api.coinbase.com/v2/prices/ETH-USD/spot", "cb"),
+        ("https://api.binance.com/api/v3/ticker/price?symbol=ETHUSDT", "bn"),
+    ):
+        try:
+            req = urllib.request.Request(url, headers={"User-Agent": "LockTrace-Explorer/2.22"})
+            with urllib.request.urlopen(req, timeout=2.5) as resp:
+                obj = json.loads(resp.read().decode("utf-8"))
+                p = float(obj["data"]["amount"]) if kind == "cb" else float(obj["price"])
+                if p > 0:
+                    _eth_usd_price_cache["price"] = p
+                    _eth_usd_price_cache["timestamp"] = now
+                    return p
+        except Exception:
+            continue
+    return _eth_usd_price_cache["price"]
+
+
+def get_live_bot_wallets_telemetry(force_refresh: bool = False) -> dict:
+    """Fetches live Base Mainnet ETH, USDC, and wBCT balances for all protocol bot wallets in a single RPC batch."""
+    global _bot_wallets_telemetry_cache
+    now = time.time()
+    if not force_refresh and _bot_wallets_telemetry_cache["data"] and (now - _bot_wallets_telemetry_cache["timestamp"] < 25):
+        return _bot_wallets_telemetry_cache["data"]
+
+    if not _bot_wallets_telemetry_lock.acquire(blocking=False):
+        if _bot_wallets_telemetry_cache["data"]:
+            return _bot_wallets_telemetry_cache["data"]
+        _bot_wallets_telemetry_lock.acquire()
+
+    try:
+        now = time.time()
+        if not force_refresh and _bot_wallets_telemetry_cache["data"] and (now - _bot_wallets_telemetry_cache["timestamp"] < 25):
+            return _bot_wallets_telemetry_cache["data"]
+
+        base_rpc = getattr(Config, "BASE_RPC_URL", "https://mainnet.base.org")
+        usdc_contract = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913"
+        wbct_contract = getattr(Config, "WBCT_CONTRACT_ADDRESS", "0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28")
+        eth_price = _get_cached_eth_usd_price()
+
+        bot_list = list(BOT_WALLETS.values())
+        rpc_batch = []
+        for idx, b in enumerate(bot_list):
+            addr = b["address"]
+            padded = addr.lower().replace("0x", "").rjust(64, "0")
+            call_data = "0x70a08231" + padded
+            base_id = idx * 3
+            rpc_batch.append({"jsonrpc": "2.0", "id": base_id + 1, "method": "eth_getBalance", "params": [addr, "latest"]})
+            rpc_batch.append({"jsonrpc": "2.0", "id": base_id + 2, "method": "eth_call", "params": [{"to": usdc_contract, "data": call_data}, "latest"]})
+            rpc_batch.append({"jsonrpc": "2.0", "id": base_id + 3, "method": "eth_call", "params": [{"to": wbct_contract, "data": call_data}, "latest"]})
+
+        rpc_results = {}
+        try:
+            import urllib.request
+            req = urllib.request.Request(
+                base_rpc,
+                data=json.dumps(rpc_batch).encode("utf-8"),
+                headers={"Content-Type": "application/json", "User-Agent": "LockTrace-Explorer/2.22"},
+            )
+            with urllib.request.urlopen(req, timeout=4.0) as resp:
+                parsed = json.loads(resp.read().decode("utf-8"))
+                if isinstance(parsed, list):
+                    for item in parsed:
+                        if isinstance(item, dict) and "id" in item and "result" in item:
+                            rpc_results[int(item["id"])] = item["result"]
+        except Exception as e:
+            logger.warning(f"Failed to batch-query bot wallet balances: {e}")
+            if _bot_wallets_telemetry_cache["data"]:
+                return _bot_wallets_telemetry_cache["data"]
+
+        enriched = []
+        total_eth = 0.0
+        total_usdc = 0.0
+        total_wbct = 0.0
+        for idx, b in enumerate(bot_list):
+            base_id = idx * 3
+            eth_hex = rpc_results.get(base_id + 1, "0x0")
+            usdc_hex = rpc_results.get(base_id + 2, "0x0")
+            wbct_hex = rpc_results.get(base_id + 3, "0x0")
+
+            eth_bal = round(int(eth_hex, 16) / 1e18, 6) if eth_hex and eth_hex != "0x" else 0.0
+            usdc_bal = round(int(usdc_hex, 16) / 1e6, 4) if usdc_hex and usdc_hex != "0x" else 0.0
+            wbct_bal = round(int(wbct_hex, 16) / 1e18, 2) if wbct_hex and wbct_hex != "0x" else 0.0
+            eth_usd = round(eth_bal * eth_price, 2) if eth_price > 0 else 0.0
+            gas_ok = eth_bal >= 0.000003
+
+            total_eth += eth_bal
+            total_usdc += usdc_bal
+            total_wbct += wbct_bal
+
+            entry = dict(b)
+            entry["eth_balance"] = eth_bal
+            entry["eth_formatted"] = f"{eth_bal:.6f} ETH"
+            entry["eth_usd"] = eth_usd
+            entry["usdc_balance"] = usdc_bal
+            entry["usdc_formatted"] = f"${usdc_bal:.4f}"
+            entry["wbct_balance"] = wbct_bal
+            entry["wbct_formatted"] = f"{wbct_bal:.2f} wBCT"
+            entry["gas_ok"] = gas_ok
+            entry["gas_status"] = "Active" if gas_ok else "Low Gas"
+            entry["basescan_url"] = f"https://basescan.org/address/{b['address']}"
+            enriched.append(entry)
+
+        result = {
+            "wallets": enriched,
+            "count": len(enriched),
+            "engine_version": "v2.0 (BTC+ETH+XRP Basket)",
+            "eth_price_usd": round(eth_price, 2),
+            "totals": {
+                "eth": round(total_eth, 6),
+                "eth_usd": round(total_eth * eth_price, 2) if eth_price > 0 else 0.0,
+                "usdc": round(total_usdc, 4),
+                "wbct": round(total_wbct, 2),
+            },
+            "updated_at": now,
+        }
+        _bot_wallets_telemetry_cache = {"data": result, "timestamp": now}
+        return result
+    finally:
+        _bot_wallets_telemetry_lock.release()
 
 
 @app.route("/api/v1/market/bot-wallets", methods=["GET"])
 def api_market_bot_wallets():
-    """Returns official protocol bot wallets metadata and transparency specs."""
-    return api_response(True, data={"wallets": list(BOT_WALLETS.values()), "count": len(BOT_WALLETS)})
+    """Returns live on-chain Base Mainnet balances for official AMM bot wallets + Bridge Relayer."""
+    force = request.args.get("refresh", "").lower() in ("1", "true")
+    telemetry = dict(get_live_bot_wallets_telemetry(force_refresh=force))
+    telemetry["relayer"] = get_relayer_public_status(force_refresh=force)
+    return api_response(True, data=telemetry)
 
 
 @app.route("/api/v1/market/bot-wallet/<address>", methods=["GET"])
 def api_market_bot_wallet_detail(address):
-    """Returns detailed information, live balances, and recent transactions for a bot wallet."""
+    """Returns live on-chain balances and v2.0 specs for a specific protocol bot wallet."""
     addr_clean = str(address or "").strip().lower()
-    wallet_info = BOT_WALLETS.get(addr_clean)
-    if not wallet_info:
+    if addr_clean not in BOT_WALLETS:
         return api_response(False, message="Bot wallet not found", code="NOT_FOUND", status=404)
 
-    eth_balance = 0.0125  # default gas reserve estimate
-    wbct_balance = 797.0   # calibrated pool allocation
-    base_rpc = os.getenv("BASE_RPC_URL", "https://mainnet.base.org")
-    try:
-        import urllib.request, json
-        payload = json.dumps({
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": "eth_getBalance",
-            "params": [wallet_info["address"], "latest"]
-        }).encode("utf-8")
-        req = urllib.request.Request(base_rpc, data=payload, headers={"Content-Type": "application/json", "User-Agent": "LockTrace/2.11"})
-        with urllib.request.urlopen(req, timeout=2.5) as resp:
-            rpc_res = json.loads(resp.read().decode())
-            if "result" in rpc_res:
-                eth_balance = round(int(rpc_res["result"], 16) / 1e18, 6)
-    except Exception:
-        pass
-
-    recent_activity = [
-        {
-            "tx_hash": f"0x{addr_clean[2:10]}...{addr_clean[-8:]}",
-            "type": "AMM Liquidity Rebalance / Calibrated Swap",
-            "pair": "wBCT / USDC",
-            "time": "Recent (5m Window)",
-            "status": "Confirmed (Base L2)",
-            "basescan_url": f"https://basescan.org/address/{wallet_info['address']}"
-        }
-    ]
-
-    detail_data = dict(wallet_info)
-    detail_data["eth_balance"] = eth_balance
-    detail_data["wbct_balance"] = wbct_balance
-    detail_data["recent_activity"] = recent_activity
-
-    return api_response(True, data=detail_data)
+    force = request.args.get("refresh", "").lower() in ("1", "true")
+    telemetry = get_live_bot_wallets_telemetry(force_refresh=force)
+    for w in telemetry.get("wallets", []):
+        if w["address"].lower() == addr_clean:
+            return api_response(True, data=w)
+    return api_response(False, message="Bot wallet not found", code="NOT_FOUND", status=404)
 
 
 # ── Wallet Mnemonic Preview & Creation ───────────────────────
@@ -4447,10 +4562,14 @@ def get_relayer_public_status(force_refresh: bool = False) -> Dict[str, Any]:
             if _relayer_status_cache["data"]:
                 return _relayer_status_cache["data"]
 
+        eth_usd_price = _get_cached_eth_usd_price()
+        bal_usd = round(bal_eth * eth_usd_price, 2) if eth_usd_price > 0 else 0.0
         is_operational = bal_eth >= 0.000001
         status_data = {
             "relayer_address": relayer_address,
             "balance_eth": float(bal_eth),
+            "balance_usd": bal_usd,
+            "balance_usd_formatted": f"${bal_usd:.2f}" if eth_usd_price > 0 else "",
             "balance_wei": bal_wei,
             "balance_formatted": f"{bal_eth:.6f} ETH",
             "is_operational": is_operational,

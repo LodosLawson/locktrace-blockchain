@@ -804,3 +804,10 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - Ağ uzun süre işlem almadan boşta kalsa bile zorluğun `1`'e düşmesi engellendi; `#0–#1303` geçmiş blokların doğrulaması %100 korundu.
 2. **BaseScan wBCT Profil & Kurumsal E-posta Uyumu:**
    - `frontend/icons/icon-32.svg` saf vektör, şeffaf arka planlı 32×32 SVG olarak yenilendi; `contact@bloctag.space` (MX/SPF/DKIM/DMARC doğrulanmış) tüm resmi iletişim kanallarına işlendi.
+
+## 🌐 44. BlocTag / LockTrace v2.22.0: Base L2 Relayer & AMM v2.0 Canlı Bakiye Telemetrisi + Çoklu Sepet Motoru
+
+1. **Köprü (Bridge) & Explorer Canlı Base L2 Telemetrisi (`server.py` & `frontend/index.html`):**
+   - Tek toplu (batch) Base Mainnet JSON-RPC sorgusu ve 25 sn önbellek ile Bridge Relayer (`0x66eD...4ED3`) ve 3 AMM Likidite Botu (`Alpha`, `Beta`, `Gamma`) için gerçek zamanlı ETH (+ USD), USDC ve wBCT bakiyeleri hem Köprü hem Explorer sayfalarına temiz, kalabalıksız kartlarla eklendi; tüm statik/örnek bakiye metinleri kaldırıldı.
+2. **AMM Market Maker v2.0 (`scripts/wbct_market_maker.py`):**
+   - Kümülatif **BTC + ETH + XRP Sepet Endeksi** (`2.5x` kontrollü beta, sıfır drift), dinamik 1–3 cüzdan parça bölme, gerçek `DRY_RUN` koruması, `MAX_GAS_GWEI = 0.5` gas tavanı, tek işlem / günlük devre kesici ve bağımlılıksız `--balances` bakiye sorgulama modu eklendi.
