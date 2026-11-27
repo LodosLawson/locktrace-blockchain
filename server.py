@@ -493,7 +493,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-NYc20ExVOnBIecN3nx5VniOXwcDCJ2BTrmuOe/4PZMk=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' 'sha256-ihksffFZEhYxUe2kVCkI0gh8x/FTp1iLjbChuQg9+zc=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1513,7 +1513,7 @@ def api_transaction():
         return api_response(False, message="A valid and positive amount must be entered.", status=400)
 
     if amount < Config.MIN_TRANSACTION:
-        return api_response(False, message=f"Minimum transfer limit is {Config.MIN_TRANSACTION} BCT to prevent network dust spam.", status=400)
+        return api_response(False, message=f"Minimum Layer-1 transfer limit is {Config.MIN_TRANSACTION:g} BCT (temporary anti-spam limit; will be adjusted in the future).", status=400)
 
     if amount > Config.MAX_TRANSACTION:
         return api_response(False, message=f"Maximum single transfer limit is {Config.MAX_TRANSACTION:,.0f} BCT.", status=400)
@@ -4838,8 +4838,12 @@ def api_bridge_claim_burn():
     if blockchain.is_wallet_burned(bct_address):
         return api_response(False, message="Recipient wallet has been permanently burned and cannot receive bridge unlocks.", status=403)
 
-    if amount_bct < 1.0:
-        return api_response(False, message="Minimum bridge amount is 1.00 BCT.", status=400)
+    if amount_bct < Config.BRIDGE_MIN_AMOUNT or amount_bct > Config.BRIDGE_MAX_AMOUNT:
+        return api_response(
+            False,
+            message=f"Temporary bridge limit: transfer must be between {Config.BRIDGE_MIN_AMOUNT:g} and {Config.BRIDGE_MAX_AMOUNT:g} BCT (both directions; this limit will be lifted in the future).",
+            status=400,
+        )
 
     # Concurrency Lock (LT-02 Race-Condition & Double-Spend Defense)
     with _BRIDGE_CLAIM_LOCK:

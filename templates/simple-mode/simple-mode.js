@@ -2962,6 +2962,9 @@
             <span>${t('send_net_received', 'Net Received by Recipient:')}</span>
             <strong class="text-primary" id="simple-send-net-preview">0.00 BCT</strong>
           </div>
+          <div class="mt-2.5 px-3 py-1.5 rounded-xl bg-amber-500/10 border border-amber-400/25 text-[10.5px] text-amber-300/95 text-center leading-snug">
+            ${t('send_min_limit_notice', 'Minimum Layer-1 transfer is 3.00 BCT (temporary anti-spam limit; will be adjusted in the future).')}
+          </div>
           <div class="grid grid-cols-4 gap-2 w-full max-w-xs mt-5">
             <button type="button" onclick="window.BlocTagSimpleMode.setSendPct(0.25)"
               class="py-2 rounded-full bg-surface-container-high hover:bg-surface-container-highest text-on-surface text-xs font-medium active:scale-95 transition-all cursor-pointer">%25</button>
@@ -5194,6 +5197,11 @@
       const rec = String(recInp ? recInp.value : '').trim();
       if (!amt || !rec) {
         if (typeof window.showToast === 'function') window.showToast(t('send_fields_required', 'Please enter amount and recipient address'), 'warning', true);
+        return;
+      }
+      const numAmt = Number(amt);
+      if (!Number.isFinite(numAmt) || numAmt < 3.0) {
+        if (typeof window.showToast === 'function') window.showToast(t('send_min_limit_notice', 'Minimum Layer-1 transfer is 3.00 BCT (temporary anti-spam limit; will be adjusted in the future).'), 'warning', true);
         return;
       }
       const proAmt = document.getElementById('sendAmountInput');

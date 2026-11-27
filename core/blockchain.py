@@ -1233,11 +1233,17 @@ class Blockchain:
                 max_tx = 10_000_000.0
 
             if amount < min_tx:
-                return False, f"Minimum transfer amount is {min_tx} BCT to prevent network dust spam.", None
+                return False, f"Minimum Layer-1 transfer amount is {min_tx:g} BCT (temporary anti-spam limit; will be adjusted in the future).", None
 
             if clean_receiver == BRIDGE_VAULT_ADDRESS:
-                if amount > 1_000_000_000.0:
-                    return False, "Maximum bridge lock amount is 1,000,000,000 BCT.", None
+                try:
+                    from config import Config
+                    b_min = float(getattr(Config, "BRIDGE_MIN_AMOUNT", 15.0))
+                    b_max = float(getattr(Config, "BRIDGE_MAX_AMOUNT", 50.0))
+                except Exception:
+                    b_min, b_max = 15.0, 50.0
+                if amount < b_min or amount > b_max:
+                    return False, f"Temporary bridge limit: transfer must be between {b_min:g} and {b_max:g} BCT (this limit will be lifted in the future).", None
             elif amount > max_tx:
                 return False, f"Maximum single transfer limit is {max_tx:,.0f} BCT (Anti-Whale limit: <= 10% circulating supply).", None
 

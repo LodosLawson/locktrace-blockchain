@@ -250,8 +250,8 @@ SUPPORTED_CHAINS = {
     }
 }
 
-MIN_BRIDGE_AMOUNT = 1.00   # Minimum 1 BCT
-MAX_BRIDGE_AMOUNT = 1_000_000_000.0  # Cap per bridge operation (1 Billion BCT)
+MIN_BRIDGE_AMOUNT = 15.00  # Temporary 2-way minimum bridge limit (15 BCT)
+MAX_BRIDGE_AMOUNT = 50.00  # Temporary 2-way maximum bridge limit (50 BCT; will be lifted in the future)
 BRIDGE_FEE_RATE = 0.002    # 0.2% bridge protocol fee (covers EVM gas costs)
 
 
@@ -371,10 +371,10 @@ class BridgeManager:
             return {"success": False, "error": "Bridge amount must be a finite number"}
 
         if amount_bct < MIN_BRIDGE_AMOUNT:
-            return {"success": False, "error": f"Minimum bridge amount is {MIN_BRIDGE_AMOUNT:.2f} BCT"}
+            return {"success": False, "error": f"Temporary bridge limit: minimum amount is {MIN_BRIDGE_AMOUNT:.2f} BCT (both directions; this limit will be lifted in the future)."}
 
         if amount_bct > MAX_BRIDGE_AMOUNT:
-            return {"success": False, "error": f"Maximum bridge amount is {MAX_BRIDGE_AMOUNT:,.0f} BCT per transaction"}
+            return {"success": False, "error": f"Temporary bridge limit: maximum amount is {MAX_BRIDGE_AMOUNT:.2f} BCT per transfer (both directions; this limit will be lifted in the future)."}
 
         chain = chain.lower().strip()
         if chain not in SUPPORTED_CHAINS:
