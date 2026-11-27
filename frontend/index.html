@@ -1560,8 +1560,8 @@
                 </div>
                 <div class="flex flex-col">
                   <span class="text-[11px] font-mono uppercase text-on-surface-variant">Consensus</span>
-                  <span class="font-headline-sm text-headline-sm text-secondary font-mono font-bold">%70 PoW + %30
-                    Quorum</span>
+                  <span class="font-headline-sm text-headline-sm text-secondary font-mono font-bold">50% PoW / 40%
+                    Quorum / 10% Obs</span>
                 </div>
                 <div class="flex flex-col">
                   <span class="text-[11px] font-mono uppercase text-on-surface-variant">Security Seal</span>
@@ -5758,6 +5758,18 @@
                     To prevent IEEE-754 floating point rounding drift at a 1-Trillion scale, all balance and fee
                     computations are executed in 10^8 atomic integer units (<code
                       class="text-on-surface font-mono">1 BCT = 100,000,000 units</code>).
+                  </p>
+                </div>
+                <div
+                  class="p-4 rounded-xl bg-surface-container-lowest border border-amber-400/25 flex flex-col gap-1.5">
+                  <span class="text-xs font-mono font-semibold text-amber-400 uppercase">5. Live Protocol Fees &amp;
+                    Temporary Safety Limits (SSOT)</span>
+                  <p class="text-xs text-on-surface-variant leading-relaxed">
+                    <strong>L1 Transfer:</strong> 1% fee (min 0.001 BCT), min transfer <strong>3.00 BCT</strong> (temporary anti-spam).
+                    <strong>Bridge (L1 &harr; Base wBCT):</strong> 0.20% fee, temporary <strong>15–50 BCT</strong> 2-way limit (will be lifted).
+                    <strong>Space:</strong> Post 0.10 &bull; Like 0.01 &bull; Comment 0.02 &bull; Follow 1.00 &bull; Royalty Transfer 0.50 BCT.
+                    <strong>Rooms:</strong> 50/25/10 BCT &bull; Avatar 2.00 &bull; Topic 0.25 &bull; Reply 0.05 &bull; Upvote 0.01 &bull; Transfer 0.50 BCT.
+                    <strong>BNS (.bct):</strong> 100/50/10 BCT (3/4/5+ chars) &bull; Primary/Price/Offer 0.05 BCT.
                   </p>
                 </div>
               </div>

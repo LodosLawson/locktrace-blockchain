@@ -231,9 +231,10 @@ LockTrace implements a hybrid consensus model that balances the decentralized pe
 ### 4.1 Block Reward Allocation Formula
 For each successfully mined and verified block $B_k$, the gross reward pool consists of the block mining subsidy plus distributed transaction fees:
 $$R_{\text{total}}(B_k) = R_{\text{subsidy}} + \sum_{tx \in B_k} \text{Fee}_{\text{reward}}(tx)$$
-This reward pool is split deterministically:
-- **70% Block Proposer (PoW Miner):** $R_{\text{proposer}} = \lfloor 0.70 \times R_{\text{total}}(B_k) \rfloor$
-- **30% Active Quorum Validators:** $R_{\text{quorum}} = \lfloor 0.30 \times R_{\text{total}}(B_k) \rfloor$
+This reward pool is split deterministically across three tiers:
+- **50% Block Proposer (PoW Miner):** $R_{\text{proposer}} = \lfloor 0.50 \times R_{\text{total}}(B_k) \rfloor$
+- **40% Active Quorum Validators ($\ge 1{,}000$ BCT Stake + Attestation):** $R_{\text{quorum}} = \lfloor 0.40 \times R_{\text{total}}(B_k) \rfloor$
+- **10% Passive Observer Stakers ($\ge 100$ BCT Stake):** $R_{\text{observer}} = \lfloor 0.10 \times R_{\text{total}}(B_k) \rfloor$
 
 ### 4.2 Proof-of-Attestation Participation Invariant (LT-01)
 To qualify for the 30% Quorum Pool, a node must satisfy two cryptographic conditions:
@@ -245,7 +246,7 @@ Nodes failing either criterion are pruned from quorum payout calculation.
 Validators and passive observers lock collateral via a 100% non-custodial transaction to `BCT_STAKE_VAULT_...` (`100.00 – 100,000.00 BCT` cumulative cap per wallet; $\ge 1{,}000.00\text{ BCT}$ for Active Validator Quorum eligibility). Unstaking enforces a consensus-level **1-hour anti-flash-staking lockup (`STAKE_LOCKUP_SECONDS = 3600`)**, per-wallet stake/unstake cooldowns, and a `< 100 BCT` partial-unstake dust guard. The vault accounting endpoint (`/api/v1/staking/participants`) transparently exposes `vault_total_bct = total_staked_bct + forfeited_vault_bct` so active yield-bearing stake and slashed/forfeited collateral reconcile 1:1 with the System ledger.
 - **Equivocation Slashing:** If a validator signs two conflicting block proposals or attestations at the identical block height, any node can submit cryptographic proof of double-signing, triggering an on-chain **100% stake slash** ($1,000.0\text{ BCT}$ permanently burned to `BCT0000000000000000000000000000000000000000`) and permanent protocol blacklisting.
 - **Anti-Dust Spam & Self-Loop Subsidy Siphoning Defense:**
-  - Mandatory minimum transfer amount: $0.01\text{ BCT}$. Micro-dust transactions ($< 0.01\text{ BCT}$) are unconditionally rejected from the mempool.
+  - Mandatory minimum Layer-1 transfer amount: **$3.00\text{ BCT}$** (`MIN_TRANSACTION = 3.0`, temporary anti-spam & welcome-bonus Sybil guard; will be adjusted in the future). Transfers below $3.00\text{ BCT}$ are unconditionally rejected at both API and consensus mempool layers.
   - Mandatory minimum network transfer fee: $0.001\text{ BCT}$ (zero-fee transfers are rejected; $1\%$ fee with $0.001\text{ BCT}$ floor).
   - Anti-Self-Loop Mining Subsidy Guard: If a candidate block contains only self-transfers between the miner and addresses within their own cluster, the Treasury block subsidy is automatically zeroed ($0.00\text{ BCT}$), eliminating economic incentives for self-dust mining.
   - Active Validator Node Authorization: Only authenticated, registered consensus nodes (`auth_verified = True`) with active collateral $\ge 1,000\text{ BCT}$ are eligible to propose blocks and receive consensus rewards. Slashed actors are permanently barred from mining templates, block submission, and reward distribution.
@@ -321,10 +322,11 @@ The maximum lifetime supply is hard-capped at **1,000,000,000,000.00000000 BCT**
 ### 8.2 Deflationary Treasury Return (Havuza Dönüş)
 Unlike inflationary networks that dilute holders, LockTrace channels 50% of all standard transfer fees, 80% of Space post and BNS registration fees, and 70% of social interaction fees back into the Genesis Treasury Vault (`BCT_HAZINE_...`). This reduces circulating velocity and strengthens token scarcity with every network interaction.
 
-### 8.3 Welcome Faucet Anti-Sybil Bounding
-New wallet creation bonus ($1.00\text{ BCT}$) is disbursed directly from the Treasury Vault under strict cryptographic bounds:
-- Per-IP rate limiting: maximum 3 creations per minute, 10 per hour.
-- Global rolling ceiling: maximum 25 grants per hour network-wide.
+### 8.3 Welcome Faucet Anti-Sybil Bounding & Adaptive API Human Challenge (v2.23.0)
+New wallet creation remains permissionless (users can create unlimited non-custodial wallets), while Treasury welcome bonus ($1.00\text{ BCT}$) disbursement is protected by three interlocking anti-bot layers:
+- **Adaptive Single-Use API PoW Human Challenge (`/api/v1/auth/human-challenge`):** Every `/api/v1/wallet/create` request must solve an IP-bound, HMAC-SHA256 signed SHA-256 Proof-of-Work challenge (`14 bits` for 1st–2nd wallet/24h, `17 bits` for 3rd–5th, `19 bits` for 6th+; single-use replay-protected), plus optional Cloudflare Turnstile server-side verification. Direct API bot scripts without a solved proof receive `HTTP 403`.
+- **1 Welcome Bonus per IP / 24h Cap (`WELCOME_BONUS_MAX_PER_IP_24H = 1`):** Additional wallets created from the same IP within 24 hours still register cleanly with `0.00 BCT`. Tor exit nodes and `/api/v1/wallet/import` never receive free Treasury bonuses.
+- **Global Rolling Ceiling:** Maximum 25 grants per hour network-wide; combined with the `3.00 BCT` minimum Layer-1 transfer rule, welcome-bonus Sybil farming is economically impossible.
 
 ---
 
@@ -332,14 +334,15 @@ New wallet creation bonus ($1.00\text{ BCT}$) is disbursed directly from the Tre
 
 LockTrace connects to Ethereum Layer-2 via a decentralized 1:1 asset bridge to the Base Mainnet Wrapped BCT contract (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`).
 
-### 9.1 Bridge Proof-of-Reserve Invariant
+### 9.1 Bridge Proof-of-Reserve Invariant, Fee & Temporary Limits
 $$\text{Supply}_{\text{wBCT}}(\text{Base}) \equiv \text{Balance}_{\text{native}}(\text{BCT\_BRIDGE\_VAULT\_...})$$
-Every minted wBCT is backed 1:1 by native BCT escrowed on Layer-1. Arbitrary minting without matching L1 deposit is cryptographically blocked.
+- Every minted wBCT is backed 1:1 by native BCT escrowed on Layer-1. Arbitrary minting without matching L1 deposit is cryptographically blocked.
+- **Protocol Bridge Fee:** `0.20%` (`BRIDGE_FEE_RATE = 0.002`) covering Base L2 relayer gas costs; Layer-1 lock transfers to `BCT_BRIDGE_VAULT` carry `0.00%` L1 fee to preserve exact 1:1 vault parity.
+- **Temporary Two-Way Transfer Limits (`L1 ↔ Base wBCT`):** Minimum **`15.00 BCT`** — Maximum **`50.00 BCT`** per bridge transfer in both directions (enforced across `config.py`, `core/bridge.py`, `core/blockchain.py`, and `server.py`). This safety limit is temporary and will be lifted in the future.
 
 ### 9.2 Reorg Depth, Canonical Block Hash & Mutex Concurrency Guards (LT-02)
 - **L1 to Base Minting:** Relayers require a minimum confirmation depth of **8-to-10 blocks** on LockTrace Layer-1 prior to initiating an EVM mint transaction.
 - **Base to L1 Unlocking:** Unlock claims fail-closed unless Base RPC confirms `status == 0x1`, at least **12 confirmations** (`MIN_EVM_CONFIRMATIONS`), and exact `receipt.blockHash == eth_getBlockByNumber(blockNumber).hash` canonical chain parity.
-- **Base to L1 Unlocking:** Relayers require **12 confirmed Base blocks** before releasing native BCT from `BCT_BRIDGE_VAULT_...`.
 - In-flight mutex locks and SQLite unique transaction indices prevent race conditions and double-spending across bridge operations.
 
 ---
@@ -486,7 +489,7 @@ LockTrace v2.7.0 incorporates multiple interlocking cyber defense shields:
 - **v2.20.0 (Completed):** 5-Pass Core Security Audit & Zero-Free-Spam Protocol Hardening — SSOT anti-spam fees on `bns_set_primary` (`0.05 BCT`), `bns_set_price` (`0.05 BCT`), `bns_offer` (`0.05 BCT`), and `bns_cancel_offer` (`0.01 BCT`), `submit_mined_block` `sender_pays` solvency & type hardening, zero-copy O(1) two-tier signature replay guard (`_is_signature_used`), `verify_full_chain_integrity()`, RBF mempool protection for critical 0-fee protocol transactions, recipient/global 2-step transfer Sybil caps (`50 / 2,000`), burned-wallet completeness across BNS marketplace & `attest_block`, Bridge Relayer `100k/500k` circuit-breakers, Nginx canonical Port 80 redirect, and 23/23 automated security tests.
 - **v2.21.0 (Completed):** Fork-Safe PoW Difficulty Hardening (`POW_HARDENING_HEIGHT = 1304`) raising post-activation base difficulty to `5` (~1.05M hashes/block) and enforcing a hard minimum/stall-recovery floor of `4` (~65.5K hashes/block, eliminating idle-period difficulty-1 degradation) up to LWMA ceiling `8`, alongside pure-vector 32×32 SVG branding and verified `contact@bloctag.space` domain authentication for BaseScan wBCT parity.
 - **v2.22.0 (Completed):** Live Base L2 Relayer & AMM v2.0 Telemetry — single-batch Base Mainnet RPC telemetry (`/api/v1/market/bot-wallets`) surfacing real-time ETH/USDC/wBCT balances for the Bridge Relayer and AMM Nodes (`Alpha`, `Beta`, `Gamma`) across both Bridge & Explorer UIs (zero mock data), paired with the hardened `wbct_market_maker.py` v2.0 BTC+ETH+XRP cumulative basket engine with dynamic 1–3 wallet splitting and gas/spend circuit-breakers.
-- **v2.23.0 (Current Production Release):** Unified Mode-Agnostic Guest Shared-Link Standard (`/post/`, `/profile/`, `/room/`, `/topic/`) with strict shared-item isolation, fixed bottom Join CTA (Desktop → Home, Mobile → PWA Install Gate), guest push-popup suppression, English-default Anti-Scam & Official Site Verification Widget (pump.fun warning, verified Base wBCT `0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`, live ECDSA domain integrity status) across Web Home and Mobile PWA Gate, circular BlocTag mobile onboarding branding, and dynamic Pro Reels viewport fitting.
+- **v2.23.0 (Current Production Release):** Unified Mode-Agnostic Guest Shared-Link Standard (`/post/`, `/profile/`, `/room/`, `/topic/`) with strict shared-item isolation, fixed bottom Join CTA (Desktop → Home, Mobile → PWA Install Gate), guest push-popup suppression, English-default Anti-Scam & Official Site Verification Widget (pump.fun warning, verified Base wBCT `0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`, live ECDSA domain integrity status) across Web Home and Mobile PWA Gate, circular BlocTag mobile onboarding branding, dynamic Pro Reels viewport fitting, temporary 2-way Bridge limits (`15–50 BCT`, `0.20%` fee) & `3.00 BCT` minimum Layer-1 transfer, Adaptive API PoW Human Challenge (`/api/v1/auth/human-challenge`) + 1-bonus/IP/24h anti-Sybil cap + Turnstile hook, Cloudflare R2 + Litestream continuous SQLite WAL replication, and AMM v2.2 organic 2–10 min 3-wallet BTC/ETH/XRP sync.
 - **v3.0+ (Future Research):** Optional zk-SNARK shielded transfers, decentralized encrypted direct messaging (E2EE ECDH over SECP256k1), and native cross-chain HTLC atomic swaps.
 
 ---

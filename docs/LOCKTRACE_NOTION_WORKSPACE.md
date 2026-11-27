@@ -820,3 +820,5 @@ LockTrace v2.8.9 sürümü ile çözülen 8 kritik bulgu ve optimizasyon:
    - Web Ana Sayfası ve Mobil Zorunlu PWA İndirme ekranına **pump.fun sahte token uyarısı**, tek resmi doğrulanmış **Base Mainnet wBCT** kontratı (`0xCa6152Ae0E785F90ED65cd706B386E5B83D0EB28`) ve canlı Yeşil/Kırmızı resmi site doğrulama rehberi eklendi.
 3. **Mobil Logo & Pro Reels Viewport Düzeltmesi:**
    - Mobil giriş ekranlarına dairesel beyaz arka planlı gerçek BlocTag logosu (`/icons/icon-192.png`) eklendi; Pro Mod Reels akışında çakışma ve alt menü arkasında kesilme `fitProReelsStreamHeight` ile giderildi.
+4. **Geçici Köprü (15–50 BCT) & L1 Transfer (Min 3 BCT) Limitleri, API Anti-Bot Kalkanı & Cloudflare R2 Canlı Yedekleme:**
+   - Çift yönlü köprü limiti (`15–50 BCT`, `%0.20` ücret) ve L1 minimum transfer (`3.00 BCT`) tüm backend + arayüz katmanlarında senkronize edildi. `/api/v1/auth/human-challenge` uyarlanabilir tek kullanımlık API PoW + IP başına 24 saatte 1 hoş geldin bonusu + Turnstile kancası, **Cloudflare R2 + Litestream** canlı SQLite WAL replikasyonu ve **AMM v2.2 (2–10 dk 3 cüzdan BTC/ETH/XRP senkron)** devreye alındı.
