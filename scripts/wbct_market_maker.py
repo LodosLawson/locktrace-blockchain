@@ -102,29 +102,29 @@ CONFIG: Dict[str, Any] = {
     "JITTER_MIN": 0.78,
     "JITTER_MAX": 1.24,
 
-    # Zamanlama (Doğal 6–22 dakikalık değişken değerlendirme penceresi)
+    # Zamanlama (Doğal 2–10 dakikalık rastgele değerlendirme penceresi)
     "POLL_INTERVAL_SECONDS": 10,
-    "WINDOW_MIN_SECONDS": int(os.getenv("BOT_WINDOW_MIN_SECONDS", "360")),   # 6 dk
-    "WINDOW_MAX_SECONDS": int(os.getenv("BOT_WINDOW_MAX_SECONDS", "1320")),  # 22 dk
-    "WINDOW_SECONDS": 600,  # Parça yayılımı için ortalama pencere referansı
+    "WINDOW_MIN_SECONDS": int(os.getenv("BOT_WINDOW_MIN_SECONDS", "120")),   # 2 dk
+    "WINDOW_MAX_SECONDS": int(os.getenv("BOT_WINDOW_MAX_SECONDS", "600")),   # 10 dk
+    "WINDOW_SECONDS": 360,  # Parça yayılımı için ortalama pencere referansı (6 dk)
 
-    # Anti-Barkod Histerezis & Yön Kilidi (Ping-Pong Engelleyici)
-    "MIN_DELTA_THRESHOLD_PCT": 0.20,          # Aynı yönde devam eşiği (%0.20)
-    "REVERSE_DELTA_THRESHOLD_PCT": 0.55,      # Ters yöne dönüş eşiği (%0.55 - barkod kırıcı)
-    "SHOCK_OVERRIDE_PCT": 1.25,               # %1.25+ sert piyasa hareketinde yön kilidini kır
-    "DIRECTION_LOCK_MIN_SECONDS": int(os.getenv("BOT_DIR_LOCK_MIN_SECONDS", "1200")),  # 20 dk
-    "DIRECTION_LOCK_MAX_SECONDS": int(os.getenv("BOT_DIR_LOCK_MAX_SECONDS", "2400")),  # 40 dk
+    # Dengeli Anti-Barkod Histerezis & Yön Kilidi (BTC+ETH+XRP Senkron)
+    "MIN_DELTA_THRESHOLD_PCT": 0.08,          # Aynı yönde devam eşiği (%0.08)
+    "REVERSE_DELTA_THRESHOLD_PCT": 0.22,      # Ters yöne dönüş eşiği (%0.22 - dengeli anti-barkod)
+    "SHOCK_OVERRIDE_PCT": 0.65,               # %0.65+ sert piyasa hareketinde yön kilidini kır
+    "DIRECTION_LOCK_MIN_SECONDS": int(os.getenv("BOT_DIR_LOCK_MIN_SECONDS", "360")),   # 6 dk
+    "DIRECTION_LOCK_MAX_SECONDS": int(os.getenv("BOT_DIR_LOCK_MAX_SECONDS", "720")),   # 12 dk
 
-    # Dinamik 1-3 Parçalı Bölme Eşikleri (Ham Sepet % Değişimi)
-    "SPLIT_2_THRESHOLD_PCT": 0.40,            # %0.40 - %0.85 -> 2 farklı cüzdan
-    "SPLIT_3_THRESHOLD_PCT": 0.85,            # >= %0.85      -> 3 farklı cüzdan
+    # Dinamik 1-3 Parçalı Çoklu Cüzdan Bölme Eşikleri (Ham Sepet % Değişimi)
+    "SPLIT_2_THRESHOLD_PCT": 0.14,            # %0.14 - %0.30 -> 2 farklı cüzdan
+    "SPLIT_3_THRESHOLD_PCT": 0.30,            # >= %0.30      -> 3 farklı cüzdan (Alpha, Beta, Gamma)
     "MAX_IMPACT_CAP_PCT": 4.00,               # Tek pencerede maksimum fiyat etkisi tavanı
 
     # Güvenlik & Devre Kesiciler
     "MAX_GAS_GWEI": float(os.getenv("BOT_MAX_GAS_GWEI", "0.5")),
     "MAX_SINGLE_TRADE_USD": float(os.getenv("BOT_MAX_SINGLE_TRADE_USD", "0.50")),
-    "MIN_SLICE_WBCT": 1.0,             # 1 wBCT altı toz işlemleri tek parçada topla
-    "MIN_SLICE_USD": 0.001,            # $0.001 altı toz işlemleri tek parçada topla
+    "MIN_SLICE_WBCT": 0.50,            # 0.50 wBCT altı toz işlemleri tek parçada topla
+    "MIN_SLICE_USD": 0.0005,           # $0.0005 altı toz işlemleri tek parçada topla
     "MIN_WALLET_ETH_GAS": 0.000003,    # Cüzdan başına minimum gas tamponu
     "MAX_DAILY_TXS": int(os.getenv("BOT_MAX_DAILY_TXS", "240")),
 
@@ -359,8 +359,8 @@ class BasketImpactEngine:
             n_slices -= 1
             weights = self._random_weights(n_slices)
 
-        # 5 dakikalık pencere içine yayılmış rastgele yürütme zamanları (15s .. 270s)
-        window_span = max(60, self.config["WINDOW_SECONDS"] - 30)
+        # Pencere içine yayılmış rastgele yürütme zamanları (15s .. next_span-20s)
+        window_span = max(90, min(int(next_span) - 15, self.config["WINDOW_SECONDS"]))
         slot_width = window_span / n_slices
         wallet_order = list(range(self.wallet_count))
         random.shuffle(wallet_order)
