@@ -14996,6 +14996,40 @@
       }
     }
 
+    async function solveApiHumanChallenge() {
+      const chalRes = await apiFetch('/auth/human-challenge');
+      if (!chalRes.ok || !chalRes.body || !chalRes.body.data) {
+        throw new Error((chalRes.body && chalRes.body.message) || 'Could not obtain human verification challenge.');
+      }
+      const chal = chalRes.body.data;
+      const prefix = `${chal.challenge_id}:${chal.salt}:`;
+      const targetBits = Math.max(12, Math.min(24, Number(chal.difficulty_bits || 14)));
+      const enc = new TextEncoder();
+      const countZeroBits = (bytes) => {
+        let bits = 0;
+        for (let i = 0; i < bytes.length; i++) {
+          const b = bytes[i];
+          if (b === 0) {
+            bits += 8;
+          } else {
+            bits += Math.clz32(b) - 24;
+            break;
+          }
+        }
+        return bits;
+      };
+      for (let nonce = 0; nonce < 4000000; nonce++) {
+        const buf = await crypto.subtle.digest('SHA-256', enc.encode(prefix + nonce));
+        if (countZeroBits(new Uint8Array(buf)) >= targetBits) {
+          return { human_challenge: chal, human_nonce: String(nonce) };
+        }
+        if ((nonce & 255) === 255) {
+          await new Promise((r) => setTimeout(r, 0));
+        }
+      }
+      throw new Error('Human verification challenge timed out.');
+    }
+
     async function requestNewWallet() {
       if (!isTermsAccepted) {
         showToast('Please confirm that you have saved the 12 words', 'warning', true);
@@ -15004,7 +15038,7 @@
       const btn = document.getElementById('btnCreateWallet');
       const btnText = document.getElementById('btnCreateWalletText');
       if (btn) btn.disabled = true;
-      if (btnText) btnText.textContent = 'Activating Wallet On-Chain...';
+      if (btnText) btnText.textContent = 'Verifying & Activating Wallet...';
 
       try {
         const mnem = previewMnemonicPhrase || LockTraceCrypto.generateMnemonic12();
@@ -15012,13 +15046,22 @@
         const pubHex = LockTraceCrypto.derivePublicKeyHex(privHex);
         const addr = LockTraceCrypto.publicKeyToAddress(pubHex);
 
-        // Zero-Knowledge Registration: ONLY address & public_key are sent over the network!
+        // Solve server-issued adaptive anti-bot human challenge before wallet registration
+        const proof = await solveApiHumanChallenge();
+
+        // Zero-Knowledge Registration: ONLY address, public_key & human proof are sent over the network!
         const { ok, body } = await apiFetch('/wallet/create', {
           method: 'POST',
-          body: JSON.stringify({ address: addr, public_key: pubHex })
+          body: JSON.stringify({
+            address: addr,
+            public_key: pubHex,
+            human_challenge: proof.human_challenge,
+            human_nonce: proof.human_nonce
+          })
         });
         const bal = (ok && body.data) ? Number(body.data.balance || 0) : 0;
         const nonce = (ok && body.data) ? Number(body.data.nonce || 0) : 0;
+        const bonusGranted = Boolean(ok && body.data && body.data.welcome_bonus_granted);
 
         sessionUnlockedKeys = null;
         saveWalletState({
@@ -15032,7 +15075,10 @@
         });
         previewMnemonicPhrase = '';
         renderBalanceFigures(currentAccount.balance);
-        showToast(ok ? 'Your new wallet is ready! (+1.00 BCT Bonus)' : 'Local wallet created (Offline mode)', 'celebration');
+        const toastMsg = ok
+          ? (bonusGranted ? 'Your new wallet is ready! (+1.00 BCT Bonus)' : 'Your new wallet is ready! (1 free welcome bonus/24h per IP)')
+          : 'Local wallet created (Offline mode)';
+        showToast(toastMsg, 'celebration');
         switchTab('cuzdanim');
         checkAndShowPushPrompt(1500);
       } catch (_e) {

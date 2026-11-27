@@ -13,9 +13,12 @@ import json
 import math
 import time
 import hashlib
+import hmac
 import logging
 import secrets
 import threading
+import urllib.parse
+import urllib.request
 from collections import deque
 from datetime import datetime, timezone
 from typing import Optional, Tuple, Dict, Set, List, Any
@@ -493,7 +496,7 @@ def after_request(response):
     # LT-04 Hardening: Comprehensive Content-Security-Policy (XSS & Key Exfiltration Defense)
     response.headers["Content-Security-Policy"] = (
         "default-src 'self'; "
-        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' 'sha256-ihksffFZEhYxUe2kVCkI0gh8x/FTp1iLjbChuQg9+zc=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
+        "script-src 'self' 'sha256-3WVw7oXxyaxB6i9uhR9aXK8M9SuZvvv0xu9ecO4dc5Q=' 'sha256-VOqSxwsWPaVZgT4K3AXRTGl30ReaN7OROYctgwJ3eJE=' 'sha256-hDhnX+/u/D0cD0juNe7n7F1FUD+ONIY3QwT1tGF0+tQ=' https://cdn.tailwindcss.com; script-src-attr 'unsafe-inline'; "
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; "
         "font-src 'self' https://fonts.gstatic.com data:; "
         "img-src 'self' data: https: blob:; "
@@ -1354,12 +1357,157 @@ def api_mnemonic_preview():
     return api_response(True, data={"mnemonic": phrase})
 
 
+# ── Anti-Abuse Human Challenge (Adaptive API PoW + Cloudflare Turnstile Hook + 1-Bonus/IP/24h) ──
+_HUMAN_CHALLENGE_LOCK = threading.Lock()
+_USED_HUMAN_CHALLENGES: Dict[str, float] = {}
+_WALLET_BONUS_IP_HISTORY: Dict[str, List[float]] = {}
+_WALLET_CREATE_IP_HISTORY: Dict[str, List[float]] = {}
+
+
+def _count_leading_zero_bits(digest: bytes) -> int:
+    bits = 0
+    for b in digest:
+        if b == 0:
+            bits += 8
+        else:
+            bits += 8 - b.bit_length()
+            break
+    return bits
+
+
+def _sign_human_challenge(challenge_id: str, salt: str, difficulty_bits: int, expires_at: int, ip: str) -> str:
+    msg = f"LT_HUMAN_CHAL:{challenge_id}:{salt}:{difficulty_bits}:{expires_at}:{ip}".encode("utf-8")
+    return hmac.new(str(Config.SECRET_KEY).encode("utf-8"), msg, hashlib.sha256).hexdigest()
+
+
+def _prune_ip_window(history: Dict[str, List[float]], ip: str, window_sec: float = 86400.0) -> List[float]:
+    now = time.time()
+    recent = [t for t in history.get(ip, []) if (now - t) < window_sec]
+    if recent:
+        history[ip] = recent
+    else:
+        history.pop(ip, None)
+    return recent
+
+
+def _verify_turnstile_token(token: str, ip: str) -> Tuple[bool, str]:
+    secret = getattr(Config, "TURNSTILE_SECRET_KEY", "")
+    if not secret:
+        return True, ""
+    if not token:
+        return False, "Human verification (Cloudflare Turnstile) is required."
+    try:
+        payload = urllib.parse.urlencode({
+            "secret": secret,
+            "response": token,
+            "remoteip": ip,
+        }).encode("utf-8")
+        req = urllib.request.Request(
+            "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+            data=payload,
+            headers={"Content-Type": "application/x-www-form-urlencoded"},
+        )
+        with urllib.request.urlopen(req, timeout=8) as resp:
+            res = json.loads(resp.read().decode("utf-8"))
+        if res.get("success"):
+            return True, ""
+        return False, "Human verification failed. Please retry."
+    except Exception as e:
+        logger.warning(f"Turnstile verification error: {e}")
+        return False, "Human verification service unavailable. Please retry."
+
+
+def _verify_human_proof(data: dict, ip: str) -> Tuple[bool, str]:
+    # 1. Optional Cloudflare Turnstile enforcement when TURNSTILE_SECRET_KEY is configured
+    if getattr(Config, "TURNSTILE_SECRET_KEY", ""):
+        ts_ok, ts_err = _verify_turnstile_token(str(data.get("cf_turnstile_token") or "").strip(), ip)
+        if not ts_ok:
+            return False, ts_err
+
+    # 2. Mandatory single-use HMAC-signed Adaptive SHA-256 PoW Challenge (blocks direct API bots)
+    chal = data.get("human_challenge")
+    nonce_raw = data.get("human_nonce")
+    if not isinstance(chal, dict) or nonce_raw is None:
+        return False, "Human verification challenge required. Please create wallets via the official interface or solve /api/v1/auth/human-challenge."
+
+    challenge_id = str(chal.get("challenge_id") or "").strip()
+    salt = str(chal.get("salt") or "").strip()
+    sig = str(chal.get("sig") or "").strip()
+    try:
+        difficulty_bits = int(chal.get("difficulty_bits", 0))
+        expires_at = int(chal.get("expires_at", 0))
+        nonce_str = str(nonce_raw).strip()
+    except Exception:
+        return False, "Malformed human verification challenge."
+
+    now = int(time.time())
+    if not challenge_id or not salt or not sig or difficulty_bits < 12 or difficulty_bits > 24:
+        return False, "Invalid human verification challenge parameters."
+    if now > expires_at:
+        return False, "Human verification challenge expired. Please try again."
+
+    expected_sig = _sign_human_challenge(challenge_id, salt, difficulty_bits, expires_at, ip)
+    if not hmac.compare_digest(sig, expected_sig):
+        return False, "Invalid human verification challenge signature or IP mismatch."
+
+    digest = hashlib.sha256(f"{challenge_id}:{salt}:{nonce_str}".encode("utf-8")).digest()
+    if _count_leading_zero_bits(digest) < difficulty_bits:
+        return False, "Human verification proof-of-work did not meet required difficulty."
+
+    with _HUMAN_CHALLENGE_LOCK:
+        # Prune expired used challenge IDs
+        expired_ids = [cid for cid, exp in _USED_HUMAN_CHALLENGES.items() if exp < now]
+        for cid in expired_ids:
+            _USED_HUMAN_CHALLENGES.pop(cid, None)
+        if challenge_id in _USED_HUMAN_CHALLENGES:
+            return False, "Human verification challenge has already been used."
+        _USED_HUMAN_CHALLENGES[challenge_id] = float(expires_at)
+    return True, ""
+
+
+@app.route("/api/v1/auth/human-challenge", methods=["GET"])
+def api_get_human_challenge():
+    """Issues a single-use HMAC-signed adaptive PoW challenge for anti-bot wallet creation."""
+    if not check_rate_limit("human_challenge", limit=30, window_seconds=60):
+        return api_response(False, message="Too many verification challenge requests. Please wait.", status=429)
+    ip = get_client_ip()
+    with _HUMAN_CHALLENGE_LOCK:
+        recent_creates = len(_prune_ip_window(_WALLET_CREATE_IP_HISTORY, ip, 86400.0))
+    # Adaptive difficulty: effortless for normal humans (14 bits ~0.1s), progressively harder for rapid multi-account bursts
+    if recent_creates < 2:
+        diff_bits = 14
+    elif recent_creates < 5:
+        diff_bits = 17
+    else:
+        diff_bits = 19
+    challenge_id = secrets.token_hex(12)
+    salt = secrets.token_hex(16)
+    expires_at = int(time.time()) + 180
+    sig = _sign_human_challenge(challenge_id, salt, diff_bits, expires_at, ip)
+    return api_response(True, data={
+        "challenge_id": challenge_id,
+        "salt": salt,
+        "difficulty_bits": diff_bits,
+        "expires_at": expires_at,
+        "sig": sig,
+        "turnstile_site_key": getattr(Config, "TURNSTILE_SITE_KEY", ""),
+    })
+
+
 @app.route("/api/v1/wallet/create", methods=["POST"])
 def api_create_wallet():
-    if not check_rate_limit("wallet_create_min", limit=3, window_seconds=60) or not check_rate_limit("wallet_create_hr", limit=10, window_seconds=3600):
-        return api_response(False, message="Wallet creation limit reached. Please try again later.", status=429)
+    if not check_rate_limit("wallet_create_min", limit=5, window_seconds=60) or not check_rate_limit("wallet_create_hr", limit=20, window_seconds=3600):
+        return api_response(False, message="Wallet creation rate limit reached. Please try again later.", status=429)
 
     data = request.get_json(silent=True) or {}
+    ip = get_client_ip()
+
+    # Enforce API-level human verification (blocks blind direct-API bot scripts)
+    proof_ok, proof_err = _verify_human_proof(data, ip)
+    if not proof_ok:
+        logger.warning(f"[ANTI-BOT] Rejected /wallet/create from {ip}: {proof_err}")
+        return api_response(False, message=proof_err, status=403)
+
     client_address = str(data.get("address", "") or "").strip()
     client_pubkey = str(data.get("public_key", "") or "").strip()
     provided_mnemonic = str(data.get("mnemonic", "") or "").strip()
@@ -1369,14 +1517,29 @@ def api_create_wallet():
         if client_address and client_pubkey and not provided_mnemonic:
             if public_key_to_address(client_pubkey) != client_address:
                 return api_response(False, message="Public key does not match wallet address.", status=400)
-            success, message = blockchain.register_wallet(client_address, client_pubkey)
+
+            # Anti-Sybil Welcome Bonus Cap: Users can create unlimited wallets,
+            # but free 1.00 BCT Treasury bonus is limited to 1 per IP every 24 hours (and 0 for Tor exits).
+            max_bonus_24h = max(0, int(getattr(Config, "WELCOME_BONUS_MAX_PER_IP_24H", 1)))
+            with _HUMAN_CHALLENGE_LOCK:
+                bonus_recent = _prune_ip_window(_WALLET_BONUS_IP_HISTORY, ip, 86400.0)
+                allow_bonus = (len(bonus_recent) < max_bonus_24h) and (not _is_tor_exit_ip(ip))
+
+            success, message = blockchain.register_wallet(client_address, client_pubkey, grant_welcome_bonus=allow_bonus)
             if success:
-                logger.info(f"Non-Custodial Account Registered: {client_address} (ip={get_client_ip()})")
-                return api_response(True, message=message, data={
+                now_ts = time.time()
+                with _HUMAN_CHALLENGE_LOCK:
+                    _WALLET_CREATE_IP_HISTORY.setdefault(ip, []).append(now_ts)
+                    if allow_bonus:
+                        _WALLET_BONUS_IP_HISTORY.setdefault(ip, []).append(now_ts)
+                final_msg = message if allow_bonus else "Wallet registered! Free 1.00 BCT welcome bonus is limited to 1 per IP every 24h to prevent abuse."
+                logger.info(f"Non-Custodial Account Registered: {client_address} (ip={ip}, bonus={allow_bonus})")
+                return api_response(True, message=final_msg, data={
                     "address": client_address,
                     "public_key": client_pubkey,
                     "balance": blockchain.get_balance(client_address),
                     "nonce": blockchain.get_account_nonce(client_address),
+                    "welcome_bonus_granted": allow_bonus,
                 }, status=201)
             return api_response(False, message=message, status=400)
 
@@ -1408,8 +1571,8 @@ def api_import_wallet():
         if client_address and client_pubkey and not mnemonic_phrase and not private_key_hex:
             if public_key_to_address(client_pubkey) != client_address:
                 return api_response(False, message="Public key does not match wallet address.", status=400)
-            allow_bonus = check_rate_limit("wallet_create_min", limit=3, window_seconds=60) and check_rate_limit("wallet_create_hr", limit=10, window_seconds=3600)
-            ok, msg = blockchain.register_wallet(client_address, client_pubkey, grant_welcome_bonus=allow_bonus)
+            # Never mint free Treasury welcome bonus on wallet import (closes Sybil import-farming loophole)
+            ok, msg = blockchain.register_wallet(client_address, client_pubkey, grant_welcome_bonus=False)
             if not ok:
                 return api_response(False, message=msg, status=400)
             return api_response(True, message="Wallet successfully verified and connected!", data={
